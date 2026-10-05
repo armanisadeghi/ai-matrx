@@ -209,10 +209,10 @@ const Meta: React.FC<{ label: string; children: React.ReactNode }> = ({ label, c
 function CodeStepBody({ step, state }: { step: FactoryStepName; state: FactoryBuildState }) {
   if (step === "intake") {
     const facts = state.facts;
-    if (!facts) return <span className="text-xs text-muted-foreground">—</span>;
+    if (!facts) return <span className="type-secondary text-muted-foreground">—</span>;
     const locked = facts.locked ?? {};
     return (
-      <div className="grid grid-cols-[8rem_1fr] gap-x-3 gap-y-1 text-xs">
+      <div className="grid grid-cols-[8rem_1fr] gap-x-3 gap-y-1 type-secondary">
         <Meta label="Job">{locked.mandate_key ?? (facts.greenfield ? "New agent" : "—")}</Meta>
         <Meta label="Output kind">{locked.output_kind ?? "—"}</Meta>
         <Meta label="Inputs">{(locked.input_names ?? []).length}</Meta>
@@ -232,7 +232,7 @@ function CodeStepBody({ step, state }: { step: FactoryStepName; state: FactoryBu
   if (step === "model") {
     const m = state.model;
     return (
-      <div className="grid grid-cols-[8rem_1fr] gap-x-3 gap-y-1 text-xs">
+      <div className="grid grid-cols-[8rem_1fr] gap-x-3 gap-y-1 type-secondary">
         <Meta label="Model">{m?.model_name ?? "—"}</Meta>
         <Meta label="Chosen by">{m?.source ?? "—"}</Meta>
         <Meta label="Why">{m?.reason ?? "—"}</Meta>
@@ -241,7 +241,7 @@ function CodeStepBody({ step, state }: { step: FactoryStepName; state: FactoryBu
   }
   if (step === "save") {
     return (
-      <div className="grid grid-cols-[8rem_1fr] gap-x-3 gap-y-1 text-xs">
+      <div className="grid grid-cols-[8rem_1fr] gap-x-3 gap-y-1 type-secondary">
         <Meta label="Agent">
           {state.agent_id ? (
             <EntityRef token="agent" id={state.agent_id} name={state.agent_id} showIcon={false} openInNewTab />
@@ -263,7 +263,7 @@ function CodeStepBody({ step, state }: { step: FactoryStepName; state: FactoryBu
           label={`${gates.filter((g) => g[1]).length}/${gates.length} code gates`}
           tone={gates.every((g) => g[1]) ? "good" : "bad"}
         />
-        <a href="#proof-cases" className="text-xs text-primary hover:underline">
+        <a href="#proof-cases" className="type-secondary text-primary hover:underline">
           Cases
         </a>
       </ChipRow>
@@ -275,12 +275,12 @@ function CodeStepBody({ step, state }: { step: FactoryStepName; state: FactoryBu
 function stepSummary(row: RunRow, state: FactoryBuildState): React.ReactNode {
   const a = row.record?.answer;
   if (row.step === "proof_review" && isRecord(a)) return verdictChip(typeof a.verdict === "string" ? a.verdict : null);
-  if (row.step === "model" && state.model?.model_name) return <span className="text-xs text-muted-foreground">{state.model.model_name}</span>;
+  if (row.step === "model" && state.model?.model_name) return <span className="type-secondary text-muted-foreground">{state.model.model_name}</span>;
   if (row.step === "tool_choice" && isRecord(a) && Array.isArray(a.tools))
-    return <span className="text-xs text-muted-foreground">{a.tools.length} tools</span>;
+    return <span className="type-secondary text-muted-foreground">{a.tools.length} tools</span>;
   if (row.label) return null;
-  if (row.step === "proof" && state.proof?.length) return <span className="text-xs text-muted-foreground">{state.proof.length} cases</span>;
-  if (row.step === "contract" && row.status === "skipped") return <span className="text-xs text-muted-foreground">The job is the contract</span>;
+  if (row.step === "proof" && state.proof?.length) return <span className="type-secondary text-muted-foreground">{state.proof.length} cases</span>;
+  if (row.step === "contract" && row.status === "skipped") return <span className="type-secondary text-muted-foreground">The job is the contract</span>;
   return null;
 }
 
@@ -309,7 +309,7 @@ function StepRow({
           <div className="flex w-5 shrink-0 justify-center">
             <span className="w-px bg-warning/60" />
           </div>
-          <div className="flex min-w-0 flex-col gap-1 rounded-md border border-dashed border-warning/50 bg-warning/5 px-2.5 py-1.5 text-xs">
+          <div className="flex min-w-0 flex-col gap-1 rounded-md border border-dashed border-warning/50 bg-warning/5 px-2.5 py-1.5 type-secondary">
             <span className="flex items-center gap-1.5 font-medium text-warning">
               <Repeat className="size-3.5" />
               {row.loop.from} sent it back to {STEP_LABEL[row.step]}
@@ -342,7 +342,7 @@ function StepRow({
             ) : (
               <span className="size-3.5 shrink-0" />
             )}
-            <span className={cn("text-sm font-medium", row.label && "font-normal text-muted-foreground")}>
+            <span className={cn("type-title", row.label && "font-normal text-muted-foreground")}>
               {row.label ?? STEP_LABEL[row.step]}
             </span>
             {(row.attempt ?? 1) > 1 ? (
@@ -353,17 +353,17 @@ function StepRow({
             ) : null}
             {findings.length > 0 ? <StateChip label={`${findings.length} findings`} tone="bad" /> : null}
             {stepSummary(row, state)}
-            <span className="ml-auto shrink-0 pl-2 text-xs tabular-nums text-muted-foreground">
+            <span className="ml-auto shrink-0 pl-2 type-secondary tabular-nums text-muted-foreground">
               {row.status === "running" ? "Running" : formatDuration(row.startedAt, row.endedAt) === "—" ? "" : formatDuration(row.startedAt, row.endedAt)}
             </span>
           </button>
           {open && expandable ? (
             <div className="mt-1.5 flex min-w-0 flex-col gap-3 rounded-md border border-border bg-card p-3">
               {rec?.error ? (
-                <p className="text-xs text-destructive">{rec.error}</p>
+                <p className="type-secondary text-destructive">{rec.error}</p>
               ) : null}
               {findings.length > 0 ? (
-                <ul className="list-disc space-y-0.5 pl-5 text-xs text-destructive">
+                <ul className="list-disc space-y-0.5 pl-5 type-secondary text-destructive">
                   {findings.map((f, i) => (
                     <li key={i}>{f}</li>
                   ))}
@@ -379,7 +379,7 @@ function StepRow({
                 <CodeStepBody step={row.step} state={state} />
               )}
               {rec ? (
-                <div className="grid grid-cols-[8rem_1fr] gap-x-3 gap-y-1 border-t border-border pt-2 text-xs">
+                <div className="grid grid-cols-[8rem_1fr] gap-x-3 gap-y-1 border-t border-border pt-2 type-secondary">
                   <Meta label="Job">
                     {rec.mandate_key ? (
                       <Link
@@ -447,12 +447,12 @@ function ProofCaseCard({
   return (
     <div className="flex min-w-0 flex-col gap-2.5 rounded-md border border-border bg-card p-3">
       <div className="flex min-w-0 flex-wrap items-center gap-2">
-        <span className="truncate font-mono text-xs font-medium" title={pc.case_id}>{pc.case_id}</span>
-        {pc.source ? <span className="text-xs text-muted-foreground">{pc.source}</span> : null}
-        <span className="text-xs text-muted-foreground" title="The judge saw the two answers as A and B">
+        <span className="truncate font-mono type-secondary font-medium" title={pc.case_id}>{pc.case_id}</span>
+        {pc.source ? <span className="type-secondary text-muted-foreground">{pc.source}</span> : null}
+        <span className="type-secondary text-muted-foreground" title="The judge saw the two answers as A and B">
           A = {labels.a} · B = {labels.b}
         </span>
-        <span className="ml-auto flex items-center gap-1.5 text-xs text-muted-foreground">
+        <span className="ml-auto flex items-center gap-1.5 type-secondary text-muted-foreground">
           Judge prefers <StateChip label={pref.label} tone={pref.tone} icon={pref.icon} />
         </span>
       </div>
@@ -465,7 +465,7 @@ function ProofCaseCard({
       </div>
       <div className="grid min-w-0 grid-cols-1 gap-2.5 lg:grid-cols-2">
         <div className="flex min-w-0 flex-col gap-1">
-          <div className="flex items-center gap-2 text-xs font-medium">
+          <div className="flex items-center gap-2 type-secondary font-medium">
             Candidate
             {pc.candidate_conversation_id && kept.has(pc.candidate_conversation_id) ? (
               <EntityRef token="conversation" id={pc.candidate_conversation_id} name="Run" showIcon={false} openInNewTab />
@@ -474,7 +474,7 @@ function ProofCaseCard({
           <LongText text={pc.candidate_output ?? null} maxHeight="max-h-96" />
         </div>
         <div className="flex min-w-0 flex-col gap-1">
-          <div className="text-xs font-medium">Baseline (today)</div>
+          <div className="type-secondary font-medium">Baseline (today)</div>
           <LongText text={baseline} maxHeight="max-h-96" />
         </div>
       </div>
@@ -565,11 +565,11 @@ export function FactoryBuildPage({ buildId }: { buildId: string }) {
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 p-4">
         <header className="flex min-w-0 flex-col gap-2">
           <div className="flex min-w-0 flex-wrap items-center gap-2">
-            <Link href={FACTORY_BASE_PATH} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+            <Link href={FACTORY_BASE_PATH} className="flex items-center gap-1 type-secondary text-muted-foreground hover:text-foreground">
               <ArrowLeft className="size-3.5" />
               Agent Factory
             </Link>
-            <span className="text-xs text-muted-foreground">/</span>
+            <span className="type-secondary text-muted-foreground">/</span>
             <h1 className="truncate font-mono text-base font-semibold">{job ?? "New agent"}</h1>
           </div>
           <div className="flex min-w-0 flex-wrap items-center gap-2">
@@ -580,23 +580,23 @@ export function FactoryBuildPage({ buildId }: { buildId: string }) {
               tone={(state.send_backs ?? 0) > 0 ? "warn" : "neutral"}
               icon={<Repeat className="size-3" />}
             />
-            <span className="text-xs text-muted-foreground" title={new Date(detail.createdAt).toLocaleString()}>
+            <span className="type-secondary text-muted-foreground" title={new Date(detail.createdAt).toLocaleString()}>
               {formatDistanceToNow(new Date(detail.createdAt), { addSuffix: true })}
             </span>
             {detail.endedAt ? (
-              <span className="text-xs tabular-nums text-muted-foreground">
+              <span className="type-secondary tabular-nums text-muted-foreground">
                 {formatDuration(detail.startedAt ?? detail.createdAt, detail.endedAt)}
               </span>
             ) : null}
             {state.agent_id ? (
-              <span className="ml-auto flex items-center gap-1.5 text-xs">
+              <span className="ml-auto flex items-center gap-1.5 type-secondary">
                 <span className="text-muted-foreground">Agent</span>
                 <EntityRef token="agent" id={state.agent_id} name={state.agent_id.slice(0, 8)} />
               </span>
             ) : null}
           </div>
           {state.error ? (
-            <pre className="max-h-40 overflow-auto whitespace-pre-wrap break-words rounded-md border border-destructive/40 bg-destructive/5 p-2.5 font-mono text-xs text-destructive">
+            <pre className="max-h-40 overflow-auto whitespace-pre-wrap break-words rounded-md border border-destructive/40 bg-destructive/5 p-2.5 font-mono type-secondary text-destructive">
               {state.error}
             </pre>
           ) : null}
@@ -618,7 +618,7 @@ export function FactoryBuildPage({ buildId }: { buildId: string }) {
 
         {(state.proof?.length ?? 0) > 0 ? (
           <section id="proof-cases" className="flex flex-col gap-2">
-            <h2 className="text-sm font-semibold">Proof</h2>
+            <h2 className="type-title">Proof</h2>
             {(state.proof ?? []).map((pc) => (
               <ProofCaseCard
                 key={pc.case_id}
@@ -635,8 +635,8 @@ export function FactoryBuildPage({ buildId }: { buildId: string }) {
           <section className="flex flex-col gap-2">
             {(state.flags?.length ?? 0) > 0 ? (
               <details className="rounded-md border border-border">
-                <summary className="px-2.5 py-1.5 text-xs font-medium">Flags ({state.flags?.length})</summary>
-                <ul className="list-disc space-y-1 border-t border-border p-2.5 pl-7 text-xs">
+                <summary className="px-2.5 py-1.5 type-secondary font-medium">Flags ({state.flags?.length})</summary>
+                <ul className="list-disc space-y-1 border-t border-border p-2.5 pl-7 type-secondary">
                   {(state.flags ?? []).map((f, i) => (
                     <li key={i}>{f}</li>
                   ))}
@@ -645,8 +645,8 @@ export function FactoryBuildPage({ buildId }: { buildId: string }) {
             ) : null}
             {(state.assumptions?.length ?? 0) > 0 ? (
               <details className="rounded-md border border-border">
-                <summary className="px-2.5 py-1.5 text-xs font-medium">Assumptions ({state.assumptions?.length})</summary>
-                <ul className="list-disc space-y-1 border-t border-border p-2.5 pl-7 text-xs">
+                <summary className="px-2.5 py-1.5 type-secondary font-medium">Assumptions ({state.assumptions?.length})</summary>
+                <ul className="list-disc space-y-1 border-t border-border p-2.5 pl-7 type-secondary">
                   {(state.assumptions ?? []).map((a, i) => (
                     <li key={i}>{a}</li>
                   ))}

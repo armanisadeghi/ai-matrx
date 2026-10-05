@@ -58,7 +58,7 @@ function ImportSidebar({
   return (
     <div className="h-full min-h-0 flex flex-col">
       <div className="px-2 py-1.5 border-b border-border shrink-0">
-        <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">
+        <span className="type-meta font-semibold text-muted-foreground uppercase tracking-wide">
           Import Source
         </span>
       </div>
@@ -67,7 +67,7 @@ function ImportSidebar({
           const items = IMPORT_SOURCES.filter((s) => s.category === cat);
           return (
             <div key={cat} className="mb-1">
-              <div className="px-2 pt-2 pb-0.5 text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-wider">
+              <div className="px-2 pt-2 pb-0.5 type-meta font-semibold text-muted-foreground/60 uppercase tracking-wider">
                 {cat}
               </div>
               {items.map((source) => {
@@ -125,10 +125,10 @@ function Alert({
   return (
     <PackageAlert
       variant={variant === "error" ? "destructive" : variant}
-      className="flex items-start gap-2 px-3 py-2 text-xs"
+      className="flex items-start gap-2 px-3 py-2 type-secondary"
     >
       <Icon className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-      <AlertDescription className="min-w-0 flex-1 text-xs">
+      <AlertDescription className="min-w-0 flex-1 type-secondary">
         {children}
       </AlertDescription>
     </PackageAlert>
@@ -152,17 +152,17 @@ function IssueRow({ issue }: { issue: ImportValidationIssue }) {
         : "text-muted-foreground";
 
   return (
-    <li className={cn("flex items-start gap-2 text-xs leading-snug", tone)}>
+    <li className={cn("flex items-start gap-2 type-secondary leading-snug", tone)}>
       <Icon className="h-3.5 w-3.5 mt-0.5 shrink-0" />
       <div className="min-w-0 flex-1">
         {issue.path && (
-          <span className="font-mono text-[10px] opacity-80 mr-1.5">
+          <span className="font-mono type-meta opacity-80 mr-1.5">
             {issue.path}
           </span>
         )}
         <span>{issue.message}</span>
         {issue.fix && (
-          <p className="mt-0.5 text-[11px] opacity-80">{issue.fix}</p>
+          <p className="mt-0.5 type-meta opacity-80">{issue.fix}</p>
         )}
       </div>
     </li>
@@ -228,12 +228,12 @@ function ImportAnalysisPanel({
       {hasIssueList && (
         <div className="rounded-md border border-border bg-muted/30 p-2.5 space-y-2">
           {analysis.canConvert ? (
-            <p className="text-xs text-green-700 dark:text-green-300 font-medium flex items-center gap-1.5">
+            <p className="type-secondary text-green-700 dark:text-green-300 font-medium flex items-center gap-1.5">
               <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
               Ready to convert — review warnings below if any.
             </p>
           ) : errors.length > 0 ? (
-            <p className="text-xs text-red-700 dark:text-red-300 font-medium flex items-center gap-1.5">
+            <p className="type-secondary text-red-700 dark:text-red-300 font-medium flex items-center gap-1.5">
               <XCircle className="h-3.5 w-3.5 shrink-0" />
               Fix {errors.length} error{errors.length === 1 ? "" : "s"} before
               converting.
@@ -243,7 +243,7 @@ function ImportAnalysisPanel({
 
           {errors.length > 0 && (
             <div role="alert">
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-red-700/80 dark:text-red-300/80 mb-1">
+              <p className="type-meta font-semibold uppercase tracking-wide text-red-700/80 dark:text-red-300/80 mb-1">
                 Errors
                 <ErrorAlchemyMenu error={errors} />
               </p>
@@ -257,7 +257,7 @@ function ImportAnalysisPanel({
 
           {warnings.length > 0 && (
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-yellow-800/80 dark:text-yellow-200/80 mb-1">
+              <p className="type-meta font-semibold uppercase tracking-wide text-yellow-800/80 dark:text-yellow-200/80 mb-1">
                 Warnings
               </p>
               <ul className="space-y-1.5">
@@ -270,7 +270,7 @@ function ImportAnalysisPanel({
 
           {infos.length > 0 && (
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1">
+              <p className="type-meta font-semibold uppercase tracking-wide text-muted-foreground mb-1">
                 Notes
               </p>
               <ul className="space-y-1.5">
@@ -312,11 +312,11 @@ function PasteBody({
       <div className="flex flex-col items-center justify-center h-full text-center px-8 py-12 text-muted-foreground gap-3">
         <Clock className="w-10 h-10 opacity-20" />
         <div>
-          <p className="text-sm font-medium">Coming Soon</p>
-          <p className="text-xs opacity-60 mt-1">
+          <p className="type-title">Coming Soon</p>
+          <p className="type-secondary opacity-60 mt-1">
             Converter for <strong>{sourceLabel}</strong> is in development.
           </p>
-          <p className="text-xs opacity-60 mt-2">
+          <p className="type-secondary opacity-60 mt-2">
             In the meantime, paste your config as <strong>Agent JSON</strong> to
             import.
           </p>
@@ -329,10 +329,10 @@ function PasteBody({
     <div className="flex flex-col h-full min-h-0 gap-3 p-4">
       <div className="flex items-center gap-2 shrink-0">
         <FileJson className="w-4 h-4 text-muted-foreground" />
-        <span className="text-sm font-medium">Paste {sourceLabel}</span>
+        <span className="type-title">Paste {sourceLabel}</span>
       </div>
       {/* Matrx accepts snake_case, camelCase, and minor syntax fixes automatically. */}
-      <p className="text-xs text-muted-foreground shrink-0">
+      <p className="type-secondary text-muted-foreground shrink-0">
         Paste a JSON object; issues show as you paste.
       </p>
 
@@ -410,7 +410,7 @@ function PreviewBody({
       )}
 
       <div className="flex-1 min-h-0 overflow-y-auto rounded-md border border-border bg-muted/40 p-3">
-        <pre className="text-xs font-mono whitespace-pre-wrap break-words text-foreground">
+        <pre className="type-secondary font-mono whitespace-pre-wrap break-words text-foreground">
           {previewJson}
         </pre>
       </div>
@@ -455,7 +455,7 @@ function ErrorBody({
       <Alert variant="error">{error}</Alert>
       {issues && issues.length > 0 ? (
         <div className="flex flex-col gap-1.5 max-h-[50%] overflow-y-auto rounded-md border border-border bg-muted/30 p-2.5">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+          <p className="type-meta font-semibold uppercase tracking-wide text-muted-foreground">
             Issues
           </p>
           <ul className="space-y-1.5">
@@ -501,11 +501,11 @@ function SuccessBody({
     <div className="flex flex-col items-center justify-center h-full text-center px-8 py-12 gap-4">
       <CheckCircle2 className="w-12 h-12 text-green-500" />
       <div>
-        <p className="text-sm font-semibold">Agent imported successfully</p>
-        <p className="text-xs text-muted-foreground mt-1 font-mono break-all">
+        <p className="type-title">Agent imported successfully</p>
+        <p className="type-secondary text-muted-foreground mt-1 font-mono break-all">
           {agentId}
         </p>
-        <p className="text-xs text-muted-foreground mt-1">
+        <p className="type-secondary text-muted-foreground mt-1">
           <strong>{agentName}</strong> is ready to edit in the builder.
         </p>
       </div>

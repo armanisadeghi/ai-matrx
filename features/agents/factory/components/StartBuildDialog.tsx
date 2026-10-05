@@ -76,7 +76,7 @@ export function StartBuildDialog({ open, onOpenChange, onStarted }: StartBuildDi
         </DialogHeader>
         <div className="flex flex-col gap-3">
           <label className="flex flex-col gap-1">
-            <span className="text-xs font-medium text-muted-foreground">Job</span>
+            <span className="type-secondary font-medium text-muted-foreground">Job</span>
             <OptionCombobox
               value={mandateKey}
               onChange={setMandateKey}
@@ -93,7 +93,7 @@ export function StartBuildDialog({ open, onOpenChange, onStarted }: StartBuildDi
             />
           </label>
           <label className="flex flex-col gap-1">
-            <span className="text-xs font-medium text-muted-foreground">Model lock</span>
+            <span className="type-secondary font-medium text-muted-foreground">Model lock</span>
             <ModelListDropdown
               modelOnly
               value={modelId}

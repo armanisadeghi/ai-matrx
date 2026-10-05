@@ -144,7 +144,7 @@ function OutcomePanel({
       <div className="flex min-w-0 flex-wrap items-center gap-2">
         {outcomeChip(outcome)}
         {kept && outcome === "saved_unproven" ? <Badge tone="warning">Unproven</Badge> : null}
-        {line ? <span className="min-w-0 text-sm">{line}</span> : null}
+        {line ? <span className="min-w-0 type-body">{line}</span> : null}
         <span className="ml-auto flex items-center gap-2">{actions}</span>
       </div>
       {cases.length > 0 ? (
@@ -160,8 +160,8 @@ function OutcomePanel({
       ) : null}
       {!kept && (reason || state.error) ? (
         <details className="rounded-md border border-border">
-          <summary className="px-2.5 py-1.5 text-xs font-medium">Why</summary>
-          <p className="whitespace-pre-wrap break-words border-t border-border p-2.5 text-xs text-muted-foreground">
+          <summary className="px-2.5 py-1.5 type-secondary font-medium">Why</summary>
+          <p className="whitespace-pre-wrap break-words border-t border-border p-2.5 type-secondary text-muted-foreground">
             {/* A kind carried in the reason reads as its one-line label (L-5, round 9). */}
             {catalogProseText(reason ?? state.error)}
           </p>
@@ -250,7 +250,7 @@ export function BuildProgress({ buildId, onFinished, onRebuilt, className }: Bui
     return error ? (
       <ErrorNotice title="Build not loaded" message={error} operation="load the agent build" size="compact" className={className} />
     ) : (
-      <div className={cn("rounded-md border border-border p-3 text-sm text-muted-foreground", className)}>No build has this id.</div>
+      <div className={cn("rounded-md border border-border p-3 type-body text-muted-foreground", className)}>No build has this id.</div>
     );
   }
 
@@ -261,18 +261,18 @@ export function BuildProgress({ buildId, onFinished, onRebuilt, className }: Bui
   return (
     <div className={cn("flex min-w-0 flex-col gap-2.5 rounded-md border border-border bg-card p-3", className)}>
       <div className="flex min-w-0 items-center gap-2">
-        <span className="truncate text-sm font-medium">{name}</span>
+        <span className="truncate type-title">{name}</span>
         {!over ? <StateChip label="Building" tone="accent" /> : null}
         {sendBacks > 0 ? (
           <StateChip label={`${sendBacks} send-back${sendBacks === 1 ? "" : "s"}`} tone="warn" icon={<Repeat className="size-3" />} />
         ) : null}
-        <span className="ml-auto shrink-0 text-xs tabular-nums text-muted-foreground">
+        <span className="ml-auto shrink-0 type-secondary tabular-nums text-muted-foreground">
           {formatDuration(detail.startedAt ?? detail.createdAt, detail.endedAt ?? new Date().toISOString())}
         </span>
         {isAdmin ? (
           <Link
             href={`${ADMIN_BUILD_PATH}/${currentId}`}
-            className="flex shrink-0 items-center gap-1 text-xs text-primary hover:underline"
+            className="flex shrink-0 items-center gap-1 type-secondary text-primary hover:underline"
           >
             Full build
             <ExternalLink className="size-3" />
@@ -284,7 +284,7 @@ export function BuildProgress({ buildId, onFinished, onRebuilt, className }: Bui
         {cells.map((c) => (
           <li
             key={c.step}
-            className={cn("flex items-center gap-1.5 text-xs", c.status === "pending" && "opacity-50")}
+            className={cn("flex items-center gap-1.5 type-secondary", c.status === "pending" && "opacity-50")}
             aria-current={c.status === "running" ? "step" : undefined}
           >
             <StatusIcon status={c.status} />
@@ -298,7 +298,7 @@ export function BuildProgress({ buildId, onFinished, onRebuilt, className }: Bui
         keptAgent ? (
           <div className="flex items-center gap-2 border-t border-border pt-2.5">
             <Badge tone="warning">Unproven</Badge>
-            <span className="text-sm">Kept. Its first 3 runs are judged.</span>
+            <span className="type-body">Kept. Its first 3 runs are judged.</span>
             <Button asChild variant="primary" className="ml-auto">
               <Link href={`/agents/${keptAgent}/build`}>Open agent</Link>
             </Button>

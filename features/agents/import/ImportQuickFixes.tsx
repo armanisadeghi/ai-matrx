@@ -132,14 +132,14 @@ export function ImportQuickFixes({
 
   return (
     <div className="rounded-md border border-primary/20 bg-primary/5 p-2.5 space-y-2 shrink-0">
-      <p className="text-[10px] font-semibold uppercase tracking-wide text-primary flex items-center gap-1.5">
+      <p className="type-meta font-semibold uppercase tracking-wide text-primary flex items-center gap-1.5">
         <Wrench className="h-3 w-3" />
         Quick fixes
       </p>
 
       {showModel && (
         <div className="space-y-1">
-          <p className="text-xs text-muted-foreground">
+          <p className="type-secondary text-muted-foreground">
             Pick a model to continue.
           </p>
           <div className="flex items-center gap-2 flex-wrap">
@@ -164,7 +164,7 @@ export function ImportQuickFixes({
 
       {showName && (
         <div className="space-y-1">
-          <p className="text-xs text-muted-foreground">
+          <p className="type-secondary text-muted-foreground">
             Enter a name for this agent.
           </p>
           <div className="flex items-center gap-2 flex-wrap">
@@ -191,7 +191,7 @@ export function ImportQuickFixes({
 
       {showAgentType && (
         <div className="space-y-1">
-          <p className="text-xs text-muted-foreground">Choose an agent type.</p>
+          <p className="type-secondary text-muted-foreground">Choose an agent type.</p>
           <div className="flex items-center gap-2 flex-wrap">
             <Label className="text-xs text-muted-foreground shrink-0 w-14">
               Type
@@ -215,7 +215,7 @@ export function ImportQuickFixes({
 
       {showEffort && effortFix?.kind === "set-settings-enum" && (
         <div className="space-y-1">
-          <p className="text-xs text-muted-foreground">
+          <p className="type-secondary text-muted-foreground">
             Pick a valid reasoning effort.
           </p>
           <div className="flex items-center gap-2 flex-wrap">
@@ -251,7 +251,7 @@ export function ImportQuickFixes({
 
       {showSummary && summaryFix?.kind === "set-settings-enum" && (
         <div className="space-y-1">
-          <p className="text-xs text-muted-foreground">
+          <p className="type-secondary text-muted-foreground">
             Pick a valid reasoning summary.
           </p>
           <div className="flex items-center gap-2 flex-wrap">

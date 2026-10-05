@@ -195,7 +195,7 @@ export function ModelChangeReconciliation({
 
       {/* Per-row table */}
       <div className="rounded border border-border overflow-hidden">
-        <div className="grid grid-cols-[minmax(140px,1fr)_minmax(110px,1fr)_minmax(160px,1.2fr)_minmax(110px,1fr)_160px] items-center gap-2 px-2.5 py-1.5 bg-muted/60 border-b border-border text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+        <div className="grid grid-cols-[minmax(140px,1fr)_minmax(110px,1fr)_minmax(160px,1.2fr)_minmax(110px,1fr)_160px] items-center gap-2 px-2.5 py-1.5 bg-muted/60 border-b border-border type-meta font-semibold uppercase tracking-wide text-muted-foreground">
           <span>Setting</span>
           <span>Current value</span>
           <span>Issue</span>
@@ -215,27 +215,27 @@ export function ModelChangeReconciliation({
                   !isLast ? "border-b border-border" : ""
                 }`}
               >
-                <span className="text-xs truncate" title={humanizeIdentifier(row.key)}>
+                <span className="type-secondary truncate" title={humanizeIdentifier(row.key)}>
                   {humanizeIdentifier(row.key)}
                 </span>
                 <span
-                  className="font-mono text-xs text-muted-foreground truncate"
+                  className="font-mono type-secondary text-muted-foreground truncate"
                   title={formatValue(row.currentValue)}
                 >
                   {formatValue(row.currentValue)}
                 </span>
-                <span className="text-xs text-foreground/80 leading-snug">
+                <span className="type-secondary text-foreground/80 leading-snug">
                   <span className="font-medium text-amber-700 dark:text-amber-400">
                     {ISSUE_LABEL[row.issue]}
                   </span>
                   {row.issueMessage ? (
-                    <span className="block text-[11px] text-muted-foreground truncate">
+                    <span className="block type-meta text-muted-foreground truncate">
                       {row.issueMessage}
                     </span>
                   ) : null}
                 </span>
                 <span
-                  className="font-mono text-xs text-muted-foreground truncate"
+                  className="font-mono type-secondary text-muted-foreground truncate"
                   title={formatValue(row.newModelDefault)}
                 >
                   {formatValue(row.newModelDefault)}
@@ -281,13 +281,13 @@ export function ModelChangeReconciliation({
             <ChevronRight className="h-3.5 w-3.5" />
           )}
           Preview settings after apply
-          <span className="ml-auto text-[10px] text-muted-foreground">
+          <span className="ml-auto type-meta text-muted-foreground">
             {Object.keys(previewSettings).length} key
             {Object.keys(previewSettings).length !== 1 ? "s" : ""}
           </span>
         </button>
         {previewOpen && (
-          <pre className="text-[11px] font-mono leading-5 p-3 overflow-auto max-h-[30dvh] bg-zinc-50 dark:bg-zinc-900 border-t border-border">
+          <pre className="type-meta font-mono leading-5 p-3 overflow-auto max-h-[30dvh] bg-zinc-50 dark:bg-zinc-900 border-t border-border">
             {JSON.stringify(previewSettings, null, 2)}
           </pre>
         )}
@@ -314,7 +314,7 @@ export function ModelChangeReconciliation({
         <DrawerContent className="px-3 pb-safe max-h-[92dvh]">
           <DrawerHeader className="px-0 pb-2">
             <DrawerTitle className="text-base">{title}</DrawerTitle>
-            <DrawerDescription className="text-xs">
+            <DrawerDescription className="type-secondary">
               {description}
             </DrawerDescription>
           </DrawerHeader>
@@ -329,7 +329,7 @@ export function ModelChangeReconciliation({
       <DialogContent className="sm:max-w-[900px] max-h-[90dvh] overflow-hidden flex flex-col p-4">
         <DialogHeader>
           <DialogTitle className="text-base">{title}</DialogTitle>
-          <DialogDescription className="text-xs">
+          <DialogDescription className="type-secondary">
             {description}
           </DialogDescription>
         </DialogHeader>

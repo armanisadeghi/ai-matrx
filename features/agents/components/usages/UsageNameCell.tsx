@@ -128,7 +128,7 @@ export function UsageNameCell({ row }: { row: UnifiedUsageRow }) {
     // lines, comparisons, code usages) — the name is honest text, not a link.
     return (
       <span
-        className="truncate text-sm text-foreground"
+        className="truncate type-body text-foreground"
         title={`${row.name} — this kind of usage has no page of its own in the app yet, so there is nothing to open.`}
       >
         {row.name}
@@ -136,5 +136,5 @@ export function UsageNameCell({ row }: { row: UnifiedUsageRow }) {
     );
   }
 
-  return <span className="truncate text-sm text-muted-foreground">{row.name}</span>;
+  return <span className="truncate type-body text-muted-foreground">{row.name}</span>;
 }

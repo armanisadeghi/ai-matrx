@@ -44,15 +44,15 @@ export function ReliabilityCurve({ bins, threshold }: { bins: CurveBin[]; thresh
         {TICKS.map((t) => (
           <g key={t}>
             <line x1={x(0)} x2={x(1)} y1={y(t)} y2={y(t)} className="stroke-border" strokeWidth={1} />
-            <text x={PAD.left - 6} y={y(t) + 3} textAnchor="end" className="fill-muted-foreground text-[10px]">
+            <text x={PAD.left - 6} y={y(t) + 3} textAnchor="end" className="fill-muted-foreground type-meta">
               {pct(t)}
             </text>
-            <text x={x(t)} y={H - PAD.bottom + 14} textAnchor="middle" className="fill-muted-foreground text-[10px]">
+            <text x={x(t)} y={H - PAD.bottom + 14} textAnchor="middle" className="fill-muted-foreground type-meta">
               {pct(t)}
             </text>
           </g>
         ))}
-        <text x={PAD.left + PW / 2} y={H - 4} textAnchor="middle" className="fill-muted-foreground text-[10px]">
+        <text x={PAD.left + PW / 2} y={H - 4} textAnchor="middle" className="fill-muted-foreground type-meta">
           Stated probability
         </text>
         <text
@@ -60,7 +60,7 @@ export function ReliabilityCurve({ bins, threshold }: { bins: CurveBin[]; thresh
           y={PAD.top + PH / 2}
           textAnchor="middle"
           transform={`rotate(-90 10 ${PAD.top + PH / 2})`}
-          className="fill-muted-foreground text-[10px]"
+          className="fill-muted-foreground type-meta"
         >
           Right this often
         </text>
@@ -108,7 +108,7 @@ export function ReliabilityCurve({ bins, threshold }: { bins: CurveBin[]; thresh
       </svg>
       {active && (
         <div
-          className="pointer-events-none absolute rounded-md border border-border bg-popover px-2 py-1 font-mono text-[10px] shadow-sm"
+          className="pointer-events-none absolute rounded-md border border-border bg-popover px-2 py-1 font-mono type-meta shadow-sm"
           style={{
             left: `${(x(active.mean_predicted) / W) * 100}%`,
             top: `${(y(active.observed_accuracy) / H) * 100}%`,

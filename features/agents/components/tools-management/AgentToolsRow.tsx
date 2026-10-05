@@ -117,7 +117,7 @@ export function AgentToolsRow({ agentId }: AgentToolsRowProps) {
         >
           {selected.length === 0 && customCount === 0 && mcpCount === 0 ? (
             // read-gate-exempt: editor row over the loaded agent's own tool ids (a form field of its record), not a list read's answer
-            <span className="shrink-0 text-xs text-muted-foreground/70">
+            <span className="shrink-0 type-secondary text-muted-foreground/70">
               None yet — Add gives this agent something it can do
             </span>
           ) : null}
@@ -127,7 +127,7 @@ export function AgentToolsRow({ agentId }: AgentToolsRowProps) {
             return (
               <span
                 key={id}
-                className="inline-flex shrink-0 items-center gap-1 rounded-md border border-border bg-muted/50 px-1.5 py-0.5 text-xs"
+                className="inline-flex shrink-0 items-center gap-1 rounded-md border border-border bg-muted/50 px-1.5 py-0.5 type-secondary"
                 title={tool?.name ?? "Loading this tool's name…"}
               >
                 <Wrench className="h-3 w-3 shrink-0 text-muted-foreground" />
@@ -148,12 +148,12 @@ export function AgentToolsRow({ agentId }: AgentToolsRowProps) {
           })}
 
           {customCount > 0 ? (
-            <span className="shrink-0 rounded-md border border-border bg-muted/50 px-1.5 py-0.5 text-xs">
+            <span className="shrink-0 rounded-md border border-border bg-muted/50 px-1.5 py-0.5 type-secondary">
               {customCount} custom
             </span>
           ) : null}
           {mcpCount > 0 ? (
-            <span className="shrink-0 rounded-md border border-border bg-muted/50 px-1.5 py-0.5 text-xs">
+            <span className="shrink-0 rounded-md border border-border bg-muted/50 px-1.5 py-0.5 type-secondary">
               {mcpCount} connected service{mcpCount === 1 ? "" : "s"}
             </span>
           ) : null}
@@ -178,7 +178,7 @@ export function AgentToolsRow({ agentId }: AgentToolsRowProps) {
       </div>
       {toolsNotice ? (
         <p
-          className="flex items-start gap-1.5 text-[11px] text-muted-foreground"
+          className="flex items-start gap-1.5 type-meta text-muted-foreground"
           data-testid="decision-turn-tools-notice"
         >
           <Info className="mt-px h-3 w-3 shrink-0" />

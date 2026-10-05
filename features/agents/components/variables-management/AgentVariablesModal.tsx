@@ -83,7 +83,7 @@ export function AgentVariablesModal({ agentId }: AgentVariablesModalProps) {
             <DialogTitle className="text-base font-semibold">
               Agent Variables
             </DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground">
+            <DialogDescription className="type-secondary text-muted-foreground">
               {count > 0
                 ? `${count} variable${count !== 1 ? "s" : ""} defined — select one to edit or add a new one`
                 : "Define named values that can be filled in when running this agent"}

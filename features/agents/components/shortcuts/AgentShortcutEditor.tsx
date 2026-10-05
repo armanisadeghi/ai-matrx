@@ -181,7 +181,7 @@ export function AgentShortcutEditor({
   if (!isCreate && isLoading && !loadedShortcut) {
     return (
       <Card className="mx-auto mt-12 w-full max-w-md">
-        <CardContent className="p-6 flex items-center justify-center gap-2 text-sm text-muted-foreground">
+        <CardContent className="p-6 flex items-center justify-center gap-2 type-body text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" />
           Loading shortcut…
         </CardContent>

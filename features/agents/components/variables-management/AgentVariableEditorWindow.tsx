@@ -165,7 +165,7 @@ export default function AgentVariableEditorWindow({
             onRenamed={handleRenamed}
           />
         ) : (
-          <p className="text-sm text-muted-foreground">
+          <p className="type-body text-muted-foreground">
             &ldquo;{shown}&rdquo; is gone — removed or renamed
           </p>
         )}

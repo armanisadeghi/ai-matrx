@@ -245,7 +245,7 @@ export function AgentSettingsForm({
 
   if (!agent) {
     return (
-      <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+      <div className="flex items-center justify-center h-full text-muted-foreground type-body">
         Agent data not loaded
       </div>
     );
@@ -292,7 +292,7 @@ export function AgentSettingsForm({
     <div className="flex flex-col h-full relative">
       {/* Top sticky static action bar (for saving state) */}
       <div className="flex items-center justify-between p-2 border-b bg-muted/40 shrink-0">
-        <span className="text-xs font-medium text-muted-foreground">
+        <span className="type-secondary font-medium text-muted-foreground">
           {isDirty ? "Unsaved changes..." : "All changes saved"}
         </span>
         <div className="flex gap-2">
@@ -316,7 +316,7 @@ export function AgentSettingsForm({
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        <div className="flex flex-col gap-8 p-3 max-w-4xl mx-auto text-sm">
+        <div className="flex flex-col gap-8 p-3 max-w-4xl mx-auto type-body">
           <div className="grid grid-cols-1 gap-4">
             <div
               className="space-y-2 flex flex-col"
@@ -370,7 +370,7 @@ export function AgentSettingsForm({
             >
               <Label className="text-sm font-semibold">
                 Tags{" "}
-                <span className="text-xs font-normal text-muted-foreground ml-1">
+                <span className="type-secondary font-normal text-muted-foreground ml-1">
                   (comma separated)
                 </span>
               </Label>
@@ -389,7 +389,7 @@ export function AgentSettingsForm({
             <div className="space-y-2 flex flex-col">
               <Label className="text-sm font-semibold flex items-center gap-1.5">
                 Default Knowledge boost
-                <span className="text-xs font-normal text-muted-foreground">
+                <span className="type-secondary font-normal text-muted-foreground">
                   retrieval ranking
                 </span>
                 <InfoHint text="Knowledge search boost: 0 none, 10–25 lift, 50+ pin near top, negative demotes; extraction jobs can override." />
@@ -430,11 +430,11 @@ export function AgentSettingsForm({
 
                 <div className="flex flex-col gap-5">
                   <div className="flex flex-col gap-1.5">
-                    <span className="text-muted-foreground/70 uppercase tracking-widest text-[10px] font-bold">
+                    <span className="text-muted-foreground/70 uppercase tracking-widest type-meta font-bold">
                       ID
                     </span>
                     <div className="flex items-center gap-1.5 bg-background/60 rounded-md pl-2.5 pr-1 py-1 border border-border/50 max-w-fit">
-                      <span className="font-mono text-foreground/80 text-[11px] tracking-tight">
+                      <span className="font-mono text-foreground/80 type-meta tracking-tight">
                         {agent.id}
                       </span>
                       <Button
@@ -448,36 +448,36 @@ export function AgentSettingsForm({
                   </div>
 
                   <div className="flex flex-col gap-1.5">
-                    <span className="text-muted-foreground/70 uppercase tracking-widest text-[10px] font-bold">
+                    <span className="text-muted-foreground/70 uppercase tracking-widest type-meta font-bold">
                       Model
                     </span>
                     {modelId ? (
                       <AiModelRef
                         modelId={modelId}
                         name={modelName}
-                        className="max-w-fit rounded-md border border-amber-500/20 bg-amber-500/10 px-2.5 py-1.5 text-xs font-semibold text-amber-600 dark:text-amber-400"
+                        className="max-w-fit rounded-md border border-amber-500/20 bg-amber-500/10 px-2.5 py-1.5 type-secondary font-semibold text-amber-600 dark:text-amber-400"
                       />
                     ) : (
-                      <span className="text-xs text-muted-foreground">
+                      <span className="type-secondary text-muted-foreground">
                         Default Selection
                       </span>
                     )}
                   </div>
 
                   <div className="flex flex-col gap-1.5">
-                    <span className="text-muted-foreground/70 uppercase tracking-widest text-[10px] font-bold">
+                    <span className="text-muted-foreground/70 uppercase tracking-widest type-meta font-bold">
                       Ownership
                     </span>
-                    <span className="inline-flex items-center px-2.5 py-1.5 rounded-md text-xs font-semibold bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20 max-w-fit">
+                    <span className="inline-flex items-center px-2.5 py-1.5 rounded-md type-secondary font-semibold bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20 max-w-fit">
                       {ownership}
                     </span>
                   </div>
 
                   <div className="flex flex-col gap-1.5">
-                    <span className="text-muted-foreground/70 uppercase tracking-widest text-[10px] font-bold">
+                    <span className="text-muted-foreground/70 uppercase tracking-widest type-meta font-bold">
                       Type
                     </span>
-                    <span className="inline-flex items-center px-2.5 py-1.5 rounded-md text-xs font-semibold bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20 max-w-fit">
+                    <span className="inline-flex items-center px-2.5 py-1.5 rounded-md type-secondary font-semibold bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20 max-w-fit">
                       {agent.agentType === "builtin"
                         ? DEFAULT_AGENT_CATALOG_LABELS.publicTab
                         : "User Generated"}
@@ -575,7 +575,7 @@ export function AgentSettingsForm({
               <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-blue-500/70 via-blue-500/30 to-transparent pointer-events-none"></div>
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500/70 via-blue-500/30 to-transparent pointer-events-none"></div>
               <div className="absolute top-0 right-0 w-16 h-16 bg-blue-500/10 rounded-full blur-2xl pointer-events-none group-hover:bg-blue-500/20 transition-colors"></div>
-              <span className="text-muted-foreground/80 uppercase tracking-wider text-[11px] font-bold mb-2 group-hover:text-primary transition-colors">
+              <span className="text-muted-foreground/80 uppercase tracking-wider type-meta font-bold mb-2 group-hover:text-primary transition-colors">
                 Messages
               </span>
               <span className="font-mono font-bold text-3xl text-foreground/90">
@@ -609,7 +609,7 @@ export function AgentSettingsForm({
               <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-purple-500/70 via-purple-500/30 to-transparent pointer-events-none"></div>
               <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-purple-500/70 via-purple-500/30 to-transparent pointer-events-none"></div>
               <div className="absolute top-0 right-0 w-16 h-16 bg-purple-500/10 rounded-full blur-2xl pointer-events-none group-hover:bg-purple-500/20 transition-colors"></div>
-              <span className="text-muted-foreground/80 uppercase tracking-wider text-[11px] font-bold mb-2 group-hover:text-primary transition-colors">
+              <span className="text-muted-foreground/80 uppercase tracking-wider type-meta font-bold mb-2 group-hover:text-primary transition-colors">
                 Variables
               </span>
               <span className="font-mono font-bold text-3xl text-foreground/90">
@@ -643,7 +643,7 @@ export function AgentSettingsForm({
               <div className="absolute top-0 left-0 w-0.5 h-full bg-gradient-to-b from-emerald-500/80 via-emerald-500/40 to-transparent pointer-events-none"></div>
               <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-emerald-500/80 via-emerald-500/40 to-transparent pointer-events-none"></div>
               <div className="absolute top-0 right-0 w-16 h-16 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none group-hover:bg-emerald-500/20 transition-colors"></div>
-              <span className="text-muted-foreground/80 uppercase tracking-wider text-[11px] font-bold mb-2 group-hover:text-primary transition-colors">
+              <span className="text-muted-foreground/80 uppercase tracking-wider type-meta font-bold mb-2 group-hover:text-primary transition-colors">
                 Tools
               </span>
               <span className="font-mono font-bold text-3xl text-foreground/90">

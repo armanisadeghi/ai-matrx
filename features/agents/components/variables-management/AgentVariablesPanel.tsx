@@ -195,7 +195,7 @@ export function AgentVariablesPanel({ agentId }: AgentVariablesPanelProps) {
       {/* ── Left panel — variable list ─────────────────────────────────────── */}
       <div className="w-52 shrink-0 flex flex-col border-r border-border overflow-hidden">
         <div className="px-3 py-2.5 border-b border-border shrink-0">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+          <p className="type-secondary font-medium text-muted-foreground uppercase tracking-wide">
             Variables
             {variables.length > 0 && (
               <span className="ml-1.5 text-foreground/60">
@@ -208,7 +208,7 @@ export function AgentVariablesPanel({ agentId }: AgentVariablesPanelProps) {
         <ScrollArea className="flex-1">
           <div className="py-1">
             {variables.length === 0 && (
-              <p className="px-3 py-4 text-xs text-muted-foreground text-center">
+              <p className="px-3 py-4 type-secondary text-muted-foreground text-center">
                 {/* read-gate-exempt: editor over the loaded agent's own variable definitions (its record), not a list read's answer */}
                 No variables yet
               </p>
@@ -235,13 +235,13 @@ export function AgentVariablesPanel({ agentId }: AgentVariablesPanelProps) {
                 >
                   <Variable className="w-3.5 h-3.5 shrink-0 text-muted-foreground" />
                   <span
-                    className="flex-1 text-xs truncate"
+                    className="flex-1 type-secondary truncate"
                     title={`{{${variable.name}}}`}
                   >
                     {variableRunLabel(variable)}
                   </span>
                   {isEmptyBinding(variable.binding) && (
-                    <span className="shrink-0 rounded px-1 text-[10px] font-medium text-warning ring-1 ring-warning/40">
+                    <span className="shrink-0 rounded px-1 type-meta font-medium text-warning ring-1 ring-warning/40">
                       Not set up
                     </span>
                   )}
@@ -253,7 +253,7 @@ export function AgentVariablesPanel({ agentId }: AgentVariablesPanelProps) {
                   )}
                   {unplacedBound.has(variable.name) && (
                     <span
-                      className="shrink-0 rounded px-1 text-[10px] font-medium text-muted-foreground ring-1 ring-border"
+                      className="shrink-0 rounded px-1 type-meta font-medium text-muted-foreground ring-1 ring-border"
                       title="No message places it, so its data is sent beside the prompt"
                     >
                       As context
@@ -275,18 +275,18 @@ export function AgentVariablesPanel({ agentId }: AgentVariablesPanelProps) {
               className="w-full flex items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-muted/60 text-muted-foreground hover:text-foreground"
             >
               <Plus className="w-3.5 h-3.5 shrink-0" />
-              <span className="text-xs">Add New Variable</span>
+              <span className="type-secondary">Add New Variable</span>
             </button>
 
             {undeclaredNames.length > 0 && (
               <div className="mt-2 border-t border-border pt-1">
-                <p className="px-3 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
+                <p className="px-3 py-1.5 type-meta font-medium text-muted-foreground uppercase tracking-wide">
                   Undeclared
                   <span className="ml-1 text-foreground/60">
                     ({undeclaredNames.length})
                   </span>
                 </p>
-                <p className="px-3 pb-1.5 text-[10px] text-muted-foreground/80 leading-tight">
+                <p className="px-3 pb-1.5 type-meta text-muted-foreground/80 leading-tight">
                   In messages, not defined yet
                 </p>
                 {undeclaredNames.map((name) => {
@@ -305,7 +305,7 @@ export function AgentVariablesPanel({ agentId }: AgentVariablesPanelProps) {
                       }
                     >
                       <AlertCircle className="w-3.5 h-3.5 shrink-0 text-red-500" />
-                      <span className="flex-1 text-xs font-mono truncate text-red-600 dark:text-red-400">
+                      <span className="flex-1 type-secondary font-mono truncate text-red-600 dark:text-red-400">
                         {name}
                       </span>
                       {collides ? (
@@ -332,13 +332,13 @@ export function AgentVariablesPanel({ agentId }: AgentVariablesPanelProps) {
               <Variable className="w-5 h-5 text-muted-foreground" />
             </div>
             <div>
-              <p className="text-sm font-medium text-foreground">
+              <p className="type-title text-foreground">
                 {variables.length === 0
                   ? // read-gate-exempt: editor over the loaded agent's own variable definitions (its record), not a list read's answer
                     "No variables defined"
                   : "Select a variable"}
               </p>
-              <p className="text-xs text-muted-foreground mt-0.5">
+              <p className="type-secondary text-muted-foreground mt-0.5">
                 {variables.length === 0
                   ? 'Click "Add New Variable" to get started'
                   : "Choose a variable from the list to edit it, or add a new one"}
@@ -349,8 +349,8 @@ export function AgentVariablesPanel({ agentId }: AgentVariablesPanelProps) {
           <>
             <div className="px-5 py-3 border-b border-border shrink-0 flex items-center justify-between">
               <div>
-                <p className="text-sm font-semibold">{selection.name}</p>
-                <p className="text-[11px] text-muted-foreground mt-0.5">
+                <p className="type-title">{selection.name}</p>
+                <p className="type-meta text-muted-foreground mt-0.5">
                   {selectedIsFresh
                     ? "Just added — changes save automatically"
                     : "Changes save automatically"}

@@ -125,7 +125,7 @@ export function CustomDataBindingPicker({
           organizationId={chosenRow?.organization_id}
           fallback={(held) => (
             <>
-              <p className="text-[11px] text-muted-foreground">
+              <p className="type-meta text-muted-foreground">
                 {held.state === "resolving" ? (
                   <span className="inline-flex items-center gap-1">
                     <Loader2 className="h-3 w-3 animate-spin" />
@@ -369,7 +369,7 @@ function BoundTableDetails({
             {SHAPE_CHOICES.map((c) => (
               <SelectItem key={c.value} value={c.value}>
                 <span>{c.label}</span>
-                <span className="ml-2 text-xs text-muted-foreground">
+                <span className="ml-2 type-secondary text-muted-foreground">
                   {c.hint}
                 </span>
               </SelectItem>
@@ -417,12 +417,12 @@ function BoundTableDetails({
             ariaLabel="Record"
           />
           {recordsCapped && !records.error && (
-            <p className="text-[11px] text-muted-foreground">
+            <p className="type-meta text-muted-foreground">
               Showing {recordOptions.length} of {recordTotal} records
             </p>
           )}
           {records.error && (
-            <p className="text-[11px] text-destructive">
+            <p className="type-meta text-destructive">
               Records could not be read: {records.error.message}
               <ErrorAlchemyMenu error={records.error.message} />
             </p>
@@ -473,7 +473,7 @@ function BoundTableDetails({
       )}
 
       {knobs.error && (
-        <p className="text-[11px] text-destructive">
+        <p className="type-meta text-destructive">
           {knobs.error} <ErrorAlchemyMenu error={knobs.error} />
         </p>
       )}
@@ -493,7 +493,7 @@ function BoundTableDetails({
             disabled={readonly}
             className="text-base"
           />
-          <p className="text-[11px] text-muted-foreground">
+          <p className="type-meta text-muted-foreground">
             Extra rows are cut; the agent is told
           </p>
         </div>
@@ -535,7 +535,7 @@ function MissingChoice({
           {MISSING_CHOICES.map((c) => (
             <SelectItem key={c.value} value={c.value}>
               <span>{c.label}</span>
-              <span className="ml-2 text-xs text-muted-foreground hidden sm:inline">
+              <span className="ml-2 type-secondary text-muted-foreground hidden sm:inline">
                 — {c.hint}
               </span>
             </SelectItem>
@@ -591,7 +591,7 @@ function TemplateEditor({
       <Label className="text-xs font-medium text-foreground">
         {perRow ? "How each row reads" : "How the record reads"}
       </Label>
-      <div className="min-h-9 rounded-md border border-border bg-background px-2 py-1.5 text-sm leading-7 text-foreground">
+      <div className="min-h-9 rounded-md border border-border bg-background px-2 py-1.5 type-body leading-7 text-foreground">
         {pieces.length === 0 ? (
           <span className="text-muted-foreground">Add fields below</span>
         ) : (
@@ -610,8 +610,8 @@ function TemplateEditor({
                 key={i}
                 className={
                   label
-                    ? "mx-0.5 rounded bg-primary/10 px-1.5 py-0.5 text-xs font-medium text-primary"
-                    : "mx-0.5 rounded bg-warning/10 px-1.5 py-0.5 text-xs font-medium text-warning"
+                    ? "mx-0.5 rounded bg-primary/10 px-1.5 py-0.5 type-secondary font-medium text-primary"
+                    : "mx-0.5 rounded bg-warning/10 px-1.5 py-0.5 type-secondary font-medium text-warning"
                 }
               >
                 {label ?? "Unknown field"}
@@ -621,7 +621,7 @@ function TemplateEditor({
         )}
       </div>
       <details className="group">
-        <summary className="cursor-pointer select-none text-[11px] text-muted-foreground hover:text-foreground">
+        <summary className="cursor-pointer select-none type-meta text-muted-foreground hover:text-foreground">
           Edit text
         </summary>
         <Textarea
@@ -636,7 +636,7 @@ function TemplateEditor({
       </details>
       <div className="flex flex-wrap gap-1">
         {fieldsLoading && (
-          <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+          <span className="inline-flex items-center gap-1 type-meta text-muted-foreground">
             <Loader2 className="h-3 w-3 animate-spin" />
             Loading fields
           </span>

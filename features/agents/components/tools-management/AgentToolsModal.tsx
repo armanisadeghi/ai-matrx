@@ -146,7 +146,7 @@ export function AgentToolsModal({
   const footer = (
     <div className="flex items-center justify-end gap-2 px-4 py-3 border-t border-border shrink-0 bg-background">
       {toolsChangedInSession && (
-        <span className="text-[11px] text-muted-foreground mr-auto">
+        <span className="type-meta text-muted-foreground mr-auto">
           Unsaved changes
         </span>
       )}
@@ -269,7 +269,7 @@ export function AgentToolsModal({
             <DialogTitle className="text-base font-semibold">
               Agent Tools
             </DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground">
+            <DialogDescription className="type-secondary text-muted-foreground">
               Select what this agent can use
             </DialogDescription>
           </DialogHeader>

@@ -33,7 +33,7 @@ function FindingRow({ finding }: { finding: UsageDriftFinding }) {
     <div className={cn("rounded-md border p-2", meta.borderClass, meta.bgClass)}>
       <div className="flex items-center gap-1.5">
         <Icon className={cn("h-3.5 w-3.5 shrink-0", meta.textClass)} aria-hidden />
-        <span className={cn("text-xs font-medium", meta.textClass)}>
+        <span className={cn("type-secondary font-medium", meta.textClass)}>
           {DRIFT_CLASS_LABEL[finding.driftClass] ?? finding.driftClass}
         </span>
       </div>
@@ -42,14 +42,14 @@ function FindingRow({ finding }: { finding: UsageDriftFinding }) {
           {keys.map((k) => (
             <code
               key={k}
-              className="rounded bg-background/70 px-1.5 py-0.5 font-mono text-[11px] text-foreground"
+              className="rounded bg-background/70 px-1.5 py-0.5 font-mono type-meta text-foreground"
             >
               {k}
             </code>
           ))}
         </div>
       )}
-      <p className="mt-1 text-[11px] text-muted-foreground">{meta.description}</p>
+      <p className="mt-1 type-meta text-muted-foreground">{meta.description}</p>
     </div>
   );
 }
@@ -71,11 +71,11 @@ export function UsageRowDetail({ row }: { row: AgentUsageRow }) {
           ))}
         </div>
       ) : (
-        <p className="text-xs text-muted-foreground">No drift detected for this usage.</p>
+        <p className="type-secondary text-muted-foreground">No drift detected for this usage.</p>
       )}
 
       {effective && (
-        <div className="grid gap-2 sm:grid-cols-2 text-[11px]">
+        <div className="grid gap-2 sm:grid-cols-2 type-meta">
           <ContractColumn label="Declared variables" items={effective.variables ?? []} required={effective.required_variables ?? []} />
           <ContractColumn label="Declared context policies" items={effective.context_policies ?? []} />
         </div>
@@ -90,7 +90,7 @@ export function UsageRowDetail({ row }: { row: AgentUsageRow }) {
         Stored configuration
       </button>
       {showConfig && (
-        <pre className="max-h-48 overflow-auto rounded-md border border-border bg-card p-2 font-mono text-[10px] leading-relaxed text-muted-foreground">
+        <pre className="max-h-48 overflow-auto rounded-md border border-border bg-card p-2 font-mono type-meta leading-relaxed text-muted-foreground">
           {JSON.stringify(stripEffective(row.config), null, 2)}
         </pre>
       )}
@@ -118,7 +118,7 @@ function ContractColumn({
             <code
               key={k}
               className={cn(
-                "rounded px-1 py-0.5 font-mono text-[10px]",
+                "rounded px-1 py-0.5 font-mono type-meta",
                 required.includes(k)
                   ? "bg-primary/10 text-primary"
                   : "bg-muted text-foreground",

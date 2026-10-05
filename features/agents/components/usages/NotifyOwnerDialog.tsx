@@ -138,7 +138,7 @@ export function NotifyOwnerDialog({ open, target, onClose }: NotifyOwnerDialogPr
             resolve. See the registry-gaps table in
             docs/handoffs/no-dead-ends-sweep.md. */}
         {target?.drift.agentId ? (
-          <div className="flex min-w-0 items-center gap-1.5 text-xs">
+          <div className="flex min-w-0 items-center gap-1.5 type-secondary">
             <span className="shrink-0 text-muted-foreground">Agent</span>
             {/* name is omitted deliberately: `contextLabel` describes the
                 notification SCOPE ("all affected users", an org label), not
@@ -180,12 +180,12 @@ export function NotifyOwnerDialog({ open, target, onClose }: NotifyOwnerDialogPr
             <label className="mb-1 block text-xs font-medium text-muted-foreground">
               Standard message (always included)
             </label>
-            <div className="rounded-md border border-border bg-muted/30 p-2.5 text-xs text-muted-foreground">
+            <div className="rounded-md border border-border bg-muted/30 p-2.5 type-secondary text-muted-foreground">
               {defaultBody}
             </div>
           </div>
           {failed.length > 0 && (
-            <p className="text-xs text-destructive">
+            <p className="type-secondary text-destructive">
               Failed for {failed.length} recipient{failed.length !== 1 ? "s" : ""}. Press send to
               retry.
               <ErrorAlchemyMenu />

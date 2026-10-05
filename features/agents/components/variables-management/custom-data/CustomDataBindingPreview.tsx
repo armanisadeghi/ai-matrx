@@ -121,7 +121,7 @@ export function CustomDataBindingPreview({
 
   return (
     <div className="space-y-1.5">
-      <div className="flex items-center gap-1.5 text-xs font-medium text-foreground">
+      <div className="flex items-center gap-1.5 type-secondary font-medium text-foreground">
         <Eye className="h-3.5 w-3.5 text-muted-foreground" />
         What the agent will see
         {complete && (
@@ -137,29 +137,29 @@ export function CustomDataBindingPreview({
       </div>
       {"status" in state ? (
         state.status === "incomplete" ? (
-          <p className="text-[11px] text-muted-foreground">
+          <p className="type-meta text-muted-foreground">
             Finish the choices above
           </p>
         ) : (
-          <p className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
+          <p className="inline-flex items-center gap-1.5 type-meta text-muted-foreground">
             <Loader2 className="h-3 w-3 animate-spin" />
             Reading your data…
           </p>
         )
       ) : state.state === "unavailable" ? (
         // The preview route is live; a 404/405 now means a real fault.
-        <p className="text-[11px] text-destructive">
+        <p className="type-meta text-destructive">
           Preview failed (not found){" "}
           <ErrorAlchemyMenu error="Binding preview returned 404" />
         </p>
       ) : state.state === "error" ? (
-        <p className="text-[11px] text-destructive">
+        <p className="type-meta text-destructive">
           {state.message} <ErrorAlchemyMenu error={state.message} />
         </p>
       ) : (
         <>
           {state.outcome === "absent" && (
-            <p className="inline-flex items-center gap-1 text-[11px] text-warning">
+            <p className="inline-flex items-center gap-1 type-meta text-warning">
               No data — the agent is told:
               {state.absentReason && (
                 <InfoHint text={asClause(state.absentReason)} label="Why" />
@@ -167,17 +167,17 @@ export function CustomDataBindingPreview({
             </p>
           )}
           {state.outcome === "blocks_run" && (
-            <p className="text-[11px] text-warning">
+            <p className="type-meta text-warning">
               No data — the run would stop
             </p>
           )}
-          <pre className="max-h-48 overflow-auto whitespace-pre-wrap break-words rounded bg-muted/50 p-2 font-mono text-[11px] text-foreground">
+          <pre className="max-h-48 overflow-auto whitespace-pre-wrap break-words rounded bg-muted/50 p-2 font-mono type-meta text-foreground">
             {state.text}
           </pre>
           {state.outcome === "delivered" &&
             state.rowCount !== null &&
             state.notes.length === 0 && (
-              <p className="text-[11px] text-muted-foreground">
+              <p className="type-meta text-muted-foreground">
                 {state.rowCount} {state.rowCount === 1 ? "row" : "rows"}
                 {state.totalRows !== null && state.totalRows > state.rowCount
                   ? ` of ${state.totalRows}`
@@ -186,17 +186,17 @@ export function CustomDataBindingPreview({
               </p>
             )}
           {state.sourceNote && (
-            <p className="text-[11px] text-muted-foreground">
+            <p className="type-meta text-muted-foreground">
               {state.sourceNote}
             </p>
           )}
           {state.withheld.length > 0 && (
-            <p className="text-[11px] text-muted-foreground">
+            <p className="type-meta text-muted-foreground">
               Hidden from you: {state.withheld.join(", ")}
             </p>
           )}
           {state.notes.map((note) => (
-            <p key={note} className="text-[11px] text-muted-foreground">
+            <p key={note} className="type-meta text-muted-foreground">
               {note}
             </p>
           ))}

@@ -261,7 +261,7 @@ export function AgentVariablesManager({ agentId }: AgentVariablesManagerProps) {
                 </button>
                 {isBoundUnplaced && (
                   <span
-                    className="shrink-0 rounded px-1 text-[10px] font-medium text-muted-foreground ring-1 ring-border"
+                    className="shrink-0 rounded px-1 type-meta font-medium text-muted-foreground ring-1 ring-border"
                     title="No message places it, so its data is sent beside the prompt"
                   >
                     As context
@@ -279,7 +279,7 @@ export function AgentVariablesManager({ agentId }: AgentVariablesManagerProps) {
                   </button>
                 )}
                 {isEmptyBinding(variable.binding) && (
-                  <span className="shrink-0 rounded px-1 text-[10px] font-medium text-warning ring-1 ring-warning/40">
+                  <span className="shrink-0 rounded px-1 type-meta font-medium text-warning ring-1 ring-warning/40">
                     Not set up
                   </span>
                 )}

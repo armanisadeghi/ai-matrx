@@ -61,7 +61,7 @@ export function InputCapabilitiesEditor({
   if (variant === "menu")
     return (
       <div className="border-t border-border px-3 pb-3">
-        <p className="pb-1 pt-3 text-xs font-medium text-muted-foreground">{title}</p>
+        <p className="pb-1 pt-3 type-secondary font-medium text-muted-foreground">{title}</p>
         {UI_GATE_EDITABLE_KEYS.map((key) => {
           const { label, Icon } = GATE_META[key];
           const overridden = overriddenKeys?.has(key) === true;
@@ -105,7 +105,7 @@ export function InputCapabilitiesEditor({
     );
   return (
     <div className="border-t pt-2 mt-2">
-      <div className="mb-2 text-xs font-semibold text-foreground">{title}</div>
+      <div className="mb-2 type-secondary font-semibold text-foreground">{title}</div>
       <div className="space-y-1">
         {UI_GATE_EDITABLE_KEYS.map((key) => {
           const { label, description, Icon } = GATE_META[key];
@@ -123,7 +123,7 @@ export function InputCapabilitiesEditor({
                 className="min-w-0 flex-1 cursor-pointer text-xs text-foreground"
               >
                 {label}
-                <span className="block text-[10px] font-normal leading-tight text-muted-foreground">
+                <span className="block type-meta font-normal leading-tight text-muted-foreground">
                   {description}
                 </span>
               </Label>

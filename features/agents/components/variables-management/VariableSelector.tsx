@@ -57,7 +57,7 @@ export function VariableSelector({
             >
                 <div className="space-y-1 max-h-[400px] overflow-y-auto">
                     {variables.length === 0 ? (
-                        <div className="text-xs text-muted-foreground px-2 py-2 italic">
+                        <div className="type-secondary text-muted-foreground px-2 py-2 italic">
                             No variables defined
                         </div>
                     ) : (

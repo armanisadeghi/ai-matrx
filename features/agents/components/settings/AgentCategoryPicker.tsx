@@ -91,7 +91,7 @@ export function AgentCategoryPicker({
           <Folder className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
           <span
             className={cn(
-              "flex-1 truncate text-sm",
+              "flex-1 truncate type-body",
               !value && "text-muted-foreground",
             )}
           >
@@ -115,7 +115,7 @@ export function AgentCategoryPicker({
             </span>
           )}
           {!matchedOption && value && (
-            <span className="text-[10px] uppercase tracking-wide text-muted-foreground/70 shrink-0">
+            <span className="type-meta uppercase tracking-wide text-muted-foreground/70 shrink-0">
               custom
             </span>
           )}

@@ -94,7 +94,7 @@ export function AgentSharePanel({
               <Icon className="h-3.5 w-3.5" />
               {tab.label}
               {tab.count != null && tab.count > 0 && (
-                <span className="px-1 py-0.5 text-[10px] bg-primary/10 rounded-full leading-none">
+                <span className="px-1 py-0.5 type-meta bg-primary/10 rounded-full leading-none">
                   {tab.count}
                 </span>
               )}
@@ -137,7 +137,7 @@ export function AgentSharePanel({
                 }}
               />
               <div>
-                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                <h3 className="type-secondary font-semibold text-muted-foreground uppercase tracking-wider mb-2">
                   Current Access
                 </h3>
                 <PermissionsList
@@ -179,7 +179,7 @@ export function AgentSharePanel({
 
           {error && (
             <div className="p-2.5 bg-destructive/10 border border-destructive/20 rounded-md">
-              <p className="text-xs text-destructive">{error}</p>
+              <p className="type-secondary text-destructive">{error}</p>
               <ErrorAlchemyMenu error={error} />
             </div>
           )}

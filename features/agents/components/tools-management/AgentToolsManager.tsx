@@ -509,7 +509,7 @@ export function AgentToolsManager({ agentId }: AgentToolsManagerProps) {
     return (
       <div className="flex items-center justify-center h-full">
         <Loader2 className="w-5 h-5 animate-spin text-muted-foreground mr-2" />
-        <span className="text-sm text-muted-foreground">Loading tools...</span>
+        <span className="type-body text-muted-foreground">Loading tools...</span>
       </div>
     );
   }
@@ -569,7 +569,7 @@ export function AgentToolsManager({ agentId }: AgentToolsManagerProps) {
       {!modelSupportsTools && (
         <div className="flex items-start gap-2 px-3 py-2 border-b border-amber-500/40 bg-amber-500/10 shrink-0">
           <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-amber-500" />
-          <p className="text-[11px] leading-tight text-amber-700 dark:text-amber-300">
+          <p className="type-meta leading-tight text-amber-700 dark:text-amber-300">
             This model doesn&apos;t support tools.
             {/* read-gate-exempt: tools saved on the agent being edited in this form, not rows fetched from a read */}
             {savedToolCount > 0
@@ -1019,7 +1019,7 @@ function ServerToolsTab({
     return (
       <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground p-8">
         <Wrench className="w-8 h-8 opacity-30" />
-        <p className="text-sm">No tools available.</p>
+        <p className="type-body">No tools available.</p>
       </div>
     );
   }
@@ -1037,7 +1037,7 @@ function ServerToolsTab({
             <div className="flex items-center justify-center w-5 h-5 rounded bg-primary/10">
               <Zap className="w-3 h-3 text-primary" />
             </div>
-            <span className="text-xs font-semibold text-primary">
+            <span className="type-secondary font-semibold text-primary">
               {enabledCount} enabled
             </span>
           </div>
@@ -1068,7 +1068,7 @@ function ServerToolsTab({
                     className="flex-col items-start gap-0.5 py-2"
                     onClick={() => handleCopyEnabled("full")}
                   >
-                    <div className="flex items-center gap-1.5 text-xs font-medium">
+                    <div className="flex items-center gap-1.5 type-secondary font-medium">
                       {copiedFormat === "full" ? (
                         <Check className="h-3 w-3 text-success" />
                       ) : (
@@ -1076,7 +1076,7 @@ function ServerToolsTab({
                       )}
                       Full JSON
                     </div>
-                    <span className="text-[10px] text-muted-foreground pl-[18px]">
+                    <span className="type-meta text-muted-foreground pl-[18px]">
                       All metadata, parameters, output schema
                     </span>
                   </DropdownMenuItem>
@@ -1084,7 +1084,7 @@ function ServerToolsTab({
                     className="flex-col items-start gap-0.5 py-2"
                     onClick={() => handleCopyEnabled("compact")}
                   >
-                    <div className="flex items-center gap-1.5 text-xs font-medium">
+                    <div className="flex items-center gap-1.5 type-secondary font-medium">
                       {copiedFormat === "compact" ? (
                         <Check className="h-3 w-3 text-success" />
                       ) : (
@@ -1092,7 +1092,7 @@ function ServerToolsTab({
                       )}
                       Compact JSON
                     </div>
-                    <span className="text-[10px] text-muted-foreground pl-[18px]">
+                    <span className="type-meta text-muted-foreground pl-[18px]">
                       id · name · description
                     </span>
                   </DropdownMenuItem>
@@ -1100,7 +1100,7 @@ function ServerToolsTab({
                     className="flex-col items-start gap-0.5 py-2"
                     onClick={() => handleCopyEnabled("minimal")}
                   >
-                    <div className="flex items-center gap-1.5 text-xs font-medium">
+                    <div className="flex items-center gap-1.5 type-secondary font-medium">
                       {copiedFormat === "minimal" ? (
                         <Check className="h-3 w-3 text-success" />
                       ) : (
@@ -1108,7 +1108,7 @@ function ServerToolsTab({
                       )}
                       Minimal JSON
                     </div>
-                    <span className="text-[10px] text-muted-foreground pl-[18px]">
+                    <span className="type-meta text-muted-foreground pl-[18px]">
                       name + description (≤120 chars)
                     </span>
                   </DropdownMenuItem>
@@ -1117,7 +1117,7 @@ function ServerToolsTab({
                     className="flex-col items-start gap-0.5 py-2"
                     onClick={() => handleCopyEnabled("xml")}
                   >
-                    <div className="flex items-center gap-1.5 text-xs font-medium">
+                    <div className="flex items-center gap-1.5 type-secondary font-medium">
                       {copiedFormat === "xml" ? (
                         <Check className="h-3 w-3 text-success" />
                       ) : (
@@ -1125,7 +1125,7 @@ function ServerToolsTab({
                       )}
                       XML for prompts
                     </div>
-                    <span className="text-[10px] text-muted-foreground pl-[18px]">
+                    <span className="type-meta text-muted-foreground pl-[18px]">
                       &lt;tool name=…&gt;…&lt;/tool&gt; for model context
                     </span>
                   </DropdownMenuItem>
@@ -1284,7 +1284,7 @@ function ServerToolsTab({
                 {activeCategory === ENABLED_CATEGORY && (
                   <Zap className="w-3 h-3 text-primary shrink-0" />
                 )}
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground truncate">
+                <span className="type-meta font-semibold uppercase tracking-wider text-muted-foreground truncate">
                   {activeCategory === ALL_CATEGORY
                     ? "All Tools"
                     : activeCategory === ENABLED_CATEGORY
@@ -1294,12 +1294,12 @@ function ServerToolsTab({
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 {enabledCount > 0 && (
-                  <span className="flex items-center gap-1 text-[11px] font-semibold text-primary sm:hidden">
+                  <span className="flex items-center gap-1 type-meta font-semibold text-primary sm:hidden">
                     <Zap className="w-3 h-3" />
                     {enabledCount}
                   </span>
                 )}
-                <span className="text-[11px] text-muted-foreground tabular-nums">
+                <span className="type-meta text-muted-foreground tabular-nums">
                   {isEnabledTab ? visibleTools.length : toolsList?.total || 0}{" "}
                   tools
                 </span>
@@ -1371,7 +1371,7 @@ function ServerToolsTab({
                         className="flex-col items-start gap-0.5 py-2"
                         onClick={() => handleCopyEnabled("full")}
                       >
-                        <div className="flex items-center gap-1.5 text-xs font-medium">
+                        <div className="flex items-center gap-1.5 type-secondary font-medium">
                           {copiedFormat === "full" ? (
                             <Check className="h-3 w-3 text-success" />
                           ) : (
@@ -1379,7 +1379,7 @@ function ServerToolsTab({
                           )}
                           Full JSON
                         </div>
-                        <span className="text-[10px] text-muted-foreground pl-[18px]">
+                        <span className="type-meta text-muted-foreground pl-[18px]">
                           All metadata, parameters, output schema
                         </span>
                       </DropdownMenuItem>
@@ -1387,7 +1387,7 @@ function ServerToolsTab({
                         className="flex-col items-start gap-0.5 py-2"
                         onClick={() => handleCopyEnabled("compact")}
                       >
-                        <div className="flex items-center gap-1.5 text-xs font-medium">
+                        <div className="flex items-center gap-1.5 type-secondary font-medium">
                           {copiedFormat === "compact" ? (
                             <Check className="h-3 w-3 text-success" />
                           ) : (
@@ -1395,7 +1395,7 @@ function ServerToolsTab({
                           )}
                           Compact JSON
                         </div>
-                        <span className="text-[10px] text-muted-foreground pl-[18px]">
+                        <span className="type-meta text-muted-foreground pl-[18px]">
                           id · name · description
                         </span>
                       </DropdownMenuItem>
@@ -1403,7 +1403,7 @@ function ServerToolsTab({
                         className="flex-col items-start gap-0.5 py-2"
                         onClick={() => handleCopyEnabled("minimal")}
                       >
-                        <div className="flex items-center gap-1.5 text-xs font-medium">
+                        <div className="flex items-center gap-1.5 type-secondary font-medium">
                           {copiedFormat === "minimal" ? (
                             <Check className="h-3 w-3 text-success" />
                           ) : (
@@ -1411,7 +1411,7 @@ function ServerToolsTab({
                           )}
                           Minimal JSON
                         </div>
-                        <span className="text-[10px] text-muted-foreground pl-[18px]">
+                        <span className="type-meta text-muted-foreground pl-[18px]">
                           name + description (≤120 chars)
                         </span>
                       </DropdownMenuItem>
@@ -1420,7 +1420,7 @@ function ServerToolsTab({
                         className="flex-col items-start gap-0.5 py-2"
                         onClick={() => handleCopyEnabled("xml")}
                       >
-                        <div className="flex items-center gap-1.5 text-xs font-medium">
+                        <div className="flex items-center gap-1.5 type-secondary font-medium">
                           {copiedFormat === "xml" ? (
                             <Check className="h-3 w-3 text-success" />
                           ) : (
@@ -1428,7 +1428,7 @@ function ServerToolsTab({
                           )}
                           XML for prompts
                         </div>
-                        <span className="text-[10px] text-muted-foreground pl-[18px]">
+                        <span className="type-meta text-muted-foreground pl-[18px]">
                           &lt;tool name=…&gt;…&lt;/tool&gt; for model context
                         </span>
                       </DropdownMenuItem>
@@ -1444,7 +1444,7 @@ function ServerToolsTab({
                 {isListLoading ? (
                   <div className="flex items-center justify-center py-12 text-muted-foreground">
                     <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                    <span className="text-xs">Loading items...</span>
+                    <span className="type-secondary">Loading items...</span>
                   </div>
                 ) : listError && !isEnabledTab && !isBundlesTab && visibleTools.length === 0 ? (
                   <ReadFailure
@@ -1458,7 +1458,7 @@ function ServerToolsTab({
                 ) : visibleTools.length === 0 ? (
                   <div className="flex flex-col items-center gap-2 py-12 text-muted-foreground">
                     <Search className="w-5 h-5 opacity-40" />
-                    <p className="text-xs">
+                    <p className="type-secondary">
                       {search
                         ? `No tools match "${search}"`
                         : "No tools in this category"}
@@ -1510,7 +1510,7 @@ function ServerToolsTab({
                 >
                   Previous
                 </Button>
-                <span className="text-[10px] text-muted-foreground">
+                <span className="type-meta text-muted-foreground">
                   Page {page} of {toolsList.page_count}
                 </span>
                 <Button
@@ -1668,10 +1668,10 @@ function OrphanedToolsBanner({
       <div className="mx-3 mt-3 rounded border border-yellow-400 dark:border-yellow-600 overflow-hidden">
         <div className="flex items-center gap-2 px-2.5 py-1.5 bg-yellow-50 dark:bg-yellow-950/40 border-b border-yellow-300 dark:border-yellow-700">
           <AlertTriangle className="h-3.5 w-3.5 text-yellow-600 dark:text-yellow-400 flex-shrink-0" />
-          <span className="text-xs font-semibold text-yellow-800 dark:text-yellow-300">
+          <span className="type-secondary font-semibold text-yellow-800 dark:text-yellow-300">
             Unresolved Tools
           </span>
-          <span className="ml-auto text-[10px] text-yellow-600 dark:text-yellow-500">
+          <span className="ml-auto type-meta text-yellow-600 dark:text-yellow-500">
             {
               // access-errors: ok — count label for ids checked against the browser-local loaded tool registry set; the banner probes each id against the DB below
               `${orphanedTools.length} tool${orphanedTools.length !== 1 ? "s" : ""} not found in registry`
@@ -1712,7 +1712,7 @@ function OrphanedToolsBanner({
                 {status === "inactive" && tool ? (
                   <>
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="text-xs font-semibold text-foreground truncate">
+                      <span className="type-secondary font-semibold text-foreground truncate">
                         {getToolDisplayName(tool.name)}
                       </span>
                       {tool.category && (
@@ -1731,7 +1731,7 @@ function OrphanedToolsBanner({
                       </Badge>
                     </div>
                     {tool.description && (
-                      <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-2">
+                      <p className="type-meta text-muted-foreground mt-0.5 line-clamp-2">
                         {tool.description}
                       </p>
                     )}
@@ -1749,14 +1749,14 @@ function OrphanedToolsBanner({
                         Not in DB
                       </Badge>
                     </div>
-                    <p className="font-mono text-[10px] text-foreground mt-0.5 truncate">
+                    <p className="font-mono type-meta text-foreground mt-0.5 truncate">
                       {id}
                     </p>
                   </>
                 ) : (
                   <div className="flex items-center gap-1.5">
                     <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
-                    <span className="font-mono text-[10px] text-muted-foreground truncate">
+                    <span className="font-mono type-meta text-muted-foreground truncate">
                       {id}
                     </span>
                   </div>
@@ -1773,7 +1773,7 @@ function OrphanedToolsBanner({
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent side="left" className="text-xs">
+                <TooltipContent side="left" className="type-secondary">
                   Remove from agent
                 </TooltipContent>
               </Tooltip>
@@ -1837,7 +1837,7 @@ function CustomToolsTab({
     <div className="flex flex-col h-full overflow-hidden">
       <div className="px-4 py-3 border-b border-border shrink-0 flex items-center justify-between">
         <div>
-          <p className="text-xs font-semibold text-foreground">
+          <p className="type-secondary font-semibold text-foreground">
             Custom Tool Definitions
           </p>
           {/* Inline tools following the MCP standard; always delegated to the client. */}
@@ -1877,8 +1877,8 @@ function CustomToolsTab({
           <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
             <Code2 className="w-8 h-8 opacity-30" />
             {/* read-gate-exempt: editor over the loaded agent's own custom tool definitions (a form over its record), not a list read's answer */}
-            <p className="text-sm">No custom tools defined.</p>
-            <p className="text-xs max-w-xs text-center">
+            <p className="type-body">No custom tools defined.</p>
+            <p className="type-secondary max-w-xs text-center">
               Define inline tools the client runs
             </p>
           </div>
@@ -1940,7 +1940,7 @@ function CustomToolCard({
         </button>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-foreground">
+            <span className="type-secondary font-semibold text-foreground">
               {getToolDisplayName(tool.name)}
             </span>
             <Badge variant="secondary" className="text-[10px]">
@@ -1948,7 +1948,7 @@ function CustomToolCard({
             </Badge>
           </div>
           {tool.description && (
-            <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">
+            <p className="type-meta text-muted-foreground mt-0.5 leading-relaxed">
               {tool.description}
             </p>
           )}
@@ -2144,7 +2144,7 @@ function CustomToolForm({
             style={{ fontSize: "16px" }}
           />
           {nameError && (
-            <p className="text-[10px] text-destructive mt-0.5">{nameError} <ErrorAlchemyMenu error={nameError} /></p>
+            <p className="type-meta text-destructive mt-0.5">{nameError} <ErrorAlchemyMenu error={nameError} /></p>
           )}
         </div>
         <div>
@@ -2221,7 +2221,7 @@ function CustomToolForm({
                     onCheckedChange={(v) => updateParam(idx, { required: !!v })}
                     className="h-3.5 w-3.5"
                   />
-                  <span className="text-[10px] text-muted-foreground">Req</span>
+                  <span className="type-meta text-muted-foreground">Req</span>
                 </div>
                 <Button
                   variant="ghost"
@@ -2313,7 +2313,7 @@ function ClientToolsTab({
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <div className="px-4 py-3 border-b border-border shrink-0">
-        <p className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+        <p className="flex items-center gap-1.5 type-secondary font-semibold text-foreground">
           Client-Handled Tools
           <InfoHint text="Checked tools run in the browser, not on the server; the run waits for the result with no timeout." />
         </p>
@@ -2327,8 +2327,8 @@ function ClientToolsTab({
           <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
             <Monitor className="w-8 h-8 opacity-30" />
             {/* read-gate-exempt: editor over the loaded agent's own enabled tools (a form over its record), not a list read's answer */}
-            <p className="text-sm">No tools enabled yet.</p>
-            <p className="text-xs max-w-xs text-center">
+            <p className="type-body">No tools enabled yet.</p>
+            <p className="type-secondary max-w-xs text-center">
               Enable tools first, then mark client-handled ones
             </p>
           </div>
@@ -2336,7 +2336,7 @@ function ClientToolsTab({
           <div className="space-y-1">
             {enabledServerTools.length > 0 && (
               <>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
+                <p className="type-meta font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
                   Server Tools
                 </p>
                 {enabledServerTools.map((tool) => (
@@ -2354,7 +2354,7 @@ function ClientToolsTab({
 
             {enabledCustomTools.length > 0 && (
               <>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5 mt-4">
+                <p className="type-meta font-semibold uppercase tracking-wider text-muted-foreground mb-1.5 mt-4">
                   Custom Tools (always client-delegated)
                 </p>
                 {enabledCustomTools.map((tool) => (
@@ -2409,7 +2409,7 @@ function ClientToolRow({
       />
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold text-foreground">{getToolDisplayName(name)}</span>
+          <span className="type-secondary font-semibold text-foreground">{getToolDisplayName(name)}</span>
           {source === "custom" && (
             <Badge variant="outline" className="text-[9px] h-4">
               auto-delegated
@@ -2417,7 +2417,7 @@ function ClientToolRow({
           )}
         </div>
         {description && (
-          <p className="text-[11px] text-muted-foreground truncate">
+          <p className="type-meta text-muted-foreground truncate">
             {description}
           </p>
         )}
@@ -2709,10 +2709,10 @@ function McpToolsTab({
             <Plug className="w-10 h-10 opacity-40" />
           </div>
           <div className="text-center max-w-md space-y-2">
-            <h3 className="text-sm font-semibold text-foreground">
+            <h3 className="type-title text-foreground">
               MCP Server Integration
             </h3>
-            <p className="text-xs leading-relaxed">
+            <p className="type-secondary leading-relaxed">
               Add tools from Notion, Stripe, GitHub and more
             </p>
           </div>
@@ -2734,10 +2734,10 @@ function McpToolsTab({
       {feedbackBanner}
       <div className="px-4 py-3 border-b border-border shrink-0 flex items-center justify-between">
         <div>
-          <p className="text-xs font-semibold text-foreground">
+          <p className="type-secondary font-semibold text-foreground">
             Agent MCP Servers
           </p>
-          <p className="text-[11px] text-muted-foreground mt-0.5">
+          <p className="type-meta text-muted-foreground mt-0.5">
             <UntrustedCount
               read={readOf({ status: catalogStatus, error: catalogError })}
               value={agentCatalogEntries.length}
@@ -2801,7 +2801,7 @@ function McpToolsTab({
       {agentMcpServers.some((id) => !catalog.find((c) => c.serverId === id)) &&
         catalog.length > 0 && (
           <div className="mx-3 mb-3 rounded border border-yellow-400 dark:border-yellow-600 bg-yellow-50/30 dark:bg-yellow-950/15 p-2.5">
-            <div className="flex items-center gap-2 text-[11px]">
+            <div className="flex items-center gap-2 type-meta">
               <AlertTriangle className="w-3.5 h-3.5 text-yellow-600 dark:text-yellow-400 shrink-0" />
               <span className="text-yellow-800 dark:text-yellow-300 font-medium">
                 <UntrustedCount
@@ -2882,7 +2882,7 @@ function McpAgentServerCard({
           />
         ) : (
           <div
-            className="w-6 h-6 rounded mt-0.5 shrink-0 flex items-center justify-center text-[10px] font-bold text-white"
+            className="w-6 h-6 rounded mt-0.5 shrink-0 flex items-center justify-center type-meta font-bold text-white"
             style={{ backgroundColor: entry.color ?? "#6b7280" }}
           >
             {entry.name.charAt(0).toUpperCase()}
@@ -2891,10 +2891,10 @@ function McpAgentServerCard({
 
         <button onClick={onExpand} className="flex-1 min-w-0 text-left">
           <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-            <span className="text-xs font-semibold text-foreground">
+            <span className="type-secondary font-semibold text-foreground">
               {entry.name}
             </span>
-            <span className="text-[10px] text-muted-foreground">
+            <span className="type-meta text-muted-foreground">
               {entry.vendor}
             </span>
             <Badge
@@ -2912,13 +2912,13 @@ function McpAgentServerCard({
               {badge.label}
             </Badge>
             {truth.state === "connected" && !!toolCount && (
-              <span className="text-[10px] text-muted-foreground">
+              <span className="type-meta text-muted-foreground">
                 {toolCount} tool{toolCount === 1 ? "" : "s"}
               </span>
             )}
           </div>
           {entry.description && (
-            <p className="text-[11px] text-muted-foreground truncate">
+            <p className="type-meta text-muted-foreground truncate">
               {entry.description}
             </p>
           )}
@@ -2980,7 +2980,7 @@ function McpAgentServerCard({
 
       {expanded && (
         <div className="px-3 pb-3 border-t border-border/50 pt-2 space-y-2">
-          <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-[11px]">
+          <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 type-meta">
             <div>
               <span className="text-muted-foreground">Transport:</span>{" "}
               <span className="font-mono text-foreground">
@@ -3022,7 +3022,7 @@ function McpAgentServerCard({
                 href={entry.websiteUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-[10px] text-primary hover:underline"
+                className="type-meta text-primary hover:underline"
               >
                 Website
               </a>
@@ -3032,7 +3032,7 @@ function McpAgentServerCard({
                 href={entry.docsUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-[10px] text-primary hover:underline"
+                className="type-meta text-primary hover:underline"
               >
                 Documentation
               </a>
@@ -3095,11 +3095,11 @@ export function BearerTokenForm({ entry }: { entry: McpCatalogEntry }) {
 
   return (
     <div className="rounded border border-border bg-muted/20 p-3 space-y-2.5">
-      <p className="text-[11px] font-semibold text-foreground flex items-center gap-1.5">
+      <p className="type-meta font-semibold text-foreground flex items-center gap-1.5">
         <KeyRound className="w-3.5 h-3.5" />
         Bearer Token
       </p>
-      <p className="text-[10px] text-muted-foreground leading-relaxed">
+      <p className="type-meta text-muted-foreground leading-relaxed">
         Paste an access token or PAT for {entry.name}.
         {entry.docsUrl && (
           <>
@@ -3138,7 +3138,7 @@ export function BearerTokenForm({ entry }: { entry: McpCatalogEntry }) {
         </button>
       </div>
       {error && (
-        <p className="text-[10px] text-destructive flex items-center gap-1">
+        <p className="type-meta text-destructive flex items-center gap-1">
           <AlertTriangle className="w-3 h-3 shrink-0" />
           {error}
           <ErrorAlchemyMenu error={error} />
@@ -3196,11 +3196,11 @@ export function ApiKeyForm({ entry }: { entry: McpCatalogEntry }) {
 
   return (
     <div className="rounded border border-border bg-muted/20 p-3 space-y-2.5">
-      <p className="text-[11px] font-semibold text-foreground flex items-center gap-1.5">
+      <p className="type-meta font-semibold text-foreground flex items-center gap-1.5">
         <KeyRound className="w-3.5 h-3.5" />
         API Key
       </p>
-      <p className="text-[10px] text-muted-foreground leading-relaxed">
+      <p className="type-meta text-muted-foreground leading-relaxed">
         Provide your API key for {entry.name}.
         {entry.docsUrl && (
           <>
@@ -3258,7 +3258,7 @@ export function ApiKeyForm({ entry }: { entry: McpCatalogEntry }) {
         </div>
       </div>
       {error && (
-        <p className="text-[10px] text-destructive flex items-center gap-1">
+        <p className="type-meta text-destructive flex items-center gap-1">
           <AlertTriangle className="w-3 h-3 shrink-0" />
           {error}
           <ErrorAlchemyMenu error={error} />
@@ -3351,7 +3351,7 @@ export function EnvVarForm({ entry }: { entry: McpCatalogEntry }) {
 
   if (loading) {
     return (
-      <div className="rounded border border-border bg-muted/20 p-3 flex items-center gap-2 text-[11px] text-muted-foreground">
+      <div className="rounded border border-border bg-muted/20 p-3 flex items-center gap-2 type-meta text-muted-foreground">
         <Loader2 className="w-3.5 h-3.5 animate-spin" />
         Loading configuration...
       </div>
@@ -3360,9 +3360,9 @@ export function EnvVarForm({ entry }: { entry: McpCatalogEntry }) {
 
   if (configs.length === 0) {
     return (
-      <div className="rounded border border-border bg-muted/20 p-3 text-[11px] text-muted-foreground">
+      <div className="rounded border border-border bg-muted/20 p-3 type-meta text-muted-foreground">
         <p>No local configurations available for this server.</p>
-        <p className="mt-1 text-[10px]">
+        <p className="mt-1 type-meta">
           Needs a local stdio setup; see the{" "}
           <a
             href={entry.docsUrl ?? "#"}
@@ -3379,7 +3379,7 @@ export function EnvVarForm({ entry }: { entry: McpCatalogEntry }) {
 
   return (
     <div className="rounded border border-border bg-muted/20 p-3 space-y-2.5">
-      <p className="text-[11px] font-semibold text-foreground flex items-center gap-1.5">
+      <p className="type-meta font-semibold text-foreground flex items-center gap-1.5">
         <Terminal className="w-3.5 h-3.5" />
         Environment Variables
       </p>
@@ -3414,7 +3414,7 @@ export function EnvVarForm({ entry }: { entry: McpCatalogEntry }) {
       {selectedConfig && (
         <>
           {selectedConfig.notes && (
-            <p className="text-[10px] text-muted-foreground leading-relaxed bg-muted/40 rounded px-2 py-1.5">
+            <p className="type-meta text-muted-foreground leading-relaxed bg-muted/40 rounded px-2 py-1.5">
               {selectedConfig.notes}
             </p>
           )}
@@ -3484,7 +3484,7 @@ export function EnvVarForm({ entry }: { entry: McpCatalogEntry }) {
       )}
 
       {error && (
-        <p className="text-[10px] text-destructive flex items-center gap-1">
+        <p className="type-meta text-destructive flex items-center gap-1">
           <AlertTriangle className="w-3 h-3 shrink-0" />
           {error}
           <ErrorAlchemyMenu error={error} />
@@ -3573,8 +3573,8 @@ function McpCatalogPicker({
     <div className="flex flex-col h-full overflow-hidden">
       <div className="px-4 py-3 border-b border-border shrink-0 flex items-center justify-between">
         <div>
-          <p className="text-xs font-semibold text-foreground">MCP Catalog</p>
-          <p className="text-[11px] text-muted-foreground mt-0.5">
+          <p className="type-secondary font-semibold text-foreground">MCP Catalog</p>
+          <p className="type-meta text-muted-foreground mt-0.5">
             {catalog.length} servers available
           </p>
         </div>
@@ -3590,7 +3590,7 @@ function McpCatalogPicker({
       </div>
 
       {catalogError && (
-        <div className="mx-4 mt-3 p-2.5 rounded border border-destructive/30 bg-destructive/5 text-[11px] text-destructive flex items-center gap-2">
+        <div className="mx-4 mt-3 p-2.5 rounded border border-destructive/30 bg-destructive/5 type-meta text-destructive flex items-center gap-2">
           <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
           {catalogError}
           <ErrorAlchemyMenu error={catalogError} />
@@ -3640,14 +3640,14 @@ function McpCatalogPicker({
 
       <div className="flex-1 overflow-y-auto p-3 space-y-1.5">
         {catalogStatus === "loading" && catalog.length === 0 && (
-          <div className="flex items-center justify-center py-12 text-muted-foreground text-xs">
+          <div className="flex items-center justify-center py-12 text-muted-foreground type-secondary">
             Loading catalog...
           </div>
         )}
 
         {featured.length > 0 && (
           <>
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 px-1">
+            <p className="type-meta font-semibold uppercase tracking-wider text-muted-foreground mb-1 px-1">
               Featured
             </p>
             {featured.map((entry) => (
@@ -3683,7 +3683,7 @@ function McpCatalogPicker({
           !(catalogError && catalog.length === 0) && (
           <div className="flex flex-col items-center gap-2 py-12 text-muted-foreground">
             <Search className="w-5 h-5 opacity-40" />
-            <p className="text-xs">No servers match your search.</p>
+            <p className="type-secondary">No servers match your search.</p>
           </div>
         )}
       </div>
@@ -3740,7 +3740,7 @@ function McpCatalogCard({
           />
         ) : (
           <div
-            className="w-7 h-7 rounded mt-0.5 shrink-0 flex items-center justify-center text-[11px] font-bold text-white"
+            className="w-7 h-7 rounded mt-0.5 shrink-0 flex items-center justify-center type-meta font-bold text-white"
             style={{ backgroundColor: entry.color ?? "#6b7280" }}
           >
             {entry.name.charAt(0).toUpperCase()}
@@ -3749,10 +3749,10 @@ function McpCatalogCard({
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-            <span className="text-xs font-semibold text-foreground">
+            <span className="type-secondary font-semibold text-foreground">
               {entry.name}
             </span>
-            <span className="text-[10px] text-muted-foreground">
+            <span className="type-meta text-muted-foreground">
               {entry.vendor}
             </span>
             {entry.isOfficial && (
@@ -3779,11 +3779,11 @@ function McpCatalogCard({
             )}
           </div>
           {entry.description && (
-            <p className="text-[11px] text-muted-foreground line-clamp-2">
+            <p className="type-meta text-muted-foreground line-clamp-2">
               {entry.description}
             </p>
           )}
-          <div className="flex items-center gap-2 mt-1 text-[10px] text-muted-foreground">
+          <div className="flex items-center gap-2 mt-1 type-meta text-muted-foreground">
             <span className={TRANSPORT_META[entry.transport]?.color ?? ""}>
               {TRANSPORT_META[entry.transport]?.label ?? entry.transport}
             </span>
@@ -3861,7 +3861,7 @@ function ParameterTable({ schema }: { schema: CustomToolInputSchema }) {
 
   if (entries.length === 0) {
     return (
-      <p className="text-[11px] text-muted-foreground italic">
+      <p className="type-meta text-muted-foreground italic">
         No parameters defined.
       </p>
     );
@@ -3870,16 +3870,16 @@ function ParameterTable({ schema }: { schema: CustomToolInputSchema }) {
   return (
     <div className="rounded border border-border overflow-hidden">
       <div className="grid grid-cols-[1fr_70px_2fr_50px] gap-2 px-2.5 py-1 bg-muted/50 border-b border-border">
-        <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+        <span className="type-meta font-semibold uppercase tracking-wide text-muted-foreground">
           Name
         </span>
-        <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+        <span className="type-meta font-semibold uppercase tracking-wide text-muted-foreground">
           Type
         </span>
-        <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+        <span className="type-meta font-semibold uppercase tracking-wide text-muted-foreground">
           Description
         </span>
-        <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+        <span className="type-meta font-semibold uppercase tracking-wide text-muted-foreground">
           Req
         </span>
       </div>
@@ -3894,7 +3894,7 @@ function ParameterTable({ schema }: { schema: CustomToolInputSchema }) {
           <span className="text-muted-foreground">
             {Array.isArray(pDef.type) ? pDef.type.join(" | ") : pDef.type}
           </span>
-          <span className="text-muted-foreground text-[11px] truncate">
+          <span className="text-muted-foreground type-meta truncate">
             {pDef.description ?? "—"}
           </span>
           <span className="text-center">
@@ -3971,7 +3971,7 @@ function CategoryItem({
           </span>
         )}
         {count !== enabledCount && (
-          <span className="text-[10px] text-muted-foreground tabular-nums">
+          <span className="type-meta text-muted-foreground tabular-nums">
             {count}
           </span>
         )}
@@ -4087,7 +4087,7 @@ function ToolCard({
             )}
           </div>
           {tool.description && (
-            <p className="text-[11px] text-muted-foreground leading-relaxed">
+            <p className="type-meta text-muted-foreground leading-relaxed">
               {tool.description}
             </p>
           )}
@@ -4117,13 +4117,13 @@ function ToolCard({
             </div>
           )}
           {runtime?.clientOnlyNote && (
-            <div className="mt-1 flex items-center gap-1 text-[10px] text-muted-foreground">
+            <div className="mt-1 flex items-center gap-1 type-meta text-muted-foreground">
               <Plug className="w-3 h-3 shrink-0" />
               <span>{runtime.clientOnlyNote}</span>
             </div>
           )}
           {unavailableIn && (
-            <div className="mt-1 flex items-center gap-1 text-[10px] text-amber-700 dark:text-amber-400">
+            <div className="mt-1 flex items-center gap-1 type-meta text-amber-700 dark:text-amber-400">
               <Info className="w-3 h-3 shrink-0" />
               <span>
                 Not available in {unavailableIn}: its organization switch for this
@@ -4132,7 +4132,7 @@ function ToolCard({
             </div>
           )}
           {isDup && (
-            <div className="mt-1 flex items-center gap-1 text-[10px] text-amber-700 dark:text-amber-400">
+            <div className="mt-1 flex items-center gap-1 type-meta text-amber-700 dark:text-amber-400">
               <Package className="w-3 h-3 shrink-0" />
               <span>
                 Already in bundle{dupBundles!.length > 1 ? "s" : ""}:{" "}
@@ -4197,7 +4197,7 @@ function ToolDetailPanel({ toolId }: { toolId: string }) {
 
   if (loading) {
     return (
-      <div className="px-3 pb-3 border-t border-border/50 pt-3 text-xs text-muted-foreground flex items-center">
+      <div className="px-3 pb-3 border-t border-border/50 pt-3 type-secondary text-muted-foreground flex items-center">
         <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" /> Fetching
         details...
       </div>
@@ -4206,7 +4206,7 @@ function ToolDetailPanel({ toolId }: { toolId: string }) {
 
   if (!detail) {
     return (
-      <div className="px-3 pb-3 border-t border-border/50 pt-3 text-xs text-muted-foreground flex items-center">
+      <div className="px-3 pb-3 border-t border-border/50 pt-3 type-secondary text-muted-foreground flex items-center">
         <AlertTriangle className="w-3.5 h-3.5 mr-2 text-yellow-500" /> Details
         unavailable.
       </div>
@@ -4249,7 +4249,7 @@ function ToolDetailPanel({ toolId }: { toolId: string }) {
       {/* Parameters */}
       {hasParams && params.properties && (
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
+          <p className="type-meta font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
             Parameters
           </p>
           <ParameterTable
@@ -4265,17 +4265,17 @@ function ToolDetailPanel({ toolId }: { toolId: string }) {
       {/* Output schema */}
       {tool.output_schema && typeof tool.output_schema === "object" && (
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
+          <p className="type-meta font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
             Output Schema
           </p>
-          <pre className="text-[10px] font-mono bg-muted/30 rounded p-2 overflow-x-auto text-muted-foreground whitespace-pre-wrap break-all max-h-40 overflow-y-auto w-full max-w-[calc(100vw-300px)]">
+          <pre className="type-meta font-mono bg-muted/30 rounded p-2 overflow-x-auto text-muted-foreground whitespace-pre-wrap break-all max-h-40 overflow-y-auto w-full max-w-[calc(100vw-300px)]">
             {JSON.stringify(tool.output_schema, null, 2)}
           </pre>
         </div>
       )}
 
       {/* Metadata */}
-      <div className="flex flex-wrap items-center gap-3 text-[10px] text-muted-foreground">
+      <div className="flex flex-wrap items-center gap-3 type-meta text-muted-foreground">
         {tool.source_kind && (
           <span className="flex items-center gap-1">
             <FileCode2 className="w-3 h-3" />

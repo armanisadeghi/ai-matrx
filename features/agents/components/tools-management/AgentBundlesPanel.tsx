@@ -230,7 +230,7 @@ export function AgentBundlesPanel({ agentId }: { agentId: string }) {
     return (
       <div className="flex items-center justify-center h-full text-muted-foreground">
         <Loader2 className="w-5 h-5 animate-spin mr-2" />
-        <span className="text-xs">Loading bundles…</span>
+        <span className="type-secondary">Loading bundles…</span>
       </div>
     );
   }
@@ -239,8 +239,8 @@ export function AgentBundlesPanel({ agentId }: { agentId: string }) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-2 text-muted-foreground p-8">
         <AlertTriangle className="w-7 h-7 text-yellow-500" />
-        <p className="text-sm">Couldn&apos;t load bundles. <ErrorAlchemyMenu /></p>
-        {error && <p className="text-[11px] text-center max-w-xs">{error} <ErrorAlchemyMenu error={error} /></p>}
+        <p className="type-body">Couldn&apos;t load bundles. <ErrorAlchemyMenu /></p>
+        {error && <p className="type-meta text-center max-w-xs">{error} <ErrorAlchemyMenu error={error} /></p>}
       </div>
     );
   }
@@ -251,7 +251,7 @@ export function AgentBundlesPanel({ agentId }: { agentId: string }) {
       <div className="px-3 py-2.5 border-b border-border shrink-0">
         <div className="flex items-center gap-2 mb-1">
           <Package className="w-3.5 h-3.5 text-secondary" />
-          <span className="text-xs font-semibold text-foreground">
+          <span className="type-secondary font-semibold text-foreground">
             Tool Bundles
           </span>
           {enabledCount > 0 && (
@@ -262,11 +262,11 @@ export function AgentBundlesPanel({ agentId }: { agentId: string }) {
               {enabledCount} enabled
             </Badge>
           )}
-          <span className="ml-auto text-[11px] text-muted-foreground tabular-nums">
+          <span className="ml-auto type-meta text-muted-foreground tabular-nums">
             {visibleBundles.length} of {scopeBundles.length}
           </span>
         </div>
-        <p className="text-[11px] text-muted-foreground leading-tight mb-2">
+        <p className="type-meta text-muted-foreground leading-tight mb-2">
           {/* A bundle carries many tools behind one lister the model expands on demand. */}
           One tool slot covers many tools, saving context
         </p>
@@ -326,7 +326,7 @@ export function AgentBundlesPanel({ agentId }: { agentId: string }) {
           {visibleBundles.length === 0 ? (
             <div className="flex flex-col items-center gap-2 py-12 text-muted-foreground">
               <Search className="w-5 h-5 opacity-40" />
-              <p className="text-xs">
+              <p className="type-secondary">
                 {search
                   ? `No ${scope === "all" ? "" : scope + " "}bundles match "${search}"`
                   : `No ${scope === "all" ? "" : scope + " "}bundles available`}
@@ -465,11 +465,11 @@ function BundleCard({
             </Badge>
           </div>
           {bundle.description && (
-            <p className="text-[11px] text-muted-foreground leading-relaxed line-clamp-2">
+            <p className="type-meta text-muted-foreground leading-relaxed line-clamp-2">
               {bundle.description}
             </p>
           )}
-          <p className="mt-1 flex items-center gap-1 text-[10px] text-muted-foreground/80">
+          <p className="mt-1 flex items-center gap-1 type-meta text-muted-foreground/80">
             {active ? (
               <Check className="w-3 h-3 text-secondary" />
             ) : (
@@ -478,7 +478,7 @@ function BundleCard({
             {loadHint}
           </p>
           {runtimeNote && (
-            <p className="mt-1 flex items-center gap-1 text-[10px] text-muted-foreground">
+            <p className="mt-1 flex items-center gap-1 type-meta text-muted-foreground">
               <Plug className="w-3 h-3 shrink-0" />
               {runtimeNote}
             </p>
@@ -488,7 +488,7 @@ function BundleCard({
 
       {/* Gentle overlap nudge — suggestion before adding, redundancy after */}
       {kind === "suggestion" && (
-        <div className="px-3 pb-2 -mt-1 flex items-start gap-1.5 text-[10px] text-emerald-700 dark:text-emerald-400">
+        <div className="px-3 pb-2 -mt-1 flex items-start gap-1.5 type-meta text-emerald-700 dark:text-emerald-400">
           <Lightbulb className="w-3 h-3 mt-0.5 shrink-0" />
           <span>
             You already use {heldIds.size} of these tools individually — add
@@ -497,7 +497,7 @@ function BundleCard({
         </div>
       )}
       {kind === "warning" && (
-        <div className="px-3 pb-2 -mt-1 flex items-start gap-1.5 text-[10px] text-amber-700 dark:text-amber-400">
+        <div className="px-3 pb-2 -mt-1 flex items-start gap-1.5 type-meta text-amber-700 dark:text-amber-400">
           <AlertTriangle className="w-3 h-3 mt-0.5 shrink-0" />
           <span>
             {heldIds.size} of these tools {heldIds.size === 1 ? "is" : "are"}{" "}
@@ -511,7 +511,7 @@ function BundleCard({
       {bundle.members.length > 0 ? (
         <div className="border-t border-border/60 px-3 py-2">
           <div className="mb-1.5">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <span className="type-meta font-semibold uppercase tracking-wider text-muted-foreground">
               Included tools ({bundle.members.length})
             </span>
           </div>
@@ -568,7 +568,7 @@ function BundleCard({
           </div>
         </div>
       ) : (
-        <div className="border-t border-border/60 px-3 py-2 flex items-center gap-1.5 text-[10px] text-muted-foreground">
+        <div className="border-t border-border/60 px-3 py-2 flex items-center gap-1.5 type-meta text-muted-foreground">
           <Plug className="w-3 h-3 shrink-0" />
           Tools are discovered when{" "}
           {bundle.serverSlug ? (

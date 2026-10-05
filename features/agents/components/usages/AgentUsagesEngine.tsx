@@ -276,9 +276,9 @@ export function AgentUsagesEngine({ agentId, mode }: AgentUsagesEngineProps) {
       width: 90,
       cell: (row) =>
         row.holderLabel ? (
-          <span className="text-xs text-muted-foreground">{row.holderLabel}</span>
+          <span className="type-secondary text-muted-foreground">{row.holderLabel}</span>
         ) : (
-          <span className="text-xs text-muted-foreground/50">—</span>
+          <span className="type-secondary text-muted-foreground/50">—</span>
         ),
     },
     {
@@ -291,7 +291,7 @@ export function AgentUsagesEngine({ agentId, mode }: AgentUsagesEngineProps) {
         const meta = dimensionMeta(row.dimension);
         const Icon = meta.icon;
         return (
-          <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+          <span className="inline-flex items-center gap-1 type-secondary text-muted-foreground">
             <Icon className="h-3 w-3" aria-hidden />
             {meta.label}
           </span>
@@ -308,7 +308,7 @@ export function AgentUsagesEngine({ agentId, mode }: AgentUsagesEngineProps) {
       cell: (row) => (
         <span
           className={cn(
-            "inline-flex items-center gap-1 tabular-nums text-xs",
+            "inline-flex items-center gap-1 tabular-nums type-secondary",
             row.behind ? "text-foreground" : "text-muted-foreground",
           )}
           title={
@@ -348,7 +348,7 @@ export function AgentUsagesEngine({ agentId, mode }: AgentUsagesEngineProps) {
       filter: "text",
       width: 140,
       cell: (row) => (
-        <span className="truncate text-xs text-muted-foreground" title={row.whatChanged}>
+        <span className="truncate type-secondary text-muted-foreground" title={row.whatChanged}>
           {row.whatChanged}
         </span>
       ),
@@ -362,7 +362,7 @@ export function AgentUsagesEngine({ agentId, mode }: AgentUsagesEngineProps) {
             filter: "text",
             width: 170,
             cell: (row: UnifiedUsageRow) => (
-              <span className="block max-w-[160px] truncate text-[11px] text-muted-foreground" title={row.organizationName ?? row.ownerText ?? undefined}>
+              <span className="block max-w-[160px] truncate type-meta text-muted-foreground" title={row.organizationName ?? row.ownerText ?? undefined}>
                 {row.organizationName ? `org: ${row.organizationName}` : null}
                 {row.organizationName && row.ownerText ? " · " : null}
                 {row.ownerText ? `owner: ${row.ownerText}` : null}
@@ -382,7 +382,7 @@ export function AgentUsagesEngine({ agentId, mode }: AgentUsagesEngineProps) {
     return (
       <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
         <AlertTriangle className="h-7 w-7 text-destructive" aria-hidden />
-        <p className="text-sm text-muted-foreground">
+        <p className="type-body text-muted-foreground">
           {scan.error ?? mandates.error ?? "Could not load usages."}
           <ErrorAlchemyMenu error={scan.error} />
         </p>
@@ -657,12 +657,12 @@ function StatusLine({
   actions: ReactNode;
 }) {
   return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 border-b border-border bg-muted/10 px-3 py-2 text-sm">
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 border-b border-border bg-muted/10 px-3 py-2 type-body">
       {scanError || mandateError ? (
         <span className="inline-flex items-center gap-1.5 text-destructive">
           <AlertTriangle className="h-4 w-4" aria-hidden />
           <span className="font-medium">Partial read.</span>
-          <span className="text-xs">
+          <span className="type-secondary">
             {scanError ? `Usage scan: ${scanError}. ` : ""}
             {mandateError ? `Mandates: ${mandateError}.` : ""}{" "}
             <ErrorAlchemyMenu error={scanError ?? mandateError} />
@@ -674,7 +674,7 @@ function StatusLine({
           <span className="font-medium text-foreground">
             {flagged} of {total} need a look
           </span>
-          <span className="text-xs text-muted-foreground">
+          <span className="type-secondary text-muted-foreground">
             {red > 0 ? `${red} red` : ""}
             {red > 0 && orange > 0 ? " · " : ""}
             {orange > 0 ? `${orange} orange` : ""}
@@ -690,7 +690,7 @@ function StatusLine({
         <span className="inline-flex items-center gap-1.5">
           <CircleCheck className="h-4 w-4 text-success" aria-hidden />
           <span className="font-medium text-foreground">No red flags.</span>
-          <span className="text-xs text-muted-foreground">
+          <span className="type-secondary text-muted-foreground">
             {total === 0
               ? "Nothing uses this agent."
               : behind > 0
@@ -700,7 +700,7 @@ function StatusLine({
         </span>
       )}
       {withheldSentences.map((sentence) => (
-        <span key={sentence} className="text-xs text-muted-foreground" title="Counted, never listed — those pins belong to other people.">
+        <span key={sentence} className="type-secondary text-muted-foreground" title="Counted, never listed — those pins belong to other people.">
           {sentence}
         </span>
       ))}
@@ -716,15 +716,15 @@ function RowDetail({ row }: { row: UnifiedUsageRow }) {
       <div className="space-y-3 p-3">
         <VerdictDetail verdict={verdict} />
         {verdict.lineage_path && verdict.lineage_path.length > 1 ? (
-          <p className="text-xs text-muted-foreground">
+          <p className="type-secondary text-muted-foreground">
             Reached through lineage:{" "}
             {lineageNames(verdict.lineage_path).join(" → ")}
           </p>
         ) : null}
         {verdict.changed_columns && verdict.changed_columns.length > 0 ? (
-          <p className="text-xs text-muted-foreground">
+          <p className="type-secondary text-muted-foreground">
             Changed columns:{" "}
-            <code className="font-mono text-[11px]">{verdict.changed_columns.join(", ")}</code>
+            <code className="font-mono type-meta">{verdict.changed_columns.join(", ")}</code>
           </p>
         ) : null}
       </div>
@@ -736,7 +736,7 @@ function RowDetail({ row }: { row: UnifiedUsageRow }) {
   if (row.kind === "aggregate" && row.aggregate) {
     const aggregate = row.aggregate;
     return (
-      <div className="space-y-2 p-3 text-xs text-muted-foreground">
+      <div className="space-y-2 p-3 type-secondary text-muted-foreground">
         <p>
           {aggregate.count} {dimensionMeta(aggregate.usageType).plural.toLowerCase()} of this agent belong to other people
           {aggregate.organizationName ? ` in ${aggregate.organizationName}` : ""}; counted, never listed or moved.

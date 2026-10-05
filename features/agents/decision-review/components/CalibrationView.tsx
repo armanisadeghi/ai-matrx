@@ -69,7 +69,7 @@ function AgreementCell({ group, minLabels }: { group: GroupCalibration; minLabel
       {dec(a.cohens_kappa, 2)}{" "}
       <span
         className={cn(
-          "ml-1 rounded px-1 py-0.5 text-[10px]",
+          "ml-1 rounded px-1 py-0.5 type-meta",
           a.band === "production" && "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",
           a.band === "usable" && "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
           a.band === "not_usable" && "bg-destructive/10 text-destructive",
@@ -164,14 +164,14 @@ export function CalibrationView({ agentId }: { agentId: string }) {
           </SelectContent>
         </Select>
         {report && (
-          <span className="ml-auto font-mono text-[11px] text-muted-foreground">
+          <span className="ml-auto font-mono type-meta text-muted-foreground">
             target precision {pct(report.target_precision)} · agreement scored from {report.min_labels} labels
           </span>
         )}
       </div>
 
       {error && (
-        <p className="flex items-start gap-1.5 border-b border-destructive/40 bg-destructive/10 px-3 py-1.5 text-xs text-destructive">
+        <p className="flex items-start gap-1.5 border-b border-destructive/40 bg-destructive/10 px-3 py-1.5 type-secondary text-destructive">
           <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0" />
           {error}
           <ErrorAlchemyMenu className="ml-auto" error={error} />
@@ -182,12 +182,12 @@ export function CalibrationView({ agentId }: { agentId: string }) {
         {report == null && !error ? (
           <Skeleton className="h-40 w-full" />
         ) : report && (report.groups ?? []).length === 0 ? (
-          <p className="text-xs text-muted-foreground">This agent has no recorded decision answers yet.</p>
+          <p className="type-secondary text-muted-foreground">This agent has no recorded decision answers yet.</p>
         ) : report ? (
           <>
-            <table className="w-full border-collapse text-xs">
+            <table className="w-full border-collapse type-secondary">
               <thead>
-                <tr className="text-left text-[10px] uppercase tracking-wide text-muted-foreground">
+                <tr className="text-left type-meta uppercase tracking-wide text-muted-foreground">
                   <th className="py-1 pr-3 font-medium">Version</th>
                   <th className="py-1 pr-3 font-medium">Question</th>
                   <th className="py-1 pr-3 text-right font-medium">Labeled</th>
@@ -248,18 +248,18 @@ export function CalibrationView({ agentId }: { agentId: string }) {
             {selected && measure && (
               <div className="mt-4 flex flex-wrap items-start gap-6 border-t border-border pt-4">
                 <div>
-                  <div className="mb-1 text-xs font-medium">
+                  <div className="mb-1 type-secondary font-medium">
                     v{selected.version} · {selected.question}
                   </div>
                   {(measure.bins ?? []).length === 0 ? (
-                    <p className="text-xs text-muted-foreground">No labeled answers yet.</p>
+                    <p className="type-secondary text-muted-foreground">No labeled answers yet.</p>
                   ) : (
                     <ReliabilityCurve bins={measure.bins ?? []} threshold={threshold?.threshold ?? null} />
                   )}
                 </div>
-                <table className="border-collapse self-start text-xs">
+                <table className="border-collapse self-start type-secondary">
                   <thead>
-                    <tr className="text-left text-[10px] uppercase tracking-wide text-muted-foreground">
+                    <tr className="text-left type-meta uppercase tracking-wide text-muted-foreground">
                       <th className="py-1 pr-3 font-medium">Stated</th>
                       <th className="py-1 pr-3 text-right font-medium">Labels</th>
                       <th className="py-1 pr-3 text-right font-medium">Mean stated</th>

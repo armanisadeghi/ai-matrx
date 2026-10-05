@@ -115,7 +115,7 @@ export function StructuredListBindingEditor({
           <Label className="text-sm font-medium cursor-pointer">
             Bind to a picklist
           </Label>
-          <p className="text-xs text-muted-foreground mt-0.5">
+          <p className="type-secondary text-muted-foreground mt-0.5">
             People pick a label; the agent gets its full text
           </p>
         </div>
@@ -136,7 +136,7 @@ export function StructuredListBindingEditor({
                   href={`/lists/${binding.listId}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-1 text-xs font-medium text-primary "
+                  className="inline-flex items-center gap-1 type-secondary font-medium text-primary "
                 >
                   Edit picklist
                   <ExternalLink className="h-3 w-3" />
@@ -207,7 +207,7 @@ export function StructuredListBindingEditor({
               <Label className="text-sm cursor-pointer">
                 Allow &ldquo;Other&rdquo; option
               </Label>
-              <p className="text-xs text-muted-foreground mt-0.5">
+              <p className="type-secondary text-muted-foreground mt-0.5">
                 Lets people type their own answer
               </p>
             </div>

@@ -114,7 +114,7 @@ export function CustomComponentConfigurator({
             {getComponentTypeOptions().map(({ value: v, label, description }) => (
               <SelectItem key={v} value={v}>
                 <span>{label}</span>
-                <span className="ml-2 text-xs text-muted-foreground hidden sm:inline">
+                <span className="ml-2 type-secondary text-muted-foreground hidden sm:inline">
                   — {description}
                 </span>
               </SelectItem>
@@ -204,7 +204,7 @@ export function CustomComponentConfigurator({
             <Label className="text-sm cursor-pointer">
               Allow random assignment
             </Label>
-            <p className="mt-0.5 text-xs text-muted-foreground">
+            <p className="mt-0.5 type-secondary text-muted-foreground">
               Picks one option at random when asked
             </p>
           </div>

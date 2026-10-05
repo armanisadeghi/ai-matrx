@@ -180,7 +180,7 @@ export function UsageKpiStrip({
 /** The history detail line, shown when the history tile is active. */
 export function HistoryDetail({ history }: { history: HistoryState }) {
   return (
-    <p className="border-b border-border bg-muted/10 px-3 py-2 text-xs text-muted-foreground">
+    <p className="border-b border-border bg-muted/10 px-3 py-2 type-secondary text-muted-foreground">
       {history.status === "loading"
         ? "Loading history…"
         : history.status === "failed"

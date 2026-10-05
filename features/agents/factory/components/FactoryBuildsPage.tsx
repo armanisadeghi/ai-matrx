@@ -76,11 +76,11 @@ export function FactoryBuildsPage() {
       width: 230,
       cell: (r) =>
         r.mandateKey ? (
-          <span className="truncate font-mono text-xs font-medium" title={r.name ?? undefined}>
+          <span className="truncate font-mono type-secondary font-medium" title={r.name ?? undefined}>
             {mandateDisplayName(r.mandateKey)}
           </span>
         ) : (
-          <span className="text-xs text-muted-foreground">New agent</span>
+          <span className="type-secondary text-muted-foreground">New agent</span>
         ),
     },
     {
@@ -98,7 +98,7 @@ export function FactoryBuildsPage() {
       filter: "select",
       width: 110,
       cell: (r) => (
-        <span className="text-xs">
+        <span className="type-secondary">
           {r.currentStep ? (STEP_LABEL[r.currentStep as FactoryStepName] ?? r.currentStep) : "—"}
         </span>
       ),
@@ -109,7 +109,7 @@ export function FactoryBuildsPage() {
       header: "Outcome",
       filter: "select",
       width: 175,
-      cell: (r) => outcomeChip(r.outcome) ?? <span className="text-xs text-muted-foreground">—</span>,
+      cell: (r) => outcomeChip(r.outcome) ?? <span className="type-secondary text-muted-foreground">—</span>,
     },
     {
       id: "send_backs",
@@ -117,7 +117,7 @@ export function FactoryBuildsPage() {
       header: "Send-backs",
       filter: "number",
       width: 100,
-      cell: (r) => <span className="text-xs tabular-nums">{r.sendBacks}</span>,
+      cell: (r) => <span className="type-secondary tabular-nums">{r.sendBacks}</span>,
     },
     {
       id: "verdict",
@@ -125,7 +125,7 @@ export function FactoryBuildsPage() {
       header: "Judge",
       filter: "select",
       width: 100,
-      cell: (r) => verdictChip(r.verdict) ?? <span className="text-xs text-muted-foreground">—</span>,
+      cell: (r) => verdictChip(r.verdict) ?? <span className="type-secondary text-muted-foreground">—</span>,
     },
     {
       id: "agent",
@@ -136,7 +136,7 @@ export function FactoryBuildsPage() {
         r.agentId ? (
           <EntityRef token="agent" id={r.agentId} name={r.agentId.slice(0, 8)} showIcon={false} />
         ) : (
-          <span className="text-xs text-muted-foreground">—</span>
+          <span className="type-secondary text-muted-foreground">—</span>
         ),
     },
     {
@@ -146,7 +146,7 @@ export function FactoryBuildsPage() {
       filter: "date",
       width: 130,
       cell: (r) => (
-        <span className="whitespace-nowrap text-xs text-muted-foreground" title={new Date(r.createdAt).toLocaleString()}>
+        <span className="whitespace-nowrap type-secondary text-muted-foreground" title={new Date(r.createdAt).toLocaleString()}>
           {formatDistanceToNow(new Date(r.createdAt), { addSuffix: true })}
         </span>
       ),
@@ -159,7 +159,7 @@ export function FactoryBuildsPage() {
       filter: "number",
       width: 90,
       cell: (r) => (
-        <span className="text-xs tabular-nums text-muted-foreground">
+        <span className="type-secondary tabular-nums text-muted-foreground">
           {r.endedAt ? formatDuration(r.startedAt ?? r.createdAt, r.endedAt) : "—"}
         </span>
       ),

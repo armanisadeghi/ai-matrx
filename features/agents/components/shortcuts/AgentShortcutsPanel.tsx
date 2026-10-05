@@ -205,7 +205,7 @@ export function AgentShortcutsPanel({
         {/* Header */}
         <header className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
           <div className="space-y-1">
-            <div className="text-xs uppercase tracking-wider text-muted-foreground font-medium">
+            <div className="type-secondary uppercase tracking-wider text-muted-foreground font-medium">
               Shortcuts
             </div>
             {/* The agent these shortcuts target — a door, not a label. */}
@@ -352,7 +352,7 @@ export function AgentShortcutsPanel({
         {/* List */}
         <section className="space-y-3">
           {isLoading && shortcuts.length === 0 ? (
-            <Card className="p-6 flex items-center justify-center gap-2 text-sm text-muted-foreground">
+            <Card className="p-6 flex items-center justify-center gap-2 type-body text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
               Loading shortcuts…
             </Card>
@@ -449,7 +449,7 @@ function CountCard({
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between gap-2">
-          <div className="text-xs text-muted-foreground uppercase tracking-wider">
+          <div className="type-secondary text-muted-foreground uppercase tracking-wider">
             {label}
           </div>
           <span className="shrink-0 opacity-0 transition-opacity focus-within:opacity-100 group-hover/card:opacity-100">
@@ -464,7 +464,7 @@ function CountCard({
           )}
         </div>
         {help && (
-          <p className="text-[11px] text-muted-foreground mt-1.5 leading-snug">
+          <p className="type-meta text-muted-foreground mt-1.5 leading-snug">
             {help}
           </p>
         )}
@@ -542,11 +542,11 @@ function ShortcutRow({
         {/* Primary value = the surface (the UI the shortcut links to) */}
         <div className="flex items-center gap-2 flex-wrap">
           {surfaceLabel ? (
-            <span className="text-sm font-semibold text-foreground truncate">
+            <span className="type-title text-foreground truncate">
               {surfaceLabel}
             </span>
           ) : (
-            <span className="text-sm font-semibold text-muted-foreground italic truncate">
+            <span className="type-title text-muted-foreground italic truncate">
               No surface
             </span>
           )}
@@ -572,7 +572,7 @@ function ShortcutRow({
               id={shortcut.organizationId}
               name={orgName}
               showIcon={false}
-              className="text-[11px] text-muted-foreground"
+              className="type-meta text-muted-foreground"
             />
           ) : null}
           {!shortcut.isActive && (
@@ -581,14 +581,14 @@ function ShortcutRow({
             </Badge>
           )}
           {shortcut.keyboardShortcut && (
-            <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground font-mono">
+            <span className="inline-flex items-center gap-1 type-meta text-muted-foreground font-mono">
               <KeyRound className="h-2.5 w-2.5" />
               {shortcut.keyboardShortcut}
             </span>
           )}
         </div>
         {/* Secondary = raw surface path · shortcut label (a door: open/new-tab/peek) · category */}
-        <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted-foreground truncate">
+        <div className="mt-0.5 flex items-center gap-1.5 type-meta text-muted-foreground truncate">
           {shortcut.surfaceName && (
             <span className="font-mono truncate">{shortcut.surfaceName}</span>
           )}
@@ -657,10 +657,10 @@ function EmptyState({
         <Rocket className="h-5 w-5" />
       </div>
       <div className="space-y-1">
-        <div className="text-sm font-medium text-foreground">
+        <div className="type-title text-foreground">
           No shortcuts for this agent yet
         </div>
-        <p className="text-xs text-muted-foreground max-w-sm">
+        <p className="type-secondary text-muted-foreground max-w-sm">
           Shortcuts let you launch this agent from menus, keyboard hotkeys,
           context menus, and other surfaces across the app.
         </p>

@@ -75,7 +75,7 @@ function SummaryLine({
     <span
       title={sentence}
       className={cn(
-        "inline-flex min-w-0 items-center gap-1 text-[11px] text-muted-foreground",
+        "inline-flex min-w-0 items-center gap-1 type-meta text-muted-foreground",
         className,
       )}
     >

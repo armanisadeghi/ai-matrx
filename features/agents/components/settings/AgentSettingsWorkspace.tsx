@@ -45,7 +45,7 @@ export function AgentTabs({
   }
 
   return (
-    <div className="flex items-end h-8 text-xs border-b border-border bg-muted/20 px-1 shrink-0 overflow-x-auto no-scrollbar">
+    <div className="flex items-end h-8 type-secondary border-b border-border bg-muted/20 px-1 shrink-0 overflow-x-auto no-scrollbar">
       {openedTabIds.map((id) => (
         <TabItem
           key={id}
@@ -86,7 +86,7 @@ function TabItem({
         width: isActive ? "180px" : "100px",
       }}
     >
-      <span className="text-xs truncate flex-1">{name}</span>
+      <span className="type-secondary truncate flex-1">{name}</span>
       <button
         onClick={onClose}
         className={cn(

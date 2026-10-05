@@ -125,7 +125,7 @@ export function ContextItemBindingEditor({
           <Label className="text-sm font-medium cursor-pointer">
             Fill automatically
           </Label>
-          <p className="text-xs text-muted-foreground mt-0.5">
+          <p className="type-secondary text-muted-foreground mt-0.5">
             From your data, a platform value, or the scope
           </p>
         </div>
@@ -138,7 +138,7 @@ export function ContextItemBindingEditor({
 
       {bound && isEmptyBinding(binding) && (
         // A draft: saving keeps the variable and drops the empty binding.
-        <p className="text-[11px] text-warning">
+        <p className="type-meta text-warning">
           Not set up — saves as a normal input
         </p>
       )}
@@ -192,7 +192,7 @@ export function ContextItemBindingEditor({
                   {ON_MISSING_OPTIONS.map((o) => (
                     <SelectItem key={o.value} value={o.value}>
                       <span>{o.label}</span>
-                      <span className="ml-2 text-xs text-muted-foreground hidden sm:inline">
+                      <span className="ml-2 type-secondary text-muted-foreground hidden sm:inline">
                         — {o.hint}
                       </span>
                     </SelectItem>

@@ -199,7 +199,7 @@ export function OptionsEditor({
   return (
     <div className="space-y-1.5">
       {unusedNote && (
-        <p className="text-[11px] text-muted-foreground italic leading-tight">
+        <p className="type-meta text-muted-foreground italic leading-tight">
           {unusedNote}
         </p>
       )}

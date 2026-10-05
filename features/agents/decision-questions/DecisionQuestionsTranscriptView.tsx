@@ -33,7 +33,7 @@ export function DecisionQuestionsTranscriptView({
 }) {
   const questions = readQuestions(payload);
   return (
-    <div className="my-2 rounded-lg border border-border bg-card/60 px-3 py-2 text-xs">
+    <div className="my-2 rounded-lg border border-border bg-card/60 px-3 py-2 type-secondary">
       <div className="mb-1.5 font-medium text-foreground">
         Questions {questions.length > 0 ? `(${questions.length})` : ""}
       </div>

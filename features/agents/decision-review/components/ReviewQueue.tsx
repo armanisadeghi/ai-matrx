@@ -81,7 +81,7 @@ function FilterSelect({
 
 function Kbd({ children }: { children: React.ReactNode }) {
   return (
-    <kbd className="rounded border border-border bg-muted px-1 font-mono text-[10px] text-muted-foreground">
+    <kbd className="rounded border border-border bg-muted px-1 font-mono type-meta text-muted-foreground">
       {children}
     </kbd>
   );
@@ -109,7 +109,7 @@ function QueueRow({
       )}
     >
       <span className="flex min-w-0 items-baseline gap-2">
-        <span className="shrink-0 font-mono text-[10px] text-muted-foreground">{item.question}</span>
+        <span className="shrink-0 font-mono type-meta text-muted-foreground">{item.question}</span>
         <span className="truncate font-medium">{optionLabel(item, item.verdict)}</span>
       </span>
       <span className="flex items-center gap-1.5">
@@ -121,14 +121,14 @@ function QueueRow({
           ))}
         <span
           className={cn(
-            "w-9 text-right font-mono text-[11px]",
+            "w-9 text-right font-mono type-meta",
             (item.confidence ?? 0) < 0.5 ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground",
           )}
         >
           {percent(item.confidence)}
         </span>
       </span>
-      <span className="col-span-2 truncate font-mono text-[10px] text-muted-foreground">
+      <span className="col-span-2 truncate font-mono type-meta text-muted-foreground">
         {showSource ? `${DECISION_SOURCE_LABELS[item.source]} · ` : ""}
         v{item.version} · {item.model ?? "model not recorded"}
         {item.method ? ` · ${METHOD_LABELS[item.method]}` : ""}
@@ -332,7 +332,7 @@ export function ReviewQueue({
             onChange={(v) => setFilter("version", v == null ? null : Number(v))}
           />
         )}
-        <span className="ml-auto font-mono text-[11px] text-muted-foreground">
+        <span className="ml-auto font-mono type-meta text-muted-foreground">
           {facets && loadError == null ? `${facets.labeled} / ${facets.total} labeled` : ""}
         </span>
         {/* Calibration is computed per agent: the combined queue offers the
@@ -356,7 +356,7 @@ export function ReviewQueue({
       </div>
 
       {error && (
-        <p className="flex items-start gap-1.5 border-b border-destructive/40 bg-destructive/10 px-3 py-1.5 text-xs text-destructive">
+        <p className="flex items-start gap-1.5 border-b border-destructive/40 bg-destructive/10 px-3 py-1.5 type-secondary text-destructive">
           <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0" />
           <span className="flex-1">{error}</span>
           <button type="button" className="underline" onClick={() => { setError(null); setReloadKey((k) => k + 1); }}>
@@ -389,7 +389,7 @@ export function ReviewQueue({
               size="compact"
             />
           ) : items.length === 0 ? (
-            <p className="p-4 text-xs text-muted-foreground">
+            <p className="p-4 type-secondary text-muted-foreground">
               {filters.status === "unlabeled"
                 ? "Nothing left to label with these filters."
                 : "No answers match these filters."}
@@ -429,16 +429,16 @@ export function ReviewQueue({
                 All answers
               </button>
               <div className="flex items-baseline gap-2">
-                <span className="text-sm font-medium">{selected.instructions ?? "Question text not recorded"}</span>
-                <span className="font-mono text-[11px] text-muted-foreground">{selected.question}</span>
-                <span className="ml-auto font-mono text-[11px] text-muted-foreground">
+                <span className="type-title">{selected.instructions ?? "Question text not recorded"}</span>
+                <span className="font-mono type-meta text-muted-foreground">{selected.question}</span>
+                <span className="ml-auto font-mono type-meta text-muted-foreground">
                   {selectedIndex + 1} /{" "}
                   <UntrustedCount value={items?.length ?? 0} trustworthy={loadError == null} label="Answers" />
                 </span>
               </div>
 
               <section className="rounded-lg border border-border bg-card">
-                <div className="flex items-center gap-2 border-b border-border px-3 py-1.5 text-[11px] font-medium text-muted-foreground">
+                <div className="flex items-center gap-2 border-b border-border px-3 py-1.5 type-meta font-medium text-muted-foreground">
                   What the model judged
                   {combined && selected.source === "model" && (
                     <span className="ml-auto font-normal">API model call{selected.model ? ` · ${selected.model}` : ""}</span>
@@ -461,7 +461,7 @@ export function ReviewQueue({
                     </Link>
                   )}
                 </div>
-                <div className="max-h-[40vh] overflow-y-auto whitespace-pre-wrap px-3 py-2 text-xs leading-relaxed">
+                <div className="max-h-[40vh] overflow-y-auto whitespace-pre-wrap px-3 py-2 type-secondary leading-relaxed">
                   {state == null ? (
                     <Skeleton className="h-16 w-full" />
                   ) : !state.visible ? (
@@ -485,7 +485,7 @@ export function ReviewQueue({
               )}
 
               <section className="flex flex-col gap-2">
-                <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                <div className="flex items-center gap-2 type-meta text-muted-foreground">
                   <span className="font-medium text-foreground">True answer</span>
                   {selected.label != null && (
                     <span>
@@ -513,9 +513,9 @@ export function ReviewQueue({
                         {index < 9 && <Kbd>{index + 1}</Kbd>}
                         <span>{selected.answerType === "choice" ? option.key : optionLabel(selected, option.key)}</span>
                         {selected.answerType === "choice" && option.label !== option.key && (
-                          <span className="max-w-[14rem] truncate text-[10px] text-muted-foreground">{option.label}</span>
+                          <span className="max-w-[14rem] truncate type-meta text-muted-foreground">{option.label}</span>
                         )}
-                        {isModel && <span className="text-[10px] text-muted-foreground">model</span>}
+                        {isModel && <span className="type-meta text-muted-foreground">model</span>}
                       </Button>
                     );
                   })}
@@ -524,7 +524,7 @@ export function ReviewQueue({
                   </Button>
                 </div>
                 {selected.options.length === 0 && (
-                  <p className="text-xs text-amber-600 dark:text-amber-400">
+                  <p className="type-secondary text-amber-600 dark:text-amber-400">
                     This answer has no recorded options, so it cannot be labeled here.
                   </p>
                 )}
@@ -532,7 +532,7 @@ export function ReviewQueue({
             </div>
           ) : (
             items != null && (
-              <div className="p-6 text-xs text-muted-foreground">Select an answer to review it.</div>
+              <div className="p-6 type-secondary text-muted-foreground">Select an answer to review it.</div>
             )
           )}
         </div>
