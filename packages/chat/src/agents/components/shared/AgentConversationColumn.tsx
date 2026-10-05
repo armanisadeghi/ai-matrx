@@ -43,6 +43,7 @@ import {
   isWarRoomThreadAgentSurface,
   traceWarRoomRenderPath,
 } from "@ai-matrx/chat/host/ui-slots";
+import { Button } from "@ai-matrx/design-system/controls";
 
 // CreatorRunPanel renders a <WindowPanel> as styling chrome (admin-gated
 // tab panel). Without `dynamic()` it would pull WindowPanel and the
@@ -496,18 +497,7 @@ export function AgentConversationColumn({
           }}
         />
         {showScrollDown && (
-          <button
-            type="button"
-            onClick={scrollToBottom}
-            className={cn(
-              "absolute bottom-4 right-4 z-10 flex items-center justify-center w-8 h-8 rounded-full",
-              "matrx-glass-thin-border shadow-lg text-muted-foreground hover:text-foreground",
-              "transition-all duration-200 ease-out animate-in fade-in slide-in-from-bottom-2",
-            )}
-            title="Scroll to bottom"
-          >
-            <ArrowDown className="w-4 h-4" />
-          </button>
+          <Button variant="quiet" icon={<ArrowDown />} onClick={scrollToBottom} title="Scroll to bottom" aria-label="Scroll to bottom" className="absolute bottom-4 right-4 z-10" />
         )}
         <TranscriptIntegrityCopyButton
           conversationId={displayId}

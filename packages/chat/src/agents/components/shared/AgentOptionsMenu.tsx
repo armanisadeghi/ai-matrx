@@ -82,6 +82,7 @@ import { useAgentLifecycleActions } from "../../lifecycle/useAgentLifecycleActio
 import { getUserMessage } from "@ai-matrx/agents/matrx";
 import { selectIsSuperAdmin } from "../../../host/identity";
 import { selectOrganizationId, isOrganizationSelectionCancelled } from "../../../host/org";
+import { Button } from "@ai-matrx/design-system/controls";
 
 const INTERFACE_VARIATIONS = [
   "Full Modal",
@@ -983,13 +984,7 @@ function MobileMenuContent({
         {variationsOpen && (
           <div className="pl-6 bg-muted/20">
             {INTERFACE_VARIATIONS.map((v) => (
-              <button
-                key={v}
-                onClick={handleVariationClick}
-                className="flex items-center gap-3 w-full px-4 py-2 text-sm text-foreground/80 hover:bg-muted/50 active:bg-muted/70 transition-colors"
-              >
-                {v}
-              </button>
+              <Button variant="quiet" key={v} onClick={handleVariationClick} className="w-full">{v}</Button>
             ))}
           </div>
         )}

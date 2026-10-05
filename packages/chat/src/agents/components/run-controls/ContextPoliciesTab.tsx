@@ -277,15 +277,7 @@ export function ContextPoliciesTab({ conversationId }: ContextPoliciesTabProps) 
             count={adHocEntries.length}
             rightPolicy={
               hasAnyValues ? (
-                <button
-                  type="button"
-                  onClick={handleClearAll}
-                  className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-destructive transition-colors"
-                  title="Remove every value for this agent"
-                >
-                  <RefreshCw className="w-3 h-3" />
-                  Clear all
-                </button>
+                <Button variant="quiet" icon={<RefreshCw />} onClick={handleClearAll} title="Remove every value for this agent">Clear all</Button>
               ) : null
             }
           />
@@ -410,14 +402,7 @@ function DeclaredPolicyRow({
       }}
       rightAction={
         entry !== undefined ? (
-          <button
-            type="button"
-            onClick={onClear}
-            title="Clear value"
-            className="p-1 text-muted-foreground hover:text-destructive transition-colors"
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
+          <Button variant="quiet" icon={<X />} onClick={onClear} title="Clear value" aria-label="Clear value" />
         ) : null
       }
       isEmpty={entry === undefined}
@@ -470,14 +455,7 @@ function AdHocEntryRow({
         onWrite(entry.key, value, type, entry.label, false);
       }}
       rightAction={
-        <button
-          type="button"
-          onClick={onDelete}
-          title="Remove key"
-          className="p-1 text-muted-foreground hover:text-destructive transition-colors"
-        >
-          <Trash2 className="w-3.5 h-3.5" />
-        </button>
+        <Button variant="quiet" icon={<Trash2 />} onClick={onDelete} title="Remove key" aria-label="Remove key" />
       }
       isEmpty={false}
     />
@@ -647,22 +625,8 @@ function ValueEditorCard({
           </div>
           {dirty && (
             <div className="flex items-center gap-1 shrink-0">
-              <button
-                type="button"
-                onClick={revert}
-                className="p-0.5 text-muted-foreground hover:text-foreground"
-                title="Discard changes"
-              >
-                <Pencil className="w-3 h-3" />
-              </button>
-              <button
-                type="button"
-                onClick={commit}
-                className="p-0.5 text-primary hover:text-primary/80"
-                title="Commit now"
-              >
-                <Check className="w-3 h-3" />
-              </button>
+              <Button variant="quiet" icon={<Pencil />} onClick={revert} title="Discard changes" aria-label="Discard changes" />
+              <Button variant="quiet" tone="primary" icon={<Check />} onClick={commit} title="Commit now" aria-label="Commit now" />
             </div>
           )}
         </div>

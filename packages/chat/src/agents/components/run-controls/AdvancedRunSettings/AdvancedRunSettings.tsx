@@ -39,6 +39,7 @@ import {
 } from './primitives';
 import { runAlgorithm } from './algorithm';
 import { ComplexityBadge } from './ComplexityBadge';
+import { Button } from "@ai-matrx/design-system/controls";
 
 export interface AdvancedRunSettingsProps {
   initialValue?: AdvancedRunSettingsValue;
@@ -166,17 +167,7 @@ export function AdvancedRunSettings({
       </Section>
 
       <div className="flex items-center justify-end pt-2 border-t border-border">
-        <button
-          type="button"
-          onClick={handleReset}
-          className={cn(
-            'inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px]',
-            'text-muted-foreground hover:text-foreground hover:bg-muted transition-colors',
-          )}
-        >
-          <RotateCcw className="h-3 w-3" />
-          Reset to defaults
-        </button>
+        <Button variant="quiet" icon={<RotateCcw />} onClick={handleReset}>Reset to defaults</Button>
       </div>
     </div>
   );

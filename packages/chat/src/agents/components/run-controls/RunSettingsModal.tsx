@@ -7,6 +7,7 @@ import {
   PopoverTrigger,
 } from "@ai-matrx/design-system";
 import { RunSettingsEditor } from "./RunSettingsEditor";
+import { Button } from "@ai-matrx/design-system/controls";
 
 interface RunSettingsModalProps {
   conversationId: string;
@@ -16,13 +17,7 @@ export function RunSettingsModal({ conversationId }: RunSettingsModalProps) {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <button
-          type="button"
-          className="p-1 text-muted-foreground hover:text-foreground transition-colors shrink-0"
-          title="Test run settings"
-        >
-          <Settings2 className="w-3.5 h-3.5" />
-        </button>
+        <Button variant="quiet" icon={<Settings2 />} title="Test run settings" aria-label="Test run settings" className="shrink-0" />
       </PopoverTrigger>
 
       <PopoverContent sizing="content" align="end" className="p-3">

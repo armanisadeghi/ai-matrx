@@ -66,6 +66,7 @@ import {
   DocumentsListRail,
   type DocumentsRailSelection,
 } from "./DocumentsListRail";
+import { Button } from "@ai-matrx/design-system/controls";
 
 interface DocTab {
   conversationId: string;
@@ -561,15 +562,7 @@ export function DocumentsWorkspace({
             >
               <div className="flex shrink-0 items-center gap-0.5 border-b border-border bg-card/40 px-1 py-1">
                 {!railOpen && (
-                  <button
-                    type="button"
-                    onClick={() => setRailOpen(true)}
-                    aria-label="Show document list"
-                    title="Show document list"
-                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                  >
-                    <PanelLeftOpen className="h-4 w-4" />
-                  </button>
+                  <Button variant="quiet" icon={<PanelLeftOpen />} onClick={() => setRailOpen(true)} aria-label="Show document list" title="Show document list" className="shrink-0" />
                 )}
                 <div className="flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto scrollbar-none">
                   {tabs.map((t) => {
@@ -603,14 +596,7 @@ export function DocumentsWorkspace({
                           </span>
                         </button>
                         {t.closable && (
-                          <button
-                            type="button"
-                            onClick={() => closeTab(key)}
-                            aria-label="Close tab"
-                            className="flex h-4 w-4 items-center justify-center rounded text-muted-foreground/60 opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
+                          <Button variant="quiet" icon={<X />} onClick={() => closeTab(key)} aria-label="Close tab" className="opacity-0 group-hover:opacity-100" />
                         )}
                       </div>
                     );

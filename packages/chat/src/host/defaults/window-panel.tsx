@@ -9,6 +9,7 @@
  */
 
 import { useState, type CSSProperties, type ReactNode } from "react";
+import { Button } from "@ai-matrx/design-system/controls";
 
 export interface DefaultWindowPanelProps {
   id?: string;
@@ -69,17 +70,10 @@ export function DefaultWindowPanel({
         <div className="min-w-0 truncate">{titleNode ?? title}</div>
         <div className="flex items-center gap-1">
           {actionsRight}
-          <button
-            type="button"
-            aria-label="Close"
-            className="px-1.5"
-            onClick={() => {
+          <Button variant="quiet" aria-label="Close" onClick={() => {
               setOpen(false);
               onClose?.();
-            }}
-          >
-            ×
-          </button>
+            }}>×</Button>
         </div>
       </div>
       <div className="flex min-h-0 flex-1">
@@ -147,9 +141,7 @@ export function DefaultFullScreenOverlay({
             {t.label}
           </button>
         ))}
-        <button type="button" aria-label="Close" className="ml-auto px-1.5" onClick={onClose}>
-          ×
-        </button>
+        <Button variant="quiet" aria-label="Close" onClick={onClose} className="ml-auto">×</Button>
       </div>
       <div className={`min-h-0 flex-1 overflow-auto ${current?.className ?? ""}`}>{current?.content}</div>
     </div>

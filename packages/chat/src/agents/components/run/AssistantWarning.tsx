@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { AlertTriangle } from "lucide-react";
 import type { WarningPayload } from "@ai-matrx/agents/generated/stream-events";
+import { Button } from "@ai-matrx/design-system/controls";
 
 interface AssistantWarningProps {
   warning: WarningPayload;
@@ -27,13 +28,7 @@ export function AssistantWarning({ warning }: AssistantWarningProps) {
           {message}
         </span>
         {hasDetails && (
-          <button
-            type="button"
-            onClick={() => setShowDetails((value) => !value)}
-            className="text-muted-foreground/70 underline-offset-2 transition-colors hover:text-foreground hover:underline"
-          >
-            {showDetails ? "Hide details" : "Details"}
-          </button>
+          <Button variant="link" onClick={() => setShowDetails((value) => !value)}>{showDetails ? "Hide details" : "Details"}</Button>
         )}
       </div>
       {hasDetails && showDetails && (

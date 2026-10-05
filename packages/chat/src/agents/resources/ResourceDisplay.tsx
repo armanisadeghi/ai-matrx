@@ -153,15 +153,10 @@ export function ResourceDisplay({ resource, className }: ResourceDisplayProps) {
                         {contentDisplay}
                     </div>
                     {isTruncated && (
-                        <button
-                            onClick={(e) => {
+                        <Button variant="link" onClick={(e) => {
                                 e.stopPropagation();
                                 setIsExpanded(false);
-                            }}
-                            className="text-xs text-muted-foreground hover:text-foreground mt-1 underline"
-                        >
-                            Show less
-                        </button>
+                            }} className="mt-1">Show less</Button>
                     )}
                 </div>
             )}

@@ -4,6 +4,7 @@ import { Loader2, Bug } from "lucide-react";
 import { TapTargetButtonSolid } from "@ai-matrx/tap-target";
 import { ArrowUpTapButton } from "@ai-matrx/tap-target/buttons";
 import { MicrophoneIconButton } from "@ai-matrx/chat/host/ui-slots";
+import { Button } from "@ai-matrx/design-system/controls";
 
 interface InputActionButtonsProps {
   /** Show the voice mic button */
@@ -38,14 +39,7 @@ export function InputActionButtons({
   return (
     <div className="flex items-center">
       {onDebugClick && (
-        <button
-          type="button"
-          onClick={onDebugClick}
-          title="Debug instance state"
-          className="p-1.5 text-orange-500 hover:text-orange-600 dark:text-orange-400 dark:hover:text-orange-300 transition-colors"
-        >
-          <Bug className="w-3.5 h-3.5" />
-        </button>
+        <Button variant="quiet" icon={<Bug />} onClick={onDebugClick} title="Debug instance state" aria-label="Debug instance state" />
       )}
 
       {showVoice && (

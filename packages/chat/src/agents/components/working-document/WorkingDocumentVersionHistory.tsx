@@ -15,6 +15,7 @@ import { useWorkingDocumentVersions } from "./useWorkingDocumentVersions";
 import { useWorkingDocument } from "../../hooks/useWorkingDocument";
 import { setWorkingDocMainView } from "./workingDocumentViewStore";
 import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
+import { ChevronLeftTapButton, ChevronRightTapButton } from "@ai-matrx/tap-target/buttons";
 
 interface WorkingDocumentVersionHistoryProps {
   conversationId: string;
@@ -149,29 +150,13 @@ function DbVersionPanel({
           Version
         </span>
         <div className="flex items-center gap-1">
-          <button
-            type="button"
-            aria-label="Newer version"
-            disabled={index <= 0}
-            onClick={() => setIndex((i) => Math.max(0, i - 1))}
-            className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent disabled:opacity-40"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </button>
+          <ChevronLeftTapButton variant="transparent" ariaLabel="Newer version" disabled={index <= 0} onClick={() => setIndex((i) => Math.max(0, i - 1))} />
           <span className="min-w-[5rem] text-center text-xs tabular-nums text-foreground">
             {index + 1} / {versions.length}
           </span>
-          <button
-            type="button"
-            aria-label="Older version"
-            disabled={index >= versions.length - 1}
-            onClick={() =>
+          <ChevronRightTapButton variant="transparent" ariaLabel="Older version" disabled={index >= versions.length - 1} onClick={() =>
               setIndex((i) => Math.min(versions.length - 1, i + 1))
-            }
-            className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent disabled:opacity-40"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </button>
+            } />
         </div>
         <span className="truncate text-xs text-muted-foreground">
           {selected

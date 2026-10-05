@@ -14,6 +14,7 @@ import { Youtube } from "@ai-matrx/icons/brand";
 import { motion } from "motion/react";
 import { Resource } from "./types";
 import { VideoPublishDate } from "@ai-matrx/media/files";
+import { Button } from "@ai-matrx/design-system/controls";
 
 interface ResourceChipsProps {
     resources: Resource[];
@@ -151,16 +152,10 @@ export function ResourceChips({ resources, onRemove, onPreview }: ResourceChipsP
                                 className="ml-1 text-[9px] text-gray-600 dark:text-gray-400"
                             />
                         )}
-                        <button
-                            onClick={(e) => {
+                        <Button variant="quiet" icon={<X />} onClick={(e) => {
                                 e.stopPropagation();
                                 onRemove(index);
-                            }}
-                            className="ml-1 p-0.5 rounded-full hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
-                            aria-label={`Remove ${display.label}`}
-                        >
-                            <X className="w-2.5 h-2.5 text-gray-600 dark:text-gray-400" />
-                        </button>
+                            }} aria-label={`Remove ${display.label}`} className="ml-1" />
                     </motion.div>
                 );
             })}

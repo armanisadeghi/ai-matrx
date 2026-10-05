@@ -70,7 +70,6 @@ import {
   Circle,
   type LucideIcon,
 } from "lucide-react";
-import { Button } from "@ai-matrx/design-system";
 import { Input } from "@ai-matrx/design-system";
 import { Textarea } from "@ai-matrx/design-system";
 import { cn } from "@ai-matrx/design-system";
@@ -89,6 +88,7 @@ import { EMPTY_ASK_RESPONSE } from "../tools/schemas";
 import { getAskDraft, setAskDraft } from "../redux/ask-draft-registry";
 import { AskCardCountdown } from "./AskCardCountdown";
 import { AgentCardShell, type AccentTone } from "./AgentCardShell";
+import { Button } from "@ai-matrx/design-system/controls";
 
 /** Labels for the one primary action a body shows: `send` when it has content, `skip` when not. */
 export interface AskActionLabels {
@@ -319,13 +319,7 @@ export function AskCard({ ask }: AskCardProps) {
           )}
           {showExtras && (
             <div>
-              <button
-                type="button"
-                onClick={() => setWriteMode(true)}
-                className="text-[11px] text-muted-foreground underline underline-offset-2 hover:text-foreground"
-              >
-                Write message instead
-              </button>
+              <Button variant="link" onClick={() => setWriteMode(true)}>Write message instead</Button>
             </div>
           )}
         </div>
@@ -367,15 +361,13 @@ export function WriteInsteadBody({
       />
       <div className="flex items-center gap-2">
         <Button
-          size="sm"
           variant={hasText ? "default" : "outline"}
           onClick={hasText ? onSend : onSkip}
-          className="gap-1.5"
         >
           {hasText && <Send className="size-3.5" />}
           {hasText ? "Send" : "Skip"}
         </Button>
-        <Button size="sm" variant="ghost" onClick={onBack}>
+        <Button variant="quiet" onClick={onBack}>
           Back to questions
         </Button>
       </div>
@@ -431,7 +423,6 @@ function PrimaryAction({
 }) {
   return (
     <Button
-      size="sm"
       variant={hasContent ? "default" : "outline"}
       onClick={hasContent ? onSend : onSkip}
       className={cn("gap-1.5", className)}
@@ -513,8 +504,7 @@ function ConfirmBody({
             onSkip={onSkip}
           />
           <Button
-            size="sm"
-            variant="ghost"
+            variant="quiet"
             onClick={() => {
               setOtherMode(false);
               setOtherText("");
@@ -529,32 +519,26 @@ function ConfirmBody({
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <Button
-        size="sm"
+      <Button variant="primary"
         onClick={() => onAnswer({ ...EMPTY_ASK_RESPONSE, confirmed: true })}
       >
         Yes
       </Button>
       <Button
-        size="sm"
         variant="outline"
         onClick={() => onAnswer({ ...EMPTY_ASK_RESPONSE, confirmed: false })}
       >
         No
       </Button>
       <Button
-        size="sm"
-        variant="ghost"
+        variant="quiet"
         onClick={() => setOtherMode(true)}
-        className="text-muted-foreground hover:text-foreground"
       >
         Other…
       </Button>
       <Button
-        size="sm"
-        variant="ghost"
-        onClick={onSkip}
-        className="ml-auto text-muted-foreground hover:text-foreground"
+        variant="quiet"
+        onClick={onSkip} className="ml-auto"
       >
         {labels.skip}
       </Button>
@@ -805,7 +789,6 @@ function NotifyBody({ ask, onAnswer, onDraft }: AskBodyProps) {
           {(ask.actions ?? []).map((a) => (
             <Button
               key={a}
-              size="sm"
               variant={ask.level === "error" ? "destructive" : "secondary"}
               onClick={() =>
                 onAnswer({ ...EMPTY_ASK_RESPONSE, action: a, freeform: null })
@@ -815,17 +798,14 @@ function NotifyBody({ ask, onAnswer, onDraft }: AskBodyProps) {
             </Button>
           ))}
           <Button
-            size="sm"
             variant="outline"
             onClick={() => setShowOther(true)}
           >
             Other…
           </Button>
           <Button
-            size="sm"
-            variant="ghost"
-            onClick={dismiss}
-            className="ml-auto text-muted-foreground hover:text-foreground"
+            variant="quiet"
+            onClick={dismiss} className="ml-auto"
           >
             Dismiss
           </Button>
@@ -852,8 +832,7 @@ function NotifyBody({ ask, onAnswer, onDraft }: AskBodyProps) {
               onSkip={dismiss}
             />
             <Button
-              size="sm"
-              variant="ghost"
+              variant="quiet"
               onClick={() => {
                 setShowOther(false);
                 setFreeform("");
@@ -890,8 +869,7 @@ function PlanApprovalBody({ ask, onAnswer, onSkip, labels }: AskBodyProps) {
         </div>
       )}
       <div className="flex gap-2">
-        <Button
-          size="sm"
+        <Button variant="primary"
           onClick={() =>
             onAnswer({
               ...EMPTY_ASK_RESPONSE,
@@ -899,13 +877,11 @@ function PlanApprovalBody({ ask, onAnswer, onSkip, labels }: AskBodyProps) {
               confirmed: true,
             })
           }
-          className="gap-1.5"
         >
           <CheckCheck className="size-3.5" />
           Approve
         </Button>
         <Button
-          size="sm"
           variant="outline"
           onClick={() =>
             onAnswer({
@@ -914,16 +890,13 @@ function PlanApprovalBody({ ask, onAnswer, onSkip, labels }: AskBodyProps) {
               confirmed: false,
             })
           }
-          className="gap-1.5"
         >
           <Circle className="size-3.5" />
           Reject
         </Button>
         <Button
-          size="sm"
-          variant="ghost"
-          onClick={onSkip}
-          className="ml-auto text-muted-foreground hover:text-foreground"
+          variant="quiet"
+          onClick={onSkip} className="ml-auto"
         >
           {labels.skip}
         </Button>

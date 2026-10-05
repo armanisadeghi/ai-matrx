@@ -16,7 +16,6 @@
 
 import { useMemo, useState, type ReactNode } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { Button } from "@ai-matrx/design-system";
 import { Textarea } from "@ai-matrx/design-system";
 import { cn } from "@ai-matrx/design-system";
 import type { PendingAsk } from "../redux/pending-asks.slice";
@@ -31,6 +30,7 @@ import {
   presentation,
   type AskActionLabels,
 } from "./AskCard";
+import { Button } from "@ai-matrx/design-system/controls";
 
 const STEP_LABELS: AskActionLabels = { send: "Next", skip: "Skip" };
 const FINAL_LABELS: AskActionLabels = {
@@ -225,10 +225,8 @@ export function AskWizard({ asks, onSend, busy = false, notice }: AskWizardProps
           <div className="flex items-center gap-2 border-t border-border/60 pt-2.5">
             {clampedActive > 0 ? (
               <Button
-                size="sm"
-                variant="ghost"
+                variant="quiet"
                 onClick={() => setActive((i) => Math.max(0, i - 1))}
-                className="gap-1 px-2 text-muted-foreground hover:text-foreground"
               >
                 <ChevronLeft className="size-4" />
                 Back
@@ -265,10 +263,8 @@ export function AskWizard({ asks, onSend, busy = false, notice }: AskWizardProps
 
             {!isFinal ? (
               <Button
-                size="sm"
-                variant="ghost"
+                variant="quiet"
                 onClick={() => setActive((i) => Math.min(total - 1, i + 1))}
-                className="gap-1 px-2 text-muted-foreground hover:text-foreground"
               >
                 Next
                 <ChevronRight className="size-4" />
@@ -303,13 +299,7 @@ export function AskWizard({ asks, onSend, busy = false, notice }: AskWizardProps
                 ? `${answeredCount} of ${total} answered — sending on the button above`
                 : `${answeredCount} of ${total} answered`}
             </span>
-            <button
-              type="button"
-              onClick={() => setWriteMode(true)}
-              className="ml-auto text-[11px] text-muted-foreground underline underline-offset-2 hover:text-foreground"
-            >
-              Write message instead
-            </button>
+            <Button variant="link" onClick={() => setWriteMode(true)} className="ml-auto">Write message instead</Button>
           </div>
         </div>
       )}

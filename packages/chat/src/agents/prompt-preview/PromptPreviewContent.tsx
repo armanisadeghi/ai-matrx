@@ -189,13 +189,7 @@ function Section({
       <div className="flex items-center justify-between">
         <span className="text-xs font-semibold text-foreground">{title}</span>
         {onCopy ? (
-          <button
-            type="button"
-            onClick={onCopy}
-            className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
-          >
-            <Copy className="h-3 w-3" /> Copy
-          </button>
+          <Button variant="quiet" icon={<Copy />} onClick={onCopy}>Copy</Button>
         ) : null}
       </div>
       {children}

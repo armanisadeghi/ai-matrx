@@ -37,6 +37,7 @@ import {
   type AgentPageMode,
   type ModeOption,
 } from "./AgentModeController";
+import { Button } from "@ai-matrx/design-system/controls";
 
 // Modes that stay visible directly on mobile — everything else goes in the
 // "More" sheet. Per UX request: only Build + Run are prominent; the rest are
@@ -148,13 +149,7 @@ export function AgentHeaderMobile({
             activeAgentId={agentId}
             label={agentName?.trim() || "Select agent"}
             triggerSlot={
-              <button
-                className="flex min-w-0 items-center gap-1.5 rounded-full px-1.5 py-1 text-sm font-medium text-foreground transition-colors hover:bg-[var(--matrx-glass-bg-active)]"
-                aria-label="Switch agent"
-              >
-                <Webhook className="h-3.5 w-3.5 shrink-0 text-primary" />
-                <span className="min-w-0 truncate">{agentName?.trim() || "Select agent"}</span>
-              </button>
+              <Button variant="quiet" icon={<Webhook />} aria-label="Switch agent" className="min-w-0">{agentName?.trim() || "Select agent"}</Button>
             }
           />
           <div className="flex-1" />
@@ -253,12 +248,7 @@ export function AgentHeaderMobile({
         <BottomSheetHeader
           title="Switch mode"
           trailing={
-            <button
-              onClick={() => setMoreOpen(false)}
-              className="text-primary active:opacity-70 min-h-[44px] px-1 text-[15px]"
-            >
-              Done
-            </button>
+            <Button variant="quiet" tone="primary" onClick={() => setMoreOpen(false)}>Done</Button>
           }
         />
         <BottomSheetBody>

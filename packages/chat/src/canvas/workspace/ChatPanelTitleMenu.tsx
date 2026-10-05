@@ -20,6 +20,7 @@ import { selectConversationTitle } from "../../agents/redux/execution-system/con
 import { selectConversationListItemById } from "../../agents/redux/conversation-list/conversation-list.selectors";
 import { conversationRenameOpener } from "../../agents/components/conversation-actions/rename/conversationRenameOpener";
 import { conversationTitleText } from "../../utils/content-ir/surfaces/kind-text-label";
+import { Button } from "@ai-matrx/design-system/controls";
 
 /** The chat's real title (null until it has one) — the conversation's, else its list row's. */
 function useChatRealTitle(conversationId: string | null): string | null {
@@ -51,13 +52,7 @@ export function ChatPanelTitleMenu({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button
-          type="button"
-          className="matrx-glyph-trim flex h-7 min-w-0 items-center gap-1 rounded-md px-1.5 text-sm font-medium text-foreground hover:bg-accent"
-        >
-          <span className="min-w-0 truncate">{title}</span>
-          <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
-        </button>
+        <Button variant="quiet" iconEnd={<ChevronDown />} className="min-w-0">{title}</Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-56">
         <DropdownMenuItem onSelect={onNewChat}>

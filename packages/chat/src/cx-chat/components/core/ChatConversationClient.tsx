@@ -33,6 +33,7 @@ import { ProposedDirectivesZone } from "@ai-matrx/chat/host/ui-slots";
 import { ServerOperationBanner } from "../../../agents/runtime-reconnect/ServerOperationBanner";
 import { pushAppHref } from "@ai-matrx/chat/host/ui-slots";
 import { replaceAddressWithoutNavigating } from "@ai-matrx/chat/ui/addressWithoutNavigating";
+import { Button } from "@ai-matrx/design-system/controls";
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 
@@ -192,18 +193,7 @@ export default function ChatConversationClient({
           {showScrollDown && (
             <div className="absolute bottom-4 left-0 right-0 z-10 pointer-events-none flex justify-center">
               <div className="w-full max-w-[800px] flex justify-end px-4">
-                <button
-                  type="button"
-                  onClick={scrollToBottom}
-                  className="pointer-events-auto flex items-center justify-center w-8 h-8 rounded-full
-                    matrx-glass-thin-border shadow-lg
-                    text-muted-foreground hover:text-foreground
-                    transition-all duration-200 ease-out
-                    animate-in fade-in slide-in-from-bottom-2"
-                  title="Scroll to bottom"
-                >
-                  <ArrowDown className="w-4 h-4" />
-                </button>
+                <Button variant="quiet" icon={<ArrowDown />} onClick={scrollToBottom} title="Scroll to bottom" aria-label="Scroll to bottom" />
               </div>
             </div>
           )}

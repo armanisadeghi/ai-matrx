@@ -37,6 +37,7 @@ import { AskCard } from "./AskCard";
 import { ApprovalCard } from "./ApprovalCard";
 import { BatchAskCard } from "./BatchAskCard";
 import { GmailReviewCard } from "../../../host/ui-slots";
+import { Button } from "@ai-matrx/design-system/controls";
 
 interface PendingAsksZoneProps {
   conversationId: string;
@@ -178,14 +179,7 @@ function MobileAsksDrawer({
         <BottomSheetHeader
           title={label}
           trailing={
-            <button
-              type="button"
-              onClick={() => setOpen(false)}
-              className="grid size-11 shrink-0 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-              aria-label="Minimize — keep questions for later"
-            >
-              <ChevronDown className="size-5" />
-            </button>
+            <Button variant="quiet" icon={<ChevronDown />} onClick={() => setOpen(false)} aria-label="Minimize — keep questions for later" className="shrink-0" />
           }
         />
         <BottomSheetBody className="px-3 pt-1">

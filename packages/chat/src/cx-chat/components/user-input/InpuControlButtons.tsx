@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronLeft } from "lucide-react";
-import { Chip, ChipSet } from "@ai-matrx/design-system/controls";
+import { Chip, ChipSet, Button } from "@ai-matrx/design-system/controls";
 import { useResponseModeAgents } from "../agent/useResponseModeAgents";
 
 // ── Response Mode Buttons ─────────────────────────────────────────────────────
@@ -68,13 +68,6 @@ export function BackToStartButton({
   agentName,
 }: BackToStartButtonProps) {
   return (
-    <button
-      onClick={onBack}
-      className="flex items-center gap-1 px-2 py-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent/60 transition-colors text-xs"
-      title="Back to agent selection"
-    >
-      <ChevronLeft size={14} />
-      <span className="hidden md:inline">{agentName || "Back"}</span>
-    </button>
+    <Button variant="quiet" icon={<ChevronLeft />} onClick={onBack} title="Back to agent selection">{agentName || "Back"}</Button>
   );
 }

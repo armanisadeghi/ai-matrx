@@ -27,8 +27,7 @@ import {
   Plus,
   ChevronRight,
 } from "lucide-react";
-import { Button } from "@ai-matrx/design-system";
-import { Input } from "@ai-matrx/design-system/controls";
+import { Input, Button } from "@ai-matrx/design-system/controls";
 import { Checkbox } from "@ai-matrx/chat/ui/checkbox";
 import { cn } from "@ai-matrx/design-system";
 import { useAppDispatch, useAppSelector } from "../../../../store/hooks";
@@ -205,8 +204,7 @@ function PlanSection({ conversationId }: { conversationId: string }) {
         )}
         {plan.status === "proposed" && (
           <div className="flex gap-2 mt-1">
-            <Button
-              size="sm"
+            <Button variant="primary"
               onClick={async () => {
                 await setPlanStatus(plan.id, "approved");
               }}
@@ -214,7 +212,6 @@ function PlanSection({ conversationId }: { conversationId: string }) {
               Approve
             </Button>
             <Button
-              size="sm"
               variant="outline"
               onClick={async () => {
                 await setPlanStatus(plan.id, "rejected");
@@ -281,8 +278,7 @@ function TasksSection({ conversationId }: { conversationId: string }) {
             }}
           />
           <Button
-            size="sm"
-            variant="ghost"
+            variant="quiet"
             onClick={add}
             disabled={!draft.trim()}
           >
@@ -357,15 +353,7 @@ function TaskRow({ task }: { task: CxAgentTaskRow }) {
           </button>
         )}
       </div>
-      <button
-        type="button"
-        onClick={remove}
-        className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0 text-muted-foreground hover:text-destructive"
-        title="Remove"
-        aria-label={`Remove "${task.title}"`}
-      >
-        <Trash2 className="w-3.5 h-3.5" />
-      </button>
+      <Button variant="quiet" icon={<Trash2 />} onClick={remove} title="Remove" aria-label={`Remove "${task.title}"`} className="opacity-0 group-hover:opacity-100 shrink-0" />
     </div>
   );
 }
@@ -424,8 +412,7 @@ function TodosSection({ conversationId }: { conversationId: string }) {
             }}
           />
           <Button
-            size="sm"
-            variant="ghost"
+            variant="quiet"
             onClick={add}
             disabled={!draft.trim()}
           >
@@ -465,9 +452,7 @@ function TodoRow({ todo }: { todo: CxUserTodoRow }) {
           </div>
         )}
       </div>
-      <button
-        type="button"
-        onClick={async () => {
+      <Button variant="quiet" icon={<Trash2 />} onClick={async () => {
           const yes = await confirmDialog({
             title: "Remove todo?",
             description: todo.title,
@@ -476,12 +461,7 @@ function TodoRow({ todo }: { todo: CxUserTodoRow }) {
           });
           if (!yes) return;
           await removeUserTodo(todo.id);
-        }}
-        className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0 text-muted-foreground hover:text-destructive"
-        title="Remove"
-      >
-        <Trash2 className="w-3.5 h-3.5" />
-      </button>
+        }} title="Remove" aria-label="Remove" className="opacity-0 group-hover:opacity-100 shrink-0" />
     </div>
   );
 }

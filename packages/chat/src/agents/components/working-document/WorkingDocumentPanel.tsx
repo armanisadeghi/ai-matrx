@@ -21,7 +21,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@ai-matrx/design-system";
-import { Button } from "@ai-matrx/design-system";
 import { cn } from "@ai-matrx/design-system";
 import { NotePickerPopover } from "../../../host/ui-slots";
 import { useWorkingDocument } from "../../hooks/useWorkingDocument";
@@ -63,6 +62,7 @@ import {
   useWorkingDocViewState,
 } from "./workingDocumentViewStore";
 import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
+import { Button } from "@ai-matrx/design-system/controls";
 
 /**
  * Stable RichDocument action-surface id for a conversation's document. Shared
@@ -333,15 +333,7 @@ export function WorkingDocumentPanel({
                 />
               </div>
               {showOpenInWindow && (
-                <button
-                  type="button"
-                  onClick={openInCanvas}
-                  aria-label="Open in Canvas"
-                  title="Open in Canvas"
-                  className="flex h-8 w-8 items-center justify-center rounded-full text-foreground transition-colors hover:bg-accent"
-                >
-                  <Maximize2 className="h-4 w-4" />
-                </button>
+                <Button variant="quiet" icon={<Maximize2 />} onClick={openInCanvas} aria-label="Open in Canvas" title="Open in Canvas" />
               )}
             </>
           )}
@@ -420,15 +412,7 @@ export function WorkingDocumentPanel({
                     : "Auto-saved"}
           </span>
           {isBound && (
-            <button
-              type="button"
-              onClick={unbind}
-              aria-label="Unbind note (revert to this conversation's document)"
-              title="Unbind note"
-              className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
+            <Button variant="quiet" icon={<X />} onClick={unbind} aria-label="Unbind note (revert to this conversation's document)" title="Unbind note" className="shrink-0" />
           )}
           {!isScratch && (
             <>
@@ -443,12 +427,7 @@ export function WorkingDocumentPanel({
                   }}
                   align="end"
                   trigger={
-                    <button
-                      type="button"
-                      className="shrink-0 rounded-full border border-border px-2 py-0.5 text-[11px] font-medium text-foreground transition-colors hover:bg-accent"
-                    >
-                      {isBound ? "Change" : "Bind note"}
-                    </button>
+                    <Button variant="outline" className="shrink-0">{isBound ? "Change" : "Bind note"}</Button>
                   }
                 />
               )}
@@ -460,12 +439,7 @@ export function WorkingDocumentPanel({
                 }
                 onSelect={linkToDocument}
                 trigger={
-                  <button
-                    type="button"
-                    className="shrink-0 rounded-full border border-border px-2 py-0.5 text-[11px] font-medium text-foreground transition-colors hover:bg-accent"
-                  >
-                    Link
-                  </button>
+                  <Button variant="outline" className="shrink-0">Link</Button>
                 }
               />
               {/* Share the durable document row (users / orgs / public / link).
@@ -510,20 +484,8 @@ export function WorkingDocumentPanel({
                   is preserved below — choose which version to keep.
                 </span>
                 <div className="flex shrink-0 gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => resolveConflict("keep-mine")}
-                    className="rounded-full bg-primary px-3 py-1 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary-hover"
-                  >
-                    Keep mine
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => resolveConflict("take-agent")}
-                    className="rounded-full border border-border px-3 py-1 text-xs font-medium text-foreground transition-colors hover:bg-accent"
-                  >
-                    Use agent&apos;s version
-                  </button>
+                  <Button variant="primary" onClick={() => resolveConflict("keep-mine")}>Keep mine</Button>
+                  <Button variant="outline" onClick={() => resolveConflict("take-agent")}>Use agent&apos;s version</Button>
                 </div>
               </div>
             </div>
@@ -580,13 +542,7 @@ export function WorkingDocumentPanel({
               ? "Scratchpad is off; turn it on for notes the agent only reads"
               : "Working document is off; turn it on to write with the agent"}
           </p>
-          <button
-            type="button"
-            onClick={() => setEnabled(true)}
-            className="rounded-full bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary-hover"
-          >
-            Enable {docNoun}
-          </button>
+          <Button variant="primary" onClick={() => setEnabled(true)}>Enable {docNoun}</Button>
         </div>
       )}
 
@@ -606,7 +562,7 @@ export function WorkingDocumentPanel({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2 sm:gap-2">
-            <Button variant="ghost" onClick={() => setPendingNoteId(null)}>
+            <Button variant="quiet" onClick={() => setPendingNoteId(null)}>
               Cancel
             </Button>
             <Button
@@ -618,7 +574,7 @@ export function WorkingDocumentPanel({
             >
               Replace
             </Button>
-            <Button
+            <Button variant="primary"
               onClick={() => {
                 if (pendingNoteId) bindToNote(pendingNoteId, "append");
                 setPendingNoteId(null);

@@ -46,6 +46,7 @@ import {
   type SurfaceOption,
 } from "../../../surfaces/services/surfaces.service";
 import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
+import { Button } from "@ai-matrx/design-system/controls";
 
 // Module-level cache — the surface catalog (~100 rows) changes rarely, so we
 // fetch it once per session instead of on every panel open.
@@ -246,13 +247,7 @@ export function SurfaceSimulatorSelect({
         <div className="flex min-w-0 items-center gap-1">
           <div className="min-w-0 flex-1">{picker}</div>
           {override && (
-            <button
-              type="button"
-              onClick={() => setOverride(null)}
-              className="shrink-0 text-[10px] text-muted-foreground hover:text-destructive"
-            >
-              Clear
-            </button>
+            <Button variant="quiet" onClick={() => setOverride(null)} className="shrink-0">Clear</Button>
           )}
         </div>
       </div>
@@ -266,13 +261,7 @@ export function SurfaceSimulatorSelect({
           Surface Simulator
         </Label>
         {override && (
-          <button
-            type="button"
-            onClick={() => setOverride(null)}
-            className="flex items-center gap-0.5 text-[10px] text-muted-foreground hover:text-destructive"
-          >
-            <X className="h-3 w-3" /> clear
-          </button>
+          <Button variant="quiet" icon={<X />} onClick={() => setOverride(null)}>clear</Button>
         )}
       </div>
       {picker}

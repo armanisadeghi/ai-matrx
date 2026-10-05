@@ -70,6 +70,7 @@ import {
   composerKeyIntent,
   intentTakesTheKey,
 } from "@ai-matrx/chat/ui/composer/composerSubmit";
+import { Button } from "@ai-matrx/design-system/controls";
 // PromptSettings / PromptVariable replaced with agents equivalents.
 // PromptSettings was @/features/prompts/types/core — model_id added as it isn't in LLMParams.
 type PromptSettings = LLMParams & { model_id?: string };
@@ -611,14 +612,7 @@ export function ConversationInput({
             <span className="text-[10px] font-semibold text-red-400 uppercase tracking-wide">
               Debug
             </span>
-            <button
-              onClick={openDebugWindow}
-              className="flex items-center gap-1 px-2 py-0.5 bg-red-600 hover:bg-red-700 text-white text-[10px] font-medium rounded transition-colors"
-              title="Open debug modal"
-            >
-              <Database className="w-2.5 h-2.5" />
-              <span>Session State</span>
-            </button>
+            <Button variant="quiet" icon={<Database />} onClick={openDebugWindow} title="Open debug modal">Session State</Button>
             <span className="text-[9px] text-red-400/70 font-mono truncate">
               {sessionId.slice(0, 8)}…
             </span>

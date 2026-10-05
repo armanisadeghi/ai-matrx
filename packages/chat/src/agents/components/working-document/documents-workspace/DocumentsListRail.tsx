@@ -34,6 +34,7 @@ import {
   type WorkingDocumentKind,
 } from "../../../redux/execution-system/instance-working-document/cx-working-document.service";
 import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
+import { Button } from "@ai-matrx/design-system/controls";
 
 export interface DocumentsRailSelection {
   conversationId: string;
@@ -132,15 +133,7 @@ export function DocumentsListRail({
           Documents
         </span>
         {onCollapse && (
-          <button
-            type="button"
-            onClick={onCollapse}
-            aria-label="Collapse list"
-            title="Collapse list"
-            className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-          >
-            <PanelLeftClose className="h-3.5 w-3.5" />
-          </button>
+          <Button variant="quiet" icon={<PanelLeftClose />} onClick={onCollapse} aria-label="Collapse list" title="Collapse list" />
         )}
       </div>
 

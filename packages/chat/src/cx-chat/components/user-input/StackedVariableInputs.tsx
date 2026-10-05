@@ -16,6 +16,7 @@ import {
   selectUserVariableValues,
 } from "../../../agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
 import { setUserVariableValue } from "../../../agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
+import { Button } from "@ai-matrx/design-system/controls";
 
 // ============================================================================
 // TYPES
@@ -178,15 +179,7 @@ export function StackedVariableInputs({
                   data-variable-index={index}
                   disabled={disabled}
                 />
-                <button
-                  type="button"
-                  onClick={() => handleExpandedVariableChange(variable.name)}
-                  className="flex-shrink-0 text-muted-foreground hover:text-foreground transition-colors"
-                  disabled={disabled}
-                  title="Expand to full editor"
-                >
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </button>
+                <Button variant="quiet" icon={<ChevronRight />} onClick={() => handleExpandedVariableChange(variable.name)} disabled={disabled} title="Expand to full editor" aria-label="Expand to full editor" />
               </div>
             )}
           </div>

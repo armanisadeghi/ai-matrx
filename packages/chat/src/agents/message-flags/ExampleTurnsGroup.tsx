@@ -8,6 +8,7 @@
 
 import { useState, type ReactNode } from "react";
 import { ChevronRight } from "lucide-react";
+import { Button } from "@ai-matrx/design-system/controls";
 
 export function ExampleTurnsGroup({
   count,
@@ -21,15 +22,7 @@ export function ExampleTurnsGroup({
   const pairs = Math.floor(count / 2);
   return (
     <div className="my-1" data-testid="runner-example-run">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        className="flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-muted-foreground hover:bg-muted"
-      >
-        <ChevronRight className={`h-3.5 w-3.5 transition-transform ${open ? "rotate-90" : ""}`} />
-        Examples · {pairs > 0 ? `${pairs} ${pairs === 1 ? "pair" : "pairs"}` : `${count} turns`}
-      </button>
+      <Button variant="quiet" icon={<ChevronRight />} onClick={() => setOpen((v) => !v)} aria-expanded={open}>Examples · {pairs > 0 ? `${pairs} ${pairs === 1 ? "pair" : "pairs"}` : `${count} turns`}</Button>
       {open && <div className="mt-1 border-l-2 border-border pl-2 opacity-80">{children}</div>}
     </div>
   );

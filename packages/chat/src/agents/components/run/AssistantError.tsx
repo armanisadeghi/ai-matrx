@@ -19,6 +19,7 @@ import { Link } from "../../../host/navigation";
 import { AlertCircle, RotateCw, Loader2, ArrowRight } from "lucide-react";
 import { bindingUnresolvedFailure } from "./friendlyStreamError";
 import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
+import { Button } from "@ai-matrx/design-system/controls";
 
 /**
  * Structured backend refusals that have a ONE-CLICK way forward. A failure the
@@ -191,13 +192,7 @@ export function AssistantError({
         )}
 
         {hasDetails && (
-          <button
-            type="button"
-            onClick={() => setShowDetails((v) => !v)}
-            className="text-muted-foreground/70 underline-offset-2 transition-colors hover:text-foreground hover:underline"
-          >
-            {showDetails ? "Hide details" : "Details"}
-          </button>
+          <Button variant="link" onClick={() => setShowDetails((v) => !v)}>{showDetails ? "Hide details" : "Details"}</Button>
         )}
       </div>
 

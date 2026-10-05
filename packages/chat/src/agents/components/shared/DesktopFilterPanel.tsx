@@ -184,12 +184,7 @@ function MultiSelectChips({
       )}
 
       {hasFilter && (
-        <button
-          onClick={() => onChange([])}
-          className="text-xs text-primary hover:underline"
-        >
-          Clear filter
-        </button>
+        <Button variant="quiet" tone="primary" onClick={() => onChange([])}>Clear filter</Button>
       )}
 
       <div className="max-h-[180px] overflow-y-auto">
@@ -316,13 +311,7 @@ export function DesktopFilterPanel({
         <div className="flex items-center justify-between px-4 py-2.5 border-b border-border shrink-0">
           <span className="text-sm font-semibold">Filters & Sort</span>
           {activeFilterCount > 0 && (
-            <button
-              onClick={resetFilters}
-              className="flex items-center gap-1 text-xs text-primary hover:text-primary/80"
-            >
-              <RotateCcw className="h-3 w-3" />
-              Reset all
-            </button>
+            <Button variant="quiet" tone="primary" icon={<RotateCcw />} onClick={resetFilters}>Reset all</Button>
           )}
         </div>
         <div className="overflow-y-auto min-h-0 flex-1 p-4 space-y-5">

@@ -32,10 +32,9 @@
  * stored binding on a binding screen.
  */
 
-import { Badge } from "@ai-matrx/design-system/controls";
+import { Badge, Button } from "@ai-matrx/design-system/controls";
 import { ConfigurationTable, ConfigurationTableRow, FieldHelp } from "@ai-matrx/chat/host/ui-slots";
 import { useEffect, useRef, useState } from "react";
-import { Button } from "@ai-matrx/design-system";
 import { AlertTriangle, CircleSlash, RotateCcw } from "lucide-react";
 import { useAppDispatch, useAppSelector, useAppStore } from "../../../store/hooks";
 import {
@@ -383,7 +382,6 @@ export function RunConfigOverrides({
             {modelDetailError}
           </FieldHelp>
           <Button
-            size="sm"
             variant="outline"
             onClick={() => {
               dispatch(retryModelDetail(effectiveModelId));
@@ -692,17 +690,7 @@ function OverrideRow({
   const touched = isOverridden || isRemoved;
   // The structured (table) rows' clear control.
   const clearButton = (
-    <button
-      type="button"
-      onClick={onClear}
-      disabled={disabled || isRemoved}
-      aria-label={`Clear ${row.label} to not set`}
-      title="Clear to not set"
-      data-testid={`run-override-clear-${row.key}`}
-      className="shrink-0 rounded p-2 text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40"
-    >
-      <CircleSlash className="size-3.5" />
-    </button>
+    <Button variant="quiet" icon={<CircleSlash />} onClick={onClear} disabled={disabled || isRemoved} aria-label={`Clear ${row.label} to not set`} title="Clear to not set" data-testid={`run-override-clear-${row.key}`} className="shrink-0" />
   );
   // buildSettingsRows only returns rows for keys the model declares a
   // control for (see settings-catalogue.ts) — control is never null here,
@@ -744,15 +732,7 @@ function OverrideRow({
                 />
               </div>
               {clearButton}
-              <button
-                type="button"
-                onClick={onReset}
-                disabled={disabled || !touched}
-                aria-label={`Reset ${row.label}`}
-                className="shrink-0 rounded p-2 text-muted-foreground disabled:opacity-40"
-              >
-                <RotateCcw className="size-3.5" />
-              </button>
+              <Button variant="quiet" icon={<RotateCcw />} onClick={onReset} disabled={disabled || !touched} aria-label={`Reset ${row.label}`} className="shrink-0" />
             </div>
           ),
         }}

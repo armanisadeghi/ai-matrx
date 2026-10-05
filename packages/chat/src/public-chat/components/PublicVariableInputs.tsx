@@ -12,6 +12,7 @@ import { variableRunLabel } from "@ai-matrx/agents";
 import { VariableInputComponent } from "../../agents/components/inputs/input-components/VariableInputComponent";
 import type { VariableDefinition as PromptVariable } from "../../agents/types/agent-definition.types";
 import { enterSendsHere } from "@ai-matrx/chat/ui/composer/composerSubmit";
+import { Button } from "@ai-matrx/design-system/controls";
 
 // ============================================================================
 // TYPES
@@ -193,15 +194,7 @@ export function PublicVariableInputs({
                   data-variable-index={index}
                   disabled={disabled}
                 />
-                <button
-                  type="button"
-                  onClick={() => handleExpandedVariableChange(variable.name)}
-                  className="flex-shrink-0 text-muted-foreground hover:text-foreground transition-colors"
-                  disabled={disabled}
-                  title="Expand to full editor"
-                >
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </button>
+                <Button variant="quiet" icon={<ChevronRight />} onClick={() => handleExpandedVariableChange(variable.name)} disabled={disabled} title="Expand to full editor" aria-label="Expand to full editor" />
               </div>
             )}
           </div>

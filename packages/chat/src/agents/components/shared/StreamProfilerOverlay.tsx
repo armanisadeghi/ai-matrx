@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Activity, X, Copy } from "lucide-react";
 import { cn } from "@ai-matrx/design-system";
+import { Button } from "@ai-matrx/design-system/controls";
 
 /**
  * Shape written by `utils/stream-profiler.ts` (`StreamProfiler.stopAndReport`)
@@ -49,13 +50,7 @@ export function StreamProfilerOverlay() {
 
   if (!isOpen) {
     return (
-      <button
-        onClick={() => setIsOpen(true)}
-        className="fixed top-4 right-4 z-50 flex items-center justify-center p-2 rounded-full bg-slate-900/80 text-green-400 shadow-xl hover:bg-slate-900 transition-colors border border-green-500/30 backdrop-blur-md"
-        title="View Stream Performance Metrics"
-      >
-        <Activity className="w-5 h-5" />
-      </button>
+      <Button variant="outline" icon={<Activity />} onClick={() => setIsOpen(true)} title="View Stream Performance Metrics" aria-label="View Stream Performance Metrics" className="fixed top-4 right-4 z-50" />
     );
   }
 
@@ -79,13 +74,7 @@ export function StreamProfilerOverlay() {
         ) : (
           reports.map((r, i) => (
              <div key={r.RequestId || i} className="bg-slate-900 border border-slate-800 rounded-lg p-3 space-y-2 relative group">
-                <button 
-                  onClick={() => navigator.clipboard.writeText(JSON.stringify(r, null, 2))}
-                  className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 text-slate-400 hover:text-white"
-                  title="Copy JSON"
-                >
-                  <Copy className="w-3 h-3" />
-                </button>
+                <Button variant="quiet" icon={<Copy />} onClick={() => navigator.clipboard.writeText(JSON.stringify(r, null, 2))} title="Copy JSON" aria-label="Copy JSON" className="absolute top-2 right-2 opacity-0 group-hover:opacity-100" />
                 <div className="text-blue-400 font-bold mb-2">{r.Test}</div>
                 <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
                   <div className="text-slate-500">Client Duration:</div>
@@ -137,12 +126,7 @@ export function StreamProfilerOverlay() {
       {reports.length > 0 && (
          <div className="p-3 border-t border-slate-800 bg-slate-900 border-b flex justify-between items-center text-xs">
            <span className="text-slate-500">Records: {reports.length}</span>
-           <button
-             onClick={() => { (window as WindowWithStreamReports).__STREAM_REPORTS__ = []; setReports([]); }}
-             className="text-red-400 hover:text-red-300"
-           >
-             Clear History
-           </button>
+           <Button variant="quiet" onClick={() => { (window as WindowWithStreamReports).__STREAM_REPORTS__ = []; setReports([]); }}>Clear History</Button>
          </div>
       )}
     </div>

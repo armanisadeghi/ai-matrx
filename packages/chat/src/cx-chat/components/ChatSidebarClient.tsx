@@ -32,6 +32,7 @@ import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { selectAgentById } from "../../agents/redux/agent-definition/selectors";
 import { initializeChatAgents } from "../../agents/redux/agent-definition/thunks";
 import { pushAppHref } from "@ai-matrx/chat/host/ui-slots";
+import { Button } from "@ai-matrx/design-system/controls";
 
 // ============================================================================
 // NAVIGATION HELPERS
@@ -321,16 +322,7 @@ export function ChatDesktopHeader() {
           ariaLabel="Toggle sidebar"
           className="text-muted-foreground"
         />
-        <button
-          onClick={() => setIsPickerOpen(true)}
-          className="flex items-center gap-1 min-w-0 px-1.5 py-1 rounded-md hover:bg-accent/50 transition-colors"
-          title={`Active agent: ${displayName}`}
-        >
-          <span className="text-xs font-medium text-foreground truncate max-w-[140px]">
-            {displayName}
-          </span>
-          <ChevronDown className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-        </button>
+        <Button variant="quiet" iconEnd={<ChevronDown />} onClick={() => setIsPickerOpen(true)} title={`Active agent: ${displayName}`} className="min-w-0">{displayName}</Button>
         <span className="ml-auto" />
         <PlusTapButton onClick={handleNewChat} ariaLabel="New chat" />
       </div>

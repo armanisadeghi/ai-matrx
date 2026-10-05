@@ -728,13 +728,7 @@ function GuidedVariableInputsBody({
           <h3 className="flex-1 text-sm font-medium text-foreground truncate min-w-0">
             {formattedName}
           </h3>
-          <button
-            type="button"
-            onClick={handleSkipAll}
-            className="flex-shrink-0 text-xs text-muted-foreground hover:text-foreground hover:bg-accent px-2 py-0.5 rounded transition-colors whitespace-nowrap"
-          >
-            Skip questions
-          </button>
+          <Button variant="quiet" onClick={handleSkipAll}>Skip questions</Button>
         </div>
         {/* Row 2: description (only when present) */}
         {helpText && (
@@ -764,39 +758,16 @@ function GuidedVariableInputsBody({
 
       {/* Navigation — always visible, never scrolls */}
       <div className="flex items-center justify-between px-3 py-2 border-t border-border/50">
-        <button
-          type="button"
-          onClick={goPrev}
-          disabled={activeIndex === 0}
-          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-default transition-colors px-1 py-0.5"
-        >
-          <ChevronLeft className="w-3.5 h-3.5" />
-          Prev
-        </button>
+        <Button variant="quiet" icon={<ChevronLeft />} onClick={goPrev} disabled={activeIndex === 0}>Prev</Button>
 
         <span className="text-xs text-muted-foreground">
           {activeIndex + 1} of {total}
         </span>
 
         {activeIndex < total - 1 ? (
-          <button
-            type="button"
-            onClick={goNext}
-            className="flex items-center gap-1 text-xs text-primary hover:text-foreground transition-colors px-1 py-0.5 font-medium"
-          >
-            Next
-            <ChevronRight className="w-3.5 h-3.5" />
-          </button>
+          <Button variant="quiet" tone="primary" iconEnd={<ChevronRight />} onClick={goNext}>Next</Button>
         ) : (
-          <button
-            type="button"
-            onClick={handleSkipAll}
-            className="flex items-center gap-1 text-xs text-primary hover:text-foreground transition-colors px-1 py-0.5 font-medium"
-          >
-            <Check className="w-3.5 h-3.5" />
-            Done
-            <ChevronRight className="w-3.5 h-3.5" />
-          </button>
+          <Button variant="quiet" tone="primary" icon={<Check />} iconEnd={<ChevronRight />} onClick={handleSkipAll}>Done</Button>
         )}
       </div>
     </div>

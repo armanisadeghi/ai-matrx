@@ -12,6 +12,7 @@ import { AgentPickerSheet } from "../../next/lazy/AgentPickerSheet";
 import { useAppSelector } from "../../store/hooks";
 import { selectAgentById } from "../../agents/redux/agent-definition/selectors";
 import { pushAppHref } from "@ai-matrx/chat/host/ui-slots";
+import { Button } from "@ai-matrx/design-system/controls";
 
 export default function ChatMobileAgentName() {
   const router = useRouter();
@@ -49,15 +50,7 @@ export default function ChatMobileAgentName() {
         }
         onSelect={handleAgentSelect}
       />
-      <button
-        onClick={() => setIsPickerOpen(true)}
-        className="flex items-center justify-center gap-1.5 px-3 py-1 rounded-full matrx-glass-thin-border text-sm font-medium text-foreground/90 transition-colors select-none min-w-0 active:scale-95"
-        style={{ WebkitTapHighlightColor: "transparent" }}
-        aria-label="Change AI agent"
-      >
-        <span className="truncate max-w-[180px]">{displayName}</span>
-        <ChevronDown className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-      </button>
+      <Button variant="quiet" iconEnd={<ChevronDown />} onClick={() => setIsPickerOpen(true)} style={{ WebkitTapHighlightColor: "transparent" }} aria-label="Change AI agent" className="min-w-0">{displayName}</Button>
     </>
   );
 }

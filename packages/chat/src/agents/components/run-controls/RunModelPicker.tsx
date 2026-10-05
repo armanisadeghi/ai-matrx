@@ -32,6 +32,7 @@ import {
   setOfferingPin,
 } from "../../redux/execution-system/instance-model-overrides/offering-pin";
 import { selectIsManualExecutionMode } from "../../redux/execution-system/selectors/aggregate.selectors";
+import { Button } from "@ai-matrx/design-system/controls";
 
 const MANUAL_MODE_MODEL_HINT =
   "Model is edited in the builder panel during test runs";
@@ -132,15 +133,7 @@ export function QuickRunModelSelect({
         disabledTitle={MANUAL_MODE_MODEL_HINT}
       />
       {isOverridden && !isManualMode && (
-        <button
-          type="button"
-          onClick={handleReset}
-          title="Reset to agent default"
-          aria-label="Reset model to agent default"
-          className="shrink-0 rounded p-1 text-muted-foreground transition-colors hover:text-foreground"
-        >
-          <RotateCcw className="h-3 w-3" />
-        </button>
+        <Button variant="quiet" icon={<RotateCcw />} onClick={handleReset} title="Reset to agent default" aria-label="Reset model to agent default" className="shrink-0" />
       )}
     </div>
   );
@@ -162,14 +155,7 @@ export function RunModelPicker({ conversationId }: { conversationId: string }) {
       <div className="flex items-center justify-between">
         <span className="text-xs font-medium text-foreground">Model</span>
         {isOverridden && (
-          <button
-            type="button"
-            onClick={handleReset}
-            className="flex items-center gap-1 text-[11px] text-muted-foreground transition-colors hover:text-foreground"
-          >
-            <RotateCcw className="h-3 w-3" />
-            Reset to agent default
-          </button>
+          <Button variant="quiet" icon={<RotateCcw />} onClick={handleReset}>Reset to agent default</Button>
         )}
       </div>
 

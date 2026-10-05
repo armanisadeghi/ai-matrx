@@ -15,7 +15,7 @@
  * stay mounted even when collapsed.
  */
 
-import { Badge } from "@ai-matrx/design-system/controls";
+import { Badge, Button } from "@ai-matrx/design-system/controls";
 import { useState, useCallback, useEffect } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useAppSelector } from "../../../store/hooks";
@@ -176,14 +176,7 @@ export function CreatorRunPanel({
             ))}
           </div>
 
-          <button
-            type="button"
-            onClick={handleCollapse}
-            className="p-1.5 ml-1 text-muted-foreground hover:text-foreground transition-colors shrink-0"
-            title="Collapse"
-          >
-            <ChevronUp className="w-3.5 h-3.5" />
-          </button>
+          <Button variant="quiet" icon={<ChevronUp />} onClick={handleCollapse} title="Collapse" aria-label="Collapse" className="ml-1 shrink-0" />
         </div>
 
         {/* Tab content — fixed height (shorter on mobile so it doesn't dominate the viewport) */}

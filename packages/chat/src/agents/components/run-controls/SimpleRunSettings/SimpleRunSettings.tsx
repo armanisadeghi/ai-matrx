@@ -23,6 +23,7 @@ import {
   type Capability,
   type ReasoningLevelId,
 } from './capabilities';
+import { Button } from "@ai-matrx/design-system/controls";
 
 export interface SimpleRunSettingsValue {
   capabilityId: Capability['id'];
@@ -106,17 +107,7 @@ export function SimpleRunSettings({
         />
       </Section>
 
-      <button
-        type="button"
-        onClick={handleReset}
-        className={cn(
-          'inline-flex items-center gap-1.5 self-start rounded-md px-2 py-1 text-[11px]',
-          'text-muted-foreground hover:text-foreground hover:bg-muted transition-colors',
-        )}
-      >
-        <RotateCcw className="h-3 w-3" />
-        Reset to defaults
-      </button>
+      <Button variant="quiet" icon={<RotateCcw />} onClick={handleReset} className="self-start">Reset to defaults</Button>
     </div>
   );
 }

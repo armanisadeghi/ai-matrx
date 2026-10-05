@@ -104,6 +104,7 @@ import {
   type StageRemarkOptions,
 } from "../../agents/redux/execution-system/instance-resources/remarks";
 import { registerRemarkSink } from "../../agents/redux/execution-system/instance-resources/remark-sink";
+import { Button } from "@ai-matrx/design-system/controls";
 
 const FLOATING_FALLBACK = { width: 340, height: 400 };
 /** Below this the workspace is one pane: the canvas, with chat / properties in sheets (navigation is the shell drawer). */
@@ -378,16 +379,7 @@ export function ChatCanvasWorkspace({
   const canvasTitle = !title ? null : titleMenu ? (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button
-          type="button"
-          className="matrx-glyph-trim flex h-7 min-w-0 items-center gap-1 rounded-md px-1.5 text-sm font-medium text-foreground hover:bg-accent"
-        >
-          <span className="min-w-0 truncate">{title}</span>
-          <ChevronDown
-            className="h-3.5 w-3.5 shrink-0 text-muted-foreground"
-            aria-hidden="true"
-          />
-        </button>
+        <Button variant="quiet" iconEnd={<ChevronDown />} className="min-w-0">{title}</Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-56">
         {titleMenu}
@@ -469,16 +461,7 @@ export function ChatCanvasWorkspace({
           </button>
           {/* The way back to a hidden chat sits where the chat opens — on the left. */}
           {!chatShown ? (
-            <button
-              type="button"
-              onClick={openChat}
-              aria-label="Show chat"
-              title="Show chat (Ctrl/Cmd + \)"
-              className="flex h-7 shrink-0 items-center gap-1.5 rounded-md px-2 text-sm font-medium text-foreground hover:bg-accent max-lg:hidden"
-            >
-              <MessageSquare className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-              Chat
-            </button>
+            <Button variant="quiet" icon={<MessageSquare />} onClick={openChat} aria-label="Show chat" title="Show chat (Ctrl/Cmd + \)" className="shrink-0 max-lg:hidden">Chat</Button>
           ) : null}
           {canvasTitle ? <div className="flex min-w-0 max-w-[40%] shrink items-center">{canvasTitle}</div> : null}
           {/* A hosted module's own header (<PageHeader>/<RouteHeader>) portals here. */}
@@ -588,15 +571,7 @@ export function ChatCanvasWorkspace({
                 contentClassName="flex flex-col overflow-hidden p-0"
                 className="max-lg:hidden"
                 headerActions={
-                  <button
-                    type="button"
-                    aria-label="Dock the chat"
-                    title="Dock the chat"
-                    onClick={() => setPlacement("side")}
-                    className="shrink-0 rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
-                  >
-                    <Maximize2 className="h-4 w-4" />
-                  </button>
+                  <Button variant="quiet" icon={<Maximize2 />} aria-label="Dock the chat" title="Dock the chat" onClick={() => setPlacement("side")} className="shrink-0" />
                 }
               >
                 {chatColumn}
