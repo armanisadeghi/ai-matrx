@@ -20,10 +20,10 @@
  *    store's own verbs (`keepStoreOutput`, `archiveStoreOutput`,
  *    `countStoreOutputs`). It never touches a `content_ir.kind_instance` door.
  *  - an OLD kind-store row keeps its old card and its old doors until wave 5.
- *  - neither: the strip says it was not saved. There is no Save here — the
- *    retired store takes no new rows, and the person's Save door (door 5,
- *    `POST /kind-outputs/save`) shows only once the message records that saving
- *    was off for it (slice 6's `kind_outputs` entry).
+ *  - neither: the strip says it was not saved and offers Save — door 5,
+ *    `POST /kind-outputs/save`, which lands it in its kind's outputs table through
+ *    the server's one lander. A Save that writes nothing new re-reads; if still
+ *    nothing landed, the strip says the store did not take it.
  *
  * ## Never absent, never dead, never a false sentence
  *
@@ -33,7 +33,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Archive, ArchiveRestore, Check, ExternalLink, RotateCw } from "lucide-react";
+import { Archive, ArchiveRestore, Check, ExternalLink, RotateCw, Save } from "lucide-react";
 import type { BlockOutcome, Landing } from "@ai-matrx/records/core";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
@@ -56,6 +56,7 @@ import {
   keepStoreOutput,
   landingForBlock,
   notifyKindRecordsChanged,
+  saveKindOutput,
   subscribeToKindRecordChanges,
 } from "./kind-record-service";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -172,6 +173,7 @@ export function KindRecordChrome({
   }, [kind, durableMessageId, conversationId, fingerprint, reloadKey, countsInKindStore]);
 
   const reload = () => setReloadKey((n) => n + 1);
+  const [saveRefused, setSaveRefused] = useState<string | null>(null);
 
   /** THE SIBLING-COUNT RULE (V-42 §3.1): every strip re-reads on every record write. */
   useEffect(() => {
@@ -228,6 +230,25 @@ export function KindRecordChrome({
       return;
     }
     toast.success(archiving ? `${label} archived` : `${label} restored`);
+    reload();
+  };
+
+  const canSave = Boolean(durableMessageId && fingerprint);
+  const onSave = async () => {
+    if (!durableMessageId || !fingerprint) return;
+    setBusy(true);
+    setSaveRefused(null);
+    const result = await saveKindOutput({ messageId: durableMessageId, fingerprint, kind });
+    setBusy(false);
+    if (!result.ok) {
+      toast.error(`Could not save this ${label}`, { description: result.message });
+      return;
+    }
+    if (result.value.length === 0) {
+      setSaveRefused(`Your tables did not take this ${label}. The reason was recorded.`);
+    } else {
+      toast.success(`${label} saved`);
+    }
     reload();
   };
 
@@ -342,8 +363,16 @@ export function KindRecordChrome({
 
       {state.status === "ready" && outcome.state === "none" && (
         <>
-          <span className="text-muted-foreground">Not saved</span>
+          <span className="text-muted-foreground">{saveRefused ?? "Not saved"}</span>
           {countLink}
+          {canSave && (
+            <span className="ml-auto flex items-center gap-1">
+              <button type="button" onClick={onSave} disabled={busy} className={doorButton}>
+                <Save className="h-3 w-3" aria-hidden />
+                {busy ? "Saving…" : "Save"}
+              </button>
+            </span>
+          )}
         </>
       )}
     </div>

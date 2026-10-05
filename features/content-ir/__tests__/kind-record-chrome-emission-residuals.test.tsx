@@ -41,6 +41,7 @@ const serviceMock = {
   keepStoreOutput: jest.fn(),
   archiveStoreOutput: jest.fn(),
   countStoreOutputs: jest.fn(),
+  saveKindOutput: jest.fn(),
 };
 
 // The REAL bus — the whole point of these tests is that the bus fan-out
@@ -179,5 +180,77 @@ describe("DD-131 slice 1 residuals (V-45)", () => {
     expect(container.textContent).toContain("Not saved");
     expect(container.querySelectorAll("button").length).toBe(0);
     expect(serviceMock.fetchMessageLandings).not.toHaveBeenCalled();
+  });
+
+  const MSG = "9a8b7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d";
+  const storeLanding = {
+    store: "record" as const,
+    recordId: "rec-saved",
+    organizationId: "org-1",
+    kind: "wine_tasting",
+    fingerprint: "fp-1",
+    ordinal: 0,
+    blockId: null,
+    tableId: "tbl-1",
+    state: "saved" as const,
+    title: "Saved Chablis",
+    unconfirmed: true,
+    archivedAt: null,
+    createdAt: new Date().toISOString(),
+    refusal: null,
+    fromSource: false,
+  };
+
+  function click(label: string): Promise<void> {
+    const button = Array.from(container.querySelectorAll("button")).find((b) => b.textContent?.includes(label));
+    if (!button) throw new Error(`no "${label}" button in: ${container.textContent}`);
+    return act(async () => {
+      button.click();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+  }
+
+  it("door 5: an unsaved output in a message offers Save, and a Save that lands flips to Saved", async () => {
+    let landed = false;
+    serviceMock.countKindRecords.mockResolvedValue({ ok: true, value: 0 });
+    serviceMock.countStoreOutputs.mockResolvedValue({ ok: true, value: 1 });
+    serviceMock.fetchMessageLandings.mockImplementation(async (messageId: string) => ({
+      ok: true,
+      value: { messageId, landings: landed ? [storeLanding] : [] },
+    }));
+    serviceMock.saveKindOutput.mockImplementation(async () => {
+      landed = true;
+      return { ok: true, value: ["rec-saved"] };
+    });
+
+    mount(<KindRecordChrome kind="wine_tasting" durableMessageId={MSG} fingerprint="fp-1" value={{}} />);
+    await flush();
+    expect(container.textContent).toContain("Not saved");
+
+    await click("Save");
+    await flush();
+    await flush();
+
+    expect(serviceMock.saveKindOutput).toHaveBeenCalledWith({ messageId: MSG, fingerprint: "fp-1", kind: "wine_tasting" });
+    expect(container.textContent).toContain("Saved Chablis");
+    expect(container.textContent).not.toContain("Not saved");
+  });
+
+  it("door 5: a Save the store did not take says so instead of going quiet", async () => {
+    serviceMock.countKindRecords.mockResolvedValue({ ok: true, value: 0 });
+    serviceMock.fetchMessageLandings.mockImplementation(async (messageId: string) => ({
+      ok: true,
+      value: { messageId, landings: [] },
+    }));
+    serviceMock.saveKindOutput.mockResolvedValue({ ok: true, value: [] });
+
+    mount(<KindRecordChrome kind="wine_tasting" durableMessageId={MSG} fingerprint="fp-1" value={{}} />);
+    await flush();
+    await click("Save");
+    await flush();
+    await flush();
+
+    expect(container.textContent).toContain("did not take this Wine Tasting");
   });
 });

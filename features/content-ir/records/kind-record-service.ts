@@ -28,12 +28,15 @@ import {
   createRecordsClient,
   landingOutcomesFor,
   outcomeForBlock,
+  OUTPUT_KEPT_KEY,
   type BlockOutcome,
   type Landing,
   type LandingOutcomes,
   type RecordsClient,
 } from "@ai-matrx/records/core";
 import { personActor, recordsDataSource } from "@ai-matrx/records-ui";
+import { apiPost } from "@/lib/api/typed-client";
+import { getUserMessage } from "@/lib/api/errors";
 import {
   storeKindRecord,
   PRODUCED_BY_LABEL as STORE_PRODUCED_BY_LABEL,
@@ -826,11 +829,8 @@ function storeFail(where: string, landing: Landing, message: string): { ok: fals
   return fail(`${where}(${landing.recordId})`, new Error(message));
 }
 
-/**
- * The output table Field its owner sets to keep an output; Keep confirms (design §5.2–5.3).
- * `@ai-matrx/records` ≥0.68 exports it as `OUTPUT_KEPT_KEY`.
- */
-const OUTPUT_KEPT = "output_kept";
+/** The output table Field its owner sets to keep an output; Keep confirms (design §5.2–5.3). */
+const OUTPUT_KEPT = OUTPUT_KEPT_KEY;
 
 /** Confirm a record-store output: its owner keeps it (`output_kept`), which confirms it. */
 export async function keepStoreOutput(landing: Landing): Promise<RecordResult<true>> {
@@ -886,5 +886,33 @@ export async function countStoreOutputs(landing: Landing): Promise<RecordResult<
     return { ok: true, value: counted.data[0]?.visible_rows ?? 0 };
   } catch (error) {
     return fail(`countStoreOutputs(${landing.recordId})`, error);
+  }
+}
+
+/**
+ * DOOR 5 — the person's Save of one output this message carries but no table holds
+ * (`POST /kind-outputs/save`). The server re-derives the block from the message's own text and
+ * lands it through the one lander, so a Save and the automatic landing never disagree.
+ * An empty answer means nothing new was written: the output was already saved, or the store
+ * refused it (the refusal is recorded server-side) — the caller re-reads to tell which.
+ */
+export async function saveKindOutput(args: {
+  messageId: string;
+  fingerprint: string;
+  ordinal?: number;
+  kind: string;
+}): Promise<RecordResult<string[]>> {
+  try {
+    const { data } = await apiPost("/kind-outputs/save", {
+      message_id: args.messageId,
+      fingerprint: args.fingerprint,
+      ordinal: args.ordinal ?? 0,
+    });
+    forgetMessageLandings();
+    notifyKindRecordsChanged(args.kind);
+    return { ok: true, value: data.landed };
+  } catch (error) {
+    fail(`saveKindOutput(${args.messageId})`, error);
+    return { ok: false, message: getUserMessage(error) };
   }
 }
