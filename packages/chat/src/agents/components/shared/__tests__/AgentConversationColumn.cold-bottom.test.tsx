@@ -226,6 +226,7 @@ describe("AgentConversationColumn cold history anchoring", () => {
             conversationId={conversationId}
             surfaceKey="chat"
             deferColdMarkdown
+            smartInputProps={{ composer: { size: "page", mode: "chat" } }}
           />
         </Provider>,
       );

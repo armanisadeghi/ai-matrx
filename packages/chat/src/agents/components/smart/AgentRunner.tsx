@@ -18,7 +18,7 @@
  *   3. Main display: AgentConversationDisplay + SmartAgentInput
  */
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAppSelector, useAppDispatch } from "../../../store/hooks";
 import {
   selectAutoRun,
@@ -34,6 +34,7 @@ import { selectHasUserInput } from "../../redux/execution-system/instance-user-i
 import { executeInstance } from "../../redux/execution-system/thunks/execute-instance.thunk";
 import { isExecutionClaimed } from "../../redux/execution-system/thunks/submit-claims";
 import { SmartAgentInput } from "../inputs/smart-input/SmartAgentInput";
+import { useComposerMode } from "../inputs/smart-input/composer/useComposerMode";
 import { PreExecutionAgentInput } from "../inputs/PreExecutionAgentInput";
 import { AgentConversationDisplay } from "../messages-display/AgentConversationDisplay";
 import { ProposedDirectivesZone } from "@host/features/matrx-envelope/components/ProposedDirectivesZone";
@@ -143,10 +144,61 @@ export function AgentRunner({
   // ── Main display ───────────────────────────────────────────────────────────
   // Layout: relative container → conversation fills + scrolls freely behind the
   // input → input panel is absolutely pinned to the bottom, overlaying the
-  // conversation. The conversation gets bottom padding equal to a reasonable
-  // input height so the last message is never hidden behind the input bar.
+  // conversation. The conversation's bottom padding is the input's MEASURED
+  // height, so the last message is never hidden behind the input bar.
   // The input panel itself uses max-h so variables can never overflow the
   // container — they scroll internally instead.
+  return (
+    <AgentRunnerFrame
+      className={className}
+      showTitle={showTitle}
+      title={title}
+      conversationId={conversationId}
+      surfaceKey={surfaceKey}
+      compact={compact}
+      showSendButton={showSendButton}
+      shouldShowInput={shouldShowInput}
+    />
+  );
+}
+
+/**
+ * The transcript scrolls under the pinned Smart Agent Input. The input's REAL
+ * height (measured) is the transcript's bottom runway, so a taller input — a
+ * variables form, attachments, a grown draft — never covers the last message.
+ */
+function AgentRunnerFrame({
+  className,
+  showTitle,
+  title,
+  conversationId,
+  surfaceKey,
+  compact,
+  showSendButton,
+  shouldShowInput,
+}: {
+  className: string;
+  showTitle: boolean;
+  title: string | null | undefined;
+  conversationId: string;
+  surfaceKey?: string;
+  compact: boolean;
+  showSendButton: boolean;
+  shouldShowInput: boolean;
+}) {
+  const { mode: composerMode } = useComposerMode();
+  const [inputPanel, setInputPanel] = useState<HTMLDivElement | null>(null);
+  const [runway, setRunway] = useState(128);
+  useEffect(() => {
+    if (!inputPanel || typeof ResizeObserver === "undefined") return undefined;
+    const observer = new ResizeObserver(([entry]) => {
+      const height = Math.ceil(entry?.borderBoxSize?.[0]?.blockSize ?? entry?.contentRect.height ?? 0);
+      setRunway((prev) => (prev === height + 8 ? prev : height + 8));
+    });
+    observer.observe(inputPanel);
+    return () => observer.disconnect();
+  }, [inputPanel]);
+
   return (
     <div
       className={`relative mx-auto h-full w-full max-w-[800px] overflow-hidden bg-background ${className}`}
@@ -161,7 +213,8 @@ export function AgentRunner({
 
       {/* Conversation — fills entire container, scrolls freely under the input */}
       <div
-        className={`absolute inset-0 overflow-y-auto bg-background pt-2 ${showTitle && title ? "top-9" : ""} ${shouldShowInput ? "pb-32" : "pb-2"}`}
+        className={`absolute inset-0 overflow-y-auto bg-background pt-2 ${showTitle && title ? "top-9" : ""} ${shouldShowInput ? "" : "pb-2"}`}
+        style={shouldShowInput ? { paddingBottom: runway } : undefined}
       >
         <AgentConversationDisplay
           conversationId={conversationId}
@@ -171,7 +224,9 @@ export function AgentRunner({
 
       {/* Input panel — pinned to bottom, grows upward, never taller than 70% of container */}
       {shouldShowInput && (
-        <div className="absolute bottom-0 left-0 right-0 z-20 flex flex-col items-stretch justify-end px-1.5 pb-1.5 pt-1 bg-gradient-to-t from-background via-background/95 to-transparent max-h-[70%] overflow-hidden">
+        <div
+          ref={setInputPanel}
+          className="absolute bottom-0 left-0 right-0 z-20 flex flex-col items-stretch justify-end px-1.5 pb-1.5 pt-1 bg-gradient-to-t from-background via-background/95 to-transparent max-h-[70%] overflow-hidden">
           {/* Same reconnect / Continue face as AgentConversationColumn — a
               resume that could not continue is never a silent stall here. */}
           <ServerOperationBanner conversationId={conversationId} />
@@ -182,6 +237,7 @@ export function AgentRunner({
             surfaceKey={surfaceKey}
             compact={compact}
             showSendButton={showSendButton}
+            composer={{ size: compact ? "compact" : "page", mode: composerMode }}
           />
         </div>
       )}

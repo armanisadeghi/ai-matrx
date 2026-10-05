@@ -242,14 +242,14 @@ export function AgentAppFormToResultShell({
 
           {/* Follow-up input */}
           {allowChat && (hasResponse || ctx.isStreaming) && (
-            <div className="rounded-lg border border-border bg-card">
-              <SmartAgentInput
-                conversationId={ctx.conversationId}
-                compact
-                singleRowTextarea
-                surfaceKey={ctx.surfaceKey}
-              />
-            </div>
+            // The Smart Agent Input, Compact style: one line of text that
+            // grows, ↵ beside it. It carries its own card, so no wrapper.
+            <SmartAgentInput
+              conversationId={ctx.conversationId}
+              compact
+              surfaceKey={ctx.surfaceKey}
+              composer={{ size: "compact", mode: "chat", meta: "none", placeholder: "Ask a follow-up" }}
+            />
           )}
         </div>
       </div>

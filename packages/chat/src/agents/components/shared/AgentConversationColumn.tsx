@@ -83,11 +83,25 @@ interface SmartInputForwardProps {
    * BEFORE the action, never mid-send (the entitlements TRUST mandate).
    */
   disableSend?: boolean;
-  /** The three-mode composer (SmartAgentInput `composer`). Absent = classic. */
-  composer?: ComposerPresentation;
+  /** The Smart Agent Input's style (Full · Compact · Launcher) — required: there is no other layout. */
+  composer: ComposerPresentation;
 }
 
-interface AgentConversationColumnProps {
+/**
+ * A column that shows its input MUST say how (smartInputProps.composer); only a
+ * column whose input is hidden may omit it. Enforced by type, so a surface can
+ * never fall back to a layout that no longer exists. `hideInput` hides the
+ * bottom input for locked-input surfaces (the agent-comparison battle modes)
+ * where the message is typed once in a page-level section; the transcript,
+ * Creator Panel and UI-first tools stay intact.
+ */
+type AgentConversationColumnInput =
+  | { hideInput: true; smartInputProps?: SmartInputForwardProps }
+  | { hideInput?: boolean; smartInputProps: SmartInputForwardProps };
+
+type AgentConversationColumnProps = AgentConversationColumnBaseProps & AgentConversationColumnInput;
+
+interface AgentConversationColumnBaseProps {
   /**
    * Conversation bound to the smart input / variables panel. In the default
    * case this is also the display id (see below).
@@ -112,7 +126,6 @@ interface AgentConversationColumnProps {
    * scrollbar rides the centered edge (unchanged legacy behavior).
    */
   edgeToEdgeScroll?: boolean;
-  smartInputProps?: SmartInputForwardProps;
   /**
    * Optional empty-state surface. When provided AND the display conversation
    * has zero messages, this is rendered above the input instead of the
@@ -121,13 +134,6 @@ interface AgentConversationColumnProps {
    * lands in the messages slice.
    */
   landingContent?: React.ReactNode;
-  /**
-   * Hide the bottom SmartAgentInput. Used by locked-input surfaces (the
-   * agent-comparison battle modes) where the message is typed once in a
-   * page-level section and each column body is read-only. The transcript,
-   * Creator Panel, and UI-first tools stay intact.
-   */
-  hideInput?: boolean;
   /**
    * Force the Creator Panel off regardless of the `showCreatorPanel`
    * preference. Defaults to false (preference-gated). Battle columns leave
@@ -556,7 +562,7 @@ export function AgentConversationColumn({
           <ProposedDirectivesZone conversationId={displayId} />
           {aboveInput}
 
-          {!hideInput && (
+          {!hideInput && smartInputProps && (
             <SmartAgentInput
               conversationId={conversationId}
               surfaceKey={surfaceKey}

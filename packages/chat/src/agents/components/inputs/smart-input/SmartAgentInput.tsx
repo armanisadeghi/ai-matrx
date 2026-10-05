@@ -69,7 +69,7 @@ interface SmartAgentInputProps {
    * component renders exactly as it always has; every existing host is
    * untouched. Present = the same engine in the composer's arrangement.
    */
-  composer?: ComposerPresentation;
+  composer: ComposerPresentation;
 }
 
 export function SmartAgentInput({

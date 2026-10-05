@@ -58,7 +58,7 @@ function shape(text: string, resources: Record<string, unknown> = {}) {
   };
 }
 
-function render(props: Partial<React.ComponentProps<typeof SmartAgentInput>>) {
+function render(props: Pick<React.ComponentProps<typeof SmartAgentInput>, "composer">) {
   given.length = 0;
   const root = createRoot(document.createElement("div"));
   act(() => root.render(<SmartAgentInput conversationId={CONVERSATION} {...props} />));
@@ -87,5 +87,5 @@ describe("the page launcher", () => {
 
 it("leaves every other composer's Send to its host (an agent may run on its own messages)", () => {
   shape("");
-  expect(render({})?.disableSend).toBe(false);
+  expect(render({ composer: { size: "page", mode: "chat" } })?.disableSend).toBe(false);
 });
