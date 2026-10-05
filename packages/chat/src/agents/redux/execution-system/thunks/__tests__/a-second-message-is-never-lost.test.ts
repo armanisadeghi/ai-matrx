@@ -55,9 +55,12 @@ jest.mock("../sandbox-gate.thunk", () => ({
   ...jest.requireActual("../sandbox-gate.thunk"),
   ensureSandboxOrDecide: () => thunkResolving("ok"),
 }));
-jest.mock("@host/features/scopes/redux/thunks/conversationScopeGate", () => ({
+jest.mock("../../../../../context/sources/scopes", () => ({
+  ...jest.requireActual("../../../../../context/sources/scopes"),
+  ...(() => ({
   ensureConversationScopesOrAsk: () => () =>
     Promise.resolve({ blocked: false, scopeIdsOverride: undefined }),
+}))(),
 }));
 jest.mock("../../../../ui-first-tools/redux/resolve-asks-with-input.thunk", () => ({
   resolvePendingAsksWithInput: () => () => false,

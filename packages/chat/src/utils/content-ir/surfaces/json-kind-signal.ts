@@ -61,12 +61,25 @@ const JSON5_KIND_SLUG = /(?:^|[{,]\s*|\n\s*)(?:__kind|'__kind'|"__kind")\s*:\s*(
 const MARKDOWN_KIND_KEY = /(?<!\\)"\\_\\_kind"\s*:/;
 
 /**
+ * The key as a STRING-HELD kind spells it once serialized again (R3, round 6):
+ * `{\"__kind\":…}` — what `JSON.stringify` of an object holding kind JSON in a
+ * string value prints, at any nesting (`\\\"`). On screen that is raw kind
+ * JSON (ruling c). Rendered-text / stored-text contexts only — inside parsed
+ * JSON it is a string VALUE, never a key, so `hasKindKey` alone ignores it.
+ */
+const ESCAPED_KIND_KEY = /\\+"__kind\\+"\s*:/;
+const ESCAPED_KIND_SLUG = /\\+"__kind\\+"\s*:\s*\\+"([A-Za-z0-9_.:-]+)\\+"/;
+
+/**
  * Options for the JSON-text readers: `json5` widens the key rule to JSON5's;
- * `markdown` also reads the markdown-escaped key (`"\_\_kind"`, P8).
+ * `markdown` also reads the markdown-escaped key (`"\_\_kind"`, P8);
+ * `escaped` also reads the backslash-escaped key of a string-held kind
+ * (`\"__kind\"`, R3 round 6 — screen and search text only).
  */
 export interface KindTextOptions {
   json5?: boolean;
   markdown?: boolean;
+  escaped?: boolean;
 }
 
 /** Whether a fence language is JSON5 (the one context that widens the key rule). */
@@ -78,7 +91,8 @@ export function hasKindKey(text: string, options: KindTextOptions = {}): boolean
   return (
     KIND_KEY.test(text) ||
     (options.json5 === true && JSON5_KIND_KEY.test(text)) ||
-    (options.markdown === true && MARKDOWN_KIND_KEY.test(text))
+    (options.markdown === true && MARKDOWN_KIND_KEY.test(text)) ||
+    (options.escaped === true && ESCAPED_KIND_KEY.test(text))
   );
 }
 
@@ -105,6 +119,9 @@ export function firstKindSlug(text: string, options: KindTextOptions = {}): stri
   if (!literal && options.json5) {
     const json5 = JSON5_KIND_SLUG.exec(text)?.[1];
     literal = json5?.startsWith("'") ? JSON.stringify(json5.slice(1, -1)) : json5;
+  }
+  if (!literal && options.escaped) {
+    return ESCAPED_KIND_SLUG.exec(text)?.[1] ?? null;
   }
   if (!literal) return null;
   let slug: unknown;

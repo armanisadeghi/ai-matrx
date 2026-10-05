@@ -42,12 +42,6 @@ const KNOWN: Record<string, KnownFailure> = {
     message:
       "We tried to start this conversation twice at once, so the second try was refused. Nothing you wrote was lost — press Retry and it will carry on the one that is already here.",
   },
-  // The server's own `user_message` names the agent's shapes and wins; this is
-  // the sentence when a gateway strips it. The typed message is already saved.
-  output_kind_locked: {
-    message:
-      "This agent always answers in its own shape, so it can't answer in a shape you picked. Remove that shape in Output and press Retry — what you typed is saved.",
-  },
   mandate_unfulfilled: {
     message:
       "No one is assigned to answer here yet, so this could not be sent. An administrator assigns it in Settings; nothing you wrote was lost.",

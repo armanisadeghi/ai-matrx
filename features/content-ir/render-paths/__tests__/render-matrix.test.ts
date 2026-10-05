@@ -324,6 +324,22 @@ describe("THE RENDER MATRIX — a valid payload always reaches its component", (
         }, 120_000);
       }
 
+      // G2 on the artifact path: the artifact keeps its own renderer, but no
+      // frame of it may put the kind on screen raw (2026-10-05 — the live
+      // block handed ArtifactBlock its tag lines and the kind drew raw
+      // mid-stream while a reload drew the component).
+      it(`never puts a __kind key on screen mid-stream on "chat_artifact" (DOM)`, async () => {
+        const kind = register(archetype);
+        const run = runRenderPath("chat_artifact", kind, archetype.value);
+        if (!run?.frames) throw new Error("chat_artifact produced no frames");
+        const leaks: string[] = [];
+        for (const frame of everyKindFrame(run.frames)) {
+          const verdict = await domFrameVerdict(frame.block, { isStreamActive: frame.isStreamActive });
+          if (verdict.failed) leaks.push(`${frame.block.type}${verdict.empty ? ` (EMPTY ${verdict.html.slice(0, 120)})` : ""}: ${verdict.text.replace(/\s+/g, " ").slice(0, 100)}`);
+        }
+        expect(leaks).toEqual([]);
+      }, 120_000);
+
       it("keeps the payload intact end to end (zero loss)", () => {
         const kind = register(archetype);
         const run = runRenderPath("chat_bare", kind, archetype.value)!;

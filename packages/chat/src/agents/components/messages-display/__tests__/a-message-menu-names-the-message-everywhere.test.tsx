@@ -49,9 +49,6 @@ jest.mock("../MessageAttachmentStrip", () => ({ MessageAttachmentStrip: () => nu
 jest.mock("../../context-policies-display/ContextPolicyChipStrip", () => ({
   ContextPolicyChipStrip: () => null,
 }));
-jest.mock("@host/features/scopes/hooks/useEntityTitles", () => ({
-  useEntityTitles: () => ({ titleFor: () => undefined }),
-}));
 jest.mock("@host/components/official/entity-ref/EntityRef", () => ({ EntityRef: () => null }));
 
 function buildState(): Record<string, unknown> {

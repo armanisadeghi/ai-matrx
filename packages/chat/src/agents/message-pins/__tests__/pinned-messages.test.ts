@@ -9,11 +9,14 @@
 const setPinned = jest.fn();
 const getBulk = jest.fn();
 
-jest.mock("@host/features/scopes/service/favoritesService", () => ({
+jest.mock("../../../context/sources/scopes", () => ({
+  ...jest.requireActual("../../../context/sources/scopes"),
+  ...(() => ({
   favoritesService: {
     setPinned: (...a: unknown[]) => setPinned(...a),
     getBulk: (...a: unknown[]) => getBulk(...a),
   },
+}))(),
 }));
 const toastError = jest.fn();
 jest.mock("../../../host/notify", () => ({ toast: { error: (...a: unknown[]) => toastError(...a), success: jest.fn() } }));

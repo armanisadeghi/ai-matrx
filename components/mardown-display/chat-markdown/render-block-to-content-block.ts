@@ -19,10 +19,39 @@
 import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
 import type { RenderBlock } from "./block-registry/BlockRenderer";
 
+/**
+ * THE ARTIFACT BODY. The accumulator keeps an `<artifact …>` block's tag lines
+ * in `content` (its `metadata.rawXml` must round-trip the source verbatim);
+ * the reload splitter hands the renderer only the body between the tags.
+ * ArtifactBlock parses `content` AS the payload, so the live block drew
+ * "No flashcards available yet" settled and the raw `__kind` JSON mid-stream
+ * while a reload drew the cards. Same body on both paths, by construction:
+ * the opening tag, the closing tag (or the closer's partial tail mid-stream)
+ * and the blank edges go; the body is untouched.
+ */
+export function artifactBodyOf(content: string): string {
+  let body = content;
+  const open = /^\s*<artifact\b[^>]*>/i.exec(body);
+  if (open) body = body.slice(open[0].length);
+  else if (/^\s*<artifact\b/i.test(body)) return ""; // the opening tag is still arriving
+  const close = body.lastIndexOf("</artifact>");
+  if (close !== -1) {
+    body = body.slice(0, close);
+  } else {
+    // Mid-stream: a closer that has only partly arrived ("</arti") is chrome.
+    const tail = /<\/?[a-z]*$/i.exec(body);
+    if (tail && "</artifact>".startsWith(tail[0].toLowerCase())) {
+      body = body.slice(0, tail.index);
+    }
+  }
+  return body.replace(/^\s*\n/, "").trimEnd();
+}
+
 export function renderBlockToContentBlock(rb: RenderBlockPayload): RenderBlock {
   return {
     type: rb.type,
-    content: rb.content ?? "",
+    content:
+      rb.type === "__off__" ? artifactBodyOf(rb.content ?? "") : (rb.content ?? ""),
     serverData: (rb.data as Record<string, unknown>) ?? undefined,
     metadata: rb.metadata,
     language: (rb.data as Record<string, unknown>)?.language as

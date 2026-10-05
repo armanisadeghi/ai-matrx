@@ -32,6 +32,8 @@ jest.mock("../../db-renderer/toolRendererCache", () => ({
   isKnownNoToolRenderer: () => true,
 }));
 
+import { registerToolRenderer } from "../../registry/registry";
+import { GenericRenderer } from "../../registry/GenericRenderer";
 import { ToolErrorCard, toolErrorLabel } from "../ToolErrorCard";
 import { guardRoutingOf } from "../guard-routing";
 import { ToolCallVisualization } from "../../components/ToolCallVisualization";
@@ -70,6 +72,15 @@ const FORBIDDEN = [/fail/i, /refused/i, new RegExp(NOTE_ID.slice(0, 8)), /apply_
 function expectQuiet(text: string) {
   for (const pattern of FORBIDDEN) expect(text).not.toMatch(pattern);
 }
+
+// The host registers the note renderer (matrx-frontend features/chat-tool-renderers); the test
+// registers one with the same labels, the same way.
+registerToolRenderer("note", {
+  toolName: "note",
+  displayName: "Note",
+  phaseLabels: { running: "Saving note", complete: "Saved note", errorPrefix: "Note save failed" },
+  InlineComponent: GenericRenderer,
+});
 
 describe("guard refusals render as a routed state, not a failure", () => {
   let container: HTMLDivElement;

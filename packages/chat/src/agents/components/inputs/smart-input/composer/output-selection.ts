@@ -257,13 +257,26 @@ export function classifyLockRead(
   return shapes.length > 0 ? { status: "locked", shapes } : { status: "none" };
 }
 
-/** Picks outside a locked agent's shapes (the server would refuse the send). */
+/**
+ * Picks outside a locked agent's shapes. Allowed (rule 23): the server drops them
+ * for that run and warns; the UI warns at pick time and on a saved pick.
+ */
 export function conflictingKinds(
   picks: readonly string[],
   lockedShapes: readonly string[],
 ): string[] {
   if (lockedShapes.length === 0) return [];
   return picks.filter((kind) => !lockedShapes.includes(kind));
+}
+
+/** The one-line warning for a pick a locked agent will not honour (≤60 chars). */
+export function lockedPickWarning(
+  lockedShapes: readonly string[],
+  label: (kind: string) => string,
+): string {
+  const named = lockedShapes.map(label).join(" or ");
+  const line = `This agent answers as ${named} only`;
+  return line.length <= 60 ? line : "This agent answers in its own shape only";
 }
 
 /** × on the pill: back to the default — Text only, no shapes. */

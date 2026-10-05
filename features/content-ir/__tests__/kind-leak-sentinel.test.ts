@@ -194,4 +194,71 @@ describe("the kind leak sentinel (G1)", () => {
     document.body.appendChild(p);
     await expect(settle()).resolves.toBeUndefined();
   });
+  // ── R3, round 6 ─────────────────────────────────────────────────────────
+  const ESCAPED = '{"answer":"{\\"__kind\\":\\"flashcard_set\\",\\"title\\":\\"Cells\\"}"}';
+
+  it("R3i: reports an ESCAPED kind key on screen (a raw view of a string-held kind)", async () => {
+    const pre = document.createElement("pre");
+    pre.textContent = ESCAPED;
+    document.body.appendChild(pre);
+    await settle();
+    expect(capture).toHaveBeenCalledTimes(1);
+    expect(capture.mock.calls[0][0].relation).toBe("flashcard_set");
+  });
+
+  it("R3i: an escaped key inside a marked source view stays silent", async () => {
+    const pane = document.createElement("div");
+    pane.setAttribute(KIND_SOURCE_ATTR, "explicit");
+    pane.innerHTML = "<pre></pre>";
+    pane.firstElementChild!.textContent = ESCAPED;
+    document.body.appendChild(pane);
+    await settle();
+    expect(capture).not.toHaveBeenCalled();
+  });
+
+  it.each(["title", "aria-label", "alt"])("R3ii: reports a kind in a %s attribute", async (attr) => {
+    const el = document.createElement(attr === "alt" ? "img" : "span");
+    el.className = `attr-${attr}`;
+    el.setAttribute(attr, `Skill: ${KIND}`);
+    document.body.appendChild(el);
+    await settle();
+    expect(capture).toHaveBeenCalledTimes(1);
+    expect(capture.mock.calls[0][0].raw.attribute).toBe(attr);
+  });
+
+  it("R3ii: later attribute leaks on new nodes are each reported", async () => {
+    const seen: string[] = [];
+    for (const attr of ["title", "aria-label", "alt"]) {
+      const el = document.createElement(attr === "alt" ? "img" : "span");
+      el.setAttribute(attr, KIND);
+      document.body.appendChild(el);
+      await settle();
+      seen.push(...capture.mock.calls.map((call) => String(call[0].raw.attribute)));
+      capture.mockClear();
+    }
+    expect(seen).toEqual(["title", "aria-label", "alt"]);
+  });
+
+  it("R3ii: reports a title attribute that CHANGES into a leak", async () => {
+    const el = document.createElement("button");
+    el.setAttribute("title", "Run");
+    document.body.appendChild(el);
+    await settle();
+    expect(capture).not.toHaveBeenCalled();
+    el.setAttribute("title", KIND);
+    await settle();
+    expect(capture).toHaveBeenCalledTimes(1);
+  });
+
+  it("R3ii: attributes inside a marked source view, and kindless attributes, stay silent", async () => {
+    document.body.innerHTML = `<div ${KIND_SOURCE_ATTR}="explicit"><span title='${KIND}'>x</span></div><span title="The __kind key">y</span>`;
+    await settle();
+    expect(capture).not.toHaveBeenCalled();
+  });
+
+  it("R3iii: every contenteditable editor (plaintext-only too) is the person's own input — skipped", async () => {
+    document.body.innerHTML = `<div contenteditable="plaintext-only">${KIND}</div><div contenteditable="">${KIND}</div><textarea>${KIND}</textarea>`;
+    await settle();
+    expect(capture).not.toHaveBeenCalled();
+  });
 });

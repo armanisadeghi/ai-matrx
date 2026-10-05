@@ -106,6 +106,8 @@ interface ComposerMenuRowProps {
   /** Count / badge chip on the right. */
   badge?: ReactNode;
   checked?: boolean;
+  /** Render the description line as a warning (amber) — the row's own problem, in place. */
+  warning?: boolean;
   chevron?: boolean;
   active?: boolean;
   disabled?: boolean;
@@ -120,6 +122,7 @@ export function ComposerMenuRow({
   detail,
   badge,
   checked,
+  warning,
   chevron,
   active,
   disabled,
@@ -145,7 +148,11 @@ export function ComposerMenuRow({
         {Icon ? <SheetIcon icon={Icon} /> : null}
         <span className="flex min-w-0 flex-1 flex-col">
           <span className="truncate">{label}</span>
-          {description ? <span className="truncate text-sm text-muted-foreground">{description}</span> : null}
+          {description ? (
+            <span className={cn("truncate text-sm", warning ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground")}>
+              {description}
+            </span>
+          ) : null}
         </span>
         {badge !== undefined && badge !== null ? (
           <span className="shrink-0 text-base tabular-nums text-muted-foreground">{badge}</span>
@@ -182,7 +189,9 @@ export function ComposerMenuRow({
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="truncate">{label}</span>
         {description ? (
-          <span className="truncate text-xs text-muted-foreground">{description}</span>
+          <span className={cn("truncate text-xs", warning ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground")}>
+            {description}
+          </span>
         ) : null}
       </span>
       {badge !== undefined && badge !== null ? (

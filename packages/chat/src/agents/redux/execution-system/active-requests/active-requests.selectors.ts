@@ -2091,6 +2091,9 @@ const PROMOTED_WARNING_CODES: ReadonlySet<string> = new Set([
   // A picked shape with no skill: the run proceeded without teaching the
   // model that shape — the person sees the server's own one-line notice.
   "output_kind_without_skill",
+  // A pick the locked agent cannot honour was dropped for this run (rule 23);
+  // the run succeeded, the person sees the server's one-line notice.
+  "output_kind_locked",
 ]);
 
 /**

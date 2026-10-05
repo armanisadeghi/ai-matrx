@@ -12,9 +12,6 @@ import { createRoot, type Root } from "react-dom/client";
 jest.mock("../../../../../store/hooks", () => ({ useAppSelector: () => ({}) }));
 // The host code this test renders reads the app's own hooks (P3): one double covers both.
 jest.mock("@host/lib/redux/hooks", () => jest.requireMock("../../../../../store/hooks"));
-jest.mock("@host/features/scopes/hooks/useEntityTitles", () => ({
-  useEntityTitles: () => ({ titleFor: () => undefined }),
-}));
 jest.mock("@host/components/official/entity-ref/EntityRef", () => ({ EntityRef: () => null }));
 jest.mock("@host/components/official/structured-value/AnswerValueView", () => ({
   AnswerValueView: ({ value }: { value?: unknown }) => (

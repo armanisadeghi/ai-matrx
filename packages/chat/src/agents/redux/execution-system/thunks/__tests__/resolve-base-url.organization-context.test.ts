@@ -22,9 +22,12 @@ jest.mock("../../../../../host/org", () => ({
     (state as unknown as { selectedOrganizationId: string | null })
       .selectedOrganizationId,
 }));
-jest.mock("@host/lib/sandbox/active-binding", () => ({
+jest.mock("../../../../../compute/targets", () => ({
+  ...jest.requireActual("../../../../../compute/targets"),
+  ...(() => ({
   resolveAgentSandboxRef: () => null,
   getEffectiveSandboxRef: () => null,
+}))(),
 }));
 // A user page: no admin seat (what the host's admin lane answers off /administration).
 jest.mock("../../../../../host/server/admin-lane", () => ({

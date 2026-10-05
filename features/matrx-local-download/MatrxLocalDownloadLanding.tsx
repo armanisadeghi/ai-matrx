@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import Link from "next/link";
 import {
   ArrowDownToLine,
   Check,
@@ -183,6 +184,20 @@ export function MatrxLocalDownloadLanding({
       </section>
 
       <main className="relative mx-auto max-w-6xl px-4 pb-12 sm:px-6 lg:px-8">
+        <aside className="mb-4 flex flex-col items-start gap-3 rounded-3xl border border-primary/30 bg-primary/5 p-5 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-base font-bold tracking-tight">
+              New for Mac: Matrx Desktop
+            </p>
+            <p className="mt-0.5 text-sm text-muted-foreground">
+              The companion app that connects AI Matrx and your whole computer.
+              Mac first, Windows and Linux coming.
+            </p>
+          </div>
+          <Button asChild className="h-10 shrink-0 rounded-xl font-semibold">
+            <Link href="/desktop">See Matrx Desktop</Link>
+          </Button>
+        </aside>
         <div className="grid gap-4 lg:grid-cols-3">
           <PlatformCard
             id="windows"

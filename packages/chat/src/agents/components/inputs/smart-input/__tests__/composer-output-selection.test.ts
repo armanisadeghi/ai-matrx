@@ -13,6 +13,7 @@ import {
   readOutputTypes,
   classifyLockRead,
   conflictingKinds,
+  lockedPickWarning,
   createKindSkillMigrator,
   lockedShapesFromSchema,
   migrateKindSkills,
@@ -127,7 +128,15 @@ describe("locked agents", () => {
     expect(lockedShapesFromSchema({ properties: { title: { type: "string" } } })).toEqual([]);
   });
 
-  it("names the picks the server would refuse", () => {
+  it("the pick warning names the lock in at most 60 characters", () => {
+    const label = (k: string) => (k === "quiz_set" ? "Quiz Set" : k);
+    expect(lockedPickWarning(["quiz_set"], label)).toBe("This agent answers as Quiz Set only");
+    const long = lockedPickWarning(["a_very_long_shape_name", "another_very_long_shape_name"], label);
+    expect(long.length).toBeLessThanOrEqual(60);
+    expect(long).toBe("This agent answers in its own shape only");
+  });
+
+  it("names the picks the server drops for the run", () => {
     expect(conflictingKinds(["quiz_set", "timeline"], ["quiz_set"])).toEqual(["timeline"]);
     expect(conflictingKinds(["timeline"], [])).toEqual([]);
   });

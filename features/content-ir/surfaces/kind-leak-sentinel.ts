@@ -15,10 +15,13 @@
  */
 
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
-import { firstKindSlug, hasKindKey } from "@/features/content-ir/surfaces/json-kind-signal";
 import {
   domPathOf,
+  findKindAttributeLeaks,
   findKindLeak,
+  KIND_LEAK_ATTRIBUTES,
+  screenKindSlug,
+  screenTextHoldsKind,
   identifyingAttributesOf,
   isInsideKindSource,
   visibleKindText,
@@ -43,21 +46,33 @@ export function resetKindLeakSentinelReports(): void {
   reportCount = 0;
 }
 
-function report(leak: Element, options: Required<Omit<KindLeakSentinelOptions, "root">>): void {
+function report(
+  leak: Element,
+  options: Required<Omit<KindLeakSentinelOptions, "root">>,
+  inAttribute?: { name: string; value: string },
+): void {
   const path = domPathOf(leak);
-  if (reported.has(path) || reportCount >= options.maxReportsPerPage) return;
-  reported.add(path);
+  const key = inAttribute ? `${path}@${inAttribute.name}` : path;
+  if (reported.has(key) || reportCount >= options.maxReportsPerPage) return;
+  reported.add(key);
   reportCount += 1;
-  const text = visibleKindText(leak, 4000);
-  const slug = firstKindSlug(text);
+  const text = inAttribute ? inAttribute.value.slice(0, 4000) : visibleKindText(leak, 4000);
+  const slug = screenKindSlug(text);
   const attributes = identifyingAttributesOf(leak);
+  const where = inAttribute ? `in its ${inAttribute.name} attribute` : "as raw text";
   try {
     captureError({
       source: "content-ir",
       relation: slug ?? undefined,
-      message: `A kind${slug ? ` ("${slug}")` : ""} reached the screen as raw text at ${path}.`,
-      hint: "This element drew `__kind` JSON outside any data-kind-source container. Route the value through AnswerValueView / MarkdownStream, or mark a deliberate source view with data-kind-source=\"explicit\".",
-      raw: { path, attributes, className: leak.getAttribute("class") ?? "", excerpt: text.slice(0, 300) },
+      message: `A kind${slug ? ` ("${slug}")` : ""} reached the screen ${where} at ${path}.`,
+      hint: "This element drew `__kind` JSON outside any data-kind-source container. Route the value through AnswerValueView / MarkdownStream (text) or kindTextLabel (titles, tooltips), or mark a deliberate source view with data-kind-source=\"explicit\".",
+      raw: {
+        path,
+        attributes,
+        className: leak.getAttribute("class") ?? "",
+        excerpt: text.slice(0, 300),
+        ...(inAttribute ? { attribute: inAttribute.name } : {}),
+      },
       recoverable: true,
     });
   } catch {
@@ -145,6 +160,8 @@ export function installKindLeakSentinel(options: KindLeakSentinelOptions = {}): 
   const sliceChars = Math.max(1_000, resolved.maxCharsPerSlice);
 
   const touched = new Set<Node>();
+  /** Elements whose readable attribute changed (attributes only, no text read). */
+  const attributeTouched = new Set<Element>();
   const queue: ScanRun[] = [];
   let timer: ReturnType<typeof setTimeout> | null = null;
   let slice: IdleHandle | null = null;
@@ -152,7 +169,7 @@ export function installKindLeakSentinel(options: KindLeakSentinelOptions = {}): 
 
   const reportIn = (parent: Node, nodes: Node[]) => {
     for (const node of nodes) {
-      if (node.nodeType === 1 && hasKindKey(visibleKindText(node))) {
+      if (node.nodeType === 1 && screenTextHoldsKind(visibleKindText(node))) {
         const leak = findKindLeak(node);
         if (leak) report(leak, resolved);
         return;
@@ -169,7 +186,7 @@ export function installKindLeakSentinel(options: KindLeakSentinelOptions = {}): 
     let window: Node[] = [];
     let text = "";
     const check = () => {
-      if (window.length && hasKindKey(text)) reportIn(run.parent, window);
+      if (window.length && screenTextHoldsKind(text)) reportIn(run.parent, window);
     };
     const start = run.first;
     for (let node: Node | null = run.first; node; node = node.nextSibling) {
@@ -185,7 +202,7 @@ export function installKindLeakSentinel(options: KindLeakSentinelOptions = {}): 
         text = "";
         const value = node.nodeValue ?? "";
         budget.left -= value.length;
-        if (hasKindKey(value.replace(/[“”„‟″]/g, '"'))) reportIn(run.parent, [node]);
+        if (screenTextHoldsKind(value.replace(/[“”„‟″]/g, '"'))) reportIn(run.parent, [node]);
       } else {
         const own = visibleKindText(node, sliceChars + 1);
         budget.left -= own.length;
@@ -243,9 +260,24 @@ export function installKindLeakSentinel(options: KindLeakSentinelOptions = {}): 
     if (queue.length && !disposed) slice = requestSlice(runSlice);
   };
 
+  const reportAttributes = (node: Node) => {
+    for (const leak of findKindAttributeLeaks(node)) {
+      report(leak.element, resolved, { name: leak.attribute, value: leak.value });
+    }
+  };
+
   const flush = () => {
     timer = null;
     try {
+      // Readable attributes (title / aria-label / alt) of what changed — one
+      // native selector query per changed node, never the whole page again.
+      for (const node of touched) {
+        if (node.isConnected && node.nodeType === 1 && !isInsideKindSource(node)) reportAttributes(node);
+      }
+      for (const node of attributeTouched) {
+        if (node.isConnected && !isInsideKindSource(node)) reportAttributes(node);
+      }
+      attributeTouched.clear();
       // Group what changed by parent: one run from the first to the last
       // changed child, with sibling context — never the whole parent.
       const byParent = new Map<Node, Node[]>();
@@ -292,7 +324,13 @@ export function installKindLeakSentinel(options: KindLeakSentinelOptions = {}): 
 
   const observer = new MutationObserver((records) => {
     for (const record of records) {
-      if (record.type === "characterData") {
+      if (record.type === "attributes") {
+        if (record.target.nodeType === 1) {
+          attributeTouched.add(record.target as Element);
+          if (timer !== null) clearTimeout(timer);
+          timer = setTimeout(flush, resolved.debounceMs);
+        }
+      } else if (record.type === "characterData") {
         // A changed text node: read its element (and that element's neighbours).
         schedule(record.target.parentElement ?? record.target);
       } else {
@@ -300,7 +338,13 @@ export function installKindLeakSentinel(options: KindLeakSentinelOptions = {}): 
       }
     }
   });
-  observer.observe(root, { childList: true, subtree: true, characterData: true });
+  observer.observe(root, {
+    childList: true,
+    subtree: true,
+    characterData: true,
+    attributes: true,
+    attributeFilter: [...KIND_LEAK_ATTRIBUTES],
+  });
   schedule(root);
 
   return () => {
@@ -309,6 +353,7 @@ export function installKindLeakSentinel(options: KindLeakSentinelOptions = {}): 
     if (timer !== null) clearTimeout(timer);
     slice?.cancel();
     touched.clear();
+    attributeTouched.clear();
     queue.length = 0;
   };
 }

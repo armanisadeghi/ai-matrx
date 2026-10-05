@@ -25,8 +25,11 @@ jest.mock("../../../store/hooks", () => ({
   useAppSelector: (selector: (state: unknown) => unknown) =>
     selector(undefined),
 }));
-jest.mock("@host/lib/redux/slices/appContextSlice", () => ({
+jest.mock("../../../context/sources/scopes", () => ({
+  ...jest.requireActual("../../../context/sources/scopes"),
+  ...(() => ({
   selectScopeSelectionsContext: () => ({}),
+}))(),
 }));
 jest.mock(
   "../../redux/execution-system/conversations/conversations.selectors",

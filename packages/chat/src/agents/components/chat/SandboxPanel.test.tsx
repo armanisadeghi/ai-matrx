@@ -19,9 +19,6 @@ import { Provider } from "react-redux";
 jest.mock("../../../host/notify", () => ({
   toast: { success: jest.fn(), error: jest.fn() },
 }));
-jest.mock("@host/features/code/views/sandboxes/CloneRepoDialog", () => ({
-  CloneRepoDialog: () => null,
-}));
 // The DB write. It is a thunk, so it is replaced with a plain, identifiable
 // action creator — what is asserted is THAT it is dispatched, with which args.
 jest.mock(
@@ -33,7 +30,11 @@ jest.mock(
     })),
   }),
 );
-jest.mock("@host/hooks/sandbox/use-sandbox", () => ({
+// The compute-targets registration (P21): the box list, the targets list and the
+// verified binding the panel reads; everything else stays the app's real registration.
+jest.mock("../../../compute/targets", () => ({
+  ...jest.requireActual("../../../compute/targets"),
+  CloneRepoDialog: () => null,
   useSandboxInstances: () => ({
     instances: [
       {
@@ -54,11 +55,7 @@ jest.mock("@host/hooks/sandbox/use-sandbox", () => ({
     renameInstance: jest.fn(),
     error: null,
   }),
-}));
-jest.mock("@host/hooks/sandbox/use-compute-targets", () => ({
   useComputeTargets: () => ({ data: { targets: [] }, loading: false }),
-}));
-jest.mock("@host/hooks/sandbox/use-verified-binding", () => ({
   useVerifiedSandboxBinding: () => ({
     ref: null,
     status: "unknown",

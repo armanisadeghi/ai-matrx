@@ -16,6 +16,8 @@ import { describe, expect, it, jest } from "@jest/globals";
 jest.mock("@/components/errors/ErrorAlchemyMenu", () => ({ ErrorAlchemyMenu: () => null }));
 jest.mock("@host/components/errors/ErrorAlchemyMenu", () => ({ ErrorAlchemyMenu: () => null }));
 
+// The app's feature renderers (dataset, picklist, ...) register first, as the host does.
+import "@/features/chat-tool-renderers/registerFeatureToolRenderers";
 import { getInlineRenderer, toolRendererRegistry } from "@ai-matrx/chat/tool-call-visualization/registry/registry";
 import { ANSWER_READ_FOR, RECORDS_SPLIT_TOOLS, registerDataToolRenderers } from "../registerDataToolRenderers";
 import { DATA_TOOLS, toolsWithNoDisplay } from "../dataToolDisplays";

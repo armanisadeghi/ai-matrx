@@ -12,7 +12,21 @@
  * QUOTED, an admin/debug window). Pure DOM reads: never mutates, never throws.
  */
 
-import { hasKindKey } from "@/features/content-ir/surfaces/json-kind-signal";
+import { firstKindSlug, hasKindKey } from "@/features/content-ir/surfaces/json-kind-signal";
+
+/**
+ * What counts as a kind key ON SCREEN: the key itself, or its backslash-escaped
+ * form — `{\"__kind\":…}` is a raw view of an object holding a string-held
+ * kind, and that IS a leak (ruling c, round 6).
+ */
+export function screenTextHoldsKind(text: string): boolean {
+  return hasKindKey(text, { escaped: true });
+}
+
+/** The kind slug named in on-screen text (escaped form included), or null. */
+export function screenKindSlug(text: string): string | null {
+  return firstKindSlug(text, { escaped: true });
+}
 
 /** The one attribute a deliberate raw/source view carries. */
 export const KIND_SOURCE_ATTR = "data-kind-source";
@@ -27,8 +41,19 @@ const ELEMENT_NODE = 1;
 const EMPHASIS_MARK: Record<string, string> = { STRONG: "__", B: "__", EM: "_", I: "_" };
 const TEXT_NODE = 3;
 
+/**
+ * A person's own editor (ruling b): any contenteditable that is not "false" —
+ * `""`, `"true"` and `"plaintext-only"` all edit. Editors are skipped like
+ * inputs; the editors that can hold stored kind text are ALSO marked
+ * `data-kind-source="explicit"` at the component.
+ */
+function isEditable(el: Element): boolean {
+  const value = el.getAttribute("contenteditable");
+  return value !== null && value.toLowerCase() !== "false";
+}
+
 function isSkipped(el: Element): boolean {
-  return SKIP_TAGS.has(el.tagName) || el.hasAttribute(KIND_SOURCE_ATTR) || el.getAttribute("contenteditable") === "true";
+  return SKIP_TAGS.has(el.tagName) || el.hasAttribute(KIND_SOURCE_ATTR) || isEditable(el);
 }
 
 /** Whether a node sits inside an explicit source container (or skipped element). */
@@ -75,7 +100,7 @@ export function visibleKindText(root: Node, cap = Number.POSITIVE_INFINITY): str
 /** Whether `root`'s visible text holds a `__kind` key outside source containers. */
 export function textLeaksKind(root: Node, cap?: number): boolean {
   if (isInsideKindSource(root)) return false;
-  return hasKindKey(visibleKindText(root, cap));
+  return screenTextHoldsKind(visibleKindText(root, cap));
 }
 
 /**
@@ -91,7 +116,7 @@ export function findKindLeak(root: Node, cap?: number): Element | null {
     let deeper: Element | null = null;
     for (let child: Element | null = current.firstElementChild; child; child = child.nextElementSibling) {
       if (isSkipped(child)) continue;
-      if (hasKindKey(visibleKindText(child, cap))) {
+      if (screenTextHoldsKind(visibleKindText(child, cap))) {
         deeper = child;
         break;
       }
@@ -99,6 +124,49 @@ export function findKindLeak(root: Node, cap?: number): Element | null {
     if (!deeper) return current;
     current = deeper;
   }
+}
+
+/** Attributes a person reads (tooltip, screen reader, image text) — R3 round 6. */
+export const KIND_LEAK_ATTRIBUTES = ["title", "aria-label", "alt"] as const;
+const ATTRIBUTE_SELECTOR = KIND_LEAK_ATTRIBUTES.map((name) => `[${name}]`).join(",");
+
+export interface KindAttributeLeak {
+  element: Element;
+  attribute: string;
+  value: string;
+}
+
+/** Whether one element's own readable attributes hold a kind key (outside source views). */
+export function attributeKindLeakOf(el: Element): KindAttributeLeak | null {
+  for (const attribute of KIND_LEAK_ATTRIBUTES) {
+    const value = el.getAttribute(attribute);
+    if (value && value.includes("kind") && screenTextHoldsKind(value.replace(/[“”„‟″]/g, '"'))) {
+      return isInsideKindSource(el) ? null : { element: el, attribute, value };
+    }
+  }
+  return null;
+}
+
+/**
+ * Every readable attribute under (and on) `root` that holds a kind key, up to
+ * `limit`. One native selector query — cheap enough for the changed nodes the
+ * sentinel hands it.
+ */
+export function findKindAttributeLeaks(root: Node, limit = 20): KindAttributeLeak[] {
+  const leaks: KindAttributeLeak[] = [];
+  if (root.nodeType !== ELEMENT_NODE && root.nodeType !== 9 && root.nodeType !== 11) return leaks;
+  if (root.nodeType === ELEMENT_NODE) {
+    const own = attributeKindLeakOf(root as Element);
+    if (own) leaks.push(own);
+  }
+  const scope = root as ParentNode;
+  if (typeof scope.querySelectorAll !== "function") return leaks;
+  for (const el of Array.from(scope.querySelectorAll(ATTRIBUTE_SELECTOR))) {
+    if (leaks.length >= limit) break;
+    const leak = attributeKindLeakOf(el);
+    if (leak) leaks.push(leak);
+  }
+  return leaks;
 }
 
 const IDENTIFYING_ATTRS = ["id", "data-testid", "data-block-type", "data-mtx-ctx", "data-language", "data-slot", "data-surface", "role", "aria-label"];

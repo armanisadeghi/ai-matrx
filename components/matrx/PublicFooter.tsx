@@ -3,6 +3,8 @@ import { siteConfig } from "@/config/extras/site";
 import { MATRX_LOCAL_DOWNLOAD_PATH } from "@/features/matrx-local-download/release";
 
 const FOOTER_LINKS = [
+  { href: "/desktop", label: "Matrx Desktop" },
+  { href: "/extend", label: "Matrx Extend" },
   { href: MATRX_LOCAL_DOWNLOAD_PATH, label: "Download" },
   { href: "/how-it-works", label: "How It Works" },
   { href: "/why-ai-matrx", label: "Why AI Matrx" },
@@ -41,7 +43,7 @@ export function PublicFooter() {
         </span>
         <nav
           aria-label="Footer"
-          className="grid w-full grid-cols-2 sm:grid-cols-4 xl:flex xl:w-auto xl:flex-nowrap xl:items-center"
+          className="grid w-full grid-cols-2 sm:grid-cols-5 xl:flex xl:w-auto xl:flex-nowrap xl:items-center"
         >
           {FOOTER_LINKS.map(({ href, label }) => (
             <Link

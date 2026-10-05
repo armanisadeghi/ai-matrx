@@ -20,8 +20,11 @@ jest.mock("../../../store/hooks", () => ({
   useAppDispatch: () => (thunk: unknown) => thunk,
   useAppSelector: (selector: (state: unknown) => unknown) => selector(undefined),
 }));
-jest.mock("@host/lib/redux/slices/appContextSlice", () => ({
+jest.mock("../../../context/sources/scopes", () => ({
+  ...jest.requireActual("../../../context/sources/scopes"),
+  ...(() => ({
   selectScopeSelectionsContext: () => ({}),
+}))(),
 }));
 // The context door (the conversation's own fields); this test is about the selection.
 jest.mock("../../redux/execution-system/context-rules/request-context", () => ({

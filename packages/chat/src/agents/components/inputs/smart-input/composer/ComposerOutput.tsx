@@ -15,8 +15,11 @@
  *    row with the shape's one-line description. A pick is recorded in
  *    `outputKinds` only and sent as `output_kinds` on every request; the server
  *    resolves the skill. An agent whose output schema fixes the root `__kind`
- *    is LOCKED: the panel shows its shape(s) as locked with a short reason and
- *    lets the person remove any pick the agent would refuse.
+ *    is LOCKED: it answers in its own shape(s) and a different pick is NEVER an
+ *    error (rule 23). The picker stays usable; a pick outside the lock gets an
+ *    inline warning on its row and in the panel (at pick time and when saved),
+ *    the pill keeps naming the locked shape with a warning mark, and the server
+ *    drops that pick for the run.
  *
  * State logic: `output-selection.ts` (pure, tested). Catalog read:
  * `useOutputShapeCatalog`.
@@ -34,6 +37,7 @@ import {
   Image as ImageIcon,
   Mic,
   Music,
+  AlertTriangle,
   Lock,
   Presentation,
   RotateCcw,
@@ -63,6 +67,7 @@ import {
   isDefaultOutput,
   classifyLockRead,
   conflictingKinds,
+  lockedPickWarning,
   readOutputTypes,
   selectedOutputKinds,
   summarizeOutput,
@@ -93,6 +98,9 @@ const kindLabel = (kind: string) => knownShapeLabel(kind) ?? (humanizeIdentifier
 
 /** The reason line shown on a locked agent's shapes (interface-text: ≤60 chars). */
 const LOCKED_REASON = "This agent always answers in its own shape";
+
+/** The warning for a pick outside the lock — row, panel and pill all say this. */
+const pickWarning = (lockedShapes: readonly string[]) => lockedPickWarning(lockedShapes, kindLabel);
 
 /** What is known about the agent's shape lock. `unknown` is never rendered as unlocked. */
 type LockState =
@@ -170,6 +178,9 @@ function useComposerOutput(conversationId: string) {
     isDefault: isDefaultOutput(types, kinds.length),
     // A locked agent answers in its own shape(s), so the pill names those, not the picks.
     locked: lock.status === "locked",
+    // Picks the locked agent will not honour (saved or just made): the pill marks them.
+    conflicts: lock.status === "locked" ? conflictingKinds(kinds, lock.shapes) : [],
+    lockWarning: lock.status === "locked" ? pickWarning(lock.shapes) : null,
     label: lock.status === "locked" ? summarizeOutput([], lock.shapes, kindLabel) : summarizeOutput(types, kinds, kindLabel),
     toggleType: (id: string) => write({ outputTypes: toggleOutputType(types, id) }),
     toggleKind: (kind: string) => write(toggleOutputKind({ outputKinds, addedSkills }, kind, skills)),
@@ -240,24 +251,33 @@ function ShapePicker({
 
   const selected = new Set(kinds);
   const needle = search.trim().toLowerCase();
+  // The locked agent's own shapes are shown as locked rows above, never twice.
+  const own = new Set(lockedShapes);
   const pinned = kinds.filter(
-    (kind) => !needle || kind.toLowerCase().includes(needle) || kindLabel(kind).toLowerCase().includes(needle),
+    (kind) =>
+      !own.has(kind) &&
+      (!needle || kind.toLowerCase().includes(needle) || kindLabel(kind).toLowerCase().includes(needle)),
   );
-  const unpinned = catalog.rows.filter((row) => !selected.has(row.kind));
+  const unpinned = catalog.rows.filter((row) => !selected.has(row.kind) && !own.has(row.kind));
   const locked = lockedShapes.length > 0;
   const refused = conflictingKinds(kinds, lockedShapes);
+  const warning = locked ? pickWarning(lockedShapes) : null;
 
-  const row = (kind: string, label: string, checked: boolean) => (
-    <ComposerMenuRow
-      key={kind}
-      icon={Shapes}
-      label={label}
-      description={knownShapeDescription(kind) ?? undefined}
-      checked={checked}
-      title={`${label} (${kind})`}
-      onClick={() => onToggle(kind)}
-    />
-  );
+  const row = (kind: string, label: string, checked: boolean) => {
+    const conflicts = warning !== null && checked && refused.includes(kind);
+    return (
+      <ComposerMenuRow
+        key={kind}
+        icon={Shapes}
+        label={label}
+        description={conflicts ? warning : (knownShapeDescription(kind) ?? undefined)}
+        warning={conflicts}
+        checked={checked}
+        title={conflicts ? `${label} (${kind}) — ${warning}` : `${label} (${kind})`}
+        onClick={() => onToggle(kind)}
+      />
+    );
+  };
 
   if (lock.status === "failed") {
     return (
@@ -281,44 +301,6 @@ function ShapePicker({
     );
   }
 
-  if (locked) {
-    return (
-      <div className="flex min-h-0 flex-col">
-        <div className="flex items-center gap-1.5 px-2.5 pb-1 pt-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-          <Lock className="h-3 w-3 shrink-0" />
-          <span className="truncate">Shapes locked</span>
-        </div>
-        <ComposerMenuHelp>{LOCKED_REASON}</ComposerMenuHelp>
-        <DetailsError details={details} />
-        {lockedShapes.map((kind) => (
-          <ComposerMenuRow
-            key={kind}
-            icon={Lock}
-            label={kindLabel(kind)}
-            description={knownShapeDescription(kind) ?? undefined}
-            checked
-            title={`${kindLabel(kind)} (${kind}) — ${LOCKED_REASON}`}
-          />
-        ))}
-        {refused.length > 0 ? (
-          <>
-            <ComposerMenuDivider />
-            <ComposerMenuHelp>Remove these, the agent refuses them</ComposerMenuHelp>
-            {refused.map((kind) => (
-              <ComposerMenuRow
-                key={kind}
-                icon={X}
-                label={kindLabel(kind)}
-                title={`Remove ${kindLabel(kind)} from this chat`}
-                onClick={() => onToggle(kind)}
-              />
-            ))}
-          </>
-        ) : null}
-      </div>
-    );
-  }
-
   return (
     <div className="flex min-h-0 flex-col">
       <div className="flex items-center justify-between gap-2 px-2.5 pb-1 pt-2">
@@ -329,6 +311,29 @@ function ShapePicker({
           <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground">{kinds.length} selected</span>
         ) : null}
       </div>
+      {locked ? (
+        <>
+          {lockedShapes.map((kind) => (
+            <ComposerMenuRow
+              key={kind}
+              icon={Lock}
+              label={kindLabel(kind)}
+              description={LOCKED_REASON}
+              checked
+              title={`${kindLabel(kind)} (${kind}) — ${LOCKED_REASON}`}
+            />
+          ))}
+          {refused.length > 0 && warning ? (
+            <p
+              role="status"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs leading-snug text-amber-600 dark:text-amber-400"
+            >
+              <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+              <span className="min-w-0 truncate">{warning}</span>
+            </p>
+          ) : null}
+        </>
+      ) : null}
       <label className="mx-1 flex h-8 shrink-0 items-center gap-2 rounded-md bg-muted/60 px-2">
         <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
         <input
@@ -458,6 +463,14 @@ export function ComposerOutputPill({
             <span className={cn("truncate", (output.locked || !output.isDefault) && "font-medium text-foreground")}>
               {output.label}
             </span>
+            {output.lockWarning && output.conflicts.length > 0 ? (
+              <span title={output.lockWarning} className="inline-flex shrink-0">
+                <AlertTriangle
+                  aria-label={output.lockWarning}
+                  className="h-3 w-3 text-amber-600 dark:text-amber-400"
+                />
+              </span>
+            ) : null}
           </button>
         </PopoverTrigger>
         {!output.isDefault ? (

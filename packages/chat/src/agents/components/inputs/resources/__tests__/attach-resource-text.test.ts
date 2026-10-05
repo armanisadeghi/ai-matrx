@@ -22,8 +22,11 @@ jest.mock("../../../../redux/execution-system/instance-resources/editable-resour
   isEditableCapableBlockType: jest.fn(() => false),
 }));
 // W5 swap: durable edges ride the @ai-matrx/associations host store.
-jest.mock("@host/features/scopes/host/associationsStore", () => ({
+jest.mock("../../../../../context/sources/scopes", () => ({
+  ...jest.requireActual("../../../../../context/sources/scopes"),
+  ...(() => ({
   getAssociationsStore: jest.fn(),
+}))(),
 }));
 jest.mock("../attached-documents", () => ({
   cleanDocumentLabel: jest.fn(),
