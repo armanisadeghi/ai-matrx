@@ -33,18 +33,18 @@ let frame = 0;
 const fresh = (text: string) => () => `${text} w${++frame}`;
 
 describe("prose spelling reader — linear-time budgets", () => {
-  it("600 escaped regions (~30 KB) in under 40 ms", () => {
+  it("600 escaped regions (~30 KB) in under 30 ms", () => {
     const text = repeat(ESCAPED, ESCAPED.length * 600);
     const ms = bestMs(fresh(text), spelledKindsAsOneLine);
     expect(spelledKindsAsOneLine(text)).not.toContain("__kind");
-    expect(ms).toBeLessThan(40);
+    expect(ms).toBeLessThan(30);
   });
 
-  it("1 MB of math prose with one escaped kind at the start in under 60 ms", () => {
+  it("1 MB of math prose with one escaped kind at the start in under 40 ms", () => {
     const text = ESCAPED + repeat(MATH, 1_000_000);
     const ms = bestMs(fresh(text), spelledKindsAsOneLine);
     expect(spelledKindsAsOneLine(text).startsWith("Log: **Hi** · Note ok.")).toBe(true);
-    expect(ms).toBeLessThan(60);
+    expect(ms).toBeLessThan(40);
   });
 
   it("1 MB of plain prose in under 10 ms", () => {
@@ -52,7 +52,7 @@ describe("prose spelling reader — linear-time budgets", () => {
     expect(ms).toBeLessThan(10);
   });
 
-  it("the normalizer shares the budget: 600 escaped regions in under 40 ms", () => {
+  it("the normalizer shares the budget: 600 escaped regions in under 30 ms", () => {
     const text = repeat(ESCAPED, ESCAPED.length * 600);
     const ms = bestMs(fresh(text), normalizeKindSpellings);
     expect(ms).toBeLessThan(40);
@@ -68,16 +68,3 @@ describe("prose spelling reader — linear-time budgets", () => {
   });
 });
 
-it("PROBE timings", () => {
-  const t1 = repeat(ESCAPED, ESCAPED.length * 600);
-  const t2 = ESCAPED + repeat(MATH, 1_000_000);
-  const t3 = repeat(PLAIN, 1_000_000);
-  // eslint-disable-next-line no-console
-  console.log("PERF", JSON.stringify({
-    esc600: bestMs(fresh(t1), spelledKindsAsOneLine),
-    mb1one: bestMs(fresh(t2), spelledKindsAsOneLine),
-    plain: bestMs(fresh(t3), spelledKindsAsOneLine),
-    norm600: bestMs(fresh(t1), normalizeKindSpellings),
-    normMb: bestMs(fresh(t2), normalizeKindSpellings),
-  }));
-});

@@ -183,7 +183,10 @@ describe("census items that are wiring", () => {
     expect(page).not.toMatch(/SwitchNotice|storeSwitch/);
     // 13 · making in the active organization is the one New table dialog (features/make/MakeMount.tsx).
     expect(route).toContain("<NewTableDialog");
-    expect(page).toContain("<ActionInbox");
+    // 15 · the inbox is a header action opening the one inbox window in place (never a band under
+    // the list: mounted there it made /data scroll twice — the page and the table, 2026-10-05).
+    expect(page).toContain('overlayId: "workInboxWindow"');
+    expect(page).not.toContain("<ActionInbox");
     for (const port of ["realtime:", "members,", "share: recordStoreShare", "chat:"]) expect(page).toContain(port);
   });
 

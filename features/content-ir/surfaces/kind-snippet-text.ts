@@ -13,7 +13,7 @@
 
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { inlineKindText } from "@/features/content-ir/surfaces/kind-one-line";
-import { firstKindSlug, hasKindKey, normalizeKindSpellings } from "@/features/content-ir/surfaces/json-kind-signal";
+import { firstKindSlug, hasKindKey, kindObjectProseBreak, normalizeKindSpellings } from "@/features/content-ir/surfaces/json-kind-signal";
 
 const KIND_KEY = /(?<!\\)"(?:__kind|\\u005[fF]_kind)"\s*:/;
 
@@ -43,9 +43,14 @@ export function snippetKindText(raw: string): string {
   let out = inlineKindText(fragment).replace(/\*\*/g, "");
   if (hasKindKey(out)) {
     const key = out.search(KIND_KEY);
-    if (key >= 0 && out.lastIndexOf("{", key) < 0) {
+    // Only a fragment that starts INSIDE an object (nothing before the key
+    // but JSON punctuation) — prose that mentions the key is never cut (round 9).
+    if (key >= 0 && out.lastIndexOf("{", key) < 0 && /(?:^|[,{[]|")\s*$/.test(out.slice(0, key))) {
       const name = (firstKindSlug(out.slice(key)) && humanizeIdentifier(firstKindSlug(out.slice(key))!)) || "Structured output";
-      out = name + out.slice(unbalancedCloserEnd(out, key));
+      // Never past where the object breaks into prose (H-1, round 9).
+      const closer = unbalancedCloserEnd(out, key);
+      const proseBreak = closer === out.length ? kindObjectProseBreak(`{${out.slice(key)}`) : null;
+      out = out.slice(0, key).replace(/[\s,"{[]*$/, "") + name + out.slice(proseBreak === null ? closer : key + proseBreak - 1);
     }
   }
   return out.replace(/\s+/g, " ").trim();

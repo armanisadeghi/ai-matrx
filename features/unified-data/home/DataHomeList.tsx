@@ -9,10 +9,9 @@
 //
 // The two organization concepts never touch (common-docs/policies/access-ladder.md):
 // the shell's organization filter (`?org_filter=`, All organizations every visit) narrows the list;
-// the ACTIVE organization is only where New table lands (the page header, and the making controls
-// in the footer). Nothing in this file reads the active organization for a read.
+// the ACTIVE organization is only where New table lands (the page header). Nothing in this file reads the active organization for a read.
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { foundHighlightOf } from "@ai-matrx/kit/reversible";
 import { useRecordsClient } from "@ai-matrx/records/react";
@@ -65,13 +64,11 @@ export const DATA_HOME_SURFACE_KEY = "data-home";
 
 export interface DataHomeListProps {
   dataSource: RecordsDataSource;
-  /** Header slot for nothing; the page owns the header. Footer: making, inbox, archive. */
-  footer?: ReactNode;
   /** The organization the page's filter names, when it shows only a member what is shared. */
   sharedOnlyHere?: boolean;
 }
 
-export function DataHomeList({ dataSource, footer, sharedOnlyHere = false }: DataHomeListProps) {
+export function DataHomeList({ dataSource, sharedOnlyHere = false }: DataHomeListProps) {
   const client = useRecordsClient();
   const userId = useAppSelector(selectUserId);
   const marks = useDataHomeMarks();
@@ -341,7 +338,6 @@ export function DataHomeList({ dataSource, footer, sharedOnlyHere = false }: Dat
             ) : null}
           </>
         )}
-        footer={footer}
       />
     </DataMenuProvider>
   );

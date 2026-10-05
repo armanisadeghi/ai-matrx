@@ -1601,6 +1601,10 @@ export function WindowPanel({
       data-window-panel=""
         data-window-id={id}
       {...surfaceLayerAttrs}
+      // A minimized tile docks at the bottom over the page: it is floating chrome, so every page
+      // end (a list's pager included) clears it (lib/layout/floating-chrome.ts). 2026-10-05: the
+      // /data pager's next-page arrows sat under the tile.
+      {...(isMinimized ? { "data-matrx-floating-bottom": "" } : {})}
       className={cn(
         "fixed",
         isMaximized ? "overflow-hidden" : "overflow-visible",

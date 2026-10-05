@@ -9,19 +9,20 @@
 //
 // The census (DATA-HOME-3-SPEC §3) items this file keeps: 1 header (Back, no "Data" word, New
 // table / Start from an example always, opening the one New table dialog — G5 b), 12 the store
-// switch and its notices, 13 making a table in the ACTIVE organization, 15 the inbox, 16 the mount
-// ports. The list, lanes, organization filter, kinds and row facts are DataHomeList's.
+// switch and its notices, 13 making a table in the ACTIVE organization, 15 the inbox (a header
+// action opening the one inbox window, in place), 16 the mount ports. The list, lanes, organization filter, kinds and row facts are DataHomeList's.
 
 import { useCallback, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ActionInbox, RecordsMount, personActor, recordsDataSource } from "@ai-matrx/records-ui";
+import { RecordsMount, personActor, recordsDataSource } from "@ai-matrx/records-ui";
 
 import { recordStoreShare } from "@/features/sharing/components/RecordStoreShareSurface";
 import { RecordScopedChat } from "@/features/unified-data/record-chat/RecordScopedChat";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import HeaderStructured from "@/features/shell/components/header/variants/variants/HeaderStructured";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { ORG_FILTER_PARAM } from "@/features/unified-data/hub/dataHomeScope";
 import type { OrganizationState } from "@/features/organizations/useOrganizationRequired";
@@ -30,17 +31,16 @@ import { getOrganizationMembers } from "@/features/organizations/service";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { createClient } from "@/utils/supabase/client";
 import { createRecordsRealtimePort } from "@/features/unified-data/realtime/recordsRealtimePort";
-import { openPath } from "@/lib/deep-link/openPath";
 import { RECORDS_NOTIFY } from "@/features/unified-data/recordsNotify";
 
 import { DataHomeList } from "./DataHomeList";
-import { MountWhenNear } from "./MountWhenNear";
 import type { DataHomeMaking } from "./DataHomeRoute";
 import { TEMPLATE_GALLERY_HREF } from "@/features/make/gallery/galleryHref";
 
 /** `making` is the route's: the header's presses open the route's one New table dialog. */
 export function DataHomeShellPage({ making }: { making: DataHomeMaking }) {
   const router = useRouter();
+  const dispatch = useAppDispatch();
   const userId = useAppSelector(selectUserId);
   const searchParams = useSearchParams();
   const { organizations: myOrganizations, loading: myOrganizationsLoading } = useUserOrganizations();
@@ -92,6 +92,13 @@ export function DataHomeShellPage({ making }: { making: DataHomeMaking }) {
                     label: "Start from a template",
                     onPress: () => router.push(TEMPLATE_GALLERY_HREF),
                   },
+                  // THE INBOX OPENS IN PLACE (2026-10-05): the one inbox window the bell opens.
+                  // Mounted under the list it made /data scroll twice — the page and the table.
+                  {
+                    icon: "Inbox",
+                    label: "Inbox",
+                    onPress: () => dispatch(openOverlay({ overlayId: "workInboxWindow" })),
+                  },
                 ],
               }
             : {})}
@@ -122,21 +129,7 @@ export function DataHomeShellPage({ making }: { making: DataHomeMaking }) {
             }}
           >
             <div className="min-h-0 flex-1">
-              <DataHomeList
-                dataSource={dataSource}
-                footer={
-                  <div className="space-y-4">
-                    <MountWhenNear>
-                      <ActionInbox
-                        className="max-h-64"
-                        onOpenRecord={(recordId, tableId) =>
-                          router.push(openPath(recordId, { fallback: `/data/${tableId}?record=${recordId}` }))
-                        }
-                      />
-                    </MountWhenNear>
-                  </div>
-                }
-              />
+              <DataHomeList dataSource={dataSource} />
             </div>
           </RecordsMount>
         )}

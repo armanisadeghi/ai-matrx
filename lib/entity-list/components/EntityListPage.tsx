@@ -184,11 +184,6 @@ export interface EntityListPageProps<TRow> {
    * scope; there is simply no choice to draw.
    */
   scopeTabs?: boolean;
-  /**
-   * Content after the list, inside the same scroll (an archive disclosure, an inbox): the page's
-   * own sections that belong under its rows, without a second scroll container around the shell.
-   */
-  footer?: ReactNode;
 }
 
 /**
@@ -254,7 +249,6 @@ export function EntityListPage<TRow>({
   defaultScope,
   clearsShellHeader = true,
   scopeTabs = true,
-  footer,
 }: EntityListPageProps<TRow>) {
   // "All" and "My team" join every list that offers them here, once — never per page.
   const visibleScopes = withStandardLanes(scopes ?? config.scopes, {
@@ -764,7 +758,7 @@ export function EntityListPage<TRow>({
           ? {
               title: `No ${plural} match`,
               description:
-                "Nothing matched your current search and filters. Widen them, or check a different scope.",
+                "Widen the search or filters, or try another lane.",
               // A SEARCH that found nothing keeps the page's own offer beside
               // the widen door — `New topic "<search>"` is the whole point of
               // an emptyAction render-prop that reads the search (page-pass
@@ -874,7 +868,6 @@ export function EntityListPage<TRow>({
       root.style.removeProperty("--page-bottom-dock-h");
     };
   }, []);
-  // WHERE THE SCROLL BODY STARTS, published for the footer-mode table pane's height (below).
   const bodyRef = useRef<HTMLDivElement | null>(null);
   // The room the table has (the body's content box), for the column priorities. Rounded to 8 px
   // so a scrollbar appearing or a sub-pixel change never re-renders the list.
@@ -893,27 +886,6 @@ export function EntityListPage<TRow>({
     ro.observe(body);
     return () => ro.disconnect();
   }, []);
-  const hasFooter = Boolean(footer);
-  useEffect(() => {
-    const pane = paneRef.current;
-    const body = bodyRef.current;
-    if (!hasFooter || !pane || !body || typeof ResizeObserver === "undefined") return undefined;
-    const publish = () => {
-      // The body's own box never moves when it scrolls (it is the scroller), so this is stable.
-      const top = Math.max(0, Math.round(body.getBoundingClientRect().top));
-      pane.style.setProperty("--entity-list-body-top", `${top}px`);
-    };
-    publish();
-    const ro = new ResizeObserver(publish);
-    if (body.previousElementSibling) ro.observe(body.previousElementSibling);
-    ro.observe(pane);
-    window.addEventListener("resize", publish);
-    return () => {
-      ro.disconnect();
-      window.removeEventListener("resize", publish);
-      pane.style.removeProperty("--entity-list-body-top");
-    };
-  }, [hasFooter]);
   const pointerInPaneRef = useRef(false);
   const hoveredRowIdRef = useRef<string | null>(null);
   // Every handler on the controller is a fresh function each render (the
@@ -1477,13 +1449,7 @@ export function EntityListPage<TRow>({
       */}
       <div ref={bodyRef} data-matrx-page-end="" className="min-h-[16rem] flex-1 overflow-y-auto px-[var(--matrx-page-gutter)]">
         {view === "table" ? (
-          // A page FOOTER waits below the fold: the table pane is one screen tall (a definite
-          // height, so the table keeps its own virtualized scroll), and the body scrolls on to the
-          // footer after it. (A percentage height here does not resolve inside the scroll body.)
-          // Its height is the screen below the body's MEASURED top (--entity-list-body-top): a
-          // notice or a Recent line above the tabs moves the top, and the pager stays on screen.
-          <div data-entity-list-table-pane="" className={footer ? "flex h-[max(16rem,calc(100dvh-var(--entity-list-body-top,9rem)))] shrink-0 flex-col" : "contents"}>
-          {/* read-gate-exempt: a failed read swaps resolvedEmptyState for failureEmptyState, and the alert above names the failure once */}
+          // read-gate-exempt: a failed read swaps resolvedEmptyState for failureEmptyState, and the alert above names the failure once
           <EntityListTable
             config={pageConfig}
             actions={actions}
@@ -1572,7 +1538,6 @@ export function EntityListPage<TRow>({
               list.setPage(next.page);
             }}
           />
-          </div>
         ) : list.rows.length === 0 && !list.isLoading ? (
           // Cards/rows views used to render literally nothing on an empty list —
           // the empty state (and its emptyAction door) existed only in the table
@@ -1602,7 +1567,6 @@ export function EntityListPage<TRow>({
             onPage={list.setPage}
           />
         )}
-        {footer ? <div className="shrink-0 pt-[var(--matrx-page-block-gap)]">{footer}</div> : null}
       </div>
 
       {modals}

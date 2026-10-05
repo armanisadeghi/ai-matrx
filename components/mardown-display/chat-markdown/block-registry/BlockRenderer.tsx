@@ -30,6 +30,7 @@ import {
   hasKindKey,
   isJsonFenceLanguage,
   isJson5Language,
+  kindObjectProseBreak,
   isKindSlug,
   json5AsJson,
   jsonKindSignal,
@@ -234,6 +235,15 @@ export function withTerminalEnvelope<
   const settled =
     block.isStreamingBlock === false || (!isStreamActive && !block.isStreamingBlock);
   if (!settled || readEnvelope(block.metadata)) {
+    return block;
+  }
+  // PROSE whose kind object broke into words (`{"__kind":"note","title":"Hi"
+  // and then…`) is not a region: the prose leaf reads it as label + the text
+  // after it, live and reloaded alike (L-4, round 9) — never an error card.
+  if (
+    (block as { type?: string }).type === "text" &&
+    kindObjectProseBreak((block.content ?? "").trimStart()) !== null
+  ) {
     return block;
   }
   // A ```json5 body parses as the JSON it means (X-minor, round 3).

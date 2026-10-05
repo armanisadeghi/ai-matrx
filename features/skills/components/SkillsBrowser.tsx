@@ -15,7 +15,7 @@ import {
 
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@ai-matrx/design-system/controls";
+import { Button, ControlRow, SearchField, SegmentedControl, Select } from "@ai-matrx/design-system/controls";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
@@ -128,62 +128,40 @@ export function SkillsBrowser({
       })}
     >
     <div className="flex flex-col h-full min-h-0">
-      {/* Filter / actions bar */}
-      <div className="flex items-center gap-2 px-4 py-3 shrink-0 border-b border-border/60">
-        <Input
+      {/* Filter / actions bar — wraps on a narrow pane: search keeps a usable width. */}
+      <ControlRow className="px-4 py-2 shrink-0 border-b border-border/60">
+        <SearchField
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search skills…"
-          className="flex-1"
+          aria-label="Search skills"
+          className="flex-1 basis-48"
         />
-        <ScopeChips value={scope} onChange={setScope} />
-        <CategoryDropdown
+        <SegmentedControl
+          value={scope}
+          onValueChange={setScope}
+          data={SCOPE_OPTIONS}
+          aria-label="Skill scope"
+        />
+        <Select
           value={categoryId}
-          onChange={setCategoryId}
-          categories={categories}
+          onValueChange={setCategoryId}
+          options={[
+            { value: "all", label: "All categories" },
+            ...categories.map((c) => ({ value: c.id, label: c.label })),
+          ]}
+          aria-label="Filter by category"
         />
-        <button
-          type="button"
-          onClick={onNew}
-          className={cn(
-            "inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-sm font-medium",
-            "bg-primary text-primary-foreground hover:opacity-90 transition-opacity",
-          )}
-        >
-          <Plus className="h-3.5 w-3.5" />
+        <Button variant="primary" icon={<Plus />} onClick={onNew}>
           New
-        </button>
+        </Button>
         {isAdmin && onIngest && (
-          <button
-            type="button"
-            onClick={onIngest}
-            aria-label="Filesystem ingest"
-            title="Filesystem ingest"
-            className={cn(
-              "inline-flex items-center justify-center h-8 w-8 rounded-md",
-              "bg-background border border-border text-foreground",
-              "hover:bg-accent transition-colors",
-            )}
-          >
-            <Upload className="h-4 w-4" />
-          </button>
+          <Button icon={<Upload />} onClick={onIngest} aria-label="Filesystem ingest" title="Filesystem ingest" />
         )}
         {isAdmin && onCategories && (
-          <button
-            type="button"
-            onClick={onCategories}
-            aria-label="Categories admin"
-            title="Categories admin"
-            className={cn(
-              "inline-flex items-center justify-center h-8 w-8 rounded-md",
-              "bg-background border border-border text-foreground",
-              "hover:bg-accent transition-colors",
-            )}
-          >
-            <Settings className="h-4 w-4" />
-          </button>
+          <Button icon={<Settings />} onClick={onCategories} aria-label="Categories admin" title="Categories admin" />
         )}
-      </div>
+      </ControlRow>
 
       {/* Body */}
       <div className="flex-1 overflow-y-auto scrollbar-thin">
@@ -273,69 +251,12 @@ export function SkillsBrowser({
 // Helpers
 // ---------------------------------------------------------------------------
 
-function ScopeChips({
-  value,
-  onChange,
-}: {
-  value: ScopeFilter;
-  onChange: (v: ScopeFilter) => void;
-}) {
-  const chips: Array<{ key: ScopeFilter; label: string }> = [
-    { key: "all", label: "All" },
-    { key: "system", label: "System" },
-    { key: "public", label: "Public" },
-    { key: "personal", label: "Personal" },
-  ];
-  return (
-    <div className="inline-flex rounded-md border border-border overflow-hidden h-8 shrink-0">
-      {chips.map((c) => (
-        <button
-          key={c.key}
-          type="button"
-          onClick={() => onChange(c.key)}
-          className={cn(
-            "px-2.5 text-xs font-medium transition-colors",
-            value === c.key
-              ? "bg-primary text-primary-foreground"
-              : "bg-background text-muted-foreground hover:bg-accent hover:text-foreground",
-          )}
-        >
-          {c.label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function CategoryDropdown({
-  value,
-  onChange,
-  categories,
-}: {
-  value: string | "all";
-  onChange: (v: string | "all") => void;
-  categories: Array<{ id: string; label: string }>;
-}) {
-  return (
-    <select
-      value={value}
-      onChange={(e) => onChange(e.target.value as string | "all")}
-      className={cn(
-        "h-8 px-2 text-sm rounded-md shrink-0",
-        "bg-background border border-border text-foreground",
-        "focus:outline-none focus:ring-1 focus:ring-ring",
-      )}
-      title="Filter by category"
-    >
-      <option value="all">All categories</option>
-      {categories.map((c) => (
-        <option key={c.id} value={c.id}>
-          {c.label}
-        </option>
-      ))}
-    </select>
-  );
-}
+const SCOPE_OPTIONS: ReadonlyArray<{ value: ScopeFilter; label: string }> = [
+  { value: "all", label: "All" },
+  { value: "system", label: "System" },
+  { value: "public", label: "Public" },
+  { value: "personal", label: "Personal" },
+];
 
 function ScopeBadge({ skill }: { skill: SkillRow }) {
   // System and imported rows get their origin from the ONE shared badge, so an

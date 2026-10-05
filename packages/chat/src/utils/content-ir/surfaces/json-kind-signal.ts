@@ -979,7 +979,7 @@ export type KindGrammarVerdict =
 export function kindGrammar(
   s: string,
   dialect: GrammarDialect = "json",
-'): KindGrammarVerdict {
+): KindGrammarVerdict {
   const closers: number[] = [];
   const singleQuotes = dialect !== "json";
   const bareKeys = dialect === "js";

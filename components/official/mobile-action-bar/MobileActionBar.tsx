@@ -170,8 +170,9 @@ export function MobileActionBar({
               </Button>
             )}
 
-            {/* Compact Search Bar */}
+            {/* Compact Search Bar — a field-shaped trigger that fills the bar, not a label pill. */}
             <div
+              data-matrx-pill="off"
               onClick={handleSearchActivate}
               className="flex-1 flex items-center gap-2 h-10 px-3 rounded-full matrx-glass-thin-border cursor-pointer"
             >
