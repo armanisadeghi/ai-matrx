@@ -21,7 +21,7 @@ import {
   markdownCarriesKind,
 } from "@/features/content-ir/surfaces/json-kind-signal";
 import { KindSourceView, useKindSourceView } from "./kind-source-view";
-import { pythonKindsAsOneLine } from "@/features/content-ir/surfaces/kind-one-line";
+import { spelledKindsAsOneLine } from "@/features/content-ir/surfaces/kind-one-line";
 import { useReportKindAtRawRenderer } from "@/features/content-ir/surfaces/report-kind-at-raw-renderer";
 import type { ImagePolicyDeclaration } from "@/components/rich-content/prose/remote-image-policy";
 
@@ -50,9 +50,10 @@ export function textNeedsKindPipeline(
   content: string,
   rerouted: readonly string[],
 ): boolean {
-  // A Python-repr kind is not a region the pipeline lifts: the prose leaf
-  // reads it as its one-line label (round 7 K4b), so it never reroutes.
-  if (!content || !markdownCarriesKind(pythonKindsAsOneLine(content))) return false;
+  // A kind spelled so no JSON reader opens it (escaped, smart quotes, entities,
+  // Python repr) is not a region the pipeline lifts: the prose leaf reads it
+  // as its one-line label (K4b round 7, round 8), so it never reroutes.
+  if (!content || !markdownCarriesKind(spelledKindsAsOneLine(content))) return false;
   const own = content.trim();
   return !rerouted.some((text) => text.includes(own));
 }

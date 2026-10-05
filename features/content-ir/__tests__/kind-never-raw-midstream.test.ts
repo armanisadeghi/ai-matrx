@@ -751,11 +751,13 @@ describe("never raw: the frames before a LATER __kind key's colon (V6)", () => {
   it("kindless JSON with underscore keys never flickers to a loader", () => {
     const body = JSON.stringify({ _id: 7, __type: "row", __key: "k", _rows: [{ _n: 1 }] });
     const frames = jsonFrames(streamCharByChar(`\`\`\`json\n${body}`, "req-v6-kindless"));
-    // Once its first key is known, a kindless region is JSON on every frame —
-    // except the single frame `"__k` of `"__key"` (the threshold the rule names).
+    // Once its first key is known, a kindless region is JSON on every frame.
+    // Round 8: the key-spelling transform at the stream's ingress holds a
+    // `"__k` that may still become `"__kind"` (zero-width spelling) until it
+    // cannot, so not even the one `"__k` frame of `"__key"` reaches a loader.
     const afterFirstKey = frames.filter((b) => (b.content ?? "").length > 8);
     const held = afterFirstKey.filter((b) => !rendersRawJson(b)).map((b) => b.content);
-    expect(held).toEqual([expect.stringMatching(/"__k$/)]);
+    expect(held).toEqual([]);
   });
 });
 

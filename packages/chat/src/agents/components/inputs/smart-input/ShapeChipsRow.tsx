@@ -97,7 +97,7 @@ export function ShapeChipsRow({
                   : `Answer as ${chip.label}`
               }
             >
-              <button type="button" onClick={() => toggle(chip.kind)} />
+              <button type="button" aria-label={chip.label} onClick={() => toggle(chip.kind)} />
             </Chip>
           );
         })}

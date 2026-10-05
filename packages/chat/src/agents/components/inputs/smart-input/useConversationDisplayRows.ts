@@ -24,7 +24,7 @@ import {
   selectDisplayContextRows,
   type DurableAttachment,
 } from "../../../redux/execution-system/context-rules/request-context";
-import { selectConversationAttachmentsEntry } from "@host/features/connectors/redux/attachments.slice";
+import { selectConversationAttachmentsEntry } from "../../../connectors/attachments.slice";
 import type { ChatRootState } from "../../../../store/root-state";
 import {
   ATTACHED_DOCUMENT_TOKENS,

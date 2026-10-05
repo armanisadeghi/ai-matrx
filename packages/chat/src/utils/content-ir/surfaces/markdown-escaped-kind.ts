@@ -16,12 +16,60 @@
  * that kind (`decodeDoubleEncodedKindText`, whole text, settled readers only).
  */
 
-import { isKindJsonText } from "./json-kind-signal";
+import { isKindJsonText, withoutZeroWidth } from "./json-kind-signal";
 
 const TARGET = '"\\_\\_kind"';
 const KEY = '"__kind"';
+const HAS_ZERO_WIDTH = /[\u200B-\u200D\u2060\uFEFF\u00AD]/;
+
+/**
+ * A ZERO-WIDTH character inside the key (`"__\u200Bkind"`, round 8): the
+ * screen reads `"__kind"`, so the key is rewritten as `"__kind"` before
+ * anything else reads the text, and the normal kind route (fence, standalone,
+ * prose) takes it. Only a complete key is rewritten — a zero-width character
+ * anywhere else stays. Character-driven and chunk-invariant (live = reload).
+ */
+export class ZeroWidthKindKey {
+  /** Bytes that may still become the key — held, never shown. */
+  private pending = "";
+
+  push(text: string): string {
+    let out = "";
+    for (const ch of text) out += this.pushChar(ch);
+    return out;
+  }
+
+  flush(): string {
+    const out = this.pending;
+    this.pending = "";
+    return out;
+  }
+
+  private pushChar(ch: string): string {
+    let candidate = this.pending + ch;
+    let out = "";
+    while (candidate && !(candidate.startsWith('"') && KEY.startsWith(withoutZeroWidth(candidate)))) {
+      const next = candidate.indexOf('"', 1);
+      if (next < 0) {
+        out += candidate;
+        candidate = "";
+      } else {
+        out += candidate.slice(0, next);
+        candidate = candidate.slice(next);
+      }
+    }
+    if (withoutZeroWidth(candidate) === KEY) {
+      this.pending = "";
+      return out + KEY;
+    }
+    this.pending = candidate;
+    return out;
+  }
+}
 
 export class MarkdownEscapedKindJson {
+  /** The zero-width key spelling is read first (round 8) — one transform, both hosts. */
+  private zeroWidth = new ZeroWidthKindKey();
   /** Bytes that may still become the escaped key — held, never shown. */
   private pending = "";
   /** Inside the object holding a rewritten key: bracket depth (0 = outside). */
@@ -31,13 +79,18 @@ export class MarkdownEscapedKindJson {
   private escape = false;
 
   push(text: string): string {
+    return this.pushUnescape(this.zeroWidth.push(text));
+  }
+
+  private pushUnescape(text: string): string {
     let out = "";
     for (const ch of text) out += this.pushChar(ch);
     return out;
   }
 
   flush(): string {
-    const out = this.pending + (this.escape ? "\\" : "");
+    const held = this.pushUnescape(this.zeroWidth.flush());
+    const out = held + this.pending + (this.escape ? "\\" : "");
     this.pending = "";
     this.escape = false;
     this.depth = 0;
@@ -91,7 +144,7 @@ export class MarkdownEscapedKindJson {
 
 /** The whole-text form, for the static splitter (identical bytes to any streaming of `source`). */
 export function unescapeMarkdownKindJson(source: string): string {
-  if (!source.includes(TARGET)) return source;
+  if (!source.includes(TARGET) && !HAS_ZERO_WIDTH.test(source)) return source;
   const transform = new MarkdownEscapedKindJson();
   return transform.push(source) + transform.flush();
 }

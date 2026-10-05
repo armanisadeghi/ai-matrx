@@ -12,7 +12,7 @@
  * QUOTED, an admin/debug window). Pure DOM reads: never mutates, never throws.
  */
 
-import { firstKindSlug, hasKindKey, withoutZeroWidth } from "@/features/content-ir/surfaces/json-kind-signal";
+import { ALL_KIND_SPELLINGS, firstKindSlug, hasKindKey, withoutZeroWidth } from "@/features/content-ir/surfaces/json-kind-signal";
 
 /**
  * What counts as a kind key ON SCREEN: the key itself, or its backslash-escaped
@@ -20,12 +20,14 @@ import { firstKindSlug, hasKindKey, withoutZeroWidth } from "@/features/content-
  * kind, and that IS a leak (ruling c, round 6).
  */
 export function screenTextHoldsKind(text: string): boolean {
-  return hasKindKey(text, { escaped: true, python: true });
+  // Every spelling the owner ruled a kind (round 8): escaped, markdown-escaped,
+  // repr, typographic quotes, entities, zero-width in the key.
+  return hasKindKey(text, ALL_KIND_SPELLINGS);
 }
 
 /** The kind slug named in on-screen text (escaped form included), or null. */
 export function screenKindSlug(text: string): string | null {
-  return firstKindSlug(text, { escaped: true, python: true });
+  return firstKindSlug(text, ALL_KIND_SPELLINGS);
 }
 
 /** The one attribute a deliberate raw/source view carries. */

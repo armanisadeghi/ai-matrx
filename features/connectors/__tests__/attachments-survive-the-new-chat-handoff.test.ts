@@ -47,6 +47,8 @@ import {
   type PendingAttachment,
 } from "../attachable-resources";
 
+import { registerChatUi } from "@ai-matrx/chat/host/ui-slots";
+
 jest.mock("../attachments.service", () => ({
   fetchConversationAttachments: jest.fn(),
   attachConversationResource: jest.fn(),
@@ -69,6 +71,13 @@ const mockAttach = attachConversationResource as jest.MockedFunction<
 const mockDetach = detachConversationResource as jest.MockedFunction<
   typeof detachConversationResource
 >;
+
+// The slice (package-owned) reaches the transport through the host's registered doors.
+registerChatUi({
+  fetchConversationAttachments: (...args: Parameters<typeof fetchConversationAttachments>) => mockFetch(...args),
+  attachConversationResource: (...args: Parameters<typeof attachConversationResource>) => mockAttach(...args),
+  detachConversationResource: (...args: Parameters<typeof detachConversationResource>) => mockDetach(...args),
+});
 
 const CONVERSATION_ID = "22222222-2222-2222-2222-222222222222";
 

@@ -60,6 +60,9 @@ export interface ChatUiSlots {
   RecordChangeApprovalCard: AnyComponent;
   /** The exact webpage text selected for a message (the scraper's pretty view). */
   WebpageSnapshotView: AnyComponent;
+  // Connections: the composer's attached-resources list and the new-chat connector prompt.
+  AttachedResourcesSection: AnyComponent;
+  ConnectorPromptHost: AnyComponent;
   /** The inline error card (title, sentence, actions); the host's carries the Alchemy menu. */
   ErrorNotice: AnyComponent;
   // Context-item drawer bodies the app owns (notes and tasks are app features).
@@ -84,6 +87,12 @@ export interface ChatUiSlots {
   notesCreate: AnyFn;
   useKnowledgeAttachSearch: AnyFn;
   useConversationAttachments: AnyFn;
+  /** One connect / re-authorize action for an MCP server: `{ connect(slug), connectingSlug }`. */
+  useConnectMcpServer: AnyFn;
+  /** The attachments doors (the host owns the transport and the sign-in): what is attached to a chat, attach, detach. */
+  fetchConversationAttachments: AnyFn;
+  attachConversationResource: AnyFn;
+  detachConversationResource: AnyFn;
   /** A surface's declaration by name (the host's manifest registry); a host with none declares nothing. */
   getSurfaceManifest: AnyFn;
   /** Registers this page's capture for the "copy this page" control (the host's page-capture registry). */
@@ -264,6 +273,9 @@ export const ShareButton = slotComponent("ShareButton", unregisteredWidget("Shar
 export const ShareModal = slotComponent("ShareModal", unregisteredWidget("ShareModal"));
 export const ReviewAnswersLink = slotComponent("ReviewAnswersLink", unregisteredWidget("ReviewAnswersLink"));
 export const RecordChangeApprovalCard = slotComponent("RecordChangeApprovalCard", unregisteredWidget("RecordChangeApprovalCard"));
+export const AttachedResourcesSection = slotComponent("AttachedResourcesSection", unregisteredWidget("AttachedResourcesSection"));
+/** A host with no connector prompt shows none (reported once). */
+export const ConnectorPromptHost = slotComponent("ConnectorPromptHost");
 export const WebpageSnapshotView = slotComponent("WebpageSnapshotView", DefaultWebpageSnapshotView);
 
 export const confirm = slotFn("confirm");
@@ -284,6 +296,10 @@ export const getSurfaceManifest = slotFn("getSurfaceManifest", () => undefined);
 /** A host with no page-capture control captures nothing; the hooks are reported no-ops. */
 export const usePageCapture = slotFn("usePageCapture", () => undefined);
 export const usePageCaptureContribution = slotFn("usePageCaptureContribution", () => undefined);
+export const fetchConversationAttachments = slotFn("fetchConversationAttachments");
+export const attachConversationResource = slotFn("attachConversationResource");
+export const detachConversationResource = slotFn("detachConversationResource");
+export const useConnectMcpServer = slotFn("useConnectMcpServer", () => ({ connect: () => undefined, connectingSlug: null }));
 export const resolveSystemOrgId = slotFn("resolveSystemOrgId");
 export const readProjectScopeOrganizationId = slotFn("readProjectScopeOrganizationId");
 export const summarizeContextCell = slotFn("summarizeContextCell", (cell: unknown) =>

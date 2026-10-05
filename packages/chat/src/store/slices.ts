@@ -50,6 +50,7 @@ import { surfaceConfigReducer } from "../surfaces/redux/surfaceConfigSlice";
 import agentAssistantMarkdownDraftReducer from "../agents/redux/agent-assistant-markdown-draft.slice";
 import proposedDirectivesReducer from "../agents/redux/proposed-directives/proposedDirectivesSlice";
 import agentSettingsReducer from "../agents/redux/agent-settings/agentSettingsSlice";
+import conversationAttachmentsReducer from "../agents/connectors/attachments.slice";
 import { chatHostReducer } from "./chat-host.slice";
 
 export const chatReducers = {
@@ -97,6 +98,8 @@ export const chatReducers = {
   proposedDirectives: proposedDirectivesReducer,
   // Agent/prompt settings (builder defaults, chat overrides); package-owned since P17.
   agentSettings: agentSettingsReducer,
+  // What is attached to each chat (connector picks); package-owned since P17.
+  conversationAttachments: conversationAttachmentsReducer,
   // Host state the package reads (identity, active org, server, prefs), synced by <ChatProvider> (P3).
   chatHost: chatHostReducer,
 };

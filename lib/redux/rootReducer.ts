@@ -106,7 +106,6 @@ import modelRegistryReducer from "../../features/ai-models/redux/modelRegistrySl
 import artifactsReducer from "./slices/artifactsSlice";
 import htmlPagesReducer from "./slices/htmlPagesSlice";
 
-import conversationAttachmentsReducer from "@/features/connectors/redux/attachments.slice";
 import appContextReducer from "@/lib/redux/slices/appContextSlice";
 import wizardDraftReducer from "@/lib/redux/slices/wizardDraftSlice";
 
@@ -297,7 +296,6 @@ export const slimReducerMap = {
   // What a person picked OUT of a connection — the repositories, files and
   // sheets attached to one conversation. A connection is account-wide; these
   // are not, which is why they are keyed by conversation and never by slug.
-  conversationAttachments: conversationAttachmentsReducer,
 
   schedulingTasks: schedulingTasksReducer,
   schedulingRuns: schedulingRunsReducer,

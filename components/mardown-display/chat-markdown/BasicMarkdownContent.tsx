@@ -42,7 +42,7 @@ import {
 } from "@/components/rich-content/prose/prose-block-elements";
 import { withImagePolicy, type ImagePolicyDeclaration } from "@/components/rich-content/prose/remote-image-policy";
 import { KindTextGate } from "@/components/mardown-display/chat-markdown/KindTextGate";
-import { pythonKindsAsOneLine } from "@/features/content-ir/surfaces/kind-one-line";
+import { spelledKindsAsOneLine } from "@/features/content-ir/surfaces/kind-one-line";
 
 interface BasicMarkdownContentProps {
   content: string;
@@ -103,9 +103,10 @@ const BasicMarkdownContentBody: React.FC<BasicMarkdownContentProps> = ({
   // prose as red `.katex-error` text) or an unclosed `[` (one giant link) from
   // eating a section. See lib/markdown/delimiter-guard.ts.
   const { text: processedContent, violations: delimiterViolations } =
-    // A Python-repr kind in prose reads as its one-line label (round 7 K4b) —
+    // A kind spelled so no JSON reader opens it (escaped, smart quotes, entities,
+    // Python repr) reads as its one-line label (K4b round 7, round 8) —
     // here, the one prose leaf live and reloaded text both pass through.
-    guardMarkdownDelimiters(preprocessProse(pythonKindsAsOneLine(content)));
+    guardMarkdownDelimiters(preprocessProse(spelledKindsAsOneLine(content)));
 
   // Loud recovery — report once the stream settles, so a half-typed `$$`
   // mid-stream isn't reported as a defect.

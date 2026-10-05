@@ -4,7 +4,7 @@ import { useRouter } from "../../../host/navigation";
 import { useAppStore } from "../../../store/hooks";
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "./chat-quick-actions.config";
 import { stageChatAgentSwitch } from "./begin-fresh-chat";
-import { ConnectorPromptHost } from "@host/features/connectors/ConnectorPromptHost";
+import { ConnectorPromptHost } from "../../../host/ui-slots";
 import { SmartAgentInput } from "../inputs/smart-input/SmartAgentInput";
 import {
   ComposerGreeting,

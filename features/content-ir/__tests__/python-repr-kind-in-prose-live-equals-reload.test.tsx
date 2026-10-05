@@ -20,7 +20,7 @@ import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-event
 import { StreamBlockAccumulator } from "@ai-matrx/chat/agents/redux/execution-system/utils/stream-block-accumulator";
 import { BlockRenderer } from "@/components/mardown-display/chat-markdown/block-registry/BlockRenderer";
 import { splitContentIntoBlocksV2 } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
-import { pythonKindsAsOneLine } from "@ai-matrx/chat/utils/content-ir/surfaces/kind-one-line";
+import { spelledKindsAsOneLine } from "@ai-matrx/chat/utils/content-ir/surfaces/kind-one-line";
 import { chunkText } from "./seeded-random";
 
 jest.setTimeout(240_000);
@@ -64,13 +64,13 @@ async function reloadText(text: string): Promise<string> {
 
 describe("a Python-repr kind in prose", () => {
   it("the transform: complete → one-line label, unfinished → kind name, kindless untouched", () => {
-    expect(pythonKindsAsOneLine(ANSWER)).toBe(
+    expect(spelledKindsAsOneLine(ANSWER)).toBe(
       "The save tool rejected this payload: **Cell biology** · Flashcard Set. I will retry with a shorter title.",
     );
-    expect(pythonKindsAsOneLine("Rejected: {'__kind': 'flashcard_set', 'title': 'Cel")).toBe("Rejected: Flashcard Set");
-    expect(pythonKindsAsOneLine("Rejected: {'__ki")).toBe("Rejected: ");
+    expect(spelledKindsAsOneLine("Rejected: {'__kind': 'flashcard_set', 'title': 'Cel")).toBe("Rejected: Flashcard Set");
+    expect(spelledKindsAsOneLine("Rejected: {'__ki")).toBe("Rejected: ");
     const plain = "A dict {'a': 1} and {'title': 'x'} stay.";
-    expect(pythonKindsAsOneLine(plain)).toBe(plain);
+    expect(spelledKindsAsOneLine(plain)).toBe(plain);
   });
 
   it.each([

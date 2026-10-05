@@ -19,12 +19,11 @@ import {
 } from "./embedded-kind-json";
 import {
   firstKindSlug,
+  firstSpelledKindRegion,
   hasKindKey,
-  hasPythonKindKey,
   normalizeKindSpellings,
-  pythonBalancedEnd,
-  pythonReprAsJson,
   quotedSourceRanges,
+  type KindTextOptions,
 } from "./json-kind-signal";
 
 const UNNAMED = "Structured output";
@@ -112,52 +111,56 @@ export function catalogProseText(text: string | null | undefined): string {
   return inlineKindText(text, { plain: true });
 }
 
-/** A Python-repr key still arriving at the very end of the text (`{'__k`, `{'__kind': `). */
-const PYTHON_PARTIAL_KIND_TAIL = /\{\s*'(?:_(?:_(?:k(?:i(?:n(?:d(?:'\s*(?::\s*)?)?)?)?)?)?)?)?$/;
+/**
+ * The spellings prose reads as a one-line label rather than lifting: none of
+ * them is JSON the stream parser can open (round 8). The literal key, its
+ * markdown-escaped form and a zero-width character inside it are LIFTED by
+ * the accumulator and the splitter instead (one transform, both hosts).
+ */
+const ONE_LINE_SPELLINGS: KindTextOptions = { escaped: true, python: true, smart: true, entity: true };
+
+/** A non-canonical key still arriving at the very end of the text (`{\"__k`, `{'__kind': `, `{“__`). */
+const QUOTE_SPELLING = String.raw`(?:\\+"?|&(?:quot|#0*34|#[xX]0*22);|[\u201C\u201D\u201E\u2018\u2019'])`;
+const SPELLED_PARTIAL_KIND_TAIL = new RegExp(
+  String.raw`\{\s*${QUOTE_SPELLING}(?:_(?:_(?:k(?:i(?:n(?:d(?:${QUOTE_SPELLING}\s*(?::\s*)?)?)?)?)?)?)?)?$`,
+);
 
 /**
- * PROSE holding a Python-repr kind (`{'__kind': 'flashcard_set', …}` — what
- * `str(dict)` prints into an error or an echo) with each one read as its
- * ONE-LINE label (round 7, K4b). A repr is never lifted into a kind block —
- * the stream parser speaks JSON — so the one prose leaf every text block
- * passes through, live and reloaded alike, calls this: live ≡ reload by
- * construction. A complete repr → `**Title** · Kind Name`; one still arriving
- * at the end of the text → the kind's name (or nothing while its key types).
- * Quoted source (inline code, non-JSON fences) stays as written; text with no
- * repr kind comes back as the same string.
+ * PROSE holding a kind in a spelling no JSON reader opens — backslash-escaped
+ * quotes `{\"__kind\":…}`, typographic quotes, HTML entities, Python repr —
+ * with each one read as its ONE-LINE label (K4b round 7, widened round 8).
+ * Never lifted into a kind block (the stream parser speaks JSON; a
+ * speculative rewrite mid-stream would split live from reload), so the one
+ * prose leaf every text block passes through, live and reloaded alike, calls
+ * this: live ≡ reload by construction. A complete region →
+ * `**Title** · Kind Name`; one still arriving at the end → the kind's name
+ * (or nothing while its key types). Quoted source stays as written; text with
+ * no such kind comes back as the same string.
  */
-export function pythonKindsAsOneLine(text: string): string {
-  if (!text || !text.includes("'__k")) return text;
-  const quoted = quotedSourceRanges(text);
+export function spelledKindsAsOneLine(text: string): string {
+  if (!text) return text;
   let out = "";
   let cursor = 0;
-  for (let i = 0; i < text.length; i++) {
-    if (text[i] !== "{" || inside(quoted, i)) continue;
-    const end = pythonBalancedEnd(text, i);
-    if (end === null) {
-      const tail = text.slice(i);
-      if (hasPythonKindKey(tail)) {
-        const slug = /'__kind'\s*:\s*'([A-Za-z0-9_.:-]+)'/.exec(tail)?.[1] ?? null;
-        out += text.slice(cursor, i) + kindName(slug);
-        cursor = text.length;
-        break;
-      }
-      if (PYTHON_PARTIAL_KIND_TAIL.test(tail)) {
-        out += text.slice(cursor, i);
-        cursor = text.length;
-        break;
-      }
-      continue;
-    }
-    const region = text.slice(i, end);
-    if (hasPythonKindKey(region)) {
-      const json = pythonReprAsJson(region);
-      if (json !== null) {
-        out += text.slice(cursor, i) + kindOneLine(JSON.parse(json));
-        cursor = end;
+  for (;;) {
+    const region = firstSpelledKindRegion(text, ONE_LINE_SPELLINGS, cursor);
+    if (!region) break;
+    out += text.slice(cursor, region.start);
+    let value: unknown = null;
+    if (region.complete && region.json !== null) {
+      try {
+        value = JSON.parse(region.json);
+      } catch {
+        value = null;
       }
     }
-    i = end - 1;
+    const slug = firstKindSlug(region.json ?? text.slice(region.start, region.end), ONE_LINE_SPELLINGS);
+    out += value !== null && typeof value === "object" ? kindOneLine(value) : kindName(slug);
+    cursor = region.end;
   }
-  return cursor === 0 ? text : out + text.slice(cursor);
+  const rest = text.slice(cursor);
+  const partial = SPELLED_PARTIAL_KIND_TAIL.exec(rest);
+  if (partial && !inside(quotedSourceRanges(text), cursor + partial.index)) {
+    return out + rest.slice(0, partial.index);
+  }
+  return cursor === 0 ? text : out + rest;
 }

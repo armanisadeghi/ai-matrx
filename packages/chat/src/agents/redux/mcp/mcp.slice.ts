@@ -14,7 +14,7 @@ import {
   type ManualAuthMethod,
 } from "../../services/mcp-connections.service";
 import type { McpToolSchema } from "../../services/mcp-client/tool-discovery";
-import type { AttachableAvailability } from "@host/features/connectors/attachable-resources";
+import type { AttachableAvailability } from "../../connectors/attachable-resources";
 
 // ---------------------------------------------------------------------------
 // State

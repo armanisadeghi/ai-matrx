@@ -23,6 +23,7 @@
 
 import { Archive, Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Chip, type ChipHue } from "@ai-matrx/design-system/controls";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { RichContentPreview } from "@/components/rich-content/RichContentPreview";
 import {
@@ -33,6 +34,18 @@ import {
 } from "@/lib/entity-list/columns";
 import { FillsMandatesCell } from "@/features/mandates/filled-by/FillsMandatesCell";
 import type { AgentBrowseRow } from "./types";
+
+/**
+ * THE agent category → chip tone table (one-ui-system: a feature maps its kinds onto the
+ * package's named hues, never a class). Categories are open-ended, so a category not named here
+ * takes a stable hue from its name — the same category is the same colour on every row and page.
+ */
+const CATEGORY_HUES: readonly ChipHue[] = ["violet", "blue", "teal", "amber", "rose", "indigo", "emerald", "orange", "cyan", "fuchsia", "lime", "sky"];
+export function agentCategoryTone(category: string): ChipHue {
+  let hash = 0;
+  for (const ch of category.trim().toLowerCase()) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
+  return CATEGORY_HUES[hash % CATEGORY_HUES.length] ?? "violet";
+}
 
 export const BROWSE_COLUMNS: EntityColumnSpec<AgentBrowseRow>[] = [
   {
@@ -110,8 +123,10 @@ export const BROWSE_COLUMNS: EntityColumnSpec<AgentBrowseRow>[] = [
       width: 420,
       className: "max-w-[26rem] overflow-hidden",
       cell: (row) => {
+        // One line per row (the table's `cellLines` default): the full description is the
+        // cell's title, which the fleet tooltip shows only when the line is cut.
         return (
-          <span className="block text-muted-foreground">
+          <span className="block text-muted-foreground" title={row.description?.trim() || undefined}>
             {row.description?.trim() ? (
               <RichContentPreview source={row.description} lines={1} />
             ) : (
@@ -133,11 +148,11 @@ export const BROWSE_COLUMNS: EntityColumnSpec<AgentBrowseRow>[] = [
       filter: "select",
       editable: "select",
       width: 160,
+      // THE canonical Chip (one 24px tag, single line, ellipsis + full-text tooltip) in the
+      // category's own tone — never a hand-built pill (the pill guard outlined two).
       cell: (row) =>
         row.category ? (
-          <Badge variant="secondary" className="py-0 text-[10px] font-normal">
-            {row.category}
-          </Badge>
+          <Chip label={row.category} tone={agentCategoryTone(row.category)} />
         ) : (
           <Muted>—</Muted>
         ),

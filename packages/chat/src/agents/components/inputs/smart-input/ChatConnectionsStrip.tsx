@@ -51,21 +51,21 @@ import { BottomSheet } from "@ai-matrx/design-system";
 import { useAppSelector } from "../../../../store/hooks";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { cn } from "@ai-matrx/design-system";
-import { selectChatConnections } from "@host/features/connectors/chat-connections";
+import { selectChatConnections } from "../../../connectors/chat-connections";
 import {
   indexRunMcpAttachments,
   mcpChipPresentation,
   readRunMcpAttachments,
-} from "@host/features/connectors/run-attachments";
+} from "../../../connectors/run-attachments";
 import { useMcpCatalog } from "../../../hooks/useMcpTools";
 import { selectAgentMcpServers } from "../../../redux/agent-definition/selectors";
 import { selectAgentIdFromInstance } from "../../../redux/execution-system/conversations/conversations.selectors";
 import { selectBuilderAdvancedSettings } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { selectPrimaryRequest } from "../../../redux/execution-system/active-requests/active-requests.selectors";
 import { useOpenRunControlsWindow } from "../../../../host/window-openers";
-import { attachActionLabel } from "@host/features/connectors/attachable-resources";
+import { attachActionLabel } from "../../../connectors/attachable-resources";
 import { useAttachResourcePicker } from "../../../../host/ui-slots";
-import { useConversationAttachments } from "@host/features/connectors/useConversationAttachments";
+import { useConversationAttachments } from "../../../../host/ui-slots";
 import { ComposerConnectorsPanel } from "./composer/ComposerConnectorsPanel";
 import { COMPOSER_CHIP_CLASS } from "./composer/composer-chip";
 

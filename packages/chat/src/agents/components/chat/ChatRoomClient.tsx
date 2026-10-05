@@ -43,8 +43,8 @@ import {
   copyInstanceRequestDraft,
   syncInstanceRequestDraftResources,
 } from "../../redux/execution-system/thunks/copy-instance-request-draft.thunk";
-import { syncHandoffPendingAttachments } from "@host/features/connectors/redux/attachments.slice";
-import { attachmentKey } from "@host/features/connectors/attachable-resources";
+import { syncHandoffPendingAttachments } from "../../connectors/attachments.slice";
+import { attachmentKey } from "../../connectors/attachable-resources";
 import { patchConversation } from "../../redux/execution-system/conversations/conversations.slice";
 import { linkConversationDocumentThunk } from "../../redux/execution-system/instance-working-document/instance-working-document.thunks";
 import { useOpenWorkingDocumentPanel } from "../../../host/window-openers";

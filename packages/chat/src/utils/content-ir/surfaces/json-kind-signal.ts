@@ -82,7 +82,29 @@ export interface KindTextOptions {
   escaped?: boolean;
   /** Also read a Python-repr key (`{'__kind': 'flashcard_set'}`) — text contexts only (K4). */
   python?: boolean;
+  /** Also read a typographic-quoted key (`“__kind”`, `‘__kind’`) — text contexts only (round 8). */
+  smart?: boolean;
+  /** Also read an HTML-entity key (`&quot;__kind&quot;`, `&#34;__kind&#34;`) — text contexts only (round 8). */
+  entity?: boolean;
 }
+
+/**
+ * EVERY spelling of the key a reader still sees as `__kind` (owner ruling,
+ * round 8): literal, `\u005f`-escaped, markdown-escaped `\_\_kind`,
+ * backslash-escaped quotes `\"__kind\"`, zero-width characters anywhere in
+ * the key, Python repr `'__kind'`, typographic quotes `“__kind”` and HTML
+ * entities `&quot;__kind&quot;`. THE options every TEXT context (prose,
+ * titles, exports, previews, the screen scan) passes; JSON contexts keep the
+ * default, where those spellings are string VALUES (and `valueCarriesKind`
+ * reads the strings with this set).
+ */
+export const ALL_KIND_SPELLINGS: Readonly<KindTextOptions> = Object.freeze({
+  markdown: true,
+  escaped: true,
+  python: true,
+  smart: true,
+  entity: true,
+});
 
 /**
  * Invisible characters a model, a copy-paste or a sanitizer can leave INSIDE
@@ -107,6 +129,15 @@ export function withoutZeroWidth(text: string): string {
 const PYTHON_KIND_KEY = /[{,]\s*'__kind'\s*:\s*['"]/;
 const PYTHON_KIND_SLUG = /[{,]\s*'__kind'\s*:\s*(?:'([A-Za-z0-9_.:-]+)'|"([A-Za-z0-9_.:-]+)")/;
 
+/** Typographic quotes a smart-quoting editor or model writes for `"` and `'`. */
+const SMART_DOUBLE = "\u201C\u201D\u201E\u201F\u2033";
+const SMART_SINGLE = "\u2018\u2019\u201A\u201B\u2032";
+/** The key in typographic quotes (`“__kind”:`, `‘__kind’:`) — key position only. */
+const SMART_KIND_KEY = new RegExp(`[${SMART_DOUBLE}${SMART_SINGLE}]__kind[${SMART_DOUBLE}${SMART_SINGLE}"']\\s*:`);
+/** The key in HTML entities (`&quot;__kind&quot;:`, `&#34;`, `&#x22;`, `&#39;`, `&apos;`). */
+const ENTITY_QUOTE = "&(?:quot|apos|#0*3[49]|#[xX]0*2[27]);";
+const ENTITY_KIND_KEY = new RegExp(`${ENTITY_QUOTE}__kind${ENTITY_QUOTE}\\s*:`);
+
 /** Whether a fence language is JSON5 (the one context that widens the key rule). */
 export function isJson5Language(lang: string | null | undefined): boolean {
   return (lang ?? "").trim().toLowerCase() === "json5";
@@ -119,8 +150,15 @@ export function hasKindKey(source: string, options: KindTextOptions = {}): boole
     (options.python === true && PYTHON_KIND_KEY.test(text)) ||
     (options.json5 === true && JSON5_KIND_KEY.test(text)) ||
     (options.markdown === true && MARKDOWN_KIND_KEY.test(text)) ||
-    (options.escaped === true && ESCAPED_KIND_KEY.test(text))
+    (options.escaped === true && ESCAPED_KIND_KEY.test(text)) ||
+    (options.smart === true && SMART_KIND_KEY.test(text)) ||
+    (options.entity === true && ENTITY_KIND_KEY.test(text))
   );
+}
+
+/** Whether TEXT holds the key in ANY spelling a reader sees as `__kind` (round 8). */
+export function hasKindKeyAnySpelling(source: string): boolean {
+  return hasKindKey(source, ALL_KIND_SPELLINGS);
 }
 
 /** The key, then its string value (escapes allowed), captured whole. */
@@ -155,6 +193,10 @@ export function firstKindSlug(source: string, options: KindTextOptions = {}): st
   if (!literal && options.python) {
     const python = PYTHON_KIND_SLUG.exec(text);
     if (python) return python[1] ?? python[2] ?? null;
+  }
+  if (!literal && (options.smart || options.entity || options.markdown)) {
+    const canonical = normalizeKindSpellings(text);
+    if (canonical !== text) return firstKindSlug(canonical, { ...options, smart: false, entity: false, markdown: false });
   }
   if (!literal) return null;
   let slug: unknown;
@@ -271,7 +313,7 @@ export function jsonKindSignal(
       continue;
     }
     if (ch === '"') {
-      return decodedKey(source.slice(i, j + 1)) === "__kind"
+      return withoutZeroWidth(decodedKey(source.slice(i, j + 1))) === "__kind"
         ? "kind"
         : notKindUnlessPartialKey(source);
     }
@@ -431,20 +473,27 @@ export function pythonBalancedEnd(text: string, start: number): number | null {
 }
 
 /**
- * THE one normalizer the text converters (markdown, one-line, search snippet)
- * run first (K4, round 7), so a kind spelled the way the screen still reads
- * as a kind converts like any other: zero-width characters are dropped, and
- * every complete Python-repr dict that carries a `'__kind'` key outside
- * quoted source is rewritten as its JSON. Text with neither comes back as the
- * same string.
+ * THE ONE SPELLING NORMALIZER (K4 round 7, widened round 8). Every text
+ * detector, converter and label function runs it (directly, or through
+ * `hasKindKeyAnySpelling`) so a kind spelled any way the screen still reads as
+ * a kind converts like any other. Each spelling's region — from the `{` that
+ * owns the key to its balanced close (or to the end, still arriving) — is
+ * rewritten as canonical JSON:
+ *
+ *   zero-width in the key · HTML entities · typographic quotes ·
+ *   backslash-escaped quotes (any depth) · markdown-escaped `\_` · Python repr
+ *
+ * Quoted source (inline code, non-JSON fences) stays as written, and a WHOLE
+ * JSON text is never rewritten (a spelling inside it is a string VALUE).
+ * Text with no non-canonical spelling comes back as the same string.
  */
 export function normalizeKindSpellings(source: string): string {
   let text = source;
-  if (HAS_ZERO_WIDTH.test(text) && hasKindKey(text, { python: true, markdown: true, escaped: true })) {
+  if (HAS_ZERO_WIDTH.test(text) && hasKindKey(text, ALL_KIND_SPELLINGS)) {
     text = text.replace(ZERO_WIDTH, "");
   }
-  if (!PYTHON_KIND_KEY.test(text)) return text;
-  // Whole JSON text: a Python repr in it is a string VALUE, never rewritten.
+  if (!hasKindKey(text, { markdown: true, escaped: true, python: true, smart: true, entity: true })) return text;
+  // Whole JSON text: a spelling in it is a string VALUE, never rewritten.
   if (/^[{[]/.test(text.trimStart())) {
     try {
       JSON.parse(text);
@@ -453,7 +502,186 @@ export function normalizeKindSpellings(source: string): string {
       // Not JSON: read on.
     }
   }
+  for (let pass = 0; pass < 6; pass++) {
+    const next = rewriteSpelledRegions(text);
+    if (next === text) break;
+    text = next;
+  }
+  return text;
+}
+
+/** One decoded text and, per decoded character, the raw index it came from (plus the raw end). */
+interface DecodedText {
+  text: string;
+  map: number[];
+}
+
+type SpellingStep = (raw: string, i: number) => [string, number];
+
+function decodeWith(raw: string, step: SpellingStep): DecodedText {
+  let text = "";
+  const map: number[] = [];
+  for (let i = 0; i < raw.length; ) {
+    const [out, consumed] = step(raw, i);
+    for (let k = 0; k < out.length; k++) map.push(i);
+    text += out;
+    i += Math.max(1, consumed);
+  }
+  map.push(raw.length);
+  return { text, map };
+}
+
+const ENTITY_STEP_RE = /^&(?:(quot|apos|amp|lt|gt)|#(\d{1,6})|#[xX]([0-9a-fA-F]{1,6}));/;
+const NAMED_ENTITIES: Record<string, string> = { quot: '"', apos: "'", amp: "&", lt: "<", gt: ">" };
+const ESCAPE_CHARS: Record<string, string> = { '"': '"', "\\": "\\", "/": "/", n: "\n", t: "\t", r: "\r", b: "", f: "" };
+
+/** A spelling: how its key is found, and how one level of it decodes. */
+interface KindSpelling {
+  option: "entity" | "smart" | "escaped" | "markdown";
+  key: RegExp;
+  step: SpellingStep;
+}
+
+const SPELLINGS: KindSpelling[] = [
+  {
+    option: "entity",
+    key: new RegExp(ENTITY_KIND_KEY.source, "g"),
+    step: (raw, i) => {
+      if (raw[i] !== "&") return [raw[i]!, 1];
+      const m = ENTITY_STEP_RE.exec(raw.slice(i, i + 12));
+      if (!m) return ["&", 1];
+      const ch = m[1] ? NAMED_ENTITIES[m[1]]! : String.fromCodePoint(Number.parseInt(m[2] ?? m[3]!, m[2] ? 10 : 16));
+      return [ch, m[0].length];
+    },
+  },
+  {
+    option: "smart",
+    key: new RegExp(SMART_KIND_KEY.source, "g"),
+    step: (raw, i) => {
+      const ch = raw[i]!;
+      if (SMART_DOUBLE.includes(ch)) return ['"', 1];
+      if (SMART_SINGLE.includes(ch)) return ["'", 1];
+      return [ch, 1];
+    },
+  },
+  {
+    option: "escaped",
+    key: new RegExp(ESCAPED_KIND_KEY.source, "g"),
+    step: (raw, i) => {
+      if (raw[i] !== "\\") return [raw[i]!, 1];
+      const next = raw[i + 1] ?? "";
+      if (next in ESCAPE_CHARS) return [ESCAPE_CHARS[next]!, 2];
+      if (next === "u" && /^[0-9a-fA-F]{4}$/.test(raw.slice(i + 2, i + 6))) return [raw.slice(i, i + 6), 6];
+      return [raw.slice(i, i + 2), 2];
+    },
+  },
+  {
+    option: "markdown",
+    key: new RegExp(MARKDOWN_KIND_KEY.source, "g"),
+    step: (raw, i) => (raw[i] === "\\" && raw[i + 1] === "_" ? ["_", 2] : [raw[i]!, 1]),
+  },
+];
+
+/** The end (exclusive) of the string-aware balanced JSON value opening at 0, or null. */
+function jsonBalancedEnd(text: string): number | null {
+  let depth = 0;
+  let inString = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i]!;
+    if (inString) {
+      if (ch === "\\") i++;
+      else if (ch === '"') inString = false;
+      continue;
+    }
+    if (ch === '"') inString = true;
+    else if (ch === "{" || ch === "[") depth++;
+    else if (ch === "}" || ch === "]") {
+      depth--;
+      if (depth === 0) return i + 1;
+    }
+  }
+  return null;
+}
+
+/**
+ * A kind region written in a NON-canonical spelling: `[start, end)` of the raw
+ * text and its canonical JSON. `complete` is false for a region still
+ * arriving (or cut off) — `end` is then the end of the text and `json` the
+ * canonical tail. `json` is null for a complete Python repr that will not read.
+ */
+export interface SpelledKindRegion {
+  start: number;
+  end: number;
+  json: string | null;
+  complete: boolean;
+}
+
+/**
+ * The first region at or after `from`, outside quoted source, whose key is
+ * spelled one of the `spellings` (default: every non-canonical spelling).
+ * THE one finder the normalizer and the prose one-line reader share.
+ */
+export function firstSpelledKindRegion(
+  text: string,
+  spellings: KindTextOptions = ALL_KIND_SPELLINGS,
+  from = 0,
+): SpelledKindRegion | null {
   const quoted = quotedSourceRanges(text);
+  const inQuoted = (at: number) => quoted.some(([a, b]) => at >= a && at < b);
+  let best: SpelledKindRegion | null = null;
+  const consider = (region: SpelledKindRegion) => {
+    if (!best || region.start < best.start) best = region;
+  };
+  for (const spelling of SPELLINGS) {
+    if (spellings[spelling.option] !== true) continue;
+    spelling.key.lastIndex = from;
+    for (let m = spelling.key.exec(text); m; m = spelling.key.exec(text)) {
+      if (inQuoted(m.index)) continue;
+      const brace = text.lastIndexOf("{", m.index);
+      if (brace < from || inQuoted(brace)) continue;
+      const decoded = decodeWith(text.slice(brace), spelling.step);
+      const end = jsonBalancedEnd(decoded.text);
+      consider(
+        end === null
+          ? { start: brace, end: text.length, json: decoded.text, complete: false }
+          : { start: brace, end: brace + decoded.map[end]!, json: decoded.text.slice(0, end), complete: true },
+      );
+      break;
+    }
+  }
+  if (spellings.python === true) {
+    for (let i = from; i < text.length; i++) {
+      if (text[i] !== "{" || inQuoted(i)) continue;
+      const end = pythonBalancedEnd(text, i);
+      if (end === null) {
+        const tail = text.slice(i);
+        if (PYTHON_KIND_KEY.test(tail)) {
+          consider({ start: i, end: text.length, json: tail, complete: false });
+          break;
+        }
+        continue;
+      }
+      const region = text.slice(i, end);
+      if (PYTHON_KIND_KEY.test(region)) {
+        consider({ start: i, end, json: pythonReprAsJson(region), complete: true });
+        break;
+      }
+      i = end - 1;
+    }
+  }
+  return best;
+}
+
+/** One pass: the first non-canonical spelled region outside quoted source, rewritten. */
+function rewriteSpelledRegions(text: string): string {
+  const region = firstSpelledKindRegion(text, { ...ALL_KIND_SPELLINGS, python: false });
+  if (region?.json != null) return text.slice(0, region.start) + region.json + text.slice(region.end);
+  return rewritePythonRegions(text, quotedSourceRanges(text));
+}
+
+/** Every complete Python-repr dict carrying `'__kind'` outside quoted source, as its JSON. */
+function rewritePythonRegions(text: string, quoted: Array<[number, number]>): string {
+  if (!PYTHON_KIND_KEY.test(text)) return text;
   let out = "";
   let cursor = 0;
   for (let i = 0; i < text.length; i++) {
@@ -615,7 +843,7 @@ export function markdownCarriesKind(source: string): boolean {
   // Front matter is document properties, hidden on screen and never lifted
   // (X-minor, round 3): a kind there is not a region of the text.
   const text = source.slice(frontMatterEnd(source));
-  if (!hasKindKey(text, { markdown: true, python: true })) return false;
+  if (!hasKindKey(text, ALL_KIND_SPELLINGS)) return false;
   if (isKindJsonText(text)) return true;
   const quoted = quotedSourceRanges(text);
   if (quoted.length === 0) return true;
@@ -627,5 +855,5 @@ export function markdownCarriesKind(source: string): boolean {
     cursor = end;
   }
   outside += text.slice(cursor);
-  return hasKindKey(outside, { markdown: true, python: true });
+  return hasKindKey(outside, ALL_KIND_SPELLINGS);
 }

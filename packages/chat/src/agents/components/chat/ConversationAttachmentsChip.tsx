@@ -28,7 +28,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@ai-matrx/design-system";
-import { attachmentKey } from "@host/features/connectors/attachable-resources";
+import { attachmentKey } from "../../connectors/attachable-resources";
 import { useConversationAttachments } from "@ai-matrx/chat/host/ui-slots";
 import { useMcpCatalog } from "../../hooks/useMcpTools";
 import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";

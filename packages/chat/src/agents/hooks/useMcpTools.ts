@@ -19,11 +19,11 @@ import {
 import {
   deriveMcpConnectionState,
   type McpConnectionTruth,
-} from "@host/features/connectors/connection-state";
+} from "../connectors/connection-state";
 import {
   normalizeAttachable,
   type AttachableResource,
-} from "@host/features/connectors/attachable-resources";
+} from "../connectors/attachable-resources";
 import { mcpConnectionRouteFor } from "@host/features/agent-connections/mcp-connection-route";
 import type { McpCatalogEntry } from "../types/mcp.types";
 import type { McpToolSchema } from "../services/mcp-client/tool-discovery";

@@ -20,7 +20,7 @@ import {
 } from "@ai-matrx/agents/matrx";
 import { applyOrganizationContextHeader } from "../../host/server/organization-context";
 import type { components } from "@ai-matrx/agents/generated/api-types";
-import type { AttachableAvailability } from "@host/features/connectors/attachable-resources";
+import type { AttachableAvailability } from "../connectors/attachable-resources";
 import { ensureOrganizationForRequest } from "../../host/org";
 
 function backendBase(): string {

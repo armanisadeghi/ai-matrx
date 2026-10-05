@@ -46,6 +46,14 @@ import { useHeldWriteTableName } from "@/features/record-change-approvals/useHel
 import { WebpageSnapshotView } from "@/features/resource-manager/webpage/WebpageSnapshotView";
 import { getManifest as getSurfaceManifest } from "@/features/surfaces/manifests/registry";
 import { usePageCapture, usePageCaptureContribution } from "@/components/agent-copy/page-capture/usePageCapture";
+import {
+  fetchConversationAttachments,
+  attachConversationResource,
+  detachConversationResource,
+} from "@/features/connectors/attachments.service";
+import { AttachedResourcesSection } from "@/features/connectors/AttachedResourcesSection";
+import { ConnectorPromptHost } from "@/features/connectors/ConnectorPromptHost";
+import { useConnectMcpServer } from "@/features/connectors/useConnectMcpServer";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import { createClient as createAppClient } from "@/utils/supabase/client";
 import { projectsDb } from "@/utils/supabase/projectsDb";
@@ -173,6 +181,12 @@ registerChatUi({
   useKnowledgeAttachSearch,
   useConversationAttachments,
   resolveSystemOrgId,
+  AttachedResourcesSection,
+  ConnectorPromptHost,
+  useConnectMcpServer,
+  fetchConversationAttachments,
+  attachConversationResource,
+  detachConversationResource,
   getSurfaceManifest,
   usePageCapture,
   usePageCaptureContribution,

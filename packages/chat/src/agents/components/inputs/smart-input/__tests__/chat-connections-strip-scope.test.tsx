@@ -54,12 +54,8 @@ jest.mock("@ai-matrx/design-system", () => ({
 
 jest.mock("../composer/ComposerConnectorsPanel", () => ({ ComposerConnectorsPanel: () => null }));
 
-// The account-wide source, made unmistakable. If the rail ever reaches for it
-// again — by this name or any other — the assertions below fail.
-jest.mock("@host/features/connectors/ChatConnectorStrip", () => ({
-  ChatConnectorStrip: () =>
-    React.createElement("div", null, "ACCOUNT-WIDE: Firecrawl Documentation"),
-}));
+// The account-wide strip lives in the app (`features/connectors/ChatConnectorStrip`); the package cannot
+// import it (the boundary check), so the rail has no account-wide source to fall back to.
 
 import { ChatConnectionsStrip } from "../ChatConnectionsStrip";
 

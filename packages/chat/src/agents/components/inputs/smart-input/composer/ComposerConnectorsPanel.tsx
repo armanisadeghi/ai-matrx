@@ -18,9 +18,9 @@
  */
 
 import { selectPrimaryRequest } from "../../../../redux/execution-system/active-requests/active-requests.selectors";
-import { indexRunMcpAttachments, readRunMcpAttachments, mcpChipPresentation } from "@host/features/connectors/run-attachments";
+import { indexRunMcpAttachments, readRunMcpAttachments, mcpChipPresentation } from "../../../../connectors/run-attachments";
 import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
-import { AttachedResourcesSection } from "@host/features/connectors/AttachedResourcesSection";
+import { AttachedResourcesSection } from "../../../../../host/ui-slots";
 import { useEffect, useState } from "react";
 import { Loader2, Paperclip } from "lucide-react";
 import { PickerSearchField } from "@ai-matrx/chat/utils/resource-picker/ResourcePickerSubViewHeader";
@@ -33,10 +33,10 @@ import { selectAgentReadyForCustomExecution, selectAgentMcpServers } from "../..
 import { selectAgentIdFromInstance } from "../../../../redux/execution-system/conversations/conversations.selectors";
 import { selectBuilderAdvancedSettings } from "../../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { setBuilderAdvancedSettings } from "../../../../redux/execution-system/instance-ui-state/instance-ui-state.slice";
-import { useConnectMcpServer } from "@host/features/connectors/useConnectMcpServer";
-import { attachActionLabel } from "@host/features/connectors/attachable-resources";
+import { useConnectMcpServer } from "../../../../../host/ui-slots";
+import { attachActionLabel } from "../../../../connectors/attachable-resources";
 import { useAttachResourcePicker } from "../../../../../host/ui-slots";
-import { useConversationAttachments } from "@host/features/connectors/useConversationAttachments";
+import { useConversationAttachments } from "../../../../../host/ui-slots";
 import { useOpenLiveIntegrationsWindow } from "../../../../../host/window-openers";
 import { fetchAgentExecutionFull } from "../../../../redux/agent-definition/thunks";
 import { fetchCatalog } from "../../../../redux/mcp/mcp.slice";
