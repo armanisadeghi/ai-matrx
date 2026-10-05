@@ -1,4 +1,3 @@
--- draft: apply after 2026-10-05T08:50Z (the 48 h zero-read clock of FLEXIBLE-DATA-RETIREMENT-PLAN.md ends then) and only once pg_stat shows no read of the three tables beyond the named sweepers
 -- chair-step: lane FINISH-THE-SWITCH sublane FTS-3, ONE-HOME wave 5: platform.flexible_data, platform.custom_entity_definition and platform.custom_record move to `deprecated` (old gone, never dropped; every row kept).
 -- One transaction: the two doors leave, the search projection (33 search rows) is removed and its trigger disabled, the foreign keys out of the three tables into live schemas drop,
 -- the three registry rows are retired, and the tables move and lose their client grants. Plan: common-docs projects/data-doctrine-adoption/v6/FLEXIBLE-DATA-RETIREMENT-PLAN.md §4.
