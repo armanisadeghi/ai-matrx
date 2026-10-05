@@ -3,10 +3,11 @@ import { createClient } from "@/utils/supabase/client";
 import { resolveServiceBaseUrl } from "@/lib/api/resolve-service-url";
 import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
 import { ensureOrganizationForRequest } from "@/lib/organization/organization-gate";
-import { parseHttpError } from "@/lib/api/errors";
+import { parseHttpError, getUserMessage } from "@/lib/api/errors";
 import { buildMatrxRequestUrl, sendMatrxRequest } from "@ai-matrx/agents/matrx";
 import { consumeStream } from "@/lib/api/stream-parser";
 import { updateSiteIntegrations } from "@/features/marketing/data/integrations-service";
+import { getSite } from "@/features/marketing/data/service";
 import type { MarketingSite } from "@/features/marketing/types";
 
 export const domainProviders = [
@@ -138,17 +139,23 @@ export async function saveDomainConfig(
   site: MarketingSite,
   config: z.infer<typeof configSchema>,
 ) {
-  const current = integrationsSchema.parse(site.integrations);
+  const latest = await getSite(site.id);
+  if (
+    JSON.stringify(domainConfig(latest)) !== JSON.stringify(domainConfig(site))
+  ) {
+    throw new Error(
+      "Domain choices changed while you were editing. Refresh this site.",
+    );
+  }
+  const current = integrationsSchema.parse(latest.integrations);
   const updated = {
     ...current,
     marketing: { ...current.marketing, owned_domains: config },
   };
-  // Parse through the database JSON contract rather than assert arbitrary JSON.
-  const json = z.json().parse(updated);
   return updateSiteIntegrations({
     siteId: site.id,
-    expectedVersion: site.version,
-    integrations: json,
+    expectedVersion: latest.version,
+    integrations: z.json().parse(updated),
   });
 }
 export async function listDomainConnections() {
@@ -239,3 +246,10 @@ export const propertiesSchema = z.object({
     }),
   ),
 });
+
+export function connectionErrorMessage(error: unknown): string {
+  return (
+    getUserMessage(error).trim() ||
+    "Connection operation failed. Refresh to check its saved state."
+  );
+}

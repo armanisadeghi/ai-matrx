@@ -2,6 +2,7 @@
 
 import { DomainConnections } from "@/features/marketing/connections/DomainConnections";
 import {
+  connectionErrorMessage,
   propertiesSchema,
   siteConnectionOperation,
 } from "@/features/marketing/connections/service";
@@ -1263,11 +1264,7 @@ function SiteIntegrationsEditor({
                       `${result.properties.length} Search Console properties refreshed`,
                     );
                   } catch (error) {
-                    toast.error(
-                      error instanceof Error
-                        ? error.message
-                        : "Property refresh unavailable",
-                    );
+                    toast.error(connectionErrorMessage(error));
                   }
                 }}
               >

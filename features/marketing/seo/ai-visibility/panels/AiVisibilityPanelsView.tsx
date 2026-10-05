@@ -160,7 +160,20 @@ function PanelCard({
   const prompts = panelPrompts(row);
   const messages = panelKeyMessages(row);
   const design = usePanelDesign(row.id, organizationId);
-  const status = panelStatusInfo(design.data?.panel_status ?? rowStatus(row));
+  const status =
+    design.data?.status === "failed"
+      ? {
+          label: "Design stopped",
+          tone: "warning" as const,
+          explanation:
+            "The design stopped before it finished, so this panel has no questions yet. The Design section below says why.",
+        }
+      : panelStatusInfo(design.data?.panel_status ?? rowStatus(row));
+  // Nothing runs a paused panel, and the weekly schedule itself is switched on platform-wide only
+  // by the owner — never promise "the schedule will pick it up".
+  const notRunDetail = row.is_active
+    ? "runs on the next weekly pass while the AI-visibility schedule is on"
+    : "paused — nothing runs this panel";
   const blindReviewOpen = Boolean(design.data?.open_gate?.blind);
   return (
     <SectionCard
@@ -199,8 +212,8 @@ function PanelCard({
                   // collected earlier for the same question at this site count,
                   // because they are the same measurement. Say so, or the two
                   // facts read as a contradiction.
-                  "the schedule will pick it up — answers below are from earlier runs of the same questions"
-                : "the schedule will pick it up"
+                  `${notRunDetail} — answers below are from earlier runs of the same questions`
+                : notRunDetail
           }
           tone={healthTone(row)}
           icon={<Activity className="h-3.5 w-3.5" />}

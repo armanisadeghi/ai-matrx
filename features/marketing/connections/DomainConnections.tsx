@@ -1,11 +1,12 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import Link from "next/link";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectOrganizationIds } from "@/features/scopes/redux/selectors/tree";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system/controls";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -21,6 +22,7 @@ import { fetchVaultItems } from "@/features/secrets/vault-service";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import { marketingKeys } from "@/features/marketing/data/hooks";
 import {
+  connectionErrorMessage,
   connectedSchema,
   domainConfig,
   domainProviders,
@@ -45,6 +47,7 @@ export function DomainConnections() {
   const [manual, setManual] = useState(config.manual_domains.join(", "));
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
+  const [failure, setFailure] = useState<unknown>(null);
   const [report, setReport] = useState<z.infer<typeof reportSchema> | null>(
     () => {
       const metadata = z
@@ -80,9 +83,6 @@ export function DomainConnections() {
       ];
     },
   });
-  useEffect(() => {
-    setCredentialId("");
-  }, [provider]);
   const eligible =
     vault.data?.filter(
       (item) =>
@@ -104,6 +104,7 @@ export function DomainConnections() {
     ) ?? [];
   async function execute(work: () => Promise<void>) {
     setBusy(true);
+    setFailure(null);
     setMessage("Checking domain evidence…");
     try {
       await work();
@@ -112,9 +113,8 @@ export function DomainConnections() {
       });
       await accounts.refetch();
     } catch (error) {
-      setMessage(
-        error instanceof Error ? error.message : "Domain operation failed",
-      );
+      setFailure(error);
+      setMessage("");
     } finally {
       await accounts.refetch();
       await queryClient.invalidateQueries({
@@ -132,9 +132,10 @@ export function DomainConnections() {
         <div className="flex flex-wrap items-center gap-2">
           <Select
             value={provider}
-            onValueChange={(value) =>
-              setProvider(z.enum(domainProviders).parse(value))
-            }
+            onValueChange={(value) => {
+              setProvider(z.enum(domainProviders).parse(value));
+              setCredentialId("");
+            }}
           >
             <SelectTrigger className="w-40" aria-label="Domain provider">
               <SelectValue />
@@ -173,6 +174,7 @@ export function DomainConnections() {
                       eligible.find((item) => item.id === credentialId)
                         ?.display_name ?? providerLabels[provider],
                   },
+                  connectionErrorMessage,
                   connectedSchema,
                   setMessage,
                 );
@@ -205,7 +207,11 @@ export function DomainConnections() {
           API credential fields: {requiredFields[provider].join(", ")}
         </p>
         {vault.error || accounts.error ? (
-          <p role="alert">{String(vault.error ?? accounts.error)}</p>
+          <ErrorNotice
+            error={vault.error ?? accounts.error}
+            operation="Read domain connections"
+            size="compact"
+          />
         ) : null}
         {accounts.data?.map((account) => {
           const inventory = z
@@ -359,6 +365,15 @@ export function DomainConnections() {
         >
           Check redirects
         </Button>
+        {failure ? (
+          <ErrorNotice
+            error={failure}
+            message={connectionErrorMessage(failure)}
+            operation="Manage owned domains"
+            records={[{ type: "web_site", id: site.id }]}
+            size="compact"
+          />
+        ) : null}
         {message ? (
           <p role="status" className="text-sm">
             {message}

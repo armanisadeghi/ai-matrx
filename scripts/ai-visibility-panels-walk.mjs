@@ -37,28 +37,44 @@ const page = await browser.newPage({ viewport: { width: 1400, height: 1000 } });
 page.on("console", (m) => m.type() === "error" && report.consoleErrors.push(m.text().slice(0, 200)));
 page.on("response", (r) => r.status() >= 400 && report.failedRequests.push(`${r.status()} ${r.url().replace(/\?.*$/, "").slice(0, 150)}`));
 const shot = async (name) => page.screenshot({ path: path.join(out, `${name}.png`), fullPage: true });
+// A shared dev server parks idle preview tabs; resume it rather than walking the parking page.
+const resumeIfParked = async () => {
+  for (let i = 0; i < 3 && page.url().includes("__dev-walk"); i++) {
+    await page.getByRole("button", { name: "Resume this preview" }).click().catch(() => {});
+    await page.waitForURL((u) => !u.toString().includes("__dev-walk"), { timeout: 120000 }).catch(() => {});
+  }
+};
 const text = async () => (await page.locator("main").innerText().catch(() => "")) || "";
 
 try {
   await page.goto(`${base}/login`, { timeout: 180000 });
+  await resumeIfParked();
   await page.waitForTimeout(4000);
   await page.fill('input[type="email"]', user);
   await page.fill('input[type="password"]', pass);
   await page.evaluate(() => document.querySelector("form")?.requestSubmit());
   await page.waitForFunction(() => !document.querySelector('input[type="email"]'), null, { timeout: 60000 });
   await page.goto(`${base}${route}`, { timeout: 300000 });
+  await resumeIfParked();
   await page.waitForTimeout(20000);
   const body = await page.locator("body").innerText();
   report.signedInAs = body.includes(user) ? user : "(identity text not found on page)";
   report.steps.push({ step: "panels_page", text: (await text()).slice(0, 4000) });
   await shot("1-panels");
+  await resumeIfParked();
   await page.getByRole("button", { name: "Design a panel" }).first().click();
   await page.waitForTimeout(2000);
+  await resumeIfParked();
   report.steps.push({ step: "design_form", text: (await text()).slice(0, 2000) });
   await shot("2-design-form");
   if (startDesign) {
+    if (!(await page.getByRole("button", { name: "Start the design" }).count())) {
+      await page.getByRole("button", { name: "Design a panel" }).first().click();
+      await page.waitForTimeout(2000);
+    }
     await page.getByRole("button", { name: "Start the design" }).click();
-    await page.waitForTimeout(45000);
+    await page.waitForTimeout(15000);
+    await resumeIfParked();
     report.steps.push({ step: "after_start", text: (await text()).slice(0, 5000) });
     await shot("3-after-start");
   }

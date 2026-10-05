@@ -1,12 +1,17 @@
 "use client";
 import { useState } from "react";
 import { z } from "zod";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system/controls";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import type { MarketingSite } from "@/features/marketing/types";
-import { sitemapSchema, siteConnectionOperation } from "./service";
+import {
+  sitemapSchema,
+  siteConnectionOperation,
+  connectionErrorMessage,
+} from "./service";
 
 export function SitemapControls({
   site,
@@ -19,12 +24,18 @@ export function SitemapControls({
   const [url, setUrl] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
+  const [failure, setFailure] = useState<unknown>(null);
   const [uncertain, setUncertain] = useState(false);
+  const isError =
+    Boolean(failure) ||
+    receipt?.state === "rejected" ||
+    receipt?.state === "unknown";
   async function operate(
     action: "list" | "submit" | "delete",
     sitemapUrl = "",
   ) {
     setBusy(true);
+    setFailure(null);
     setMessage("Checking Search Console…");
     try {
       const result = await siteConnectionOperation(
@@ -42,9 +53,8 @@ export function SitemapControls({
       );
     } catch (error) {
       if (action !== "list") setUncertain(true);
-      setMessage(
-        error instanceof Error ? error.message : "Search Console unavailable",
-      );
+      setFailure(error);
+      setMessage("");
     } finally {
       setBusy(false);
     }
@@ -67,6 +77,17 @@ export function SitemapControls({
             {receipt.property} ·{" "}
             {receipt.account_name ?? "Connected Google account"}
           </p>
+        ) : null}
+        {isError ? (
+          <ErrorNotice
+            error={failure ?? receipt}
+            message={
+              failure ? connectionErrorMessage(failure) : receipt?.message
+            }
+            operation="Manage Search Console sitemaps"
+            records={[{ type: "web_site", id: site.id }]}
+            size="compact"
+          />
         ) : null}
         {message ? (
           <p role="status" className="text-sm">
@@ -94,7 +115,9 @@ export function SitemapControls({
             Submit
           </Button>
         </div>
-        {receipt?.sitemaps.length === 0 && receipt.state === "listed" ? (
+        {!isError &&
+        receipt?.sitemaps.length === 0 &&
+        receipt.state === "listed" ? (
           <p className="text-sm text-muted-foreground">No submitted sitemaps</p>
         ) : null}
         {receipt?.sitemaps.map((sitemap) => (
