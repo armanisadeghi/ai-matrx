@@ -14,7 +14,7 @@ jest.mock("@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext", () => ({
     return null;
   },
 }));
-jest.mock("@ai-matrx/records/react", () => ({ useRecordsClient: () => null }));
+jest.mock("@ai-matrx/records/react", () => ({ useRecordsClient: () => null, useTable: () => ({ data: null }), useFields: () => ({ data: [] }) }));
 
 import { act } from "react";
 import { createRoot } from "react-dom/client";
