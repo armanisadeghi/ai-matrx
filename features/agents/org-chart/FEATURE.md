@@ -62,10 +62,22 @@ fill — vocabulary row ruled 2026-10-04). Box ids are `type:entityId` (`constan
   kept live by one realtime channel (the table is in the `supabase_realtime` publication), re-read on
   reconnect. Knobs: `agents.org_chart.activity_window_hours`, `agents.org_chart.stalled_after_minutes`.
   Cards read it through context, so a status tick never re-lays the chart.
+- **The open-position ladder** (vision: `common-docs/systems/agents/org-chart/VISION.md`). A position
+  is a seat: noted (name + description) → "Define the job" (`components/DefineSeatJobDialog.tsx`: goal,
+  what it's given, what it hands back) creates an ORGANIZATION soft mandate in the seat's
+  organization through `createSoftMandate` and links it (`agent.position.mandate_id`) → the job opens
+  IN PLACE (`useOpenMandateWindow`), where the goal writer, Create Agent and Test already live. The card
+  derives its rung from the job (`positionsService.readSeatJobs`: default Holder or a live agent
+  binding): Noted / Needs an agent / Agent at work / Job off. Seat jobs re-read when the job window
+  closes and on mandate-cache invalidation.
 - The drawing is the shared `components/official/org-chart/OrgChart.tsx` — THE org chart primitive for
   any hierarchy (layout adapted from Paperclip, MIT, credited in `layout.ts`). Never a second one.
 
 ## Change log
+
+- 2026-10-05 — Open-position ladder rungs 1–4 live (define the job → mandate → build its agent → the
+  seat reads "Agent at work"). Health check menu. Suggestions at rung 2 and the department-from-a-
+  description summit are parked in the node task list.
 
 - 2026-10-05 — Live activity across the whole chart (any run the viewer may see, from any surface).
   Second review fixed: a cancelled drag never unplaces; a touch hold no longer also opens the menu;

@@ -27,6 +27,7 @@ import {
   selectOrgPositions,
   selectOrgPositionsStatus,
 } from "@/features/agents/redux/orchestras/selectors";
+import { selectIsOverlayOpen } from "@/lib/redux/slices/overlaySlice";
 import { onMandateCacheInvalidated } from "@ai-matrx/chat/mandates/service";
 import { useEnsureAgentsLoaded } from "@/features/agents/orchestras/hooks/useEnsureAgentsLoaded";
 import { buildAgentOrgForest, type OrchestraShape } from "./buildAgentOrgForest";
@@ -129,10 +130,15 @@ export function useAgentOrgChart(opts: { rootIds?: string[] } = {}) {
   useEffect(() => {
     if (!seatMandates) return;
     const ids = seatMandates.split(",");
-    dispatch(loadSeatJobs(ids));
     // A job changes in its own window (an agent built, a Holder set): re-read then.
     return onMandateCacheInvalidated(() => void dispatch(loadSeatJobs(ids)));
   }, [dispatch, seatMandates]);
+  // A Holder saved in the job window does not always announce itself: closing
+  // the window re-reads every seat's job, so the card says what is true.
+  const jobWindowOpen = useAppSelector((s) => selectIsOverlayOpen(s, "mandateWindow"));
+  useEffect(() => {
+    if (!jobWindowOpen && seatMandates) dispatch(loadSeatJobs(seatMandates.split(",")));
+  }, [dispatch, jobWindowOpen, seatMandates]);
 
   const positionById = new Map(positions.map((p) => [p.id, p]));
   const nameOf = (id: string) => {
