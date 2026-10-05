@@ -389,10 +389,6 @@ export const PROSE_BLOCK_ELEMENTS = {
       </pre>
     );
   },
-  // An inline code span is the model QUOTING source (ruling, 2026-09-30) — a
-  // kind there stays as written; marked so the leak sentinel (G1) skips it.
-  // `pre` above reads the fenced child's props, never this element's DOM.
-  code: ({ node, ...props }) => <code data-kind-source="explicit" {...props} />,
   hr: ({ node, ...props }) => (
     <hr
       className="my-3 border-t border-gray-300 dark:border-gray-600"

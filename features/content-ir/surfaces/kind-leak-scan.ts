@@ -23,6 +23,8 @@ export const KIND_SOURCE_PROPS = { [KIND_SOURCE_ATTR]: "explicit" } as const;
 const SKIP_TAGS = new Set(["SCRIPT", "STYLE", "TEMPLATE", "NOSCRIPT", "TEXTAREA", "INPUT", "SELECT", "OPTION"]);
 
 const ELEMENT_NODE = 1;
+/** The markdown delimiter each emphasis element replaced (see `visibleKindText`). */
+const EMPHASIS_MARK: Record<string, string> = { STRONG: "__", B: "__", EM: "_", I: "_" };
 const TEXT_NODE = 3;
 
 function isSkipped(el: Element): boolean {
@@ -54,9 +56,16 @@ export function visibleKindText(root: Node, cap = Number.POSITIVE_INFINITY): str
     }
     if (node.nodeType !== ELEMENT_NODE && node.nodeType !== 11 /* fragment */ && node.nodeType !== 9) return true;
     if (node.nodeType === ELEMENT_NODE && isSkipped(node as Element)) return true;
+    // Markdown EATS the key's underscores: `{"__kind":"x",…{"__kind"` renders
+    // `{"<strong>kind":"x",…{"</strong>kind"` — on screen that is raw JSON
+    // (`{"kind":…`). Put back the delimiter emphasis replaced, so the key reads
+    // as written (`__` strong, `_` em; harmless for every other text).
+    const mark = node.nodeType === ELEMENT_NODE ? EMPHASIS_MARK[(node as Element).tagName] ?? "" : "";
+    out += mark;
     for (let child = node.firstChild; child; child = child.nextSibling) {
       if (!walk(child)) return false;
     }
+    out += mark;
     return true;
   };
   walk(root);

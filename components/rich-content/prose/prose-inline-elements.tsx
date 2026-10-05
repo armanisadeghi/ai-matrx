@@ -178,6 +178,9 @@ export const PROSE_INLINE_ELEMENTS = {
 
     return (
       <code
+        // An inline code span is the model QUOTING source (ruling 2026-09-30):
+        // a kind there stays as written — the leak sentinel (G1) skips it.
+        data-kind-source="explicit"
         className={cn(
           "px-1.5 py-0 rounded font-mono text-sm font-medium",
           "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
