@@ -816,6 +816,9 @@ export default function KnowledgeCommandBar({
         onValueChange={setSelected}
         className="bg-transparent"
       >
+      {/* The dialog's own close button sits 16px from the top; this header row
+          is ~48px tall, so centre the button on it. */}
+      <style>{`[role="dialog"]:has([data-testid="knowledge-command-bar"]) > button.absolute { top: 0.25rem; }`}</style>
       <div data-testid="knowledge-command-bar" className="flex min-h-0 flex-col">
         <div className="flex flex-wrap items-center gap-1.5 border-b border-border px-3 py-2 pr-12">
           <Search className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
