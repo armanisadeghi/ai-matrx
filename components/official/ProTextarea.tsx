@@ -1202,7 +1202,9 @@ export const ProTextarea = React.forwardRef<
       // right gutter beside it instead of a reserved row below.
       hasCoarseControls &&
         !onSubmit &&
-        (editor?.singleLine ? "pr-24" : "pb-10 pointer-coarse:pb-12"),
+        (editor?.singleLine
+          ? "pr-24 pointer-coarse:pr-32"
+          : "pb-10 pointer-coarse:pb-12"),
       // Bottom padding for the submit button — TapTargetButtonSolid is
       // 44px tall (h-11), so reserve enough vertical clearance.
       onSubmit && "pb-14",

@@ -23,10 +23,13 @@ import {
 // outer padding is equal on both ends so the ink sits centred in the pill
 // (tap-target guard); on a touch screen both ends pad out a little more.
 const SEGMENT =
-  "relative z-[1] inline-flex h-full touch-manipulation items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-40";
-const MIC_ALONE = "px-1.5 pointer-coarse:px-2.5";
-const MIC_SPLIT = "pl-1.5 pr-0.5 pointer-coarse:pl-2.5 pointer-coarse:pr-1";
-const CHEVRON_SPLIT = "pl-0 pr-1.5 pointer-coarse:pl-0.5 pointer-coarse:pr-2.5";
+  "relative z-[1] inline-flex h-full touch-manipulation items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-40 " +
+  // Touch: an invisible strip grows each segment's hit area to 44px tall
+  // without growing the layout (the tap-target system's own trick).
+  "pointer-coarse:before:absolute pointer-coarse:before:inset-x-0 pointer-coarse:before:-inset-y-1 pointer-coarse:before:content-['']";
+const MIC_ALONE = "px-1.5 pointer-coarse:px-3";
+const MIC_SPLIT = "pl-1.5 pr-0.5 pointer-coarse:pl-3 pointer-coarse:pr-1.5";
+const CHEVRON_SPLIT = "pl-0 pr-1.5 pointer-coarse:pl-1 pointer-coarse:pr-3";
 
 export interface MicWithDeviceMenuProps {
   onMicClick: () => void;
@@ -77,8 +80,8 @@ export function MicWithDeviceMenu({
     // Plain ink, no glass border: the hosts pair it with a transparent "…"
     // tap button, so the row is all non-glass (tap-target placement rule 2)
     // and reads as two quiet icons, not a stack of pills.
-    <div className="relative mx-[3px] inline-flex h-7 shrink-0 items-center">
-      <div className="relative flex h-6 items-stretch overflow-hidden rounded-full pointer-coarse:h-7">
+    <div className="relative mx-[3px] inline-flex h-7 shrink-0 items-center pointer-coarse:h-10">
+      <div className="relative flex h-6 items-stretch rounded-full pointer-coarse:h-9">
         {isRecording && (
           <>
             <span

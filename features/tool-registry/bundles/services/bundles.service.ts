@@ -357,6 +357,8 @@ export interface CreateBundleMemberInput {
  */
 export async function createBundleWithLister(args: {
   name: string;
+  /** The organization the bundle, its lister tool and binding are saved in — always explicit. */
+  organizationId: string;
   description?: string;
   isSystem?: boolean;
   listerToolName?: string;
@@ -364,6 +366,7 @@ export async function createBundleWithLister(args: {
 }): Promise<CreateBundleResult> {
   const { data, error } = await sb().rpc("create_bundle_with_lister", {
     p_name: args.name,
+    p_organization_id: args.organizationId,
     p_description: args.description ?? "",
     p_is_system: args.isSystem ?? false,
     p_lister_tool_name: args.listerToolName,

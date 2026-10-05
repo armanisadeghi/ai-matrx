@@ -69,8 +69,8 @@ export function hoverRevealsCluster(inputWidth: number): boolean {
  */
 export type ProInputClusterTier = "full" | "menu" | "none";
 
-/** Widths the cluster takes per tier, px (tap boxes + the mic capsule). */
-export const PRO_INPUT_FULL_CLUSTER_PX = 86;
+/** Widths the cluster takes per tier, px (measured on a fine pointer, 2026-10-04: 87px). */
+export const PRO_INPUT_FULL_CLUSTER_PX = 88;
 export const PRO_INPUT_MENU_CLUSTER_PX = 38;
 /** The most of the free room the hover cluster may ever take. */
 export const PRO_INPUT_CLUSTER_MAX_SHARE = 0.4;

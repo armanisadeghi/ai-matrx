@@ -16,7 +16,7 @@ export interface ParsedDecisionOption {
     text: string;
 }
 
-const OPTION_RE = /<option\s+label="([^"]*)">([\s\S]*?)<\/option>/g;
+const OPTION_RE = /<option\b([^>]*)>([\s\S]*?)<\/option\s*>/gi;
 const ATTR_RE = /([\w-]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/g;
 
 export function parseOptionAttributes(attrString: string): Record<string, string> {
@@ -34,7 +34,7 @@ export function parseDecisionOptionsFromBody(body: string): ParsedDecisionOption
     const re = new RegExp(OPTION_RE.source, OPTION_RE.flags);
     let m: RegExpExecArray | null;
     while ((m = re.exec(body)) !== null) {
-        const attrs = { label: m[1] };
+        const attrs = parseOptionAttributes(m[1]);
         const text = m[2].trim();
         const label = (attrs.label ?? attrs.title ?? attrs.name ?? '').trim() || text.split('\n')[0].trim();
         if (label === '') continue;

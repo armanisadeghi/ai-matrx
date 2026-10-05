@@ -2284,9 +2284,16 @@ export class StreamBlockAccumulator {
       !this.subState.isAttrXml &&
       this.xmlClosedCleanly
     ) {
+      // An opener carrying attributes (`<questionnaire title="…">`) hands the
+      // strategy the literal framing (the splitter does the same), so the
+      // attributes are not lost with the stripped tag text.
+      const openTag = this.subState.openingTagText;
+      const tagName = this.subState.tagName;
       const xmlEnvelope = envelopeForCompletedXmlRegion(
-        this.subState.tagName,
-        this.currentBlockContent,
+        tagName,
+        openTag && openTag !== `<${tagName}>`
+          ? `${openTag}\n${this.currentBlockContent}\n</${tagName}>`
+          : this.currentBlockContent,
       );
       if (xmlEnvelope) this.irEnvelope = xmlEnvelope;
     }

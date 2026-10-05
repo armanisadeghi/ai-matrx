@@ -541,7 +541,8 @@ export const ProInput = React.forwardRef<HTMLInputElement, ProInputProps>(
     const micChoiceInMenu = showMic && clusterTier === "menu";
     const showMenu =
       !disabled &&
-      clusterTier !== "none" &&
+      // An open menu never unmounts under the person if the field shrinks.
+      (clusterTier !== "none" || menuOpen) &&
       (showCopyButton || cleanupEligible || micChoiceInMenu);
     const rightPadding = rightPaddingClass(!!onSubmit, showClear);
     const auxVisible =

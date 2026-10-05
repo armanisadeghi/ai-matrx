@@ -34713,6 +34713,7 @@ export type Database = {
           p_include_fresh?: boolean
           p_limit?: number
           p_organization_id: string
+          p_record_ids?: string[]
         }
         Returns: {
           current_value: Json
@@ -90670,7 +90671,6 @@ export type Database = {
         Returns: Json
       }
       cutover_seams: { Args: { p_organization_id: string }; Returns: Json }
-      cutover_store_writer_scope_parity: { Args: never; Returns: Json }
       cutover_tables_copied: { Args: { p_org: string }; Returns: Json }
       data_tables_born_in_the_new_system_for_me: {
         Args: never
@@ -98380,6 +98380,7 @@ export type Database = {
           p_lister_tool_name?: string
           p_member_tool_names?: string[]
           p_name: string
+          p_organization_id: string
         }
         Returns: string
       }

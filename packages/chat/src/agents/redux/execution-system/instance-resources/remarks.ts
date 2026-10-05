@@ -31,7 +31,7 @@
 import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import type { ManagedResource } from "../../../types/instance.types";
 import { generateResourceId } from "../utils/ids";
-import { remarkDiff } from "./remark-diff";
+import { remarkChangeSummary, remarkDiff } from "./remark-diff";
 import {
   addResource,
   removeResource,
@@ -190,13 +190,6 @@ function clip(text: string, max = QUOTE_CHARS): string {
   return clean.length <= max ? clean : `${clean.slice(0, max - 1).trimEnd()}…`;
 }
 
-function firstChangedLine(before: string, after: string): string {
-  const lines = remarkDiff(before, after).split("\n");
-  const added = lines.find((l) => l.startsWith("+ ") && l.slice(2).trim());
-  const removed = lines.find((l) => l.startsWith("- ") && l.slice(2).trim());
-  return added ? added.slice(2) : removed ? `Removed: ${removed.slice(2)}` : "";
-}
-
 /** The chip's words: the short quote (or what the person did), never prose. */
 export function remarkChipTitle(item: RemarkItem): string {
   switch (item.kind) {
@@ -207,7 +200,7 @@ export function remarkChipTitle(item: RemarkItem): string {
       return clip(item.chosen) || KIND_LABEL.choice;
     case "edit":
       // The words the person changed, not the answer's opening line.
-      return clip(item.projection ?? firstChangedLine(item.before, item.after)) || KIND_LABEL.edit;
+      return clip(item.projection ?? remarkChangeSummary(item.before, item.after)) || KIND_LABEL.edit;
     case "answers":
       return item.title ? clip(item.title) : `${item.answers.length} answers`;
     case "interaction":

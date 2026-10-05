@@ -29,6 +29,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
+import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import { toast, recordToast } from "@/lib/toast";
 import { toastDoor } from "@/components/official/entity-ref/toastDoor";
 import {
@@ -370,6 +372,7 @@ function NewBundleDialog({
     try {
       const result = await createBundleWithLister({
         name,
+        organizationId: await ensureOrgId(),
         description,
         isSystem,
       });
@@ -394,6 +397,7 @@ function NewBundleDialog({
       );
       onCreated(result.bundle_id);
     } catch (e) {
+      if (isOrganizationSelectionCancelled(e)) return;
       toast.error(e instanceof Error ? e.message : "Create failed");
     } finally {
       setBusy(false);

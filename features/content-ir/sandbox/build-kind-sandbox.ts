@@ -32,6 +32,7 @@
  *   @/components/MarkdownStream               → FrameMarkdown     (ruling 1)
  *   @/components/agent-copy/CopyForAiButton   → FrameCopyForAiButton
  *   @/features/google-workspace/export/sendToGoogle → FrameSendToGoogle
+ *   @/features/agent-apps/embed/AppletParts   → FrameAppletParts  (@/applets)
  * They are aliases rather than database migrations, so the live component
  * bodies are migrated to the frame-safe implementations without a row
  * changing — including the five that import MarkdownStream.
@@ -78,6 +79,10 @@ const ALIAS: Record<string, string> = {
   "@/features/google-workspace/export/sendToGoogle": resolve(
     __dirname,
     "runtime/FrameSendToGoogle.ts",
+  ),
+  "@/features/agent-apps/embed/AppletParts": resolve(
+    __dirname,
+    "runtime/FrameAppletParts.tsx",
   ),
 };
 

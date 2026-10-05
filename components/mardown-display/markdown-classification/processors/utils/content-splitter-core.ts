@@ -955,9 +955,27 @@ function detectXmlBlockType(
     if (matchedTag) {
       return { type: type as keyof typeof XML_TAG_BLOCKS, matchedTag };
     }
+    // An opener carrying attributes (`<questionnaire title="…">`) — models
+    // write these and the stream accumulator already accepts them; the
+    // literal opening tag becomes the matched tag.
+    const bare = tags[0].slice(0, -1);
+    if (trimmed.startsWith(`${bare} `)) {
+      const close = trimmed.indexOf(">");
+      if (close !== -1) {
+        return {
+          type: type as keyof typeof XML_TAG_BLOCKS,
+          matchedTag: trimmed.slice(0, close + 1),
+        };
+      }
+    }
   }
 
   return null;
+}
+
+/** Tag name of a matched opening tag, bare or attributed. */
+function xmlTagNameOf(matchedTag: string): string {
+  return /^<([\w-]+)/.exec(matchedTag)?.[1] ?? matchedTag.slice(1, -1);
 }
 
 /**
@@ -1141,7 +1159,7 @@ function extractXmlBlock(
   // loop can process it as a new block.
   let remainderAfterClose = "";
 
-  const tagName = matchedTag.slice(1, -1);
+  const tagName = xmlTagNameOf(matchedTag);
   const closingTag = `</${tagName}>`;
 
   // First line may have content after the opening tag: <reasoning>test or <reasoning>test</reasoning>
@@ -2242,9 +2260,15 @@ export const splitContentIntoBlocksWith = (
       // kind pipeline the live stream does. Complete-only; loud fail-open.
       let xmlMetadata = extraction.metadata;
       if (xmlMetadata?.isComplete === true) {
+        const xmlTag = xmlTagNameOf(xmlMatch.matchedTag);
+        const attributed = xmlMatch.matchedTag !== `<${xmlTag}>`;
         const xmlEnvelope = envelopes.xmlRegion(
-          xmlMatch.matchedTag.slice(1, -1),
-          extraction.content,
+          xmlTag,
+          // Attributes (e.g. a questionnaire `title`) live on the opener:
+          // hand the strategy the same literal framing the accumulator does.
+          attributed
+            ? `${xmlMatch.matchedTag}\n${extraction.content}\n</${xmlTag}>`
+            : extraction.content,
         );
         if (xmlEnvelope) {
           xmlMetadata = { ...xmlMetadata, [IR_ENVELOPE_KEY]: xmlEnvelope };

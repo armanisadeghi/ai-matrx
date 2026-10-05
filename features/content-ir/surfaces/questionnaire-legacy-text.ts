@@ -54,6 +54,10 @@ import type {
 } from "@/components/mardown-display/markdown-classification/processors/custom/parser-separated";
 import { KIND_KEY } from "@ai-matrx/content-ir";
 import {
+  looksLikeQuestionnaireXml,
+  questionnaireXmlToKindValue,
+} from "./questionnaire-xml";
+import {
   INTRO_SECTION_TITLE,
   OPTIONS_SECTION_TITLE,
   TYPE_DIRECTIVE,
@@ -140,6 +144,13 @@ function headerFromParsed(
 export function questionnaireLegacyTextToKindValue(
   regionText: string,
 ): Record<string, unknown> | null {
+  // Models also write the body as XML (`<question …>` / `<option …>`): same
+  // strategy, same canonical value — see questionnaire-xml.ts.
+  if (looksLikeQuestionnaireXml(regionText)) {
+    const fromXml = questionnaireXmlToKindValue(regionText);
+    if (fromXml) return fromXml;
+  }
+
   let inner = regionText.replace(OPENING_TAG_RE, "");
   const closeIdx = inner.toLowerCase().indexOf(CLOSING_TAG);
   if (closeIdx !== -1) inner = inner.slice(0, closeIdx);

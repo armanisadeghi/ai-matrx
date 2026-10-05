@@ -5,7 +5,7 @@
 // by the platform diff engine (@ai-matrx/diff). Changed lines are `- ` / `+ `,
 // one line of context around each hunk is `  `, and a gap between hunks is `…`.
 
-import { computeLineChanges } from "@ai-matrx/diff/text";
+import { computeLineChanges, computeTextDiff } from "@ai-matrx/diff/text";
 
 const CONTEXT_LINES = 1;
 
@@ -33,4 +33,39 @@ export function remarkDiff(before: string, after: string): string {
     out.push(`${mark}${line.content}`);
   });
   return out.join("\n");
+}
+
+/**
+ * The words that changed, as one short phrase for a chip title: `+ added words`,
+ * `- removed words`, or `- old → + new`. Word-level (the platform engine's
+ * intra-line segments), so appending a sentence to a one-paragraph answer names
+ * that sentence — never the paragraph's opening. "" when nothing changed.
+ */
+export function remarkChangeSummary(before: string, after: string): string {
+  if (before === after) return "";
+  const added: string[] = [];
+  const removed: string[] = [];
+  for (const line of computeTextDiff(before, after).inline) {
+    if (line.type === "unchanged") continue;
+    const target = line.type === "added" ? added : removed;
+    if (line.segments && line.segments.length > 0) {
+      let run = "";
+      for (const seg of line.segments) {
+        if (seg.type === line.type) run += seg.value;
+        else if (run.trim()) {
+          target.push(run.trim());
+          run = "";
+        } else run = "";
+      }
+      if (run.trim()) target.push(run.trim());
+    } else if (line.content.trim()) {
+      target.push(line.content.trim());
+    }
+  }
+  const add = added[0];
+  const rem = removed[0];
+  if (add && rem) return `- ${rem} → + ${add}`;
+  if (add) return `+ ${add}`;
+  if (rem) return `- ${rem}`;
+  return "";
 }

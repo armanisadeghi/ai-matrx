@@ -60,6 +60,8 @@ import { WorkingDocumentBody } from "./bodies/WorkingDocumentBody";
 import { ProcessedDocumentBody } from "./bodies/ProcessedDocumentBody";
 import { ProcessedDocumentTitle } from "./bodies/ProcessedDocumentTitle";
 import { GenericBody, GenericFooter } from "./bodies/GenericBody";
+import { RemarkBody } from "./bodies/RemarkBody";
+import { RemarkBody } from "./bodies/RemarkBody";
 import { BookmarkReferenceBody } from "./bodies/BookmarkReferenceBody";
 import { EntityReferenceBody } from "./bodies/EntityReferenceBody";
 import { ContextInputBody } from "./bodies/ContextInputBody";
@@ -342,7 +344,7 @@ export const CONTEXT_ITEM_TYPE_DEFS: ContextItemTypeDef[] = [
     icon: MessageSquareQuote,
     themeKey: "input_remarks",
     editable: false,
-    Body: GenericBody,
+    Body: RemarkBody,
   },
 ];
 
