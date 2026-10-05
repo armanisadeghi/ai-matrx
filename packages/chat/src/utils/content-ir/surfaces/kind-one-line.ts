@@ -175,3 +175,45 @@ function computeSpelledKindsAsOneLine(text: string): string {
   return cursor === 0 ? text : out + text.slice(cursor);
 }
 
+
+const AS_CODE_CACHE = new Map<string, string>();
+
+/**
+ * Round 10, detection-only spellings drawn EXACTLY as written: a non-JSON
+ * kind spelling in prose (`{\"__kind\":…}`, repr, a JS literal, typographic
+ * quotes, entities) becomes an inline code span, so markdown neither eats its
+ * backslashes nor decodes its entities — the screen shows the source byte for
+ * byte, as quoted source. Nothing outside a region changes; text with no such
+ * region comes back as the same string. One linear pass, memoized per text.
+ * (A markdown-escaping pass did the same job and hung the renderer on nested
+ * escapes — never reintroduce it.)
+ */
+export function nonJsonKindsAsCode(text: string): string {
+  if (!text || !mayHoldKindKey(text)) return text;
+  const cached = AS_CODE_CACHE.get(text);
+  if (cached !== undefined) return cached;
+  let out = "";
+  let cursor = 0;
+  for (const region of scanKindSpellingRegions(text, { families: "all" })) {
+    if (region.family === "lifted" || region.family === "markdown") continue;
+    out += text.slice(cursor, region.start) + asCodeSpan(text.slice(region.start, region.end));
+    cursor = region.end;
+  }
+  const result = cursor === 0 ? text : out + text.slice(cursor);
+  if (AS_CODE_CACHE.size >= ONE_LINE_CACHE_SIZE) AS_CODE_CACHE.delete(AS_CODE_CACHE.keys().next().value!);
+  AS_CODE_CACHE.set(text, result);
+  return result;
+}
+
+/** A CommonMark code span whose fence is longer than any backtick run inside. */
+function asCodeSpan(source: string): string {
+  let longest = 0;
+  let run = 0;
+  for (const ch of source) {
+    run = ch === "`" ? run + 1 : 0;
+    if (run > longest) longest = run;
+  }
+  const fence = "`".repeat(longest + 1);
+  const pad = source.startsWith("`") || source.endsWith("`") ? " " : "";
+  return `${fence}${pad}${source}${pad}${fence}`;
+}

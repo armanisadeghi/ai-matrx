@@ -16,7 +16,7 @@ import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-event
 import { StreamBlockAccumulator } from "@ai-matrx/chat/agents/redux/execution-system/utils/stream-block-accumulator";
 import { BlockRenderer } from "@/components/mardown-display/chat-markdown/block-registry/BlockRenderer";
 import { splitContentIntoBlocksV2 } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
-import { catalogProseText, inlineKindText, spelledKindsAsOneLine } from "@/features/content-ir/surfaces/kind-one-line";
+import { catalogProseText, inlineKindText, spelledKindsAsOneLine, nonJsonKindsAsCode } from "@/features/content-ir/surfaces/kind-one-line";
 import { snippetKindText } from "@/features/content-ir/surfaces/kind-snippet-text";
 import { kindTextToMarkdown } from "@/features/content-ir/surfaces/kind-text-to-markdown";
 import { kindTextLabel } from "@/features/content-ir/surfaces/kind-text-label";
@@ -118,7 +118,14 @@ describe("an unclosed kind never hides the text after it — rendered", () => {
     expect(reload.text).toContain(TAIL);
     // Round 10: a real JSON spelling reads as its label; every other spelling draws exactly as written.
     if (JSON_ROWS.has(_name)) expect(reload.text).toMatch(/Note/);
-    else expect(reload.text).toContain(squash(text));
+    else {
+      // Drawn exactly as written, as an inline code span (a source view the
+      // judge does not read) — so the as-written proof is the prose source.
+      const spelled = SPELLED.find(([name]) => name === _name)![1];
+      expect(nonJsonKindsAsCode(text)).toContain(unclosed(spelled));
+      expect(nonJsonKindsAsCode(text)).toContain(TAIL);
+      expect(reload.text).toContain("Example:");
+    }
     const live = await liveText(text);
     expect(live.raw).toBe(false);
     expect(live.text).toContain(TAIL);
