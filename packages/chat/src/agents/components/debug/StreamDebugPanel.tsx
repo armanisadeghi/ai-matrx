@@ -97,7 +97,7 @@ function CopyBtn({
 }) {
   const { copied, copy } = useCopy();
   return (
-    <Button variant="quiet" icon={copied === id ? <Check /> : <Copy />} aria-label="Copy" onClick={(e) => {
+    <Button variant="quiet" icon={copied === id ? <Check /> : <Copy />} glyphTone={copied === id ? "success" : undefined} aria-label="Copy" onClick={(e) => {
         e.stopPropagation();
         copy(text, id);
       }} className={className} />
