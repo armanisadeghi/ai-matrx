@@ -104,7 +104,7 @@ const CopyPathObjectDialog: React.FC<CopyPathObjectDialogProps> = ({
           <div className="space-y-2">
             <Label>Preview:</Label>
             <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded-md">
-              <pre className="text-xs text-gray-800 dark:text-gray-300">
+              <pre className="type-secondary text-gray-800 dark:text-gray-300">
                 {JSON.stringify(buildEnhancedBookmarkObject(currentPath, name.trim() || "", ignorePrefix), null, 2)}
               </pre>
             </div>

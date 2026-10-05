@@ -48,11 +48,11 @@ const ImageCropperWithSelect = ({
             aspectRatios={aspectRatios}
             trigger={
               <>
-                <div className="cursor-pointer transform transition-transform hover:scale-110 text-xs border border-border bg-textured text-gray-900 dark:text-gray-100 focus:border-rose-500 rounded-xl p-2">
+                <div className="cursor-pointer transform transition-transform hover:scale-110 type-secondary border border-border bg-textured text-gray-900 dark:text-gray-100 focus:border-rose-500 rounded-xl p-2">
                   <ArrowRight className="h-8 w-8 text-blue-500 dark:text-blue-400" /> Crop
                 </div>
                 <div 
-                  className="cursor-pointer transform transition-transform flex items-center justify-center hover:scale-110 text-xs border border-border bg-textured text-gray-900 dark:text-gray-100 focus:border-rose-500 rounded-xl p-2 mt-2"
+                  className="cursor-pointer transform transition-transform flex items-center justify-center hover:scale-110 type-secondary border border-border bg-textured text-gray-900 dark:text-gray-100 focus:border-rose-500 rounded-xl p-2 mt-2"
                   onClick={handleReset}
                 >
                   <RefreshCcw className="h-6 w-6 text-blue-500 dark:text-blue-400" />

@@ -45,7 +45,7 @@ const SaveBookmarkDialog: React.FC<BookmarkDialogProps> = ({
         </DialogHeader>
         <div className="space-y-4 py-2">
           {configKey && (
-            <div className="bg-blue-50 dark:bg-blue-950 p-2 rounded text-xs flex items-start gap-2">
+            <div className="bg-blue-50 dark:bg-blue-950 p-2 rounded type-secondary flex items-start gap-2">
               <InfoIcon className="h-4 w-4 text-blue-500 flex-shrink-0 mt-0.5" />
               <div>
                 <p className="text-blue-800 dark:text-blue-200 font-medium">Config: {configKey}</p>
@@ -58,10 +58,10 @@ const SaveBookmarkDialog: React.FC<BookmarkDialogProps> = ({
           <div>
             <label className="text-sm font-medium">Path:</label>
             <div className="flex flex-col gap-2 mt-1">
-              <code className="text-xs block bg-gray-100 dark:bg-gray-800 p-2 rounded overflow-x-auto whitespace-pre-wrap break-all">
+              <code className="type-secondary block bg-gray-100 dark:bg-gray-800 p-2 rounded overflow-x-auto whitespace-pre-wrap break-all">
                 {pathString}
               </code>
-              <div className="px-2 py-1 text-xs rounded bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 inline-block self-start">
+              <div className="px-2 py-1 type-secondary rounded bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 inline-block self-start">
                 {pathTypeInfo?.readibleType || "Unknown Type"}
               </div>
             </div>
@@ -88,7 +88,7 @@ const SaveBookmarkDialog: React.FC<BookmarkDialogProps> = ({
               placeholder="What does this path point to?"
             />
           </div>
-          <div className="bg-amber-50 dark:bg-amber-950 p-2 rounded text-xs flex items-start gap-2">
+          <div className="bg-amber-50 dark:bg-amber-950 p-2 rounded type-secondary flex items-start gap-2">
             <BookmarkIcon className="h-4 w-4 text-amber-500 flex-shrink-0 mt-0.5" />
             <p className="text-amber-800 dark:text-amber-200">
               This bookmark will include additional type information that can be used for advanced filtering and navigation.

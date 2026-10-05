@@ -71,7 +71,7 @@ export function ProTextFieldStatsPanel({
   return (
     <div className="flex flex-col">
       <div className="flex items-center justify-between gap-2 border-b border-border px-3 py-2">
-        <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+        <div className="flex items-center gap-1.5 type-secondary font-semibold text-foreground">
           <BarChart3 className="h-3.5 w-3.5 text-primary" />
           Text stats
         </div>
@@ -83,7 +83,7 @@ export function ProTextFieldStatsPanel({
       {text.length === 0 ? (
         // Same law as the pinned bar: no statistics for a field with no text.
         // Five zeros are five facts about nothing; this says the true thing.
-        <p className="px-3 py-2.5 text-xs text-muted-foreground">
+        <p className="px-3 py-2.5 type-secondary text-muted-foreground">
           Nothing typed here yet — the counts start with the first character.
         </p>
       ) : (
@@ -91,7 +91,7 @@ export function ProTextFieldStatsPanel({
         {TEXTAREA_METRICS.map((key) => (
           <div
             key={key}
-            className="flex items-baseline justify-between gap-3 text-xs"
+            className="flex items-baseline justify-between gap-3 type-secondary"
           >
             <dt className="text-muted-foreground">{METRIC_LABELS[key]}</dt>
             <dd className="font-mono tabular-nums text-foreground">

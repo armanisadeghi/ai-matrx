@@ -497,7 +497,7 @@ export function PublicImageSearch({
                         "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMyA4QzMgOC41NTIyOCAzLjQ0NzcyIDkgNCA5SDIwQzIwLjU1MjMgOSAyMSA4LjU1MjI4IDIxIDhDMjEgNy40NDc3MiAyMC41NTIzIDcgMjAgN0g0QzMuNDQ3NzIgNyAzIDcuNDQ3NzIgMyA4WiIgZmlsbD0iY3VycmVudENvbG9yIi8+PHBhdGggZD0iTTMgMTZDMyAxNi41NTIzIDMuNDQ3NzIgMTcgNCAxN0gyMEMyMC41NTIzIDE3IDIxIDE2LjU1MjMgMjEgMTZDMjEgMTUuNDQ3NyAyMC41NTIzIDE1IDIwIDE1SDRDMy40NDc3MiAxNSAzIDE1LjQ0NzcgMyAxNloiIGZpbGw9ImN1cnJlbnRDb2xvciIvPjwvc3ZnPg==";
                     }}
                   />
-                  <div className="absolute top-0 right-0 bg-black/50 text-white text-xs px-1 rounded-bl">
+                  <div className="absolute top-0 right-0 bg-black/50 text-white type-secondary px-1 rounded-bl">
                     {index + 1}
                   </div>
                   <button
@@ -678,7 +678,7 @@ function SearchDialog({
                 <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300">
                   No images found
                 </h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400 max-w-md mt-2">
+                <p className="type-body text-gray-500 dark:text-gray-400 max-w-md mt-2">
                   {searchQuery
                     ? "Try a different search term"
                     : "Start by searching for images above"}
@@ -718,7 +718,7 @@ function SearchDialog({
                     />
 
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <p className="text-white text-sm font-medium text-center p-2 line-clamp-2">
+                      <p className="text-white type-title text-center p-2 line-clamp-2">
                         {photo.alt_description ||
                           photo.description ||
                           `Photo by ${photo.user.name}`}
@@ -746,7 +746,7 @@ function SearchDialog({
           {multiSelect && (
             <div className="p-4 border-t border-border flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-500 dark:text-gray-400">
+                <span className="type-body text-gray-500 dark:text-gray-400">
                   {selectedPhotos.length} image
                   {selectedPhotos.length !== 1 ? "s" : ""} selected
                 </span>

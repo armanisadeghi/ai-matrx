@@ -376,9 +376,9 @@ function PreviewBar({
         />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-xs font-medium text-muted-foreground">Image set</p>
-        <p className="text-[10px] text-muted-foreground truncate">{imageUrl}</p>
-        <p className="text-[10px] text-muted-foreground/60 mt-0.5">
+        <p className="type-secondary font-medium text-muted-foreground">Image set</p>
+        <p className="type-meta text-muted-foreground truncate">{imageUrl}</p>
+        <p className="type-meta text-muted-foreground/60 mt-0.5">
           Use the tabs below to change
         </p>
       </div>
@@ -471,12 +471,12 @@ function LibraryTabContent({
           <FolderOpen className="h-8 w-8 text-muted-foreground" />
         )}
         <div className="text-center px-3">
-          <p className="text-sm font-medium text-foreground">
+          <p className="type-title text-foreground">
             {state === "resolving"
               ? "Attaching variants…"
               : "Browse your library"}
           </p>
-          <p className="text-xs text-muted-foreground mt-0.5">
+          <p className="type-secondary text-muted-foreground mt-0.5">
             {state === "resolving"
               ? "Detecting existing variants, generating any that are missing"
               : "Pick an existing cloud file — missing variants are auto-generated"}
@@ -484,7 +484,7 @@ function LibraryTabContent({
         </div>
       </button>
       {state === "error" && errorMsg && (
-        <p className="text-xs text-destructive flex items-center gap-1">
+        <p className="type-secondary text-destructive flex items-center gap-1">
           <AlertCircle className="h-3 w-3 shrink-0" /> {errorMsg}
           <ErrorAlchemyMenu error={errorMsg} />
         </p>
@@ -555,7 +555,7 @@ function UrlTabContent({
 
   return (
     <div className="flex flex-col gap-2 py-2">
-      <p className="text-xs text-muted-foreground px-0.5">
+      <p className="type-secondary text-muted-foreground px-0.5">
         Paste any public image URL. If accessible, variants will be
         auto-generated; otherwise the URL is used directly.
       </p>
@@ -590,7 +590,7 @@ function UrlTabContent({
         </Button>
       </div>
       {state === "error" && errorMsg && (
-        <p className="text-xs text-destructive flex items-center gap-1">
+        <p className="type-secondary text-destructive flex items-center gap-1">
           <AlertCircle className="h-3 w-3 shrink-0" /> {errorMsg}
           <ErrorAlchemyMenu error={errorMsg} />
         </p>
@@ -760,14 +760,14 @@ function GenerateTabContent({
       </Button>
 
       {!IMAGE_STUDIO_BACKEND_CAPABILITIES.generate && (
-        <p className="text-xs text-muted-foreground">
+        <p className="type-secondary text-muted-foreground">
           Image generation is coming soon. Use Upload, Library, or URL instead.
         </p>
       )}
 
       {results.length > 0 && (
         <div className="flex flex-col gap-1.5">
-          <p className="text-xs text-muted-foreground">
+          <p className="type-secondary text-muted-foreground">
             {genState === "attaching"
               ? "Attaching preset variants…"
               : "Pick an image to use"}
@@ -805,7 +805,7 @@ function GenerateTabContent({
       )}
 
       {genState === "error" && errorMsg && (
-        <p className="text-xs text-destructive flex items-center gap-1">
+        <p className="type-secondary text-destructive flex items-center gap-1">
           <AlertCircle className="h-3 w-3 shrink-0" /> {errorMsg}
           <ErrorAlchemyMenu error={errorMsg} />
         </p>
@@ -1086,22 +1086,22 @@ export function ImageAssetUploader({
             alt={label}
             className="shrink-0"
           />
-          <div className="min-w-0 flex-1 text-sm">
+          <div className="min-w-0 flex-1 type-body">
             {section.state === "success" && (
-              <p className="text-success text-xs font-medium">
+              <p className="text-success type-secondary font-medium">
                 Processed successfully
               </p>
             )}
             {section.state === "idle" && (
-              <p className="text-xs text-muted-foreground font-medium">
+              <p className="type-secondary text-muted-foreground font-medium">
                 Image set
               </p>
             )}
-            <p className="text-muted-foreground text-xs truncate">
+            <p className="text-muted-foreground type-secondary truncate">
               {section.fileName ?? "Previously uploaded"}
             </p>
             {!disabled && (
-              <p className="text-xs text-muted-foreground mt-0.5">
+              <p className="type-secondary text-muted-foreground mt-0.5">
                 Click to replace
               </p>
             )}
@@ -1143,14 +1143,14 @@ export function ImageAssetUploader({
             <Upload className={cn(iconSize, "text-muted-foreground")} />
           )}
           <div className="text-center px-3">
-            <p className="text-sm font-medium text-foreground">
+            <p className="type-title text-foreground">
               {section.state === "uploading"
                 ? "Processing…"
                 : highlighted
                   ? "Drop to upload"
                   : "Drop image or click to upload"}
             </p>
-            <p className="text-xs text-muted-foreground mt-0.5">
+            <p className="type-secondary text-muted-foreground mt-0.5">
               {enablePaste
                 ? `JPG, PNG, WebP · ${blurb} · Paste with Ctrl/⌘V`
                 : `JPG, PNG, WebP · ${blurb}`}
@@ -1208,7 +1208,7 @@ export function ImageAssetUploader({
           </>
         )}
         {section.error && (
-          <p className="text-xs text-destructive flex items-center gap-1">
+          <p className="type-secondary text-destructive flex items-center gap-1">
             <AlertCircle className="h-3 w-3" /> {section.error}
             <ErrorAlchemyMenu error={section.error} />
           </p>
@@ -1221,7 +1221,7 @@ export function ImageAssetUploader({
   return (
     <div className={cn("flex flex-col gap-2", className)}>
       <div className="flex items-center justify-between">
-        <p className="text-sm font-medium flex items-center gap-1.5">
+        <p className="type-title flex items-center gap-1.5">
           <ImageIcon className="h-4 w-4 text-muted-foreground" />
           {label}
         </p>
@@ -1281,7 +1281,7 @@ export function ImageAssetUploader({
       {dropzoneContent}
 
       {section.error && (
-        <p className="text-xs text-destructive flex items-center gap-1">
+        <p className="type-secondary text-destructive flex items-center gap-1">
           <AlertCircle className="h-3 w-3" /> {section.error}
           <ErrorAlchemyMenu error={section.error} />
         </p>
@@ -1294,7 +1294,7 @@ export function ImageAssetUploader({
             {populatedLegacyEntries.map(({ key, label: vLabel }) => (
               <span
                 key={key}
-                className="text-xs px-2 py-0.5 rounded-full border border-success/40 text-success bg-success/5"
+                className="type-secondary px-2 py-0.5 rounded-full border border-success/40 text-success bg-success/5"
                 title={vLabel}
               >
                 {vLabel}

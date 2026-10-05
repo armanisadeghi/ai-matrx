@@ -71,11 +71,11 @@ export function ProTextAgentActionPopoverBody({
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border px-3 py-2">
-        <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+        <div className="flex items-center gap-1.5 type-secondary font-semibold text-foreground">
           <AGENT_ICON className="h-3.5 w-3.5 text-primary" />
           {title}
           {isBusy && (
-            <span className="ml-1 inline-flex items-center gap-1 text-[10px] font-normal text-muted-foreground">
+            <span className="ml-1 inline-flex items-center gap-1 type-meta font-normal text-muted-foreground">
               <Loader2 className="h-3 w-3 animate-spin" />
               {isThinking ? "Thinking…" : "Working…"}
             </span>
@@ -106,13 +106,13 @@ export function ProTextAgentActionPopoverBody({
       {hasRun && (
         <div className="max-h-56 min-h-0 flex-1 overflow-y-auto px-3 py-2.5">
           {isError ? (
-            <p className="text-xs text-destructive">
+            <p className="type-secondary text-destructive">
               {error ?? "Something went wrong. Please try again."}
               <ErrorAlchemyMenu error={error} />
             </p>
           ) : hasResult ? (
             <div className="flex items-start gap-2">
-              <div className="min-w-0 flex-1 text-sm leading-relaxed text-foreground">
+              <div className="min-w-0 flex-1 type-body leading-relaxed text-foreground">
                 <AnswerValueView text={result} />
               </div>
               <div className="sticky top-0 shrink-0">
@@ -134,7 +134,7 @@ export function ProTextAgentActionPopoverBody({
               </div>
             </div>
           ) : (
-            <div className="flex items-center gap-2 py-4 text-xs text-muted-foreground">
+            <div className="flex items-center gap-2 py-4 type-secondary text-muted-foreground">
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
               Analyzing your text…
             </div>

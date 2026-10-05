@@ -143,7 +143,7 @@ function JsonNode({
             "{keyName}":
           </span>
         )}
-        <span className="text-muted-foreground text-xs">{getPreview()}</span>
+        <span className="text-muted-foreground type-secondary">{getPreview()}</span>
       </div>
       {expanded && (
         <div>
@@ -196,7 +196,7 @@ function JsonTreeViewerBody({ data }: { data: unknown }) {
   return (
     <div className="h-full flex flex-col">
       <div className="flex items-center justify-between p-2 border-b border-border bg-muted shrink-0">
-        <span className="text-xs text-muted-foreground">JSON Explorer</span>
+        <span className="type-secondary text-muted-foreground">JSON Explorer</span>
         <Button
           icon={copied ? (
             <Check className="text-green-500" />
@@ -206,10 +206,10 @@ function JsonTreeViewerBody({ data }: { data: unknown }) {
           variant="quiet"
           onClick={handleCopy}
         >
-          <span className="ml-1.5 text-xs">{copied ? "Copied!" : "Copy"}</span>
+          <span className="ml-1.5 type-secondary">{copied ? "Copied!" : "Copy"}</span>
         </Button>
       </div>
-      <div className="flex-1 overflow-auto p-3 font-mono text-xs">
+      <div className="flex-1 overflow-auto p-3 font-mono type-secondary">
         <JsonNode data={data} defaultExpanded={true} />
       </div>
     </div>
@@ -237,7 +237,7 @@ function RawJsonView({ data }: { data: unknown }) {
   return (
     <div className="h-full flex flex-col">
       <div className="flex items-center justify-between p-2 border-b border-border bg-muted shrink-0">
-        <span className="text-xs text-muted-foreground">
+        <span className="type-secondary text-muted-foreground">
           Raw JSON ({formatCount(jsonString.length)} chars)
         </span>
         <Button
@@ -249,10 +249,10 @@ function RawJsonView({ data }: { data: unknown }) {
           variant="quiet"
           onClick={handleCopy}
         >
-          <span className="ml-1.5 text-xs">{copied ? "Copied!" : "Copy"}</span>
+          <span className="ml-1.5 type-secondary">{copied ? "Copied!" : "Copy"}</span>
         </Button>
       </div>
-      <pre className="flex-1 overflow-auto p-4 text-xs text-foreground font-mono whitespace-pre-wrap">
+      <pre className="flex-1 overflow-auto p-4 type-secondary text-foreground font-mono whitespace-pre-wrap">
         {jsonString}
       </pre>
     </div>

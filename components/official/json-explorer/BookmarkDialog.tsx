@@ -25,7 +25,7 @@ const BookmarkDialog: React.FC<BookmarkDialogProps> = ({
         <div className="space-y-4 py-2">
           <div>
             <label className="text-sm font-medium">Path:</label>
-            <code className="text-xs block bg-gray-100 dark:bg-gray-800 p-2 rounded mt-1">
+            <code className="type-secondary block bg-gray-100 dark:bg-gray-800 p-2 rounded mt-1">
               {generateAccessPath(currentPath)}
             </code>
           </div>

@@ -842,14 +842,14 @@ export const ProInput = React.forwardRef<HTMLInputElement, ProInputProps>(
                   transition={{ repeat: Infinity, duration: 1.5 }}
                   className="w-2 h-2 bg-primary rounded-full flex-shrink-0"
                 />
-                <span className="text-xs text-primary font-medium truncate">
+                <span className="type-secondary text-primary font-medium truncate">
                   {liveTranscript ? liveTranscript.slice(-60) : "Listening..."}
                 </span>
               </div>
             ) : (
               <div className="flex items-center gap-1.5 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 rounded-md">
                 <Loader2 className="w-3 h-3 animate-spin text-blue-600 dark:text-blue-400" />
-                <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+                <span className="type-secondary text-blue-600 dark:text-blue-400 font-medium">
                   Finalizing...
                 </span>
               </div>

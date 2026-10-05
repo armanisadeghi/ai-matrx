@@ -92,7 +92,7 @@ export const PageTemplate: React.FC<PageTemplateProps> = ({
                       href={url} 
                       target="_blank" 
                       rel="noopener noreferrer"
-                      className="text-white/90 hover:text-white hover:dark:text-gray-300 underline decoration-1 underline-offset-4 text-xs font-small"
+                      className="text-white/90 hover:text-white hover:dark:text-gray-300 underline decoration-1 underline-offset-4 type-secondary font-small"
                     >
                       {urlText || url}
                     </a>
@@ -104,7 +104,7 @@ export const PageTemplate: React.FC<PageTemplateProps> = ({
                 <div className="flex space-x-3 flex-wrap gap-y-3">
                   {statsItems.map((stat, index) => (
                     <div key={index} className="bg-white/10 backdrop-blur-md rounded-lg px-4 py-3 text-center">
-                      <div className="text-white/80 text-sm font-medium mb-1">{stat.label}</div>
+                      <div className="text-white/80 type-title mb-1">{stat.label}</div>
                       <div className="text-white text-2xl font-bold">{stat.value}</div>
                     </div>
                   ))}
@@ -205,8 +205,8 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
 }) => (
   <div className="relative">
     <div className="flex items-center justify-between mb-2">
-      <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">{label}</span>
-      <span className="text-sm font-medium text-gray-500 dark:text-gray-400">{value}</span>
+      <span className="type-title text-gray-700 dark:text-gray-300">{label}</span>
+      <span className="type-title text-gray-500 dark:text-gray-400">{value}</span>
     </div>
     <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
       <div 
@@ -235,7 +235,7 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({ status, text }
     <div className="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg mb-4">
       <div className="flex items-center">
         <div className={`w-3 h-3 rounded-full ${statusColors[status]} mr-2`}></div>
-        <p className="text-sm text-gray-700 dark:text-gray-300">{text}</p>
+        <p className="type-body text-gray-700 dark:text-gray-300">{text}</p>
       </div>
     </div>
   );
@@ -278,7 +278,7 @@ export const HeaderGroup: React.FC<HeaderGroupProps> = ({ tag, items }) => {
             {tag}
           </span>
           <div className="ml-3 bg-white/20 backdrop-blur-sm rounded-full px-2 py-0.5">
-            <span className="text-white text-sm font-medium">{items.length}</span>
+            <span className="text-white type-title">{items.length}</span>
           </div>
         </div>
       </AccordionTrigger>

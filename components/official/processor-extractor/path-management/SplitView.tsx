@@ -102,7 +102,7 @@ const SplitView: React.FC<SplitViewProps> = ({
     <div className="grid grid-cols-1 gap-4">
       {displayItems.map((item, index) => (
         <div key={index} className="border rounded-md p-4">
-          <div className="text-sm font-medium mb-2">Item {index}</div>
+          <div className="type-title mb-2">Item {index}</div>
           {children(item, index)}
         </div>
       ))}

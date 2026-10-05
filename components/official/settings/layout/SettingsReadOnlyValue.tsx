@@ -55,7 +55,7 @@ export function SettingsReadOnlyValue({
       <div className="flex min-w-0 items-center gap-1.5">
         <span
           className={cn(
-            "min-w-0 max-w-full text-xs text-muted-foreground truncate @[40rem]/settings:max-w-64",
+            "min-w-0 max-w-full type-secondary text-muted-foreground truncate @[40rem]/settings:max-w-64",
             mono && "font-mono tabular-nums",
           )}
           title={value}

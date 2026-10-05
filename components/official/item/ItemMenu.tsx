@@ -143,13 +143,13 @@ function EntryInner({
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="truncate">{entry.label}</span>
         {secondLine && (
-          <span className="truncate text-xs text-muted-foreground">
+          <span className="truncate type-secondary text-muted-foreground">
             {secondLine}
           </span>
         )}
       </span>
       {entry.badge && (
-        <span className="ml-2 shrink-0 rounded border border-border px-1.5 py-px text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+        <span className="ml-2 shrink-0 rounded border border-border px-1.5 py-px type-meta font-medium uppercase tracking-wide text-muted-foreground">
           {entry.badge}
         </span>
       )}
@@ -500,7 +500,7 @@ export function ItemMenu({
               <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">
                 {resolved.header.title}
                 {resolved.header.description && (
-                  <span className="mt-0.5 block text-[10px] font-normal text-muted-foreground/70">
+                  <span className="mt-0.5 block type-meta font-normal text-muted-foreground/70">
                     {resolved.header.description}
                   </span>
                 )}

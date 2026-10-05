@@ -97,8 +97,8 @@ function ModalContent({
                             />
                         </div>
                         <div>
-                            <p className="text-sm font-medium">Current {label.toLowerCase()}</p>
-                            <p className="text-xs text-muted-foreground">
+                            <p className="type-title">Current {label.toLowerCase()}</p>
+                            <p className="type-secondary text-muted-foreground">
                                 Pick or drop a new one below to replace it
                             </p>
                         </div>

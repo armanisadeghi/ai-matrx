@@ -183,7 +183,7 @@ export function OptionCombobox({
                     >
                       <ChevronRight className="h-3.5 w-3.5" />
                       {group.heading ?? "More"}
-                      <span className="ml-auto text-xs tabular-nums">
+                      <span className="ml-auto type-secondary tabular-nums">
                         {group.options.length}
                       </span>
                     </CommandItem>

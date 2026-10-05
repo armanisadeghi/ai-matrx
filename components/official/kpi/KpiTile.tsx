@@ -82,7 +82,7 @@ export function KpiTile({
       {/* A label wraps to a second line rather than being cut ("NO DEFAULT
           MANDA…" on a phone, punch list 2026-09-26) — a KPI whose name is
           unreadable is a number without a meaning. */}
-      <div className="flex min-w-0 items-start gap-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+      <div className="flex min-w-0 items-start gap-1.5 type-meta font-medium uppercase tracking-wide text-muted-foreground">
         {dot ? (
           <span aria-hidden className={cn("mt-1 inline-block h-2 w-2 shrink-0 rounded-sm", dot)} />
         ) : null}
@@ -111,7 +111,7 @@ export function KpiTile({
         </div>
       )}
       {hint ? (
-        <div className="truncate text-[11px] text-muted-foreground">{hint}</div>
+        <div className="truncate type-meta text-muted-foreground">{hint}</div>
       ) : null}
     </>
   );

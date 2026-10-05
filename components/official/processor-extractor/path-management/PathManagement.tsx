@@ -151,13 +151,13 @@ const PathManagement: React.FC<PathManagementProps> = ({ jsonStr, currentPath, o
         <div className="w-full mb-4">
             <div className="flex items-center h-9 gap-2">
                 <div className="flex-1 h-full">
-                    <div className="relative h-full flex items-center px-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono overflow-hidden">
+                    <div className="relative h-full flex items-center px-2 bg-gray-100 dark:bg-gray-700 rounded type-secondary font-mono overflow-hidden">
                         {pathDetails.path}
                         <InlineCopyButton content={pathDetails} position="center-right" size="xs" tooltipText="Copy Path With Details" />
                     </div>
                 </div>
 
-                <div className="h-full flex items-center px-2 bg-blue-100 dark:bg-blue-900 rounded text-xs font-mono text-blue-800 dark:text-blue-200 relative group">
+                <div className="h-full flex items-center px-2 bg-blue-100 dark:bg-blue-900 rounded type-secondary font-mono text-blue-800 dark:text-blue-200 relative group">
                     {pathDetails.readibleType}
                 </div>
 

@@ -177,7 +177,7 @@ export function MobileActionBar({
               className="flex-1 flex items-center gap-2 h-10 px-3 rounded-full matrx-glass-thin-border cursor-pointer"
             >
               <Search className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground truncate">
+              <span className="type-body text-muted-foreground truncate">
                 {localSearchValue || searchPlaceholder}
               </span>
               {showVoiceSearch && (
@@ -300,14 +300,14 @@ export function MobileActionBar({
                   transition={{ repeat: Infinity, duration: 1.5 }}
                   className="w-2 h-2 bg-red-500 rounded-full"
                 />
-                <span className="text-sm text-red-600 dark:text-red-400 font-medium">
+                <span className="type-title text-red-600 dark:text-red-400">
                   Recording...
                 </span>
               </>
             ) : (
               <>
                 <Loader2 className="w-4 h-4 animate-spin text-blue-600 dark:text-blue-400" />
-                <span className="text-sm text-blue-600 dark:text-blue-400 font-medium">
+                <span className="type-title text-blue-600 dark:text-blue-400">
                   Transcribing...
                 </span>
               </>

@@ -862,7 +862,7 @@ export function OrgChart<T>({
 
         {drag && (
           <div
-            className="pointer-events-none fixed z-50 flex -translate-x-1/2 -translate-y-[140%] items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1 text-xs font-medium text-foreground shadow-lg"
+            className="pointer-events-none fixed z-50 flex -translate-x-1/2 -translate-y-[140%] items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1 type-secondary font-medium text-foreground shadow-lg"
             style={{ left: drag.x, top: drag.y }}
           >
             {drag.keys.length > 1
@@ -879,10 +879,10 @@ export function OrgChart<T>({
             {toolbar}
             {highlight && !q && (
               <div className="flex h-9 items-center gap-1 rounded-lg border border-warning/50 bg-card/95 pl-2.5 pr-1 shadow-sm backdrop-blur">
-                <span className="max-w-48 truncate text-xs font-medium text-foreground" title={highlight.label}>
+                <span className="max-w-48 truncate type-secondary font-medium text-foreground" title={highlight.label}>
                   {highlight.label}
                 </span>
-                <span className="whitespace-nowrap px-1 text-[11px] tabular-nums text-muted-foreground">
+                <span className="whitespace-nowrap px-1 type-meta tabular-nums text-muted-foreground">
                   {matches.length ? `${Math.min(matchIndex, matches.length - 1) + 1}/${matches.length}` : "0"}
                 </span>
                 <ControlButton label="Next" onClick={() => goToMatch(selectedKey === matches[matchIndex] ? matchIndex + 1 : matchIndex)}>
@@ -917,7 +917,7 @@ export function OrgChart<T>({
                 />
                 {query && (
                   <>
-                    <span className="whitespace-nowrap px-1 text-[11px] tabular-nums text-muted-foreground">
+                    <span className="whitespace-nowrap px-1 type-meta tabular-nums text-muted-foreground">
                       {matches.length ? `${matchIndex + 1}/${matches.length}` : "0"}
                     </span>
                     <ControlButton label="Next match" onClick={() => goToMatch(matchIndex + 1)}>
@@ -939,7 +939,7 @@ export function OrgChart<T>({
             <ControlButton label="Zoom out" onClick={() => zoomBy(1 / 1.2)}>
               <Minus className="h-4 w-4" />
             </ControlButton>
-            <span className="hidden w-11 text-center text-[11px] tabular-nums text-muted-foreground sm:inline">
+            <span className="hidden w-11 text-center type-meta tabular-nums text-muted-foreground sm:inline">
               {Math.round(view.zoom * 100)}%
             </span>
             <ControlButton label="Zoom in" onClick={() => zoomBy(1.2)}>
@@ -982,7 +982,7 @@ export function OrgChart<T>({
             className="absolute bottom-3 left-3 z-20 max-w-[calc(100%-1.5rem)] rounded-lg border border-border bg-card/95 px-3 py-2 shadow-sm backdrop-blur sm:max-w-xs"
             data-no-pan
           >
-            <div className="mb-1 hidden text-[10px] font-semibold uppercase tracking-wide text-muted-foreground sm:block">
+            <div className="mb-1 hidden type-meta font-semibold uppercase tracking-wide text-muted-foreground sm:block">
               Links
             </div>
             <ul className="space-y-1.5">
@@ -1001,9 +1001,9 @@ export function OrgChart<T>({
                     />
                   </svg>
                   <div className="min-w-0">
-                    <div className="text-xs font-medium text-foreground">{kind.label}</div>
+                    <div className="type-secondary font-medium text-foreground">{kind.label}</div>
                     {kind.description && (
-                      <div className="hidden text-[11px] leading-snug text-muted-foreground sm:block">{kind.description}</div>
+                      <div className="hidden type-meta leading-snug text-muted-foreground sm:block">{kind.description}</div>
                     )}
                   </div>
                 </li>

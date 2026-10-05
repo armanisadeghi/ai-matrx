@@ -58,7 +58,7 @@ export function SettingsCallout({
       )}
     >
       <Icon className={cn("h-4 w-4 shrink-0 mt-0.5", icon)} />
-      <div className="flex-1 min-w-0 text-xs leading-relaxed">
+      <div className="flex-1 min-w-0 type-secondary leading-relaxed">
         {title && <div className="font-semibold mb-0.5">{title}</div>}
         <div>{children}</div>
         {action && <div className="mt-2">{action}</div>}

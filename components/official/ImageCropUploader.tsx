@@ -214,12 +214,12 @@ function SourcePicker({ onFile, onError, disabled }: SourcePickerProps) {
         <input {...getInputProps()} />
         <Upload className="h-8 w-8 text-muted-foreground" />
         <div className="text-center">
-          <p className="text-sm font-medium text-foreground">
+          <p className="type-title text-foreground">
             {isDragActive
               ? "Drop to select"
               : "Drop an image or click to upload"}
           </p>
-          <p className="text-xs text-muted-foreground mt-0.5">
+          <p className="type-secondary text-muted-foreground mt-0.5">
             JPG, PNG, WebP, GIF, HEIC · Paste with Ctrl/⌘V
           </p>
         </div>
@@ -388,8 +388,8 @@ function PreviewStrip({
         />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-xs font-medium text-muted-foreground">Image set</p>
-        <p className="text-[10px] text-muted-foreground truncate mt-0.5">
+        <p className="type-secondary font-medium text-muted-foreground">Image set</p>
+        <p className="type-meta text-muted-foreground truncate mt-0.5">
           {imageUrl}
         </p>
       </div>
@@ -496,7 +496,7 @@ export function ImageCropUploader({
   return (
     <div className={cn("flex flex-col gap-2", className)}>
       <div className="flex items-center justify-between">
-        <p className="text-sm font-medium flex items-center gap-1.5">
+        <p className="type-title flex items-center gap-1.5">
           <ImageIcon className="h-4 w-4 text-muted-foreground" />
           {label}
         </p>
@@ -565,7 +565,7 @@ export function ImageCropUploader({
           ) : (
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           )}
-          <p className="text-xs text-muted-foreground">
+          <p className="type-secondary text-muted-foreground">
             Uploading & generating variants…
           </p>
         </div>
@@ -574,7 +574,7 @@ export function ImageCropUploader({
       {/* Error */}
       {stage === "error" && errorMsg && (
         <div className="flex items-center gap-2">
-          <p className="text-xs text-destructive flex items-center gap-1 flex-1">
+          <p className="type-secondary text-destructive flex items-center gap-1 flex-1">
             <AlertCircle className="h-3 w-3 shrink-0" /> {errorMsg}
             <ErrorAlchemyMenu error={errorMsg} />
           </p>

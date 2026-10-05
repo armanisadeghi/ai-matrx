@@ -417,7 +417,7 @@ const RawJsonExplorerBody: React.FC<RawJsonExplorerProps> = ({
     <div className="w-full">
       <div className="flex flex-col">
         <div className="flex justify-between items-center">
-          <div className="p-2 pr-4 bg-muted text-xs font-mono overflow-x-auto">
+          <div className="p-2 pr-4 bg-muted type-secondary font-mono overflow-x-auto">
             Access Path:{" "}
             {generateAccessPath(currentPath) !== "data" ? (
               <span>{generateAccessPath(currentPath)}</span>

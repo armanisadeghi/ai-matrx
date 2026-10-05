@@ -149,7 +149,7 @@ export function MobileFilterDrawer({
               </label>
 
               {field.description && (
-                <p className="text-xs text-muted-foreground -mt-2">
+                <p className="type-secondary text-muted-foreground -mt-2">
                   {field.description}
                 </p>
               )}
@@ -180,7 +180,7 @@ export function MobileFilterDrawer({
 
           {filterConfig.fields.length === 0 && (
             <div className="pt-4 space-y-2">
-              <p className="text-xs text-muted-foreground text-center">
+              <p className="type-secondary text-muted-foreground text-center">
                 No filters available
               </p>
             </div>
@@ -190,7 +190,7 @@ export function MobileFilterDrawer({
 
       <div className="flex-shrink-0 border-t border-border/50 px-3 py-4 pb-safe space-y-3">
         <div className="text-center py-2 px-4 bg-muted/30 rounded-lg">
-          <p className="text-sm font-medium text-foreground">
+          <p className="type-title text-foreground">
             Showing{" "}
             <span className="font-bold text-primary">{filteredCount}</span> of{" "}
             {totalCount} {displayLabel}

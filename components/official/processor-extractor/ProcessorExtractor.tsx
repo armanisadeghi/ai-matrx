@@ -278,7 +278,7 @@ const ProcessorExtractorBody = ({ jsonData, configKey }: ProcessorExtractorProps
             {/* Conditional rendering based on whether we have a wildcard path */}
             {hasWildcard ? (
                 <div className="mb-4">
-                    <h3 className="text-sm font-medium mb-2">Multiple Items For Wildcard Path: {wildcardPath}</h3>
+                    <h3 className="type-title mb-2">Multiple Items For Wildcard Path: {wildcardPath}</h3>
                     <SplitView 
                         originalData={originalData} 
                         wildcardPath={wildcardPath}
@@ -287,7 +287,7 @@ const ProcessorExtractorBody = ({ jsonData, configKey }: ProcessorExtractorProps
                     >
                         {(item, index) => (
                             <div>
-                                <pre className="whitespace-pre-wrap bg-gray-50 dark:bg-gray-800 p-4 rounded-md text-sm text-gray-800 dark:text-gray-200 overflow-auto max-h-[300px]">
+                                <pre className="whitespace-pre-wrap bg-gray-50 dark:bg-gray-800 p-4 rounded-md type-body text-gray-800 dark:text-gray-200 overflow-auto max-h-[300px]">
                                     {formatJson(item, 2)}
                                 </pre>
                                 <div className="mt-2 flex justify-end">
@@ -341,7 +341,7 @@ const ProcessorExtractorBody = ({ jsonData, configKey }: ProcessorExtractorProps
                     contentSource={{ type: "raw" }}
                     contextData={{ content: displayJsonStr }}
                 >
-                    <pre className="whitespace-pre-wrap bg-gray-50 dark:bg-gray-800 p-4 rounded-md text-sm text-gray-800 dark:text-gray-200 overflow-auto max-h-[60dvh]">
+                    <pre className="whitespace-pre-wrap bg-gray-50 dark:bg-gray-800 p-4 rounded-md type-body text-gray-800 dark:text-gray-200 overflow-auto max-h-[60dvh]">
                         {displayJsonStr}
                     </pre>
                 </NonEditableContextMenu>

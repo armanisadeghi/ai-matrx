@@ -73,7 +73,7 @@ export function MobileOverlayWrapper({
                                             {title}
                                         </h2>
                                         {description && (
-                                            <p className="text-sm text-muted-foreground mt-0.5 line-clamp-1">
+                                            <p className="type-body text-muted-foreground mt-0.5 line-clamp-1">
                                                 {description}
                                             </p>
                                         )}

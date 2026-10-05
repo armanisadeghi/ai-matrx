@@ -245,7 +245,7 @@ function ProTextareaAgentRunner({
 
   if (!conversationId) {
     return (
-      <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+      <div className="flex h-full items-center justify-center type-body text-muted-foreground">
         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
         Starting agent…
       </div>
@@ -362,12 +362,12 @@ export function ProTextareaAgentPanel({
             onControlsChange={handleControlsChange}
           />
         ) : mandateWaiting ? (
-          <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+          <div className="flex h-full items-center justify-center type-body text-muted-foreground">
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             Finding the agent for {mandateName}…
           </div>
         ) : mandateRefusal ? (
-          <div className="flex h-full items-center justify-center px-6 text-center text-sm text-muted-foreground">
+          <div className="flex h-full items-center justify-center px-6 text-center type-body text-muted-foreground">
             {mandateRefusal}
             <ErrorAlchemyMenu error={mandateRefusal} />
           </div>

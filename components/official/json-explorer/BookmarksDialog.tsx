@@ -48,9 +48,9 @@ const BookmarksDialog: React.FC<BookmarksDialogProps> = ({
                     </div>
                   </div>
                   {bookmark.description && (
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">{bookmark.description}</p>
+                    <p className="type-body text-gray-500 dark:text-gray-400 mb-2">{bookmark.description}</p>
                   )}
-                  <code className="text-xs block bg-gray-100 dark:bg-gray-800 p-2 rounded">{bookmark.path}</code>
+                  <code className="type-secondary block bg-gray-100 dark:bg-gray-800 p-2 rounded">{bookmark.path}</code>
                 </div>
               ))}
             </div>

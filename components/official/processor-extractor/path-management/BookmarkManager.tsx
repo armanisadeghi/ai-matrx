@@ -116,17 +116,17 @@ const BookmarkManager: React.FC<BookmarkManagerProps> = ({ open, onOpenChange })
                                                 >
                                                     <TableCell data-phone="lead">
                                                         <div className="font-medium">{bookmark.name}</div>
-                                                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                                                        <div className="type-secondary text-gray-500 dark:text-gray-400">
                                                             Created {formatDate(bookmark.createdAt)}
                                                         </div>
                                                     </TableCell>
                                                     <TableCell data-label="Type" data-phone="inline">
-                                                        <div className="px-2 py-1 text-xs rounded bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 inline-block">
+                                                        <div className="px-2 py-1 type-secondary rounded bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 inline-block">
                                                             {bookmark.readibleType || bookmark.type}
                                                         </div>
                                                     </TableCell>
                                                     <TableCell
-                                                        className="font-mono text-xs truncate hidden md:table-cell max-w-[300px]"
+                                                        className="font-mono type-secondary truncate hidden md:table-cell max-w-[300px]"
                                                         data-phone="hidden"
                                                     >
                                                         {bookmark.path}
@@ -161,7 +161,7 @@ const BookmarkManager: React.FC<BookmarkManagerProps> = ({ open, onOpenChange })
                                                 {expandedBookmarkId === bookmark.id && (
                                                     <TableRow>
                                                         <TableCell colSpan={4} className="bg-gray-50 dark:bg-gray-800">
-                                                            <div className="p-2 text-sm">
+                                                            <div className="p-2 type-body">
                                                                 {bookmark.description && (
                                                                     <div className="mb-2 text-gray-700 dark:text-gray-300">
                                                                         <span className="font-semibold">Description:</span> {bookmark.description}
@@ -169,8 +169,8 @@ const BookmarkManager: React.FC<BookmarkManagerProps> = ({ open, onOpenChange })
                                                                 )}
                                                                 <div className="grid grid-cols-2 gap-4 mb-2">
                                                                     <div>
-                                                                        <div className="font-semibold text-xs text-gray-500 dark:text-gray-400">Type Details</div>
-                                                                        <div className="grid grid-cols-2 gap-x-2 text-xs mt-1">
+                                                                        <div className="font-semibold type-secondary text-gray-500 dark:text-gray-400">Type Details</div>
+                                                                        <div className="grid grid-cols-2 gap-x-2 type-secondary mt-1">
                                                                             <span className="text-gray-500">Type:</span> <span>{bookmark.type}</span>
                                                                             <span className="text-gray-500">Subtype:</span> <span>{bookmark.subtype || "N/A"}</span>
                                                                             <span className="text-gray-500">Depth:</span> <span>{bookmark.depth}</span>
@@ -179,8 +179,8 @@ const BookmarkManager: React.FC<BookmarkManagerProps> = ({ open, onOpenChange })
                                                                         </div>
                                                                     </div>
                                                                     <div>
-                                                                        <div className="font-semibold text-xs text-gray-500 dark:text-gray-400">Metadata</div>
-                                                                        <div className="grid grid-cols-2 gap-x-2 text-xs mt-1">
+                                                                        <div className="font-semibold type-secondary text-gray-500 dark:text-gray-400">Metadata</div>
+                                                                        <div className="grid grid-cols-2 gap-x-2 type-secondary mt-1">
                                                                             <span className="text-gray-500">Created:</span> <span>{new Date(bookmark.createdAt).toLocaleString()}</span>
                                                                             <span className="text-gray-500">Last Accessed:</span> 
                                                                             <span>{bookmark.lastAccessed ? new Date(bookmark.lastAccessed).toLocaleString() : "Never"}</span>
@@ -188,8 +188,8 @@ const BookmarkManager: React.FC<BookmarkManagerProps> = ({ open, onOpenChange })
                                                                         </div>
                                                                     </div>
                                                                 </div>
-                                                                <div className="font-semibold text-xs text-gray-500 dark:text-gray-400 mt-2">Full Path</div>
-                                                                <code className="text-xs block bg-gray-100 dark:bg-gray-900 p-2 rounded mt-1 whitespace-pre-wrap break-all">
+                                                                <div className="font-semibold type-secondary text-gray-500 dark:text-gray-400 mt-2">Full Path</div>
+                                                                <code className="type-secondary block bg-gray-100 dark:bg-gray-900 p-2 rounded mt-1 whitespace-pre-wrap break-all">
                                                                     {bookmark.path}
                                                                 </code>
                                                             </div>
@@ -207,7 +207,7 @@ const BookmarkManager: React.FC<BookmarkManagerProps> = ({ open, onOpenChange })
                     <TabsContent value="import" className="flex-1 overflow-hidden flex flex-col">
                         <div className="flex-1 flex flex-col space-y-4">
                             <div>
-                                <h3 className="font-medium text-sm mb-2">Export Bookmarks</h3>
+                                <h3 className="type-title mb-2">Export Bookmarks</h3>
                                 <div className="flex space-x-2">
                                     <Button
                                         icon={<FileUp />}
@@ -218,13 +218,13 @@ const BookmarkManager: React.FC<BookmarkManagerProps> = ({ open, onOpenChange })
                                         Copy to Clipboard
                                     </Button>
                                 </div>
-                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                                <p className="type-secondary text-gray-500 dark:text-gray-400 mt-2">
                                     Export your bookmarks to share with others or back them up.
                                 </p>
                             </div>
                             
                             <div className="pt-4 border-t border-border">
-                                <h3 className="font-medium text-sm mb-2">Import Bookmarks</h3>
+                                <h3 className="type-title mb-2">Import Bookmarks</h3>
                                 <div className="space-y-3">
                                     <textarea
                                         className="w-full h-32 p-2 text-sm border rounded resize-none bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
@@ -244,7 +244,7 @@ const BookmarkManager: React.FC<BookmarkManagerProps> = ({ open, onOpenChange })
                                         </Button>
                                     </div>
                                 </div>
-                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                                <p className="type-secondary text-gray-500 dark:text-gray-400 mt-2">
                                     Import bookmarks from a JSON string. This will replace all your current bookmarks.
                                 </p>
                             </div>

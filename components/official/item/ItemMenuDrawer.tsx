@@ -102,7 +102,7 @@ export function ItemMenuDrawer({
                 {headerTitle}
               </DrawerTitle>
               {config.header?.description && (
-                <p className="mt-1 text-center text-[13px] text-muted-foreground">
+                <p className="mt-1 text-center type-body text-muted-foreground">
                   {config.header.description}
                 </p>
               )}
@@ -144,7 +144,7 @@ export function ItemMenuDrawer({
               <div key={section.id ?? section.label ?? sIdx}>
                 {sIdx > 0 && <div className="my-1 h-px bg-border" />}
                 {section.label && (
-                  <div className="px-4 pb-1 pt-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  <div className="px-4 pb-1 pt-2 type-secondary font-medium uppercase tracking-wide text-muted-foreground">
                     {section.label}
                   </div>
                 )}
@@ -209,7 +209,7 @@ function DrawerEntry({
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="truncate text-[15px]">{entry.label}</span>
         {(entry.description || (disabled && entry.disabledReason)) && (
-          <span className="truncate text-[13px] text-muted-foreground">
+          <span className="truncate type-body text-muted-foreground">
             {disabled && entry.disabledReason
               ? entry.disabledReason
               : entry.description}

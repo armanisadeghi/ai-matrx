@@ -169,7 +169,7 @@ export function ReviewDeck({
     return (
       <div className={cn("flex h-full w-full min-h-0 flex-col gap-3", className)}>
         <div className="flex items-center justify-between gap-2">{switcher}</div>
-        <div className="flex flex-1 items-center justify-center p-6 text-xs text-muted-foreground">
+        <div className="flex flex-1 items-center justify-center p-6 type-secondary text-muted-foreground">
           <ReadEmpty read={read}>{emptyState ?? "Nothing left to review."}</ReadEmpty>
         </div>
       </div>
@@ -204,7 +204,7 @@ export function ReviewDeck({
       <ReadStaleNotice read={read} />
       <div className="flex flex-wrap items-center justify-between gap-2">
         {switcher}
-        <span className="text-xs tabular-nums text-muted-foreground">
+        <span className="type-secondary tabular-nums text-muted-foreground">
           {mode === "one_by_one"
             ? `${Math.min(index + 1, items.length)} of ${items.length}`
             : `${items.length} to review`}
@@ -214,19 +214,19 @@ export function ReviewDeck({
       {mode === "one_by_one" && current ? (
         <div className="flex min-h-0 flex-1 flex-col gap-3">
           <div className="min-h-0 flex-1 overflow-auto rounded-md border border-border bg-card p-3">
-            <div className="text-sm font-medium text-foreground">{current.title}</div>
+            <div className="type-title text-foreground">{current.title}</div>
             {current.subtitle ? (
-              <div className="mt-0.5 text-xs text-muted-foreground">{current.subtitle}</div>
+              <div className="mt-0.5 type-secondary text-muted-foreground">{current.subtitle}</div>
             ) : null}
             {current.meta ? <div className="mt-2">{current.meta}</div> : null}
             {current.body ? (
-              <div className="mt-3 text-xs text-foreground/90">{current.body}</div>
+              <div className="mt-3 type-secondary text-foreground/90">{current.body}</div>
             ) : null}
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Button variant="primary" disabled={busy} onClick={() => void decideCurrent("accept")}>
               {acceptLabel}
-              <kbd className="ml-1.5 text-[10px] opacity-70">A</kbd>
+              <kbd className="ml-1.5 type-meta opacity-70">A</kbd>
             </Button>
             <Button
               variant="outline"
@@ -234,7 +234,7 @@ export function ReviewDeck({
               onClick={() => void decideCurrent("reject")}
             >
               {rejectLabel}
-              <kbd className="ml-1.5 text-[10px] opacity-70">R</kbd>
+              <kbd className="ml-1.5 type-meta opacity-70">R</kbd>
             </Button>
             {rejectOptions}
             {onSkip ? (
@@ -247,7 +247,7 @@ export function ReviewDeck({
                 }}
               >
                 Skip
-                <kbd className="ml-1.5 text-[10px] opacity-70">S</kbd>
+                <kbd className="ml-1.5 type-meta opacity-70">S</kbd>
               </Button>
             ) : null}
           </div>
@@ -291,7 +291,7 @@ export function ReviewDeck({
             }
           />
           <div className="flex flex-wrap items-center gap-2 border-t border-border pt-2">
-            <span className="text-xs text-muted-foreground">
+            <span className="type-secondary text-muted-foreground">
               {checkedIds.length} selected
             </span>
             <Button
@@ -352,9 +352,9 @@ function ReviewList({
             />
           ) : null}
           <div className="min-w-0 flex-1">
-            <div className="truncate text-xs text-foreground">{item.title}</div>
+            <div className="truncate type-secondary text-foreground">{item.title}</div>
             {item.subtitle ? (
-              <div className="truncate text-[11px] text-muted-foreground">
+              <div className="truncate type-meta text-muted-foreground">
                 {item.subtitle}
               </div>
             ) : null}

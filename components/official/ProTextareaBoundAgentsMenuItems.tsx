@@ -26,7 +26,7 @@ export function ProTextareaBoundAgentsMenuItems({
 
   if (loading && !hasAgents) {
     return (
-      <div className="flex items-center gap-1.5 px-2 py-2 text-xs text-muted-foreground border-t border-border">
+      <div className="flex items-center gap-1.5 px-2 py-2 type-secondary text-muted-foreground border-t border-border">
         <Loader2 className="h-3 w-3 animate-spin" /> Loading bound agents…
       </div>
     );
@@ -36,7 +36,7 @@ export function ProTextareaBoundAgentsMenuItems({
 
   return (
     <div className="border-t border-border pt-1">
-      <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+      <div className="px-2 py-1 type-meta font-semibold uppercase tracking-wide text-muted-foreground">
         Bound agents
       </div>
       {sections.map((section, sectionIdx) => (
@@ -44,7 +44,7 @@ export function ProTextareaBoundAgentsMenuItems({
           {sectionIdx > 0 && (
             <div className="mx-2 my-1 border-t border-border/60" />
           )}
-          <div className="px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground/80">
+          <div className="px-2 py-0.5 type-meta uppercase tracking-wide text-muted-foreground/80">
             {section.label}
           </div>
           {section.agents.map((agent) => (
@@ -57,7 +57,7 @@ export function ProTextareaBoundAgentsMenuItems({
               <AGENT_ICON className="h-4 w-4 shrink-0 text-indigo-500/80" />
               <span className="truncate">{agent.name}</span>
               {agent.organizationName ? (
-                <span className="ml-auto shrink-0 truncate text-[10px] text-muted-foreground">
+                <span className="ml-auto shrink-0 truncate type-meta text-muted-foreground">
                   {agent.organizationName}
                 </span>
               ) : null}

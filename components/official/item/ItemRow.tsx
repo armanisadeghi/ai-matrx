@@ -172,7 +172,7 @@ export function ItemRow({
         // "140 cards - 1 section could not be covered …"). Unclamped it pushed
         // the label out of the row (owner, 2026-10-04).
         <span
-          className="item-shift min-w-0 max-w-[50%] truncate text-xs text-muted-foreground"
+          className="item-shift min-w-0 max-w-[50%] truncate type-secondary text-muted-foreground"
           title={secondaryLabel}
         >
           {secondaryLabel}

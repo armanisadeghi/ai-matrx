@@ -69,12 +69,12 @@ function Stamp({
   const actor = resolveActor?.(actorId) ?? null;
   return (
     <div className="min-w-0">
-      <dt className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+      <dt className="type-meta font-semibold uppercase tracking-wide text-muted-foreground">
         {label}
       </dt>
       <dd
         className={cn(
-          "mt-0.5 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs text-foreground",
+          "mt-0.5 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 type-secondary text-foreground",
           tone === "warning" && "text-warning",
         )}
       >
@@ -85,7 +85,7 @@ function Stamp({
               user={actor.user}
               size="xs"
               subtitle={false}
-              className="min-w-0 gap-1.5 text-xs"
+              className="min-w-0 gap-1.5 type-secondary"
             />
           ) : actor.loading ? (
             <span className="text-muted-foreground">resolving…</span>
@@ -94,7 +94,7 @@ function Stamp({
             // are not a current member of this organization). Showing the id
             // as a door would be a lie — it is offered as a support handle.
             <span
-              className="truncate font-mono text-[10px] text-muted-foreground"
+              className="truncate font-mono type-meta text-muted-foreground"
               title={`Account ${actor.id} — no longer a member of this organization`}
             >
               a former member · {actor.id.slice(0, 8)}
@@ -123,7 +123,7 @@ export function RecordStamps({
   return (
     <dl
       className={cn(
-        "grid grid-cols-2 gap-x-4 gap-y-2.5 text-xs sm:grid-cols-4",
+        "grid grid-cols-2 gap-x-4 gap-y-2.5 type-secondary sm:grid-cols-4",
         className,
       )}
     >
@@ -151,10 +151,10 @@ export function RecordStamps({
       />
       {typeof version === "number" ? (
         <div className="min-w-0">
-          <dt className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+          <dt className="type-meta font-semibold uppercase tracking-wide text-muted-foreground">
             Row version
           </dt>
-          <dd className="mt-0.5 text-xs tabular-nums text-foreground">
+          <dd className="mt-0.5 type-secondary tabular-nums text-foreground">
             {version}
           </dd>
         </div>

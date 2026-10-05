@@ -127,7 +127,7 @@ const ParseExtractorOptions = ({ content, processors, configKey }: ParseExtracto
                                 <h4 className="text-red-800 dark:text-red-300 font-medium mb-2">
                                     Processing Error
                                 </h4>
-                                <p className="text-red-600 dark:text-red-400 text-sm">
+                                <p className="text-red-600 dark:text-red-400 type-body">
                                     {result.error}
                                 </p>
                               <ErrorAlchemyMenu error={result.error} />

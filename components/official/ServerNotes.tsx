@@ -92,7 +92,7 @@ export function ServerNotes({
           className,
         )}
       >
-        <summary className="cursor-pointer text-[10px] font-medium uppercase tracking-wider text-amber-700 dark:text-amber-400">
+        <summary className="cursor-pointer type-meta font-medium uppercase tracking-wider text-amber-700 dark:text-amber-400">
           {title}
         </summary>
         <div className="space-y-1 pt-1">{body}</div>
@@ -107,7 +107,7 @@ export function ServerNotes({
         className,
       )}
     >
-      <p className="text-[10px] font-medium uppercase tracking-wider text-amber-700 dark:text-amber-400">
+      <p className="type-meta font-medium uppercase tracking-wider text-amber-700 dark:text-amber-400">
         {title}
       </p>
       {usable.map((note) => (

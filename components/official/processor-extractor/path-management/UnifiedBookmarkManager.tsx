@@ -268,11 +268,11 @@ const UnifiedBookmarkManager: React.FC<UnifiedBookmarkManagerProps> = ({
             ) : (
               <div className="p-2">
                 <div className="flex justify-between items-center mb-2">
-                  <div className="text-sm text-gray-500 dark:text-gray-400">
+                  <div className="type-body text-gray-500 dark:text-gray-400">
                     {filteredBookmarks.length} bookmarks found
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-500">Sort by:</span>
+                    <span className="type-secondary text-gray-500">Sort by:</span>
                     <Select value={sortBy} onValueChange={setSortBy}>
                       <SelectTrigger className="w-32">
                         <SelectValue placeholder="Sort by" />
@@ -316,7 +316,7 @@ const UnifiedBookmarkManager: React.FC<UnifiedBookmarkManagerProps> = ({
                               <BookmarkIcon className="h-4 w-4 text-blue-500 mt-1" />
                               <div>
                                 <div className="font-medium">{bookmark.name}</div>
-                                <div className="text-xs text-gray-500 dark:text-gray-400 flex flex-wrap gap-1 mt-1">
+                                <div className="type-secondary text-gray-500 dark:text-gray-400 flex flex-wrap gap-1 mt-1">
                                   <span>Created {formatDate(bookmark.createdAt)}</span>
                                   {bookmark.configKey && bookmark.configKey !== 'default' && (
                                     <Badge variant="outline" className="text-[10px] h-4">
@@ -328,12 +328,12 @@ const UnifiedBookmarkManager: React.FC<UnifiedBookmarkManagerProps> = ({
                             </div>
                           </TableCell>
                           <TableCell data-label="Type" data-phone="inline">
-                            <div className="px-2 py-1 text-xs rounded bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 inline-block">
+                            <div className="px-2 py-1 type-secondary rounded bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 inline-block">
                               {bookmark.readibleType || bookmark.type}
                             </div>
                           </TableCell>
                           <TableCell
-                            className="font-mono text-xs truncate max-w-[300px]"
+                            className="font-mono type-secondary truncate max-w-[300px]"
                             data-label="Path"
                           >
                             {bookmark.path}
@@ -392,7 +392,7 @@ const UnifiedBookmarkManager: React.FC<UnifiedBookmarkManagerProps> = ({
                         {expandedBookmarkId === bookmark.id && (
                           <TableRow>
                             <TableCell colSpan={4} className="bg-gray-50 dark:bg-gray-800 p-0">
-                              <div className="p-4 text-sm">
+                              <div className="p-4 type-body">
                                 {bookmark.description && (
                                   <div className="mb-4 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 p-3 rounded-md border-border">
                                     <div className="font-semibold mb-1">Description:</div>
@@ -402,10 +402,10 @@ const UnifiedBookmarkManager: React.FC<UnifiedBookmarkManagerProps> = ({
 
                                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-4">
                                   <div className="bg-textured p-3 rounded-md border-border shadow-sm">
-                                    <div className="font-semibold text-sm text-gray-700 dark:text-gray-300 mb-2 pb-1 border-b">
+                                    <div className="type-title text-gray-700 dark:text-gray-300 mb-2 pb-1 border-b">
                                       Type Details
                                     </div>
-                                    <div className="grid grid-cols-2 gap-y-2 gap-x-4 text-xs">
+                                    <div className="grid grid-cols-2 gap-y-2 gap-x-4 type-secondary">
                                       <span className="text-gray-500 dark:text-gray-400 font-medium">Type:</span> 
                                       <span className="font-mono">{bookmark.type}</span>
                                       
@@ -427,10 +427,10 @@ const UnifiedBookmarkManager: React.FC<UnifiedBookmarkManagerProps> = ({
                                   </div>
 
                                   <div className="bg-textured p-3 rounded-md border-border shadow-sm">
-                                    <div className="font-semibold text-sm text-gray-700 dark:text-gray-300 mb-2 pb-1 border-b">
+                                    <div className="type-title text-gray-700 dark:text-gray-300 mb-2 pb-1 border-b">
                                       Metadata
                                     </div>
-                                    <div className="grid grid-cols-2 gap-y-2 gap-x-4 text-xs">
+                                    <div className="grid grid-cols-2 gap-y-2 gap-x-4 type-secondary">
                                       <span className="text-gray-500 dark:text-gray-400 font-medium">Created:</span> 
                                       <span>{new Date(bookmark.createdAt).toLocaleString()}</span>
                                       
@@ -453,7 +453,7 @@ const UnifiedBookmarkManager: React.FC<UnifiedBookmarkManagerProps> = ({
                                 </div>
 
                                 <div className="bg-textured p-3 rounded-md border-border shadow-sm">
-                                  <div className="font-semibold text-sm text-gray-700 dark:text-gray-300 mb-2 pb-1 border-b flex justify-between items-center">
+                                  <div className="type-title text-gray-700 dark:text-gray-300 mb-2 pb-1 border-b flex justify-between items-center">
                                     <span>Full Path</span>
                                     <Button 
                                       variant="ghost" 
@@ -468,7 +468,7 @@ const UnifiedBookmarkManager: React.FC<UnifiedBookmarkManagerProps> = ({
                                       Copy
                                     </Button>
                                   </div>
-                                  <code className="text-xs block bg-gray-100 dark:bg-gray-900 p-2 rounded whitespace-pre-wrap break-all">
+                                  <code className="type-secondary block bg-gray-100 dark:bg-gray-900 p-2 rounded whitespace-pre-wrap break-all">
                                     {bookmark.path}
                                   </code>
                                 </div>
@@ -488,11 +488,11 @@ const UnifiedBookmarkManager: React.FC<UnifiedBookmarkManagerProps> = ({
         <TabsContent value="import" className="flex-1 overflow-hidden flex flex-col">
           <div className="flex-1 overflow-y-auto p-4 space-y-6">
             <div>
-              <h3 className="font-medium text-sm mb-2 flex items-center">
+              <h3 className="type-title mb-2 flex items-center">
                 <FileUp className="w-4 h-4 mr-2" />
                 Export Bookmarks
               </h3>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+              <p className="type-secondary text-gray-500 dark:text-gray-400 mb-3">
                 Export your bookmarks to share with others or back them up.
               </p>
               <Button 
@@ -505,11 +505,11 @@ const UnifiedBookmarkManager: React.FC<UnifiedBookmarkManagerProps> = ({
             </div>
             
             <div className="pt-4 border-t border-border">
-              <h3 className="font-medium text-sm mb-2 flex items-center">
+              <h3 className="type-title mb-2 flex items-center">
                 <ImportIcon className="w-4 h-4 mr-2" />
                 Import Bookmarks
               </h3>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+              <p className="type-secondary text-gray-500 dark:text-gray-400 mb-3">
                 Import bookmarks from a JSON string. This will replace all your current bookmarks.
               </p>
               <div className="space-y-3">
@@ -532,7 +532,7 @@ const UnifiedBookmarkManager: React.FC<UnifiedBookmarkManagerProps> = ({
               </div>
               
               <Alert className="mt-4 bg-amber-50 dark:bg-amber-950 text-amber-800 dark:text-amber-200 border-amber-200 dark:border-amber-800">
-                <AlertDescription className="text-xs">
+                <AlertDescription className="type-secondary">
                   Warning: Importing bookmarks will replace all existing bookmarks. Make sure to export your current bookmarks first if you want to keep them.
                 </AlertDescription>
               </Alert>
@@ -601,16 +601,16 @@ const UnifiedBookmarkManager: React.FC<UnifiedBookmarkManagerProps> = ({
             </div>
             
             <div className="bg-gray-50 dark:bg-gray-900 p-3 rounded-md border-border">
-              <div className="font-semibold text-sm text-gray-700 dark:text-gray-300 mb-2">Path Information</div>
+              <div className="type-title text-gray-700 dark:text-gray-300 mb-2">Path Information</div>
               <div className="mb-3">
-                <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Type:</div>
-                <div className="px-2 py-1 text-xs rounded bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 inline-block">
+                <div className="type-secondary text-gray-500 dark:text-gray-400 mb-1">Type:</div>
+                <div className="px-2 py-1 type-secondary rounded bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 inline-block">
                   {editingBookmark.readibleType || editingBookmark.type}
                 </div>
               </div>
               <div>
-                <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Path:</div>
-                <code className="text-xs block bg-gray-100 dark:bg-gray-800 p-2 rounded whitespace-pre-wrap break-all">
+                <div className="type-secondary text-gray-500 dark:text-gray-400 mb-1">Path:</div>
+                <code className="type-secondary block bg-gray-100 dark:bg-gray-800 p-2 rounded whitespace-pre-wrap break-all">
                   {editingBookmark.path}
                 </code>
               </div>

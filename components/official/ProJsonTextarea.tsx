@@ -365,7 +365,7 @@ function ValidationPanel({ state }: { state: ProJsonValidationState }) {
   if (state.isEmpty) return null;
   if (state.issues.length === 0) {
     return (
-      <div className="flex items-center gap-2 rounded-md border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+      <div className="flex items-center gap-2 rounded-md border border-border bg-muted/30 px-3 py-2 type-secondary text-muted-foreground">
         <CheckCircle2 className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
         No JSON issues found.
       </div>
@@ -403,7 +403,7 @@ function IssueCard({
   return (
     <div
       className={cn(
-        "overflow-hidden rounded-md border text-[11px]",
+        "overflow-hidden rounded-md border type-meta",
         isError
           ? "border-red-300 bg-red-50 text-red-900 dark:border-red-800 dark:bg-red-950/20 dark:text-red-200"
           : "border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-800 dark:bg-amber-950/20 dark:text-amber-200",
@@ -422,19 +422,19 @@ function IssueCard({
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="font-semibold">{issue.message}</span>
             {issue.path && (
-              <code className="rounded bg-background/70 px-1 font-mono text-[10px]">
+              <code className="rounded bg-background/70 px-1 font-mono type-meta">
                 {labelForPath(issue.path)}
               </code>
             )}
             {line != null && (
-              <span className="text-[10px] opacity-80">
+              <span className="type-meta opacity-80">
                 line {line}
                 {issue.column != null ? `, col ${issue.column}` : ""}
               </span>
             )}
           </div>
           {issue.source && (
-            <p className="mt-0.5 text-[10px] opacity-75">{issue.source}</p>
+            <p className="mt-0.5 type-meta opacity-75">{issue.source}</p>
           )}
         </div>
       </div>

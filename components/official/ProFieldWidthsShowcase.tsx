@@ -13,7 +13,7 @@ const TEXTAREA_WIDTHS = [560, 320, 220];
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="flex items-start gap-3">
-      <div className="w-24 shrink-0 pt-2 font-mono text-xs text-muted-foreground">
+      <div className="w-24 shrink-0 pt-2 font-mono type-secondary text-muted-foreground">
         {label}
       </div>
       <div className="min-w-0 flex-1">{children}</div>
@@ -24,7 +24,7 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="space-y-3 rounded-lg border border-border bg-card p-4">
-      <h2 className="text-sm font-semibold text-foreground">{title}</h2>
+      <h2 className="type-title text-foreground">{title}</h2>
       {children}
     </section>
   );
