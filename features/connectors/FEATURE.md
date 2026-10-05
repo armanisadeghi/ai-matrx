@@ -78,6 +78,17 @@ is limited to immediately usable providers.
 
 ---
 
+**Bring your work** (`/bring-your-work`, `features/connectors/bring-your-work/BringYourWorkPage.tsx`;
+Integrations menu) — the other direction: a person's OWN AI (Claude Code, Claude app, ChatGPT,
+Cursor) connecting TO the AI Matrx MCP (aidream `api/mcp/people/`), a personal key made in place
+(`ApiKeysTab`), the public Claude plugin and skill zips served from `public/claude/` (catalog
+`https://aimatrx.com/claude/marketplace.json`, plugin source an `archive` URL — a web-hosted catalog
+refuses relative paths; rebuild with `bash scripts/build-claude-plugin.sh` after editing
+`public/claude/plugins/ai-matrx/`), and copyable template prompts (Notion via the skill; Airtable,
+Sheets, ClickUp via the MCP tools directly; split-into-agents). "Bring your work" is Arman's working
+label — no vocabulary word exists yet. `proxy.ts` excludes `.zip` so a signed-out install is never
+bounced to /login.
+
 ## Data model
 
 No tables of its own. Google connectors use `features/marketing/google/service.ts → listGoogleConnectionInventory()` (Supabase-direct), the same source `features/google-workspace/connection.ts` uses. That read now also selects **`capability_health`** — the jsonb column the hub's recording seam writes one object per capability key into (`{last_success:{at,action}, last_refusal:{at,action,code,sentence,http_status}}`, under the `__kind` marker `google_connection_capability_health`, and, once lane B-17 lands, the provider-neutral `connection_capability_health` — the reader accepts both and carries whichever it finds). It is client-readable by a **column-level** `authenticated` grant: those five declared, person-facing call facts are needed for the health row; `credential_item_id` and `vault_secret_key` remain ungranted. `types/database.types.ts` already includes `capability_health`; `service.ts` derives its narrowed `ConnectionRow` with `Pick` from that generated row and uses `.returns<ConnectionRow[]>()` for this selected projection. There is no `CapabilityHealthPending` stand-in. MCP-backed connectors use `useMcpCatalog()` over `public.get_mcp_catalog_for_user()`: its sanitized `connection_ready` bit is true only for an existing connection, an explicitly certified provider, a proven prior connection path, GitHub's canonical flow, or a real no-auth remote server. Credentials remain in the Unified Credential Vault and never enter this feature. The fair rotation stores only provider ids and bag progress in browser `localStorage` under `matrx.connector-strip.rotation.v1`.
@@ -297,6 +308,8 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
 ---
 
 ## Change log
+
+- 2026-10-04 — NOTION-MIGRATE: `/bring-your-work` page, public Claude plugin + skills under `public/claude/`, Integrations menu entry.
 
 - `2026-09-22` — **`connectors / shared_account.member_default_level` was a registered knob NO code read, so every member of an organization was offered Disconnect on the organization's shared account.** `migrations/connectors_knobs.sql` declared the row "consumed by the sharing layer"; there was no sharing layer, org-owned connections are reachable through RLS by every member, and `ConnectorsSettingsPanel` handed each of them Reconnect and Disconnect — the clinic's shared `info@` mailbox could be disconnected by anyone in the clinic, while an admin who set the knob to "Viewer" saw "saved" and nothing changed (`pnpm check:settings-orphans`, LANE SETTINGS-3). The read is now [`shared-account-level.ts`](shared-account-level.ts), through `useEffectiveKnob` and the register's own `{ feature, key }` pair, resolved **per card for the account's OWN organization** (a personal Google account and an employer's shared one sit on the same screen; the knob is organization-rung). `admin` and above may reconnect or disconnect; `viewer`/`commenter`/`editor` may only USE the account, which is the knob's own vocabulary. The organization's owners and admins keep full control — the knob governs MEMBERS, and `overridable_by` is `{organization}` only so a member cannot raise their own level. **No code fallback:** a knob that has not answered, or answers with a level this build does not know, hides the credential controls and prints the reason instead of guessing "editor" (law 4). Guard: [`__tests__/a-member-cannot-disconnect-the-organizations-account.test.tsx`](__tests__/a-member-cannot-disconnect-the-organizations-account.test.tsx) — red on the pre-fix bytes (Disconnect rendered for a member at the seeded default), green after. Evidence: `features/connectors` 58 suites / 425 passed 1 skipped, `tsc --noEmit` clean, `check:settings-orphans` exit 0 with the address gone from `fresh`.
 

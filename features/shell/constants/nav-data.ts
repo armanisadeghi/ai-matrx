@@ -1753,6 +1753,7 @@ export const primaryNavItems: ShellNavItem[] = [
     children: [
       { label: "Connected Sources", href: "/connected-sources", iconName: "Link2", guestHidden: true },
       { label: "My Devices", href: "/local", iconName: "Laptop", guestHidden: true },
+      { label: "Bring Your Work", href: "/bring-your-work", iconName: "Import", guestHidden: true },
     ],
   },
   {

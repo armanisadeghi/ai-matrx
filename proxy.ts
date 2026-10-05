@@ -385,6 +385,6 @@ export const config = {
      * that authenticated users still get their session cookies refreshed. They are
      * excluded from the login-redirect check in utils/supabase/middleware.ts.
      */
-    "/((?!api|_next/static|_next/image|public|auth|app_redirect|app_callback|favicon.ico|sitemap.xml|robots.txt|manifest.webmanifest|.*\\.(?:js|mjs|css|map|json|txt|xml|svg|png|jpg|jpeg|gif|webp|avif|ico|woff|woff2|ttf|otf|eot|mp3|mp4|webm|wasm|pdf)$).*)",
+    "/((?!api|_next/static|_next/image|public|auth|app_redirect|app_callback|favicon.ico|sitemap.xml|robots.txt|manifest.webmanifest|.*\\.(?:js|mjs|css|map|json|txt|xml|svg|png|jpg|jpeg|gif|webp|avif|ico|woff|woff2|ttf|otf|eot|mp3|mp4|webm|wasm|pdf|zip)$).*)",
   ],
 };

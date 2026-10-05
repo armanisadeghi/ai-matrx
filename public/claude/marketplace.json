@@ -1,0 +1,14 @@
+{
+  "name": "ai-matrx",
+  "owner": { "name": "AI Matrx", "email": "support@aimatrx.com" },
+  "metadata": { "description": "Bring your work to AI Matrx from your own Claude." },
+  "plugins": [
+    {
+      "name": "ai-matrx",
+      "source": { "source": "archive", "url": "https://aimatrx.com/claude/ai-matrx-plugin.zip" },
+      "description": "Your AI Matrx tables and agents in Claude, plus skills that move a Notion workspace in and split a big task into AI Matrx agents.",
+      "version": "1.0.0",
+      "homepage": "https://aimatrx.com/bring-your-work"
+    }
+  ]
+}

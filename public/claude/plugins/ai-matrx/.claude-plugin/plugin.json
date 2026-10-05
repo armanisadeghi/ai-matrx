@@ -1,0 +1,8 @@
+{
+  "name": "ai-matrx",
+  "version": "1.0.0",
+  "description": "Your AI Matrx tables and agents in Claude, as you. Skills: copy a Notion workspace into AI Matrx; split one big task into AI Matrx agents.",
+  "author": { "name": "AI Matrx", "email": "support@aimatrx.com", "url": "https://aimatrx.com" },
+  "homepage": "https://aimatrx.com/bring-your-work",
+  "keywords": ["ai-matrx", "notion", "migration", "tables", "agents"]
+}

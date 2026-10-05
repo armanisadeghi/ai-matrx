@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "ai-matrx": {
+      "type": "http",
+      "url": "https://server.app.matrxserver.com/api/matrx-mcp",
+      "headers": { "Authorization": "Bearer ${AI_MATRX_API_KEY}" }
+    }
+  }
+}
