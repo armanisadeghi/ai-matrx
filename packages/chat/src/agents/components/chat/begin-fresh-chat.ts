@@ -70,6 +70,22 @@ export function getFreshChatHref(
   return `/chat/a/${encodeURIComponent(activeAgentId)}`;
 }
 
+const RESERVED_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** The conversation id a fresh chat route was opened for (`?c=<uuid>`), or null. */
+export function reservedConversationIdOf(param: string | null | undefined): string | null {
+  return param && RESERVED_ID_RE.test(param) ? param.toLowerCase() : null;
+}
+
+/** A fresh-chat href that opens the room on an id reserved up front (so content staged for it is keyed to it). */
+export function getReservedFreshChatHref(
+  activeAgentId: string | undefined,
+  defaultAgentId: string | null,
+  conversationId: string,
+): string {
+  return `${getFreshChatHref(activeAgentId, defaultAgentId)}?c=${conversationId}`;
+}
+
 /**
  * THE ONE chat-route surface key. Every chat surface — the room client that
  * REGISTERS the focus entry, the header picker that reads a draft off it, the

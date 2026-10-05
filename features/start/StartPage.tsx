@@ -13,8 +13,7 @@ import { LayoutDashboard } from "lucide-react";
 import { RecordsMount, personActor, recordsDataSource } from "@ai-matrx/records-ui";
 import { Button, EmptyState } from "@ai-matrx/design-system/controls";
 
-import PageHeader from "@/features/shell/components/header/PageHeader";
-import HeaderStructured from "@/features/shell/components/header/variants/variants/HeaderStructured";
+import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
@@ -29,9 +28,7 @@ export function StartPage() {
   const active = useOrganizationRequired();
   return (
     <>
-      <PageHeader>
-        <HeaderStructured back title="Start" />
-      </PageHeader>
+      <RecordPageHeader backHref="/" record={{ name: "Start" }} />
       <div className="h-full overflow-y-auto px-3 pb-6 pt-[calc(var(--shell-header-h)+0.75rem)]">
         {userId ? (
           // org-filter: write-target a changed start-page choice is saved here; the read walks every organization

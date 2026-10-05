@@ -148,3 +148,52 @@ export function withReceiptHandle(
   });
   return { messageId: hit.messageId, content };
 }
+
+/** True when some remark in this content has no handle yet. */
+export function hasHandlelessRemark(content: unknown): boolean {
+  const parts = Array.isArray(content) ? content : [];
+  return parts.some(
+    (part) =>
+      isRecord(part) &&
+      part.type === REMARKS_BLOCK_TYPE &&
+      Array.isArray(part.items) &&
+      part.items.some((item) => isRecord(item) && !item.handle),
+  );
+}
+
+/**
+ * THE HANDLES A TURN LEARNS FROM ITS OWN SAVED MESSAGE. The server mints a
+ * conversation's handles when it stores the person's message; the optimistic
+ * copy never has them. Every remark in the saved row carries its handle, so —
+ * matching each remark by its own stable id (never by position, never by a
+ * guess) — copy the handles the saved row names onto the local content.
+ *
+ * Returns the local content with the handles stamped, or null when it gains
+ * none (nothing handle-less, or the saved row names no handle for it).
+ */
+export function withPersistedHandles(localContent: unknown, persistedContent: unknown): unknown[] | null {
+  if (!Array.isArray(localContent)) return null;
+  const handleById = new Map<string, string>();
+  for (const part of Array.isArray(persistedContent) ? persistedContent : []) {
+    if (!isRecord(part) || part.type !== REMARKS_BLOCK_TYPE || !Array.isArray(part.items)) continue;
+    for (const item of part.items) {
+      if (isRecord(item) && str(item.id) && isRemarkHandle(item.handle)) handleById.set(item.id as string, item.handle);
+    }
+  }
+  if (handleById.size === 0) return null;
+  let changed = false;
+  const next = localContent.map((part) => {
+    if (!isRecord(part) || part.type !== REMARKS_BLOCK_TYPE || !Array.isArray(part.items)) return part;
+    return {
+      ...part,
+      items: part.items.map((item) => {
+        if (!isRecord(item) || item.handle || !str(item.id)) return item;
+        const handle = handleById.get(item.id as string);
+        if (!handle) return item;
+        changed = true;
+        return { ...item, handle };
+      }),
+    };
+  });
+  return changed ? next : null;
+}

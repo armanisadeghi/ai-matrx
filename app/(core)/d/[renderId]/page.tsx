@@ -36,8 +36,7 @@ import { use, useEffect, useState } from "react";
 
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { RichDocument } from "@/features/rich-document/RichDocument";
-import PageHeader from "@/features/shell/components/header/PageHeader";
-import HeaderStructured from "@/features/shell/components/header/variants/variants/HeaderStructured";
+import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { createClient } from "@/utils/supabase/client";
 import { recordsDataSource } from "@ai-matrx/records-ui";
 
@@ -103,9 +102,7 @@ export default function RenderedDocumentRoute({
 
     return (
         <>
-            <PageHeader>
-                <HeaderStructured title="Document" />
-            </PageHeader>
+            <RecordPageHeader record={{ name: "Document" }} />
             <div className="h-full overflow-y-auto pt-[var(--shell-header-h)] p-4">
                 {refusal ? (
                     // The door's own refusal (or a zero-row answer) goes to the

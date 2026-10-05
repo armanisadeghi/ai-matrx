@@ -26,7 +26,7 @@ import {
   readStoredRemarks,
   restageRemarks,
 } from "../../redux/execution-system/instance-resources/remarks";
-import { chatRouteSurfaceKey, stageChatAgentSwitch } from "./begin-fresh-chat";
+import { chatRouteSurfaceKey, reservedConversationIdOf, stageChatAgentSwitch } from "./begin-fresh-chat";
 import { buildChatComposerTextMenu } from "./agent-context/chatComposerTextMenu";
 import { useComposerMode } from "../inputs/smart-input/composer/useComposerMode";
 import type {
@@ -226,6 +226,8 @@ export function ChatRoomClient({
   const isIncognito = useAppSelector(selectChatIncognitoActive);
   const freshSessionKey = useAppSelector(selectChatFreshSessionNonce);
   const isFreshRoute = !conversationIdProp;
+  // "New chat about this" reserves this chat's id before it opens (`?c=<uuid>`).
+  const reservedConversationId = reservedConversationIdOf(useSearchParams().get("c"));
   useCreatorOwnershipSync(agentId);
 
   // Register this client as a `page` surface so action bars can route
@@ -335,6 +337,7 @@ export function ChatRoomClient({
     isEphemeral: isIncognito,
     preferFresh: isFreshRoute,
     freshSessionKey: isFreshRoute ? freshSessionKey : 0,
+    reservedConversationId: isFreshRoute ? reservedConversationId : null,
     // The chat route promotes /chat/new → /chat/[conversationId] right after
     // the first submit, which unmounts this launcher mid-stream. Retain the
     // started conversation so the destination route re-attaches to the live

@@ -25,35 +25,32 @@ import {
   useDeleteClaim,
   type SavedClaimRow,
 } from "./api/claims";
-import PageHeader from "@/features/shell/components/header/PageHeader";
-import { CrumbTrailHeader } from "@/features/shell/components/header/templates/CrumbTrailHeader";
-import { TapTargetButtonSolid } from "@ai-matrx/tap-target";
+import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { formatRelativeTime } from "@/utils/datetime";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
-const CASES_TRAIL = [
-  { label: "Legal", href: "/legal" },
-  { label: "CA WC", href: "/legal/ca-wc" },
-  { label: "Cases" },
-];
-
 function CasesHeader({ showNewCase }: { showNewCase: boolean }) {
   return (
-    <PageHeader>
-      <CrumbTrailHeader
-        backHref="/legal/ca-wc"
-        trail={CASES_TRAIL}
-        right={
-          showNewCase ? (
-            <TapTargetButtonSolid
-              icon={<Plus className="h-4 w-4" />}
-              label="New case"
-              href="/legal/ca-wc/pd-ratings-calculator"
-            />
-          ) : undefined
-        }
-      />
-    </PageHeader>
+    <RecordPageHeader
+      backHref="/legal/ca-wc"
+      parents={[
+        { label: "Legal", href: "/legal" },
+        { label: "CA WC", href: "/legal/ca-wc" },
+      ]}
+      record={{ name: "Cases" }}
+      actions={
+        showNewCase
+          ? [
+              {
+                label: "New case",
+                icon: Plus,
+                href: "/legal/ca-wc/pd-ratings-calculator",
+                primary: true,
+              },
+            ]
+          : undefined
+      }
+    />
   );
 }
 

@@ -1,6 +1,6 @@
 /**
- * An unsent chip must be (1) found again when its conversation has no record yet
- * ("New chat about this": a fresh id is minted on every mount) and (2) saved —
+ * An unsent chip must be (1) found again by the conversation it was staged into ("New chat
+ * about this" reserves that chat's id up front) and never by any other, and (2) saved —
  * with its ref in hand — before a send goes out.
  * Use case: Dana selects a sentence, "New chat about this", reloads before typing; the chip is
  * still there. She sends within a second of adding a note; the note carries its row and clears.
@@ -39,16 +39,28 @@ const savedRow = (state: Record<string, unknown>, v = 1) => ({
 beforeEach(() => { jest.useFakeTimers(); setBlockState.mockReset(); listStagedBlockStates.mockReset(); });
 afterEach(() => jest.useRealTimers());
 
-it("finds a chip staged into a different (re-minted) conversation by its surface and re-keys it", async () => {
+it("finds a chip by the conversation it was staged into, after a reload (the reserved new-chat id)", async () => {
   jest.useRealTimers();
-  const staged = savedRow({ remark: comment, coalesceKey: "passage:x", stagedIn: "old-conv", stagedSurface: "alias:chat-new", resourceId: "r1" });
+  const staged = savedRow({ remark: comment, coalesceKey: "passage:x", stagedIn: "new-conv", resourceId: "r1" });
   listStagedBlockStates.mockResolvedValue([staged]);
-  setBlockState.mockResolvedValue(savedRow({ ...staged.state, stagedIn: "new-conv" }, 2));
   const store = fakeStore();
-  createRemarkDurability(store).restore("new-conv", "alias:chat-new");
+  createRemarkDurability(store).restore("new-conv");
   await new Promise((r) => setTimeout(r, 20));
-  expect(listStagedBlockStates).toHaveBeenCalledWith("new-conv", "alias:chat-new");
-  expect(setBlockState).toHaveBeenCalledWith(expect.objectContaining({ blockKey: "remark:passage:x", patch: expect.objectContaining({ stagedIn: "new-conv" }) }));
+  expect(listStagedBlockStates).toHaveBeenCalledWith("new-conv");
+  expect(setBlockState).not.toHaveBeenCalled(); // a restore never writes
+});
+
+it("a staged new-chat chip never restores into a different conversation", async () => {
+  jest.useRealTimers();
+  const staged = savedRow({ remark: comment, coalesceKey: "passage:x", stagedIn: "new-conv", stagedSurface: "alias:chat-new", resourceId: "r1" });
+  listStagedBlockStates.mockResolvedValue([staged]);
+  const store = fakeStore();
+  createRemarkDurability(store).restore("source-conv");
+  await new Promise((r) => setTimeout(r, 20));
+  expect(listStagedBlockStates).toHaveBeenCalledWith("source-conv");
+  expect(setBlockState).not.toHaveBeenCalled(); // not re-keyed onto the chat on screen
+  const dispatched = (store as unknown as { dispatch: jest.Mock }).dispatch.mock.calls.map((c) => JSON.stringify(c[0]));
+  expect(dispatched.some((d) => d.includes("restage"))).toBe(false);
 });
 
 it("a pending chip write is flushed on demand and a send waits for it", async () => {

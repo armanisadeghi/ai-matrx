@@ -1,13 +1,10 @@
-import PageHeader from "@/features/shell/components/header/PageHeader";
-import HeaderIconTitle from "@/features/shell/components/header/variants/variants/HeaderIconTitle";
+import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { Skeleton } from "@ai-matrx/design-system";
 
 export default function LaunchpadLoading() {
   return (
     <>
-      <PageHeader>
-        <HeaderIconTitle icon="Rocket" title="Launchpad" />
-      </PageHeader>
+      <RecordPageHeader record={{ name: "Launchpad" }} />
       <div className="h-full overflow-hidden bg-textured px-3 pb-10 pt-[calc(var(--shell-header-h)+1rem)] sm:px-5 lg:px-7">
         <div className="mx-auto w-full max-w-[1680px] space-y-5">
           <Skeleton className="h-32 w-full rounded-2xl sm:h-28" />

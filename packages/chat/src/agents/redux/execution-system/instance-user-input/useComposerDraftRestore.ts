@@ -15,7 +15,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAppDispatch, useAppSelector, useAppStore } from "../../../../store/hooks";
 import {
-  composerSurfaceAliasOf,
   isComposerDraftStorageAvailable,
   peekComposerDraft,
   registerComposerDraftAlias,
@@ -123,7 +122,7 @@ export function useComposerDraftRestore(
     setStorageAvailable(isComposerDraftStorageAvailable());
     if (!enabled) return;
     // Staged remarks (comments, choices, edits…) come back as their chips.
-    restoreComposerRemarks(conversationId, liveAlias ? composerSurfaceAliasOf(conversationId) : null);
+    restoreComposerRemarks(conversationId);
     const token = peekComposerDraft(conversationId, liveAlias, ownerId);
     if (!token) return;
     // Compare-and-apply — the thunk refuses the token if a send, another tab or

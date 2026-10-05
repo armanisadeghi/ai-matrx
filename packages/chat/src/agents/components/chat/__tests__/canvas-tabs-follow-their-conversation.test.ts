@@ -9,9 +9,9 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { CanvasItem } from "@ai-matrx/canvas";
-import { canvasItemConversation, tabsOfOtherConversations } from "../useCanvasScopedToConversation";
+import { canvasItemConversation, tabsOfOtherConversations, unownedThreadTabs } from "../useCanvasScopedToConversation";
 
-const item = (id: string, data: unknown) => ({ id, data }) as unknown as CanvasItem;
+const item = (id: string, data: unknown, kind = "x") => ({ id, data, kind }) as unknown as CanvasItem;
 const messageIn = (map: Record<string, string>) => (messageId: string) => map[messageId] ?? null;
 
 describe("canvas tabs follow their conversation", () => {
@@ -46,5 +46,20 @@ describe("canvas tabs follow their conversation", () => {
       "utf8",
     );
     expect(reply).toContain('conversationId: thread.entity === "message" ? conversationId : null');
+  });
+
+  it("closes a comment thread that names no chat (legacy: Notes & comments, a task's thread) but keeps other unknown tabs", () => {
+    const legacy = {
+      ...items,
+      legacy1: item("legacy1", { entity: "message", id: "m-never-loaded", title: "Notes & comments on Chat answer" }, "comment-thread"),
+      legacy2: item("legacy2", { entity: "task", id: "t-9", title: "Ship pricing page" }, "comment-thread"),
+      mine: item("mine", { entity: "task", id: "t-8", conversationId: "conv-new" }, "comment-thread"),
+    };
+    expect(tabsOfOtherConversations(legacy, "conv-new", lookup).sort()).toEqual(["docs", "legacy1", "legacy2", "stamped", "thread"]);
+  });
+
+  it("a thread opened while this chat is on screen is adopted by it", () => {
+    const opened = { t: item("t", { entity: "task", id: "t-1" }, "comment-thread"), s: item("s", { entity: "task", id: "t-2", conversationId: "c" }, "comment-thread") };
+    expect(unownedThreadTabs(opened, lookup).map((i) => i.id)).toEqual(["t"]);
   });
 });

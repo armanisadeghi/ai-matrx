@@ -142,6 +142,7 @@ import { deriveAnswerText } from "../active-requests/active-requests.selectors";
 import { captureError } from "../../../../host/diagnostics";
 import type { Json } from "../../../../host/db-types";
 import { readReceiptThread, withReceiptHandle } from "../instance-resources/remark-handles";
+import { stampPersistedRemarkHandles } from "../message-crud/stamp-remark-handles.thunk";
 import type { ExtractedJsonSnapshot } from "../../../types/request.types";
 import {
   setConversationLabel,
@@ -3220,6 +3221,14 @@ export async function processStream({
   // commit/read race while still allowing a missing row to stay honestly empty.
   if (authoritativeUserMessageRefreshes.length > 0) {
     await Promise.allSettled(authoritativeUserMessageRefreshes);
+  }
+  // The saved message names the handle of every remark this turn carried: stamp
+  // them now so each "Reply in thread · cN" line is a door without a reload.
+  // Background and bounded; the transcript commit never waits on it.
+  if (streamFailure === null) {
+    void Promise.resolve(dispatch(stampPersistedRemarkHandles({ conversationId }))).catch((error: unknown) => {
+      console.error("[process-stream] stamping remark handles failed:", error);
+    });
   }
 
   // Unconditional: the local isInTextRun/isInReasoningRun flags can be stale

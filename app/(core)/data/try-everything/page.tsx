@@ -16,8 +16,7 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
-import PageHeader from "@/features/shell/components/header/PageHeader";
-import HeaderStructured from "@/features/shell/components/header/variants/variants/HeaderStructured";
+import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import TryEverythingScreen from "@/features/unified-data/test-bench/TryEverythingScreen";
 import { routesInThisBuild } from "@/features/unified-data/test-bench/routesInThisBuild";
 
@@ -25,9 +24,7 @@ export default async function TryEverythingRoute() {
     const routes = await routesInThisBuild();
     return (
         <>
-            <PageHeader>
-                <HeaderStructured back title="Try everything" />
-            </PageHeader>
+            <RecordPageHeader backHref="/data" record={{ name: "Try everything" }} />
             <div className="h-full overflow-y-auto pt-[var(--shell-header-h)] p-4">
                 <div className="mx-auto mb-3 max-w-3xl">
                     <Link

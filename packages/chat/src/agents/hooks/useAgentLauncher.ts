@@ -219,6 +219,7 @@ export function useAgentLauncher(
   const isManagedHook = agentId != null && surfaceKey != null;
   const preferFresh = options?.preferFresh ?? false;
   const freshSessionKey = options?.freshSessionKey ?? 0;
+  const reservedId = preferFresh ? (options?.reservedConversationId ?? null) : null;
   // The launch currently in flight (or last settled) for this hook. See
   // `ManagedLaunch` — it is what keeps a superseded launch from reaping the id
   // the composer is bound to.
@@ -234,7 +235,7 @@ export function useAgentLauncher(
       identity: launchIdentity,
       id: isManagedHook
         ? (preferFresh
-            ? generateConversationId()
+            ? (reservedId ?? generateConversationId())
             : (focusedConversationId ?? generateConversationId()))
         : null,
       followMinted: false,
@@ -259,6 +260,7 @@ export function useAgentLauncher(
     const shouldRemint =
       previous.surfaceKey !== surfaceKey ||
       (preferFresh && previous.freshSessionKey !== freshSessionKey) ||
+      (reservedId != null && previous.id !== reservedId) ||
       keyChangedMidLaunch;
     if (!shouldRemint) {
       const followMinted =
@@ -279,7 +281,9 @@ export function useAgentLauncher(
       freshSessionKey,
       identity: launchIdentity,
       id:
-        preferFresh || keyChangedMidLaunch
+        reservedId && !keyChangedMidLaunch
+          ? reservedId
+          : preferFresh || keyChangedMidLaunch
           ? generateConversationId()
           : (focusedConversationId ?? generateConversationId()),
       followMinted: keyChangedMidLaunch,
@@ -291,6 +295,7 @@ export function useAgentLauncher(
     isManagedHook,
     launchIdentity,
     preferFresh,
+    reservedId,
     surfaceKey,
   ]);
 

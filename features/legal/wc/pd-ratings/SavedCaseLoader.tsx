@@ -10,21 +10,19 @@ import {
 import { hydrateRatingDraft } from "./state/hydrateFromServer";
 import { CaPdCalculatorClient } from "./CaPdCalculatorClient";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
-import PageHeader from "@/features/shell/components/header/PageHeader";
-import { CrumbTrailHeader } from "@/features/shell/components/header/templates/CrumbTrailHeader";
+import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-const LOADER_TRAIL = [
-  { label: "Legal", href: "/legal" },
-  { label: "CA WC", href: "/legal/ca-wc" },
-  { label: "PD Rating" },
-];
-
 function LoaderHeader() {
   return (
-    <PageHeader>
-      <CrumbTrailHeader backHref="/legal/ca-wc" trail={LOADER_TRAIL} />
-    </PageHeader>
+    <RecordPageHeader
+      backHref="/legal/ca-wc"
+      parents={[
+        { label: "Legal", href: "/legal" },
+        { label: "CA WC", href: "/legal/ca-wc" },
+      ]}
+      record={{ name: "PD Rating" }}
+    />
   );
 }
 

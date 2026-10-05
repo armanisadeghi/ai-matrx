@@ -26,8 +26,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import PageHeader from "@/features/shell/components/header/PageHeader";
-import HeaderStructured from "@/features/shell/components/header/variants/variants/HeaderStructured";
+import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { isOwnFallbackPath, OPEN_BY_ID_FALLBACK_KEY, openPath } from "@/lib/deep-link/openPath";
 import { isResolvableId, readSide, resolveId, type ResolvedId } from "@/lib/deep-link/resolveId";
 import { currentRequestLoginHref } from "@/utils/auth/server-login-href";
@@ -133,9 +132,7 @@ interface OpenNoticeProps {
 function OpenNotice({ title, body, action }: OpenNoticeProps) {
   return (
     <>
-      <PageHeader>
-        <HeaderStructured title="Open" />
-      </PageHeader>
+      <RecordPageHeader record={{ name: "Open" }} />
       <div className="h-full overflow-y-auto bg-textured p-4 pt-[calc(var(--shell-header-h)+1rem)]">
         <div className="mx-auto flex max-w-xl flex-col items-start gap-2 rounded-md border border-border bg-card p-6">
           <p className="text-sm font-medium text-foreground">{title}</p>

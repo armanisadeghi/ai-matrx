@@ -221,12 +221,6 @@ export function registerComposerDraftAlias(
   }
 }
 
-/** The surface key this (unstarted) conversation is findable by, or null once it is real / when the surface is shared. */
-export function composerSurfaceAliasOf(conversationId: string): string | null {
-  const key = aliases.get(conversationId);
-  return key && !isAliasShared(key) ? key : null;
-}
-
 export function unregisterComposerDraftAlias(conversationId: string): void {
   dropAliasHolder(conversationId);
 }

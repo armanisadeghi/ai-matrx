@@ -56,7 +56,7 @@ beforeEach(() => { feed = null; subscribe.mockClear(); restageRemarks.mockClear(
 
 it("joins the conversation's feed once the composer is up, and stages a chip another tab made", async () => {
   listStagedBlockStates.mockResolvedValue([]);
-  createRemarkDurability(store()).restore(CONV, null);
+  createRemarkDurability(store()).restore(CONV);
   await settle();
   expect(subscribe).toHaveBeenCalledWith({ scope: "conversation", entityId: CONV }, "u1", expect.any(Function));
   feed!({ rows: [row({})] });
@@ -67,7 +67,7 @@ it("joins the conversation's feed once the composer is up, and stages a chip ano
 
 it("a chip the other tab sent leaves this composer", async () => {
   listStagedBlockStates.mockResolvedValue([]);
-  createRemarkDurability(store()).restore(CONV, null);
+  createRemarkDurability(store()).restore(CONV);
   await settle();
   feed!({ rows: [row({ sent_version: 2 })] });
   await settle();
@@ -79,7 +79,17 @@ it("a conversation with no answers yet joins nothing (its topic would only be re
   listStagedBlockStates.mockResolvedValue([]);
   const s = store() as unknown as { getState: () => { messages: unknown } };
   s.getState = () => ({ ...(store() as never as { getState: () => object }).getState(), messages: { byConversationId: {} } }) as never;
-  createRemarkDurability(s as never).restore(CONV, null);
+  createRemarkDurability(s as never).restore(CONV);
   await settle();
   expect(subscribe).not.toHaveBeenCalled();
+});
+
+it("a chip staged into ANOTHER conversation never lands here, even though it is about an answer here (live walk 2026-10-05)", async () => {
+  listStagedBlockStates.mockResolvedValue([]);
+  createRemarkDurability(store()).restore(CONV);
+  await settle();
+  const NEW_CHAT = "11111111-2222-4333-8444-555555555555";
+  feed!({ rows: [row({ state: { remark, coalesceKey: `passage:${MSG}:q`, stagedIn: NEW_CHAT, resourceId: "res_9" } })] });
+  await settle();
+  expect(restageRemarks).not.toHaveBeenCalled();
 });

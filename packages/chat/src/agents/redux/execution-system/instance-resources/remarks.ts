@@ -289,13 +289,10 @@ export interface RemarkDurability {
   /** A chip left the composer without being sent (X, or an edit that became empty): retire it for good. */
   retire(conversationId: string, resourceId: string, coalesceKey: string | null, item: RemarkItem): void;
   /**
-   * The composer mounted: put this conversation's unsent chips back from the server.
-   * `surfaceAlias` finds chips staged into an unstarted conversation (a fresh id
-   * is minted on every mount of /chat/new) by the person + surface instead.
+   * The composer mounted: put this conversation's unsent chips back from the
+   * server — only chips staged into THIS conversation id, never any other.
    */
-  restore(conversationId: string, surfaceAlias?: string | null): void;
-  /** The surface key an unstarted conversation's chips are written under (null once it is real). */
-  surfaceAliasOf?(conversationId: string): string | null;
+  restore(conversationId: string): void;
   /** True while a chip's write is queued or in flight (its row/ref has not come back yet). */
   hasPending(conversationId: string): boolean;
   /** Write everything queued NOW and wait until every chip holds its saved row/ref. */
@@ -313,8 +310,8 @@ export async function flushRemarkWrites(conversationId: string): Promise<void> {
 }
 
 /** Put a conversation's unsent chips back (any device) — the composer calls this once on mount. */
-export function restoreComposerRemarks(conversationId: string, surfaceAlias?: string | null): void {
-  durability?.restore(conversationId, surfaceAlias);
+export function restoreComposerRemarks(conversationId: string): void {
+  durability?.restore(conversationId);
 }
 
 let durability: RemarkDurability | null = null;

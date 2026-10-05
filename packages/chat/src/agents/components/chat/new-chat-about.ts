@@ -17,7 +17,8 @@ import { clearFocus } from "../../redux/execution-system/conversation-focus/conv
 import { bumpFreshSession } from "../../redux/chat/chat-route.slice";
 import { generateResourceId } from "../../redux/execution-system/utils/ids";
 import type { RemarkThreadEntry, StoredRemark } from "../../redux/execution-system/instance-resources/remarks";
-import { chatRouteSurfaceKey, getFreshChatHref } from "./begin-fresh-chat";
+import { chatRouteSurfaceKey, getReservedFreshChatHref } from "./begin-fresh-chat";
+import { generateConversationId } from "../../redux/execution-system/utils/ids";
 import { stashChatDraftTransfer } from "./chat-draft-transfer";
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "./chat-quick-actions.config";
 import { ensureOrgId } from "../../../host/org";
@@ -108,5 +109,7 @@ export async function openNewChatAbout({
   });
   dispatch(clearFocus(chatRouteSurfaceKey(targetAgentId)));
   dispatch(bumpFreshSession());
-  navigate(getFreshChatHref(targetAgentId, mandate.agentId));
+  // The new chat's id is reserved NOW: the chip is keyed to it, a reload reopens the
+  // same chat with the chip, and no other chat can ever receive it.
+  navigate(getReservedFreshChatHref(targetAgentId, mandate.agentId, generateConversationId()));
 }

@@ -744,6 +744,13 @@ function AuthorName({ author }: { author: ResolvedItem["author"] }) {
   );
 }
 
+// A body with a quoted block (an edit's "Was:" / "Now:" lines) is made of block
+// spans separated by newline text; under the pre-wrap of a plain comment those
+// newlines each print as a blank line around the bullet. Only paragraphs and
+// list items keep their own line breaks. Plain comments are untouched.
+const QUOTED_BLOCK = /^\s*>/m;
+const BLOCKS_FLOW_TIGHT = "whitespace-normal [&_.rc-inline-p]:whitespace-pre-wrap [&_.list-item]:whitespace-pre-wrap";
+
 export function CommentBody({ body, className }: { body: string; className?: string }) {
   const [expanded, setExpanded] = useState(false);
   return (
@@ -754,7 +761,7 @@ export function CommentBody({ body, className }: { body: string; className?: str
       expandLabel="Show more"
       collapseLabel="Show less"
       showLabel
-      className={cn("text-sm leading-5 text-foreground", className)}
+      className={cn("text-sm leading-5 text-foreground", QUOTED_BLOCK.test(body) && BLOCKS_FLOW_TIGHT, className)}
     >
       <CommentTokens body={body} />
     </CollapsibleText>

@@ -1,13 +1,10 @@
-import PageHeader from "@/features/shell/components/header/PageHeader";
-import HeaderIconTitle from "@/features/shell/components/header/variants/variants/HeaderIconTitle";
+import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import UserLaunchpad from "@/features/launchpad/components/UserLaunchpad";
 
 export default function LaunchpadPage() {
   return (
     <>
-      <PageHeader>
-        <HeaderIconTitle icon="Rocket" title="Launchpad" />
-      </PageHeader>
+      <RecordPageHeader record={{ name: "Launchpad" }} />
       <UserLaunchpad />
     </>
   );

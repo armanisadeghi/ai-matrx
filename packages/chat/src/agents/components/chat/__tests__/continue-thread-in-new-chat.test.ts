@@ -42,7 +42,7 @@ async function open(args: Partial<Parameters<typeof openNewChatAbout>[0]>) {
 
 it("hands the thread to the agent that replied, as one root comment remark, and sends at once", async () => {
   const { navigate } = await open({ thread: THREAD, agentId: "agent-intake" });
-  expect(navigate).toHaveBeenCalledWith("/chat/a/agent-intake");
+  expect(navigate).toHaveBeenCalledWith(expect.stringMatching(/^\/chat\/a\/agent-intake\?c=[0-9a-f-]{36}$/));
   const transfer = consumeChatDraftTransfer("agent-intake", IDENTITY)!;
   expect(transfer.autoSend).toBe(true);
   expect(transfer.text).toBe("");
@@ -70,7 +70,7 @@ it("hands the thread to the agent that replied, as one root comment remark, and 
 
 it("with no agent named, the default new-chat agent takes it", async () => {
   const { navigate } = await open({ thread: THREAD, agentId: null });
-  expect(navigate).toHaveBeenCalledWith("/chat/new");
+  expect(navigate).toHaveBeenCalledWith(expect.stringMatching(/^\/chat\/new\?c=[0-9a-f-]{36}$/));
   expect(consumeChatDraftTransfer("agent-default-chat", IDENTITY)?.autoSend).toBe(true);
 });
 

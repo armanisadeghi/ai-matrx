@@ -17,8 +17,7 @@ import { Database, Loader2, Search, Table2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system/controls";
-import PageHeader from "@/features/shell/components/header/PageHeader";
-import HeaderStructured from "@/features/shell/components/header/variants/variants/HeaderStructured";
+import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { SavesTo, SAVED_WHERE_CHOSEN } from "@/features/make/MakeMount";
@@ -86,9 +85,7 @@ export function ConnectDatabasePage() {
 
   return (
     <>
-      <PageHeader>
-        <HeaderStructured back title="Connect a database" />
-      </PageHeader>
+      <RecordPageHeader backHref="/data" record={{ name: "Connect a database" }} />
       <div className="h-full overflow-y-auto overflow-x-hidden">
         <div className="mx-auto flex w-full max-w-2xl flex-col gap-5 px-4 pb-16 pt-[calc(var(--shell-header-h)+1.25rem)] sm:px-6">
           <div className="flex flex-wrap items-center justify-end gap-2">

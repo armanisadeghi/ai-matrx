@@ -8,12 +8,11 @@
 // `block_state_ref` on the wire so the server marks it sent with the message,
 // and comes back on any device when the composer mounts.
 //
-// Where a chip is found again: by the conversation it was staged into, and — while
-// that conversation has no persisted record yet ("New chat about this" opens a
-// brand-new chat whose id is minted on every mount) — by the person + surface it
-// was staged on (`stagedSurface`). The row lives on the answer / record the remark
-// is about, so it is durable from the first write; restoring re-keys it to the
-// conversation now on screen. Board and task comment chips come back the same way.
+// Where a chip is found again: ONLY by the conversation it was staged into
+// (`stagedIn`). A chip belongs to exactly one conversation and never appears in
+// any other — not by surface, not by the answer it is about. "New chat about
+// this" reserves the new chat's id up front (/chat/new?c=<id>), so the chip is
+// keyed to that id from its first write and survives a reload.
 
 import type { AppDispatch, AppStore, RootState } from "@/lib/redux/store";
 import { toast } from "@/lib/toast";
@@ -34,7 +33,6 @@ import { flushBlockStateWrites, hasPendingBlockStateWrites } from "./pendingWrit
 import { selectAllBlockStateRows, upsertBlockStateRows } from "./redux/blockStatesSlice";
 import { BLOCK_STATE_DEBOUNCE_MS } from "./useBlockState";
 import { isChipDue, type BlockStateRow } from "./types";
-import { composerSurfaceAliasOf } from "@ai-matrx/chat/agents/redux/execution-system/instance-user-input/composer-draft-store";
 import { purgeLegacyBrowserStores } from "./legacyPurge";
 import { unitRefOf } from "./redux/blockStateThunks";
 import { subscribeBlockStateFeed } from "./blockStateRealtime";
@@ -75,10 +73,7 @@ function reportFailure(error: unknown): void {
   console.error("[block-state] remark write failed:", error);
 }
 
-export function createRemarkDurability(
-  store: AppStore,
-  surfaceAliasOf?: (conversationId: string) => string | null,
-): RemarkDurability {
+export function createRemarkDurability(store: AppStore): RemarkDurability {
   const slots = new Map<string, Slot>();
   const dispatch = store.dispatch as AppDispatch;
 
@@ -100,8 +95,6 @@ export function createRemarkDurability(
       console.warn("[block-state] a chip with no answer or record to belong to is not kept:", key);
       return;
     }
-    const alias = surfaceAliasOf?.(conversationId) ?? null;
-    console.info('[DBG-A] write', conversationId, key, 'alias=', alias);
     slot.inFlight += 1;
     slot.chain = slot.chain.then(async () => {
       try {
@@ -115,8 +108,6 @@ export function createRemarkDurability(
             remark: stripRef(latest.item) as unknown as Record<string, unknown>,
             coalesceKey: latest.coalesceKey,
             stagedIn: latest.conversationId,
-            // null clears it once the conversation is real (a surface key is not unique per conversation)
-            stagedSurface: alias,
             resourceId: latest.resourceId,
           },
           fingerprint: null,
@@ -136,7 +127,9 @@ export function createRemarkDurability(
     [...slots.entries()].filter(([id]) => id.startsWith(`${conversationId}\u0000`)).map(([, slot]) => slot);
 
   /** Stage (or refresh, or clear) this conversation's chips from saved rows, from any device. */
-  const applyRows = async (conversationId: string, rows: BlockStateRow[], surfaceAlias: string | null): Promise<void> => {
+  const applyRows = async (conversationId: string, allRows: BlockStateRow[]): Promise<void> => {
+    // A chip belongs to the conversation it was staged into, and to no other.
+    const rows = allRows.filter((r) => r.state.stagedIn === conversationId);
     dispatch(upsertBlockStateRows(rows));
     const state = store.getState() as unknown as ChatRootState;
     const submitted = new Set(state.instanceResources.submittedIds[conversationId] ?? []);
@@ -161,38 +154,13 @@ export function createRemarkDurability(
       })),
     );
     if (stored.length > 0) dispatch(restageRemarks(conversationId, stored));
-    // RE-KEY: a chip found by its surface now belongs to the conversation on screen.
-    for (const r of due) {
-      if (r.state.stagedIn === conversationId) continue;
-      const entity = { entityType: r.entity_type, entityId: r.entity_id };
-      const coalesceKey = typeof r.state.coalesceKey === "string" ? r.state.coalesceKey : null;
-      const held = Object.values(
-        (store.getState() as unknown as ChatRootState).instanceResources.byConversationId[conversationId] ?? {},
-      ).find((res) => coalesceKey && remarkSourceOf(res)?.coalesceKey === coalesceKey);
-      const resourceId = held?.resourceId ?? (typeof r.state.resourceId === "string" ? r.state.resourceId : r.id);
-      try {
-        const saved = await setBlockState({
-          ...entity,
-          blockKey: r.block_key,
-          kind: "remark",
-          scope: "viewer",
-          patch: { stagedIn: conversationId, stagedSurface: surfaceAlias },
-          fingerprint: null,
-        });
-        dispatch(upsertBlockStateRows([saved]));
-        // The new version is the one the send must name, or the chip would be due again.
-        dispatch(attachRemarkRef(conversationId, resourceId, { id: saved.id, stateVersion: saved.state_version }));
-      } catch (error) {
-        reportFailure(error);
-      }
-    }
   };
 
   // THE LIVE FEED: a chip made in another tab or on another device lands here without a reload.
   // One feed per real conversation (a conversation with no answers yet has nothing to watch —
   // its topic would be refused, which is a CHANNEL_ERROR for nothing).
   const watching = new Map<string, () => void>();
-  const watch = (conversationId: string, surfaceAlias: string | null): void => {
+  const watch = (conversationId: string): void => {
     if (watching.has(conversationId)) return;
     const answers = (store.getState() as unknown as ChatRootState).messages?.byConversationId?.[conversationId]?.orderedIds.length ?? 0;
     if (answers === 0) return;
@@ -203,10 +171,10 @@ export function createRemarkDurability(
     const release = subscribeBlockStateFeed({ scope: ref.scope, entityId: ref.entityId }, userId, (signal) => {
       if ("rows" in signal) {
         const mine = signal.rows.filter((r) => r.kind === "remark");
-        if (mine.length > 0) void applyRows(conversationId, mine, surfaceAlias);
+        if (mine.length > 0) void applyRows(conversationId, mine);
       } else {
-        void listStagedBlockStates(conversationId, surfaceAlias).then(
-          (all) => applyRows(conversationId, all, surfaceAlias),
+        void listStagedBlockStates(conversationId).then(
+          (all) => applyRows(conversationId, all),
           (e) => console.error("[block-state] resync failed:", e),
         );
       }
@@ -246,8 +214,6 @@ export function createRemarkDurability(
       });
     },
 
-    surfaceAliasOf,
-
     hasPending(conversationId) {
       return (
         slotsOf(conversationId).some((slot) => slot.timer !== null || slot.inFlight > 0) ||
@@ -266,17 +232,17 @@ export function createRemarkDurability(
       await Promise.all([...mine.map((slot) => slot.chain), flushBlockStateWrites(conversationId)]);
     },
 
-    restore(conversationId, surfaceAlias) {
+    restore(conversationId) {
       void (async () => {
         let rows: BlockStateRow[];
         try {
-          rows = await listStagedBlockStates(conversationId, surfaceAlias ?? null);
+          rows = await listStagedBlockStates(conversationId);
         } catch (error) {
           console.error("[block-state] restoring unsent chips failed:", error);
           return;
         }
-        if (rows.length > 0) await applyRows(conversationId, rows, surfaceAlias ?? null);
-        watch(conversationId, surfaceAlias ?? null);
+        if (rows.length > 0) await applyRows(conversationId, rows);
+        watch(conversationId);
       })();
     },
   };
@@ -285,7 +251,7 @@ export function createRemarkDurability(
 /** Register this app's durability with the chat package (once, with the store). Returns the release. */
 export function registerBlockStateRemarkDurability(store: AppStore): () => void {
   purgeLegacyBrowserStores();
-  const port = createRemarkDurability(store, (id) => composerSurfaceAliasOf(id));
+  const port = createRemarkDurability(store);
   const releasePort = registerRemarkDurability(port);
   return releasePort;
 }

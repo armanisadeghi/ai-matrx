@@ -1417,6 +1417,14 @@ export interface ManagedAgentOptions {
    * the managed launcher to remint even when the URL stays on `/chat/new`.
    */
   freshSessionKey?: number;
+
+  /**
+   * CLIENT-ONLY. With `preferFresh`: the conversation id this fresh room must
+   * use instead of a random one (a UUID reserved before the room opened — the
+   * `?c=` of "New chat about this"). Content staged for that id (its chip) is
+   * keyed to it, so it survives a reload and can never land in another chat.
+   */
+  reservedConversationId?: string | null;
 }
 
 // =============================================================================
