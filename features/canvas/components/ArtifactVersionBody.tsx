@@ -13,6 +13,7 @@ import { hasKindKeyAnySpelling } from "@/features/content-ir/surfaces/json-kind-
 import { kindTextToMarkdown } from "@/features/content-ir/surfaces/kind-text-to-markdown";
 import { kindValueToMarkdown } from "@/features/canvas/export/exportArtifactMarkdown";
 import type { CanvasArtifactRow } from "@/features/canvas/services/canvasArtifactService";
+import { Button } from "@ai-matrx/design-system/controls";
 
 function dataOf(row: CanvasArtifactRow): unknown {
   const c = row.content as { data?: unknown } | string | null | undefined;
@@ -55,13 +56,9 @@ export function ArtifactVersionBody({ row }: { row: CanvasArtifactRow }) {
   const structured = data !== null && typeof data === "object";
   return (
     <div className="px-3 pb-3 pt-1">
-      <button
-        type="button"
-        onClick={() => setShowJson((v) => !v)}
-        className="mb-1 rounded px-1.5 py-0.5 text-[10px] text-muted-foreground hover:bg-background hover:text-foreground"
-      >
+      <Button variant="quiet" onClick={() => setShowJson((v) => !v)} className="mb-1">
         {showJson ? "View answer" : "View JSON"}
-      </button>
+      </Button>
       {showJson ? (
         rawPre
       ) : (

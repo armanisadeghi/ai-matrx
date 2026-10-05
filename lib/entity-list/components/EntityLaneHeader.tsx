@@ -23,6 +23,7 @@ import { laneCounts } from "../laneRows";
 import type { LaneRowsState } from "../useLaneRows";
 import { EntityOrgFilter } from "./EntityOrgFilter";
 import { EntityScopeTabs } from "./EntityScopeTabs";
+import { Button } from "@ai-matrx/design-system/controls";
 
 export interface EntityLaneHeaderProps {
   /** The lanes the surface declares (All and My team are added by withStandardLanes). */
@@ -69,15 +70,7 @@ export function EntityLaneHeader({
           onChange={(next) => onLaneChange(next.kind)}
         />
         {laneRows.error !== null && (
-          <button
-            type="button"
-            onClick={laneRows.reload}
-            aria-label="Retry counts"
-            title="Counts failed to load. Retry."
-            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-destructive hover:bg-muted"
-          >
-            <RotateCw className="h-3.5 w-3.5" />
-          </button>
+          <Button variant="quiet" icon={<RotateCw />} onClick={laneRows.reload} aria-label="Retry counts" title="Counts failed to load. Retry." className="shrink-0" />
         )}
       </div>
       <EntityOrgFilter

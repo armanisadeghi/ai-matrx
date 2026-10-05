@@ -28,6 +28,7 @@ import { readThreadLink } from "@/components/mardown-display/blocks/data-events/
 import { useDirectiveFence } from "@/features/matrx-envelope/directiveFence";
 
 import { Spinner } from "@/components/ui/loaders/Spinner";
+import { Button } from "@ai-matrx/design-system/controls";
 const NO_MESSAGES: readonly MessageRecord[] = [];
 
 function CommentReplyLine({ handle, conversationId, streaming }: { handle: string; conversationId: string | null; streaming: boolean }) {
@@ -75,11 +76,7 @@ function CommentReplyLine({ handle, conversationId, streaming }: { handle: strin
     );
   }
   return (
-    <button
-      type="button"
-      data-comment-reply={handle}
-      className="inline-flex items-center gap-1.5 rounded text-xs text-muted-foreground hover:text-foreground hover:underline"
-      onClick={() =>
+    <Button variant="link" data-comment-reply={handle} onClick={() =>
         openCommentThread(canvas, {
           entity: thread.entity,
           id: thread.id,
@@ -87,10 +84,9 @@ function CommentReplyLine({ handle, conversationId, streaming }: { handle: strin
           focus: remark?.commentId ?? link?.rootId ?? null,
           conversationId: thread.entity === "message" ? conversationId : null,
         })
-      }
-    >
+      }>
       {label}
-    </button>
+    </Button>
   );
 }
 

@@ -4,7 +4,7 @@
 // copy link, duplicate, move to, delete (= move to Trash), undo.
 
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
-import { Switch } from "@ai-matrx/design-system/controls";
+import { Button, Switch } from "@ai-matrx/design-system/controls";
 import { Copy, CornerUpRight, Link, Lock, MoreHorizontal, MoveHorizontal, Trash2, Type, Undo2 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 
@@ -69,26 +69,18 @@ export function PageMenu({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <button type="button" className="spaces-topbar-button" aria-label="Page options">
-          <MoreHorizontal size={18} />
-        </button>
+        <Button variant="quiet" icon={<MoreHorizontal size={18} />} aria-label="Page options" />
       </PopoverTrigger>
       <PopoverContent surface="solid" align="end" className="w-[260px] p-1">
         <p className="px-2 pb-1 pt-1.5 type-secondary text-muted-foreground">Style</p>
         <div className="grid grid-cols-3 gap-1 px-1 pb-1">
           {FONTS.map((f) => (
-            <button
-              key={f.value}
-              type="button"
-              className="spaces-font-choice"
-              data-selected={settings.font === f.value ? "true" : undefined}
-              onClick={() => onSettings({ font: f.value })}
-            >
+            <Button variant="quiet" key={f.value} data-selected={settings.font === f.value ? "true" : undefined} onClick={() => onSettings({ font: f.value })}>
               <span style={{ fontFamily: f.family }} className="text-2xl">
                 Ag
               </span>
               <span className="type-secondary text-muted-foreground">{f.label}</span>
-            </button>
+            </Button>
           ))}
         </div>
         <div className="my-1 border-t border-border" />

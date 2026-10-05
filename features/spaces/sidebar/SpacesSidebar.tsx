@@ -56,9 +56,7 @@ function RowMenu({ space, onRename }: { space: SpaceSummary; onRename: () => voi
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <button type="button" className="spaces-row-action" aria-label="More actions" onClick={(e) => e.stopPropagation()}>
-          <MoreHorizontal size={15} />
-        </button>
+        <Button variant="quiet" icon={<MoreHorizontal size={15} />} aria-label="More actions" onClick={(e) => e.stopPropagation()} />
       </PopoverTrigger>
       {/* Closes instantly (Notion): a row that leaves the tree (Move to Trash) must not take an open menu
           with it — an anchorless menu would be drawn at the top-left corner during its exit. */}
@@ -246,33 +244,19 @@ function TreeRow({
             <span className="spaces-row-glyph">
               <SpaceIcon media={space.icon} size={17} />
             </span>
-            <button
-              type="button"
-              className="spaces-row-chevron"
-              aria-label={isOpen ? "Collapse" : "Expand"}
-              onClick={(e) => {
+            <Button variant="quiet" icon={<ChevronRight size={14} style={{ transform: isOpen ? "rotate(90deg)" : undefined }} />} aria-label={isOpen ? "Collapse" : "Expand"} onClick={(e) => {
                 e.stopPropagation();
                 toggle(space.id);
-              }}
-            >
-              <ChevronRight size={14} style={{ transform: isOpen ? "rotate(90deg)" : undefined }} />
-            </button>
+              }} />
           </span>
           <span className="spaces-row-title">{space.title || "Untitled"}</span>
           <span className="spaces-row-actions">
             <RowMenu space={space} onRename={() => setRenaming(true)} />
-            <button
-              type="button"
-              className="spaces-row-action"
-              aria-label="Add a page inside"
-              onClick={(e) => {
+            <Button variant="quiet" icon={<Plus size={15} />} aria-label="Add a page inside" onClick={(e) => {
                 e.stopPropagation();
                 toggle(space.id, true);
                 void spaces.createSpace(space.id);
-              }}
-            >
-              <Plus size={15} />
-            </button>
+              }} />
           </span>
         </div>
       </RenamePopover>
@@ -294,13 +278,11 @@ function Section({ title, children, onAdd }: { title: string; children: React.Re
   return (
     <div className="mt-3">
       <div className="spaces-section-head group/section">
-        <button type="button" className="spaces-section-title" onClick={() => setOpen(!open)} aria-expanded={open}>
+        <Button variant="quiet" onClick={() => setOpen(!open)} aria-expanded={open}>
           {title}
-        </button>
+        </Button>
         {onAdd ? (
-          <button type="button" className="spaces-row-action opacity-0 group-hover/section:opacity-100" aria-label={`Add a page in ${title}`} onClick={onAdd}>
-            <Plus size={15} />
-          </button>
+          <Button variant="quiet" icon={<Plus size={15} />} aria-label={`Add a page in ${title}`} onClick={onAdd} className="opacity-0 group-hover/section:opacity-100" />
         ) : null}
       </div>
       {open ? <div role="tree">{children}</div> : null}
@@ -348,10 +330,9 @@ function TrashPopover() {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <button type="button" className="spaces-nav-row">
-          <Trash2 size={17} />
+        <Button variant="quiet" icon={<Trash2 size={17} />}>
           Trash
-        </button>
+        </Button>
       </PopoverTrigger>
       <PopoverContent surface="solid" side="right" align="end" className="w-[400px] p-2">
         <SearchField placeholder="Search pages in Trash" value={q} onChange={(e) => setQ(e.target.value)} className="w-full" />
@@ -429,19 +410,14 @@ export function SpacesSidebarContent({ onCollapse }: { onCollapse?: () => void }
         <span className="spaces-workspace-mark">S</span>
         <span className="min-w-0 flex-1 truncate type-title">Spaces</span>
         {onCollapse ? (
-          <button type="button" className="spaces-row-action spaces-collapse" aria-label="Close sidebar" title="Close sidebar (Cmd+\)" onClick={onCollapse}>
-            <ChevronsLeft size={17} />
-          </button>
+          <Button variant="quiet" icon={<ChevronsLeft size={17} />} aria-label="Close sidebar" title="Close sidebar (Cmd+\)" onClick={onCollapse} />
         ) : null}
-        <button type="button" className="spaces-row-action" aria-label="New page" onClick={() => void spaces.createSpace(null)}>
-          <SquarePen size={16} />
-        </button>
+        <Button variant="quiet" icon={<SquarePen size={16} />} aria-label="New page" onClick={() => void spaces.createSpace(null)} />
       </div>
-      <button type="button" className="spaces-nav-row" onClick={() => spaces.openQuickFind("jump")}>
-        <Search size={17} />
+      <Button variant="quiet" icon={<Search size={17} />} onClick={() => spaces.openQuickFind("jump")}>
         Search
         <span className="ml-auto type-secondary text-muted-foreground">⌘K</span>
-      </button>
+      </Button>
 
       <div className="spaces-sidebar-scroll">
         {favs.length ? (

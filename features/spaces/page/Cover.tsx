@@ -162,45 +162,33 @@ export function Cover({ cover, editable, onChange }: { cover: CoverValue; editab
         <div className="spaces-cover-actions">
           {repositioning ? (
             <>
-              <button
-                type="button"
-                className="spaces-cover-button"
-                onClick={() => {
+              <Button variant="quiet" onClick={() => {
                   onChange({ ...cover, offsetY: offset });
                   setRepositioning(false);
-                }}
-              >
+                }}>
                 Save position
-              </button>
-              <button
-                type="button"
-                className="spaces-cover-button"
-                onClick={() => {
+              </Button>
+              <Button variant="quiet" onClick={() => {
                   setOffset(cover.offsetY ?? 50);
                   setRepositioning(false);
-                }}
-              >
+                }}>
                 Cancel
-              </button>
+              </Button>
             </>
           ) : (
             <>
               <CoverPicker onPick={onChange}>
-                <button type="button" className="spaces-cover-button">
+                <Button variant="quiet">
                   Change cover
-                </button>
+                </Button>
               </CoverPicker>
               {isImage ? (
-                <button
-                  type="button"
-                  className="spaces-cover-button"
-                  onClick={() => {
+                <Button variant="quiet" onClick={() => {
                     setOffset(cover.offsetY ?? 50);
                     setRepositioning(true);
-                  }}
-                >
+                  }}>
                   Reposition
-                </button>
+                </Button>
               ) : null}
             </>
           )}

@@ -41,6 +41,7 @@ import {
 import { selectMatrixBase, selectMatrixColumns, selectMatrixRows } from "../redux/selectors";
 import { PatchEditor } from "./PatchEditor";
 import type { MatrixAxisKey, MatrixVariant } from "../types";
+import { Button as ControlButton } from "@ai-matrx/design-system/controls";
 
 export function AxisEditor({ axis }: { axis: MatrixAxisKey }) {
   const dispatch = useAppDispatch();
@@ -142,15 +143,7 @@ function VariantRow({
   return (
     <li className="px-2 py-1.5">
       <div className="flex items-center gap-1 min-w-0">
-        <button
-          type="button"
-          onClick={onToggle}
-          aria-label={expanded ? "Collapse" : "Edit overrides"}
-          title={expanded ? "Collapse" : "Edit overrides"}
-          className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted"
-        >
-          {expanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
-        </button>
+        <ControlButton variant="quiet" icon={expanded ? <ChevronDown /> : <ChevronRight />} onClick={onToggle} aria-label={expanded ? "Collapse" : "Edit overrides"} title={expanded ? "Collapse" : "Edit overrides"} />
         <span className="w-6 shrink-0 text-right type-meta tabular-nums text-muted-foreground">
           {index + 1}
         </span>

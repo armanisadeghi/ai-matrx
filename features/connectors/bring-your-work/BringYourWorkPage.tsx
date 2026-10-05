@@ -248,24 +248,13 @@ export function BringYourWorkPage() {
           {CLIENTS.map((c) => {
             const selected = c.value === client;
             return (
-              <button
-                key={c.value}
-                type="button"
-                role="radio"
-                aria-checked={selected}
-                onClick={() => {
+              <Button variant="outline" pressed={selected} key={c.value} role="radio" aria-checked={selected} onClick={() => {
                   setClient(c.value);
                   setPicked(true);
-                }}
-                className={cn(
-                  "flex flex-col items-center justify-center gap-2 rounded-lg border bg-card px-3 py-4 text-sm font-medium text-foreground transition-colors",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                  selected ? "border-primary ring-1 ring-primary" : "border-border hover:bg-accent",
-                )}
-              >
+                }}>
                 {c.mark}
                 {c.label}
-              </button>
+              </Button>
             );
           })}
         </div>

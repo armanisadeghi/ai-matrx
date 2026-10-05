@@ -14,6 +14,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectAllTools, selectToolsStatus } from "@ai-matrx/chat/agents/redux/tools/tools.selectors";
 import { fetchAvailableTools } from "@ai-matrx/chat/agents/redux/tools/tools.thunks";
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
+import { Button } from "@ai-matrx/design-system/controls";
 
 export function ToolNamesInput({
   value,
@@ -59,28 +60,14 @@ export function ToolNamesInput({
           className="inline-flex items-center gap-1 h-6 pl-2 pr-1 rounded border border-border bg-muted/40 type-meta font-mono"
         >
           {name}
-          <button
-            type="button"
-            aria-label={`Remove ${name}`}
-            title={`Remove ${name}`}
-            onClick={() => onChange(value.filter((v) => v !== name))}
-            className="p-0.5 rounded text-muted-foreground hover:text-foreground"
-          >
-            <X className="w-3 h-3" />
-          </button>
+          <Button variant="quiet" icon={<X />} aria-label={`Remove ${name}`} title={`Remove ${name}`} onClick={() => onChange(value.filter((v) => v !== name))} />
         </span>
       ))}
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
-          <button
-            type="button"
-            aria-label={label}
-            title={label}
-            className="inline-flex items-center gap-1 h-6 px-2 rounded border border-dashed border-border text-[11px] text-muted-foreground hover:text-foreground hover:bg-muted"
-          >
-            <Plus className="w-3 h-3" />
+          <Button variant="outline" icon={<Plus />} aria-label={label} title={label}>
             Tool
-          </button>
+          </Button>
         </PopoverTrigger>
         <PopoverContent align="start" className="w-80 p-2">
           <input
@@ -104,24 +91,15 @@ export function ToolNamesInput({
               <div className="px-2 py-1.5 type-secondary text-destructive">Tool list did not load</div>
             )}
             {candidates.map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => add(t.name)}
-                className="w-full flex items-center justify-between gap-2 px-2 py-1 rounded text-left hover:bg-muted"
-              >
+              <Button variant="quiet" key={t.id} onClick={() => add(t.name)} className="w-full">
                 <span className="type-secondary font-mono truncate">{t.name}</span>
                 <span className="type-meta text-muted-foreground shrink-0">{t.category}</span>
-              </button>
+              </Button>
             ))}
             {query.trim() && !tools.some((t) => t.name === query.trim()) && (
-              <button
-                type="button"
-                onClick={() => add(query)}
-                className="w-full px-2 py-1 rounded text-left text-xs hover:bg-muted"
-              >
+              <Button variant="quiet" onClick={() => add(query)} className="w-full">
                 Add <span className="font-mono">{query.trim()}</span>
-              </button>
+              </Button>
             )}
           </div>
         </PopoverContent>

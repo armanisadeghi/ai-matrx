@@ -190,26 +190,17 @@ function DatabaseFrame({
             <ViewSettings view={active} fields={fields} props={props} onView={saveView} onBlock={save} editable={editable} compact />
           ) : null}
           {editable && !isChart ? (
-            <button
-              type="button"
-              className="spaces-db-icon"
-              aria-label="Add view"
-              onClick={() => {
+            <Button variant="quiet" icon={<Plus size={14} />} aria-label="Add view" onClick={() => {
                 const v: SpaceDbView = { id: newViewId(), name: "Table", layout: "grid" };
                 save({ views: [...views, v], activeViewId: v.id });
-              }}
-            >
-              <Plus size={14} />
-            </button>
+              }} />
           ) : null}
         </div>
         {!isChart ? (
           <div className="spaces-db-tools">
             <FilterButton view={active} fields={fields} onView={saveView} editable={editable} />
             <SortButton view={active} fields={fields} onView={saveView} editable={editable} />
-            <button type="button" className="spaces-db-icon" aria-label="Open as full page" title="Open as full page" onClick={() => setExpanded(true)}>
-              <Maximize2 size={15} strokeWidth={1.8} />
-            </button>
+            <Button variant="quiet" icon={<Maximize2 size={15} strokeWidth={1.8} />} aria-label="Open as full page" title="Open as full page" onClick={() => setExpanded(true)} />
             <ViewSettings view={active} fields={fields} props={props} onView={saveView} onBlock={save} editable={editable} />
             <NewButton onNew={() => setCreating(true)} />
           </div>
@@ -280,10 +271,9 @@ function DatabaseBody({
     <div className="spaces-db-body">
       <ViewSwitcher view={spec} chooser={false} onOpenRecord={onOpenRecord} filter={view.filters && Object.keys(view.filters).length ? view.filters : undefined} />
       {editable && (view.layout === "grid" || view.layout === "list") ? (
-        <button type="button" className="spaces-db-newrow" onClick={onNew}>
-          <Plus size={14} strokeWidth={1.8} />
+        <Button variant="quiet" icon={<Plus size={14} strokeWidth={1.8} />} onClick={onNew}>
           New page
-        </button>
+        </Button>
       ) : null}
     </div>
   );
@@ -313,22 +303,15 @@ function ViewTab({
   return (
     <Popover open={menu} onOpenChange={(o) => (editable ? setMenu(o) : null)}>
       <PopoverTrigger asChild>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={active}
-          className="spaces-db-tab"
-          data-active={active ? "true" : undefined}
-          onClick={(e) => {
+        <Button variant="quiet" role="tab" aria-selected={active} data-active={active ? "true" : undefined} onClick={(e) => {
             if (!active) {
               e.preventDefault();
               onSelect();
             }
-          }}
-        >
+          }}>
           {icon}
           <span>{view.name}</span>
-        </button>
+        </Button>
       </PopoverTrigger>
       <PopoverContent surface="solid" align="start" className="w-[240px] p-1">
         <div className="p-1">
@@ -380,9 +363,7 @@ function FilterButton({ view, fields, onView, editable }: { view: SpaceDbView; f
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <button type="button" className="spaces-db-icon" aria-label="Filter" title="Filter" data-on={count ? "true" : undefined}>
-          <ListFilter size={15} strokeWidth={1.8} />
-        </button>
+        <Button variant="quiet" icon={<ListFilter size={15} strokeWidth={1.8} />} aria-label="Filter" title="Filter" data-on={count ? "true" : undefined} />
       </PopoverTrigger>
       <PopoverContent surface="solid" align="end" className="w-[280px] p-1">
         {Object.entries(filters).map(([k, v]) => (
@@ -429,9 +410,7 @@ function SortButton({ view, fields, onView, editable }: { view: SpaceDbView; fie
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <button type="button" className="spaces-db-icon" aria-label="Sort" title="Sort" data-on={sort ? "true" : undefined}>
-          <ArrowDownUp size={15} strokeWidth={1.8} />
-        </button>
+        <Button variant="quiet" icon={<ArrowDownUp size={15} strokeWidth={1.8} />} aria-label="Sort" title="Sort" data-on={sort ? "true" : undefined} />
       </PopoverTrigger>
       <PopoverContent surface="solid" align="end" className="w-[260px] p-1">
         {sort ? (
@@ -441,9 +420,7 @@ function SortButton({ view, fields, onView, editable }: { view: SpaceDbView; fie
               {sort.direction === "asc" ? "Ascending" : "Descending"}
             </Button>
             {editable ? (
-              <button type="button" className="spaces-db-icon" aria-label="Remove sort" onClick={() => onView({ sorts: [] })}>
-                <X size={14} />
-              </button>
+              <Button variant="quiet" icon={<X size={14} />} aria-label="Remove sort" onClick={() => onView({ sorts: [] })} />
             ) : null}
           </div>
         ) : editable ? (
@@ -459,14 +436,12 @@ function SortButton({ view, fields, onView, editable }: { view: SpaceDbView; fie
 function NewButton({ onNew }: { onNew: () => void }) {
   return (
     <div className="spaces-db-new">
-      <button type="button" className="spaces-db-new-main" onClick={onNew}>
+      <Button variant="quiet" onClick={onNew}>
         New
-      </button>
+      </Button>
       <Popover>
         <PopoverTrigger asChild>
-          <button type="button" className="spaces-db-new-more" aria-label="Templates">
-            <ChevronDown size={14} />
-          </button>
+          <Button variant="quiet" icon={<ChevronDown size={14} />} aria-label="Templates" />
         </PopoverTrigger>
         <PopoverContent surface="solid" align="end" className="w-[240px] p-1">
           <div className="px-2 py-1 type-secondary text-muted-foreground">Templates</div>
@@ -540,9 +515,9 @@ function ViewSettings({
                 <div className="px-2 pt-2 pb-1 type-secondary text-muted-foreground">{chart.type === "donut" ? "Value" : "Y axis"}</div>
                 <div className="flex flex-wrap gap-1 px-1 pb-1">
                   {OPS.map((o) => (
-                    <button key={o.id} type="button" className="spaces-db-pill" data-active={chart.op === o.id ? "true" : undefined} disabled={!editable} onClick={() => (o.id === "count" ? setChart({ op: "count", field: null }) : (setChart({ op: o.id }), setPage("yfield")))}>
+                    <Button variant="quiet" key={o.id} data-active={chart.op === o.id ? "true" : undefined} disabled={!editable} onClick={() => (o.id === "count" ? setChart({ op: "count", field: null }) : (setChart({ op: o.id }), setPage("yfield")))}>
                       {o.label}
-                    </button>
+                    </Button>
                   ))}
                 </div>
                 {chart.op !== "count" ? <MenuRow label="Of" end={<span className="type-secondary text-muted-foreground">{label(chart.field)}</span>} onClick={() => editable && setPage("yfield")} /> : null}
@@ -609,9 +584,7 @@ function RecordOpen({ tableId, recordId, as, onClose }: { tableId: string; recor
     return (
       <aside className="spaces-peek-side" aria-label="Side peek">
         <div className="spaces-peek-bar">
-          <button type="button" className="spaces-db-icon" aria-label="Close" onClick={onClose}>
-            <X size={16} />
-          </button>
+          <Button variant="quiet" icon={<X size={16} />} aria-label="Close" onClick={onClose} />
         </div>
         <div className="spaces-peek-body">
           <Peek tableId={tableId} recordId={recordId} onClose={onClose} />

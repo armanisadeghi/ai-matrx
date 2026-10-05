@@ -4,7 +4,7 @@
 // shows. The person's real tables (every table they can see, across all their organizations — the data
 // home's own list) and the agency sample. Never filtered by the active organization (access ladder).
 
-import { SearchField } from "@ai-matrx/design-system/controls";
+import { Button, SearchField } from "@ai-matrx/design-system/controls";
 import { Database, FlaskConical } from "lucide-react";
 import { useRef, useState } from "react";
 
@@ -31,19 +31,17 @@ function Lists({ query, onPick }: { query: string; onPick: (s: PickedSource) => 
       {tables.error ? <div className="px-3 py-2 type-body text-muted-foreground">Your tables could not be listed.</div> : null}
       {!tables.loading && !tables.error && !real.length ? <div className="px-3 py-2 type-body text-muted-foreground">No tables</div> : null}
       {real.map((t) => (
-        <button key={t.table_id} type="button" className="spaces-db-menurow" onClick={() => onPick({ tableId: t.table_id, name: t.table_name })}>
-          <Database size={15} className="text-muted-foreground" />
+        <Button variant="quiet" icon={<Database size={15} />} key={t.table_id} onClick={() => onPick({ tableId: t.table_id, name: t.table_name })}>
           <span className="flex-1 truncate text-left">{t.table_name}</span>
           <span className="truncate type-secondary text-muted-foreground">{t.organization_name}</span>
-        </button>
+        </Button>
       ))}
       <div className="px-3 pt-3 pb-1 type-secondary text-muted-foreground">Sample agency</div>
       {sample.map((t) => (
-        <button key={t.id} type="button" className="spaces-db-menurow" onClick={() => onPick({ tableId: t.id, name: t.name, sample: AGENCY_SAMPLE_ID })}>
-          <FlaskConical size={15} className="text-muted-foreground" />
+        <Button variant="quiet" icon={<FlaskConical size={15} />} key={t.id} onClick={() => onPick({ tableId: t.id, name: t.name, sample: AGENCY_SAMPLE_ID })}>
           <span className="flex-1 truncate text-left">{t.name}</span>
           <span className="type-secondary text-muted-foreground">{t.rows} rows</span>
-        </button>
+        </Button>
       ))}
     </div>
   );

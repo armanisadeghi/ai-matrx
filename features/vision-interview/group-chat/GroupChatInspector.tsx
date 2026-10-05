@@ -23,7 +23,7 @@ import {
   SelectValue,
   Skeleton,
 } from "@ai-matrx/design-system";
-import { Input } from "@ai-matrx/design-system/controls";
+import { Button, Input } from "@ai-matrx/design-system/controls";
 import { RoomViewReceipt } from "@ai-matrx/chat/agents/components/context-policies-display/MessageContextReceipt";
 import { RichDocument } from "@/features/rich-document/RichDocument";
 import { stripControlLines } from "@/lib/control-tokens/stripControlLines";
@@ -142,13 +142,9 @@ function SeesKeysPicker({
   return (
     <Popover open={open} onOpenChange={onOpenChange}>
       <PopoverTrigger asChild>
-        <button
-          type="button"
-          className="h-7 min-w-0 max-w-[9rem] truncate rounded-md border border-border px-1.5 text-left text-xs text-foreground"
-          title={full.seesKeys.map(nameOf).join(", ")}
-        >
+        <Button variant="outline" title={full.seesKeys.map(nameOf).join(", ")} className="min-w-0">
           {full.seesKeys.length ? full.seesKeys.map(nameOf).join(", ") : "Pick…"}
-        </button>
+        </Button>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-48 p-1">
         {options.map((key) => (
@@ -423,18 +419,10 @@ export function GroupChatInspector({ anchorType, anchorId, initialKey }: { ancho
       <div className="flex shrink-0 items-center gap-2 border-b border-border px-2 py-1 type-secondary">
         <span className="font-medium text-foreground">Round {state.group.round}</span>
         <span className="text-muted-foreground">{rows.length} participants</span>
-        <button
-          type="button"
-          className="ml-auto inline-flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
-          aria-label="Refresh"
-          title="Refresh"
-          onClick={() => {
+        <Button variant="quiet" icon={<RefreshCw />} aria-label="Refresh" title="Refresh" onClick={() => {
             reload();
             setRefresh((n) => n + 1);
-          }}
-        >
-          <RefreshCw className="h-3.5 w-3.5" />
-        </button>
+          }} className="ml-auto" />
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto scrollbar-thin">
         <div className="overflow-x-auto">

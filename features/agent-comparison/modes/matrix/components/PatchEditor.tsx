@@ -31,6 +31,7 @@ import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelList
 import { cn } from "@/lib/utils";
 import { ToolNamesInput } from "./ToolNamesInput";
 import type { MatrixPatch, MatrixSettings } from "../types";
+import { Button } from "@ai-matrx/design-system/controls";
 
 type FieldKey =
   | "agent"
@@ -275,15 +276,7 @@ export function PatchEditor({
             )}
           </div>
           {!(isBase && f.key === "agent") && (
-            <button
-              type="button"
-              onClick={() => onChange(withoutField(patch, f.key))}
-              aria-label={`Stop overriding ${f.label}`}
-              title={isBase ? `Remove ${f.label}` : `Inherit ${f.label}`}
-              className="mt-1 p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
+            <Button variant="quiet" icon={<X />} onClick={() => onChange(withoutField(patch, f.key))} aria-label={`Stop overriding ${f.label}`} title={isBase ? `Remove ${f.label}` : `Inherit ${f.label}`} className="mt-1" />
           )}
         </div>
       ))}
@@ -356,17 +349,9 @@ function Segmented<T extends string>({
   return (
     <div className="inline-flex rounded-md border border-border p-0.5">
       {options.map((o) => (
-        <button
-          key={o.value}
-          type="button"
-          onClick={() => onChange(o.value)}
-          className={cn(
-            "h-7 px-2.5 rounded text-xs",
-            value === o.value ? "bg-primary text-primary-foreground" : "hover:bg-muted",
-          )}
-        >
+        <Button variant="quiet" pressed={value === o.value} key={o.value} onClick={() => onChange(o.value)}>
           {o.label}
-        </button>
+        </Button>
       ))}
     </div>
   );
@@ -401,32 +386,20 @@ function VariablesField({
             placeholder="value"
             className="flex-1 min-w-0 h-7 px-2 rounded border border-border bg-background text-xs"
           />
-          <button
-            type="button"
-            aria-label={`Remove ${k || "variable"}`}
-            onClick={() => {
+          <Button variant="quiet" icon={<X />} aria-label={`Remove ${k || "variable"}`} onClick={() => {
               const next = { ...value };
               delete next[k];
               onChange(next);
-            }}
-            className="p-1 rounded text-muted-foreground hover:text-foreground"
-          >
-            <X className="w-3 h-3" />
-          </button>
+            }} />
         </div>
       ))}
-      <button
-        type="button"
-        onClick={() => {
+      <Button variant="outline" icon={<Plus />} onClick={() => {
           let n = entries.length + 1;
           while (`var_${n}` in value) n += 1;
           onChange({ ...value, [`var_${n}`]: "" });
-        }}
-        className="inline-flex items-center gap-1 h-6 px-2 rounded border border-dashed border-border text-[11px] text-muted-foreground hover:text-foreground"
-      >
-        <Plus className="w-3 h-3" />
+        }}>
         Variable
-      </button>
+      </Button>
     </div>
   );
 }

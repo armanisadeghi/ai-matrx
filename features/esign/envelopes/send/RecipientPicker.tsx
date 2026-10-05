@@ -222,14 +222,9 @@ export function RecipientPicker({
                   </button>
                 ))}
                 {matches.length === 0 && <p className="px-3 py-2 type-secondary text-muted-foreground">No member matches</p>}
-                <button
-                  type="button"
-                  onClick={() => setOutsider({ fullName: typedEmail ? "" : query.trim(), email: typedEmail ?? "" })}
-                  className="flex items-center gap-2 border-t border-border px-3 py-1.5 text-left text-sm hover:bg-accent/40"
-                >
-                  <UserPlus className="h-4 w-4 text-muted-foreground" />
+                <Button variant="quiet" icon={<UserPlus />} onClick={() => setOutsider({ fullName: typedEmail ? "" : query.trim(), email: typedEmail ?? "" })}>
                   Add someone outside
-                </button>
+                </Button>
               </>
             )}
           </div>

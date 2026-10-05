@@ -18,6 +18,7 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { createClient } from "@/utils/supabase/client";
+import { Button } from "@ai-matrx/design-system/controls";
 
 // ── 1. the table, declared once ────────────────────────────────────────────────────────────
 export const supplyReorderPoints = defineAppTable({
@@ -84,9 +85,9 @@ function ReorderBoard() {
         <span className="font-medium">Supply reorder points</span>
         <span className="text-muted-foreground">table {status ?? "…"}</span>
         <span className="text-muted-foreground">{total ?? 0} rows</span>
-        <button type="button" className="ml-auto rounded border px-2 py-1" disabled={busy !== null} onClick={async () => { for (const s of SAMPLE) await save(s); }}>
+        <Button variant="outline" disabled={busy !== null} onClick={async () => { for (const s of SAMPLE) await save(s); }} className="ml-auto">
           Add 3 sample items
-        </button>
+        </Button>
       </div>
       {error && <p className="type-body text-destructive">{error.message}</p>}
       <form
@@ -101,7 +102,7 @@ function ReorderBoard() {
         <label className="flex flex-col">Item<input className="rounded border px-2 py-1" value={item} onChange={(e) => setItem(e.target.value)} /></label>
         <label className="flex flex-col">On hand<input className="w-24 rounded border px-2 py-1" type="number" value={onHand} onChange={(e) => setOnHand(e.target.value)} /></label>
         <label className="flex flex-col">Reorder at<input className="w-24 rounded border px-2 py-1" type="number" required value={reorderAt} onChange={(e) => setReorderAt(e.target.value)} /></label>
-        <button type="submit" className="rounded border px-3 py-1" disabled={busy !== null}>Save</button>
+        <Button variant="outline" type="submit" disabled={busy !== null}>Save</Button>
       </form>
       {lastWrite && <p className="type-secondary text-muted-foreground" data-testid="last-write">{lastWrite}</p>}
       <table className="w-full type-body">
@@ -111,7 +112,7 @@ function ReorderBoard() {
           {rows.map((r) => (
             <tr key={r._id} className={low(r) ? "text-destructive" : undefined}>
               <td>{r.item}</td><td>{r.category ?? ""}</td><td>{r.on_hand ?? ""}</td><td>{r.reorder_at}</td><td>{r.unit_cost ?? ""}</td>
-              <td><button type="button" className="text-xs underline" onClick={() => void remove(r._id)}>archive</button></td>
+              <td><Button variant="link" onClick={() => void remove(r._id)}>archive</Button></td>
             </tr>
           ))}
         </tbody>

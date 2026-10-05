@@ -87,17 +87,7 @@ export function IconPicker({
               {names.map((name) => {
                 const Icon = SPACE_ICONS[name];
                 return (
-                  <button
-                    key={name}
-                    type="button"
-                    title={words(name)}
-                    aria-label={words(name)}
-                    data-selected={current === name ? "true" : undefined}
-                    className="flex aspect-square items-center justify-center rounded text-foreground/80 hover:bg-accent data-[selected=true]:bg-accent"
-                    onClick={() => pick({ icon: name })}
-                  >
-                    <Icon size={20} strokeWidth={1.75} />
-                  </button>
+                  <Button variant="quiet" icon={<Icon size={20} strokeWidth={1.75} />} key={name} title={words(name)} aria-label={words(name)} data-selected={current === name ? "true" : undefined} onClick={() => pick({ icon: name })} className="aspect-square" />
                 );
               })}
               {names.length === 0 ? <p className="col-span-12 py-6 text-center type-body text-muted-foreground">No results</p> : null}

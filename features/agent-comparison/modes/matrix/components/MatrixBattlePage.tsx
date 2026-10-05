@@ -32,6 +32,7 @@ import { AxisEditor } from "./AxisEditor";
 import { MatrixResults } from "./MatrixResults";
 import { MatrixToolbar } from "./MatrixToolbar";
 import { PatchEditor } from "./PatchEditor";
+import { Button } from "@ai-matrx/design-system/controls";
 
 const POLL_MS = 2000;
 
@@ -109,13 +110,9 @@ export function MatrixBattlePage({ setId = null }: { setId?: string | null }) {
           <AlertTriangle className="w-4 h-4 mt-0.5 text-destructive shrink-0" />
           <span className="min-w-0 flex-1 break-words">{runError ?? readError}</span>
           {runError && (
-            <button
-              type="button"
-              onClick={() => dispatch(setRunError(null))}
-              className="shrink-0 text-xs text-muted-foreground hover:text-foreground"
-            >
+            <Button variant="quiet" onClick={() => dispatch(setRunError(null))} className="shrink-0">
               Dismiss
-            </button>
+            </Button>
           )}
         </div>
       )}
@@ -154,17 +151,9 @@ function TabButton({
   children: React.ReactNode;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      className={cn(
-        "h-7 px-3 rounded-md text-xs font-medium",
-        active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-muted",
-      )}
-    >
+    <Button variant="quiet" pressed={active} onClick={onClick}>
       {children}
-    </button>
+    </Button>
   );
 }
 
@@ -204,25 +193,9 @@ function SetupView() {
           <div className="flex-1" />
           <span className="type-secondary text-muted-foreground">Runs per cell</span>
           <div className="inline-flex items-center rounded-md border border-border">
-            <button
-              type="button"
-              aria-label="Fewer runs per cell"
-              disabled={repeats <= 1}
-              onClick={() => dispatch(setRepeats(repeats - 1))}
-              className="p-1 disabled:opacity-30 hover:bg-muted rounded-l-md"
-            >
-              <Minus className="w-3.5 h-3.5" />
-            </button>
+            <Button variant="quiet" icon={<Minus />} aria-label="Fewer runs per cell" disabled={repeats <= 1} onClick={() => dispatch(setRepeats(repeats - 1))} />
             <span className="w-6 text-center type-secondary tabular-nums">{repeats}</span>
-            <button
-              type="button"
-              aria-label="More runs per cell"
-              disabled={repeats >= MAX_REPEATS}
-              onClick={() => dispatch(setRepeats(repeats + 1))}
-              className="p-1 disabled:opacity-30 hover:bg-muted rounded-r-md"
-            >
-              <Plus className="w-3.5 h-3.5" />
-            </button>
+            <Button variant="quiet" icon={<Plus />} aria-label="More runs per cell" disabled={repeats >= MAX_REPEATS} onClick={() => dispatch(setRepeats(repeats + 1))} />
           </div>
           <span className="type-secondary tabular-nums font-medium" title="Rows × columns × runs per cell">
             {total} cells

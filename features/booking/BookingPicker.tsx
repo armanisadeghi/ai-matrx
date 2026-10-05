@@ -27,6 +27,7 @@ import { FieldControl, RecordsUiProvider } from "@ai-matrx/records-ui";
 
 import type { BookingSlot, PublicBooking } from "@/features/booking/service";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { Button } from "@ai-matrx/design-system/controls";
 
 /** What the two route handlers answer. Declared so a fallback cannot narrow the union. */
 interface HoldAnswer {
@@ -273,17 +274,12 @@ export function BookingPicker({ page, preview }: { page: PublicBooking; preview?
           <span className="text-muted-foreground">
             {preview ? "" : "held for you"}{stage.expiresAt ? ` until ${clockText(stage.expiresAt, zone)}` : ""}
           </span>
-          <button
-            type="button"
-            className="ml-auto rounded px-2 py-1 text-xs underline underline-offset-2 disabled:opacity-50"
-            disabled={busy}
-            onClick={() => {
+          <Button variant="link" disabled={busy} onClick={() => {
               setStage({ kind: "picking" });
               void refresh();
-            }}
-          >
+            }} className="ml-auto">
             Pick another time
-          </button>
+          </Button>
         </header>
 
         {questions.map((q) => {
@@ -362,14 +358,9 @@ export function BookingPicker({ page, preview }: { page: PublicBooking; preview?
             {refused}
           </p>
         ) : null}
-        <button
-          type="button"
-          className="h-11 rounded bg-primary px-4 text-base font-medium text-primary-foreground disabled:opacity-60"
-          disabled={busy}
-          onClick={() => void confirm()}
-        >
+        <Button variant="primary" disabled={busy} onClick={() => void confirm()}>
           {busy ? "Booking…" : (page.presentation?.submit_label ?? "Book it")}
-        </button>
+        </Button>
       </section>
     );
   }
@@ -406,16 +397,11 @@ export function BookingPicker({ page, preview }: { page: PublicBooking; preview?
                       {clockText(slot.at, zone)} · taken
                     </span>
                   ) : (
-                    <button
-                      type="button"
-                      className="h-11 rounded border border-input px-3 text-sm hover:bg-accent disabled:opacity-50"
-                      disabled={stage.kind === "holding"}
-                      onClick={() => void hold(slot)}
-                    >
+                    <Button variant="outline" disabled={stage.kind === "holding"} onClick={() => void hold(slot)}>
                       {stage.kind === "holding" && stage.slotKey === slot.key
                         ? "Holding…"
                         : clockText(slot.at, zone)}
-                    </button>
+                    </Button>
                   )}
                 </li>
               ))}

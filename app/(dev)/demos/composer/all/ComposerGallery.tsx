@@ -32,6 +32,7 @@ import type {
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { cn } from "@/lib/utils";
+import { Button } from "@ai-matrx/design-system/controls";
 
 const MIN_W = 340;
 const MAX_W = 768;
@@ -97,17 +98,15 @@ function StyleSection({ spec, mode }: { spec: StyleSpec; mode: ComposerMode }) {
         message={chat.conversation.reason}
         operation="Open the demo conversation"
         actions={
-          <button type="button" onClick={chat.conversation.retry} className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-sm hover:bg-accent">
-            <RotateCcw className="h-3.5 w-3.5" /> Try again
-          </button>
+          <Button variant="outline" icon={<RotateCcw />} onClick={chat.conversation.retry}> Try again
+          </Button>
         }
       />
     );
   } else if (chat.conversation.state === "needs-organization") {
     body = (
-      <button type="button" onClick={chat.conversation.choose} className="m-auto inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-sm hover:bg-accent">
-        <Building2 className="h-3.5 w-3.5" /> Choose organization
-      </button>
+      <Button variant="outline" icon={<Building2 />} onClick={chat.conversation.choose} className="m-auto"> Choose organization
+      </Button>
     );
   } else if (!conversationId) {
     body = <div className="m-auto h-24 w-4/5 animate-pulse rounded-[22px] bg-muted" aria-busy="true" />;
@@ -194,20 +193,12 @@ function ResizableFrame({ children }: { children: ReactNode }) {
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap items-center gap-1.5">
         {PRESETS.map((w) => (
-          <button
-            key={w}
-            type="button"
-            onClick={() => {
+          <Button variant="quiet" pressed={preset === w} key={w} onClick={() => {
               apply(w);
               setPreset(w);
-            }}
-            className={cn(
-              "h-6 rounded-md px-2 text-xs tabular-nums transition-colors",
-              preset === w ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent hover:text-foreground",
-            )}
-          >
+            }}>
             {w}
-          </button>
+          </Button>
         ))}
         <span ref={labelRef} className="ml-2 type-secondary tabular-nums text-muted-foreground">
           560px

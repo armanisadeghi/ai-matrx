@@ -641,21 +641,13 @@ export function AgentViewContent({ agentId, recordSections }: { agentId: string;
                     </span>
                   )}
                 </EntityRef>
-                <button
-                  type="button"
-                  onClick={() =>
-                    handleCopy("agent-id", liveAgentId, "Agent ID copied")
-                  }
-                  className="group inline-flex shrink-0 items-center text-foreground/90 transition-colors hover:text-foreground"
-                  title="Copy agent ID"
-                  aria-label="Copy agent ID"
-                >
-                  {copied === "agent-id" ? (
-                    <Check className="w-3 h-3 text-success shrink-0" />
+                <ControlButton variant="quiet" icon={copied === "agent-id" ? (
+                    <Check />
                   ) : (
-                    <Copy className="w-3 h-3 opacity-60 group-hover:opacity-100 shrink-0" />
-                  )}
-                </button>
+                    <Copy />
+                  )} glyphTone="success" onClick={() =>
+                    handleCopy("agent-id", liveAgentId, "Agent ID copied")
+                  } title="Copy agent ID" aria-label="Copy agent ID" className="shrink-0" />
               </div>
               {agent.description && (
                 <RichContent level="full" imagePolicy="other"

@@ -12,7 +12,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { X } from "lucide-react";
-import { Input } from "@ai-matrx/design-system/controls";
+import { Button, Input } from "@ai-matrx/design-system/controls";
 import { toast } from "@/lib/toast";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
@@ -136,18 +136,10 @@ function CustomCell({
         {saving ? (
           <Spinner size="xs" className="absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
         ) : saved !== undefined ? (
-          <button
-            type="button"
-            className="absolute -right-4 top-1/2 flex h-4 w-4 -translate-y-1/2 items-center justify-center rounded-sm text-muted-foreground opacity-0 hover:text-destructive focus-visible:opacity-100 group-hover:opacity-100"
-            aria-label={`Unset the ${label} value`}
-            title="Unset this window"
-            onClick={(event) => {
+          <Button variant="quiet" icon={<X />} removes aria-label={`Unset the ${label} value`} title="Unset this window" onClick={(event) => {
               event.preventDefault();
               void remove();
-            }}
-          >
-            <X className="h-3 w-3" />
-          </button>
+            }} className="absolute top-1/2 opacity-0 focus-visible:opacity-100 group-hover:opacity-100" />
         ) : null}
       </div>
       <span

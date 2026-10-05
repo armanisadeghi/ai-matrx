@@ -158,19 +158,15 @@ export function OrgBoxPicker({
           {loadError && (
             <div className="flex items-center gap-2 type-secondary text-destructive">
               <span className="min-w-0 flex-1 truncate" title={loadError}>{loadError}</span>
-              <button
-                type="button"
-                className="font-medium text-primary hover:underline"
-                onClick={() => {
+              <Button variant="link" onClick={() => {
                   setLoadError(null);
                   void loadOrgDirectory(true).then(() => {
                     setTeams(null);
                     setMembers(null);
                   });
-                }}
-              >
+                }}>
                 Retry
-              </button>
+              </Button>
             </div>
           )}
           <div className="min-h-0 flex-1 overflow-y-auto rounded-md border border-border bg-card p-1">
@@ -240,9 +236,9 @@ export function OrgBoxPicker({
               <span>{writeOrgId ? `Creates in ${writeOrgName ?? "your organization"}` : "Choose where new positions go"}</span>
               <OrganizationPickerPopover
                 trigger={
-                  <button type="button" className="font-medium text-primary hover:underline">
+                  <Button variant="link">
                     {writeOrgId ? "Change" : "Choose organization"}
-                  </button>
+                  </Button>
                 }
               />
             </div>

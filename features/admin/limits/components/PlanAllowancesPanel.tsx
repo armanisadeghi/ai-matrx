@@ -43,7 +43,7 @@ import { Loader2, Plus, X } from "lucide-react";
 import { formatFileSize } from "@ai-matrx/kit/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system/controls";
+import { Button as ControlButton, Input } from "@ai-matrx/design-system/controls";
 import {
   Select,
   SelectContent,
@@ -247,15 +247,7 @@ function LimitCell({
           <Loader2 className="absolute right-[-14px] top-1/2 h-3 w-3 -translate-y-1/2 animate-spin text-muted-foreground" />
         ) : (
           existing && (
-            <button
-              type="button"
-              className="absolute right-[-15px] top-1/2 flex h-4 w-4 -translate-y-1/2 items-center justify-center rounded-sm text-muted-foreground opacity-0 hover:text-destructive focus-visible:opacity-100 group-hover:opacity-100"
-              aria-label={`Remove the ${periodLabel(column.period)} window from ${plan.name}`}
-              title="Remove this window"
-              onClick={() => void remove()}
-            >
-              <X className="h-3 w-3" />
-            </button>
+            <ControlButton variant="quiet" icon={<X />} removes aria-label={`Remove the ${periodLabel(column.period)} window from ${plan.name}`} title="Remove this window" onClick={() => void remove()} className="absolute right-[-15px] top-1/2 opacity-0 focus-visible:opacity-100 group-hover:opacity-100" />
           )
         )}
       </div>

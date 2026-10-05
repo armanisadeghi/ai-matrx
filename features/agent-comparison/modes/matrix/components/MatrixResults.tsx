@@ -33,6 +33,7 @@ import { selectMatrixCells, selectMatrixSetup } from "../redux/selectors";
 import type { MatrixCell, MatrixVariant } from "../types";
 
 import { Spinner } from "@/components/ui/loaders/Spinner";
+import { Button } from "@ai-matrx/design-system/controls";
 const nf = new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 });
 const nf1 = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
 
@@ -100,21 +101,9 @@ export function MatrixResults({
     <div className="space-y-4">
       {hasHistory && (
         <div className="flex justify-end">
-          <button
-            type="button"
-            aria-pressed={withHistory}
-            onClick={() => setWithHistory((v) => !v)}
-            title="Count the spend of earlier attempts in the totals"
-            className={cn(
-              "inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border text-xs",
-              withHistory
-                ? "border-primary bg-primary/10 text-primary"
-                : "border-border text-muted-foreground hover:text-foreground hover:bg-muted",
-            )}
-          >
-            <History className="w-3.5 h-3.5" />
+          <Button variant="outline" pressed={withHistory} icon={<History />} onClick={() => setWithHistory((v) => !v)} title="Count the spend of earlier attempts in the totals">
             Earlier attempts
-          </button>
+          </Button>
         </div>
       )}
       <div className="overflow-x-auto rounded-lg border border-border bg-card">
@@ -366,16 +355,9 @@ function CellDetail({
             Conversation
           </a>
         )}
-        <button
-          type="button"
-          onClick={onRerun}
-          disabled={busy || (!!cell && (cell.status === "running" || cell.status === "queued") && !cell.stalled)}
-          className="inline-flex items-center gap-1 h-6 px-2 rounded hover:bg-muted disabled:opacity-40"
-          title={cell?.status === "completed" ? "Run this cell again; spends another run" : "Run this cell"}
-        >
-          <RotateCw className="w-3 h-3" />
+        <Button variant="quiet" icon={<RotateCw />} onClick={onRerun} disabled={busy || (!!cell && (cell.status === "running" || cell.status === "queued") && !cell.stalled)} title={cell?.status === "completed" ? "Run this cell again; spends another run" : "Run this cell"}>
           {cell ? "Re-run" : "Run"}
-        </button>
+        </Button>
       </div>
       {cell?.error && <div className="text-destructive break-words">{cell.error}</div>}
       {cell?.stalled && <div className="text-warning">Runner stopped responding</div>}

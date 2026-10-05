@@ -1,7 +1,7 @@
 "use client";
 
 import { Badge as StatusBadge } from "@ai-matrx/design-system/controls";
-import {  } from "@ai-matrx/design-system/controls";
+import { Button, } from "@ai-matrx/design-system/controls";
 import React, { useCallback, useState } from "react";
 import {
   X,
@@ -588,20 +588,14 @@ function MessageCard({
         <span className="type-meta text-muted-foreground/50 shrink-0">
           #{index}
         </span>
-        <button
-          type="button"
-          onClick={(e) => {
+        <Button variant="quiet" icon={copied ? (
+            <Check />
+          ) : (
+            <Copy />
+          )} glyphTone="success" onClick={(e) => {
             e.stopPropagation();
             copy();
-          }}
-          className="opacity-0 group-hover:opacity-100 h-4 w-4 flex items-center justify-center rounded text-muted-foreground hover:text-foreground transition-all shrink-0"
-        >
-          {copied ? (
-            <Check className="h-3 w-3 text-success" />
-          ) : (
-            <Copy className="h-3 w-3" />
-          )}
-        </button>
+          }} aria-label="Copy" className="opacity-0 group-hover:opacity-100 shrink-0" />
       </div>
       {open && (
         <pre className="px-4 pb-3 type-secondary font-mono text-foreground whitespace-pre-wrap leading-relaxed bg-muted/10">
@@ -728,21 +722,14 @@ function AgentSidebarItem({
             {agent.instanceIds.length}
           </span>
         )}
-        <button
-          type="button"
-          onClick={(e) => {
+        <Button variant="quiet" icon={copied ? (
+            <Check />
+          ) : (
+            <Copy />
+          )} glyphTone="success" onClick={(e) => {
             e.stopPropagation();
             copy();
-          }}
-          className="opacity-0 group-hover:opacity-100 h-4 w-4 flex items-center justify-center rounded text-muted-foreground hover:text-foreground transition-all shrink-0"
-          title="Copy agent ID"
-        >
-          {copied ? (
-            <Check className="h-3 w-3 text-success" />
-          ) : (
-            <Copy className="h-3 w-3" />
-          )}
-        </button>
+          }} title="Copy agent ID" aria-label="Copy agent ID" className="opacity-0 group-hover:opacity-100 shrink-0" />
       </div>
       {open && agent.hasInstances && (
         <div className="pl-2">
@@ -830,21 +817,14 @@ function InstanceSidebarRow({
       >
         <EntityDoorControls token="conversation" id={conversationId} />
       </div>
-      <button
-        type="button"
-        onClick={(e) => {
+      <Button variant="quiet" icon={copied ? (
+          <Check />
+        ) : (
+          <Copy />
+        )} glyphTone="success" onClick={(e) => {
           e.stopPropagation();
           copy();
-        }}
-        className="opacity-0 group-hover:opacity-100 h-4 w-4 flex items-center justify-center rounded text-muted-foreground hover:text-foreground transition-all shrink-0"
-        title="Copy conversation ID"
-      >
-        {copied ? (
-          <Check className="h-3 w-3 text-success" />
-        ) : (
-          <Copy className="h-3 w-3" />
-        )}
-      </button>
+        }} title="Copy conversation ID" aria-label="Copy conversation ID" className="opacity-0 group-hover:opacity-100 shrink-0" />
     </div>
   );
 }
@@ -957,22 +937,9 @@ function AgentDebugTabBar({
         const disabled = requiresInstance && !conversationId;
         const isActive = activeTab === key;
         return (
-          <button
-            key={key}
-            type="button"
-            disabled={disabled}
-            onClick={() => onActivate(key)}
-            className={cn(
-              "flex items-center gap-1.5 px-3 h-8 text-xs whitespace-nowrap transition-colors shrink-0 border-b-2 -mb-px",
-              isActive
-                ? "border-primary text-foreground font-medium"
-                : "border-transparent text-muted-foreground hover:text-foreground hover:bg-accent/50",
-              disabled && "opacity-30 cursor-not-allowed",
-            )}
-          >
-            <Icon className="h-3 w-3 shrink-0" />
+          <Button variant="quiet" pressed={isActive} icon={<Icon />} key={key} disabled={disabled} onClick={() => onActivate(key)} className="shrink-0 -mb-px">
             {label}
-          </button>
+          </Button>
         );
       })}
     </div>

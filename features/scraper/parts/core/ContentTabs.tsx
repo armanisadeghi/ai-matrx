@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Button } from "@ai-matrx/design-system/controls";
 
 interface ContentTabsProps {
   activeTab: string;
@@ -47,13 +48,7 @@ const ContentTabs = ({ activeTab, setActiveTab }: ContentTabsProps) => {
   return (
     <div className="relative w-full rounded-t-none">
       {/* Scroll buttons visible on smaller screens */}
-      <button
-        onClick={() => scrollTabs("left")}
-        className="absolute left-0 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-textured shadow-md md:hidden"
-        aria-label="Scroll left"
-      >
-        <ChevronLeft size={18} />
-      </button>
+      <Button variant="quiet" icon={<ChevronLeft size={18} />} onClick={() => scrollTabs("left")} aria-label="Scroll left" className="absolute left-0 top-1/2 z-10 md:hidden" />
 
       <TabsList
         ref={tabsRef}
@@ -69,13 +64,7 @@ const ContentTabs = ({ activeTab, setActiveTab }: ContentTabsProps) => {
         ))}
       </TabsList>
 
-      <button
-        onClick={() => scrollTabs("right")}
-        className="absolute right-0 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-textured shadow-md md:hidden"
-        aria-label="Scroll right"
-      >
-        <ChevronRight size={18} />
-      </button>
+      <Button variant="quiet" icon={<ChevronRight size={18} />} onClick={() => scrollTabs("right")} aria-label="Scroll right" className="absolute right-0 top-1/2 z-10 md:hidden" />
     </div>
   );
 };

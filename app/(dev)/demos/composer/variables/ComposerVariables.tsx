@@ -15,7 +15,7 @@
 
 import { useRef, useState, type ReactNode } from "react";
 import { Building2, RotateCcw } from "lucide-react";
-import { SegmentedControl } from "@ai-matrx/design-system/controls";
+import { Button, SegmentedControl } from "@ai-matrx/design-system/controls";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { AgentConversationColumn } from "@ai-matrx/chat/agents/components/shared/AgentConversationColumn";
 import { useCanvasWorkspaceConversation } from "@ai-matrx/chat/canvas/workspace/useCanvasWorkspaceConversation";
@@ -98,17 +98,15 @@ export function ComposerVariables({ initialMode }: { initialMode: ComposerMode |
         message={chat.conversation.reason}
         operation="Open the demo conversation"
         actions={
-          <button type="button" onClick={chat.conversation.retry} className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-sm hover:bg-accent">
-            <RotateCcw className="h-3.5 w-3.5" /> Try again
-          </button>
+          <Button variant="outline" icon={<RotateCcw />} onClick={chat.conversation.retry}> Try again
+          </Button>
         }
       />
     );
   } else if (chat.conversation.state === "needs-organization") {
     body = (
-      <button type="button" onClick={chat.conversation.choose} className="m-auto inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-sm hover:bg-accent">
-        <Building2 className="h-3.5 w-3.5" /> Choose organization
-      </button>
+      <Button variant="outline" icon={<Building2 />} onClick={chat.conversation.choose} className="m-auto"> Choose organization
+      </Button>
     );
   } else if (!conversationId) {
     body = <div className="m-auto h-24 w-4/5 animate-pulse rounded-[22px] bg-muted" aria-busy="true" />;
@@ -133,18 +131,9 @@ export function ComposerVariables({ initialMode }: { initialMode: ComposerMode |
       </div>
       <div className="flex shrink-0 flex-wrap items-center justify-center gap-1.5 px-4 pb-2">
         {QUICK_PICKS.map((q) => (
-          <button
-            key={q.id}
-            type="button"
-            title={q.id}
-            onClick={() => pick(q.id)}
-            className={cn(
-              "h-6 rounded-md px-2 text-xs transition-colors",
-              agentId === q.id ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent hover:text-foreground",
-            )}
-          >
+          <Button variant="quiet" pressed={agentId === q.id} key={q.id} title={q.id} onClick={() => pick(q.id)}>
             {q.label} · {q.types}
-          </button>
+          </Button>
         ))}
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto">
@@ -169,17 +158,9 @@ function WidthFrame({ children }: { children: ReactNode }) {
     <div className="flex flex-col items-center gap-2">
       <div className="flex items-center gap-1.5">
         {PRESETS.map((w) => (
-          <button
-            key={w}
-            type="button"
-            onClick={() => apply(w)}
-            className={cn(
-              "h-6 rounded-md px-2 text-xs tabular-nums transition-colors",
-              width === w ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent hover:text-foreground",
-            )}
-          >
+          <Button variant="quiet" pressed={width === w} key={w} onClick={() => apply(w)}>
             {w}
-          </button>
+          </Button>
         ))}
       </div>
       <div

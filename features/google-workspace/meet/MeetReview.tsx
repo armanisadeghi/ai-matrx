@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Skeleton, } from "@ai-matrx/design-system";
-import { Input, Tile } from "@ai-matrx/design-system/controls";
+import { Button as ControlButton, Input, Tile } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 import { GoogleAccountSelect } from "@/features/google-workspace/GoogleAccountSelect";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
@@ -431,14 +431,7 @@ function MeetReviewBodyInner({
                 </p>
               ) : (
                 conferencePage.conferences.map((item) => (
-                  <button
-                    key={item.name}
-                    type="button"
-                    data-clickable
-                    className="min-h-11 w-full min-w-0 rounded-md border border-border p-3 text-left text-sm"
-                    onClick={() => selectConference(item.name)}
-                    disabled={busy !== null}
-                  >
+                  <ControlButton variant="outline" key={item.name} data-clickable onClick={() => selectConference(item.name)} disabled={busy !== null} className="w-full min-w-0">
                     <span className="block min-w-0 font-medium [overflow-wrap:anywhere]">
                       {item.space_name}
                     </span>
@@ -447,7 +440,7 @@ function MeetReviewBodyInner({
                       {item.transcripts.state} · recordings:{" "}
                       {item.recordings.state}
                     </span>
-                  </button>
+                  </ControlButton>
                 ))
               )}
               {conferencePage.next_page_token && conferenceSource ? (

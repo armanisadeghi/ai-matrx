@@ -23,6 +23,7 @@ import type { SklRenderDefinition } from "../../redux/skl/types";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { publishedToWebLabel } from "@/lib/row-access";
+import { Button } from "@ai-matrx/design-system/controls";
 
 /**
  * Classification badges — surfaces the block_type / web-state fidelity the
@@ -333,14 +334,7 @@ function RenderBlockDetail({
   return (
     <div className="flex flex-col h-full min-h-0">
       <div className="flex items-center gap-3 px-4 py-3 shrink-0 border-b border-border/40">
-        <button
-          type="button"
-          onClick={onBack}
-          className="inline-flex items-center justify-center h-8 w-8 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-          aria-label="Back"
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </button>
+        <Button variant="quiet" icon={<ArrowLeft />} onClick={onBack} aria-label="Back" />
         <div className="flex flex-col min-w-0 flex-1">
           <div className="flex items-center gap-1.5 min-w-0">
             <span className="type-title text-foreground truncate">
