@@ -63,7 +63,7 @@ try {
       await cardEl.scrollIntoViewIfNeeded();
       await shot("2-card");
       await cardEl.getByRole("button", { name: /^Approve$/ }).click();
-      const dlg = page.getByRole("dialog");
+      const dlg = page.locator('[role="dialog"],[role="alertdialog"]').filter({ hasText: "Approve 1" }).first();
       await dlg.waitFor({ timeout: 20000 });
       console.log("dialog:", JSON.stringify((await dlg.innerText()).replace(/\s+/g, " ")));
       await shot("2b-confirm");
@@ -77,6 +77,17 @@ try {
     const seen = await until("clinic", async () => /Cedar Ridge - (Irvine|Costa Mesa)/.exec(await page.locator("body").innerText())?.[0], 90000);
     await shot("4-crm");
     console.log("clinic on page:", seen.v);
+    if (process.argv[3] === "archive") {
+      await page.getByRole("button", { name: /Move to trash/ }).first().click();
+      const dlg = page.locator('[role="dialog"]:not([data-nextjs-dialog]),[role="alertdialog"]').filter({ hasText: /trash/i }).first();
+      await dlg.waitFor({ timeout: 20000 });
+      console.log("dialog:", JSON.stringify((await dlg.innerText()).replace(/\s+/g, " ")));
+      await shot("5-trash-confirm");
+      await dlg.getByRole("button", { name: /trash|archive|move/i }).last().click();
+      await sleep(4000);
+      await shot("6-after-trash");
+      console.log("after:", page.url());
+    }
   }
 } finally {
   await browser.close();
