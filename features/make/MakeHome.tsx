@@ -38,7 +38,7 @@ import {
 } from "@ai-matrx/records-ui";
 
 import PageHeader from "@/features/shell/components/header/PageHeader";
-import HeaderStructured from "@/features/shell/components/header/variants/variants/HeaderStructured";
+import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Skeleton } from "@ai-matrx/design-system";
@@ -192,11 +192,11 @@ export default function MakeHome() {
   return (
     <>
       <PageHeader>
-        <HeaderStructured back title="Make" />
+        <RecordPageHeader backHref="/" record={{ name: "Make" }} />
       </PageHeader>
       <div className="h-full overflow-y-auto overflow-x-hidden bg-textured">
         <div className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 pb-16 pt-[calc(var(--shell-header-h)+1.25rem)] sm:px-6">
-          <section className="flex flex-col gap-3" aria-labelledby="make-heading">
+          <section className="flex flex-col gap-6" aria-labelledby="make-heading">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h1 id="make-heading" className="text-2xl font-semibold tracking-tight text-foreground">
                 What do you want to make?

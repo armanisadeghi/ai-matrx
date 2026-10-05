@@ -141,7 +141,7 @@ export function DescribeBox() {
         Describe it
       </h2>
       <form
-        className="flex flex-col gap-2 sm:flex-row sm:items-start"
+        className="relative"
         onSubmit={(e) => {
           e.preventDefault();
           void start();
@@ -158,14 +158,16 @@ export function DescribeBox() {
           }}
           placeholder="A patient intake form that books the first visit"
           aria-label="Describe what to make"
-          rows={2}
+          rows={3}
           disabled={busy}
-          className="min-h-[2.75rem] flex-1 resize-none"
+          className="w-full resize-none pb-12"
           data-make-describe-input=""
         />
-        <Button iconEnd={busy ? null : <ArrowRight aria-hidden />} variant="primary" type="submit" disabled={busy || !sentence.trim()} aria-busy={busy || undefined} data-make-describe-go="">
-          {run.phase === "writing" ? `Designing… ${elapsed}` : run.phase === "installing" ? `Building… ${elapsed}` : "Make it"}
-        </Button>
+        <div className="absolute bottom-2 right-2">
+          <Button iconEnd={busy ? null : <ArrowRight aria-hidden />} variant="primary" type="submit" disabled={busy || !sentence.trim()} aria-busy={busy || undefined} data-make-describe-go="">
+            {run.phase === "writing" ? `Designing… ${elapsed}` : run.phase === "installing" ? `Building… ${elapsed}` : "Make it"}
+          </Button>
+        </div>
       </form>
 
       {askOrganization && !organizationId ? (
