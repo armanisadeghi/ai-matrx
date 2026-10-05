@@ -114,12 +114,9 @@ export default function ServerCacheManager() {
                 {/* Header */}
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+                        <h1 title="Manage and refresh server-side caches" className="text-3xl font-bold text-gray-900 dark:text-gray-100">
                             Server Cache Management
                         </h1>
-                        <p className="text-gray-600 dark:text-gray-400 mt-2">
-                            Manage and refresh server-side caches
-                        </p>
                     </div>
                     {cacheItems.length > 1 && (
                         <Button

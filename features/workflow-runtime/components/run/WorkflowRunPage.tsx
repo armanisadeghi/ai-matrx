@@ -293,12 +293,9 @@ export function WorkflowRunPage({
   } else {
     body = (
       <div className="mx-auto w-full max-w-3xl px-4 py-6">
-        <h1 className="text-2xl font-semibold text-foreground">
+        <h1 title="Tell it what to work with, then press Run." className="text-2xl font-semibold text-foreground">
           {workflow.name}
         </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Tell it what to work with, then press Run.
-        </p>
         <div className="mt-5">
           <RunStartForm
             definitionId={workflow.id}

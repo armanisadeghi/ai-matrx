@@ -196,11 +196,6 @@ export function AiWorkConnections() {
             <h1 className="text-lg font-semibold text-foreground">
               Connections and sync
             </h1>
-            <p className="mt-1 max-w-3xl text-sm leading-relaxed text-muted-foreground">
-              Connection facts are kept separate: account identity,
-              authorization, client detection, session delivery, and history
-              sync do not prove one another.
-            </p>
           </div>
           <Button asChild variant="outline">
             <Link href="/agent-connections/plugins" target="_blank" rel="noopener noreferrer">

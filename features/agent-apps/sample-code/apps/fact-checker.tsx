@@ -67,15 +67,12 @@ export default function FactCheckerApp({
       {/* ── Hero header — only before first submit ── */}
       {!hasSubmitted && (
         <div className="pt-4 pb-8">
-          <h1 className="flex items-center gap-2.5 text-3xl font-bold tracking-tight text-foreground">
+          <h1 title="Enter any claim for evidence-based analysis." className="flex items-center gap-2.5 text-3xl font-bold tracking-tight text-foreground">
             <div className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-sky-100 dark:bg-sky-900/30 shrink-0">
               <ShieldCheck className="w-4.5 h-4.5 text-sky-600 dark:text-sky-400" />
             </div>
             Fact Checker
           </h1>
-          <p className="mt-2 text-muted-foreground text-sm max-w-sm leading-relaxed">
-            Enter any claim for evidence-based analysis.
-          </p>
         </div>
       )}
 

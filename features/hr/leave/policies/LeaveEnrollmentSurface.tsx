@@ -342,14 +342,9 @@ export function LeaveEnrollmentSurface({ policyId }: { policyId: string }) {
               Back to the policy
             </Link>
           </Button>
-          <h1 className="text-base font-semibold text-foreground">
+          <h1 title="An enrolment is effective-dated and there is exactly one live enrolment per person per policy." className="text-base font-semibold text-foreground">
             Who is on {policy?.name ?? "this policy"}
           </h1>
-          <p className="text-xs leading-relaxed text-muted-foreground">
-            An enrolment is effective-dated and there is exactly one live enrolment per person
-            per policy. The policy year is stamped when somebody is enrolled and never moves
-            afterwards — moving it would re-cut a carry-over boundary that has already happened.
-          </p>
         </div>
 
         {/* ── The roster ───────────────────────────────────────────────── */}

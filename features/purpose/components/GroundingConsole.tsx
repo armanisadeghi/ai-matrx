@@ -199,11 +199,7 @@ export function GroundingConsole() {
   return (
     <div className="flex h-full flex-col overflow-hidden bg-textured">
       <div className="flex shrink-0 items-center gap-2 border-b border-border px-4 py-2">
-        <h1 className="text-sm font-semibold">Purpose &amp; grounding</h1>
-        <p className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
-          Every unit of work declares what job it does. Units without one cannot be
-          measured against their own purpose.
-        </p>
+        <h1 title="Every unit of work declares what job it does." className="text-sm font-semibold">Purpose &amp; grounding</h1>
         <Button icon={<RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />} variant="quiet"
                 onClick={() => void load()} disabled={loading}>
           Refresh

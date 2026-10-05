@@ -321,13 +321,7 @@ export function GmailReadReview() {
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-col gap-4 p-4 sm:p-6">
       <div>
-        <h1 className="text-xl font-semibold">Gmail reading</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Search and open messages from the Google account you choose. Search
-          reads only when you ask. If this account has Gmail change access, you
-          can change an opened message with an explicit action. This screen does
-          not sync your whole mailbox or send email.
-        </p>
+        <h1 title="Search and open messages from the Google account you choose." className="text-xl font-semibold">Gmail reading</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           Gmail reading access lets this screen search for your words and show
           the body of a message you select. Sending access cannot read messages;

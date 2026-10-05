@@ -181,12 +181,9 @@ export function GradeWorkSurface() {
             <ScanText className="h-5 w-5" />
           </span>
           <div>
-            <h1 className="text-xl font-semibold leading-tight text-foreground">
+            <h1 title="Snap your worked solution — graded on meaning, step by step." className="text-xl font-semibold leading-tight text-foreground">
               Grade My Handwritten Work
             </h1>
-            <p className="text-sm text-muted-foreground">
-              Snap your worked solution — graded on meaning, step by step.
-            </p>
           </div>
         </div>
       </div>

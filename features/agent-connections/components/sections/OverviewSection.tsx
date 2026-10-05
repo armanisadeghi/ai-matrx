@@ -64,14 +64,9 @@ export function OverviewSection() {
       />
       <div className="flex-1 overflow-y-auto scrollbar-thin px-4 py-3 flex flex-col gap-4">
         <header className="flex flex-col gap-1">
-          <h1 className="text-lg font-semibold text-foreground">
+          <h1 title="Tailor how agents work in your projects." className="text-lg font-semibold text-foreground">
             Agent Connections
           </h1>
-          <p className="text-sm text-muted-foreground">
-            Tailor how agents work in your projects. Configure workspace
-            customizations for the entire team, or create personal ones that
-            follow you across projects.
-          </p>
         </header>
 
         {!search && (

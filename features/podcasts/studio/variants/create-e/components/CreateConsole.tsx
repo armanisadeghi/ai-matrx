@@ -153,12 +153,9 @@ export function CreateConsole() {
         <AudioLines className="h-4 w-4" />
       </span>
       <div className="min-w-0 flex-1 shrink leading-tight lg:flex-none">
-        <h1 className="truncate text-sm font-semibold text-foreground">
+        <h1 title="Source → script → cover → video → audio" className="truncate text-sm font-semibold text-foreground">
           New episode
         </h1>
-        <p className="hidden truncate text-[11px] text-muted-foreground lg:block">
-          Source → script → cover → video → audio
-        </p>
       </div>
 
       {/* Mobile/tablet pane toggles (below lg) */}

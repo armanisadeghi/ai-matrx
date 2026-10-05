@@ -105,13 +105,10 @@ export function CanvasDiscovery() {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
                     <div className="flex items-center justify-between gap-4">
                         <div className="space-y-1">
-                            <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                            <h1 title="Explore interactive content created by our community" className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
                                 <Grid3x3 className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                                 Discover Content
                             </h1>
-                            <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                                Explore interactive content created by our community
-                            </p>
                         </div>
                         <Link href={loginHref}>
                             <Button

@@ -184,14 +184,9 @@ export function CaptureTestSurface() {
     <div className="h-full overflow-y-auto bg-textured">
       <div className="mx-auto max-w-3xl space-y-4 p-4 sm:p-6">
         <header>
-          <h1 className="text-lg font-semibold text-foreground">
+          <h1 title="Prove the Web-Audio PCM → WAV capture core." className="text-lg font-semibold text-foreground">
             Fast Fire — audio capture test
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Prove the Web-Audio PCM → WAV capture core. Each clip should be the
-            right length, contain real speech (non-silent), and carry a beep at its
-            start/stop boundaries.
-          </p>
         </header>
 
         {/* Mode + auto settings */}

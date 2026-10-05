@@ -185,10 +185,7 @@ export function GoogleMusicMixer() {
           <ArrowLeft className="h-4 w-4" /> Voice playground
         </Link>
         <div className="text-center">
-          <h1 className="text-sm font-semibold">Lyria realtime mixer</h1>
-          <p className="text-[11px] text-muted-foreground">
-            48 kHz stereo PCM · live weighted prompts
-          </p>
+          <h1 title="48 kHz stereo PCM · live weighted prompts" className="text-sm font-semibold">Lyria realtime mixer</h1>
         </div>
         <span className="rounded-full border px-2 py-1 text-[11px] capitalize text-muted-foreground">
           {connection}

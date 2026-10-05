@@ -600,13 +600,9 @@ function ContextItemsOrgView({
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
               {orgName}
             </p>
-            <h1 className="text-2xl font-bold text-foreground leading-tight">
+            <h1 title="Every field across all scope types in this organization, grouped by type." className="text-2xl font-bold text-foreground leading-tight">
               All context items
             </h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Every field across all scope types in this organization, grouped
-              by type.
-            </p>
           </div>
         </div>
       </Card>

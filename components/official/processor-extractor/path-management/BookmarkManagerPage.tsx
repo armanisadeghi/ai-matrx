@@ -29,11 +29,7 @@ const BookmarkManagerPage: React.FC = () => {
         <div className="mb-4 flex items-center gap-3">
           <BookmarkIcon className="h-7 w-7 text-blue-500" />
           <div>
-            <h1 className="text-3xl font-bold">Bookmark Manager</h1>
-            <p className="text-gray-500 dark:text-gray-400 max-w-3xl">
-              Manage all your saved paths and bookmarks across the application. You can filter bookmarks by configuration, 
-              search by text, and sort by various fields. Click on a bookmark to view its details.
-            </p>
+            <h1 title="Manage all your saved paths and bookmarks across the application." className="text-3xl font-bold">Bookmark Manager</h1>
           </div>
         </div>
         

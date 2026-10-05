@@ -340,16 +340,9 @@ export default function TasksView() {
     <div className="p-4 sm:p-6 space-y-6 max-w-6xl mx-auto">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">
+          <h1 title="Sources that need help to capture content." className="text-xl font-semibold tracking-tight">
             Capture Tasks
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground max-w-2xl">
-            Sources that need help to capture content. The Chrome extension
-            handles Levels 1 and 2 automatically; Levels 3 and 4 need you in the
-            loop. You can always end the cycle for any source by accepting it
-            as-is, marking it a dead link, or asking for a retry — verdicts are
-            optional, the auto-pipeline keeps going if you ignore them.
-          </p>
         </div>
         <div className="flex items-center gap-3 shrink-0">
           <label className="flex items-center gap-2 text-xs text-muted-foreground select-none">

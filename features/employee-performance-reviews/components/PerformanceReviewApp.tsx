@@ -571,13 +571,9 @@ export default function PerformanceReviewApp({
               <div className="mx-auto max-w-[920px] p-3 pb-16 sm:p-6">
                 <div className="mb-4 flex items-center justify-between gap-4 rounded-xl border border-border bg-card px-4 py-3">
                   <div>
-                    <h1 className="text-base font-semibold">
+                    <h1 title="The print view and downloaded PDF use this same two-page layout." className="text-base font-semibold">
                       Finished report preview
                     </h1>
-                    <p className="text-xs text-muted-foreground">
-                      The print view and downloaded PDF use this same two-page
-                      layout.
-                    </p>
                   </div>
                   <span className="hidden rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary sm:inline-flex">
                     Letter · 2 pages
@@ -597,13 +593,9 @@ export default function PerformanceReviewApp({
                       <ClipboardList className="h-5 w-5" />
                     </div>
                     <div>
-                      <h1 className="text-xl font-bold tracking-tight">
+                      <h1 title="Draft the review, then preview the finished two-page report." className="text-xl font-bold tracking-tight">
                         Employee Performance Review
                       </h1>
-                      <p className="text-xs text-muted-foreground">
-                        Draft the review, then preview the finished two-page
-                        report.
-                      </p>
                     </div>
                   </div>
                 ) : null}

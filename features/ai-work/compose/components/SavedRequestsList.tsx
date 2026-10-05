@@ -83,13 +83,9 @@ export function SavedRequestsList() {
     <div className="mx-auto flex max-w-3xl flex-col gap-3 px-4 py-4">
       <header className="flex items-start justify-between gap-3">
         <div>
-          <h1 className="text-lg font-semibold text-foreground">
+          <h1 title="Requests you saved so you can run them again." className="text-lg font-semibold text-foreground">
             Saved requests
           </h1>
-          <p className="text-xs text-muted-foreground">
-            Requests you saved so you can run them again. These are yours —
-            nobody else sees them.
-          </p>
         </div>
         <Button variant="primary" asChild>
           <Link href="/work/new">

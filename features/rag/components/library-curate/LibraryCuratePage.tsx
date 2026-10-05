@@ -200,11 +200,7 @@ export function LibraryCuratePage() {
           )}
         >
           <div className="border-b border-border px-3 py-2.5">
-            <h1 className="text-sm font-semibold text-foreground">Curate</h1>
-            <p className="mt-0.5 text-xs text-muted-foreground">
-              Starter packs you author for your industry. Drafts are private until you submit
-              them.
-            </p>
+            <h1 title="Starter packs you author for your industry." className="text-sm font-semibold text-foreground">Curate</h1>
             <div className="relative mt-2">
               <Search
                 className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground"

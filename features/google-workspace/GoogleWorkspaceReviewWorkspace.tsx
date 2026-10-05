@@ -525,12 +525,9 @@ export function GoogleWorkspaceReviewWorkspace({
   return (
     <div className="mx-auto w-full max-w-6xl space-y-3 p-3 sm:p-4">
       <header>
-        <h1 className="text-2xl font-semibold tracking-tight">
+        <h1 title="Manage connected accounts and the Google access each one has." className="text-2xl font-semibold tracking-tight">
           Google Workspace
         </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Manage connected accounts and the Google access each one has.
-        </p>
       </header>
 
       {error && (

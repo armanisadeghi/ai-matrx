@@ -272,14 +272,10 @@ export function BlobCacheInspector() {
     <div className="flex flex-col gap-4 p-4 md:p-6">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-lg font-semibold flex items-center gap-2">
+          <h1 title="3-tier byte cache health for the current user." className="text-lg font-semibold flex items-center gap-2">
             <Layers className="h-4 w-4 text-primary" />
             Blob Cache Observability
           </h1>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            3-tier byte cache health for the current user. Stats refresh every
-            5s.
-          </p>
         </div>
         <div className="flex items-center gap-2">
           <Button

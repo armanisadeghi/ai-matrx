@@ -49,15 +49,12 @@ export default async function MyAccessLogPage() {
       <div className="h-full overflow-y-auto">
         <div className="mx-auto w-full max-w-3xl space-y-4 p-4 pt-[var(--shell-header-h)] sm:p-6 sm:pt-[var(--shell-header-h)]">
           <div className="space-y-1">
-            <h1 className="text-lg font-semibold">
+            <h1
+              className="text-lg font-semibold"
+              title="Emergency access is read-only, expires, and is logged here, including refusals"
+            >
               Every time anyone opened your data
             </h1>
-            <p className="text-sm text-muted-foreground">
-              Your private data cannot be read by an admin browsing around. The
-              only way in is an emergency door that is read-only, expires by
-              itself, and lands here — including the times someone asked and was
-              turned away.
-            </p>
           </div>
           <Suspense fallback={<AccessLogFeedSkeleton />}>
             <AccessLogFeed />

@@ -81,14 +81,9 @@ export function GoogleEmbeddingLab() {
       <main className="matrx-touch-targets h-full overflow-auto bg-background">
         <div className="mx-auto max-w-5xl space-y-6 px-4 py-7 sm:px-6">
           <header>
-            <h1 className="flex items-center gap-2 text-xl font-semibold">
+            <h1 title="Test the same catalog-routed Gemini embedding runtime available to the knowledge pipeline." className="flex items-center gap-2 text-xl font-semibold">
               <Binary className="h-5 w-5 text-primary" /> Gemini embedding lab
             </h1>
-            <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-              Test the same catalog-routed Gemini embedding runtime available to
-              the knowledge pipeline. Gemini Embedding 2 accepts text and
-              provider-readable image, audio, video, or PDF URIs.
-            </p>
           </header>
 
           <section className="grid gap-4 rounded-xl border border-border/60 bg-card p-4 sm:grid-cols-3">

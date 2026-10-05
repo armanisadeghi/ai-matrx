@@ -122,9 +122,11 @@ export default async function TopicalMapDoor({
             {map.description ? (
               <p className="mt-1 text-sm text-muted-foreground">{map.description}</p>
             ) : null}
-            <p className="mt-1 text-xs text-muted-foreground">
-              Status: {map.status}. You can read this map but not the brand it belongs to, so
-              nothing here can be changed — editing lives in the brand&apos;s workspace.
+            <p
+              className="mt-1 text-xs text-muted-foreground"
+              title="You can read this map but not its brand, so editing is unavailable"
+            >
+              Status: {map.status}
             </p>
           </div>
           <div className="flex items-center gap-2">

@@ -24,15 +24,9 @@ export function BringYourExportPage() {
       <div className="matrx-touch-targets h-full overflow-hidden">
         <div className="h-full overflow-y-auto overscroll-contain pb-safe">
           <div className="mx-auto w-full max-w-3xl px-4 pb-16 pt-[calc(var(--shell-header-h)+1rem)] sm:px-6">
-            <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
+            <h1 title="Every service will hand you your own data if you ask for it." className="text-xl font-semibold tracking-tight sm:text-2xl">
               Bring your export
             </h1>
-            <p className="mt-1.5 max-w-xl text-sm text-muted-foreground">
-              Every service will hand you your own data if you ask for it. Drop
-              what they gave you and you will see what it is, how much of it
-              there is, and what is worth keeping — in seconds.
-            </p>
-
             <ExportDropZone className="mt-5" />
 
             <AdapterCatalog className="mt-8" />

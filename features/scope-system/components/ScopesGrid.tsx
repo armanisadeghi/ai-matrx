@@ -66,12 +66,9 @@ export function ScopesGrid({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl md:text-3xl font-bold text-foreground">
+        <h1 title="Group what your team works on — clients, products, teams, anything." className="text-2xl md:text-3xl font-bold text-foreground">
           Scopes
         </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Group what your team works on — clients, products, teams, anything.
-        </p>
       </div>
 
       {loading && scopeTypes.length === 0 ? (

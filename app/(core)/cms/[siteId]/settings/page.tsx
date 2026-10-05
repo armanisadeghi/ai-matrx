@@ -238,13 +238,12 @@ export default function SiteSettingsPage() {
         <div className="px-4 sm:px-6 py-6 space-y-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div className="space-y-1">
-              <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+              <h1
+                className="text-2xl font-semibold tracking-tight text-foreground"
+                title={`Site identity, styling, navigation and shell for ${site.name}`}
+              >
                 Settings
               </h1>
-              <p className="max-w-2xl text-sm text-muted-foreground">
-                Manage site-wide identity, styling, navigation, and shell
-                behavior for {site.name}.
-              </p>
             </div>
             <div className="flex flex-col items-stretch gap-1.5 sm:items-end">
               <div className="flex items-center gap-2">

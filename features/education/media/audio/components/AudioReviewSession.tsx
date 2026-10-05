@@ -374,12 +374,9 @@ export function AudioReviewSession({
             aria-label="Back"
           />
           <div>
-            <h1 className="text-lg font-semibold text-foreground">
+            <h1 title="Questions read aloud — you answer by voice, graded on meaning." className="text-lg font-semibold text-foreground">
               Audio review
             </h1>
-            <p className="text-xs text-muted-foreground">
-              Questions read aloud — you answer by voice, graded on meaning.
-            </p>
           </div>
         </div>
         <select

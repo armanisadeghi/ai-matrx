@@ -178,13 +178,9 @@ export function PdfManipulationWorkbench({
         <div className="mx-auto flex max-w-[1600px] flex-col gap-2">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <h1 className="text-base font-semibold text-foreground">
+              <h1 title="Same viewer + ManipulationPanel as PDF Extractor — pick a cloud PDF, then use the right rail (crop draws on the left pane)." className="text-base font-semibold text-foreground">
                 PDF manipulation workbench
               </h1>
-              <p className="text-xs text-muted-foreground">
-                Same viewer + ManipulationPanel as PDF Extractor — pick a cloud
-                PDF, then use the right rail (crop draws on the left pane).
-              </p>
             </div>
             {source.payload ? (
               <Button

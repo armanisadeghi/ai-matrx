@@ -240,14 +240,9 @@ export default function ResearchYouTubePage() {
             <p className="text-sm font-medium text-red-600 dark:text-red-400">
               Permanent topic sources
             </p>
-            <h1 className="mt-2 text-3xl font-semibold tracking-tight">
+            <h1 title="Each video is linked to this topic, while its metadata, comments, transcript, and structured analysis are stored once and reused everywhere." className="mt-2 text-3xl font-semibold tracking-tight">
               YouTube research library
             </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-              Each video is linked to this topic, while its metadata, comments,
-              transcript, and structured analysis are stored once and reused
-              everywhere.
-            </p>
           </div>
 
           {loading ? (

@@ -313,12 +313,6 @@ export default function ProofRunsClient() {
             <ShieldCheck className="h-5 w-5" />
             Proof Runs
           </h1>
-          <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
-            Checks that call real providers so their result means something —
-            and then prove it from the cost ledger rather than taking the
-            code&apos;s word for it. Every run is measured; a skipped proof is
-            never a pass.
-          </p>
         </div>
         <div className="flex items-center gap-2">
           <div className="rounded-md border border-border px-3 py-2 text-right">

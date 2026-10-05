@@ -579,11 +579,7 @@ function ComposerBody({
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-3 px-4 py-4">
       <header>
-        <h1 className="text-lg font-semibold text-foreground">Start work</h1>
-        <p className="text-xs text-muted-foreground">
-          Say what you want done, choose who does it and what they should know,
-          then run it now or save it to run again.
-        </p>
+        <h1 title="Say what you want done, choose who does it and what they should know, then run it now or save it to run again." className="text-lg font-semibold text-foreground">Start work</h1>
       </header>
 
       <ComposerSection

@@ -346,16 +346,13 @@ export function AssessmentCreate({ kind }: { kind: AssessmentKind }) {
             <Icon className="h-6 w-6" />
           </div>
           <div>
-            <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight text-foreground">
+            <h1 title="Generate graded questions from a topic, a deck, or a document." className="flex items-center gap-2 text-xl font-semibold tracking-tight text-foreground">
               New {config.label.toLowerCase()}
               <IntelligenceIndicator
                 feature="education"
                 mandateKeys={[ASSESSMENT_MANDATES.generateQuiz, ASSESSMENT_MANDATES.generateQuizFromSource]}
               />
             </h1>
-            <p className="text-sm text-muted-foreground">
-              Generate graded questions from a topic, a deck, or a document.
-            </p>
           </div>
         </div>
 

@@ -55,13 +55,12 @@ export default function UtilitiesHubPage() {
             <Calculator className="h-3.5 w-3.5" />
             Settlement utilities
           </div>
-          <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-foreground">
+          <h1
+            className="text-3xl sm:text-4xl font-semibold tracking-tight text-foreground"
+            title="Settlement modeling and life-pension projections"
+          >
             Projection &amp; modeling tools
           </h1>
-          <p className="mt-2 max-w-2xl text-sm sm:text-base text-muted-foreground">
-            Quick utilities for settlement modeling and life-pension
-            projections. Use these alongside a rating from the PD calculator.
-          </p>
         </div>
 
       <main className="mx-auto w-full max-w-5xl px-4 sm:px-6 lg:px-8 py-8 sm:py-10">

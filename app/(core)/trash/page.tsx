@@ -344,14 +344,13 @@ export default function TrashPage() {
         {pending.length > 0 && (
           <section className="space-y-2 pb-4">
             <div>
-              <h2 className="text-foreground text-sm font-semibold">
+              <h2
+                className="text-foreground text-sm font-semibold"
+                title="Keep an item and it stays"
+              >
                 {/* destroy-label-ok: the retention policy's schedule, shown honestly; no button purges */}
                 Scheduled to be deleted for good
               </h2>
-              <p className="text-muted-foreground text-sm">
-                You deleted these, so they&apos;re on their way out. Changed
-                your mind? Keep them and they stay.
-              </p>
             </div>
             {pending.map((group) => (
               <PendingGroup
@@ -408,13 +407,12 @@ export default function TrashPage() {
         {archived.length > 0 && (
           <section className="space-y-2 pt-6">
             <div>
-              <h2 className="text-foreground text-sm font-semibold">
+              <h2
+                className="text-foreground text-sm font-semibold"
+                title="Not deleted, only tucked away. Still yours."
+              >
                 Moved to long-term storage
               </h2>
-              <p className="text-muted-foreground text-sm">
-                Not deleted — just tucked away so the app stays fast. It&apos;s
-                still yours.
-              </p>
             </div>
             {archived.map((group) => (
               <ArchivedGroup

@@ -64,13 +64,9 @@ export function CreateView() {
           <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
             <Mic className="h-7 w-7" />
           </span>
-          <h1 className="text-xl font-semibold text-foreground">
+          <h1 title="The podcast studio turns any idea, document, or note into a fully produced two-host episode — with cover art, video, and audio." className="text-xl font-semibold text-foreground">
             Sign in to create podcasts
           </h1>
-          <p className="text-sm text-muted-foreground">
-            The podcast studio turns any idea, document, or note into a fully
-            produced two-host episode — with cover art, video, and audio.
-          </p>
           <Button variant="primary" asChild>
             <Link href="/login?next=/podcast/studio/create">
               <LogIn className="h-4 w-4" />

@@ -624,11 +624,7 @@ function NoPeriodChosen({ org }: { org: HrOrgRef }) {
   return (
     <div className="px-4 py-6">
       <section className="rounded-lg border border-border bg-card p-6">
-        <h1 className="text-base font-semibold">Choose a pay period</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          This grid approves one pay group&rsquo;s timecards for one pay period. Pick the period you
-          want to work through.
-        </p>
+        <h1 title="This grid approves one pay group's timecards for one pay period." className="text-base font-semibold">Choose a pay period</h1>
         <Link
           href={hrTimePeriodsHref(org)}
           className="mt-3 inline-flex text-sm font-medium underline underline-offset-4"
