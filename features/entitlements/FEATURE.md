@@ -421,9 +421,9 @@ webhook handlers in `app/api/stripe/webhook/route.ts`. FE consumers:
   `invoice.payment_failed`, `invoice.payment_action_required`, `invoice.paid`, and
   `invoice.upcoming`. The four invoice events retrieve the current Stripe subscription before
   applying the canonical mirror writer; they do not create grace, refund, or email policy.
-- **UNVERIFIABLE from this checkout:** the live Stripe Dashboard endpoint allowlists must be
-  checked to contain this exact twelve-event contract for both ledgers. A handler change alone
-  does not subscribe Stripe to new event types.
+- **Registration verified 2026-10-05 UTC:** both existing enabled Stripe endpoints were read,
+  augmented with the four invoice events, then read back with all twelve events and the original
+  eight preserved. This verifies event registration, not delivery or a production handler release.
 - Production keeps the live endpoint secret in `STRIPE_WEBHOOK_SECRET` and the test endpoint secret
   in `STRIPE_TEST_MODE_WEBHOOK_SECRET`. Preview/development use the established
   `STRIPE_WEBHOOK_SECRET` for test delivery. The verifier tries only configured modes and requires

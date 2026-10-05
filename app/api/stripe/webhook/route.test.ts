@@ -90,6 +90,8 @@ beforeAll(async () => {
 });
 
 beforeEach(() => {
+  // Each event exercises its own delivery; previous cases are not retries of it.
+  jest.clearAllMocks();
   jest.spyOn(console, "error").mockImplementation(() => {});
   verifyStripeWebhook.mockReturnValue({ event: invoiceEvent("invoice.payment_failed"), stripe });
   hasProcessedStripeEvent.mockResolvedValue(false);
