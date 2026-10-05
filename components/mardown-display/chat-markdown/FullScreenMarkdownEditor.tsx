@@ -189,7 +189,7 @@ function CopyIconButton({
         <Check />
       ) : (
         <Icon />
-      )} glyphTone="success" onClick={() => copy(text)} title={label}>
+      )} glyphTone={copied ? "success" : undefined} onClick={() => copy(text)} title={label}>
       {copied ? "Copied!" : label}
     </Button>
   );

@@ -332,7 +332,7 @@ const SectionViewerV2 = ({ data }: { data: unknown }) => {
                   <Check  size={16} />
                 ) : (
                   <Copy  size={16} />
-                )} glyphTone="success" onClick={handleCopy} title="Copy section content" aria-label="Copy section content" />
+                )} glyphTone={copied ? "success" : undefined} onClick={handleCopy} title="Copy section content" aria-label="Copy section content" />
             </div>
           </div>
           

@@ -169,7 +169,7 @@ const YamlBlock: React.FC<YamlBlockProps> = ({ content, className }) => {
             <Check />
           ) : (
             <Copy />
-          )} glyphTone="success" onClick={handleCopy} aria-label="Copy" />
+          )} glyphTone={copied ? "success" : undefined} onClick={handleCopy} aria-label="Copy" />
       </div>
       <div className="px-3 py-2 font-mono text-sm leading-relaxed overflow-x-auto">
         {visibleLines.map((idx) => {

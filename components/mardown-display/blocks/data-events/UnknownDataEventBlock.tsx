@@ -109,7 +109,7 @@ const UnknownDataEventBlock: React.FC<UnknownDataEventBlockProps> = ({
             variant="quiet"
             onClick={handleCopyForAi}
             title="Copy full failure context for an AI agent"
-            icon={aiCopied ? <Check /> : <AGENT_ICON />}
+            icon={aiCopied ? <Check />  : <AGENT_ICON />}
           >
             Copy for AI
           </Button>
@@ -117,7 +117,7 @@ const UnknownDataEventBlock: React.FC<UnknownDataEventBlockProps> = ({
               <Check />
             ) : (
               <Copy />
-            )} glyphTone="success" onClick={handleCopy} title="Copy JSON" aria-label="Copy JSON" />
+            )} glyphTone={aiCopied ? "success" : undefined} onClick={handleCopy} title="Copy JSON" aria-label="Copy JSON" />
           <Button variant="quiet" icon={isExpanded ? (
               <ChevronUp />
             ) : (

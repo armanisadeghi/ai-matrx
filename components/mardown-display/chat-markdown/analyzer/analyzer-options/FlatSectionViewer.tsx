@@ -131,10 +131,10 @@ const FlatSectionViewer = ({ data, bookmark }: FlatSectionViewerProps) => {
           {/* Header */}
           <div className="p-4 border-b border-border bg-gray-50 dark:bg-gray-900">
             <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <div className="flex items-center gap-3">
+              <div className="min-w-0 flex-1">
+                <div className="flex min-w-0 items-center gap-3">
                   {selectedSection?.icon}
-                  <h3 className="font-semibold text-gray-800 dark:text-gray-200">
+                  <h3 className="min-w-0 truncate font-semibold text-gray-800 dark:text-gray-200">
                     {selectedSection?.title || "Unknown Section"}
                   </h3>
                   
@@ -143,7 +143,7 @@ const FlatSectionViewer = ({ data, bookmark }: FlatSectionViewerProps) => {
                     variant="outline"
                     onClick={() => setShowRawContent(!showRawContent)}
                     aria-pressed={showRawContent}
-                    icon={showRawContent ? <EyeOff /> : <Eye />}
+                    icon={showRawContent ? <EyeOff />  : <Eye />}
                     title={showRawContent ? "Switch to rendered markdown" : "Switch to raw content"}
                   >
                     {showRawContent ? "Raw" : "Rendered"}
@@ -160,7 +160,7 @@ const FlatSectionViewer = ({ data, bookmark }: FlatSectionViewerProps) => {
                         <Check  size={12} />
                       ) : (
                         <Copy  size={12} />
-                      )} glyphTone="success" onClick={handleBookmarkCopy} title="Copy bookmark path" aria-label="Copy bookmark path" />
+                      )} glyphTone={bookmarkCopied ? "success" : undefined} onClick={handleBookmarkCopy} title="Copy bookmark path" aria-label="Copy bookmark path" />
                   </div>
                 )}
               </div>
@@ -169,7 +169,7 @@ const FlatSectionViewer = ({ data, bookmark }: FlatSectionViewerProps) => {
                   <Check  size={16} />
                 ) : (
                   <Copy  size={16} />
-                )} glyphTone="success" onClick={handleCopy} title="Copy section content" aria-label="Copy section content" />
+                )} glyphTone={copied ? "success" : undefined} className="shrink-0" onClick={handleCopy} title="Copy section content" aria-label="Copy section content" />
             </div>
           </div>
           

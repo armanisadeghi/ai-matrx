@@ -734,7 +734,7 @@ const TroubleshootingBlock: React.FC<TroubleshootingBlockProps> = ({
                                                                               <Check />
                                                                             ) : (
                                                                               <Copy />
-                                                                            )} glyphTone="success" onClick={() =>
+                                                                            )} glyphTone={isCopied ? "success" : undefined} onClick={() =>
                                                                               copyCommand(
                                                                                 command,
                                                                                 commandId,

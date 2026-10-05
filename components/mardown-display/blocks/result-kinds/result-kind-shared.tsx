@@ -357,7 +357,7 @@ export const CopyValueButton: React.FC<{ text: string; what: string }> = ({
         <Check />
       ) : (
         <Copy />
-      )} glyphTone="success" aria-label={`Copy ${what}`} title={`Copy ${what}`} onClick={(event) => {
+      )} glyphTone={copied ? "success" : undefined} aria-label={`Copy ${what}`} title={`Copy ${what}`} onClick={(event) => {
         event.stopPropagation();
         void copyText(text, `${what} copied`);
         setCopied(true);

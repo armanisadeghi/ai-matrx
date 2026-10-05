@@ -142,7 +142,7 @@ const TreeBlock: React.FC<TreeBlockProps> = ({ content, className }) => {
             <Check />
           ) : (
             <Copy />
-          )} glyphTone="success" onClick={handleCopy} aria-label="Copy" />
+          )} glyphTone={copied ? "success" : undefined} onClick={handleCopy} aria-label="Copy" />
       </div>
       <div
         data-tree-wrap={wrap ? "wrap" : "scroll"}

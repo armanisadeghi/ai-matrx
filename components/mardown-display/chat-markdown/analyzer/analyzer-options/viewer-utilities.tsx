@@ -437,7 +437,7 @@ export const JsonFallback: React.FC<JsonFallbackProps> = ({
                   <Check  size={16} />
                 ) : (
                   <Copy  size={16} />
-                )} glyphTone="success" onClick={handleCopy} title="Copy JSON data" aria-label="Copy JSON data" />
+                )} glyphTone={copied ? "success" : undefined} onClick={handleCopy} title="Copy JSON data" aria-label="Copy JSON data" />
             </div>
           </div>
           

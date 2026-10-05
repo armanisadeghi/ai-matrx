@@ -212,7 +212,7 @@ const SectionViewer = ({ data }: { data: unknown }) => {
                         <Check  size={14} />
                       ) : (
                         <Copy  size={14} />
-                      )} glyphTone="success" onClick={() => copyToClipboard(section.content, index)} title="Copy to clipboard" aria-label="Copy to clipboard" />
+                      )} glyphTone={copiedIndex === index ? "success" : undefined} onClick={() => copyToClipboard(section.content, index)} title="Copy to clipboard" aria-label="Copy to clipboard" />
                   </div>
                   
                   <div className="pl-1">

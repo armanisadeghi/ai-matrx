@@ -208,7 +208,7 @@ export function LessonScriptSectionCard({
               <Check />
             ) : (
               <Copy />
-            )} glyphTone="success" onClick={() => void handleCopy()} title="Copy this section's script" aria-label="Copy this section's script" className="shrink-0" />
+            )} glyphTone={copied ? "success" : undefined} onClick={() => void handleCopy()} title="Copy this section's script" aria-label="Copy this section's script" className="shrink-0" />
         )}
       </div>
 

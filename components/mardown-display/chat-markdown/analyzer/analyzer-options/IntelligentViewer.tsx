@@ -431,7 +431,7 @@ const IntelligentViewer = ({ data, bookmark }: IntelligentViewerProps) => {
                                                 <Check  size={12} />
                                             ) : (
                                                 <Copy  size={12} />
-                                            )} glyphTone="success" onClick={handleBookmarkCopy} title="Copy bookmark path" aria-label="Copy bookmark path" />
+                                            )} glyphTone={bookmarkCopied ? "success" : undefined} onClick={handleBookmarkCopy} title="Copy bookmark path" aria-label="Copy bookmark path" />
                                     </div>
                                 )}
                             </div>
@@ -439,7 +439,7 @@ const IntelligentViewer = ({ data, bookmark }: IntelligentViewerProps) => {
                                     <Check  size={16} />
                                 ) : (
                                     <Copy  size={16} />
-                                )} glyphTone="success" onClick={handleCopy} title="Copy section content" aria-label="Copy section content" />
+                                )} glyphTone={copied ? "success" : undefined} onClick={handleCopy} title="Copy section content" aria-label="Copy section content" />
                         </div>
                     </div>
 

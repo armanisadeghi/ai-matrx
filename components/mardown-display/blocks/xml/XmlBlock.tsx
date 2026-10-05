@@ -163,7 +163,7 @@ const XmlBlock: React.FC<XmlBlockProps> = ({
             <Check />
           ) : (
             <Copy />
-          )} glyphTone="success" aria-label="Copy XML" onClick={handleCopy} />
+          )} glyphTone={copied ? "success" : undefined} aria-label="Copy XML" onClick={handleCopy} />
       </div>
       {!cardCollapsed && (
         <div

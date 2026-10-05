@@ -260,7 +260,7 @@ const SectionViewerWithSidebar = ({ data }: { data: unknown }) => {
                         <Check  size={16} />
                       ) : (
                         <Copy  size={16} />
-                      )} glyphTone="success" onClick={copyToClipboard} title="Copy section content" aria-label="Copy section content" />
+                      )} glyphTone={copied ? "success" : undefined} onClick={copyToClipboard} title="Copy section content" aria-label="Copy section content" />
                   )}
                 </div>
               </div>

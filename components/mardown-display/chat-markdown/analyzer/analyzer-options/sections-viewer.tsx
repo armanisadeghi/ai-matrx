@@ -77,7 +77,7 @@ const JsonFallback = ({ data, onCopy }: { data: unknown; onCopy: () => void }) =
                   <Check  size={16} />
                 ) : (
                   <Copy  size={16} />
-                )} glyphTone="success" onClick={handleCopy} title="Copy JSON data" aria-label="Copy JSON data" />
+                )} glyphTone={copied ? "success" : undefined} onClick={handleCopy} title="Copy JSON data" aria-label="Copy JSON data" />
             </div>
           </div>
           
@@ -379,7 +379,7 @@ const SectionsViewer = ({ data }: { data: unknown }) => {
                   <Check  size={16} />
                 ) : (
                   <Copy  size={16} />
-                )} glyphTone="success" onClick={copyToClipboard} title="Copy section content" aria-label="Copy section content" />
+                )} glyphTone={copiedData ? "success" : undefined} onClick={copyToClipboard} title="Copy section content" aria-label="Copy section content" />
             </div>
           </div>
           

@@ -86,7 +86,7 @@ export const PresentationPublishModal: React.FC<PresentationPublishModalProps> =
                                             <CheckCircle2  size={18} />
                                         ) : (
                                             <Copy  size={18} />
-                                        )} glyphTone="success" onClick={handleCopyUrl} title="Copy URL" aria-label="Copy URL" />
+                                        )} glyphTone={copiedUrl ? "success" : undefined} onClick={handleCopyUrl} title="Copy URL" aria-label="Copy URL" />
                                     <a
                                         href={publishedUrl}
                                         target="_blank"

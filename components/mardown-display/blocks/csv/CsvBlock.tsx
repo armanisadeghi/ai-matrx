@@ -210,7 +210,7 @@ const CsvBlock: React.FC<CsvBlockProps> = ({
               <Check />
             ) : (
               <Copy />
-            )} glyphTone="success" onClick={handleCopy} aria-label="Copy" />
+            )} glyphTone={copied ? "success" : undefined} onClick={handleCopy} aria-label="Copy" />
         </div>
       </div>
       <div className="overflow-x-auto">
