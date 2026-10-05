@@ -193,9 +193,21 @@ one-live-registration law). Every tile ALSO registers into its own **capture**
 (`<SurfaceActivity capture>`, `createSurfaceCapture` — features/surfaces FEATURE.md), live or
 dormant; the host keeps them in an `ItemSurfaceIndex` (`BoardToolHost.itemSurfaces`).
 - **Request one — `board_items`**, on every turn: each item's id, title, kind, surface, `live`, and
-  for a dormant item its **basics** (`surfaceBrief`: the manifest's `briefValues`, projected small),
-  bounded (`BOARD_ITEMS_MAX`, `BOARD_ITEMS_BRIEF_BUDGET_CHARS`, stated in `limits`). The live item
-  carries none: its full surface already reaches the agent as a surface-chain level.
+  for a dormant item its **basics** (`surfaceBrief`: the manifest's `briefValues` in order, projected
+  small), plus one line `read_in_full`: `board_open_item(id)` reads any item. **Fair share**: each
+  item with basics gets `BOARD_ITEMS_BRIEF_BUDGET_CHARS (8000) / count` characters, between
+  `ITEM_BASICS_FLOOR_CHARS` (70: its name plus one fact, never zero) and `ITEM_BASICS_CEILING_CHARS`
+  (1200: four values of 160 characters on a small board). The share sets how many values (4 → 3 → 2)
+  and how long their text is (160 → 100 → 60 → 30, shortened further to fit); `limits` states the
+  share in force. The first 80 items (`BOARD_ITEMS_MAX`) are listed in full; up to 300 more are a
+  compact `more_items` tail (id + title), so nothing on the board is invisible.
+- **Selected = full.** The live tile is `focused ?? editing ?? selected` (`useIsLiveTile`), the one
+  tile registered globally, so with nothing else going on the selected tile IS live and its full
+  surface is a chain level. When the person works in or focuses another tile, the selected tile is
+  dormant: its row is marked `selected` and carries `full_values` (every declared value, capped at
+  `SELECTED_FULL_MAX_CHARS`) instead of basics. `BoardSurface` marks exactly one row `live` (it used
+  to mark the selected, worked-in and focused tiles all live, so a dormant selected tile read "its
+  full surface is in your context" when it was not).
 - **Request two, same turn — `board_open_item(id)`**: the item's declared values (with descriptions,
   capped) and controls — write-target lines from `describeAgentWritableTargets` (the injected
   `apply_surface_write` wording) and client tools with schemas — and it selects the item (a parked
