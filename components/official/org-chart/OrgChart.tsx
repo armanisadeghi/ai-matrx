@@ -203,13 +203,20 @@ export function OrgChart<T>({
 
   // ── remembered view (per browser; a convenience, never state that matters) ──
   const storageKey = persistKey ? `matrx:org-chart:${persistKey}` : null;
-  const loadedPersist = useRef(false);
+  // The key whose saved view has been read: a new key (another chart in the same
+  // mounted component) reads ITS view before anything is written under it.
+  const loadedPersist = useRef<string | null>(null);
+  const skipNextWrite = useRef(false);
   useEffect(() => {
-    if (!storageKey || loadedPersist.current) return;
-    loadedPersist.current = true;
+    if (!storageKey || loadedPersist.current === storageKey) return;
+    loadedPersist.current = storageKey;
+    skipNextWrite.current = true; // this pass still holds the previous view
     try {
       const raw = window.localStorage.getItem(storageKey);
-      if (!raw) return;
+      if (!raw) {
+        setCollapsed(new Set());
+        return;
+      }
       const saved = JSON.parse(raw) as { collapsed?: unknown; minimap?: unknown };
       if (Array.isArray(saved.collapsed)) {
         setCollapsed(new Set(saved.collapsed.filter((k): k is string => typeof k === "string")));
@@ -221,7 +228,11 @@ export function OrgChart<T>({
   }, [storageKey]);
   const collapsedKey = [...collapsed].sort().join("|");
   useEffect(() => {
-    if (!storageKey || !loadedPersist.current) return;
+    if (!storageKey || loadedPersist.current !== storageKey) return;
+    if (skipNextWrite.current) {
+      skipNextWrite.current = false;
+      return;
+    }
     try {
       window.localStorage.setItem(
         storageKey,
@@ -355,8 +366,13 @@ export function OrgChart<T>({
     keys: string[];
     x: number;
     y: number;
+    /** Where it was picked up. */
+    ox: number;
+    oy: number;
     target: string | null;
     accept: boolean;
+    /** Carried past the slop since it was picked up — a hold and release is not a drop. */
+    moved: boolean;
   } | null>(null);
   const dragRef = useRef<{
     key: string;
@@ -367,22 +383,40 @@ export function OrgChart<T>({
     timer: number | null;
   } | null>(null);
   const swallowClick = useRef(false);
+  /** Set while we cancel the card's own long-press; that synthetic cancel is not ours to act on. */
+  const ignoreCancel = useRef(false);
   /** The drag as the pointer handlers see it (state is for rendering only). */
   const liveDrag = useRef<typeof drag>(null);
 
-  const targetAt = (clientX: number, clientY: number, keys: string[]) => {
-    for (const el of document.elementsFromPoint(clientX, clientY)) {
-      const key = (el as HTMLElement).closest?.("[data-org-key]")?.getAttribute("data-org-key");
-      if (key && !keys.includes(key)) return key;
-      if (key) return null;
+  /**
+   * What a release at this point means. Only open canvas inside the chart is a
+   * "drop on nothing" — over the carried card itself, over chart chrome (toolbar,
+   * legend, minimap, menus) or outside the chart, the drag is called off.
+   */
+  const dropAt = (
+    clientX: number,
+    clientY: number,
+    keys: string[],
+  ): { kind: "card"; key: string } | { kind: "canvas" } | { kind: "cancel" } => {
+    const rect = viewportRef.current?.getBoundingClientRect();
+    if (!rect || clientX < rect.left || clientX > rect.right || clientY < rect.top || clientY > rect.bottom) {
+      return { kind: "cancel" };
     }
-    return null;
+    for (const el of document.elementsFromPoint(clientX, clientY)) {
+      const h = el as HTMLElement;
+      if (h === viewportRef.current) return { kind: "canvas" };
+      const key = h.closest?.("[data-org-key]")?.getAttribute("data-org-key");
+      if (key) return keys.includes(key) ? { kind: "cancel" } : { kind: "card", key };
+      if (h.closest?.("[data-no-pan]")) return { kind: "cancel" };
+      if (!viewportRef.current?.contains(h)) return { kind: "cancel" }; // something laid over the chart
+    }
+    return { kind: "cancel" };
   };
 
   const beginDrag = (key: string, clientX: number, clientY: number) => {
     const keys = selectedSet.has(key) ? selection.slice() : [key];
     if (!selectedSet.has(key)) setSelection([key]);
-    liveDrag.current = { keys, x: clientX, y: clientY, target: null, accept: false };
+    liveDrag.current = { keys, x: clientX, y: clientY, ox: clientX, oy: clientY, target: null, accept: false, moved: false };
     setDrag(liveDrag.current);
   };
 
@@ -391,6 +425,8 @@ export function OrgChart<T>({
     if (e.pointerType === "mouse" && e.button !== 0) return;
     if ((e.target as HTMLElement).closest("button, a, input, textarea, select, [data-no-drag]")) return;
     const start = { key, startX: e.clientX, startY: e.clientY, pointerType: e.pointerType, active: false, timer: null as number | null };
+    const pressed = e.currentTarget as HTMLElement | null;
+    const pointerId = e.pointerId;
     if (e.pointerType === "touch") {
       // A finger pans the canvas; holding still on a card for a moment picks it up instead.
       start.timer = window.setTimeout(() => {
@@ -398,6 +434,11 @@ export function OrgChart<T>({
         if (!d || d.active) return;
         d.active = true;
         cancelGesture();
+        // The card's context menu opens on its own long-press (~700ms); a synthetic
+        // cancel ends that timer. Our own window listener ignores it.
+        ignoreCancel.current = true;
+        pressed?.dispatchEvent(new PointerEvent("pointercancel", { bubbles: true, pointerId, pointerType: "touch" }));
+        ignoreCancel.current = false;
         beginDrag(d.key, d.startX, d.startY);
       }, 450);
     } else {
@@ -424,9 +465,11 @@ export function OrgChart<T>({
       ev.preventDefault();
       const cur = liveDrag.current;
       if (!cur) return;
-      const target = targetAt(ev.clientX, ev.clientY, cur.keys);
-      const accept = target ? (canDrop ? canDrop(cur.keys, target) : true) : true;
-      liveDrag.current = { ...cur, x: ev.clientX, y: ev.clientY, target, accept };
+      const at = dropAt(ev.clientX, ev.clientY, cur.keys);
+      const target = at.kind === "card" ? at.key : null;
+      const accept = target ? (canDrop ? canDrop(cur.keys, target) : true) : at.kind === "canvas";
+      const moved = cur.moved || Math.hypot(ev.clientX - cur.ox, ev.clientY - cur.oy) > 4;
+      liveDrag.current = { ...cur, x: ev.clientX, y: ev.clientY, target, accept, moved };
       setDrag(liveDrag.current);
       // Nudge the canvas when the card is carried to an edge.
       const rect = viewportRef.current?.getBoundingClientRect();
@@ -438,6 +481,7 @@ export function OrgChart<T>({
       }
     };
     const up = (ev: PointerEvent) => {
+      if (ev.type === "pointercancel" && ignoreCancel.current) return;
       cleanup();
       // Whatever happened in between, a release always ends a drag in progress.
       if (!liveDrag.current) return;
@@ -446,7 +490,17 @@ export function OrgChart<T>({
       const cur = liveDrag.current;
       liveDrag.current = null;
       setDrag(null);
-      if (cur && (!cur.target || cur.accept)) onDrop(cur.keys, cur.target, { x: ev.clientX, y: ev.clientY });
+      // A cancelled pointer, a hold with no carry, or a release that isn't a drop
+      // place (the card itself, chrome, outside the chart) changes nothing.
+      if (!cur || ev.type === "pointercancel" || !cur.moved) return;
+      const at = dropAt(ev.clientX, ev.clientY, cur.keys);
+      if (at.kind === "cancel") return;
+      if (at.kind === "card") {
+        if (canDrop && !canDrop(cur.keys, at.key)) return;
+        onDrop(cur.keys, at.key, { x: ev.clientX, y: ev.clientY });
+      } else {
+        onDrop(cur.keys, null, { x: ev.clientX, y: ev.clientY });
+      }
     };
     const key_ = (ev: KeyboardEvent) => {
       if (ev.key === "Escape") {
@@ -454,6 +508,9 @@ export function OrgChart<T>({
         liveDrag.current = null;
         setDrag(null);
       }
+    };
+    const noMenu = (ev: Event) => {
+      if (liveDrag.current) ev.preventDefault(); // a held card is being carried, not asking for its menu
     };
     const cleanup = () => {
       const d = dragRef.current;
@@ -464,12 +521,14 @@ export function OrgChart<T>({
       window.removeEventListener("pointercancel", up);
       window.removeEventListener("keydown", key_);
       window.removeEventListener("blur", cancelOnBlur);
+      window.removeEventListener("contextmenu", noMenu, true);
     };
     window.addEventListener("pointermove", move, { passive: false });
     window.addEventListener("pointerup", up);
     window.addEventListener("pointercancel", up);
     window.addEventListener("keydown", key_);
     window.addEventListener("blur", cancelOnBlur);
+    window.addEventListener("contextmenu", noMenu, true);
   };
   /** The window lost focus mid-drag (alt-tab, a system dialog): drop nothing. */
   const cancelOnBlur = () => {
@@ -750,6 +809,7 @@ export function OrgChart<T>({
               ? `Moving ${drag.keys.length}`
               : `Moving ${dragLabel ? dragLabel(nodeData(roots, drag.keys[0]) as T) : ""}`.trim()}
             {drag.target && !drag.accept && <span className="text-destructive">· can&apos;t go there</span>}
+            {drag.moved && !drag.target && !drag.accept && <span className="text-muted-foreground">· let go to cancel</span>}
           </div>
         )}
 
@@ -919,7 +979,8 @@ function Minimap<T>({
       <svg
         width={w}
         height={h}
-        className="cursor-pointer overflow-hidden"
+        data-clickable=""
+        className="overflow-hidden"
         onClick={(e) => {
           const rect = e.currentTarget.getBoundingClientRect();
           onJump((e.clientX - rect.left) / scale, (e.clientY - rect.top) / scale);

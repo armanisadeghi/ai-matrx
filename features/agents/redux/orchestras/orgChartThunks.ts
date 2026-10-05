@@ -10,6 +10,7 @@ import type { RootState } from "@/lib/redux/rootReducer";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import { orgChartService } from "@/features/agents/org-chart/orgChartService";
 import { orchestrasActions } from "./slice";
+import type { ManualOrgEdge } from "@/features/agents/org-chart/buildAgentOrgForest";
 import { positionsService, type OrgPosition } from "@/features/agents/org-chart/positionsService";
 import type { RecordedLinkKind } from "@/features/agents/org-chart/constants";
 
@@ -18,8 +19,12 @@ type AppThunk<R = void> = ThunkAction<R, RootState, unknown, UnknownAction>;
 export interface OrgChartWriteResult {
   ok: boolean;
   error?: string;
-  /** The refusal was a loop (the chosen manager already sits under the agent). */
+  /** The refusal was a loop (the chosen manager already sits under the box). */
   loop?: boolean;
+  /** Nothing to do: the box already sat there. */
+  unchanged?: boolean;
+  /** A hand-off or dotted line this pair held before, which the placement replaced. */
+  replaced?: ManualOrgEdge;
 }
 
 const inFlight = new Set<string>();
@@ -36,11 +41,12 @@ export function loadManualOrgEdges(
     );
     if (ids.length === 0) return;
     ids.forEach((id) => inFlight.add(id));
+    const startedAtSeq = getState().orchestras.manualOrgChart.writeSeq;
     dispatch(orchestrasActions.manualOrgPending());
     try {
       const res = await orgChartService.listManualEdges(ids, opts?.direction ?? "out");
       if (isScopesRpcErr(res)) dispatch(orchestrasActions.manualOrgRejected(res.error.message));
-      else dispatch(orchestrasActions.manualOrgFulfilled({ managerIds: ids, edges: res.data }));
+      else dispatch(orchestrasActions.manualOrgFulfilled({ managerIds: ids, edges: res.data, startedAtSeq }));
     } finally {
       ids.forEach((id) => inFlight.delete(id));
     }
@@ -75,15 +81,15 @@ async function sitsUnder(managerId: string, reportId: string): Promise<boolean |
 const placing = new Set<string>();
 
 /**
- * Place `reportId` under `managerId` by hand. An agent has at most ONE manual
+ * Place `reportId` under `managerId` by hand. A box has at most ONE manual
  * manager, so any existing manual placement is replaced. Refuses a placement
- * that would put an agent under its own team — a loop has no top to draw.
+ * that would put a box under its own team — a loop has no top to draw.
  */
 export function setManualManager(managerId: string, reportId: string): AppThunk<Promise<OrgChartWriteResult>> {
-  return async (dispatch) => {
-    // One placement per agent at a time: a double click or a second tab must
-    // not read "no manager" twice and leave the agent with two.
-    if (placing.has(reportId)) return { ok: false, error: "That agent is already being moved. Try again in a moment." };
+  return async (dispatch, getState) => {
+    // One placement per box at a time: a double click or a second tab must
+    // not read "no manager" twice and leave the box with two.
+    if (placing.has(reportId)) return { ok: false, error: "That box is already being moved. Try again in a moment." };
     placing.add(reportId);
     try {
       const loop = await sitsUnder(managerId, reportId);
@@ -94,21 +100,31 @@ export function setManualManager(managerId: string, reportId: string): AppThunk<
           loop: true,
           error:
             managerId === reportId
-              ? "An agent can't sit under itself."
-              : "That agent already sits under this one, so this would make a loop. Move it first.",
+              ? "A box can't sit under itself."
+              : "That box already sits under this one, so this would make a loop. Move it first.",
         };
       }
       const current = await orgChartService.listManagersOf(reportId);
       if (isScopesRpcErr(current)) return { ok: false, error: current.error.message };
-      if (current.data.some((e) => e.managerId === managerId)) return { ok: true };
+      if (current.data.some((e) => e.managerId === managerId)) return { ok: true, unchanged: true };
+
+      // The pair may already hold a hand-off or dotted line: the placement
+      // re-types that one record, so a failure must put it back.
+      const pairEdge = getState().orchestras.manualOrgChart.edges.find(
+        (e) => e.managerId === managerId && e.reportId === reportId && !e.edgeId.startsWith("pending:"),
+      );
 
       // Add the new link FIRST, then drop the old ones: a failure part-way
-      // never leaves the agent with no manager at all.
+      // never leaves the box with no manager at all.
+      dispatch(orchestrasActions.manualOrgEdgeRemoved({ managerId, reportId }));
       const temp = { edgeId: `pending:${managerId}:${reportId}`, managerId, reportId, kind: "reports_to" as const };
       dispatch(orchestrasActions.manualOrgEdgeAdded(temp));
       const res = await orgChartService.add(managerId, reportId, "reports_to");
       dispatch(orchestrasActions.manualOrgEdgeRemoved({ managerId, reportId }));
-      if (isScopesRpcErr(res)) return { ok: false, error: res.error.message };
+      if (isScopesRpcErr(res)) {
+        if (pairEdge) dispatch(orchestrasActions.manualOrgEdgeAdded(pairEdge));
+        return { ok: false, error: res.error.message };
+      }
       dispatch(
         orchestrasActions.manualOrgEdgeAdded({ edgeId: res.data.id, managerId, reportId, kind: "reports_to" }),
       );
@@ -120,11 +136,11 @@ export function setManualManager(managerId: string, reportId: string): AppThunk<
           dispatch(orchestrasActions.manualOrgEdgeAdded(e));
           return {
             ok: false,
-            error: `Placed it under the new agent, but could not take it out from under the old one: ${rm.error.message}`,
+            error: `Placed it under the new box, but could not take it out from under the old one: ${rm.error.message}`,
           };
         }
       }
-      return { ok: true };
+      return pairEdge ? { ok: true, replaced: pairEdge } : { ok: true };
     } finally {
       placing.delete(reportId);
     }
