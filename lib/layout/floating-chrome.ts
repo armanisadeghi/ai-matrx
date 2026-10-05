@@ -34,7 +34,18 @@ export const FLOATING_BOTTOM_SELECTOR = [
   ".ambient-assistant-dock",
   // The mobile nav dock (features/shell/components/dock/MobileDock).
   ".shell-dock",
+  // A toast (components/ui/sonner.tsx): while it shows, the page's runway grows by it so the
+  // content under it can scroll clear — it covered /cms cards at 375 with nothing else floating.
+  // It RESTS ABOVE the other chrome, so its own offset reads FLOATING_BELOW_TOASTS_VAR, never a
+  // measure that includes itself (that would lift it without end).
+  '[data-sonner-toast]:not([data-removed="true"])',
 ].join(", ");
+
+/** The toasts — floating chrome that stacks above the rest. */
+export const FLOATING_TOAST_SELECTOR = "[data-sonner-toast]";
+
+/** The measure WITHOUT the toasts: where the toast stack rests (styles/shell.css --matrx-toast-clearance). */
+export const FLOATING_BELOW_TOASTS_VAR = "--matrx-floating-below-toasts";
 
 /** The CSS variable FloatingClearanceSync writes on <html>. */
 export const FLOATING_MEASURED_VAR = "--matrx-floating-measured";

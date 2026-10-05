@@ -1924,6 +1924,13 @@ body[style*="pointer-events: none"] {
     max(var(--matrx-floating-measured, 0px), env(safe-area-inset-bottom, 0px)) +
       var(--matrx-page-end)
   );
+  /* Where the toast stack rests: above every OTHER floating thing. The toasts
+     themselves are in --matrx-floating-measured (the page's runway grows while
+     one shows), never in this one, or a toast would lift itself without end. */
+  --matrx-toast-clearance: calc(
+    max(var(--matrx-floating-below-toasts, 0px), env(safe-area-inset-bottom, 0px)) +
+      var(--matrx-page-end)
+  );
 }
 
 .shell-main::after,
