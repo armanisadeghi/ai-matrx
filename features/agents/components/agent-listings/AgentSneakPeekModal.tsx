@@ -14,8 +14,8 @@ import {
 import {
   Tabs,
   TabsContent,
-  TabsListLegacy as TabsList,
-  TabsTriggerCoreLegacy as TabsTriggerCore,
+  TabsList,
+  TabsTriggerCore,
 } from "@/components/ui/tabs";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -123,10 +123,6 @@ function buildOverviewJson(definition: AgentDefinition): string {
   };
   return JSON.stringify(overview, null, 2);
 }
-
-// Shared tab trigger styling — small, flat, underline-on-active.
-const TAB_TRIGGER_CLASS =
-  "rounded-none border-b-2 border-transparent bg-transparent shadow-none text-xs font-medium px-3 py-1 h-auto text-muted-foreground hover:text-foreground data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-primary data-[state=active]:text-primary";
 
 const SYSTEM_PROMPT_PREVIEW_CHARS = 1000;
 const MESSAGE_PREVIEW_CHARS = 500;
@@ -396,23 +392,23 @@ export function AgentSneakPeekContent({
       defaultValue="summary"
       className={cn("flex flex-col gap-3", className)}
     >
-      <TabsList className="h-auto bg-transparent p-0 gap-0 rounded-none border-b border-border justify-start w-full shrink-0 sticky top-0 z-10 backdrop-blur">
-        <TabsTriggerCore value="summary" className={TAB_TRIGGER_CLASS}>
+      <TabsList variant="underline" overflow="scroll" className="w-full shrink-0 sticky top-0 z-10 backdrop-blur">
+        <TabsTriggerCore value="summary">
           Summary
         </TabsTriggerCore>
-        <TabsTriggerCore value="input" className={TAB_TRIGGER_CLASS}>
+        <TabsTriggerCore value="input">
           Input
         </TabsTriggerCore>
-        <TabsTriggerCore value="output" className={TAB_TRIGGER_CLASS}>
+        <TabsTriggerCore value="output">
           Output
         </TabsTriggerCore>
-        <TabsTriggerCore value="full" className={TAB_TRIGGER_CLASS}>
+        <TabsTriggerCore value="full">
           Full JSON
         </TabsTriggerCore>
-        <TabsTriggerCore value="core" className={TAB_TRIGGER_CLASS}>
+        <TabsTriggerCore value="core">
           Execution Core
         </TabsTriggerCore>
-        <TabsTriggerCore value="overview" className={TAB_TRIGGER_CLASS}>
+        <TabsTriggerCore value="overview">
           Overview
         </TabsTriggerCore>
       </TabsList>

@@ -20,7 +20,7 @@
 
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Tabs, TabsContent, TabsListLegacy as TabsList, TabsTriggerLegacy as TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Building2,
   FileUp,
@@ -70,36 +70,31 @@ export function SharedKnowledgeAdminClient({
       >
         {/* Mobile: 44px, non-shrinking triggers + horizontal scroll so every
             tab remains readable and reachable on narrow screens. */}
-        <TabsList className="h-auto w-fit max-w-full overflow-x-auto">
+        <TabsList overflow="scroll" className="max-w-full">
           <TabsTrigger
             value="industries"
-            className="min-h-11 shrink-0 whitespace-nowrap px-3 py-2.5 sm:min-h-0 sm:py-1.5"
           >
-            <Layers className="mr-1.5 h-3.5 w-3.5" /> Industries
+            <Layers className="h-3.5 w-3.5" /> Industries
           </TabsTrigger>
           <TabsTrigger
             value="stores"
-            className="min-h-11 shrink-0 whitespace-nowrap px-3 py-2.5 sm:min-h-0 sm:py-1.5"
           >
-            <Building2 className="mr-1.5 h-3.5 w-3.5" /> Stores & grants
+            <Building2 className="h-3.5 w-3.5" /> Stores & grants
           </TabsTrigger>
           <TabsTrigger
             value="packs"
-            className="min-h-11 shrink-0 whitespace-nowrap px-3 py-2.5 sm:min-h-0 sm:py-1.5"
           >
-            <Package className="mr-1.5 h-3.5 w-3.5" /> Starter packs
+            <Package className="h-3.5 w-3.5" /> Starter packs
           </TabsTrigger>
           <TabsTrigger
             value="ingest"
-            className="min-h-11 shrink-0 whitespace-nowrap px-3 py-2.5 sm:min-h-0 sm:py-1.5"
           >
-            <FileUp className="mr-1.5 h-3.5 w-3.5" /> Ingest
+            <FileUp className="h-3.5 w-3.5" /> Ingest
           </TabsTrigger>
           <TabsTrigger
             value="explorer"
-            className="min-h-11 shrink-0 whitespace-nowrap px-3 py-2.5 sm:min-h-0 sm:py-1.5"
           >
-            <SearchCheck className="mr-1.5 h-3.5 w-3.5" /> Access explorer
+            <SearchCheck className="h-3.5 w-3.5" /> Access explorer
           </TabsTrigger>
         </TabsList>
 

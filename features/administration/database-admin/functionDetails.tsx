@@ -5,7 +5,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Tabs, TabsListLegacy as TabsList, TabsTriggerLegacy as TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Copy, Save, AlertCircle, Key, Clock, Code, Info } from "lucide-react";
@@ -150,26 +150,24 @@ const FunctionDetails = ({
             }
             className="flex flex-col flex-1"
           >
-            <TabsList className="grid w-full h-auto grid-cols-2 sm:h-9 sm:grid-cols-4 mb-4">
+            <TabsList overflow="wrap" className="mb-4">
               <TabsTrigger
                 value="definition"
-                className="flex items-center gap-2"
               >
                 <Code className="h-4 w-4" />
                 Definition
               </TabsTrigger>
-              <TabsTrigger value="details" className="flex items-center gap-2">
+              <TabsTrigger value="details">
                 <Info className="h-4 w-4" />
                 Details
               </TabsTrigger>
               <TabsTrigger
                 value="permissions"
-                className="flex items-center gap-2"
               >
                 <Key className="h-4 w-4" />
                 Permissions
               </TabsTrigger>
-              <TabsTrigger value="usage" className="flex items-center gap-2">
+              <TabsTrigger value="usage">
                 <Clock className="h-4 w-4" />
                 Usage
               </TabsTrigger>

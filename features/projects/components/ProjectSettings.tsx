@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Settings, Users, Mail, AlertTriangle } from 'lucide-react';
-import { Tabs, TabsContent, TabsListLegacy as TabsList, TabsTriggerLegacy as TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { Project, ProjectRole } from '../types';
 import { GeneralSettings } from './GeneralSettings';
 import { MemberManagement } from './MemberManagement';
@@ -33,21 +33,21 @@ export function ProjectSettings({
   return (
     <div>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="w-full justify-start gap-1 h-auto p-1 mb-4">
-          <TabsTrigger value="general" className="gap-1.5 px-3 py-1.5 text-sm">
+        <TabsList overflow="scroll" className="mb-4">
+          <TabsTrigger value="general">
             <Settings className="h-3.5 w-3.5" />
             General
           </TabsTrigger>
 
           {canManageMembers && (
-            <TabsTrigger value="members" className="gap-1.5 px-3 py-1.5 text-sm">
+            <TabsTrigger value="members">
               <Users className="h-3.5 w-3.5" />
               Members
             </TabsTrigger>
           )}
 
           {canManageSettings && (
-            <TabsTrigger value="invitations" className="gap-1.5 px-3 py-1.5 text-sm">
+            <TabsTrigger value="invitations">
               <Mail className="h-3.5 w-3.5" />
               Invites
             </TabsTrigger>
@@ -56,7 +56,6 @@ export function ProjectSettings({
           {canDelete && (
             <TabsTrigger
               value="danger"
-              className="gap-1.5 px-3 py-1.5 text-sm text-red-600 dark:text-red-400 data-[state=active]:text-red-600"
             >
               <AlertTriangle className="h-3.5 w-3.5" />
               Danger

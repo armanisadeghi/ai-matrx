@@ -39,7 +39,7 @@ import {
 } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsListLegacy as TabsList, TabsTriggerLegacy as TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -827,12 +827,11 @@ export const SandboxDiagnosticsPanel = forwardRef<
         >
           <TabsList
             aria-label="Sandbox diagnostics sections"
-            className="h-auto w-full max-w-full justify-start gap-1 overflow-x-auto p-1"
+            overflow="scroll" className="max-w-full"
           >
             {showFilesystem && (
               <TabsTrigger
                 value="filesystem"
-                className="shrink-0 whitespace-nowrap max-md:min-h-11"
               >
                 Agent filesystem
               </TabsTrigger>
@@ -840,7 +839,6 @@ export const SandboxDiagnosticsPanel = forwardRef<
             {showEnv && (
               <TabsTrigger
                 value="agent-env"
-                className="shrink-0 whitespace-nowrap max-md:min-h-11"
               >
                 Agent env
               </TabsTrigger>
@@ -848,7 +846,6 @@ export const SandboxDiagnosticsPanel = forwardRef<
             {showEnv && (
               <TabsTrigger
                 value="env"
-                className="shrink-0 whitespace-nowrap max-md:min-h-11"
               >
                 Passthrough
               </TabsTrigger>
@@ -856,7 +853,6 @@ export const SandboxDiagnosticsPanel = forwardRef<
             {showEnv && (
               <TabsTrigger
                 value="secrets"
-                className="shrink-0 whitespace-nowrap max-md:min-h-11"
               >
                 Secrets injection
               </TabsTrigger>
@@ -864,7 +860,6 @@ export const SandboxDiagnosticsPanel = forwardRef<
             {showLogs && (
               <TabsTrigger
                 value="logs"
-                className="shrink-0 whitespace-nowrap max-md:min-h-11"
               >
                 Live logs
               </TabsTrigger>
@@ -872,7 +867,6 @@ export const SandboxDiagnosticsPanel = forwardRef<
             {showRaw && (
               <TabsTrigger
                 value="raw"
-                className="shrink-0 whitespace-nowrap max-md:min-h-11"
               >
                 Raw response
               </TabsTrigger>

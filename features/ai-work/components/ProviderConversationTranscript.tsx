@@ -18,7 +18,7 @@ import {
 import { RichContent } from "@/components/rich-content/RichContent";
 import AssociateTaskButton from "@/features/tasks/widgets/AssociateTaskButton";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsListLegacy as TabsList, TabsTriggerLegacy as TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ItemMenu } from "@/components/official/item/ItemMenu";
 import { buildConversationMenu } from "@ai-matrx/chat/agents/components/conversation-actions/conversationActionRegistry";
 import { useAppDispatch } from "@/lib/redux/hooks";
@@ -444,38 +444,33 @@ export function ProviderConversationTranscript({
         </div>
       </section>
       <Tabs defaultValue="conversation" className="mt-3">
-        <TabsList className="scrollbar-none h-auto w-full justify-start gap-0 overflow-x-auto rounded-none border-b border-border bg-transparent p-0">
+        <TabsList variant="underline" overflow="scroll" className="w-full">
           <TabsTrigger
             value="conversation"
-            className="min-h-10 shrink-0 gap-1.5 rounded-none border-b-2 border-transparent px-3 data-[state=active]:border-primary data-[state=active]:bg-transparent"
           >
             <MessageSquareText className="h-3.5 w-3.5" />
             Conversation
           </TabsTrigger>
           <TabsTrigger
             value="source"
-            className="min-h-10 shrink-0 gap-1.5 rounded-none border-b-2 border-transparent px-3 data-[state=active]:border-primary data-[state=active]:bg-transparent"
           >
             <Info className="h-3.5 w-3.5" />
             Source
           </TabsTrigger>
           <TabsTrigger
             value="files"
-            className="min-h-10 shrink-0 gap-1.5 rounded-none border-b-2 border-transparent px-3 data-[state=active]:border-primary data-[state=active]:bg-transparent"
           >
             <FileText className="h-3.5 w-3.5" />
             Files
           </TabsTrigger>
           <TabsTrigger
             value="analyze"
-            className="min-h-10 shrink-0 gap-1.5 rounded-none border-b-2 border-transparent px-3 data-[state=active]:border-primary data-[state=active]:bg-transparent"
           >
             <AGENT_ICON className="h-3.5 w-3.5" />
             Analyze
           </TabsTrigger>
           <TabsTrigger
             value="organize"
-            className="min-h-10 shrink-0 gap-1.5 rounded-none border-b-2 border-transparent px-3 data-[state=active]:border-primary data-[state=active]:bg-transparent"
           >
             <Network className="h-3.5 w-3.5" />
             Organize

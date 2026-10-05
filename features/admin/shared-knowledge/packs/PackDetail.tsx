@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Skeleton } from "@ai-matrx/design-system";
-import { Tabs, TabsContent, TabsListLegacy as TabsList, TabsTriggerLegacy as TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -290,38 +290,33 @@ export function PackDetail({
         defaultValue="overview"
         className="mt-2 flex min-h-0 flex-1 flex-col"
       >
-        <TabsList className="h-auto w-fit max-w-full overflow-x-auto">
+        <TabsList overflow="scroll" className="max-w-full">
           <TabsTrigger
             value="overview"
-            className="min-h-11 shrink-0 whitespace-nowrap px-2.5 py-2 text-xs sm:min-h-0 sm:py-1.5"
           >
             Overview
           </TabsTrigger>
           <TabsTrigger
             value="meaning"
-            className="min-h-11 shrink-0 whitespace-nowrap px-2.5 py-2 text-xs sm:min-h-0 sm:py-1.5"
           >
-            <ListChecks className="mr-1 size-3.5" /> Meaning{" "}
+            <ListChecks className="size-3.5" /> Meaning{" "}
             {detail.data.meaning.length}
           </TabsTrigger>
           <TabsTrigger
             value="topics"
-            className="min-h-11 shrink-0 whitespace-nowrap px-2.5 py-2 text-xs sm:min-h-0 sm:py-1.5"
           >
-            <TreePine className="mr-1 size-3.5" /> Topics{" "}
+            <TreePine className="size-3.5" /> Topics{" "}
             {detail.data.topics.length}
           </TabsTrigger>
           <TabsTrigger
             value="bands"
-            className="min-h-11 shrink-0 whitespace-nowrap px-2.5 py-2 text-xs sm:min-h-0 sm:py-1.5"
           >
-            <Layers className="mr-1 size-3.5" /> Bands & geo
+            <Layers className="size-3.5" /> Bands & geo
           </TabsTrigger>
           <TabsTrigger
             value="guidelines"
-            className="min-h-11 shrink-0 whitespace-nowrap px-2.5 py-2 text-xs sm:min-h-0 sm:py-1.5"
           >
-            <BookOpenText className="mr-1 size-3.5" /> Guidelines
+            <BookOpenText className="size-3.5" /> Guidelines
           </TabsTrigger>
         </TabsList>
         <TabsContent

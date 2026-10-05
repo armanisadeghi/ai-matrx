@@ -2,7 +2,7 @@
 
 import React, { lazy, Suspense } from 'react';
 import SuspenseLoader from '@/components/loaders/SuspenseLoader';
-import { Tabs, TabsContent, TabsListLegacy as TabsList, TabsTriggerLegacy as TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PromptBuilderProvider, usePromptBuilder } from './PromptBuilderContext';
 
 // Import all tab components
@@ -85,14 +85,13 @@ const PromptBuilderContent: React.FC = () => {
     <div className="space-y-6">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <div className="mb-8 border-b border-zinc-200 dark:border-zinc-800 pb-1">
-          <TabsList className="flex flex-wrap h-auto justify-start bg-transparent">
+          <TabsList overflow="wrap">
             {allTabs.map((tab) => (
               <TabsTrigger
                 key={tab.id}
                 value={tab.id}
-                className="flex items-center px-4 py-2 mx-1 my-1 data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-900 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400 text-gray-700 dark:text-gray-300 rounded-md data-[state=active]:shadow-sm"
               >
-                <span className="mr-2">{tab.icon}</span>
+                <span >{tab.icon}</span>
                 {tab.label}
               </TabsTrigger>
             ))}

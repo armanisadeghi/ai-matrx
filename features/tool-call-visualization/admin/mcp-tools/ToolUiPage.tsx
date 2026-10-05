@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Zap, Paintbrush, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsListLegacy as TabsList, TabsTriggerLegacy as TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
 import { ToolUiComponentGenerator } from "@/features/tool-call-visualization/admin/ToolUiComponentGenerator";
 import { ToolUiComponentEditor } from "@/features/tool-call-visualization/admin/ToolUiComponentEditor";
@@ -147,16 +147,16 @@ export function ToolUiPage({ tool }: Props) {
           className="flex-1 flex flex-col overflow-hidden"
         >
           <div className="flex-shrink-0 border-b border-border px-4 pt-2 sm:px-6">
-            <TabsList className="grid h-auto w-full grid-cols-3 sm:inline-flex sm:h-9 sm:w-auto">
-              <TabsTrigger value="preview" className="min-h-11 gap-1.5 px-2 text-xs sm:min-h-0 sm:px-3">
+            <TabsList overflow="scroll" className="max-w-full">
+              <TabsTrigger value="preview">
                 <Eye className="h-3.5 w-3.5" />
                 Preview &amp; Test
               </TabsTrigger>
-              <TabsTrigger value="generate" className="min-h-11 gap-1.5 px-2 text-xs sm:min-h-0 sm:px-3">
+              <TabsTrigger value="generate">
                 <Zap className="h-3.5 w-3.5" />
                 Generate
               </TabsTrigger>
-              <TabsTrigger value="editor" className="min-h-11 gap-1.5 px-2 text-xs sm:min-h-0 sm:px-3">
+              <TabsTrigger value="editor">
                 <Paintbrush className="h-3.5 w-3.5" />
                 Edit Code
               </TabsTrigger>

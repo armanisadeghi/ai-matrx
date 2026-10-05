@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from "react";
-import { Tabs, TabsListLegacy as TabsList, TabsTriggerLegacy as TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface ContentTabsProps {
@@ -57,13 +57,12 @@ const ContentTabs = ({ activeTab, setActiveTab }: ContentTabsProps) => {
 
       <TabsList
         ref={tabsRef}
-        className="flex h-auto justify-start gap-1 overflow-x-auto scrollbar-hide py-1 px-11 md:px-0 rounded-t-none rounded-b-lg shadow-md border-b border-border bg-muted"
+        overflow="scroll" className="px-11 md:px-0"
       >
         {CONTENT_TABS.map(([value, label]) => (
           <TabsTrigger
             key={value}
             value={value}
-            className="min-h-11 shrink-0 md:min-h-0"
           >
             {label}
           </TabsTrigger>

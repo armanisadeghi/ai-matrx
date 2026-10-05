@@ -17,7 +17,7 @@ import {
   Scissors,
 } from "lucide-react";
 
-import { Tabs, TabsContent, TabsListLegacy as TabsList, TabsTriggerLegacy as TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   buildAgentPayload,
   type AgentPayloadInput,
@@ -116,12 +116,6 @@ const ICON_BUTTON_CLS = cn(
   "text-muted-foreground hover:text-foreground hover:bg-muted",
 );
 
-const TRIGGER_CLS = cn(
-  CELL_CLS,
-  "rounded-none border-r border-border last:border-r-0",
-  "bg-transparent text-muted-foreground hover:bg-muted hover:text-foreground",
-  "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-none",
-);
 
 const ICON_CLS = "h-3.5 w-3.5";
 
@@ -356,9 +350,8 @@ function JsonInspectorBody({
               {label}
             </h2>
           )}
-          <TabsList className="h-auto shrink-0 gap-0 rounded border border-border bg-transparent p-0 overflow-hidden">
+          <TabsList className="shrink-0">
             <TabsTrigger
-              className={TRIGGER_CLS}
               value="json"
               title="Formatted JSON"
               aria-label="Formatted JSON"
@@ -366,7 +359,6 @@ function JsonInspectorBody({
               <Braces className={ICON_CLS} />
             </TabsTrigger>
             <TabsTrigger
-              className={TRIGGER_CLS}
               value="explorer"
               title="Path Explorer"
               aria-label="Path Explorer"
@@ -374,7 +366,6 @@ function JsonInspectorBody({
               <Compass className={ICON_CLS} />
             </TabsTrigger>
             <TabsTrigger
-              className={TRIGGER_CLS}
               value="tree"
               title="Tree Viewer"
               aria-label="Tree Viewer"
@@ -382,7 +373,6 @@ function JsonInspectorBody({
               <ListTree className={ICON_CLS} />
             </TabsTrigger>
             <TabsTrigger
-              className={TRIGGER_CLS}
               value="truncator"
               title="Truncator"
               aria-label="Truncator"
@@ -391,7 +381,6 @@ function JsonInspectorBody({
             </TabsTrigger>
             {editable && (
               <TabsTrigger
-                className={TRIGGER_CLS}
                 value="edit"
                 title="Edit JSON"
                 aria-label="Edit JSON"

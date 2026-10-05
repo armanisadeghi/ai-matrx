@@ -21,7 +21,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsListLegacy as TabsList, TabsTriggerLegacy as TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useToast } from "@/components/ui/use-toast";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
@@ -488,13 +488,13 @@ function AgentAppsExecutionsContent() {
           className="flex flex-1 flex-col overflow-hidden"
         >
           <div className="border-b border-border bg-card px-4">
-            <TabsList className="h-auto gap-1 bg-transparent p-0">
+            <TabsList >
               <TabsTrigger value="executions">
-                <Activity className="mr-2 h-4 w-4" />
+                <Activity className="h-4 w-4" />
                 Executions
               </TabsTrigger>
               <TabsTrigger value="errors">
-                <AlertCircle className="mr-2 h-4 w-4" />
+                <AlertCircle className="h-4 w-4" />
                 Errors
               </TabsTrigger>
             </TabsList>

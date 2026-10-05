@@ -22,7 +22,7 @@ import {
 } from "@/features/administration/local-storage/storage-usage";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Tabs, TabsContent, TabsListLegacy as TabsList, TabsTriggerLegacy as TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
@@ -813,16 +813,14 @@ const StorageManager = ({
       />
 
       <Tabs value={selectedModule || "all"} onValueChange={setSelectedModule}>
-        <TabsList className="flex flex-wrap h-auto justify-start bg-card">
+        <TabsList overflow="wrap">
           <TabsTrigger
-            className="border-border border rounded-md m-1 bg-background hover:bg-accent data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
             value="all"
           >
             All Modules
           </TabsTrigger>
           {modules.map((module) => (
             <TabsTrigger
-              className="border-border border rounded-md m-1 bg-background hover:bg-accent data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
               key={module}
               value={module}
             >
@@ -1505,27 +1503,23 @@ export function LocalStorageAdmin() {
       )}
 
       <Tabs defaultValue="storage" className="w-full">
-        <TabsList className="flex flex-wrap h-auto justify-start bg-card">
+        <TabsList overflow="wrap">
           <TabsTrigger
-            className="border-border border rounded-md m-1 bg-background hover:bg-accent data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
             value="storage"
           >
             Storage Manager
           </TabsTrigger>
           <TabsTrigger
-            className="border-border border rounded-md m-1 bg-background hover:bg-accent data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
             value="raw"
           >
             Raw Storage
           </TabsTrigger>
           <TabsTrigger
-            className="border-border border rounded-md m-1 bg-background hover:bg-accent data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
             value="cookies"
           >
             Cookie Manager
           </TabsTrigger>
           <TabsTrigger
-            className="border-border border rounded-md m-1 bg-background hover:bg-accent data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
             value="import-export"
           >
             Import/Export

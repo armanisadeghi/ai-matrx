@@ -18,7 +18,7 @@ import React from "react";
 import dynamic from "next/dynamic";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsListLegacy as TabsList, TabsTriggerLegacy as TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Rainbow, GitCompare, File, FileCode, FileText } from "lucide-react";
 import { RichContent } from "@/components/rich-content/RichContent";
 import { DiffView } from "./DiffView";
@@ -85,31 +85,27 @@ export function ReviewStage({
       )}
 
       <Tabs defaultValue="diff" className="flex-1 flex flex-col min-h-0">
-        <TabsList className="w-full justify-start border-b rounded-none bg-transparent p-0 h-auto shrink-0 gap-0">
+        <TabsList variant="underline" overflow="scroll" className="w-full shrink-0">
           <TabsTrigger
             value="diff"
-            className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground hover:bg-muted/50 px-2 py-1 text-[11px] gap-1 h-7 font-normal"
           >
             <GitCompare className="w-3 h-3" />
             Diff
           </TabsTrigger>
           <TabsTrigger
             value="original"
-            className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground hover:bg-muted/50 px-2 py-1 text-[11px] gap-1 h-7 font-normal"
           >
             <File className="w-3 h-3" />
             Original
           </TabsTrigger>
           <TabsTrigger
             value="after"
-            className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground hover:bg-muted/50 px-2 py-1 text-[11px] gap-1 h-7 font-normal"
           >
             <FileCode className="w-3 h-3" />
             Preview
           </TabsTrigger>
           <TabsTrigger
             value="response"
-            className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground hover:bg-muted/50 px-2 py-1 text-[11px] gap-1 h-7 font-normal"
           >
             <FileText className="w-3 h-3" />
             Response

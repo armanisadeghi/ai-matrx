@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Tabs, TabsContent, TabsListLegacy as TabsList, TabsTriggerLegacy as TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -144,24 +144,21 @@ export function CodePreviewCanvas({
     <div className="h-full flex flex-col bg-background">
       {/* Tabs - VSCode style with minimal padding */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-        <TabsList className="w-full justify-start border-b rounded-none bg-transparent p-0 h-auto shrink-0 gap-0">
+        <TabsList variant="underline" overflow="scroll" className="w-full shrink-0">
           <TabsTrigger
             value="diff"
-            className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground hover:bg-muted/50 px-2 py-0.5 text-[10px] gap-1 h-6 font-normal"
           >
             <GitCompare className="w-3 h-3" />
             Diff
           </TabsTrigger>
           <TabsTrigger
             value="original"
-            className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground hover:bg-muted/50 px-2 py-0.5 text-[10px] gap-1 h-6 font-normal"
           >
             <File className="w-3 h-3" />
             Original
           </TabsTrigger>
           <TabsTrigger
             value="preview"
-            className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground hover:bg-muted/50 px-2 py-0.5 text-[10px] gap-1 h-6 font-normal"
           >
             <FileCode className="w-3 h-3" />
             Preview

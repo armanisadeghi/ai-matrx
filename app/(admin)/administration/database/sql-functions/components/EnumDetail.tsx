@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsListLegacy as TabsList, TabsTriggerLegacy as TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   X,
   Edit,
@@ -193,22 +193,19 @@ export default function EnumDetail({
           onValueChange={(value) => setActiveTab(value as EnumDetailTab)}
           className="w-full"
         >
-          <TabsList className="w-full justify-start px-4 pt-2 bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
+          <TabsList variant="underline" overflow="scroll" className="px-4 pt-2">
             <TabsTrigger
               value="details"
-              className="text-slate-600 dark:text-slate-400 data-[state=active]:text-slate-900 dark:data-[state=active]:text-slate-100"
             >
               Details
             </TabsTrigger>
             <TabsTrigger
               value="values"
-              className="text-slate-600 dark:text-slate-400 data-[state=active]:text-slate-900 dark:data-[state=active]:text-slate-100"
             >
               Values
             </TabsTrigger>
             <TabsTrigger
               value="usage"
-              className="text-slate-600 dark:text-slate-400 data-[state=active]:text-slate-900 dark:data-[state=active]:text-slate-100"
             >
               Usage
             </TabsTrigger>

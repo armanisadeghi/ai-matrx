@@ -20,7 +20,7 @@ import {
   Network,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsListLegacy as TabsList, TabsTriggerLegacy as TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { formatSessionTimestamp } from "@/features/agent-connections/coding-sessions/verdict";
 import { ConversationAnalyzePanel } from "@/features/ai-work/analysis/ConversationAnalyzePanel";
@@ -82,24 +82,21 @@ export function MatrxConversationDetail({
       </section>
 
       <Tabs defaultValue="source" className="mt-3">
-        <TabsList className="scrollbar-none h-auto w-full justify-start gap-0 overflow-x-auto rounded-none border-b border-border bg-transparent p-0">
+        <TabsList variant="underline" overflow="scroll" className="w-full">
           <TabsTrigger
             value="source"
-            className="min-h-10 shrink-0 gap-1.5 rounded-none border-b-2 border-transparent px-3 data-[state=active]:border-primary data-[state=active]:bg-transparent"
           >
             <Info className="h-3.5 w-3.5" />
             Source
           </TabsTrigger>
           <TabsTrigger
             value="analyze"
-            className="min-h-10 shrink-0 gap-1.5 rounded-none border-b-2 border-transparent px-3 data-[state=active]:border-primary data-[state=active]:bg-transparent"
           >
             <AGENT_ICON className="h-3.5 w-3.5" />
             Analyze
           </TabsTrigger>
           <TabsTrigger
             value="organize"
-            className="min-h-10 shrink-0 gap-1.5 rounded-none border-b-2 border-transparent px-3 data-[state=active]:border-primary data-[state=active]:bg-transparent"
           >
             <Network className="h-3.5 w-3.5" />
             Organize

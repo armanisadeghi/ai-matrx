@@ -2,7 +2,7 @@
 
 import React, {useState, useEffect} from 'react';
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
-import {Tabs, TabsContent, TabsListLegacy as TabsList, TabsTriggerLegacy as TabsTrigger} from "@/components/ui/tabs";
+import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/components/ui/tabs";
 import {Button} from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system/controls";
 import {Badge} from "@/components/ui/badge";
@@ -213,7 +213,7 @@ const ApiTest = () => {
                 </CardHeader>
                 <CardContent>
                     <Tabs value={activeTab} onValueChange={setActiveTab}>
-                        <TabsList className="grid grid-cols-4 mb-4">
+                        <TabsList overflow="wrap" className="mb-4">
                             <TabsTrigger value="messages">Messages</TabsTrigger>
                             {API_CONFIG.categories.map(category => (
                                 <TabsTrigger key={category.id} value={category.id}>
@@ -251,12 +251,11 @@ const ApiTest = () => {
                                     </CardHeader>
                                     <CardContent>
                                         <Tabs defaultValue={category.endpoints[0]?.id} className="w-full">
-                                            <TabsList className="w-full flex-wrap h-auto gap-2 justify-start">
+                                            <TabsList overflow="wrap" className="w-full">
                                                 {category.endpoints.map(endpoint => (
                                                     <TabsTrigger
                                                         key={endpoint.id}
                                                         value={endpoint.id}
-                                                        className="flex items-center gap-2"
                                                     >
                                                         {endpoint.name}
                                                         <Badge variant="outline" className="ml-2">

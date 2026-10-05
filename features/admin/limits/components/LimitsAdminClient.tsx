@@ -19,7 +19,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ArrowUpRight } from "lucide-react";
-import { Tabs, TabsContent, TabsListLegacy as TabsList, TabsTriggerLegacy as TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AccountAddonsPanel } from "./AccountAddonsPanel";
 import { FeatureKnobsPanel } from "./FeatureKnobsPanel";
 import { PlanAllowancesPanel } from "./PlanAllowancesPanel";
@@ -54,10 +54,10 @@ export function LimitsAdminClient() {
         </p>
       </header>
       <Tabs defaultValue={defaultTab}>
-        <TabsList className="h-auto max-w-full flex-wrap justify-start">
-          <TabsTrigger className="shrink-0" value="allowances">Plan allowances</TabsTrigger>
-          <TabsTrigger className="shrink-0" value="addons">Account add-ons</TabsTrigger>
-          <TabsTrigger className="shrink-0" value="knobs">Feature knobs</TabsTrigger>
+        <TabsList overflow="wrap" className="max-w-full">
+          <TabsTrigger value="allowances">Plan allowances</TabsTrigger>
+          <TabsTrigger value="addons">Account add-ons</TabsTrigger>
+          <TabsTrigger value="knobs">Feature knobs</TabsTrigger>
         </TabsList>
         <TabsContent value="allowances" className="mt-6">
           <PlanAllowancesPanel />

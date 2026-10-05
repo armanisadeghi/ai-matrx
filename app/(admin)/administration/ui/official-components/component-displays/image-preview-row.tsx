@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { ComponentEntry } from '../parts/component-list';
 import { ComponentDisplayWrapper } from '../component-usage';
-import { Tabs, TabsContent, TabsListLegacy as TabsList, TabsTriggerLegacy as TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useSelectedImages } from '@/components/image/context/SelectedImagesProvider';
 import { ImagePreviewRow } from '@/components/image/shared/ImagePreviewRow';
 import { Button } from '@/components/ui/button';
@@ -154,7 +154,7 @@ function MyComponent() {
 
   return (
     <Tabs defaultValue="medium">
-      <TabsList className="mb-4 flex flex-wrap">
+      <TabsList overflow="wrap" className="mb-4">
         <TabsTrigger value="xs">XS</TabsTrigger>
         <TabsTrigger value="small">Small</TabsTrigger>
         <TabsTrigger value="medium">Medium</TabsTrigger>

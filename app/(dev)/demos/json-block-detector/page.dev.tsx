@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsListLegacy as TabsList, TabsTriggerLegacy as TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
 import { ProJsonTextarea } from "@/components/official/ProJsonTextarea";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
@@ -940,17 +940,17 @@ export default function JsonBlockDetectorPage() {
             defaultValue="samples"
             className="flex min-h-0 flex-1 flex-col gap-2"
           >
-            <TabsList className="grid h-auto w-full shrink-0 grid-cols-4 gap-0.5">
-              <TabsTrigger value="samples" className="px-1 text-[10px]">
+            <TabsList fill className="w-full shrink-0">
+              <TabsTrigger value="samples">
                 Samples
               </TabsTrigger>
-              <TabsTrigger value="schemas" className="px-1 text-[10px]">
+              <TabsTrigger value="schemas">
                 Schemas
               </TabsTrigger>
-              <TabsTrigger value="validation" className="px-1 text-[10px]">
+              <TabsTrigger value="validation">
                 Validate
               </TabsTrigger>
-              <TabsTrigger value="convert" className="px-1 text-[10px]">
+              <TabsTrigger value="convert">
                 Convert
               </TabsTrigger>
             </TabsList>

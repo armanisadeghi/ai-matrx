@@ -19,7 +19,7 @@ import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { GoogleContactsImportPanel } from "@/features/connectors/import/GoogleContactsImportPanel";
 import { DirectoryReview } from "@/features/google-workspace/directory/DirectoryReview";
 import { canUseGoogleOAuthInternalTest } from "@/features/marketing/google/internal-test-reviewer";
-import { Tabs, TabsContent, TabsListLegacy as TabsList, TabsTriggerLegacy as TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
   selectIsSuperAdmin,
@@ -87,11 +87,11 @@ export default function GoogleContactsImportWindow({
         className="flex min-h-0 flex-1 flex-col"
       >
         {canReviewDirectory ? (
-          <TabsList className="mx-2 mt-2 grid h-auto grid-cols-2">
-            <TabsTrigger value="contacts" className="min-h-11 text-xs">
+          <TabsList fill className="mx-2 mt-2">
+            <TabsTrigger value="contacts">
               Google Contacts
             </TabsTrigger>
-            <TabsTrigger value="directory" className="min-h-11 text-xs">
+            <TabsTrigger value="directory">
               Directory
             </TabsTrigger>
           </TabsList>

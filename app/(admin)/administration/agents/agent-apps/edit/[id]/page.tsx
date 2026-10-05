@@ -16,7 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tabs, TabsContent, TabsListLegacy as TabsList, TabsTriggerLegacy as TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import {
@@ -455,16 +455,14 @@ export default function AdminEditAgentAppPage({
           className="h-full flex flex-col"
         >
           <div className="border-b border-border px-4 bg-card">
-            <TabsList className="bg-transparent h-auto p-0 gap-1">
+            <TabsList >
               <TabsTrigger
                 value="admin"
-                className="data-[state=active]:bg-background data-[state=active]:shadow-sm"
               >
                 Admin Controls
               </TabsTrigger>
               <TabsTrigger
                 value="code"
-                className="data-[state=active]:bg-background data-[state=active]:shadow-sm"
               >
                 Component Code
               </TabsTrigger>

@@ -9,7 +9,7 @@ import {
   PromptBuilderProvider,
   usePromptBuilder as useBuilderContext,
 } from "../tabbed-builder/PromptBuilderContext";
-import { Tabs, TabsContent, TabsListLegacy as TabsList, TabsTriggerLegacy as TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TaskTab } from "../tabbed-builder/TaskTab";
 import { ContextTab } from "../tabbed-builder/ContextTab";
 import { ToneTab } from "../tabbed-builder/ToneTab";
@@ -107,14 +107,13 @@ function BuilderContent({ onComplete }: ComprehensiveBuilderProps) {
       <div className="flex-1 overflow-auto p-3">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <div className="mb-4 border-b border-zinc-200 dark:border-zinc-800 pb-1">
-            <TabsList className="flex flex-wrap h-auto justify-start bg-transparent">
+            <TabsList overflow="wrap">
               {allTabs.map((tab) => (
                 <TabsTrigger
                   key={tab.id}
                   value={tab.id}
-                  className="flex items-center px-3 py-1.5 mx-1 my-1 data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-900 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400 text-gray-700 dark:text-gray-300 rounded-md data-[state=active]:shadow-sm text-xs"
                 >
-                  <span className="mr-1.5 text-sm">{tab.icon}</span>
+                  <span className="text-sm">{tab.icon}</span>
                   {tab.label}
                 </TabsTrigger>
               ))}
