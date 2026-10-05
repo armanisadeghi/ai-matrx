@@ -492,11 +492,19 @@ export function UserBoard({
   });
   // Stable (it closes over a ref only), so a tile never re-renders because its host did.
   const onThrow = (id: string, direction: ThrowDirection) => throwRef.current(id, direction);
+  // A frame goes as one undoable step; its tiles stay where they are.
+  const deleteFrame = (id: string) => {
+    const frame = board.frames.find((f) => f.id === id);
+    if (!frame) return;
+    board.removeFrame(id);
+    if (store?.getSelected() === id) store.select(null);
+    toast(`Deleted frame "${frame.title}" — its tiles stay`, { action: { label: "Undo", onClick: board.undo } });
+  };
   const deleteSelected = () => {
     const id = store?.getSelected();
     if (!id) return;
     if (board.shapes.some((sh) => sh.id === id)) board.removeShape(id);
-    else if (board.frames.some((f) => f.id === id)) board.removeFrame(id);
+    else if (board.frames.some((f) => f.id === id)) deleteFrame(id);
     else if (tileOf(id)) takeOff(id);
   };
   // Arrange (Board menu → Arrange, and its keys): frames move with their tiles, one undo step.
@@ -631,7 +639,7 @@ export function UserBoard({
             }
           >
             {layout.frames.map((f) => (
-              <BoardFrameView key={f.id} {...f} />
+              <BoardFrameView key={f.id} {...f} onRemove={deleteFrame} />
             ))}
             <ShapesLayer shapes={layout.shapes} />
             {layout.connections.map((c) =>

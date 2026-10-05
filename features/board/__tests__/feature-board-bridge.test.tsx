@@ -144,7 +144,7 @@ async function mount(capture: boolean) {
 
 const overviewOf = async () =>
   (await getSurfaceRuntimeForName(BOARD_SURFACE_NAME)?.getScope())?.board_items as {
-    items: Array<{ id: string; basics?: Record<string, unknown>; basics_note?: string }>;
+    items: Array<{ id: string; basics?: Record<string, unknown>; basics_note?: string; basics_stale?: true }>;
   };
 
 describe("feature boards (War Room, workflow run) publish the same two-request bridge", () => {
