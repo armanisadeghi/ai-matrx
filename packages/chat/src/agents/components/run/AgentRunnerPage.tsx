@@ -31,7 +31,7 @@ import { AgentConversationColumn } from "../shared/AgentConversationColumn";
 import { useComposerMode } from "../inputs/smart-input/composer/useComposerMode";
 import { ChatRoomSkeleton } from "../chat/ChatRoomSkeleton";
 import { AlertTriangle, Loader2, RotateCw, TestTube2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system/controls";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { AgentRunHeader } from "./AgentRunHeader";
 import { DebugSessionActivator } from "../debug/DebugSessionActivator";

@@ -41,7 +41,7 @@ import { AlertTriangle, ChevronDown, GitCompareArrows, MessageSquareText, Refres
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { cn } from "@ai-matrx/design-system";
 import { Skeleton } from "@ai-matrx/design-system";
-import { Button } from "@/components/ui/button";
+import { Badge, Button, Chip } from "@ai-matrx/design-system/controls";
 import { Textarea } from "@ai-matrx/design-system";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@host/components/ui/tabs";
 import { InlineCopyButton } from "@host/components/matrx/buttons/InlineCopyButton";
@@ -599,14 +599,9 @@ function Checks({ side }: { side: CompareSide }) {
                       ? "tagged to its project"
                       : c.via}
               </span>
-              <span
-                className={cn(
-                  "shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium",
-                  c.admitted ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground",
-                )}
-              >
+              <Badge className="shrink-0" tone={c.admitted ? "primary" : "neutral"}>
                 {c.admitted ? "you may read it" : "not delivered"}
-              </span>
+              </Badge>
             </div>
             {c.says && <p className="mt-1 text-muted-foreground">{c.says}</p>}
           </li>
@@ -963,10 +958,11 @@ export function ContextCompareView({
   return (
     <div className="flex min-h-0 flex-1 flex-col" data-context-compare>
       <div className="flex shrink-0 items-center gap-2 border-b border-border px-4 py-1.5">
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
-          <GitCompareArrows className="h-3 w-3" />
-          {status === "loading" ? "Resolving both…" : "Current system · Record store"}
-        </span>
+        <Chip
+          tone="primary"
+          icon={<GitCompareArrows />}
+          label={status === "loading" ? "Resolving both…" : "Current system · Record store"}
+        />
         <span className="flex-1" />
         <Button
           icon={<RefreshCw className={cn("h-3 w-3", status === "loading" && "animate-spin")} />}

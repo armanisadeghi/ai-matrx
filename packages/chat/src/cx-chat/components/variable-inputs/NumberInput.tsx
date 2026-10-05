@@ -1,7 +1,7 @@
 import React from 'react';
 import { Label } from '@ai-matrx/design-system';
 import { Input } from "@ai-matrx/design-system/controls";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system/controls";
 import { Minus, Plus } from 'lucide-react';
 
 interface NumberInputProps {

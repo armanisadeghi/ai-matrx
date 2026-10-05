@@ -11,7 +11,7 @@
 import { useState } from "react";
 import { getIconComponent } from "@ai-matrx/icons";
 import { Button as SurfaceButton } from "@ai-matrx/design-system";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system/controls";
 import { Separator } from "@ai-matrx/design-system";
 import { Badge } from "@ai-matrx/design-system";
 import {

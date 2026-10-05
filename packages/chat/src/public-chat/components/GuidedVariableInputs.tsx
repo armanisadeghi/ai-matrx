@@ -4,7 +4,7 @@ import React, { useState, useCallback, useRef, useEffect } from "react";
 import { ChevronLeft, ChevronRight, ChevronDown, Check } from "lucide-react";
 import { Textarea } from "@ai-matrx/design-system";
 import { Input } from "@ai-matrx/design-system";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system/controls";
 import { Checkbox } from "@host/components/ui/checkbox";
 import { Minus, Plus } from "lucide-react";
 import { variableRunLabel } from "@ai-matrx/agents";

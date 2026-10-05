@@ -16,7 +16,7 @@
 import { useEffect, useState } from "react";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { useAgentCatalogRows } from "@ai-matrx/agents/catalog/react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system/controls";
 import { RadioGroup, RadioGroupItem } from "@ai-matrx/design-system";
 import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import { toast } from "../../../host/notify";

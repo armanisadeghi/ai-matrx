@@ -23,7 +23,7 @@ import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { toast } from "../../../host/notify";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system/controls";
 import { useAgentLauncher } from "../../../agents/hooks/useAgentLauncher";
 import { sourceFeatureFromSurfaceName } from "../../../agents/utils/source-feature-from-surface";
 import { useSurfaceAgentRoles } from "../../hooks/useSurfaceConfig";

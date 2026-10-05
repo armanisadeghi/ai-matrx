@@ -18,7 +18,7 @@ import { useAppSelector } from "../../store/hooks";
 import { selectVoiceVoiceId } from "../state/selectors";
 import { LiveVoiceDoor } from "../components/LiveVoiceDoor";
 import { AudioLines } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system/controls";
 import { useMandate } from "../../mandates/useMandate";
 import type { SourceFeature } from "@ai-matrx/agents/generated/source-attribution";
 import { VoiceRelayPanel } from "./VoiceRelayPanel";

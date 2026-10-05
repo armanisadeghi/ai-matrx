@@ -2,7 +2,7 @@
 
 import { useCallback, type ReactNode } from "react";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system/controls";
 import { Badge } from "@ai-matrx/design-system";
 import { ScrollArea } from "@ai-matrx/design-system";
 import { Separator } from "@ai-matrx/design-system";

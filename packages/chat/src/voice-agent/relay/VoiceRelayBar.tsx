@@ -15,7 +15,7 @@
 
 import { useState } from "react";
 import { Mic, Square, AudioLines } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system/controls";
 import { useMandate } from "../../mandates/useMandate";
 import { VoiceMuteButton } from "../components/VoiceMuteButton";
 import type { SourceFeature } from "@ai-matrx/agents/generated/source-attribution";

@@ -24,7 +24,7 @@ import { useMemo, useState } from "react";
 import { AlertTriangle, Braces, FileCode2, RefreshCw } from "lucide-react";
 import { cn } from "@ai-matrx/design-system";
 import { Skeleton } from "@ai-matrx/design-system";
-import { Button } from "@/components/ui/button";
+import { Badge, Button, Chip, SegmentedControl } from "@ai-matrx/design-system/controls";
 import { InlineCopyButton } from "@host/components/matrx/buttons/InlineCopyButton";
 import { useAppSelector } from "../../../store/hooks";
 import { SurfaceRuntimeProvider } from "../../../surfaces/runtime/SurfaceRuntimeContext";
@@ -115,9 +115,7 @@ function VariableGroup({
                   {key}
                 </span>
                 {f.source && (
-                  <span className="shrink-0 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
-                    {f.source}
-                  </span>
+                  <Chip className="shrink-0" tone="primary" label={f.source} />
                 )}
               </div>
               <div className="mt-1 whitespace-pre-wrap break-words rounded bg-muted/40 px-2 py-1 font-mono text-[11px] leading-relaxed text-foreground/90">
@@ -228,9 +226,9 @@ function BindingTraces({ traces }: { traces: unknown[] | null | undefined }) {
               <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
                 {r.target === "context_policy" ? "slot" : "variable"}
               </span>
-              <span className="shrink-0 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+              <Badge className="shrink-0" tone="primary">
                 {r.outcome}
-              </span>
+              </Badge>
             </div>
             <div className="mt-1 space-y-0.5 text-[11px] leading-relaxed text-foreground/90">
               {r.winner && (
@@ -307,23 +305,9 @@ function ResolvedView({
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex shrink-0 items-center gap-2 border-b border-border px-4 py-1.5">
-        <span
-          className={cn(
-            "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium",
-            status === "error"
-              ? "bg-destructive/10 text-destructive"
-              : "bg-primary/10 text-primary",
-          )}
-        >
-          <span
-            className={cn(
-              "h-1.5 w-1.5 rounded-full",
-              status === "error" ? "bg-destructive" : "bg-primary",
-              status === "loading" && "animate-pulse",
-            )}
-          />
+        <Badge tone={status === "error" ? "destructive" : "primary"}>
           {status === "loading" ? "Resolving…" : "Server truth"}
-        </span>
+        </Badge>
         <span className="flex-1" />
         {copyAllText && (
           <span
@@ -467,12 +451,7 @@ function ResolvedBody({
         {scopeLabels.length > 0 && (
           <div className="mt-1.5 flex flex-wrap gap-1">
             {scopeLabels.map((label) => (
-              <span
-                key={label}
-                className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary"
-              >
-                {label}
-              </span>
+              <Chip key={label} tone="primary" label={label} />
             ))}
           </div>
         )}
@@ -622,27 +601,16 @@ export function ContextPreviewPanel({
     >
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex shrink-0 items-center gap-1 border-b border-border px-3 py-1.5">
-        {(
-          [
-            ["resolved", "Resolved"],
-            ["compare", "Old vs new"],
-            ["attached", "Attached this turn"],
-          ] as const
-        ).map(([id, label]) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => setView(id)}
-            className={cn(
-              "rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
-              view === id
-                ? "bg-primary/10 text-primary"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground",
-            )}
-          >
-            {label}
-          </button>
-        ))}
+        <SegmentedControl
+          aria-label="Context view"
+          value={view}
+          onValueChange={setView}
+          data={[
+            { value: "resolved", label: "Resolved" },
+            { value: "compare", label: "Old vs new" },
+            { value: "attached", label: "Attached this turn" },
+          ]}
+        />
       </div>
       {view === "resolved" ? (
         <ResolvedView preview={preview} agentId={agentId} />

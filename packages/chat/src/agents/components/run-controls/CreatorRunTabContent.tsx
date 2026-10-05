@@ -270,7 +270,7 @@ function SystemPromptTab({ conversationId }: { conversationId: string }) {
               }),
             )
           }
-          className="scale-75 origin-right"
+          className="origin-right"
         />
       </div>
 

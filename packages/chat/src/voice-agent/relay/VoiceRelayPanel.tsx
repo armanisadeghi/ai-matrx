@@ -14,7 +14,7 @@
 // SoR: common-docs/systems/chat/voice/STATE.md
 
 import { PhoneOff } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system/controls";
 import { VoiceOrb } from "../components/VoiceOrb";
 import { VoiceStatusPill } from "../components/VoiceStatusPill";
 import { VoiceMuteButton } from "../components/VoiceMuteButton";

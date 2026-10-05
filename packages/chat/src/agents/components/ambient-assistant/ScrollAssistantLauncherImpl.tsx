@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "../../../host/navigation";
 import { X } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system/controls";
 import { SmartAgentInput } from "../inputs/smart-input/SmartAgentInput";
 import type { ComposerPresentation } from "../inputs/smart-input/composer/composer-types";
 

@@ -34,7 +34,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@ai-matrx/design-system";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system/controls";
 import { Badge } from "@ai-matrx/design-system";
 import { Textarea } from "@ai-matrx/design-system";
 import { ScrollArea } from "@ai-matrx/design-system";

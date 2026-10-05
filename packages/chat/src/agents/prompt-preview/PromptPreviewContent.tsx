@@ -17,7 +17,7 @@
 
 import { useEffect, useState } from "react";
 import { Loader2, Copy, RefreshCw, AlertTriangle } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system/controls";
 import { toast } from "../../host/notify";
 import { useAppStore } from "../../store/hooks";
 import { requestPromptPreview } from "./service";

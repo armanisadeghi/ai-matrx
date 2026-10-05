@@ -232,7 +232,7 @@ function VariableField({ conversationId, def, value, onChange }: VariableFieldPr
             id={fieldId}
             checked={checked}
             onCheckedChange={(c) => onChange(c ? onLabel : offLabel)}
-            className="scale-90 origin-left"
+            className="origin-left"
           />
           <span className="text-xs text-foreground">
             {checked ? onLabel : offLabel}

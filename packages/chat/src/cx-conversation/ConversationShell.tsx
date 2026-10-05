@@ -2,7 +2,7 @@
 
 import React from "react";
 import { X } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system/controls";
 import { MessageList } from "./MessageList";
 import { ConversationInput } from "./ConversationInput";
 import type { ConversationInputProps } from "./ConversationInput";

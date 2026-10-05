@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { usePathname } from "../../../host/navigation";
 import { AudioLines, Keyboard, Mic, MicOff, Square, X } from "lucide-react";
 import { Button as SurfaceButton } from "@ai-matrx/design-system";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system/controls";
 import { SmartAgentInput } from "../inputs/smart-input/SmartAgentInput";
 import type { ComposerPresentation } from "../inputs/smart-input/composer/composer-types";
 

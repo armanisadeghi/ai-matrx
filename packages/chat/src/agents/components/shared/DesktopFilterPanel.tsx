@@ -10,7 +10,7 @@ import {
   X,
 } from "lucide-react";
 import { Button as SurfaceButton } from "@ai-matrx/design-system";
-import { Button } from "@/components/ui/button";
+import { Button, Chip, ChipSet } from "@ai-matrx/design-system/controls";
 import {
   Popover,
   PopoverContent,
@@ -192,35 +192,18 @@ function MultiSelectChips({
         </button>
       )}
 
-      <div className="flex flex-wrap gap-1.5 max-h-[180px] overflow-y-auto">
+      <ChipSet className="max-h-[180px] overflow-y-auto">
         {!searchQ && (
-          <button
-            onClick={() => toggle(NONE_SENTINEL)}
-            className={cn(
-              "px-2 py-0.5 rounded-full text-xs font-medium border transition-colors italic",
-              includesNone
-                ? "bg-primary/15 border-primary/30 text-primary"
-                : "border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground",
-            )}
-          >
-            {noneLabel}
-          </button>
+          <Chip asChild pressed={includesNone} label={noneLabel}>
+            <button type="button" onClick={() => toggle(NONE_SENTINEL)} />
+          </Chip>
         )}
         {filtered.map((item) => {
           const isSelected = selected.includes(item);
           return (
-            <button
-              key={item}
-              onClick={() => toggle(item)}
-              className={cn(
-                "px-2 py-0.5 rounded-full text-xs font-medium border transition-colors",
-                isSelected
-                  ? "bg-primary/15 border-primary/30 text-primary"
-                  : "border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground",
-              )}
-            >
-              {item}
-            </button>
+            <Chip key={item} asChild pressed={isSelected} label={item}>
+              <button type="button" onClick={() => toggle(item)} />
+            </Chip>
           );
         })}
       </div>

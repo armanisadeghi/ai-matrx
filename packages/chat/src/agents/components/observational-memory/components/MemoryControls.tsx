@@ -123,7 +123,7 @@ export function MemoryControls({
           id={`mem-toggle-${conversationId}`}
           checked={effectiveEnabled}
           onCheckedChange={handleToggle}
-          className="scale-75 origin-right"
+          className="origin-right"
         />
       </div>
 

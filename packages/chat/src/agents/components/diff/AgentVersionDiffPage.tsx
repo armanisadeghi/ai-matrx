@@ -17,7 +17,7 @@ import SearchableSelect from "@host/components/matrx/SearchableSelect";
 import type { Option } from "@host/components/matrx/SearchableSelect";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@host/components/ui/tabs";
 import { Badge } from "@ai-matrx/design-system";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system/controls";
 import { Skeleton } from "@ai-matrx/design-system";
 import {
   AlertDialog,

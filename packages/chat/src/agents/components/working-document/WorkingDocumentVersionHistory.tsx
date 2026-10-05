@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { NoteVersionHistoryPanel } from "../../../next/lazy/NoteVersionHistoryPanel";
 import { ChevronLeft, ChevronRight, Loader2, RotateCcw } from "lucide-react";
 import { DiffViewer } from "@ai-matrx/diff/react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system/controls";
 import { cn } from "@ai-matrx/design-system";
 import { useAppSelector } from "../../../store/hooks";
 import {

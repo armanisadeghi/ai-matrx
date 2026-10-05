@@ -13,7 +13,7 @@
 
 import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import { RotateCcw } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system/controls";
 import { Label } from "@ai-matrx/design-system";
 import { VOICE_INTRO_MANDATE_KEY } from "../../constants";
 import { useMandateAgentInstructions } from "../../agentInstructions";

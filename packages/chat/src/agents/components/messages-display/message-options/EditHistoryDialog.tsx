@@ -40,7 +40,7 @@ import {
   DrawerTitle,
   DrawerDescription,
 } from "@ai-matrx/design-system";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system/controls";
 import { ScrollArea } from "@ai-matrx/design-system";
 import { toast } from "../../../../host/notify";
 import {

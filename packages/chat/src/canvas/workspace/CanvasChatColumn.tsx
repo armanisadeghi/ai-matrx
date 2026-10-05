@@ -24,7 +24,7 @@ import { AgentConversationColumn } from "../../agents/components/shared/AgentCon
 import type { AttachedContextRailItem } from "../../agents/components/inputs/smart-input/ConversationContextRail";
 import { setContextEntries } from "../../agents/redux/execution-system/instance-context/instance-context.slice";
 import { useAppDispatch } from "../../store/hooks";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system/controls";
 import { ErrorNotice } from "@ai-matrx/chat/host/ui-slots";
 import { cn } from "@ai-matrx/design-system";
 import type { ContextObjectType } from "../../agents/types/agent-api-types";

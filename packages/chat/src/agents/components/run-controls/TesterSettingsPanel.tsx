@@ -128,7 +128,7 @@ function SwitchRow({
         checked={checked}
         onCheckedChange={onCheckedChange}
         disabled={disabled}
-        className="scale-75 shrink-0"
+        className="shrink-0"
       />
     </div>
   );
@@ -287,7 +287,7 @@ export function TesterSettingsPanel({
           id={`${idPrefix}-include-editor-context`}
           checked={c.includeEditorContext}
           onCheckedChange={c.setIncludeEditorContext}
-          className="scale-75 shrink-0"
+          className="shrink-0"
         />
       </div>
 
