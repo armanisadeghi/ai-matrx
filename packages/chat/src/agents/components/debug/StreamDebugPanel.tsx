@@ -1,5 +1,6 @@
 "use client";
 
+import { Chip, type ChipTone } from "@ai-matrx/design-system/controls";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 
 import React, { useState, useRef, useEffect, useMemo } from "react";
@@ -123,7 +124,7 @@ function TimelineCopyChip({
   text,
   label,
   tooltip,
-  toneClass,
+  tone,
   LeadingIcon,
 }: {
   id: string;
@@ -131,7 +132,7 @@ function TimelineCopyChip({
   /** Short label shown on pill */
   label: string;
   tooltip: string;
-  toneClass: string;
+  tone: ChipTone;
   /** Default Copy; use FileText = projection, Layers / Radio = fuller payload */
   LeadingIcon?: LucideIcon;
 }) {
@@ -139,25 +140,22 @@ function TimelineCopyChip({
   const done = copied === id;
   const Leading = LeadingIcon ?? Copy;
   return (
-    <button
-      type="button"
-      onClick={(e) => {
-        e.stopPropagation();
-        copy(text, id);
-      }}
+    <Chip
+      asChild
+      className="shrink-0"
+      tone={done ? "success" : tone}
+      icon={done ? <Check /> : <Leading />}
+      label={label}
       title={tooltip}
-      className={cn(
-        "inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0 h-5 rounded border transition-colors shrink-0 cursor-pointer",
-        done ? "bg-green-500/20 text-green-400 border-green-500/30" : toneClass,
-      )}
     >
-      {done ? (
-        <Check className="h-2.5 w-2.5 shrink-0" />
-      ) : (
-        <Leading className="h-2.5 w-2.5 shrink-0 opacity-90" />
-      )}
-      <span>{label}</span>
-    </button>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          copy(text, id);
+        }}
+      />
+    </Chip>
   );
 }
 
@@ -1022,37 +1020,30 @@ function TimelineTab({ request }: { request: ActiveRequest }) {
             STREAMING TEXT
           </Badge>
         )}
-        <button
-          type="button"
-          onClick={() => setAllExpanded(!allExpanded)}
-          className={cn(
-            "ml-auto px-1.5 py-0 h-5 rounded text-[10px] border",
-            allExpanded
-              ? "bg-purple-500/20 text-purple-400 border-purple-500/30"
-              : "bg-muted/20 text-muted-foreground border-transparent hover:border-border/50",
-          )}
+        <Chip
+          asChild
+          className="ml-auto"
+          pressed={allExpanded}
+          tone="violet"
+          label={allExpanded ? "collapse all" : "expand all"}
         >
-          {allExpanded ? "collapse all" : "expand all"}
-        </button>
-        <button
-          type="button"
-          onClick={() => setAutoScroll(!autoScroll)}
-          className={cn(
-            "px-1.5 py-0 h-5 rounded text-[10px] border",
-            autoScroll
-              ? "bg-blue-500/20 text-blue-400 border-blue-500/30"
-              : "bg-muted/20 text-muted-foreground border-transparent",
-          )}
+          <button type="button" onClick={() => setAllExpanded(!allExpanded)} />
+        </Chip>
+        <Chip
+          asChild
+          pressed={autoScroll}
+          tone="blue"
+          label={`auto-scroll ${autoScroll ? "ON" : "OFF"}`}
         >
-          auto-scroll {autoScroll ? "ON" : "OFF"}
-        </button>
+          <button type="button" onClick={() => setAutoScroll(!autoScroll)} />
+        </Chip>
         <div className="flex items-center gap-1 shrink-0 flex-wrap border-l border-border/40 pl-1.5 ml-1">
           <TimelineCopyChip
             id="full-timeline-proj"
             label="all · tl"
             tooltip="Copy full timeline (projection only — TimelineEntry[])"
             LeadingIcon={FileText}
-            toneClass="bg-sky-500/20 text-sky-400 border-sky-500/30"
+            tone="sky"
             text={JSON.stringify(request.timeline, null, 2)}
           />
           <TimelineCopyChip
@@ -1060,7 +1051,7 @@ function TimelineTab({ request }: { request: ActiveRequest }) {
             label="all · +raw"
             tooltip="Copy full timeline with paired raw stream rows per timestamp (where available)"
             LeadingIcon={Layers}
-            toneClass="bg-sky-500/20 text-sky-400 border-sky-500/30"
+            tone="sky"
             text={JSON.stringify(
               timelineWithRawPairs(request.timeline),
               null,
@@ -1076,7 +1067,7 @@ function TimelineTab({ request }: { request: ActiveRequest }) {
             label="view · tl"
             tooltip="Copy filtered/visible timeline projection only (TimelineEntry[])"
             LeadingIcon={FileText}
-            toneClass="bg-violet-500/20 text-violet-400 border-violet-500/30"
+            tone="violet"
             text={JSON.stringify(filtered, null, 2)}
           />
           <TimelineCopyChip
@@ -1084,7 +1075,7 @@ function TimelineTab({ request }: { request: ActiveRequest }) {
             label="view · +raw"
             tooltip="Copy filtered timeline rows paired with matching raw stream events"
             LeadingIcon={Layers}
-            toneClass="bg-violet-500/20 text-violet-400 border-violet-500/30"
+            tone="violet"
             text={JSON.stringify(timelineWithRawPairs(filtered), null, 2)}
           />
           <span
@@ -1096,7 +1087,7 @@ function TimelineTab({ request }: { request: ActiveRequest }) {
             label="raw · dump"
             tooltip="Copy full rawEvents array (unedited stream capture)"
             LeadingIcon={Radio}
-            toneClass="bg-cyan-500/20 text-cyan-400 border-cyan-500/30"
+            tone="cyan"
             text={JSON.stringify(request.rawEvents, null, 2)}
           />
         </div>
@@ -1589,32 +1580,21 @@ function RawEventsTab({ request }: { request: ActiveRequest }) {
         <span className="text-[9px] text-muted-foreground font-medium mr-1">
           {rawEvents.length} events
         </span>
-        <button
-          type="button"
-          onClick={() => setFilterType(null)}
-          className={cn(
-            "px-1.5 py-0.5 rounded text-[9px] cursor-pointer transition-colors",
-            !filterType
-              ? "bg-primary/20 text-primary"
-              : "text-muted-foreground hover:text-foreground hover:bg-muted/30",
-          )}
-        >
-          All
-        </button>
+        <Chip asChild pressed={!filterType} label="All">
+          <button type="button" onClick={() => setFilterType(null)} />
+        </Chip>
         {eventTypes.map((type) => (
-          <button
+          <Chip
             key={type}
-            type="button"
-            onClick={() => setFilterType(filterType === type ? null : type)}
-            className={cn(
-              "px-1.5 py-0.5 rounded text-[9px] cursor-pointer transition-colors",
-              filterType === type
-                ? "bg-primary/20 text-primary"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted/30",
-            )}
+            asChild
+            pressed={filterType === type}
+            label={`${type} (${rawEvents.filter((e) => e.eventType === type).length})`}
           >
-            {type} ({rawEvents.filter((e) => e.eventType === type).length})
-          </button>
+            <button
+              type="button"
+              onClick={() => setFilterType(filterType === type ? null : type)}
+            />
+          </Chip>
         ))}
         <CopyBtn
           text={JSON.stringify(rawEvents, null, 2)}
@@ -1815,19 +1795,9 @@ function InstanceDebugView({
         <div className="flex shrink-0 items-center gap-1.5 px-2 py-1 border-b border-border/30 text-[10px]">
           <span className="text-muted-foreground font-medium">Request:</span>
           {requestIds.map((id, idx) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => setSelectedRequestIdx(idx)}
-              className={cn(
-                "px-2 py-0.5 h-5 rounded border text-[10px] font-mono",
-                idx === effectiveIdx
-                  ? "bg-primary/20 text-primary border-primary/30"
-                  : "bg-muted/20 text-muted-foreground border-transparent hover:border-border/50",
-              )}
-            >
-              #{idx + 1}
-            </button>
+            <Chip key={id} asChild pressed={idx === effectiveIdx} label={`#${idx + 1}`}>
+              <button type="button" onClick={() => setSelectedRequestIdx(idx)} />
+            </Chip>
           ))}
           <span className="text-muted-foreground/60 text-[9px] ml-auto">
             {/* read-gate-exempt: requests this browser tab started and tracks in memory, not rows fetched from a read */}

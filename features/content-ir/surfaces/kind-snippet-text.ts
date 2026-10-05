@@ -13,7 +13,7 @@
 
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { inlineKindText } from "@/features/content-ir/surfaces/kind-one-line";
-import { firstKindSlug, hasKindKey } from "@/features/content-ir/surfaces/json-kind-signal";
+import { firstKindSlug, hasKindKey, normalizeKindSpellings } from "@/features/content-ir/surfaces/json-kind-signal";
 
 const KIND_KEY = /(?<!\\)"(?:__kind|\\u005[fF]_kind)"\s*:/;
 
@@ -36,7 +36,9 @@ function unbalancedCloserEnd(text: string, from: number): number {
   return text.length;
 }
 
-export function snippetKindText(fragment: string): string {
+export function snippetKindText(raw: string): string {
+  // A Python-repr or zero-width-spelled kind reads like any other (K4).
+  const fragment = raw ? normalizeKindSpellings(raw) : raw;
   if (!fragment || !hasKindKey(fragment)) return fragment;
   let out = inlineKindText(fragment).replace(/\*\*/g, "");
   if (hasKindKey(out)) {

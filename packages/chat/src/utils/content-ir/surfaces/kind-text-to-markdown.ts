@@ -24,7 +24,7 @@ import {
   findKindCarryingJsonValues,
   frontMatterEnd,
 } from "./embedded-kind-json";
-import { firstKindSlug, hasKindKey, isKindJsonText, valueCarriesKind } from "./json-kind-signal";
+import { firstKindSlug, hasKindKey, isKindJsonText, normalizeKindSpellings, valueCarriesKind } from "./json-kind-signal";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -423,8 +423,10 @@ function noteEscapedCutOffKind(text: string, options: ConvertOptions): string {
  * off, malformed) becomes its one-line "<Kind> did not finish" note — never
  * the fragment.
  */
-export function kindTextToMarkdown(text: string | null | undefined): string {
-  if (!text) return "";
+export function kindTextToMarkdown(raw: string | null | undefined): string {
+  if (!raw) return "";
+  // A Python-repr or zero-width-spelled kind converts like any other (K4).
+  const text = normalizeKindSpellings(raw);
   if (!hasKindKey(text)) return text;
   return convertKindText(text, { broken: "note" });
 }
@@ -485,7 +487,8 @@ function kindKeyIndex(text: string): number {
  * still arriving is cut from the text and named in `pendingKind` so the
  * caller shows that kind's loader — the raw JSON never shows mid-stream.
  */
-export function kindTextPreview(text: string | null | undefined): KindTextPreview {
+export function kindTextPreview(raw: string | null | undefined): KindTextPreview {
+  const text = raw ? normalizeKindSpellings(raw) : raw;
   // An arriving kind is the caller's loader, not a note: keep it to cut below.
   const md = !text ? "" : hasKindKey(text) ? convertKindText(text, { broken: "keep" }) : text;
   const keyIndex = kindKeyIndex(md);

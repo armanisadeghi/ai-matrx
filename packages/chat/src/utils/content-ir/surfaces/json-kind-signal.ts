@@ -80,16 +80,43 @@ export interface KindTextOptions {
   json5?: boolean;
   markdown?: boolean;
   escaped?: boolean;
+  /** Also read a Python-repr key (`{'__kind': 'flashcard_set'}`) — text contexts only (K4). */
+  python?: boolean;
 }
+
+/**
+ * Invisible characters a model, a copy-paste or a sanitizer can leave INSIDE
+ * the key (`"__\u200Bkind"`): the screen still reads `"__kind"`, so the
+ * detector reads through them (K4, round 7). Zero-width space / non-joiner /
+ * joiner, word joiner, BOM / zero-width no-break space, soft hyphen.
+ */
+const ZERO_WIDTH = /[\u200B-\u200D\u2060\uFEFF\u00AD]/g;
+const HAS_ZERO_WIDTH = /[\u200B-\u200D\u2060\uFEFF\u00AD]/;
+
+/** The text without zero-width characters (unchanged — same string — when it has none). */
+export function withoutZeroWidth(text: string): string {
+  return HAS_ZERO_WIDTH.test(text) ? text.replace(ZERO_WIDTH, "") : text;
+}
+
+/**
+ * The key as a PYTHON REPR spells it (K4, round 7): `{'__kind': 'flashcard_set'}`
+ * — what `str(dict)` prints into a server error or a tool's string result.
+ * Text contexts only, and only in key position (after `{` or `,`) with a
+ * quoted value, so prose that says `'__kind':` is never one.
+ */
+const PYTHON_KIND_KEY = /[{,]\s*'__kind'\s*:\s*['"]/;
+const PYTHON_KIND_SLUG = /[{,]\s*'__kind'\s*:\s*(?:'([A-Za-z0-9_.:-]+)'|"([A-Za-z0-9_.:-]+)")/;
 
 /** Whether a fence language is JSON5 (the one context that widens the key rule). */
 export function isJson5Language(lang: string | null | undefined): boolean {
   return (lang ?? "").trim().toLowerCase() === "json5";
 }
 
-export function hasKindKey(text: string, options: KindTextOptions = {}): boolean {
+export function hasKindKey(source: string, options: KindTextOptions = {}): boolean {
+  const text = withoutZeroWidth(source);
   return (
     KIND_KEY.test(text) ||
+    (options.python === true && PYTHON_KIND_KEY.test(text)) ||
     (options.json5 === true && JSON5_KIND_KEY.test(text)) ||
     (options.markdown === true && MARKDOWN_KIND_KEY.test(text)) ||
     (options.escaped === true && ESCAPED_KIND_KEY.test(text))
@@ -114,14 +141,20 @@ export function isKindSlug(value: unknown): value is string {
  * which kind's skeleton to show while the region arrives. Never an identity:
  * the parser owns which kind a region actually is.
  */
-export function firstKindSlug(text: string, options: KindTextOptions = {}): string | null {
+export function firstKindSlug(source: string, options: KindTextOptions = {}): string | null {
+  const text = withoutZeroWidth(source);
   let literal = KIND_SLUG.exec(text)?.[1];
   if (!literal && options.json5) {
     const json5 = JSON5_KIND_SLUG.exec(text)?.[1];
     literal = json5?.startsWith("'") ? JSON.stringify(json5.slice(1, -1)) : json5;
   }
   if (!literal && options.escaped) {
-    return ESCAPED_KIND_SLUG.exec(text)?.[1] ?? null;
+    const escaped = ESCAPED_KIND_SLUG.exec(text)?.[1];
+    if (escaped) return escaped;
+  }
+  if (!literal && options.python) {
+    const python = PYTHON_KIND_SLUG.exec(text);
+    if (python) return python[1] ?? python[2] ?? null;
   }
   if (!literal) return null;
   let slug: unknown;
@@ -327,6 +360,114 @@ export function json5AsJson(text: string): string | null {
 }
 
 /**
+ * A Python repr of a dict/list (`{'__kind': 'flashcard_set', 'ok': True}`) as
+ * JSON text, or null when it is not one. Strings may be single- or
+ * double-quoted; `True` / `False` / `None` become JSON literals.
+ */
+export function pythonReprAsJson(text: string): string | null {
+  let out = "";
+  let i = 0;
+  while (i < text.length) {
+    const ch = text[i]!;
+    if (ch === "'" || ch === '"') {
+      let j = i + 1;
+      let body = "";
+      while (j < text.length && text[j] !== ch) {
+        if (text[j] === "\\") {
+          const next = text[j + 1] ?? "";
+          body += next === "'" ? "'" : `\\${next}`;
+          j += 2;
+          continue;
+        }
+        body += text[j] === '"' ? '\\"' : text[j]!;
+        j++;
+      }
+      if (j >= text.length) return null;
+      out += `"${body}"`;
+      i = j + 1;
+      continue;
+    }
+    const word = /^(?:True|False|None)\b/.exec(text.slice(i, i + 5));
+    if (word) {
+      out += word[0] === "True" ? "true" : word[0] === "False" ? "false" : "null";
+      i += word[0].length;
+      continue;
+    }
+    out += ch;
+    i++;
+  }
+  try {
+    JSON.parse(out);
+    return out;
+  } catch {
+    return null;
+  }
+}
+
+/** Where the Python-repr value opening at `start` (`{` or `[`) closes (exclusive), or null. */
+function pythonBalancedEnd(text: string, start: number): number | null {
+  let depth = 0;
+  let quote: string | null = null;
+  for (let i = start; i < text.length; i++) {
+    const ch = text[i]!;
+    if (quote) {
+      if (ch === "\\") i++;
+      else if (ch === quote) quote = null;
+      continue;
+    }
+    if (ch === "'" || ch === '"') quote = ch;
+    else if (ch === "{" || ch === "[") depth++;
+    else if (ch === "}" || ch === "]") {
+      depth--;
+      if (depth === 0) return i + 1;
+    }
+  }
+  return null;
+}
+
+/**
+ * THE one normalizer the text converters (markdown, one-line, search snippet)
+ * run first (K4, round 7), so a kind spelled the way the screen still reads
+ * as a kind converts like any other: zero-width characters are dropped, and
+ * every complete Python-repr dict that carries a `'__kind'` key outside
+ * quoted source is rewritten as its JSON. Text with neither comes back as the
+ * same string.
+ */
+export function normalizeKindSpellings(source: string): string {
+  let text = source;
+  if (HAS_ZERO_WIDTH.test(text) && hasKindKey(text, { python: true, markdown: true, escaped: true })) {
+    text = text.replace(ZERO_WIDTH, "");
+  }
+  if (!PYTHON_KIND_KEY.test(text)) return text;
+  // Whole JSON text: a Python repr in it is a string VALUE, never rewritten.
+  if (/^[{[]/.test(text.trimStart())) {
+    try {
+      JSON.parse(text);
+      return text;
+    } catch {
+      // Not JSON: read on.
+    }
+  }
+  const quoted = quotedSourceRanges(text);
+  let out = "";
+  let cursor = 0;
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] !== "{") continue;
+    if (quoted.some(([a, b]) => i >= a && i < b)) continue;
+    const end = pythonBalancedEnd(text, i);
+    if (end === null) continue;
+    const region = text.slice(i, end);
+    if (!PYTHON_KIND_KEY.test(region)) continue;
+    const json = pythonReprAsJson(region);
+    if (json === null) continue;
+    out += text.slice(cursor, i) + json;
+    cursor = end;
+    i = end - 1;
+  }
+  return cursor === 0 ? text : out + text.slice(cursor);
+}
+
+/**
  * The VALUE form of the same question, for renderers handed parsed data
  * instead of text (the value grid, the JSON viewers): does this value carry a
  * kind anywhere — an object with a string `__kind`, at any depth, or a string
@@ -469,7 +610,7 @@ export function markdownCarriesKind(source: string): boolean {
   // Front matter is document properties, hidden on screen and never lifted
   // (X-minor, round 3): a kind there is not a region of the text.
   const text = source.slice(frontMatterEnd(source));
-  if (!hasKindKey(text, { markdown: true })) return false;
+  if (!hasKindKey(text, { markdown: true, python: true })) return false;
   if (isKindJsonText(text)) return true;
   const quoted = quotedSourceRanges(text);
   if (quoted.length === 0) return true;
@@ -481,5 +622,5 @@ export function markdownCarriesKind(source: string): boolean {
     cursor = end;
   }
   outside += text.slice(cursor);
-  return hasKindKey(outside, { markdown: true });
+  return hasKindKey(outside, { markdown: true, python: true });
 }

@@ -27,6 +27,7 @@
  * exactly when the question gets asked.
  */
 
+import { Badge } from "@ai-matrx/design-system/controls";
 import { useState } from "react";
 import { Boxes } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
@@ -65,9 +66,7 @@ export function ConversationRecordsChip({
           <Boxes className="h-4 w-4" aria-hidden />
           <span className="hidden sm:inline">Records</span>
           {state.status === "ready" && state.active.length > 0 && (
-            <span className="rounded-full bg-primary/10 px-1.5 text-[11px] font-semibold text-primary">
-              {state.active.length}
-            </span>
+            <Badge tone="primary">{state.active.length}</Badge>
           )}
         </button>
       </PopoverTrigger>

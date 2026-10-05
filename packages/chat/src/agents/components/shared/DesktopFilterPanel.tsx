@@ -206,7 +206,7 @@ function MultiSelectChips({
             </Chip>
           );
         })}
-      </div>
+      </ChipSet>
       {filtered.length === 0 && searchQ && (
         <p className="text-xs text-muted-foreground">No matches</p>
       )}

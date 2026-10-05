@@ -20,6 +20,7 @@
  * `removeContextEntry`, and the doc gates — never a parallel path.
  */
 
+import { Badge, Chip } from "@ai-matrx/design-system/controls";
 import { useMemo } from "react";
 import {
   FileText,
@@ -249,19 +250,12 @@ export function AttachedContextSection({
               <span className="min-w-0 flex-1 truncate text-sm text-foreground">
                 {resourceLabel(r)}
               </span>
-              <span
-                className={cn(
-                  "shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium",
-                  r.status === "ready"
-                    ? "bg-primary/10 text-primary"
-                    : r.status === "error"
-                      ? "bg-destructive/10 text-destructive"
-                      : "bg-muted text-muted-foreground",
-                )}
+              <Badge
+                className="shrink-0"
+                tone={r.status === "ready" ? "primary" : r.status === "error" ? "destructive" : "neutral"}
               >
-                {r.blockType}
-                {r.status !== "ready" ? ` · ${r.status}` : ""}
-              </span>
+                {`${r.blockType}${r.status !== "ready" ? ` · ${r.status}` : ""}`}
+              </Badge>
               <RemoveX
                 label={resourceLabel(r)}
                 onRemove={() =>
@@ -311,9 +305,11 @@ export function AttachedContextSection({
               <span className="min-w-0 flex-1 text-sm text-foreground">
                 Observational memory
               </span>
-              <span className="shrink-0 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
-                {[memoryModel, memoryScope].filter(Boolean).join(" · ") || "on"}
-              </span>
+              <Chip
+                className="shrink-0"
+                tone="primary"
+                label={[memoryModel, memoryScope].filter(Boolean).join(" · ") || "on"}
+              />
             </li>
           )}
 
@@ -359,9 +355,7 @@ export function AttachedContextSection({
                     <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
                       {layer.title}
                     </span>
-                    <span className="shrink-0 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
-                      {layer.typeLabel}
-                    </span>
+                    <Chip className="shrink-0" tone="primary" label={layer.typeLabel} />
                   </li>
                 );
               })}

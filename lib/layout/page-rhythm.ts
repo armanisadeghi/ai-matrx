@@ -9,7 +9,12 @@
 //   gutter      the page's left/right inset                          12px phone · 16px ≥640px
 //   top         header bottom → the page's first block               16px phone · 24px ≥640px
 //   block gap   between two big blocks (cards → list, list → pager…) 16px phone · 24px ≥640px
-//   end         the page's TOTAL bottom space                        = block gap
+//   end         the page's TOTAL bottom space                        = gutter (12px · 16px)
+//
+// Why end = gutter, not the block gap: the page's content sits in one even frame — the space
+// under the last element matches the space beside it. The owner's words (2026-10-05): "the
+// bottom padding in total is the same as the other space". Measured before this scale, list
+// pages ended 20px under their pager beside a 12px gutter; a 24px end would have grown it.
 //
 // THE NO-STACKING RULE. The space under a page's last element is `end` — once. When something
 // floats over the bottom of the viewport (the page assistant, the assists pill, the mobile dock)
@@ -27,8 +32,8 @@
 
 /** The page-structure scale, in px, per breakpoint (`wide` applies at ≥ PAGE_RHYTHM_WIDE_MIN_PX). */
 export const PAGE_RHYTHM = {
-  narrow: { gutter: 12, top: 16, blockGap: 16, end: 16 },
-  wide: { gutter: 16, top: 24, blockGap: 24, end: 24 },
+  narrow: { gutter: 12, top: 16, blockGap: 16, end: 12 },
+  wide: { gutter: 16, top: 24, blockGap: 24, end: 16 },
 } as const;
 
 /** The viewport width the wide scale starts at (Tailwind `sm`). */

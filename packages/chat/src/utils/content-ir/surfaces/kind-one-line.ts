@@ -20,6 +20,7 @@ import {
 import {
   firstKindSlug,
   hasKindKey,
+  normalizeKindSpellings,
   quotedSourceRanges,
 } from "./json-kind-signal";
 
@@ -54,7 +55,9 @@ function inside(ranges: Array<[number, number]>, at: number): boolean {
  * prose replaced by its one-line form. Quoted source (inline code, non-JSON
  * fences) stays as written. Text with no kind key comes back unchanged.
  */
-export function inlineKindText(source: string, options: { plain?: boolean } = {}): string {
+export function inlineKindText(raw: string, options: { plain?: boolean } = {}): string {
+  // A Python-repr or zero-width-spelled kind converts like any other (K4).
+  const source = raw ? normalizeKindSpellings(raw) : raw;
   if (!source || !hasKindKey(source)) return source;
   type Span = { start: number; end: number; line: string };
   const spans: Span[] = [];

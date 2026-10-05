@@ -59,8 +59,9 @@ function KitCard({ kit }: { kit: StudyKit }) {
       </Link>
 
       {/* Every format this kit has, by name — THE chip, one uniform grid so
-          siblings share one width and one baseline. */}
-      <ChipSet layout="grid" className="px-3 pb-3">
+          siblings share one width and one baseline. Padded exactly like the
+          header (p-3.5): the set's box edge is the chips' visible edge. */}
+      <ChipSet layout="grid" className="px-3.5 pb-3.5">
         {present.map(({ artifact, visual }) => {
           const Icon = visual.icon;
           return (
@@ -80,8 +81,8 @@ function KitCard({ kit }: { kit: StudyKit }) {
       {/* THE ONE NUDGE — about this learner's own material, not about a
           feature they're missing out on. Renders nothing on a complete kit. */}
       {missing.length > 0 && (
-        <div className="mt-auto border-t border-border px-3 pb-3 pt-2">
-          <p className="mb-1.5 px-[3px] text-[11px] text-muted-foreground">
+        <div className="mt-auto border-t border-border px-3.5 pb-3.5 pt-2">
+          <p className="mb-1.5 text-[11px] text-muted-foreground">
             Not in this kit yet
           </p>
           <ChipSet layout="grid">

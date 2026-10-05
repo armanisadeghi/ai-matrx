@@ -30,12 +30,12 @@ describe("the page-rhythm scale", () => {
       SHELL_CSS.slice(SHELL_CSS.indexOf("/* PAGE RHYTHM")),
     )?.[1] ?? "";
 
-  it("is the owner's scale: 12/16 gutter, 16/24 top, 16/24 between big blocks, end = block gap", () => {
+  it("is the owner's scale: 12/16 gutter, 16/24 top, 16/24 between big blocks, end = gutter", () => {
     expect(PAGE_RHYTHM).toEqual({
-      narrow: { gutter: 12, top: 16, blockGap: 16, end: 16 },
-      wide: { gutter: 16, top: 24, blockGap: 24, end: 24 },
+      narrow: { gutter: 12, top: 16, blockGap: 16, end: 12 },
+      wide: { gutter: 16, top: 24, blockGap: 24, end: 16 },
     });
-    for (const scale of [PAGE_RHYTHM.narrow, PAGE_RHYTHM.wide]) expect(scale.end).toBe(scale.blockGap);
+    for (const scale of [PAGE_RHYTHM.narrow, PAGE_RHYTHM.wide]) expect(scale.end).toBe(scale.gutter);
   });
 
   it("styles/shell.css declares exactly these numbers", () => {
@@ -47,7 +47,7 @@ describe("the page-rhythm scale", () => {
       expect(declaredPx(narrowBlock, cssVar)).toBe(PAGE_RHYTHM.narrow[key]);
       expect(declaredPx(wideBlock, cssVar)).toBe(PAGE_RHYTHM.wide[key]);
     }
-    expect(narrowBlock).toMatch(/--matrx-page-end:\s*var\(--matrx-page-block-gap\)/);
+    expect(narrowBlock).toMatch(/--matrx-page-end:\s*var\(--matrx-page-gutter\)/);
   });
 
   it("the floating runway is the page end, never a constant stacked on it", () => {
@@ -67,10 +67,10 @@ describe("the double-padding detector", () => {
     const allowed = PAGE_RHYTHM.wide.end + PAGE_RHYTHM_TOLERANCE_PX;
     expect(isDoublePadded(allowed, 1440)).toBe(false);
     expect(isDoublePadded(allowed + 1, 1440)).toBe(true);
-    // The 2026-10-05 sample: the shell's 24px runway on top of a page's own 16px.
+    // The 2026-10-05 education sample: the shell's 24px runway on top of the page's own 16px.
     expect(isDoublePadded(40, 1440)).toBe(true);
     expect(isDoublePadded(16, 375)).toBe(false);
-    expect(isDoublePadded(24, 375)).toBe(true);
+    expect(isDoublePadded(17, 375)).toBe(true);
   });
 
   function rect(top: number, bottom: number) {
@@ -98,16 +98,16 @@ describe("the double-padding detector", () => {
     expect(isDoublePadded(measurePageEnd(doubled, []).endSpacePx, 1440)).toBe(true);
     doubled.remove();
 
-    const once = page(900 - 24);
-    expect(measurePageEnd(once, []).endSpacePx).toBe(24);
+    const once = page(900 - 16);
+    expect(measurePageEnd(once, []).endSpacePx).toBe(16);
     expect(isDoublePadded(measurePageEnd(once, []).endSpacePx, 1440)).toBe(false);
     once.remove();
   });
 
   it("measures against the floating chat's top when something floats over the bottom", () => {
-    const scroller = page(900 - 60 - 24);
+    const scroller = page(900 - 60 - 16);
     const chat = { top: 900 - 60, bottom: 900 - 12, left: 300, right: 700 };
-    expect(measurePageEnd(scroller, [chat]).endSpacePx).toBe(24);
+    expect(measurePageEnd(scroller, [chat]).endSpacePx).toBe(16);
     scroller.remove();
   });
 });

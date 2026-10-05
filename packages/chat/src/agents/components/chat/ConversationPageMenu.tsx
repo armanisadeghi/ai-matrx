@@ -32,6 +32,7 @@
  * record true.
  */
 
+import { Button } from "@ai-matrx/design-system/controls";
 import { useRef } from "react";
 import { ClipboardCopy, Download, MoreHorizontal, Pin, Search, Send, Share, X } from "lucide-react";
 import { useAssociations } from "@ai-matrx/associations/react";
@@ -225,22 +226,24 @@ export function ConversationPageMenu({
       {/* The filter is ON — say so where it was switched, one click clears it.
           Only while filtered; costs the transcript nothing. */}
       {pinnedOnly && (
-        <button
+        <Button
           type="button"
+          variant="quiet"
+          tone="warning"
+          className="shrink-0"
           onClick={() => setConversationPinnedOnly(conversationId, false)}
           aria-label="Showing pinned messages only — show all messages"
           title="Show all messages"
-          className="inline-flex h-7 shrink-0 items-center gap-1 rounded-md bg-amber-500/15 px-1.5 text-xs font-medium text-amber-700 transition-colors hover:bg-amber-500/25 dark:text-amber-300"
+          icon={<Pin aria-hidden="true" />}
+          iconEnd={<X aria-hidden="true" />}
         >
-          <Pin className="h-3.5 w-3.5" aria-hidden="true" />
           <UntrustedCount
             className="tabular-nums"
             trustworthy={!pinsReadFailed}
             label="Pinned messages"
             value={pinnedCount}
           />
-          <X className="hidden h-3 w-3 opacity-70 sm:block" aria-hidden="true" />
-        </button>
+        </Button>
       )}
       <ItemMenu
         config={{

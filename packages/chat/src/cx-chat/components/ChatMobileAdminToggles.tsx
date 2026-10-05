@@ -4,6 +4,7 @@
 //
 // Migrated to pure Redux: no context dependencies.
 
+import { Chip } from "@ai-matrx/design-system/controls";
 import { Blocks, Camera } from "lucide-react";
 import { useAppSelector, useAppDispatch } from "../../store/hooks";
 import {
@@ -49,21 +50,19 @@ export default function ChatMobileAdminToggles() {
   return (
     <div className="flex items-center gap-1">
       {loopbackAllowed && (
-        <button
-          onClick={handleToggleLocalhost}
+        <Chip
+          asChild
+          pressed={isUsingLocalhost}
+          tone="warning"
+          label="local"
           title={
             isUsingLocalhost
               ? "Using localhost — click to switch to production"
               : "Using production — click to switch to localhost"
           }
-          className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold transition-colors ${
-            isUsingLocalhost
-              ? "bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/40"
-              : "text-muted-foreground/50 hover:text-muted-foreground border border-transparent hover:border-border"
-          }`}
         >
-          local
-        </button>
+          <button type="button" onClick={handleToggleLocalhost} />
+        </Chip>
       )}
       <button
         onClick={handleToggleBlockMode}

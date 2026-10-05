@@ -11,7 +11,7 @@
 
 import React, { useCallback, useMemo, useState } from "react";
 import { FileText, Loader2, NotebookPen, Search } from "lucide-react";
-import { Input } from "@ai-matrx/design-system/controls";
+import { Input, Tabs } from "@ai-matrx/design-system/controls";
 import {
   Popover,
   PopoverContent,
@@ -106,25 +106,14 @@ function DocumentLinkPickerBody({
         </div>
         {/* Scratchpads are personal by design — no shared scope for them. */}
         {!isScratch && (
-          <div className="mt-1.5 flex gap-1" role="tablist" aria-label="Document scope">
-            {SCOPES.map((s) => (
-              <button
-                key={s.value}
-                type="button"
-                role="tab"
-                aria-selected={scope === s.value}
-                onClick={() => onScopeChange(s.value)}
-                className={cn(
-                  "rounded-full border px-2 py-0.5 text-[11px] font-medium transition-colors",
-                  scope === s.value
-                    ? "border-primary/40 bg-primary/10 text-primary"
-                    : "border-border text-muted-foreground hover:bg-accent",
-                )}
-              >
-                {s.label}
-              </button>
-            ))}
-          </div>
+          <Tabs
+            variant="capsule"
+            className="mt-1.5"
+            aria-label="Document scope"
+            value={scope}
+            onValueChange={onScopeChange}
+            data={SCOPES}
+          />
         )}
       </div>
 

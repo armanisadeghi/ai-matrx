@@ -347,7 +347,7 @@ function KitCard({ kit }: { kit: StudyKit }) {
   const missing = missingFormatsFor(kit);
   return (
     <article className="flex min-w-0 flex-col rounded-lg border border-border bg-card transition-colors hover:border-primary/40">
-      <Link href={href} className="group flex cursor-pointer items-center gap-2.5 py-2 pl-3 pr-2">
+      <Link href={href} className="group flex items-center gap-2.5 py-2 pl-3 pr-2">
         <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
           <Package className="size-4" aria-hidden />
         </span>
@@ -360,7 +360,7 @@ function KitCard({ kit }: { kit: StudyKit }) {
         </span>
         <ChevronRight className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" aria-hidden />
       </Link>
-      <ChipSet layout="grid" className="px-2.5 pb-2.5">
+      <ChipSet layout="grid" className="px-3 pb-3">
         {present.map(({ artifact, visual }) => {
           const Icon = visual.icon;
           return (
@@ -371,8 +371,8 @@ function KitCard({ kit }: { kit: StudyKit }) {
         })}
       </ChipSet>
       {missing.length > 0 ? (
-        <div className="mt-auto border-t border-border px-2.5 pb-2.5 pt-2">
-          <p className="mb-1.5 px-[3px] text-[0.6875rem] text-muted-foreground">Not in this kit yet</p>
+        <div className="mt-auto border-t border-border px-3 pb-3 pt-2">
+          <p className="mb-1.5 text-[0.6875rem] text-muted-foreground">Not in this kit yet</p>
           <ChipSet layout="grid">
             {missing.map((option) => {
               const Icon = option.visual.icon;

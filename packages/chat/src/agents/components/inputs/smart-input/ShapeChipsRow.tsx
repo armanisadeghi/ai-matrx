@@ -12,6 +12,7 @@
  * resolves the skill. No skill list gates the chips and no skill id is written.
  */
 
+import { Chip } from "@ai-matrx/design-system/controls";
 import {
   Layers,
   ListChecks,
@@ -84,26 +85,20 @@ export function ShapeChipsRow({
           const Icon = CHIP_ICONS[chip.key] ?? Layers;
           const selected = picked.has(chip.kind);
           return (
-            <button
+            <Chip
               key={chip.key}
-              type="button"
-              aria-pressed={selected}
-              onClick={() => toggle(chip.kind)}
+              asChild
+              pressed={selected}
+              icon={<Icon />}
+              label={chip.label}
               title={
                 selected
                   ? `${chip.label} picked for this chat — click to remove`
                   : `Answer as ${chip.label}`
               }
-              className={cn(
-                "inline-flex h-6 items-center gap-1 rounded-md border px-2 text-xs font-medium transition-colors",
-                selected
-                  ? "border-primary/50 bg-primary/10 text-primary"
-                  : "border-border bg-transparent text-muted-foreground hover:border-primary/40 hover:text-foreground",
-              )}
             >
-              <Icon className="h-3 w-3" />
-              {chip.label}
-            </button>
+              <button type="button" onClick={() => toggle(chip.kind)} />
+            </Chip>
           );
         })}
     </div>

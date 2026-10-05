@@ -12,7 +12,7 @@
  * QUOTED, an admin/debug window). Pure DOM reads: never mutates, never throws.
  */
 
-import { firstKindSlug, hasKindKey } from "@/features/content-ir/surfaces/json-kind-signal";
+import { firstKindSlug, hasKindKey, withoutZeroWidth } from "@/features/content-ir/surfaces/json-kind-signal";
 
 /**
  * What counts as a kind key ON SCREEN: the key itself, or its backslash-escaped
@@ -20,12 +20,12 @@ import { firstKindSlug, hasKindKey } from "@/features/content-ir/surfaces/json-k
  * kind, and that IS a leak (ruling c, round 6).
  */
 export function screenTextHoldsKind(text: string): boolean {
-  return hasKindKey(text, { escaped: true });
+  return hasKindKey(text, { escaped: true, python: true });
 }
 
 /** The kind slug named in on-screen text (escaped form included), or null. */
 export function screenKindSlug(text: string): string | null {
-  return firstKindSlug(text, { escaped: true });
+  return firstKindSlug(text, { escaped: true, python: true });
 }
 
 /** The one attribute a deliberate raw/source view carries. */
@@ -140,7 +140,7 @@ export interface KindAttributeLeak {
 export function attributeKindLeakOf(el: Element): KindAttributeLeak | null {
   for (const attribute of KIND_LEAK_ATTRIBUTES) {
     const value = el.getAttribute(attribute);
-    if (value && value.includes("kind") && screenTextHoldsKind(value.replace(/[“”„‟″]/g, '"'))) {
+    if (value && withoutZeroWidth(value).includes("kind") && screenTextHoldsKind(value.replace(/[“”„‟″]/g, '"'))) {
       return isInsideKindSource(el) ? null : { element: el, attribute, value };
     }
   }

@@ -10,6 +10,7 @@
  * mirrors the current importance score at the top so it's never hidden.
  */
 
+import { SegmentedControl } from "@ai-matrx/design-system/controls";
 import { Badge } from "@ai-matrx/design-system";
 import { cn } from "@ai-matrx/design-system";
 import {
@@ -60,23 +61,12 @@ export function MemoryComposer({ state, memory }: MemoryComposerProps) {
         </span>
 
         {isNew ? (
-          <div className="flex gap-1.5">
-            {SCOPE_OPTIONS.map((opt) => (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => state.setDraftScope(opt.value)}
-                className={cn(
-                  "rounded-full px-2.5 py-0.5 text-[11px] font-medium transition-colors",
-                  draft.scope === opt.value
-                    ? "bg-primary/15 text-primary"
-                    : "bg-muted text-muted-foreground hover:text-foreground",
-                )}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
+          <SegmentedControl
+            aria-label="Memory scope"
+            value={draft.scope}
+            onValueChange={(v) => state.setDraftScope(v)}
+            data={SCOPE_OPTIONS}
+          />
         ) : (
           memory && (
             <>

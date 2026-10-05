@@ -1,4 +1,6 @@
 import { getAccessTokenOrNull, resolveBaseUrl } from "../../host/server/python-client";
+import { getActiveOrgId } from "../../host/org";
+import { toast } from "../../host/notify";
 
 export type GoogleRealtimeChannel = "live" | "music";
 export type GoogleRealtimeConnectionState =
@@ -38,18 +40,13 @@ function socketUrl(channel: GoogleRealtimeChannel): string {
 
 /**
  * Resolve JUST the Supabase JWT — deliberately NOT `lib/python-client.ts`'s
- * `buildHeaders`. That helper is mandatory-org (fail-closed on no selected
- * organization) because every REST/NDJSON transport it serves reaches an
- * organization-scoped aidream endpoint. This WebSocket route
- * (`aidream/api/routers/google_specialized.py::_authenticated_setup`) is a
- * raw FastAPI websocket handler that never runs through `AuthMiddleware` at
- * all (websocket upgrades bypass the ASGI HTTP middleware stack) and has NO
- * organization concept server-side today — it only verifies the JWT. Routing
- * token extraction through `buildHeaders` would incorrectly gate every voice
- * session on having an organization selected, for a server call that does
- * not use one. If this endpoint later gains organization scoping, thread it
- * through the "setup" frame explicitly (see the file header) rather than
- * reintroducing this coupling.
+ * `buildHeaders` (mandatory-org, fail-closed). The socket never runs through
+ * `AuthMiddleware`; the server verifies the JWT, and the active organization
+ * rides the "setup" frame as `organization_id` (see `open()`): the server
+ * records every voice turn as a conversation in that organization. No active
+ * organization never blocks the session — the setup frame simply names none and
+ * the server answers `history_held`, which is surfaced to the person (never
+ * silent).
  */
 async function accessToken(): Promise<string> {
   const token = await getAccessTokenOrNull();
@@ -116,10 +113,12 @@ export function createGoogleRealtimeClient(
         ...(setup.options ?? {}),
         ...(sessionHandle ? { session_handle: sessionHandle } : {}),
       };
+      const organizationId = getActiveOrgId();
       next.send(
         JSON.stringify({
           type: "setup",
           access_token: token,
+          ...(organizationId ? { organization_id: organizationId } : {}),
           ...(Object.keys(options).length > 0 ? { options } : {}),
         }),
       );
@@ -141,6 +140,15 @@ export function createGoogleRealtimeClient(
         flush();
       } else if (event.type === "error") {
         emitState("error", String(event.message ?? "Realtime service error"));
+      } else if (event.type === "history_held") {
+        // The session runs, but its turns are not being kept: no organization
+        // reached the server. Say so — never silent.
+        toast.warning(
+          String(
+            event.message ?? "Pick an organization to keep this session's history.",
+          ),
+          { id: "google-realtime-history-held" },
+        );
       }
       for (const listener of eventListeners) listener(event);
     };

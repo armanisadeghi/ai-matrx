@@ -26,6 +26,7 @@
  * host list just renders `scope.items`.
  */
 
+import { Chip } from "@ai-matrx/design-system/controls";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -625,20 +626,9 @@ export const ConversationSourceFilterTree: React.FC<
                 preset.includeEmpty,
               );
               return (
-                <button
-                  key={preset.id}
-                  type="button"
-                  onClick={() => applyPreset(preset)}
-                  className={cn(
-                    "inline-flex h-5 items-center rounded-full border px-2 text-[10px] font-medium transition-colors",
-                    isActive
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-border text-muted-foreground hover:bg-accent hover:text-foreground",
-                  )}
-                  aria-pressed={isActive}
-                >
-                  {preset.label}
-                </button>
+                <Chip key={preset.id} asChild pressed={isActive} label={preset.label}>
+                  <button type="button" onClick={() => applyPreset(preset)} />
+                </Chip>
               );
             })}
           </div>
@@ -655,21 +645,15 @@ export const ConversationSourceFilterTree: React.FC<
             {ORIGIN_CLASSES.map((oc) => {
               const isActive = selectedOriginClasses.has(oc);
               return (
-                <button
+                <Chip
                   key={oc}
-                  type="button"
-                  onClick={() => toggleOriginClass(oc)}
-                  className={cn(
-                    "inline-flex h-5 items-center rounded-full border px-2 text-[10px] font-medium transition-colors",
-                    isActive
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-border text-muted-foreground hover:bg-accent hover:text-foreground",
-                  )}
-                  aria-pressed={isActive}
+                  asChild
+                  pressed={isActive}
+                  label={ORIGIN_CLASS_META[oc].label}
                   title={`Only show conversations started by: ${ORIGIN_CLASS_META[oc].label}`}
                 >
-                  {ORIGIN_CLASS_META[oc].label}
-                </button>
+                  <button type="button" onClick={() => toggleOriginClass(oc)} />
+                </Chip>
               );
             })}
           </div>

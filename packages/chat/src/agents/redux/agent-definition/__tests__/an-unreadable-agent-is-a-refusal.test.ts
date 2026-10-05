@@ -2,7 +2,8 @@
  * AN UNREADABLE AGENT IS A REFUSAL, NEVER A QUIET SUCCESS (page-pass
  * 2026-09-27, /agent-apps/[id]/run).
  *
- * `agx_get_execution_minimal` answers `[]` — no error — when the caller cannot
+ * The run-tier read (`agx_get_run_tier`, P24; before it `agx_get_execution_minimal`)
+ * answers `[]` — no error — when the caller cannot
  * read the agent (another organization's agent behind a shared, public app).
  * The thunk returned quietly, `isReady` stayed false forever, and the Fact
  * Checker's every Run said "still loading"; `useAgentApp` never reached its
@@ -30,6 +31,7 @@ it("rejects, and records the error, when the read returns no row", async () => {
   });
   const getState = () => ({ agentDefinition: { agents: {} } }) as never;
   const result = await fetchAgentExecutionMinimal("agent-x")(dispatch as never, getState, undefined);
-  expect(result.type).toBe("agentDefinition/fetchExecutionMinimal/rejected");
+  expect(result.type).toBe("agentDefinition/fetchRunTier/rejected");
+  expect(rpc).toHaveBeenCalledWith("agx_get_run_tier", { p_agent_id: "agent-x" });
   expect(actions.some((a) => /setAgentError/i.test(a.type))).toBe(true);
 });

@@ -40,6 +40,7 @@
  * reports.
  */
 
+import { Chip } from "@ai-matrx/design-system/controls";
 import { useEffect, useState } from "react";
 import { Lock } from "lucide-react";
 import { InfoHint } from "@ai-matrx/chat/host/ui-slots";
@@ -113,13 +114,12 @@ export function ConversationRoomNotice({ conversationId }: { conversationId?: st
       : notice.roomLabel;
 
   return (
-    <span
-      className="flex min-w-0 items-center gap-1.5 rounded-md border border-slate-300 bg-slate-100 px-2 py-0.5 text-xs text-slate-600 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300"
-    >
-      <Lock className="h-3.5 w-3.5 shrink-0" aria-hidden />
-      <span className="truncate">
-        Personal — only you can see this, even inside a shared room{where ? ` (${where})` : ""}
-      </span>
+    <span className="flex min-w-0 items-center gap-1">
+      <Chip
+        tone="slate"
+        icon={<Lock aria-hidden />}
+        label={`Personal — only you can see this, even inside a shared room${where ? ` (${where})` : ""}`}
+      />
       <InfoHint
         label="About this chat"
         text={`Personal chat in ${where ?? "a shared room"}; only you can open it until you share it with the room.`}

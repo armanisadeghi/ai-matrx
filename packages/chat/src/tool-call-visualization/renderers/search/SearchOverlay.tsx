@@ -23,6 +23,7 @@
  * tokens only; favicons via the Google favicon service. React Compiler is on.
  */
 
+import { Chip, SegmentedControl } from "@ai-matrx/design-system/controls";
 import React, { useMemo, useState } from "react";
 import {
     Search,
@@ -98,22 +99,12 @@ const BreadcrumbPath: React.FC<{ url: string }> = ({ url }) => {
 const FilterPill: React.FC<{
     active: boolean;
     onClick: () => void;
-    children: React.ReactNode;
+    label: string;
     title?: string;
-}> = ({ active, onClick, children, title }) => (
-    <button
-        type="button"
-        onClick={onClick}
-        title={title}
-        className={cn(
-            "inline-flex max-w-[280px] items-center gap-1.5 rounded-full border px-3 py-1 text-xs transition-colors",
-            active
-                ? "border-primary bg-primary/10 text-primary"
-                : "border-border bg-card text-muted-foreground hover:bg-muted/50",
-        )}
-    >
-        <span className="truncate">{children}</span>
-    </button>
+}> = ({ active, onClick, label, title }) => (
+    <Chip asChild pressed={active} label={label} title={title}>
+        <button type="button" onClick={onClick} />
+    </Chip>
 );
 
 /**
@@ -390,18 +381,19 @@ export const SearchOverlay: React.FC<ToolRendererProps> = ({ entry }) => {
                 <div className="space-y-2">
                     {multiQuery && (
                         <div className="flex flex-wrap gap-1.5">
-                            <FilterPill active={activeQuery === null} onClick={() => setActiveQuery(null)}>
-                                All queries ({sources.length})
-                            </FilterPill>
+                            <FilterPill
+                                active={activeQuery === null}
+                                onClick={() => setActiveQuery(null)}
+                                label={`All queries (${sources.length})`}
+                            />
                             {groups.map((g) => (
                                 <FilterPill
                                     key={g.query}
                                     active={activeQuery === g.query}
                                     onClick={() => setActiveQuery((q) => (q === g.query ? null : g.query))}
                                     title={g.query}
-                                >
-                                    {g.query} ({g.count})
-                                </FilterPill>
+                                    label={`${g.query} (${g.count})`}
+                                />
                             ))}
                         </div>
                     )}
@@ -418,21 +410,16 @@ export const SearchOverlay: React.FC<ToolRendererProps> = ({ entry }) => {
                         </div>
                         <div className="flex items-center gap-1.5">
                             <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
-                            {(["relevance", "domain", "date"] as const).map((k) => (
-                                <button
-                                    key={k}
-                                    type="button"
-                                    onClick={() => setSortKey(k)}
-                                    className={cn(
-                                        "rounded-md border px-2.5 py-1 text-xs capitalize transition-colors",
-                                        sortKey === k
-                                            ? "border-primary bg-primary/10 text-primary"
-                                            : "border-border bg-card text-muted-foreground hover:bg-muted/50",
-                                    )}
-                                >
-                                    {k}
-                                </button>
-                            ))}
+                            <SegmentedControl
+                                aria-label="Sort sources"
+                                value={sortKey}
+                                onValueChange={setSortKey}
+                                data={[
+                                    { value: "relevance", label: "Relevance" },
+                                    { value: "domain", label: "Domain" },
+                                    { value: "date", label: "Date" },
+                                ]}
+                            />
                         </div>
                     </div>
                 </div>

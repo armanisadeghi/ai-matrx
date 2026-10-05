@@ -20,6 +20,7 @@
  * provider, never a `<span>` naming something the reader cannot reach).
  */
 
+import { Badge } from "@ai-matrx/design-system/controls";
 import { useState } from "react";
 import { AlertTriangle, ExternalLink, Paperclip } from "lucide-react";
 import {
@@ -69,9 +70,7 @@ export function ConversationAttachmentsChip({
           <Paperclip className="h-4 w-4" aria-hidden />
           <span className="hidden sm:inline">Attached</span>
           {items.length > 0 && (
-            <span className="rounded-full bg-primary/10 px-1.5 text-[11px] font-semibold text-primary">
-              {items.length}
-            </span>
+            <Badge tone="primary">{items.length}</Badge>
           )}
           {attachments.status === "failed" && (
             <AlertTriangle

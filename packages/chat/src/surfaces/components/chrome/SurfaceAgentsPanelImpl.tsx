@@ -12,6 +12,7 @@
  * rendered as a breadcrumb (Brand › Site › [Page]) with children below.
  */
 
+import { Chip } from "@ai-matrx/design-system/controls";
 import { useState } from "react";
 import { Braces, ChevronRight, ShieldCheck } from "lucide-react";
 import { toast } from "../../../host/notify";
@@ -219,20 +220,9 @@ export default function SurfaceAgentsPanelImpl({
                 {i > 0 && (
                   <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground/60" />
                 )}
-                <button
-                  type="button"
-                  onClick={() => setActiveSurface(ref.name)}
-                  title={ref.name}
-                  className={cn(
-                    "rounded-md px-1.5 py-0.5 text-[10px] transition-colors",
-                    isSelf ? "font-semibold" : "font-normal",
-                    isActive
-                      ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground hover:bg-accent hover:text-foreground",
-                  )}
-                >
-                  {ref.label}
-                </button>
+                <Chip asChild pressed={isActive} label={ref.label} title={ref.name}>
+                  <button type="button" onClick={() => setActiveSurface(ref.name)} />
+                </Chip>
               </span>
             );
           })}
@@ -246,20 +236,9 @@ export default function SurfaceAgentsPanelImpl({
             Child surfaces
           </span>
           {related.children.map((c) => (
-            <button
-              key={c.name}
-              type="button"
-              onClick={() => setActiveSurface(c.name)}
-              title={c.name}
-              className={cn(
-                "rounded-md px-1.5 py-0.5 text-[10px] transition-colors",
-                activeName === c.name
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:bg-accent hover:text-foreground",
-              )}
-            >
-              {c.label}
-            </button>
+            <Chip key={c.name} asChild pressed={activeName === c.name} label={c.label} title={c.name}>
+              <button type="button" onClick={() => setActiveSurface(c.name)} />
+            </Chip>
           ))}
         </div>
       )}
