@@ -94,7 +94,8 @@ const CHAT_KEYS_ADDED = ["chatHost"];
  * Host keys whose slice moved INTO the package since P2 (P17b, P17), under the SAME key: the host
  * no longer imports these reducers itself, it mounts them through `...chatReducers`.
  */
-const CHAT_KEYS_MOVED_IN = ["proposedDirectives", "agentSettings"];
+// conversationAttachments, modelRegistry: moved in deliberately by 9e363c01e5 (P17b).
+const CHAT_KEYS_MOVED_IN = ["proposedDirectives", "agentSettings", "conversationAttachments", "modelRegistry"];
 
 const ALL_CHAT_KEYS = [...CHAT_KEYS_BEFORE_P2, ...CHAT_KEYS_ADDED, ...CHAT_KEYS_MOVED_IN];
 
