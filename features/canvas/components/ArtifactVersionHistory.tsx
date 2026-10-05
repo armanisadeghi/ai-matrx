@@ -34,16 +34,12 @@ import {
   type CanvasArtifactRow,
 } from "@/features/canvas/services/canvasArtifactService";
 import { CANVAS_ITEM_UPDATED_EVENT } from "@/features/canvas/hooks/useCanvasItem";
+import {
+  ArtifactVersionBody,
+  versionReadableText,
+  versionText,
+} from "./ArtifactVersionBody";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
-
-/** Pull the readable body out of the stored `{ data, type, metadata }` shape. */
-function versionText(row: CanvasArtifactRow): string {
-  const c = row.content as { data?: unknown } | string | null | undefined;
-  if (c && typeof c === "object" && "data" in c) {
-    return typeof c.data === "string" ? c.data : JSON.stringify(c.data ?? "", null, 2);
-  }
-  return typeof c === "string" ? c : JSON.stringify(c ?? "", null, 2);
-}
 
 function relTime(iso: string): string {
   try {
@@ -229,8 +225,8 @@ export function ArtifactVersionHistory({
                       type="button"
                       onClick={() =>
                         openDiff({
-                          original: versionText(selected),
-                          modified: versionText(current),
+                          original: versionReadableText(selected),
+                          modified: versionReadableText(current),
                           originalLabel: `v${selected.version}`,
                           modifiedLabel: `Current (v${current.version})`,
                           title: `${selected.title ?? "Artifact"} — compare`,
@@ -247,9 +243,7 @@ export function ArtifactVersionHistory({
                     </button>
                   )}
                 </div>
-                <pre className="max-h-40 overflow-auto whitespace-pre-wrap px-3 pb-3 pt-1 text-[11px] leading-relaxed text-foreground/80">
-                  {versionText(selected).slice(0, 4000)}
-                </pre>
+                <ArtifactVersionBody row={selected} />
               </div>
             )}
           </>
