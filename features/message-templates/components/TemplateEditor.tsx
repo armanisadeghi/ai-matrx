@@ -274,7 +274,7 @@ export function TemplateEditor({ template, mode }: TemplateEditorProps) {
               }}
             >
               <SelectTrigger
-                className="h-9 w-32 text-sm"
+                className="w-32"
                 style={{ fontSize: "16px" }}
               >
                 <SelectValue />

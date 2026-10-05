@@ -4,7 +4,7 @@ import React, { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   Select,
   SelectContent,
@@ -305,7 +305,7 @@ export function CategoryTree({
               placeholder="Search categories..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-1 text-[16px]"
+              className="flex-1"
             />
           )}
           {!placementFilter && (

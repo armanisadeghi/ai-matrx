@@ -13,7 +13,7 @@ import {
   MatrxDataTable,
   type MatrxColumnDef,
 } from "@ai-matrx/design-system/data-table";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
@@ -194,11 +194,11 @@ export function DirectiveCatalogGrid({
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Search name, token or table…"
                 aria-label="Search directive nouns and tables"
-                className="h-11 w-full text-base sm:w-56 lg:h-8 lg:text-sm"
+                className="w-full sm:w-56"
               />
               <Select value={familyFilter} onValueChange={setFamilyFilter}>
                 <SelectTrigger
-                  className="h-11 w-auto min-w-0 flex-1 text-base sm:w-56 sm:flex-none lg:h-8 lg:text-sm"
+                  className="w-auto min-w-0 flex-1 sm:w-56 sm:flex-none"
                   aria-label="Filter directive nouns by family"
                 >
                   <SelectValue placeholder="All families" />

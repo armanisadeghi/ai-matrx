@@ -9,7 +9,7 @@ import { TriangleAlert, Trash2 } from "lucide-react";
 import { EntityTypeChip } from "@/components/entity-types/EntityTypeChip";
 import { EntityTypeCombobox } from "@/components/entity-types/EntityTypeCombobox";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Switch } from "@/components/ui/switch";
 import {
   Select,
@@ -216,7 +216,6 @@ export function RuleEditorForm({
                 });
               }}
               placeholder="e.g. attachment"
-              className="h-8"
               style={{ fontSize: "16px" }}
             />
           ) : (
@@ -283,7 +282,7 @@ export function RuleEditorForm({
               onChange({ ...editor, conveysMax: v as PermissionLevel })
             }
           >
-            <SelectTrigger className="h-8">
+            <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

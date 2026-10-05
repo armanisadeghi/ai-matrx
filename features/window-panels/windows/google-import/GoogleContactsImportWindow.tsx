@@ -19,7 +19,7 @@ import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { GoogleContactsImportPanel } from "@/features/connectors/import/GoogleContactsImportPanel";
 import { DirectoryReview } from "@/features/google-workspace/directory/DirectoryReview";
 import { canUseGoogleOAuthInternalTest } from "@/features/marketing/google/internal-test-reviewer";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsListLegacy as TabsList, TabsTriggerLegacy as TabsTrigger } from "@/components/ui/tabs";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
   selectIsSuperAdmin,

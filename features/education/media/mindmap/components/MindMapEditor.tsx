@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";

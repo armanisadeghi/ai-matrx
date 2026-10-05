@@ -234,7 +234,7 @@ export function TopicalMapHomeCard({
         {brandSites && unbound.length > 0 ? (
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <Select value={pendingSite} onValueChange={setPendingSite} disabled={bind.isPending}>
-              <SelectTrigger className="h-8 w-64 text-xs" aria-label="Site to bind to this map">
+              <SelectTrigger className="w-64" aria-label="Site to bind to this map">
                 <SelectValue placeholder="A site of this brand" />
               </SelectTrigger>
               <SelectContent>

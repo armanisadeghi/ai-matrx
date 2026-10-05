@@ -34,7 +34,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Skeleton } from "@ai-matrx/design-system";
 import { SourceFavicon } from "@/features/research/components/results/SourceFavicon";
 import { OrganizationRequiredNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
@@ -238,13 +238,12 @@ export function AuthenticatorWorkspace() {
           <div className="flex min-h-16 items-center gap-3 border-b border-border px-4 py-2 sm:rounded-t-xl sm:border sm:bg-card sm:px-5">
             {entries.length >= 5 ? (
               <div className="relative min-w-0 flex-1">
-                <Input
+                <Input adornment="start"
                   type="search"
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
                   placeholder="Search authenticators"
                   aria-label="Search authenticators"
-                  className="h-11 bg-muted/60 pl-10 text-base"
                   style={{ fontSize: "16px" }}
                 />
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />

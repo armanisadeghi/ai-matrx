@@ -30,7 +30,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -233,7 +233,7 @@ export function OffboardEmployeeDialog({
               value={category}
               onValueChange={(v) => setCategory(v as HrSeparationCategory)}
             >
-              <SelectTrigger id="sep-category" className="min-h-11 sm:min-h-9">
+              <SelectTrigger id="sep-category">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -281,7 +281,7 @@ export function OffboardEmployeeDialog({
                     setCorrectiveActionId(v === NO_BASIS ? "" : v)
                   }
                 >
-                  <SelectTrigger id="sep-basis" className="min-h-11 sm:min-h-9">
+                  <SelectTrigger id="sep-basis">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -310,7 +310,7 @@ export function OffboardEmployeeDialog({
               </p>
             ) : (
               <Select value={reasonId} onValueChange={setReasonId}>
-                <SelectTrigger id="sep-reason" className="min-h-11 sm:min-h-9">
+                <SelectTrigger id="sep-reason">
                   <SelectValue placeholder="Choose a reason" />
                 </SelectTrigger>
                 <SelectContent>
@@ -330,7 +330,7 @@ export function OffboardEmployeeDialog({
               value={initiator}
               onValueChange={(v) => setInitiator(v as HrSeparationInitiator)}
             >
-              <SelectTrigger id="sep-initiator" className="min-h-11 sm:min-h-9">
+              <SelectTrigger id="sep-initiator">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -351,7 +351,6 @@ export function OffboardEmployeeDialog({
                 type="date"
                 value={lastDayWorked}
                 onChange={(e) => setLastDayWorked(e.target.value)}
-                className="min-h-11 sm:min-h-9"
               />
             </div>
             <div className="space-y-1.5">
@@ -361,7 +360,6 @@ export function OffboardEmployeeDialog({
                 type="date"
                 value={terminationDate}
                 onChange={(e) => setTerminationDate(e.target.value)}
-                className="min-h-11 sm:min-h-9"
               />
             </div>
           </div>
@@ -384,7 +382,7 @@ export function OffboardEmployeeDialog({
               value={rehire}
               onValueChange={(v) => setRehire(v as RehireChoice)}
             >
-              <SelectTrigger id="sep-rehire" className="min-h-11 sm:min-h-9">
+              <SelectTrigger id="sep-rehire">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -403,7 +401,6 @@ export function OffboardEmployeeDialog({
               id="sep-note"
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              className="min-h-11 sm:min-h-9"
               placeholder="Kept with the separation; skip it if there is nothing to add."
             />
           </div>

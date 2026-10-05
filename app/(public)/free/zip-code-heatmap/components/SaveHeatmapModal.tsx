@@ -4,7 +4,8 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Share2, Loader2, Copy, Check, Globe2, Lock, LogIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input, Button as SurfaceButton } from '@ai-matrx/design-system';
+import { Button as SurfaceButton } from '@ai-matrx/design-system';
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import {
@@ -306,7 +307,7 @@ export default function SaveHeatmapModal({
               <div className="space-y-2">
                 <Label>Share Link</Label>
                 <div className="flex gap-2">
-                  <Input value={shareUrl} readOnly className="font-mono text-sm" />
+                  <Input mono value={shareUrl} readOnly />
                   <SurfaceButton
                     variant="outline"
                     size="icon"

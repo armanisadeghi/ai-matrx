@@ -21,7 +21,8 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ClipboardType, FileAudio, Link2, Loader2, Plus, Upload } from "lucide-react";
-import { Input, Textarea } from "@ai-matrx/design-system";
+import { Textarea } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { TapTargetButtonSolid } from "@ai-matrx/tap-target";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";

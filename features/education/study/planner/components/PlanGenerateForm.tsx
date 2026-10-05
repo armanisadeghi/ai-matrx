@@ -11,7 +11,7 @@
 import { useEffect, useState } from "react";
 import { CalendarClock, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 import { useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
@@ -237,7 +237,6 @@ export function PlanGenerateForm({
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="e.g. Spanish midterm, AP Bio Unit 3"
-            className="text-base sm:text-sm"
           />
         </Field>
 
@@ -248,7 +247,6 @@ export function PlanGenerateForm({
               value={examDate}
               min={todayIso()}
               onChange={(e) => setExamDate(e.target.value)}
-              className="text-base sm:text-sm"
             />
           </Field>
           <Field label={`Minutes per day: ${dailyMinutes}`}>
@@ -293,7 +291,7 @@ export function PlanGenerateForm({
             value={cap}
             onChange={(e) => setCap(e.target.value)}
             placeholder="e.g. 40 — leave blank for no cap"
-            className="max-w-[220px] text-base sm:text-sm"
+            className="max-w-[220px]"
           />
         </Field>
 

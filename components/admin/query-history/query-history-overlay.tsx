@@ -13,7 +13,7 @@ import {
   StoredQuery 
 } from './query-storage';
 import { Button } from '@/components/ui/button';
-import { Input } from '@ai-matrx/design-system';
+import { Input } from "@ai-matrx/design-system/controls";
 import { Popover, PopoverContent, PopoverTrigger } from '@ai-matrx/design-system';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
@@ -226,11 +226,10 @@ export const QueryHistoryOverlay: React.FC<QueryHistoryOverlayProps> = ({
           <div className="flex-1 min-w-[300px]">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-              <Input
+              <Input adornment="start"
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}
                 placeholder="Search queries..."
-                className="pl-10 bg-white dark:bg-slate-900"
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
               />
             </div>

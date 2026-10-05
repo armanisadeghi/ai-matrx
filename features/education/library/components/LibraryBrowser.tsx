@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { Search, ShieldCheck, Library as LibraryIcon, Lightbulb } from "lucide-react";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { DeckCard } from "./DeckCard";
@@ -205,11 +205,10 @@ export function LibraryBrowser({
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
+          <Input adornment="start"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search decks by name, topic, or description…"
-            className="pl-9"
           />
         </div>
         <Button

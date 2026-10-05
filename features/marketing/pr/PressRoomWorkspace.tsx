@@ -371,7 +371,7 @@ export default function PressRoomWorkspace({
             value={brandId}
             onValueChange={(value) => set({ brand: value })}
           >
-            <SelectTrigger id="press-brand" className="h-8 w-56">
+            <SelectTrigger id="press-brand" className="w-56">
               <SelectValue
                 placeholder={
                   brands.isLoading ? "Loading…" : "Select a business"
@@ -399,7 +399,7 @@ export default function PressRoomWorkspace({
             onValueChange={(value) => set({ site: value })}
             disabled={!brandId}
           >
-            <SelectTrigger id="press-site" className="h-8 w-56">
+            <SelectTrigger id="press-site" className="w-56">
               <SelectValue
                 placeholder={sites.isLoading ? "Loading…" : "Select a site"}
               />

@@ -9,7 +9,7 @@ import {
   X,
 } from "lucide-react";
 import { Button } from "@ai-matrx/design-system";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   Select,
   SelectContent,
@@ -331,7 +331,7 @@ export function ContextItemAddForm({
                 onValueChange={(v) => setPrimitiveType(v as ContextValueType)}
                 disabled={busy}
               >
-                <SelectTrigger id={ids.primitive} size="sm" className="w-40">
+                <SelectTrigger id={ids.primitive} className="w-40">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -386,7 +386,7 @@ export function ContextItemAddForm({
             onValueChange={(v) => setCategory(v === NO_CATEGORY ? "" : v)}
             disabled={busy}
           >
-            <SelectTrigger id={ids.category} size="sm">
+            <SelectTrigger id={ids.category}>
               <SelectValue placeholder="None" />
             </SelectTrigger>
             <SelectContent>
@@ -513,7 +513,7 @@ export function ContextItemAddForm({
               onValueChange={(v) => setFetchHint(v as ContextFetchHint)}
               disabled={busy}
             >
-              <SelectTrigger id={ids.fetch} size="sm">
+              <SelectTrigger id={ids.fetch}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -533,7 +533,7 @@ export function ContextItemAddForm({
               onValueChange={(v) => setSensitivity(v as ContextSensitivity)}
               disabled={busy}
             >
-              <SelectTrigger id={ids.sensitivity} size="sm">
+              <SelectTrigger id={ids.sensitivity}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

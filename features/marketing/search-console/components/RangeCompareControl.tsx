@@ -22,7 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import type {
   GscCompareMode,
   GscRangeKey,
@@ -81,8 +81,7 @@ export function RangeCompareControl({
         disabled={disabled}
       >
         <SelectTrigger
-          size="sm"
-          className="h-7 w-auto gap-1 border-border bg-card px-2 text-xs"
+          className="w-auto"
           aria-label="Date range"
         >
           <CalendarRange className="h-3.5 w-3.5 text-muted-foreground" />
@@ -116,19 +115,19 @@ export function RangeCompareControl({
 
       {customOpen ? (
         <div className="flex items-center gap-1 rounded-md border border-border bg-card p-0.5">
-          <Input
+          <Input variant="bare"
             type="date"
             value={draftFrom}
             onChange={(e) => setDraftFrom(e.target.value)}
-            className="h-6 w-32 border-0 bg-transparent px-1 text-xs"
+            className="w-32"
             aria-label="Start date"
           />
           <span className="text-xs text-muted-foreground">→</span>
-          <Input
+          <Input variant="bare"
             type="date"
             value={draftTo}
             onChange={(e) => setDraftTo(e.target.value)}
-            className="h-6 w-32 border-0 bg-transparent px-1 text-xs"
+            className="w-32"
             aria-label="End date"
           />
           <Button
@@ -165,8 +164,7 @@ export function RangeCompareControl({
         disabled={disabled}
       >
         <SelectTrigger
-          size="sm"
-          className="h-7 w-auto border-border bg-card px-2 text-xs"
+          className="w-auto"
           aria-label="Compare mode"
         >
           <SelectValue />

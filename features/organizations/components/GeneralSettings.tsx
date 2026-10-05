@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Save, X, Loader2, Copy, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/lib/toast";
@@ -269,7 +269,7 @@ export function GeneralSettings({
                 minLength={2}
                 maxLength={3}
                 disabled={isSaving}
-                className="w-24 font-semibold uppercase tracking-wider"
+                className="w-24"
               />
               {!abbreviationValidation.valid && (
                 <p

@@ -174,7 +174,7 @@ export function MaskDialog({ fileId, open, onOpenChange }: MaskDialogProps) {
             <div className="space-y-1">
               <span className="text-xs font-medium">Mode</span>
               <Select value={mode} onValueChange={(v) => setMode(v as Mode)}>
-                <SelectTrigger className="h-9 text-xs">
+                <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -197,7 +197,7 @@ export function MaskDialog({ fileId, open, onOpenChange }: MaskDialogProps) {
               <div className="space-y-1">
                 <span className="text-xs font-medium">Substitute style</span>
                 <Select value={style} onValueChange={(v) => setStyle(v as Style)}>
-                  <SelectTrigger className="h-9 text-xs">
+                  <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>

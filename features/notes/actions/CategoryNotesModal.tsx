@@ -5,7 +5,7 @@ import { RichContent } from "@/components/rich-content/RichContent";
 import { idMatchesQuery } from '@ai-matrx/kit/search-scoring';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@ai-matrx/design-system';
+import { Input } from "@ai-matrx/design-system/controls";
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { 
@@ -311,11 +311,10 @@ export function CategoryNotesModal({
                                 <div className="p-3 border-b border-border">
                                     <div className="relative">
                                         <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-muted-foreground" />
-                                        <Input
+                                        <Input adornment="start"
                                             placeholder="Search..."
                                             value={searchQuery}
                                             onChange={(e) => setSearchQuery(e.target.value)}
-                                            className="pl-7 h-8 text-sm"
                                         />
                                     </div>
                                 </div>
@@ -449,7 +448,6 @@ export function CategoryNotesModal({
                                     placeholder="Title (optional - auto-generated from content)"
                                     value={newNoteLabel}
                                     onChange={(e) => setNewNoteLabel(e.target.value)}
-                                    className="text-base"
                                 />
                             </div>
                             <ProTextarea
@@ -475,7 +473,6 @@ export function CategoryNotesModal({
                                     placeholder="Title (optional)"
                                     value={editNoteLabel}
                                     onChange={(e) => setEditNoteLabel(e.target.value)}
-                                    className="text-base"
                                 />
                             </div>
                             <ProTextarea
@@ -499,11 +496,10 @@ export function CategoryNotesModal({
                             <div className="p-3 border-b border-border">
                                 <div className="relative">
                                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                    <Input
+                                    <Input adornment="start"
                                         placeholder="Search all notes to import..."
                                         value={importSearchQuery}
                                         onChange={(e) => setImportSearchQuery(e.target.value)}
-                                        className="pl-10"
                                     />
                                 </div>
                             </div>

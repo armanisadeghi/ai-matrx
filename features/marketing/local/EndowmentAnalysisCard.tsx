@@ -4,7 +4,7 @@ import { useState } from "react";
 import { ListChecks } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { SectionCard } from "@/features/marketing/components/shared/MarketingUi";
 import { launchAgentExecution } from "@ai-matrx/chat/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
@@ -173,7 +173,6 @@ export function EndowmentAnalysisCard({
         <div className="flex flex-col gap-1">
           <Label className="text-xs text-muted-foreground">Company</Label>
           <Input
-            className="h-8 text-sm"
             value={company}
             onChange={(event) => setCompany(event.target.value)}
             placeholder="e.g. All Green Electronics Recycling"
@@ -182,7 +181,6 @@ export function EndowmentAnalysisCard({
         <div className="flex flex-col gap-1">
           <Label className="text-xs text-muted-foreground">Industry</Label>
           <Input
-            className="h-8 text-sm"
             value={industry}
             onChange={(event) => setIndustry(event.target.value)}
             placeholder="e.g. electronics recycling / ITAD"
@@ -191,7 +189,6 @@ export function EndowmentAnalysisCard({
         <div className="flex flex-col gap-1">
           <Label className="text-xs text-muted-foreground">Location (optional)</Label>
           <Input
-            className="h-8 text-sm"
             value={location}
             onChange={(event) => setLocation(event.target.value)}
             placeholder="City / region — drives the place and capital endowments"

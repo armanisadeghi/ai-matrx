@@ -4,7 +4,7 @@ import { formatDurationMs } from "@ai-matrx/kit/format";
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   Tooltip,
   TooltipContent,
@@ -155,7 +155,7 @@ export function QueryBlock({
         <Input
           value={block.label}
           onChange={(e) => onUpdate(block.id, { label: e.target.value })}
-          className="h-7 text-sm font-medium border-transparent shadow-none bg-transparent focus-visible:ring-1 focus-visible:ring-slate-300 dark:focus-visible:ring-slate-600 px-2 min-w-0 flex-1"
+          className="min-w-0 flex-1"
           placeholder="Query name"
         />
 

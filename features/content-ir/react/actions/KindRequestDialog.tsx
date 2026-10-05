@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ProTextarea } from "@/components/official/ProTextarea";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
   selectConversationRequestIds,
@@ -361,7 +361,7 @@ export function KindRequestDialog({
                       setValues((v) => ({ ...v, [f.name]: e.target.value }))
                     }
                     placeholder={f.placeholder}
-                    className="mt-1 text-base sm:text-sm"
+                    className="mt-1"
                     disabled={isRunning}
                   />
                 ) : (

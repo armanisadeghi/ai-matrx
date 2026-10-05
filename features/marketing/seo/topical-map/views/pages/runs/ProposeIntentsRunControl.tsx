@@ -21,7 +21,7 @@
 import { useState } from "react";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { X } from "lucide-react";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 
 import { Button } from "@/components/ui/button";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
@@ -301,7 +301,6 @@ function TopicPicker({
         value={query}
         placeholder="Search this map's topics…"
         onChange={(event) => onQueryChange(event.target.value)}
-        className="h-7 text-xs"
       />
       {!searching ? null : search.isPending ? (
         <SuspenseLoader

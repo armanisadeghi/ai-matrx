@@ -10,7 +10,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, ChevronRight, Search } from "lucide-react";
-import { Input, Skeleton } from "@ai-matrx/design-system";
+import { Skeleton } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { allTypesToggleLabel } from "./referencePickerTypes";
 
 export interface TypeOption {
@@ -75,12 +76,11 @@ export function TypeStep({
     <div className="flex min-h-0 flex-col gap-3">
       <div className="relative">
         <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-        <Input
+        <Input adornment="start"
           ref={inputRef}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="What do you want to reference?"
-          className="h-9 pl-8 text-base"
           onKeyDown={(e) => {
             if (e.key === "Enter" && matches && matches[0]) onChoose(matches[0]);
             if (e.key === "Escape") onCancel();

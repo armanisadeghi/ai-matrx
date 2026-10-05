@@ -7,7 +7,7 @@
 import React, { useState } from "react";
 import { Check, Loader2, Plus, RotateCcw, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 /** 14px square check glyph — fixed footprint in both states. */
@@ -172,7 +172,6 @@ export function InlineCreate({
           e.stopPropagation();
         }}
         placeholder={placeholder}
-        className="h-6 rounded px-1.5 py-0 text-[13px] md:text-[13px]"
         style={{ fontSize: "16px" }}
       />
       <button

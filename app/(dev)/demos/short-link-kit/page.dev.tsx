@@ -5,7 +5,7 @@ import { CopyShortLinkButton } from "@ai-matrx/kit/short-link-react";
 import { supabase } from "@/utils/supabase/client";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 
 // The five-minute proof for the short-link package (kit ./short-link-react):
 // everything below the input — the mint call (org-gated shorten_app_url door),
@@ -27,10 +27,10 @@ export default function ShortLinkKitDemo() {
         </p>
       </div>
       <div className="flex items-center gap-2">
-        <Input
+        <Input mono
           value={path}
           onChange={(e) => setPath(e.target.value)}
-          className="flex-1 font-mono text-sm"
+          className="flex-1"
           placeholder="/some/app/path"
         />
         {organizationId ? (

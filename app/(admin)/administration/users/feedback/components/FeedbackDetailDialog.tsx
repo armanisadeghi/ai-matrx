@@ -52,7 +52,7 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   Select,
   SelectContent,
@@ -1148,13 +1148,12 @@ export default function FeedbackDetailDialog({
             {/* Six triggers do not fit a phone: the strip scrolls sideways and
                 no trigger may shrink into an unreadable sliver. */}
             <TabsList className="w-full justify-start overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&>*]:shrink-0">
-              <TabsTrigger value="submission" className="gap-1.5 text-xs">
+              <TabsTrigger value="submission">
                 <MessageSquare className="w-3.5 h-3.5" />
                 Submission
               </TabsTrigger>
               <TabsTrigger
                 value="analysis"
-                className="gap-1.5 text-xs"
                 disabled={!hasAiAnalysis}
               >
                 <Brain className="w-3.5 h-3.5" />
@@ -1163,17 +1162,16 @@ export default function FeedbackDetailDialog({
                   <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 ml-1" />
                 )}
               </TabsTrigger>
-              <TabsTrigger value="decision" className="gap-1.5 text-xs">
+              <TabsTrigger value="decision">
                 <Shield className="w-3.5 h-3.5" />
                 Decision
               </TabsTrigger>
-              <TabsTrigger value="comments" className="gap-1.5 text-xs">
+              <TabsTrigger value="comments">
                 <MessageSquare className="w-3.5 h-3.5" />
                 Comments
               </TabsTrigger>
               <TabsTrigger
                 value="testing"
-                className="gap-1.5 text-xs"
                 disabled={!hasTesting && !isResolved}
               >
                 <TestTube className="w-3.5 h-3.5" />
@@ -1182,7 +1180,7 @@ export default function FeedbackDetailDialog({
                   <span className="w-1.5 h-1.5 rounded-full bg-green-500 ml-1" />
                 )}
               </TabsTrigger>
-              <TabsTrigger value="user-messages" className="gap-1.5 text-xs">
+              <TabsTrigger value="user-messages">
                 <Users className="w-3.5 h-3.5" />
                 User Messages
                 {isUserReview && (
@@ -1757,7 +1755,7 @@ export default function FeedbackDetailDialog({
                                 onChange={(e) =>
                                   setParentSearchQuery(e.target.value)
                                 }
-                                className="h-8 text-xs mb-2"
+                                className="mb-2"
                                 autoFocus
                               />
                               <div className="max-h-48 overflow-y-auto space-y-1">
@@ -1822,7 +1820,7 @@ export default function FeedbackDetailDialog({
                       Category
                     </label>
                     <Select value={categoryId} onValueChange={setCategoryId}>
-                      <SelectTrigger className="h-9">
+                      <SelectTrigger>
                         <SelectValue>
                           {categoryId !== "none" ? (
                             (() => {
@@ -1903,7 +1901,7 @@ export default function FeedbackDetailDialog({
                   </label>
                   <div className="flex items-center gap-1">
                     <Select value={assigneeId} onValueChange={setAssigneeId}>
-                      <SelectTrigger className="h-9">
+                      <SelectTrigger>
                         <SelectValue>
                           {(() => {
                             if (assigneeId === "none")

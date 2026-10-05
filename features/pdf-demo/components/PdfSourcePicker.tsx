@@ -142,7 +142,7 @@ export function PdfSourcePicker({ value, onChange }: Props) {
         </div>
       ) : (
         <Tabs defaultValue="upload" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList fill>
             <TabsTrigger value="upload">
               <Upload className="h-3.5 w-3.5 mr-1" /> Upload
             </TabsTrigger>

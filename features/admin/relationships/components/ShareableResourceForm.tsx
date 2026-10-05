@@ -10,7 +10,7 @@ import { TriangleAlert } from "lucide-react";
 import { EntityTypeChip } from "@/components/entity-types/EntityTypeChip";
 import { EntityTypeCombobox } from "@/components/entity-types/EntityTypeCombobox";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Switch } from "@/components/ui/switch";
 import type { EntityTypeDisabledMap } from "@/components/entity-types/EntityTypeCombobox";
 import { SharePolicyColumnEditor } from "./SharePolicyColumnEditor";
@@ -102,47 +102,43 @@ export function ShareableResourceForm({
         <div className="grid grid-cols-2 gap-3 border-t border-border p-3">
           <div className="flex flex-col gap-1.5">
             <span className="text-xs font-medium">Schema</span>
-            <Input
+            <Input mono
               value={editor.schemaName}
               onChange={(e) =>
                 onChange({ ...editor, schemaName: e.target.value })
               }
               placeholder="e.g. workspace"
-              className="h-8 font-mono"
               style={{ fontSize: "16px" }}
             />
           </div>
           <div className="flex flex-col gap-1.5">
             <span className="text-xs font-medium">Table</span>
-            <Input
+            <Input mono
               value={editor.tableName}
               onChange={(e) =>
                 onChange({ ...editor, tableName: e.target.value })
               }
               placeholder="e.g. projects"
-              className="h-8 font-mono"
               style={{ fontSize: "16px" }}
             />
           </div>
           <div className="flex flex-col gap-1.5">
             <span className="text-xs font-medium">ID column</span>
-            <Input
+            <Input mono
               value={editor.idColumn}
               onChange={(e) =>
                 onChange({ ...editor, idColumn: e.target.value })
               }
-              className="h-8 font-mono"
               style={{ fontSize: "16px" }}
             />
           </div>
           <div className="flex flex-col gap-1.5">
             <span className="text-xs font-medium">Owner column</span>
-            <Input
+            <Input mono
               value={editor.ownerColumn}
               onChange={(e) =>
                 onChange({ ...editor, ownerColumn: e.target.value })
               }
-              className="h-8 font-mono"
               style={{ fontSize: "16px" }}
             />
           </div>
@@ -153,13 +149,12 @@ export function ShareableResourceForm({
                 (optional — blank if none)
               </span>
             </span>
-            <Input
+            <Input mono
               value={editor.isPublicColumn}
               onChange={(e) =>
                 onChange({ ...editor, isPublicColumn: e.target.value })
               }
               placeholder="e.g. visibility"
-              className="h-8 font-mono"
               style={{ fontSize: "16px" }}
             />
           </div>
@@ -174,7 +169,6 @@ export function ShareableResourceForm({
             onChange({ ...editor, displayLabel: e.target.value })
           }
           placeholder="e.g. Project"
-          className="h-8"
           style={{ fontSize: "16px" }}
         />
       </div>
@@ -184,13 +178,12 @@ export function ShareableResourceForm({
           Open-in-app destination{" "}
           <span className="font-normal text-muted-foreground">(optional)</span>
         </span>
-        <Input
+        <Input mono
           value={editor.urlPathTemplate}
           onChange={(e) =>
             onChange({ ...editor, urlPathTemplate: e.target.value })
           }
           placeholder="e.g. /projects/{id}"
-          className="h-8 font-mono"
           style={{ fontSize: "16px" }}
         />
         {urlMissingId ? (

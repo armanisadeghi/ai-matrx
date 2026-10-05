@@ -840,7 +840,7 @@ export function ConnectorConsentBody({
             <Select value={accountId} onValueChange={chooseAccount}>
               <SelectTrigger
                 id="connector-consent-account"
-                className="h-9 w-auto min-w-0 rounded-full border-border/70 bg-background px-3.5 text-sm font-medium shadow-sm"
+                className="w-auto min-w-0"
                 aria-label={`Change which ${provider.name} account this connects`}
               >
                 <SelectValue placeholder={`Choose a ${provider.name} account`} />

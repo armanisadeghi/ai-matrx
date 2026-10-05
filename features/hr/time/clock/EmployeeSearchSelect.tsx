@@ -34,7 +34,7 @@
 import { useEffect, useState } from "react";
 import { Loader2, Search } from "lucide-react";
 
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import type { HrWorkerClass } from "@/features/hr/constants";
 import { fetchHrDirectory } from "@/features/hr/service";
 import { isHrGranted } from "@/features/hr/types";
@@ -168,14 +168,12 @@ export function EmployeeSearchSelect({
       </label>
       <div className="relative">
         <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
+        <Input adornment="start"
           id="hr-punch-subject-search"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Search by name or employee number"
           autoComplete="off"
-          /* ≥16px so iOS does not zoom on focus. */
-          className="min-h-[52px] pl-9 text-base"
         />
       </div>
 

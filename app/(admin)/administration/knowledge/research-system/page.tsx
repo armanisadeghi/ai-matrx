@@ -14,16 +14,16 @@ export default function ResearchSystemAdminPage() {
         <div className="h-[calc(100dvh-2.5rem)] flex flex-col overflow-hidden">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
                 <div className="border-b px-4 bg-card">
-                    <TabsList className="h-12">
-                        <TabsTrigger value="templates" className="gap-2">
+                    <TabsList>
+                        <TabsTrigger value="templates">
                             <FileText className="w-4 h-4" />
                             Templates
                         </TabsTrigger>
-                        <TabsTrigger value="agents" className="gap-2">
+                        <TabsTrigger value="agents">
                             <Cpu className="w-4 h-4" />
                             Agent Wiring
                         </TabsTrigger>
-                        <TabsTrigger value="projects" className="gap-2">
+                        <TabsTrigger value="projects">
                             <FolderOpen className="w-4 h-4" />
                             Projects
                         </TabsTrigger>

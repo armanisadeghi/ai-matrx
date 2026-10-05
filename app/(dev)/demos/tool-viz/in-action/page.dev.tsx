@@ -53,7 +53,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { RichContent } from "@/components/rich-content/RichContent";
 import ThinkingTrace from "@/components/mardown-display/blocks/thinking-reasoning/ThinkingTrace";
 import { ToolCallVisualization } from "@ai-matrx/chat/tool-call-visualization/components/ToolCallVisualization";
@@ -1233,11 +1233,10 @@ function RealRunsPanel({
         </p>
         <div className="relative px-0.5">
           <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input
+          <Input adornment="start"
             value={toolSearch}
             onChange={(e) => setToolSearch(e.target.value)}
             placeholder="Search tools…"
-            className="h-7 pl-7 text-xs"
             style={{ fontSize: 16 }}
           />
         </div>

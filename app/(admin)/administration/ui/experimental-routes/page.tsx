@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { experimentalRoutes, searchExperimentalRoutes } from '../experimental-routes-config';
-import { Input } from '@ai-matrx/design-system';
+import { Input } from "@ai-matrx/design-system/controls";
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Search, Beaker, ChevronRight, ArrowUpRight } from "lucide-react";
@@ -86,12 +86,11 @@ export default function ExperimentalRoutesPage() {
                 {/* Search */}
                 <div className="relative max-w-2xl">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
+                    <Input adornment="both"
                         type="text"
                         placeholder="Search routes by name, path, or description..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-10 pr-10"
                     />
                     {searchQuery && (
                         <button

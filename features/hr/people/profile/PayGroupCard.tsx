@@ -183,7 +183,7 @@ export function PayGroupCard({
             <Label className="block min-w-0 flex-1 space-y-1.5">
               <span className="block text-xs font-medium">In this pay group</span>
               <Select value={choice} onValueChange={setChoice} disabled={saving}>
-                <SelectTrigger className="h-11 sm:h-9">
+                <SelectTrigger>
                   <SelectValue placeholder="Choose a pay group" />
                 </SelectTrigger>
                 <SelectContent>

@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Input, Skeleton, Button as SurfaceButton } from "@ai-matrx/design-system";
+import { Skeleton, Button as SurfaceButton } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 import { GoogleAccountSelect } from "@/features/google-workspace/GoogleAccountSelect";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";

@@ -49,7 +49,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   Select,
   SelectContent,
@@ -372,7 +372,6 @@ export function ValueRuleEditor({
                 value={form.name}
                 onChange={(e) => set("name", e.target.value)}
                 placeholder="Free-seeking searches"
-                className="h-8 text-sm"
               />
             </Field>
 
@@ -413,7 +412,7 @@ export function ValueRuleEditor({
                     value={form.matchKind}
                     onValueChange={(v) => set("matchKind", v)}
                   >
-                    <SelectTrigger className="h-8 text-xs">
+                    <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -440,7 +439,6 @@ export function ValueRuleEditor({
                     value={form.pattern}
                     onChange={(e) => set("pattern", e.target.value)}
                     placeholder="free"
-                    className="h-8 text-sm"
                   />
                 </Field>
               </div>

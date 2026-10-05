@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { X, Copy, Check } from "lucide-react";
 import { cleanUrl } from "@/utils/url-utils";
 
@@ -87,13 +87,13 @@ const TextArrayInput = ({
   return (
     <div className={`space-y-3 ${className}`}>
       <form onSubmit={handleSubmit} className="w-full relative">
-        <Input
+        <Input adornment="end"
           type="text"
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          className="w-full pr-10"
+          className="w-full"
         />
         {showCopyIcon && value.length > 0 && (
           <button

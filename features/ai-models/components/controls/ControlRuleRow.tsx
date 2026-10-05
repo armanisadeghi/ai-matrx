@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Switch } from "@/components/ui/switch";
 import { EnhancedEditableJsonViewer } from "@/components/ui/JsonComponents/JsonEditor";
 import { cn } from "@/lib/utils";
@@ -332,7 +332,7 @@ export default function ControlRuleRow({
                 <div className="flex items-center gap-1.5">
                   <Input
                     type="number"
-                    className="h-7 w-24 text-xs"
+                    className="w-24"
                     placeholder={`min ${row.setting?.canonical_min ?? ""}`}
                     disabled={readOnly}
                     value={editedRule.clamp?.min ?? ""}
@@ -350,7 +350,7 @@ export default function ControlRuleRow({
                   <span className="text-[10px] text-muted-foreground">–</span>
                   <Input
                     type="number"
-                    className="h-7 w-24 text-xs"
+                    className="w-24"
                     placeholder={`max ${row.setting?.canonical_max ?? ""}`}
                     disabled={readOnly}
                     value={editedRule.clamp?.max ?? ""}

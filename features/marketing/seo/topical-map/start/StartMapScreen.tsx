@@ -41,7 +41,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { ResearchTopicSelect } from "@/features/marketing/content-plan/components/ResearchTopicSelect";
 import { useBrandSites } from "@/features/marketing/data/hooks";
 import { SourceResolverPanel } from "@/features/podcasts/generator/components/SourceResolverPanel";
@@ -346,7 +346,6 @@ export function StartMapScreen({
                 onChange={(e) => setWebUrl(e.target.value)}
                 placeholder="https://example.com/services"
                 disabled={busy}
-                className="text-base"
               />
               <Button
                 icon={webFetching ? (
@@ -437,7 +436,7 @@ export function StartMapScreen({
               onChange={(e) => setNewMapName(e.target.value)}
               placeholder={`${brand.name} topical map`}
               disabled={busy}
-              className="w-full text-base sm:w-80"
+              className="w-full sm:w-80"
             />
           </div>
         ) : null}

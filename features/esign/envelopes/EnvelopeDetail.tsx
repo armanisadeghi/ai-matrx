@@ -36,7 +36,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Button as ControlButton } from "@ai-matrx/design-system/controls";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { toast } from "@/lib/toast";
@@ -389,7 +389,6 @@ export function EnvelopeDetail({ envelopeId }: { envelopeId: string }) {
           <Textarea
             value={voidReason}
             placeholder="Sent the wrong version"
-            className="text-base"
             onChange={(ev) => setVoidReason(ev.target.value)}
           />
           <DialogFooter>
@@ -427,7 +426,6 @@ export function EnvelopeDetail({ envelopeId }: { envelopeId: string }) {
               id="esign-resend-email"
               type="email"
               value={resendFor?.email ?? ""}
-              className="text-base"
               onChange={(ev) => setResendFor((r) => (r ? { ...r, email: ev.target.value } : r))}
             />
           </div>

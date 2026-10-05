@@ -44,7 +44,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@ai-matrx/design-system";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
@@ -872,7 +872,7 @@ export default function TableConfigModal({
           onValueChange={setActiveTab}
           className="flex min-h-0 flex-1 flex-col overflow-hidden"
         >
-          <TabsList className="mx-3 mt-2 grid shrink-0 w-auto grid-cols-3 sm:mx-4">
+          <TabsList fill className="mx-3 mt-2 shrink-0 w-auto sm:mx-4">
             <TabsTrigger value="fields">Fields & Order</TabsTrigger>
             <TabsTrigger value="table">Table Settings</TabsTrigger>
             <TabsTrigger value="actions">Actions</TabsTrigger>
@@ -927,7 +927,6 @@ export default function TableConfigModal({
                                 e.target.value,
                               )
                             }
-                            className="h-8 text-sm"
                           />
                         </div>
                       </div>
@@ -946,7 +945,7 @@ export default function TableConfigModal({
                             handleFieldChange(field.id, "data_type", value)
                           }
                         >
-                          <SelectTrigger className="h-8 w-full text-xs">
+                          <SelectTrigger className="w-full">
                             <span className="truncate">
                               {DATA_TYPES.find(
                                 (type) => type.value === field.data_type,

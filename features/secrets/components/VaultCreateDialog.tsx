@@ -1465,7 +1465,6 @@ function DefinitionForm({
                   }
                 >
                   <SelectTrigger
-                    className="h-7 text-xs"
                     aria-label={VAULT_LABELS.browserMatchRule}
                   >
                     <SelectValue />
@@ -1505,7 +1504,6 @@ function DefinitionForm({
               onValueChange={(next) => setTwoFactor(next as TwoFactorChoice)}
             >
               <SelectTrigger
-                className="h-7 text-xs"
                 aria-label="Two-factor authentication"
               >
                 <SelectValue />
@@ -1630,12 +1628,11 @@ function DefinitionForm({
                   Remove
                 </Button>
               </div>
-              <Textarea
+              <Textarea mono
                 id="vault-create-recovery-codes"
                 value={recoveryCodes}
                 onChange={(event) => setRecoveryCodes(event.target.value)}
                 rows={5}
-                className="font-mono"
                 placeholder="Paste one recovery code per line"
                 autoComplete="off"
                 spellCheck={false}
@@ -1975,7 +1972,6 @@ function DefinitionForm({
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 rows={4}
-                className="text-xs"
                 placeholder="Anything that is not a secret — account numbers, support contacts, reminders."
               />
             </div>

@@ -12,13 +12,13 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
-  Input,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   MatrxDataTable,
   type MatrxColumnDef,
@@ -285,13 +285,12 @@ export default function AliasesContainer() {
               <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Alias <span className="text-destructive">*</span>
               </Label>
-              <Input
+              <Input mono
                 value={form.alias}
                 onChange={(event) =>
                   setForm({ ...form, alias: event.target.value })
                 }
                 placeholder="e.g. claude-3-5-sonnet-latest"
-                className="h-8 font-mono text-sm"
               />
             </div>
             <div className="space-y-1">
@@ -346,7 +345,6 @@ export default function AliasesContainer() {
                   setForm({ ...form, notes: event.target.value })
                 }
                 placeholder="Optional"
-                className="h-8 text-sm"
               />
             </div>
           </div>

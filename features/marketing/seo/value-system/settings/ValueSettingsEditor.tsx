@@ -23,7 +23,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Skeleton } from "@ai-matrx/design-system";
 import { cn } from "@/styles/themes/utils";
 import { toast } from "@/lib/toast";
@@ -175,7 +175,7 @@ export function ValueSettingsEditor({
           <Input
             type="number"
             min={0}
-            className="h-8 w-32 text-xs"
+            className="w-32"
             value={baseline}
             disabled={readOnly}
             placeholder={String(data.inherited.baseline ?? 100)}
@@ -242,7 +242,7 @@ export function ValueSettingsEditor({
                 >
                   <td className="py-1.5 pr-2">
                     <Input
-                      className="h-7 w-full max-w-[16rem] text-xs"
+                      className="w-full max-w-[16rem]"
                       value={level.label ?? level.value}
                       disabled={readOnly}
                       aria-label={`Name for ${level.value}`}
@@ -262,7 +262,7 @@ export function ValueSettingsEditor({
                       <Input
                         type="number"
                         min={0}
-                        className="h-7 w-28 text-xs"
+                        className="w-28"
                         value={level.min_score ?? ""}
                         disabled={readOnly}
                         aria-label={`Score ${level.label ?? level.value} starts at`}

@@ -49,7 +49,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -1262,7 +1262,7 @@ function LinkExistingPartyPopover({
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           placeholder="Search your CRM…"
-          className="mb-2 h-8"
+          className="mb-2"
         />
         <div className="max-h-56 overflow-y-auto">
           {error ? (
@@ -1365,7 +1365,6 @@ function EntityEditorDialog({
               value={draft.label}
               onChange={(event) => onPatch({ label: event.target.value })}
               placeholder="Mayo Clinic — PRP overview"
-              className="h-8"
             />
           </div>
           <div>
@@ -1376,7 +1375,7 @@ function EntityEditorDialog({
                 onPatch({ entityType: next as PlanEntityType })
               }
             >
-              <SelectTrigger className="h-8 text-sm">
+              <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

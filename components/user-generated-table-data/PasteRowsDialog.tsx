@@ -330,7 +330,7 @@ export default function PasteRowsDialog({
               <Label htmlFor="pasteData">
                 Paste from Excel, Google Sheets, or a CSV
               </Label>
-              <Textarea
+              <Textarea mono
                 id="pasteData"
                 value={pasteData}
                 onChange={(e) => setPasteData(e.target.value)}
@@ -340,7 +340,6 @@ export default function PasteRowsDialog({
                   "Jane\t30\tjane@example.com"
                 }
                 rows={12}
-                className="font-mono text-sm"
               />
               {parseError && (
                 <p className="text-sm text-red-500">{parseError} <ErrorAlchemyMenu error={parseError} /></p>
@@ -378,7 +377,7 @@ export default function PasteRowsDialog({
                         onValueChange={(next) => chooseColumn(m.pasteHeader, next)}
                       >
                         <SelectTrigger
-                          className={`h-7 w-48 text-xs ${
+                          className={` w-48 ${
                             m.matchedField &&
                             droppedFields.includes(m.matchedField.field_name)
                               ? "line-through text-muted-foreground"

@@ -331,7 +331,7 @@ export function SaveSourcePanel({
               value={libraryId ?? NO_LIBRARY}
               onValueChange={chooseLibrary}
             >
-              <SelectTrigger className="h-8 text-xs">
+              <SelectTrigger>
                 <SelectValue placeholder="No Library" />
               </SelectTrigger>
               <SelectContent>

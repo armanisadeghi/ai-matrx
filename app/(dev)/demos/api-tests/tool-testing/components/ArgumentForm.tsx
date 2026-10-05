@@ -1,6 +1,6 @@
 'use client';
 
-import { Input } from '@ai-matrx/design-system';
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -80,7 +80,7 @@ function ParameterField({
           value={String(value ?? '')}
           onValueChange={(v) => onChange(v)}
         >
-          <SelectTrigger className="h-10 text-base sm:h-8 sm:text-xs">
+          <SelectTrigger>
             <SelectValue placeholder={`Select ${name}...`} />
           </SelectTrigger>
           <SelectContent>
@@ -115,7 +115,6 @@ function ParameterField({
               value={strVal}
               onChange={(e) => onChange(e.target.value)}
               placeholder={param.description}
-              className="h-10 text-base sm:h-8 sm:text-xs"
             />
           )}
         </div>
@@ -142,7 +141,6 @@ function ParameterField({
             max={param.maximum}
             step={param.type === 'integer' ? 1 : 'any'}
             placeholder={param.description}
-            className="h-10 text-base sm:h-8 sm:text-xs"
           />
           {(param.minimum !== undefined || param.maximum !== undefined) && (
             <p className="text-[10px] text-muted-foreground">
@@ -199,7 +197,6 @@ function ParameterField({
                         updated[idx] = e.target.value;
                         onChange(updated);
                       }}
-                      className="h-10 text-base sm:h-8 sm:text-xs"
                       placeholder={`Item ${idx + 1}`}
                     />
                   )}
@@ -244,7 +241,7 @@ function ParameterField({
         return (
           <div className="space-y-1">
             <FieldLabel name={name} param={param} />
-            <Textarea
+            <Textarea mono minHeight={80}
               value={typeof value === 'string' ? value : JSON.stringify(value ?? {}, null, 2)}
               onChange={(e) => {
                 try {
@@ -254,7 +251,6 @@ function ParameterField({
                 }
               }}
               placeholder="JSON object..."
-              className="min-h-[80px] font-mono text-base sm:text-xs"
             />
           </div>
         );
@@ -289,7 +285,6 @@ function ParameterField({
             value={String(value ?? '')}
             onChange={(e) => onChange(e.target.value)}
             placeholder={param.description}
-            className="h-10 text-base sm:h-8 sm:text-xs"
           />
         </div>
       );

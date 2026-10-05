@@ -5,7 +5,7 @@ import { formatDurationMs } from "@ai-matrx/kit/format";
 import { useState, useRef, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -477,11 +477,11 @@ export default function ConversationDemoClient() {
                     Conversation ID <span className="text-destructive">*</span>
                   </Label>
                   <div className="flex gap-1">
-                    <Input
+                    <Input mono
                       value={conversationId}
                       onChange={(e) => setConversationId(e.target.value)}
                       placeholder="UUID of existing conversation"
-                      className="h-7 text-xs font-mono flex-1 min-w-0"
+                      className="flex-1 min-w-0"
                     />
                     <ConvIdCopyButton text={conversationId} />
                     <Tooltip>
@@ -515,11 +515,11 @@ export default function ConversationDemoClient() {
                       </Badge>
                     )}
                   </div>
-                  <Textarea
+                  <Textarea mono minHeight={55}
                     value={configOverridesRaw}
                     onChange={(e) => setConfigOverridesRaw(e.target.value)}
                     placeholder='{"temperature": 0.7}'
-                    className="min-h-[55px] text-xs font-mono resize-y"
+                    className="resize-y"
                   />
                 </div>
 
@@ -544,11 +544,11 @@ export default function ConversationDemoClient() {
                 <Label className="text-xs font-semibold flex-shrink-0">
                   User Input
                 </Label>
-                <Textarea
+                <Textarea mono minHeight={0}
                   value={userInput}
                   onChange={(e) => setUserInput(e.target.value)}
                   placeholder="Your message to continue the conversation…"
-                  className="flex-1 min-h-0 text-xs font-mono resize-none"
+                  className="flex-1 min-h-0 resize-none"
                   onKeyDown={(e) => {
                     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
                       e.preventDefault();
@@ -643,14 +643,14 @@ export default function ConversationDemoClient() {
                 defaultValue="history"
                 className="flex-1 flex flex-col overflow-hidden min-h-0"
               >
-                <TabsList className="grid grid-cols-3 h-8 mx-3 mt-2 flex-shrink-0">
-                  <TabsTrigger value="history" className="text-xs">
+                <TabsList fill className="mx-3 mt-2 flex-shrink-0">
+                  <TabsTrigger value="history">
                     Conversation
                   </TabsTrigger>
-                  <TabsTrigger value="events" className="text-xs">
+                  <TabsTrigger value="events">
                     Stream Events
                   </TabsTrigger>
-                  <TabsTrigger value="request" className="text-xs">
+                  <TabsTrigger value="request">
                     Request
                   </TabsTrigger>
                 </TabsList>

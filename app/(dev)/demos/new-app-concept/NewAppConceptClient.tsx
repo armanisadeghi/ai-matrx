@@ -46,7 +46,7 @@ import {
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   Popover,
   PopoverContent,
@@ -367,7 +367,6 @@ export function NewAppConceptClient() {
                     value={selection.topic}
                     onChange={(event) => updateSelection({ topic: event.target.value })}
                     placeholder={config.fieldPlaceholder}
-                    className="h-9 text-sm"
                   />
                   <button
                     type="button"

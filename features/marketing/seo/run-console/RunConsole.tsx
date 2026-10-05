@@ -45,7 +45,7 @@ import AppLink from "@/components/navigation/AppLink";
 import { useRouter, useSearchParams } from "next/navigation";
 import { hasRunHistoryParams } from "./runHistoryFilters";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { ContentTransferSurfaceProvider } from "@ai-matrx/design-system/content-transfer";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -352,12 +352,11 @@ export function RunConsole({
         onValueChange={setEngineSlug}
         className="flex min-h-0 flex-1 flex-col"
       >
-        <TabsList className="h-9 shrink-0 justify-start gap-1 rounded-none border-b border-border bg-card px-2">
+        <TabsList variant="underline" className="shrink-0 justify-start">
           {CONSOLE_ENGINES.map((row) => (
             <TabsTrigger
               key={row.slug}
               value={row.slug}
-              className="h-7 text-xs"
             >
               {row.label}
             </TabsTrigger>
@@ -796,7 +795,7 @@ function TopicPlacementConsole({
               max={capCeiling || undefined}
               value={cap ?? (capCeiling || "")}
               onChange={(event) => setCap(Number(event.target.value))}
-              className="h-7 w-20 text-xs tabular-nums"
+              className="w-20"
               disabled={knobsBroken}
             />
           </div>
@@ -848,11 +847,11 @@ function TopicPlacementConsole({
             brand-keyed tabs is what made the tab strip lie. */}
         <section className="flex min-h-0 flex-col rounded-lg border border-border bg-card lg:col-span-5">
           <Tabs defaultValue="brands" className="flex min-h-0 flex-1 flex-col">
-            <TabsList className="h-8 shrink-0 justify-start rounded-none border-b border-border bg-transparent px-1">
-              <TabsTrigger value="brands" className="h-6 text-xs">
+            <TabsList variant="underline" className="shrink-0 justify-start">
+              <TabsTrigger value="brands">
                 Brands
               </TabsTrigger>
-              <TabsTrigger value="schedule" className="h-6 text-xs">
+              <TabsTrigger value="schedule">
                 Schedule
               </TabsTrigger>
             </TabsList>
@@ -972,17 +971,17 @@ function TopicPlacementConsole({
             onValueChange={onResultViewChange}
             className="flex min-h-0 flex-1 flex-col"
           >
-            <TabsList className="h-8 shrink-0 justify-start rounded-none border-b border-border bg-transparent px-1">
-              <TabsTrigger value="run" className="h-6 text-xs">
+            <TabsList variant="underline" className="shrink-0 justify-start">
+              <TabsTrigger value="run">
                 This run
               </TabsTrigger>
-              <TabsTrigger value="proposals" className="h-6 text-xs">
+              <TabsTrigger value="proposals">
                 Proposals
               </TabsTrigger>
-              <TabsTrigger value="unplaced" className="h-6 text-xs">
+              <TabsTrigger value="unplaced">
                 Not placed
               </TabsTrigger>
-              <TabsTrigger value="history" className="h-6 text-xs">
+              <TabsTrigger value="history">
                 Run history
               </TabsTrigger>
             </TabsList>

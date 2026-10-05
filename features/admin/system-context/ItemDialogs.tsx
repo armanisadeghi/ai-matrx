@@ -12,7 +12,7 @@ import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { recordToast, toast } from "@/lib/toast";
 
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -212,11 +212,10 @@ export function EditItemDialog({
                 />
               ) : item.value_type === "object" ||
                 item.value_type === "array" ? (
-                <Textarea
+                <Textarea mono
                   value={value}
                   onChange={(e) => setValue(e.target.value)}
                   rows={4}
-                  className="font-mono text-xs"
                   placeholder={item.value_type === "object" ? "{ }" : "[ ]"}
                 />
               ) : (
@@ -352,10 +351,9 @@ export function AddItemDialog({
                 !keyValid ? "lowercase letters, numbers, _ only" : undefined
               }
             >
-              <Input
+              <Input mono
                 value={key}
                 onChange={(e) => setKey(e.target.value)}
-                className="font-mono text-sm"
                 data-identifier
                 placeholder="company_name"
                 autoFocus
@@ -452,11 +450,10 @@ export function AddItemDialog({
                     placeholder="# Heading\n\nWrite the Markdown value…"
                   />
                 ) : valueType === "object" || valueType === "array" ? (
-                  <Textarea
+                  <Textarea mono
                     value={value}
                     onChange={(e) => setValue(e.target.value)}
                     rows={4}
-                    className="font-mono text-xs"
                     placeholder={valueType === "object" ? "{ }" : "[ ]"}
                   />
                 ) : (

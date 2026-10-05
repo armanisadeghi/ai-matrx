@@ -39,7 +39,7 @@ const TableTopOptions: React.FC<TableTopOptionsProps> = ({
                         value={pageSize.toString()}
                         onValueChange={(value) => setPageSize(Number(value))}
                     >
-                        <SelectTrigger className="w-24 bg-card text-card-foreground border-input text-sm">
+                        <SelectTrigger className="w-24">
                             <SelectValue placeholder="Rows"/>
                         </SelectTrigger>
                         <SelectContent>

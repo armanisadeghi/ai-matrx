@@ -17,7 +17,7 @@
  */
 
 import { useEffect, useState } from "react";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   PencilTapButton,
   ExternalLinkTapButton,
@@ -496,7 +496,7 @@ export function SandboxPanel({ conversationId }: SandboxPanelProps) {
                             setNameDraft(event.target.value);
                             setNameError(null);
                           }}
-                          className="h-9 min-w-0 flex-1 text-base sm:h-7 sm:text-xs"
+                          className="min-w-0 flex-1"
                         />
                         <CheckTapButton
                           variant="transparent"

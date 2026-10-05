@@ -139,7 +139,7 @@ export function DictionaryImportDialog({ open, onOpenChange, onImport }: Props) 
           </div>
         </div>
 
-        <Textarea
+        <Textarea mono minHeight={140}
           value={text}
           onChange={(e) => { setText(e.target.value); doParse(e.target.value, format); }}
           placeholder={
@@ -147,7 +147,6 @@ export function DictionaryImportDialog({ open, onOpenChange, onImport }: Props) 
               ? "term,sounds_like,pronunciation,ipa,definition,category,is_active"
               : '[{"term":"Rejuvina","pronunciation":"reh-juh-VEE-nah"}]'
           }
-          className="min-h-[140px] font-mono text-xs"
           style={{ fontSize: "16px" }}
         />
 

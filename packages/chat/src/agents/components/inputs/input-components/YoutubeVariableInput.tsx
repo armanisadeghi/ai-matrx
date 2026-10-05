@@ -17,7 +17,7 @@
  */
 
 import { Youtube as YoutubeIcon } from "@host/components/icons/brand-icons";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { cn } from "@ai-matrx/design-system";
 
 const ID_PATTERN = /^[A-Za-z0-9_-]{11}$/;
@@ -114,12 +114,11 @@ export function YoutubeVariableInput({
             id ? "text-red-500" : "text-muted-foreground",
           )}
         />
-        <Input
+        <Input mono
           value={stored}
           onChange={(e) => handleChange(e.target.value)}
           placeholder="Paste any YouTube URL or 11-char video ID"
           aria-label={`YouTube URL for ${variableName}`}
-          className="h-8 text-xs font-mono"
           style={{ fontSize: "16px" }}
         />
       </div>

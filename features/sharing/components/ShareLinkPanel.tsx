@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import { Button } from "@ai-matrx/design-system";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   Link2,
   Copy,
@@ -477,10 +477,10 @@ export function ShareLinkPanel({
                 key={link.id}
                 className="flex items-center gap-1.5 rounded-md border bg-background p-1.5"
               >
-                <Input
+                <Input mono
                   readOnly
                   value={shareUrlForLink(link)}
-                  className="h-8 min-w-0 flex-1 text-xs font-mono"
+                  className="min-w-0 flex-1"
                   onFocus={(e) => e.currentTarget.select()}
                 />
                 <span

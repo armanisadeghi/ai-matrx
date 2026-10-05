@@ -692,7 +692,7 @@ export function LinkGraphView({
           onValueChange={(value) => setNodeCapId(value as NodeCapId)}
         >
           <SelectTrigger
-            className="h-8 w-[120px] shrink-0 text-xs"
+            className="w-[120px] shrink-0"
             title="Detail — how many pages to render"
           >
             <SelectValue />

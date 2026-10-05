@@ -5,7 +5,7 @@ import AppLink from "@/components/navigation/AppLink";
 import { Plus, Loader2, Database as DbIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PencilTapButton } from "@ai-matrx/tap-target/buttons";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { Label } from "@/components/ui/label";
@@ -106,14 +106,14 @@ function LookupsAdminPageInner() {
           className="flex-1 flex flex-col"
         >
           <div className="flex-shrink-0 px-6 pt-2 border-b border-border bg-background">
-            <TabsList className="h-9">
-              <TabsTrigger value="clients" className="text-xs">
+            <TabsList>
+              <TabsTrigger value="clients">
                 UI Clients
               </TabsTrigger>
-              <TabsTrigger value="surfaces" className="text-xs">
+              <TabsTrigger value="surfaces">
                 UI Surfaces
               </TabsTrigger>
-              <TabsTrigger value="executors" className="text-xs">
+              <TabsTrigger value="executors">
                 Tool Executors
               </TabsTrigger>
             </TabsList>
@@ -466,12 +466,11 @@ function UiClientDialog({
         <div className="space-y-3">
           <div className="space-y-1.5">
             <Label className="text-xs">Name (PK)</Label>
-            <Input
+            <Input mono
               value={name}
               onChange={(e) => setName(e.target.value.toLowerCase())}
               placeholder="e.g., matrx-mobile"
               disabled={isEdit}
-              className="font-mono text-sm"
               style={{ fontSize: "16px" }}
             />
             {!isEdit && !nameValid && name.length > 0 && (
@@ -612,7 +611,7 @@ function UiSurfaceCrud() {
             add: { onAdd: () => setCreating(true) },
             leading: (
               <Select value={filterClient} onValueChange={setFilterClient}>
-                <SelectTrigger className="h-8 w-[200px] text-xs">
+                <SelectTrigger className="w-[200px]">
                   <SelectValue placeholder="Filter by client" />
                 </SelectTrigger>
                 <SelectContent>
@@ -750,12 +749,11 @@ function UiSurfaceDialog({
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs">Local name</Label>
-            <Input
+            <Input mono
               value={localPart}
               onChange={(e) => setLocalPart(e.target.value.toLowerCase())}
               placeholder="e.g., notes"
               disabled={isEdit}
-              className="font-mono text-sm"
               style={{ fontSize: "16px" }}
             />
             <p className="text-[11px] text-muted-foreground">
@@ -989,12 +987,11 @@ function ToolExecutorDialog({
         <div className="space-y-3 max-h-[70dvh] overflow-y-auto">
           <div className="space-y-1.5">
             <Label className="text-xs">Name (PK)</Label>
-            <Input
+            <Input mono
               value={name}
               onChange={(e) => setName(e.target.value.toLowerCase())}
               placeholder="e.g., mcp.my-server"
               disabled={isEdit}
-              className="font-mono text-sm"
               style={{ fontSize: "16px" }}
             />
             <p className="text-[11px] text-muted-foreground">
@@ -1045,11 +1042,10 @@ function ToolExecutorDialog({
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs">Config (JSON)</Label>
-            <Textarea
+            <Textarea mono
               value={configJson}
               onChange={(e) => setConfigJson(e.target.value)}
               rows={6}
-              className="font-mono text-xs"
               style={{ fontSize: "13px" }}
             />
           </div>

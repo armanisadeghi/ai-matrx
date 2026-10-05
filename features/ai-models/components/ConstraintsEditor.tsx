@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -143,7 +143,7 @@ function FieldCombobox({
 
   return (
     <div className={`relative ${className}`}>
-      <Input
+      <Input mono
         value={value}
         onChange={(e) => {
           onChange(e.target.value);
@@ -156,7 +156,6 @@ function FieldCombobox({
         }}
         onBlur={() => setTimeout(() => setOpen(false), 150)}
         placeholder="field…"
-        className="h-7 text-xs font-mono"
       />
       {open && filtered.length > 0 && (
         <div className="absolute top-full left-0 z-40 w-full max-h-44 overflow-auto bg-popover border rounded-md shadow-lg mt-0.5">
@@ -224,7 +223,7 @@ function TagInput({
           </button>
         </Badge>
       ))}
-      <Input
+      <Input mono
         value={input}
         onChange={(e) => setInput(e.target.value)}
         onKeyDown={(e) => {
@@ -234,7 +233,7 @@ function TagInput({
           }
         }}
         placeholder="+ value"
-        className="h-6 text-[10px] font-mono w-20 min-w-16 flex-1"
+        className="w-20 min-w-16 flex-1"
       />
     </div>
   );
@@ -268,14 +267,14 @@ function InlineValue({
 
   if (NUMERIC_OPS.has(op as ConditionOp) || op === "min" || op === "max") {
     return (
-      <Input
+      <Input mono
         type="number"
         value={typeof value === "number" ? value : ""}
         onChange={(e) =>
           onChange(e.target.value === "" ? undefined : Number(e.target.value))
         }
         placeholder="0"
-        className="h-7 text-xs font-mono w-full"
+        className="w-full"
       />
     );
   }
@@ -310,13 +309,13 @@ function InlineValue({
   if (typeof value === "number") {
     return (
       <div className="flex items-center gap-1.5">
-        <Input
+        <Input mono
           type="number"
           value={value}
           onChange={(e) =>
             onChange(e.target.value === "" ? 0 : Number(e.target.value))
           }
-          className="h-7 text-xs font-mono flex-1 min-w-16"
+          className="flex-1 min-w-16"
         />
         <button
           type="button"
@@ -337,11 +336,11 @@ function InlineValue({
   }
   return (
     <div className="flex items-center gap-1.5">
-      <Input
+      <Input mono
         value={String(value ?? "")}
         onChange={(e) => onChange(e.target.value)}
         placeholder="value"
-        className="h-7 text-xs font-mono flex-1 min-w-16"
+        className="flex-1 min-w-16"
       />
       <button
         type="button"
@@ -542,13 +541,13 @@ function UnconditionalRow({
             onChange={(e) =>
               onChange({ ...constraint, message: e.target.value })
             }
-            className="h-6 text-[11px] flex-1"
+            className="flex-1"
           />
-          <Input
+          <Input mono
             value={constraint.id}
             placeholder="ID (auto)"
             onChange={(e) => onChange({ ...constraint, id: e.target.value })}
-            className="h-6 text-[11px] font-mono text-muted-foreground w-48 shrink-0"
+            className="w-48 shrink-0"
           />
         </div>
       )}
@@ -655,13 +654,13 @@ function ConditionalRow({
             onChange={(e) =>
               onChange({ ...constraint, message: e.target.value })
             }
-            className="h-6 text-[11px] flex-1"
+            className="flex-1"
           />
-          <Input
+          <Input mono
             value={constraint.id}
             placeholder="ID (auto)"
             onChange={(e) => onChange({ ...constraint, id: e.target.value })}
-            className="h-6 text-[11px] font-mono text-muted-foreground w-48 shrink-0"
+            className="w-48 shrink-0"
           />
         </div>
       )}

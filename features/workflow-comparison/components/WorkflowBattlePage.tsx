@@ -42,7 +42,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Textarea } from "@/components/ui/textarea";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { callApi } from "@/lib/api/call-api";
@@ -322,7 +322,7 @@ function BattleSetup({ onStarted }: { onStarted: (row: ComparisonRow) => void })
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         placeholder="Comparison title (optional)"
-        className="h-9 max-w-md"
+        className="max-w-md"
       />
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -634,7 +634,6 @@ function ComparisonView({
             onChange={(e) => setNotes(e.target.value)}
             placeholder="Verdict notes — what decided it?"
             rows={2}
-            className="text-sm"
           />
         </div>
       )}

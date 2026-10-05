@@ -21,7 +21,7 @@ import { Plus, UserPlus } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -137,7 +137,7 @@ export function IncidentPartiesPanel({
               value={role}
               onValueChange={(v) => setRole(v as HrIncidentPartyRole)}
             >
-              <SelectTrigger id="party-role" className="min-h-11 sm:min-h-9">
+              <SelectTrigger id="party-role">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -171,7 +171,6 @@ export function IncidentPartiesPanel({
               id="party-external"
               value={externalName}
               onChange={(e) => setExternalName(e.target.value)}
-              className="min-h-11 sm:min-h-9"
               placeholder="A customer, a contractor's employee, a first responder"
             />
           </div>

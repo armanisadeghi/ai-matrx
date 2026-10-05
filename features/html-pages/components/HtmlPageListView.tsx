@@ -22,7 +22,7 @@ import {
   type HtmlPagesViewMode,
 } from "@/features/html-pages/utils/list-url-state";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
@@ -310,11 +310,10 @@ export default function HtmlPageListView({
         <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center">
           <div className="relative max-w-sm flex-1">
             <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-            <Input
+            <Input adornment="start"
               placeholder="Search pages…"
               value={search}
               onChange={(event) => replaceListState({ q: event.target.value })}
-              className="h-8 pl-8 text-sm"
               style={{ fontSize: "16px" }}
             />
             {search && (

@@ -293,7 +293,7 @@ export function AnalysisView({
               value={reduxMode}
               onValueChange={(v) => setReduxMode(v as ReduxParseMode)}
             >
-              <SelectTrigger className="h-8 w-32 text-xs">
+              <SelectTrigger className="w-32">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

@@ -48,7 +48,7 @@ import { cn } from "@/styles/themes/utils";
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Skeleton } from "@ai-matrx/design-system";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
@@ -318,12 +318,11 @@ export function MatcherReviewBody({
           })}
           <div className="relative ml-auto min-w-0 flex-1 sm:max-w-[220px]">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-            <Input
+            <Input adornment="start"
               value={needle}
               onChange={(event) => setNeedle(event.target.value)}
               placeholder="Filter these keywords…"
               aria-label="Filter the matched keywords"
-              className="h-7 pl-8 text-xs"
             />
           </div>
         </div>

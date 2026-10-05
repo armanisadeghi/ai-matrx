@@ -519,7 +519,7 @@ export function ProjectOrgPicker({ project, canEdit, onPatch }: FieldProps) {
         save(project.id, { organizationId: v }, { organizationId: v }, onPatch)
       }
     >
-      <SelectTrigger className="h-7 w-auto gap-1.5 rounded-full border px-2.5 text-xs font-medium text-muted-foreground">
+      <SelectTrigger className="w-auto">
         <Building2 className="h-3.5 w-3.5" />
         <SelectValue placeholder="Organization" />
       </SelectTrigger>

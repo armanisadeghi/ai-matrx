@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Settings, Users, Mail, AlertTriangle } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent, TabsListLegacy as TabsList, TabsTriggerLegacy as TabsTrigger } from '@/components/ui/tabs';
 import type { Project, ProjectRole } from '../types';
 import { GeneralSettings } from './GeneralSettings';
 import { MemberManagement } from './MemberManagement';

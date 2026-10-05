@@ -15,7 +15,8 @@ import {
   AlertCircle,
   Info,
 } from "lucide-react";
-import { Input, Skeleton } from "@ai-matrx/design-system";
+import { Skeleton } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { MCP_CATEGORY_META } from "@ai-matrx/chat/agents/types/mcp.types";
@@ -214,13 +215,12 @@ export function IntegrationDirectory({
                 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
                 aria-hidden
               />
-              <Input
+              <Input adornment="start"
                 type="search"
                 value={filters.query}
                 onChange={(event) => change({ query: event.target.value })}
                 placeholder="Search integrations"
                 aria-label="Search integrations"
-                className="h-9 pl-9 text-base @[38rem]/integrations:text-sm"
               />
             </div>
             <SlidersHorizontal

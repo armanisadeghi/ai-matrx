@@ -1,5 +1,5 @@
 import React from 'react';
-import { Input } from '@ai-matrx/design-system';
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from '@/components/ui/label';
 
 
@@ -11,7 +11,7 @@ const MatrxInput: React.FC<MatrxInputProps> = ({ label, className, ...props }) =
     <div className="mb-4">
         {label && <Label htmlFor={props.id} className="block mb-2 text-sm font-medium text-foreground">{label}</Label>}
         <Input
-            className={`w-full bg-background text-foreground border-input ${className}`}
+            className={`w-full ${className}`}
             {...props}
         />
     </div>

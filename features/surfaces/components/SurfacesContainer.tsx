@@ -63,7 +63,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { toast, recordToast, dismissRecordToasts } from "@/lib/toast";
 
@@ -767,11 +767,10 @@ function NewClientDialog({
         <div className="space-y-3">
           <div className="space-y-1.5">
             <Label className="text-xs">Name</Label>
-            <Input
+            <Input mono
               value={name}
               onChange={(e) => setName(e.target.value.toLowerCase())}
               placeholder="e.g. matrx-mobile"
-              className="font-mono text-sm"
               style={{ fontSize: "16px" }}
               disabled={busy}
               autoFocus

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -80,7 +80,7 @@ function NumberRangeInput({
       <span className="text-xs text-muted-foreground whitespace-nowrap">
         {label}
       </span>
-      <Input
+      <Input mono
         value={minDraft}
         onChange={(e) => setMinDraft(e.target.value)}
         onBlur={(e) => commit(e.target.value, onMinChange)}
@@ -88,10 +88,10 @@ function NumberRangeInput({
           if (e.key === "Enter") e.currentTarget.blur();
         }}
         placeholder="min"
-        className="h-7 text-xs w-16 font-mono"
+        className="w-16"
       />
       <span className="text-xs text-muted-foreground">–</span>
-      <Input
+      <Input mono
         value={maxDraft}
         onChange={(e) => setMaxDraft(e.target.value)}
         onBlur={(e) => commit(e.target.value, onMaxChange)}
@@ -99,7 +99,7 @@ function NumberRangeInput({
           if (e.key === "Enter") e.currentTarget.blur();
         }}
         placeholder="max"
-        className="h-7 text-xs w-16 font-mono"
+        className="w-16"
       />
     </div>
   );
@@ -215,7 +215,7 @@ export default function AiModelFilterBar({
         {/* Search */}
         <div className="relative shrink-0 max-sm:w-full">
           <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
-          <Input
+          <Input adornment="both"
             value={localQ}
             onChange={(e) => handleSearchChange(e.target.value)}
             onFocus={() => {
@@ -230,7 +230,7 @@ export default function AiModelFilterBar({
             }}
             aria-label="Search AI models"
             placeholder="Search model, provider, modality…"
-            className="h-7 w-52 pl-7 pr-6 text-xs max-sm:h-11 max-sm:w-full max-sm:text-base"
+            className="w-52 max-sm:w-full"
           />
           {localQ && (
             <button

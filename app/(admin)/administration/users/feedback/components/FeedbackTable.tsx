@@ -476,7 +476,7 @@ export default function FeedbackTable() {
                 void updateStatus(r.id, value as FeedbackStatus)
               }
             >
-              <SelectTrigger className="h-7 w-36 text-xs">
+              <SelectTrigger className="w-36">
                 <SelectValue>
                   <Badge className={cn("border-0", option?.color)}>
                     {option?.label ?? r.status}
@@ -822,7 +822,7 @@ export default function FeedbackTable() {
                 render: () => (
                   <div className="flex gap-2">
                     <Select value={category} onValueChange={setCategory}>
-                      <SelectTrigger className="h-8 w-40 text-xs">
+                      <SelectTrigger className="w-40">
                         <SelectValue placeholder="Category" />
                       </SelectTrigger>
                       <SelectContent>
@@ -838,7 +838,7 @@ export default function FeedbackTable() {
                       </SelectContent>
                     </Select>
                     <Select value={assignee} onValueChange={setAssignee}>
-                      <SelectTrigger className="h-8 w-40 text-xs">
+                      <SelectTrigger className="w-40">
                         <SelectValue placeholder="Assignee" />
                       </SelectTrigger>
                       <SelectContent>

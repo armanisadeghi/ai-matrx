@@ -40,7 +40,8 @@ import {
 import { createSourceRef } from "@ai-matrx/agents/sources";
 import type { CanonicalBlockIR } from "@ai-matrx/content-ir";
 import { Button } from "@/components/ui/button";
-import { Input, SegmentedControl } from "@ai-matrx/design-system";
+import { SegmentedControl } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 import { Label } from "@/components/ui/label";
 import {
@@ -608,7 +609,7 @@ export function CreateDeckPage({
                         }}
                         disabled={busy}
                       >
-                        <SelectTrigger id="fc-difficulty" className="h-11 text-base sm:h-9">
+                        <SelectTrigger id="fc-difficulty">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -662,7 +663,6 @@ export function CreateDeckPage({
                           keep({ gradeLevel: e.target.value });
                         }}
                         placeholder="e.g. 9th grade, first-year nursing"
-                        className="h-11 text-base sm:h-9"
                         disabled={busy}
                       />
                     </div>
@@ -677,7 +677,6 @@ export function CreateDeckPage({
                           setDeckName(e.target.value);
                           keep({ deckName: e.target.value });
                         }}
-                        className="h-11 text-base sm:h-9"
                         disabled={busy}
                       />
                     </div>

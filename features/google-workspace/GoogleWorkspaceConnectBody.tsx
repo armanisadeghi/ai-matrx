@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CircleAlert, ExternalLink, Loader2, Mail, Plus } from "lucide-react";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { toast, recordToast } from "@/lib/toast";
 import { LazyGoogleAPIProvider } from "@/providers/google-provider/LazyGoogleAPIProvider";
 import {
@@ -710,7 +710,7 @@ function GoogleWorkspaceConnectBodyContent({
                     </p>
                     {failure.collisionProposal ? (
                       <Input
-                        className="mt-1 h-9"
+                        className="mt-1"
                         aria-label={`New name for ${failure.selection.name}`}
                         value={
                           driveCollisionNames[failure.selection.sourceRef] ??

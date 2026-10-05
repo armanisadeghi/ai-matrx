@@ -18,7 +18,7 @@ import {
 import { toast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -437,13 +437,13 @@ export function BingConnectionsWorkspace() {
                         The key is saved securely and is not shown again after
                         connection.
                       </p>
-                      <Input
+                      <Input mono
                         id="bing-api-key"
                         type="password"
                         autoFocus={!usableConnections.length}
                         autoComplete="off"
                         spellCheck={false}
-                        className="mt-2 h-9 w-full font-mono text-xs"
+                        className="mt-2 w-full"
                         placeholder="Paste API key here"
                         value={apiKey}
                         onChange={(event) => setApiKey(event.target.value)}
@@ -586,7 +586,7 @@ export function BingConnectionsWorkspace() {
                       setResourceRef("");
                     }}
                   >
-                    <SelectTrigger className="mt-1 w-full sm:w-80" size="sm">
+                    <SelectTrigger className="mt-1 w-full sm:w-80">
                       <SelectValue
                         placeholder={
                           sites.isLoading ? "Loading sites…" : "Choose a site"
@@ -613,7 +613,7 @@ export function BingConnectionsWorkspace() {
                         setResourceRef("");
                       }}
                     >
-                      <SelectTrigger className="mt-1 w-full sm:w-80" size="sm">
+                      <SelectTrigger className="mt-1 w-full sm:w-80">
                         <SelectValue placeholder="Choose who owns this connection" />
                       </SelectTrigger>
                       <SelectContent>
@@ -655,7 +655,6 @@ export function BingConnectionsWorkspace() {
                           >
                             <SelectTrigger
                               className="mt-1 w-full sm:w-80"
-                              size="sm"
                             >
                               <SelectValue placeholder="Choose the matching Bing property" />
                             </SelectTrigger>

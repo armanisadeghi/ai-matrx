@@ -40,11 +40,11 @@ import { CalendarDays, Clock } from "lucide-react";
 
 import {
   Button,
-  Input,
   Popover,
   PopoverAnchor,
   PopoverContent,
 } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import {
@@ -346,7 +346,7 @@ export const DateCellEditor = forwardRef<HTMLInputElement, Props>(
                     commit("down");
                   }
                 }}
-                className="h-8 flex-1"
+                className="flex-1"
                 style={{ fontSize: "16px" }}
               />
             </div>

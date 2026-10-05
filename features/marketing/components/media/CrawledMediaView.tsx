@@ -208,7 +208,7 @@ export function CrawledMediaView({
             value={tierFilter}
             onValueChange={(value) => setTierFilter(value as TierFilter)}
           >
-            <SelectTrigger className="h-7 w-[7.5rem] px-2 text-[11px]">
+            <SelectTrigger className="w-[7.5rem]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="text-[11px]">
@@ -224,7 +224,7 @@ export function CrawledMediaView({
               setAltFilter(value === "missing" ? "missing" : "all")
             }
           >
-            <SelectTrigger className="h-7 w-[7.5rem] px-2 text-[11px]">
+            <SelectTrigger className="w-[7.5rem]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="text-[11px]">
@@ -233,7 +233,7 @@ export function CrawledMediaView({
             </SelectContent>
           </Select>
           <Select value={pageFilter} onValueChange={setPageFilter}>
-            <SelectTrigger className="h-7 w-[13rem] px-2 text-[11px]">
+            <SelectTrigger className="w-[13rem]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="text-[11px]">

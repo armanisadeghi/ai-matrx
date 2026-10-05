@@ -15,7 +15,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
@@ -253,11 +253,10 @@ export function SkillConfigPicker({
           <div className="shrink-0 space-y-3 border-b border-border px-4 py-3">
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
+              <Input adornment="both"
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder="Search by skill name, description, category, type, or ID…"
-                className="h-10 pl-9 pr-9"
                 autoFocus
               />
               {search && (

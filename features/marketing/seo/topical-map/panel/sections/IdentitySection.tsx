@@ -117,7 +117,7 @@ export function IdentitySection({
               onValueChange={(next) => void send({ status: next as MapTopicStatus })}
               disabled={patch.isPending}
             >
-              <SelectTrigger className="h-7 w-28 text-xs" aria-label="Status">
+              <SelectTrigger className="w-28" aria-label="Status">
                 <SelectValue placeholder={status} />
               </SelectTrigger>
               <SelectContent>

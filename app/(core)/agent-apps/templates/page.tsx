@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { DISPLAY_MODE_OPTIONS } from "@/features/agent-apps/sample-code/templates";
-import PageHeader from "@/features/shell/components/header/PageHeader";
-import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
+import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 
 
 const MODE_ICONS: Record<string, string> = {
@@ -17,17 +16,11 @@ const MODE_ICONS: Record<string, string> = {
 export default function TemplatesIndexPage() {
   return (
     <>
-      <PageHeader>
-        <div className="flex items-center w-full min-w-0 gap-0 p-0">
-          <ChevronLeftTapButton
-            href="/agent-apps"
-            ariaLabel="Back to Agent Apps"
-          />
-          <h1 className="ml-2 text-sm font-medium text-foreground truncate">
-            Display Mode Templates
-          </h1>
-        </div>
-      </PageHeader>
+      <RecordPageHeader
+        backHref="/agent-apps"
+        parents={[{ label: "Agent Apps", href: "/agent-apps" }]}
+        record={{ name: "Display mode templates" }}
+      />
       <div className="h-full overflow-y-auto">
         <div
           className="max-w-5xl mx-auto px-6 pb-6"

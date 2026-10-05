@@ -14,7 +14,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Copy, Loader2, Save, Trash2 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -451,7 +451,6 @@ export function AgentAppSettingsContent({
               <Input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="text-[16px]"
               />
             </FieldRow>
             <FieldRow
@@ -463,7 +462,6 @@ export function AgentAppSettingsContent({
               <Input
                 value={tagline}
                 onChange={(e) => setTagline(e.target.value)}
-                className="text-[16px]"
               />
             </FieldRow>
             <FieldRow
@@ -666,7 +664,7 @@ export function AgentAppSettingsContent({
                   value={rateIp}
                   onChange={(e) => setRateIp(e.target.value)}
                   inputMode="numeric"
-                  className="h-8 w-32 text-[16px]"
+                  className="w-32"
                 />
               </FieldRow>
               <FieldRow
@@ -690,7 +688,7 @@ export function AgentAppSettingsContent({
                   value={rateWindow}
                   onChange={(e) => setRateWindow(e.target.value)}
                   inputMode="numeric"
-                  className="h-8 w-32 text-[16px]"
+                  className="w-32"
                 />
               </FieldRow>
               <FieldRow
@@ -712,7 +710,7 @@ export function AgentAppSettingsContent({
                   value={rateAuth}
                   onChange={(e) => setRateAuth(e.target.value)}
                   inputMode="numeric"
-                  className="h-8 w-32 text-[16px]"
+                  className="w-32"
                 />
               </FieldRow>
             </div>

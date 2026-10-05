@@ -254,8 +254,8 @@ export default function ShareModalWindow({
           onValueChange={(value) => setActiveTab(value as typeof activeTab)}
           className="flex-1 flex flex-col min-h-0"
         >
-          <TabsList className="grid w-full grid-cols-2 flex-shrink-0">
-            <TabsTrigger value="users" className="gap-2">
+          <TabsList fill className="flex-shrink-0">
+            <TabsTrigger value="users">
               <Users className="w-4 h-4" />
               <span className="hidden sm:inline">Users</span>
               {!error && userPermissions.length > 0 && (
@@ -264,7 +264,7 @@ export default function ShareModalWindow({
                 </span>
               )}
             </TabsTrigger>
-            <TabsTrigger value="public" className="gap-2">
+            <TabsTrigger value="public">
               <Globe className="w-4 h-4" />
               <span className="hidden sm:inline">Anyone link</span>
               {publicPermission && (

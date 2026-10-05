@@ -31,7 +31,8 @@ import { CheckCircle2, ShieldAlert, SlidersHorizontal } from "lucide-react";
 import { Button } from "@ai-matrx/design-system";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { Input, Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
+import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 
 import { getFieldFormat } from "@ai-matrx/design-system/field-formats";
 import type { FieldFormatConfig } from "@ai-matrx/design-system/field-formats";
@@ -88,7 +89,6 @@ function NumberRule({
         type="number"
         step={step ?? "any"}
         min={min}
-        className="h-8 text-xs"
         value={value === undefined ? "" : String(value)}
         placeholder="—"
         onChange={(e) => {
@@ -229,9 +229,8 @@ export function ColumnValidationEditor({
                 <Label htmlFor="rule-pattern" className="text-[11px] text-muted-foreground">
                   Pattern (regular expression)
                 </Label>
-                <Input
+                <Input mono
                   id="rule-pattern"
-                  className="h-8 font-mono text-xs"
                   placeholder="^\\d{3}-\\d{4}$"
                   value={value.pattern ?? ""}
                   onChange={(e) =>
@@ -263,7 +262,6 @@ export function ColumnValidationEditor({
                   </Label>
                   <Input
                     id="rule-hint"
-                    className="h-8 text-xs"
                     placeholder="###-####"
                     value={value.patternHint ?? ""}
                     onChange={(e) =>
@@ -287,7 +285,6 @@ export function ColumnValidationEditor({
                   </Label>
                   <Input
                     id="rule-allowed"
-                    className="h-8 text-xs"
                     placeholder="Red, Green, Blue"
                     value={allowedShown}
                     onChange={(e) => {

@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { Search, Plus, ListFilter, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 import type { UserList } from "../types";
 import { ListCard } from "./ListCard";
@@ -70,11 +70,10 @@ export function ListsSidebar({
       <div className="px-3 py-2 border-b border-border">
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
-          <Input
+          <Input adornment="both"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search lists…"
-            className="pl-8 pr-7 h-8 text-sm bg-muted/50 border-0 focus-visible:ring-1"
             style={{ fontSize: "16px" }}
           />
           {search && (

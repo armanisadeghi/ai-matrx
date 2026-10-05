@@ -19,7 +19,7 @@ import { readOf } from "@/components/read-state/ReadGate";
 import { useMemo, useState } from "react";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,

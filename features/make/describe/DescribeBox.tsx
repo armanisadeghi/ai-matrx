@@ -1,100 +1,80 @@
 "use client";
 
-// features/make/describe/DescribeBox.tsx — LANE MAKE-HOME (v6), wave 3: the describe box on /make.
+// features/make/describe/DescribeBox.tsx — lane CHAIR-DESCRIBE (v7): the describe box on /make.
 //
-// ONE SENTENCE → A WORKING TABLE, FORM AND BOOKING PAGE. Champions: Softr's AI app generator, Glide's
-// "describe your app", Airtable Omni. Bar: under 60 s, every object openable from the result.
+// ONE SENTENCE → A COMPLETE, WORKING SETUP IN UNDER 60 s. Champions: Softr's AI app generator, Glide's
+// "describe your app", Airtable Omni. Brief: common-docs projects/data-doctrine-adoption/v6/
+// MANDATE-BRIEF-SENTENCE-TO-TEMPLATE.md (Arman approved 2026-10-03, "Yes. Definitely." 2026-10-05).
 //
-// WHY THIS IS LEGAL UNDER "AGENTS NEVER AUTHOR AGENTS" (common-docs/policies/agents-never-author-agents.md).
-// No agent is created, and no instruction is written here. The person's own sentence is sent, as
-// the person's own message, to the EXISTING Data page agent through its EXISTING mandate
-// `data.page_guidance` (aidream services/mandates/client_mandates.py: "Turn one plain sentence from a
-// non-technical expert into a live form, booking page, portal or dashboard … built through the
-// records tool"). That agent already carries the server's `records` tool, whose `form_propose` and
-// `booking_propose` each make their table, typed fields and published link in one call, stamped
-// `agent` on behalf of the person by the server — never by this browser. Launching by mandate
-// (never an agent id) keeps whoever holds that mandate in charge of its quality.
-//
-// WHAT THIS FILE OWNS is mechanical: the organization (asked first, never defaulted — A3), the
-// store switch, the clock, the live list of what has appeared so far (polled from the data home's
-// own doors, `made.ts`), and the agent's own words when it made nothing or the run failed (C3: a
-// refusal is shown in its plain sentence, never swallowed).
+// THE PIPE (no second path):
+//   1. the mandate `make.describe_template` (launched by mandate key, never an agent id — whoever holds
+//      it owns its quality; this file writes no instruction) answers ONE template spec;
+//   2. validateTemplate ("describe" profile) checks it — a failure is one line and a retry, never a
+//      half-build;
+//   3. custom.template_declare('org') files it as the organization's own template, and the gallery's
+//      runTemplateDoor installs it with the gallery's own live progress and landing.
+// Remove and "Save as my template" live on the template's own page (the same family), linked from the
+// result.
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, ExternalLink } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { supabaseDataSource } from "@ai-matrx/records/core";
+import { runTemplateDoor, type TemplateDoorAnswer } from "@ai-matrx/records/templates";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
-import { useAgentLauncher } from "@ai-matrx/chat/agents/hooks/useAgentLauncher";
-import { selectRequest } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { useHeadlessAgentJson } from "@ai-matrx/chat/agents/hooks/useHeadlessAgentJson";
+import { useDeclaredSurfaceMandates } from "@ai-matrx/chat/surfaces/runtime/surface-mandates";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@ai-matrx/design-system";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import * as doors from "@/features/unified-data/hub/doors";
-import { KindIcon } from "@/features/unified-data/home/dataHomeColumns";
 import { createClient } from "@/utils/supabase/client";
-
-import { madeSince, secondsWords, snapshotOf, type MadeThing, type StoreSnapshot } from "./made";
 import { enterSendsHere } from "@/components/official/composer/composerSubmit";
+import { Landing, Progress } from "../gallery/TemplateGallery";
+import type { MadeObject } from "../gallery/catalogue";
+import { templatePreviewHref } from "../gallery/galleryHref";
 
-/** How often the store is read while the agent works: each new thing appears as it lands. */
-const POLL_MS = 3_000;
+import { secondsWords } from "./made";
+import {
+  checkDescribeSpec,
+  coerceDescribeAnswer,
+  declareDescribeSpec,
+  describeSpec,
+  describeVariables,
+  readExistingTables,
+  readOrganizationFacts,
+  type DescribeAnswer,
+} from "./describeTemplate";
+
+const DESCRIBE = MANDATE_KEYS.make__describe_template;
+const DESCRIBE_DISCLOSURE = [{ mandateKey: DESCRIBE, does: "turns your sentence into tables, forms and a booking page" }] as const;
 
 type Run =
   | { phase: "idle" }
-  | { phase: "running"; startedAt: number; organizationId: string; before: StoreSnapshot; made: MadeThing[]; requestId: string | null }
-  | { phase: "done"; ms: number; made: MadeThing[]; reply: string; requestId: string | null }
-  | { phase: "failed"; why: string; made: MadeThing[] };
-
-async function readStore(organizationId: string) {
-  const source = supabaseDataSource(createClient());
-  const [tables, items] = await Promise.all([
-    doors.dataHomeTables(source, organizationId),
-    doors.dataHomeItems(source, organizationId),
-  ]);
-  if (!tables.ok) return { ok: false as const, why: doors.doorFailureLine(tables.error) };
-  if (!items.ok) return { ok: false as const, why: doors.doorFailureLine(items.error) };
-  return { ok: true as const, tables: tables.data, items: items.data };
-}
+  | { phase: "writing"; startedAt: number }
+  | { phase: "installing"; startedAt: number; templateId: string; answer: TemplateDoorAnswer | null; notes: string[] }
+  | { phase: "installed"; ms: number; templateId: string; answer: TemplateDoorAnswer; notes: string[] }
+  | { phase: "failed"; why: string; templateId: string | null; answer: TemplateDoorAnswer | null };
 
 export function DescribeBox() {
-  const userId = useAppSelector(selectUserId);
-  // org-filter: write-target what the sentence makes is saved in the organization new things go to; nothing is read through it
+  // org-filter: write-target what the sentence makes is installed in the organization new things go to; its tables are read only to reuse them
   const active = useOrganizationRequired();
   const organizationId = active.organizationState === "ready" ? active.organizationId : null;
-  const { launchMandate } = useAgentLauncher();
+  const writer = useHeadlessAgentJson();
+  useDeclaredSurfaceMandates(DESCRIBE_DISCLOSURE);
   const [sentence, setSentence] = useState("");
   const [run, setRun] = useState<Run>({ phase: "idle" });
   const [askOrganization, setAskOrganization] = useState(false);
   const [now, setNow] = useState(() => Date.now());
-  const runRef = useRef(run);
-  runRef.current = run;
 
-  const requestId = run.phase === "running" || run.phase === "done" ? run.requestId : null;
-  const request = useAppSelector((state) => (requestId ? selectRequest(requestId)(state as never) : undefined));
-
-  // The clock and the live list while the agent works.
+  const busy = run.phase === "writing" || run.phase === "installing";
   useEffect(() => {
-    if (run.phase !== "running") return;
+    if (!busy) return;
     const tick = setInterval(() => setNow(Date.now()), 500);
-    const poll = setInterval(() => {
-      const current = runRef.current;
-      if (current.phase !== "running") return;
-      void readStore(current.organizationId).then((read) => {
-        const latest = runRef.current;
-        if (!read.ok || latest.phase !== "running") return;
-        setRun({ ...latest, made: madeSince(latest.before, read, latest.organizationId) });
-      });
-    }, POLL_MS);
-    return () => {
-      clearInterval(tick);
-      clearInterval(poll);
-    };
-  }, [run.phase]);
+    return () => clearInterval(tick);
+  }, [busy]);
 
   const start = async () => {
     const said = sentence.trim();
@@ -104,56 +84,56 @@ export function DescribeBox() {
       return;
     }
     setAskOrganization(false);
-    const before = await readStore(organizationId);
-    if (!before.ok) {
-      setRun({ phase: "failed", why: before.why, made: [] });
-      return;
-    }
     const startedAt = Date.now();
-    const snapshot = snapshotOf(before.tables, before.items);
     setNow(startedAt);
-    setRun({ phase: "running", startedAt, organizationId, before: snapshot, made: [], requestId: null });
+    setRun({ phase: "writing", startedAt });
+    const client = createClient();
     try {
-      const result = await launchMandate(MANDATE_KEYS.data__page_guidance, {
+      // The provision: the organization's facts and its own tables (reuse beats duplicate).
+      const source = supabaseDataSource(client);
+      const [facts, listed] = await Promise.all([readOrganizationFacts(client, organizationId), doors.dataHomeTables(source, organizationId)]);
+      const own = listed.ok
+        ? listed.data.filter((t) => t.organization_id === organizationId && t.kind === "table" && !t.kept_by_the_app).map((t) => ({ id: t.table_id, name: t.table_name }))
+        : [];
+      const tables = await readExistingTables(client, organizationId, own);
+
+      const answer = await writer.run<DescribeAnswer>({
+        mandateKey: DESCRIBE,
         surfaceKey: "make:describe",
-        organizationId,
         sourceFeature: "udt",
-        // Headless: this box draws the progress and the result itself.
-        config: { displayMode: "background", autoRun: true, allowChat: false },
-        // The person's own sentence IS the ask — never a prompt written here.
-        runtime: { userInput: said, ...(userId ? { variables: { asker_user_id: userId } } : {}) },
-        onRequestId: (id: string) => {
-          const current = runRef.current;
-          if (current.phase === "running") setRun({ ...current, requestId: id });
-        },
-      } as Parameters<typeof launchMandate>[1]);
-      const after = await readStore(organizationId);
-      const made = after.ok ? madeSince(snapshot, after, organizationId) : [];
-      const current = runRef.current;
-      setRun({
-        phase: "done",
-        ms: Date.now() - startedAt,
-        made,
-        reply: (result.responseText ?? "").trim(),
-        requestId: result.requestId ?? (current.phase === "running" ? current.requestId : null),
+        expect: "json",
+        initiation: "user",
+        organizationId,
+        variables: describeVariables(said, facts, tables),
+        coerce: (v) => coerceDescribeAnswer(v),
       });
+
+      // The check before anything is built: one line, and a retry.
+      const spec = describeSpec(answer.template);
+      const checked = checkDescribeSpec(spec);
+      if (!checked.ok) {
+        setRun({ phase: "failed", why: checked.line, templateId: null, answer: null });
+        return;
+      }
+      const stamp = `${startedAt.toString(36)}${Math.random().toString(36).slice(2, 6)}`.toUpperCase();
+      const templateId = await declareDescribeSpec(client, organizationId, spec, stamp);
+      setRun({ phase: "installing", startedAt, templateId, answer: null, notes: answer.notes });
+      const done = await runTemplateDoor(source, "template_install", organizationId, templateId, {
+        onCall: (a) => setRun((r) => (r.phase === "installing" ? { ...r, answer: a } : r)),
+      });
+      if (!done.ok || !done.answer) {
+        const refusal = done.answer?.refusal as { message?: string } | null | undefined;
+        setRun({ phase: "failed", why: refusal?.message ?? done.error?.message ?? "The install stopped before it finished.", templateId, answer: done.answer });
+        return;
+      }
+      setRun({ phase: "installed", ms: Date.now() - startedAt, templateId, answer: done.answer, notes: answer.notes });
     } catch (err: unknown) {
-      const current = runRef.current;
-      setRun({
-        phase: "failed",
-        why: err instanceof Error ? err.message : String(err),
-        made: current.phase === "running" ? current.made : [],
-      });
+      const detail = (err as { detail?: string } | null)?.detail;
+      setRun({ phase: "failed", why: [err instanceof Error ? err.message : String(err), detail].filter(Boolean).join(" — "), templateId: null, answer: null });
     }
   };
 
-  // The run's own failure, in the words the server sent (C3) — the person-facing one first.
-  const requestError =
-    request && request.status === "error"
-      ? (request.error?.user_message || request.error?.message || "The agent stopped before it finished.")
-      : null;
-
-  const running = run.phase === "running";
+  const elapsed = run.phase === "writing" || run.phase === "installing" ? secondsWords(now - run.startedAt) : null;
   return (
     <section className="flex flex-col gap-2" aria-labelledby="make-describe" data-make-describe={run.phase}>
       <h2 id="make-describe" className="sr-only">
@@ -178,13 +158,13 @@ export function DescribeBox() {
           placeholder="A patient intake form that books the first visit"
           aria-label="Describe what to make"
           rows={2}
-          disabled={running}
+          disabled={busy}
           className="min-h-[2.75rem] flex-1 resize-none"
           data-make-describe-input=""
         />
-        <Button iconEnd={running ? null : <ArrowRight aria-hidden />} variant="primary" type="submit" disabled={running || !sentence.trim()} aria-busy={running || undefined} data-make-describe-go="">
-          
-          {running ? `Making… ${secondsWords(now - run.startedAt)}` : "Make it"}
+        <Button type="submit" disabled={busy || !sentence.trim()} aria-busy={busy || undefined} className="gap-1.5" data-make-describe-go="">
+          {run.phase === "writing" ? `Designing… ${elapsed}` : run.phase === "installing" ? `Building… ${elapsed}` : "Make it"}
+          {busy ? null : <ArrowRight className="h-4 w-4" aria-hidden />}
         </Button>
       </form>
 
@@ -197,78 +177,45 @@ export function DescribeBox() {
         />
       ) : null}
 
-      {run.phase === "running" && run.made.length > 0 ? <MadeList made={run.made} /> : null}
+      {run.phase === "installing" ? <Progress run={{ door: "template_install", answer: run.answer }} /> : null}
 
-      {run.phase === "done" ? (
-        <div className="flex flex-col gap-2 rounded-xl border border-border bg-card p-3" data-make-describe-result="">
-          {run.made.length > 0 ? (
-            <>
-              <p className="text-sm font-medium text-foreground" data-make-describe-ms={run.ms}>
-                Made in {secondsWords(run.ms)}
-              </p>
-              <MadeList made={run.made} />
-            </>
-          ) : (
-            <p className="text-sm font-medium text-foreground">Nothing was made</p>
-          )}
-          {requestError ? (
-            <p className="text-sm text-destructive" role="alert" data-make-describe-refusal="">
-              {requestError}
-            </p>
-          ) : run.made.length === 0 ? (
-            // The agent's own answer — a question back or its reason — is the honest result.
-            <p className="whitespace-pre-wrap text-sm text-muted-foreground" data-make-describe-reply="">
-              {run.reply || "The agent answered with nothing."}
-            </p>
-          ) : null}
+      {run.phase === "installed" ? (
+        <div className="flex flex-col gap-2" data-make-describe-result="" data-make-describe-ms={run.ms}>
+          <p className="text-sm font-medium text-foreground">Made in {secondsWords(run.ms)}</p>
+          <Landing made={(run.answer.made ?? []) as MadeObject[]} />
+          <Notes notes={run.notes} />
+          <Link href={templatePreviewHref(run.templateId)} className="text-sm text-primary underline-offset-2 hover:underline" data-make-describe-template="">
+            Remove or save as a template
+          </Link>
         </div>
       ) : null}
 
       {run.phase === "failed" ? (
         <div className="flex flex-col gap-2" role="alert" data-make-describe-refusal="">
-          <p className="text-sm text-destructive">{run.why}</p>
-          {run.made.length > 0 ? <MadeList made={run.made} /> : null}
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="min-w-0 flex-1 text-sm text-destructive">{run.why}</p>
+            <Button size="sm" variant="outline" onClick={() => void start()} data-make-describe-retry="">
+              Try again
+            </Button>
+          </div>
+          {run.templateId ? (
+            <Link href={templatePreviewHref(run.templateId)} className="text-sm text-primary underline-offset-2 hover:underline">
+              Remove what was made
+            </Link>
+          ) : null}
         </div>
       ) : null}
     </section>
   );
 }
 
-const KIND_WORD: Record<MadeThing["kind"], string> = {
-  table: "Table",
-  form: "Form",
-  booking: "Booking page",
-  portal: "Portal",
-  dashboard: "Dashboard",
-  digest: "Digest",
-  checklist: "Checklist",
-};
-
-function MadeList({ made }: { made: MadeThing[] }) {
+/** The mandate's assumptions, one line each — what it decided for the person. */
+function Notes({ notes }: { notes: string[] }) {
+  if (!notes.length) return null;
   return (
-    <ul className="divide-y divide-border overflow-hidden rounded-lg border border-border" data-make-describe-made="">
-      {made.map((thing) => (
-        <li key={`${thing.kind}:${thing.id}`} className="flex min-w-0 items-center gap-3 px-3 py-2" data-make-made={thing.kind}>
-          <KindIcon kind={thing.kind} className="h-4 w-4 shrink-0 text-muted-foreground" />
-          <span className="flex min-w-0 flex-1 flex-col sm:flex-row sm:items-center sm:gap-2">
-            <span className="truncate text-sm text-foreground">{thing.title}</span>
-            <span className="shrink-0 text-xs text-muted-foreground">{thing.word ?? KIND_WORD[thing.kind]}</span>
-          </span>
-          <Link href={thing.href} className="shrink-0 text-sm text-primary underline-offset-2 hover:underline" data-make-made-open="">
-            Open
-          </Link>
-          {thing.publicHref ? (
-            <Link
-              href={thing.publicHref}
-              target="_blank"
-              className="inline-flex shrink-0 items-center gap-1 text-sm text-primary underline-offset-2 hover:underline"
-              data-make-made-public=""
-            >
-              Link
-              <ExternalLink className="h-3 w-3" aria-hidden />
-            </Link>
-          ) : null}
-        </li>
+    <ul className="flex flex-col gap-0.5 text-xs text-muted-foreground" data-make-describe-notes={notes.length}>
+      {notes.map((n) => (
+        <li key={n}>{n}</li>
       ))}
     </ul>
   );

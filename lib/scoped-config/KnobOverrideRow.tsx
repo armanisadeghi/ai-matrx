@@ -21,11 +21,11 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Lock, MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
-  Input,
   Popover,
   PopoverContent,
   PopoverTrigger, Button as SurfaceButton,
 } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
@@ -819,7 +819,6 @@ export function KnobOverrideRow(props: {
                         ? `${knob.label} for ${scopeLabel}`
                         : knob.label
                     }
-                    size="default"
                     className="w-full min-w-0"
                   >
                     {/* The value in force, in the registry's WORDS ("Ask"), never

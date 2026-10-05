@@ -32,7 +32,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -427,7 +427,7 @@ const CreateShapeDialog: React.FC<CreateShapeDialogProps> = ({
 
           <div className="space-y-1.5">
             <Label htmlFor="shape-slug">Slug</Label>
-            <Input
+            <Input mono
               id="shape-slug"
               value={slug}
               onChange={(e) => {
@@ -435,7 +435,6 @@ const CreateShapeDialog: React.FC<CreateShapeDialogProps> = ({
                 setSlug(e.target.value);
               }}
               disabled={creating || pendingFix !== null}
-              className="font-mono"
             />
             <p
               className={cn(
@@ -495,13 +494,13 @@ const CreateShapeDialog: React.FC<CreateShapeDialogProps> = ({
                 (required — validated against the schema)
               </span>
             </Label>
-            <Textarea
+            <Textarea mono minHeight={176} maxHeight={176}
               id="shape-sample"
               value={sampleText}
               onChange={(e) => setEditedSample(e.target.value)}
               disabled={creating}
               spellCheck={false}
-              className="h-44 resize-y font-mono text-xs"
+              className="resize-y"
             />
           </div>
 

@@ -22,7 +22,7 @@ import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { webLocation } from "@/features/marketing/lib/copy-payloads";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { useMarketingBrandOptional } from "@/features/marketing/lib/brand-context";
 import { PlanNodeTopicField } from "@/features/marketing/seo/topical-map/linkins/PlanNodeTopicField";
@@ -1074,14 +1074,13 @@ export function NodePanel({
                         onChange={(event) =>
                           setDraft((d) => ({ ...d, label: event.target.value }))
                         }
-                        className="h-8"
                       />
                     </div>
                     <div>
                       <Label className="mb-1 block text-xs font-medium">
                         Slug (kebab-case)
                       </Label>
-                      <Input
+                      <Input mono
                         value={current.slug ?? ""}
                         placeholder={
                           current.node_type === "home"
@@ -1097,7 +1096,6 @@ export function NodePanel({
                                 : event.target.value.trim(),
                           }))
                         }
-                        className="h-8 font-mono"
                       />
                     </div>
                     <div className="col-span-2">
@@ -1128,7 +1126,7 @@ export function NodePanel({
                           }))
                         }
                       >
-                        <SelectTrigger className="h-8 text-sm">
+                        <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -1183,7 +1181,7 @@ export function NodePanel({
                           }))
                         }
                       >
-                        <SelectTrigger className="h-8 text-sm">
+                        <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -1210,7 +1208,7 @@ export function NodePanel({
                           }))
                         }
                       >
-                        <SelectTrigger className="h-8 text-sm">
+                        <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -1699,7 +1697,7 @@ function MoveNodeControl({
         }}
         disabled={reparent.isPending}
       >
-        <SelectTrigger className="h-8 text-sm">
+        <SelectTrigger>
           <SelectValue />
         </SelectTrigger>
         <SelectContent>

@@ -51,7 +51,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Textarea } from "@/components/ui/textarea";
 import { recordToast, toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
@@ -193,7 +193,7 @@ export default function ProviderSyncPolicyDialog({
                 type="date"
                 value={cutoff}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCutoff(e.target.value)}
-                className="h-8 w-44 text-xs"
+                className="w-44"
               />
               {cutoff && (
                 <Button
@@ -216,7 +216,7 @@ export default function ProviderSyncPolicyDialog({
               Excluded models ({excluded.length})
             </p>
             <div className="flex items-center gap-2">
-              <Input
+              <Input mono
                 value={newId}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewId(e.target.value)}
                 onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -226,7 +226,6 @@ export default function ProviderSyncPolicyDialog({
                   }
                 }}
                 placeholder="Provider model id, e.g. gpt-4o-transcribe-diarize"
-                className="h-8 text-xs font-mono"
                 list="sync-policy-known-models"
               />
               <datalist id="sync-policy-known-models">
@@ -299,7 +298,6 @@ export default function ProviderSyncPolicyDialog({
               onChange={(e) => setNotes(e.target.value)}
               rows={2}
               placeholder="Why these rules exist — the next person reads this."
-              className="text-xs"
             />
           </div>
 

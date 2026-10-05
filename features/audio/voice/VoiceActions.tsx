@@ -3,7 +3,7 @@
 import { cloneVoiceFromFile } from "@/lib/cartesia/cartesiaUtils";
 import { Button } from "@/components/ui/button";
 import { FileUpload } from "@/components/ui/file-upload/file-upload";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { useAiAudio } from "@/features/audio/voice/AiVoicePage";
 import { Language } from "@/lib/cartesia/cartesia.types";
 import { useState } from "react";

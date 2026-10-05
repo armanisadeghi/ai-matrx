@@ -19,7 +19,7 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Plus, Save, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { toast } from "@/lib/toast";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { extractErrorMessage } from "@/utils/errors";
@@ -243,7 +243,6 @@ export function DefaultRulesEditor() {
                 value={draft.label}
                 onChange={(e) => setDraft({ ...draft, label: e.target.value })}
                 placeholder="Wants it free"
-                className="h-8 text-xs"
               />
             </label>
             <label className="flex flex-col gap-1">
@@ -357,7 +356,6 @@ export function DefaultRulesEditor() {
                   }
                   placeholder={draft.effect === "add" ? "-60" : "0.2"}
                   inputMode="decimal"
-                  className="h-8 text-xs"
                 />
               </label>
             )}

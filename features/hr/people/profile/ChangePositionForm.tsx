@@ -30,7 +30,7 @@ import Link from "next/link";
 import { AlertTriangle, Info } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -244,7 +244,7 @@ export function ChangePositionForm({
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="Job title">
             <Select value={jobTitleId} onValueChange={setJobTitleId}>
-              <SelectTrigger className="h-11 sm:h-9">
+              <SelectTrigger>
                 <SelectValue placeholder="Pick a job title" />
               </SelectTrigger>
               <SelectContent>
@@ -259,7 +259,7 @@ export function ChangePositionForm({
 
           <Field label="Department">
             <Select value={departmentId} onValueChange={setDepartmentId}>
-              <SelectTrigger className="h-11 sm:h-9">
+              <SelectTrigger>
                 <SelectValue placeholder="Pick a department" />
               </SelectTrigger>
               <SelectContent>
@@ -274,7 +274,7 @@ export function ChangePositionForm({
 
           <Field label="Location">
             <Select value={locationId} onValueChange={setLocationId}>
-              <SelectTrigger className="h-11 sm:h-9">
+              <SelectTrigger>
                 <SelectValue placeholder="Pick a location" />
               </SelectTrigger>
               <SelectContent>
@@ -298,7 +298,6 @@ export function ChangePositionForm({
               max="2"
               value={fte}
               onChange={(event) => setFte(event.target.value)}
-              className="h-11 sm:h-9"
             />
           </Field>
 
@@ -318,7 +317,6 @@ export function ChangePositionForm({
               value={standardHours}
               onChange={(event) => setStandardHours(event.target.value)}
               placeholder="e.g. 40"
-              className="h-11 sm:h-9"
             />
             <p className="mt-1 text-[0.6875rem] text-muted-foreground">
               What a day of leave costs against. Empty on older assignments —
@@ -328,7 +326,7 @@ export function ChangePositionForm({
 
           <Field label="FLSA status">
             <Select value={flsaStatus} onValueChange={setFlsaStatus}>
-              <SelectTrigger className="h-11 sm:h-9">
+              <SelectTrigger>
                 <SelectValue placeholder="Pick a status" />
               </SelectTrigger>
               <SelectContent>
@@ -351,7 +349,6 @@ export function ChangePositionForm({
                 value={exemptionBasis}
                 onChange={(event) => setExemptionBasis(event.target.value)}
                 placeholder="e.g. executive, administrative, professional"
-                className="h-11 sm:h-9"
               />
             </Field>
           ) : null}

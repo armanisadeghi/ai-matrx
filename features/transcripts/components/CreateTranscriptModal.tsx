@@ -10,7 +10,8 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input, Button as SurfaceButton } from "@ai-matrx/design-system";
+import { Button as SurfaceButton } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -635,7 +636,6 @@ export function CreateTranscriptModal({
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="Transcript Title"
-                  className="border border-border"
                   style={{ fontSize: "16px" }}
                 />
               </div>
@@ -681,7 +681,6 @@ export function CreateTranscriptModal({
                     onChange={(e) => setFolder(e.target.value)}
                     placeholder="Folder Name"
                     style={{ fontSize: "16px" }}
-                    className="border border-border"
                   />
                 </div>
               </div>
@@ -720,7 +719,6 @@ export function CreateTranscriptModal({
                   >
                     <SelectTrigger
                       id="preview-source-type"
-                      className="border border-border"
                     >
                       <SelectValue />
                     </SelectTrigger>
@@ -742,7 +740,6 @@ export function CreateTranscriptModal({
                     onChange={(e) => setFolder(e.target.value)}
                     placeholder="Folder Name"
                     style={{ fontSize: "16px" }}
-                    className="border border-border"
                   />
                 </div>
               </div>

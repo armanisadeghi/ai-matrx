@@ -33,7 +33,7 @@ import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { CrumbTrailHeader } from "@/features/shell/components/header/templates/CrumbTrailHeader";
 import { ItemContextMenu } from "@/components/official/item/ItemMenu";
 import type { ItemMenuConfig } from "@/components/official/item/types";
@@ -365,12 +365,11 @@ export function OrgResourceDetail() {
               {listable && (
                 <div className="relative mb-3">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
+                  <Input adornment="start"
                     aria-label={`Search ${entry.labelPlural.toLowerCase()} shared with ${org.name}`}
                     value={sharedQuery}
                     onChange={(e) => setSharedQuery(e.target.value)}
                     placeholder={`Search ${entry.labelPlural.toLowerCase()}…`}
-                    className="pl-9"
                   />
                 </div>
               )}
@@ -439,12 +438,11 @@ export function OrgResourceDetail() {
                 <>
                   <div className="relative mb-3">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
+                    <Input adornment="start"
                       aria-label={`Search your ${entry.labelPlural.toLowerCase()}`}
                       value={query}
                       onChange={(e) => setQuery(e.target.value)}
                       placeholder={`Search your ${entry.labelPlural.toLowerCase()}…`}
-                      className="pl-9"
                     />
                   </div>
                   {mine.loading ? (

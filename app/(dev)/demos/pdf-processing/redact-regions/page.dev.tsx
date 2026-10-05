@@ -4,7 +4,7 @@ import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 import { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import {

@@ -178,7 +178,7 @@ export function ResearchMediaView({
           />
         </div>
         <Select value={topicFilter} onValueChange={setTopicFilter}>
-          <SelectTrigger className="h-7 w-[12rem] px-2 text-[11px]">
+          <SelectTrigger className="w-[12rem]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent className="text-[11px]">
@@ -196,7 +196,7 @@ export function ResearchMediaView({
             setOriginFilter(value as "all" | "own" | "external")
           }
         >
-          <SelectTrigger className="h-7 w-[9rem] px-2 text-[11px]">
+          <SelectTrigger className="w-[9rem]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent className="text-[11px]">

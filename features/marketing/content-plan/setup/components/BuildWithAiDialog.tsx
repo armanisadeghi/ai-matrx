@@ -24,7 +24,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { cn } from "@/lib/utils";
 
 import { ResearchTopicSelect } from "../../components/ResearchTopicSelect";
@@ -264,7 +264,7 @@ export function BuildWithAiDialog({
                   value={guidance.locationCount}
                   placeholder="e.g. 4"
                   disabled={busy}
-                  className="h-7 w-24 px-2 text-base sm:text-sm"
+                  className="w-24"
                   onChange={(event) =>
                     setGuidance((g) => ({
                       ...g,

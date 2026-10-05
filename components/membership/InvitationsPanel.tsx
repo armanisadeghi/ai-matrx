@@ -32,7 +32,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -434,7 +434,7 @@ export function InvitationsPanel({
                       : "colleague@example.com"
                 }
                 disabled={operationLoading}
-                className={`h-9 ${
+                className={` ${
                   email && !emailValidation.valid ? "border-red-500" : ""
                 }`}
               />
@@ -451,7 +451,7 @@ export function InvitationsPanel({
               value={role}
               onValueChange={(value) => setRole(value as MembershipRole)}
             >
-              <SelectTrigger disabled={operationLoading} className="w-32 h-9">
+              <SelectTrigger disabled={operationLoading} className="w-32">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

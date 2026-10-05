@@ -10,7 +10,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -227,7 +227,6 @@ export default function TableDataSource({
               placeholder="Search tables..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-9 text-sm"
             />
             <div className="border rounded-md max-h-[200px] overflow-y-auto">
               {filteredTables.length === 0 ? (
@@ -279,7 +278,7 @@ export default function TableDataSource({
               <div className="space-y-2">
                 <Label className="text-sm">Zip Code Column</Label>
                 <Select value={zipCodeColumn} onValueChange={setZipCodeColumn}>
-                  <SelectTrigger className="h-9">
+                  <SelectTrigger>
                     <SelectValue placeholder="Select column..." />
                   </SelectTrigger>
                   <SelectContent>
@@ -302,7 +301,7 @@ export default function TableDataSource({
               <div className="space-y-2">
                 <Label className="text-sm">Count Column</Label>
                 <Select value={countColumn} onValueChange={setCountColumn}>
-                  <SelectTrigger className="h-9">
+                  <SelectTrigger>
                     <SelectValue placeholder="Select column..." />
                   </SelectTrigger>
                   <SelectContent>

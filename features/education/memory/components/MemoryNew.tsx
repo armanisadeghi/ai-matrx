@@ -14,7 +14,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, Brain, Loader2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { cn } from "@/lib/utils";
 import { fcService } from "@/features/flashcards/data/fcService";
 import type { FcSetRow } from "@/features/flashcards/data/types";
@@ -373,7 +373,6 @@ export function MemoryNew() {
           onChange={(e) => setFocus(e.target.value)}
           placeholder="Concentrate on a specific list, term set, or concept…"
           data-surface-value="request_focus"
-          className="text-base"
         />
       </section>
 

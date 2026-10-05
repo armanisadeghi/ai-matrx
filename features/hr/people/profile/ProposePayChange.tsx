@@ -30,7 +30,7 @@ import Link from "next/link";
 import { Loader2, ShieldQuestion } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   Select,
   SelectContent,
@@ -218,7 +218,7 @@ export function ProposePayChange({
             value={form.component_kind}
             onValueChange={(v) => set({ component_kind: v })}
           >
-            <SelectTrigger className="h-9">
+            <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -233,7 +233,7 @@ export function ProposePayChange({
 
         <Field label="Basis">
           <Select value={form.pay_basis} onValueChange={(v) => set({ pay_basis: v })}>
-            <SelectTrigger className="h-9">
+            <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -252,13 +252,12 @@ export function ProposePayChange({
             inputMode="decimal"
             value={form.amount}
             onChange={(e) => set({ amount: e.target.value })}
-            className="h-9"
           />
         </Field>
 
         <Field label="Per">
           <Select value={form.per_unit} onValueChange={(v) => set({ per_unit: v })}>
-            <SelectTrigger className="h-9">
+            <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -276,7 +275,6 @@ export function ProposePayChange({
             type="date"
             value={form.effective_from}
             onChange={(e) => set({ effective_from: e.target.value })}
-            className="h-9"
           />
         </Field>
 
@@ -285,7 +283,6 @@ export function ProposePayChange({
             value={form.change_reason}
             onChange={(e) => set({ change_reason: e.target.value })}
             placeholder="Why this change"
-            className="h-9"
           />
         </Field>
       </div>

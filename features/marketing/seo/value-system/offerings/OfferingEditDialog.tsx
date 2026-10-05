@@ -20,7 +20,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { cn } from "@/styles/themes/utils";
@@ -90,7 +90,6 @@ export function OfferingEditDialog({
               value={name}
               onChange={(event) => setName(event.target.value)}
               placeholder="Hard Drive Shredding"
-              className="h-9 text-base sm:text-sm"
             />
           </div>
 
@@ -134,7 +133,6 @@ export function OfferingEditDialog({
               value={parentSearch}
               onChange={(event) => setParentSearch(event.target.value)}
               placeholder="Search this brand's offerings…"
-              className="h-9 text-base sm:text-sm"
             />
             <div className="max-h-40 overflow-y-auto overscroll-contain rounded border border-border">
               <ParentOption

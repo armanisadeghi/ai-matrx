@@ -45,24 +45,21 @@ export function ScrapedResultDetailTabs({
           onValueChange={(v) => onTabChange(v as ScrapedDetailTabId)}
           className="flex flex-col h-full w-full"
         >
-          <TabsList className="w-full justify-start rounded-none border-b border-border h-8 px-2 shrink-0 bg-muted/20">
+          <TabsList variant="underline" className="w-full justify-start shrink-0">
             <TabsTrigger
               value="pretty"
-              className="text-[11px] h-6 px-2.5 data-[state=active]:bg-card data-[state=active]:shadow-sm"
             >
               <FileText className="w-3 h-3 mr-1" />
               Pretty
             </TabsTrigger>
             <TabsTrigger
               value="overview"
-              className="text-[11px] h-6 px-2.5 data-[state=active]:bg-card data-[state=active]:shadow-sm"
             >
               <Hash className="w-3 h-3 mr-1" />
               Overview
             </TabsTrigger>
             <TabsTrigger
               value="text"
-              className="text-[11px] h-6 px-2.5 data-[state=active]:bg-card data-[state=active]:shadow-sm"
             >
               Plain
               {!contentLength(selected) && (
@@ -71,7 +68,6 @@ export function ScrapedResultDetailTabs({
             </TabsTrigger>
             <TabsTrigger
               value="raw"
-              className="text-[11px] h-6 px-2.5 data-[state=active]:bg-card data-[state=active]:shadow-sm"
             >
               JSON
             </TabsTrigger>

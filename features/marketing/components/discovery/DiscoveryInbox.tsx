@@ -45,7 +45,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { Input, Button as SurfaceButton } from "@ai-matrx/design-system";
+import { Button as SurfaceButton } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   Select,
   SelectContent,
@@ -732,7 +733,7 @@ export function DiscoveryInbox({ brandId }: { brandId: string }) {
                         onValueChange={assignBulkKind}
                         disabled={!bulkTypePool || bulkBusy}
                       >
-                        <SelectTrigger className="h-7 w-40 text-xs">
+                        <SelectTrigger className="w-40">
                           <SelectValue
                             placeholder={
                               bulkTypePool
@@ -898,7 +899,7 @@ export function DiscoveryInbox({ brandId }: { brandId: string }) {
                     goToPage(1);
                   }}
                 >
-                  <SelectTrigger className="h-7 w-24 text-xs">
+                  <SelectTrigger className="w-24">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -1238,7 +1239,7 @@ function DiscoveryRow({
       ) : (
         <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
           <Select value={kind} onValueChange={onKindChange}>
-            <SelectTrigger className="h-8 w-40 text-xs">
+            <SelectTrigger className="w-40">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -1252,7 +1253,7 @@ function DiscoveryRow({
           <Input
             value={label}
             onChange={(event) => onLabelChange(event.target.value)}
-            className="h-8 w-40 text-xs"
+            className="w-40"
             placeholder={
               customLabelRequired
                 ? "Custom label (required)"

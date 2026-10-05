@@ -365,11 +365,10 @@ export function AdvancedMandateCrud() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
-            <Textarea
+            <Textarea mono
               value={insertJson}
               onChange={(e) => setInsertJson(e.target.value)}
               rows={12}
-              className="font-mono text-xs"
             />
             <p className="text-xs text-muted-foreground">
               Columns available:{" "}

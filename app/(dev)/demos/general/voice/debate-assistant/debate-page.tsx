@@ -176,11 +176,11 @@ export default function DebatePage() {
                     {/* Input Area */}
                     <div className="p-4 border-t">
                         <form onSubmit={handleSubmit} className="flex gap-2">
-                            <Textarea
+                            <Textarea minHeight={60} maxHeight={120}
                                 value={input}
                                 onChange={(e) => setInput(e.target.value)}
                                 placeholder="Type your debate argument or response..."
-                                className="min-h-[60px] max-h-[120px] resize-none"
+                                className="resize-none"
                                 disabled={isPending || isPlaying}
                                 onKeyDown={(e) => {
                                     if (e.key === 'Enter' && !e.shiftKey && enterSendsHere(true)) {

@@ -42,7 +42,7 @@ import TaskDetailsPanel from "./TaskDetailsPanel";
 import AllTasksView from "./AllTasksView";
 import TaskSortControl from "./TaskSortControl";
 import { useRefocusInputAfterAsync } from "@/features/tasks/hooks/useRefocusInputAfterAsync";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { ProInput } from "@/components/official/ProInput";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { Button } from "@/components/ui/button";
@@ -306,14 +306,13 @@ export default function TaskContentNew() {
                         className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"
                         size={16}
                       />
-                      <Input
+                      <Input adornment="both"
                         type="text"
                         value={searchQuery}
                         onChange={(e) =>
                           dispatch(setSearchQuery(e.target.value))
                         }
                         placeholder="Search tasks by name, description, or project..."
-                        className="pl-9 pr-9 h-9 text-sm bg-card"
                       />
                       {searchQuery && (
                         <button

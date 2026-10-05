@@ -545,7 +545,7 @@ export function ShareWithUserTab({
             }
             disabled={isLoading}
           >
-            <SelectTrigger id="user-permission" className="h-9">
+            <SelectTrigger id="user-permission">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

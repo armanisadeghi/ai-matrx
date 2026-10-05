@@ -2,7 +2,7 @@
 import React from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@ai-matrx/design-system";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { generateAccessPath, getPathAndTypeInfo } from "../utils/json-path-navigation-util";
 import { BookmarkIcon, InfoIcon } from "lucide-react";
 import { PathArray } from "../types";

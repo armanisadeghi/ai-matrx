@@ -101,7 +101,7 @@ const DynamicTabs: React.FC<DynamicTabsProps> = ({tabs}) => {
     return (
         <Tabs defaultValue={tabs[0]?.value} className="w-full">
             {/* Dynamically adjusting the grid columns based on the number of tabs */}
-            <TabsList className={`grid w-full grid-cols-${numberOfTabs}`}>
+            <TabsList fill className={` grid-cols-${numberOfTabs}`}>
                 {tabs.map((tab) => (
                     <TabsTrigger key={tab.value} value={tab.value}>
                         {tab.label}

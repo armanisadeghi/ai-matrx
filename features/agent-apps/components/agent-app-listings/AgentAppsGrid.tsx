@@ -446,7 +446,7 @@ export function AgentAppsGrid({
               value={sortBy}
               onValueChange={(v) => setSortBy(v as AgentAppSortOption)}
             >
-              <SelectTrigger className="h-8 w-[180px]" size="sm">
+              <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
               <SelectContent>

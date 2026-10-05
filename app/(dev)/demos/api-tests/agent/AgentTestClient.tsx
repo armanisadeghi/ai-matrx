@@ -26,7 +26,7 @@ import {
 } from "lucide-react";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -557,11 +557,11 @@ export default function AgentTestClient() {
                 <Label className="text-[10px] text-muted-foreground">
                   Prompt / Agent ID
                 </Label>
-                <Input
+                <Input mono
                   value={promptId}
                   onChange={(e) => setPromptId(e.target.value)}
                   placeholder="UUID of prompt/agent"
-                  className="h-7 text-[10px] font-mono mt-0.5"
+                  className="mt-0.5"
                   disabled={isRunning}
                 />
               </div>
@@ -635,11 +635,11 @@ export default function AgentTestClient() {
                     </span>
                   )}
                 </Label>
-                <Input
+                <Input mono
                   value={activeConversationId}
                   onChange={(e) => setActiveConversationId(e.target.value)}
                   placeholder="conversation UUID"
-                  className="h-7 text-[10px] font-mono mt-0.5"
+                  className="mt-0.5"
                   disabled={isRunning}
                 />
               </div>

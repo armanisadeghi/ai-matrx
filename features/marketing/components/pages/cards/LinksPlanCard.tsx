@@ -27,7 +27,7 @@ import {
 import TextArrayInput from "@/components/official/TextArrayInput";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { cn } from "@/lib/utils";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
@@ -197,7 +197,7 @@ function PlannedLinkListEditor({
             )}
           >
             <div className="flex items-center gap-1.5">
-              <Input
+              <Input mono
                 value={entry.url}
                 onChange={(event) =>
                   update(entry.id, { url: event.target.value })
@@ -205,7 +205,7 @@ function PlannedLinkListEditor({
                 list={datalistId}
                 placeholder={urlPlaceholder}
                 aria-label="Planned page URL"
-                className="h-8 min-w-0 flex-1 font-mono text-xs"
+                className="min-w-0 flex-1"
               />
               <PlannedLinkStatusBadge score={score} pending={pending} />
               <Button
@@ -232,7 +232,7 @@ function PlannedLinkListEditor({
                 }}
                 placeholder={anchorPlaceholder}
                 aria-label="Planned anchor text"
-                className="h-8 min-w-0 flex-1 text-xs"
+                className="min-w-0 flex-1"
               />
               {score?.partnerPageId ? (
                 <Link
@@ -272,13 +272,13 @@ function PlannedLinkListEditor({
         );
       })}
       <div className="flex items-center gap-1.5">
-        <Input
+        <Input mono
           value={newUrl}
           onChange={(event) => setNewUrl(event.target.value)}
           list={datalistId}
           placeholder={urlPlaceholder}
           aria-label="New planned page URL"
-          className="h-8 min-w-0 flex-1 font-mono text-xs"
+          className="min-w-0 flex-1"
           onKeyDown={(event) => {
             if (event.key === "Enter") {
               event.preventDefault();
@@ -291,7 +291,7 @@ function PlannedLinkListEditor({
           onChange={(event) => setNewAnchor(event.target.value)}
           placeholder={anchorPlaceholder}
           aria-label="New planned anchor text"
-          className="h-8 min-w-0 flex-1 text-xs"
+          className="min-w-0 flex-1"
           onKeyDown={(event) => {
             if (event.key === "Enter") {
               event.preventDefault();

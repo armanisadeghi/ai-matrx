@@ -9,7 +9,7 @@ import {
   Share2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { SearchEngineIndexedSwitch } from "@/features/sharing/indexed/SearchEngineIndexedSwitch";
@@ -141,7 +141,7 @@ export function ShowForm({ show, isNew, onSaved, onCancel }: ShowFormProps) {
 
       <div className="grid gap-1.5">
         <Label htmlFor="show-slug">Slug *</Label>
-        <Input
+        <Input mono
           id="show-slug"
           value={form.slug}
           onChange={(e) =>
@@ -149,7 +149,6 @@ export function ShowForm({ show, isNew, onSaved, onCancel }: ShowFormProps) {
           }
           placeholder="my-podcast-show"
           required
-          className="font-mono"
         />
         <p className="text-xs text-muted-foreground">
           Used in the share URL: /podcast/your-slug
@@ -204,7 +203,6 @@ export function ShowForm({ show, isNew, onSaved, onCancel }: ShowFormProps) {
               value={form.image_url}
               onChange={(e) => set("image_url", e.target.value)}
               placeholder="https://…"
-              className="text-xs h-8"
             />
           </div>
           <div className="grid gap-1.5">
@@ -216,7 +214,6 @@ export function ShowForm({ show, isNew, onSaved, onCancel }: ShowFormProps) {
               value={form.og_image_url}
               onChange={(e) => set("og_image_url", e.target.value)}
               placeholder="https://…"
-              className="text-xs h-8"
             />
           </div>
           <div className="grid gap-1.5">
@@ -228,7 +225,6 @@ export function ShowForm({ show, isNew, onSaved, onCancel }: ShowFormProps) {
               value={form.thumbnail_url}
               onChange={(e) => set("thumbnail_url", e.target.value)}
               placeholder="https://…"
-              className="text-xs h-8"
             />
           </div>
         </div>
@@ -440,7 +436,7 @@ export function EpisodeForm({
 
       <div className="grid gap-1.5">
         <Label htmlFor="ep-slug">Slug *</Label>
-        <Input
+        <Input mono
           id="ep-slug"
           value={form.slug}
           onChange={(e) =>
@@ -448,7 +444,6 @@ export function EpisodeForm({
           }
           placeholder="episode-slug"
           required
-          className="font-mono"
         />
         <p className="text-xs text-muted-foreground">/podcast/your-slug</p>
       </div>
@@ -595,7 +590,6 @@ export function EpisodeForm({
               value={form.image_url}
               onChange={(e) => set("image_url", e.target.value)}
               placeholder="https://…"
-              className="text-xs h-8"
             />
           </div>
           <div className="grid gap-1.5">
@@ -607,7 +601,6 @@ export function EpisodeForm({
               value={form.og_image_url}
               onChange={(e) => set("og_image_url", e.target.value)}
               placeholder="https://…"
-              className="text-xs h-8"
             />
           </div>
           <div className="grid gap-1.5">
@@ -619,7 +612,6 @@ export function EpisodeForm({
               value={form.thumbnail_url}
               onChange={(e) => set("thumbnail_url", e.target.value)}
               placeholder="https://…"
-              className="text-xs h-8"
             />
           </div>
           <div className="grid gap-1.5">
@@ -631,7 +623,6 @@ export function EpisodeForm({
               value={form.video_url}
               onChange={(e) => set("video_url", e.target.value)}
               placeholder="https://…"
-              className="text-xs h-8"
             />
           </div>
         </div>

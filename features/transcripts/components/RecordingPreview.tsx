@@ -3,7 +3,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { formatDurationSeconds } from '@ai-matrx/kit/format';
 import { Button } from '@/components/ui/button';
-import { Input, Button as SurfaceButton } from '@ai-matrx/design-system';
+import { Button as SurfaceButton } from '@ai-matrx/design-system';
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Play, Pause, Volume2, Gauge, Check } from 'lucide-react';
@@ -108,7 +109,6 @@ export function RecordingPreview({
                         onChange={(e) => onTitleChange(e.target.value)}
                         placeholder="Recording title"
                         style={{ fontSize: '16px' }}
-                        className="border border-border"
                     />
                 </div>
 

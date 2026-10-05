@@ -1,6 +1,6 @@
 "use client";
 
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { FieldHelp } from "@/components/official/ConfigurationFields";
 import styles from "./SettingsSection.module.css";
 import { Switch } from "@/components/ui/switch";
@@ -172,7 +172,6 @@ export function SettingsSection({
                       !value.autoRun ||
                       !value.showPreExecutionGate
                     }
-                    className="h-9 text-sm"
                     style={{ fontSize: "16px" }}
                   />
                 </ShortcutFieldRow>
@@ -194,7 +193,7 @@ export function SettingsSection({
           >
             <SelectTrigger
               aria-label="Variable panel style"
-              className="h-9 text-sm w-full"
+              className="w-full"
             >
               <SelectValue />
             </SelectTrigger>

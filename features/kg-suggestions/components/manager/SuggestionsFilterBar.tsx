@@ -9,7 +9,7 @@
 "use client";
 
 import { Search, Star, X } from "lucide-react";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   Select,
   SelectContent,
@@ -141,11 +141,10 @@ export function SuggestionsFilterBar({
 
         <div className="relative ml-auto w-full max-w-xs">
           <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input
+          <Input adornment="start"
             value={query.search ?? ""}
             onChange={(e) => patchQuery({ search: e.target.value || null })}
             placeholder="Search value, scope, field…"
-            className="h-8 pl-7 text-base sm:text-xs"
             style={{ fontSize: "16px" }}
           />
         </div>
@@ -260,7 +259,7 @@ function FilterSelect({
 }) {
   return (
     <Select value={value} onValueChange={onChange}>
-      <SelectTrigger className="h-8 w-auto min-w-[7rem] gap-1 text-[11px]">
+      <SelectTrigger className="w-auto min-w-[7rem]">
         <span className="text-muted-foreground">{label}:</span>
         <SelectValue />
       </SelectTrigger>

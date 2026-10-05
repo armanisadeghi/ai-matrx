@@ -499,7 +499,7 @@ export function MeetingFormDialog({
             {!editing && !reschedule && templates.templates.length > 0 ? (
               <Select value={templateId} onValueChange={chooseTemplate}>
                 <SelectTrigger
-                  className="ml-auto h-8 w-44 gap-1.5 text-xs"
+                  className="ml-auto w-44"
                   aria-label="Start from a template"
                 >
                   <LayoutTemplate
@@ -562,7 +562,7 @@ export function MeetingFormDialog({
                   value={String(draft.durationMinutes)}
                   onValueChange={(v) => set({ durationMinutes: Number(v) })}
                 >
-                  <SelectTrigger className="h-9 w-32" aria-label="Duration">
+                  <SelectTrigger className="w-32" aria-label="Duration">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -801,7 +801,7 @@ export function MeetingFormDialog({
                         }
                       >
                         <SelectTrigger
-                          className="h-8 w-48"
+                          className="w-48"
                           aria-label="Recording"
                         >
                           <SelectValue />

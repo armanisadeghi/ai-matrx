@@ -11,7 +11,7 @@ import {
   PopoverAnchor,
   PopoverContent,
 } from "@ai-matrx/design-system";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 import {
   Plus,
@@ -404,7 +404,6 @@ export default function TaskTapButton(props: TaskTapButtonProps) {
                 }
               }}
               placeholder="Task title..."
-              className="h-8 text-sm"
               style={{ fontSize: "16px" }}
             />
             <ProTextarea

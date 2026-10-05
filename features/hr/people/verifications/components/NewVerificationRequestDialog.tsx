@@ -25,7 +25,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -150,7 +150,7 @@ export function NewVerificationRequestDialog({
               value={source}
               onValueChange={(v) => setSource(v as HrVerificationSource)}
             >
-              <SelectTrigger id="ver-source" className="min-h-11 sm:min-h-9">
+              <SelectTrigger id="ver-source">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -169,7 +169,7 @@ export function NewVerificationRequestDialog({
               value={kind}
               onValueChange={(v) => setKind(v as HrVerificationKind)}
             >
-              <SelectTrigger id="ver-kind" className="min-h-11 sm:min-h-9">
+              <SelectTrigger id="ver-kind">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -218,7 +218,6 @@ export function NewVerificationRequestDialog({
               id="ver-subject-name"
               value={subjectName}
               onChange={(e) => setSubjectName(e.target.value)}
-              className="min-h-11 sm:min-h-9"
               placeholder="Used when nobody by that name works or worked here."
             />
           </div>
@@ -230,7 +229,6 @@ export function NewVerificationRequestDialog({
                 id="ver-req-name"
                 value={requesterName}
                 onChange={(e) => setRequesterName(e.target.value)}
-                className="min-h-11 sm:min-h-9"
               />
             </div>
             <div className="space-y-1.5">
@@ -239,7 +237,6 @@ export function NewVerificationRequestDialog({
                 id="ver-req-org"
                 value={requesterOrganization}
                 onChange={(e) => setRequesterOrganization(e.target.value)}
-                className="min-h-11 sm:min-h-9"
               />
             </div>
           </div>
@@ -252,7 +249,6 @@ export function NewVerificationRequestDialog({
                 type="email"
                 value={requesterEmail}
                 onChange={(e) => setRequesterEmail(e.target.value)}
-                className="min-h-11 sm:min-h-9"
               />
             </div>
             <div className="space-y-1.5">
@@ -262,7 +258,6 @@ export function NewVerificationRequestDialog({
                 type="date"
                 value={asOf}
                 onChange={(e) => setAsOf(e.target.value)}
-                className="min-h-11 sm:min-h-9"
               />
               <p className="text-xs text-muted-foreground">
                 Everything the letter asserts is resolved as of this date and

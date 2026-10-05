@@ -701,7 +701,7 @@ export default function TaskDetailsPanel({
               }
             }}
           >
-            <SelectTrigger className="text-sm">
+            <SelectTrigger>
               <SelectValue>
                 <span
                   className={`px-2 py-1 rounded-md text-xs font-medium ${getPriorityColor(priority)}`}

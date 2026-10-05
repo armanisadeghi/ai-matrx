@@ -44,7 +44,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Skeleton } from "@ai-matrx/design-system";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
 import { formatCount } from "@/features/marketing/search-console/types";
@@ -315,7 +315,6 @@ export function WorthConvertDialog({
                     value={effectiveAmount}
                     onChange={(event) => setAmount(event.target.value)}
                     inputMode="numeric"
-                    className="h-8 text-xs"
                     placeholder="e.g. 200 or -80"
                     aria-label="Points this value adds"
                   />

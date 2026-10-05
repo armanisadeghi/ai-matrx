@@ -25,7 +25,7 @@ import { Loader2, Pencil, Plus, TriangleAlert, Trash2, X } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { CustomComponentConfigurator } from "@/features/agents/components/variables-management/CustomComponentConfigurator";
 import type { VariableCustomComponent } from "@ai-matrx/chat/agents/types/agent-definition.types";
@@ -328,10 +328,9 @@ export default function KindVariantsTab({ detail }: KindVariantsTabProps) {
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1">
                 <Label htmlFor="variant-name">Name</Label>
-                <Input
+                <Input mono
                   id="variant-name"
                   value={draft.name}
-                  className="font-mono"
                   data-identifier
                   placeholder="snake_case_name"
                   onChange={(event) =>

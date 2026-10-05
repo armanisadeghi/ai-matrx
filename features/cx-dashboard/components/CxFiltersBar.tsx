@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, Download, Search, X } from "lucide-react";
 import {
@@ -77,7 +77,7 @@ export function CxFiltersBar({
         value={filters.timeframe}
         onValueChange={(v) => updateFilter("timeframe", v)}
       >
-        <SelectTrigger className="w-[120px] h-8 text-xs">
+        <SelectTrigger className="w-[120px]">
           <SelectValue placeholder="Timeframe" />
         </SelectTrigger>
         <SelectContent>
@@ -97,7 +97,7 @@ export function CxFiltersBar({
             updateFilter("status", v === "all_values" ? undefined : v)
           }
         >
-          <SelectTrigger className="w-[120px] h-8 text-xs">
+          <SelectTrigger className="w-[120px]">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
@@ -119,7 +119,7 @@ export function CxFiltersBar({
             updateFilter("provider", v === "all_values" ? undefined : v)
           }
         >
-          <SelectTrigger className="w-[120px] h-8 text-xs">
+          <SelectTrigger className="w-[120px]">
             <SelectValue placeholder="Provider" />
           </SelectTrigger>
           <SelectContent>
@@ -137,9 +137,9 @@ export function CxFiltersBar({
       {showSearch && (
         <div className="relative">
           <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
-          <Input
+          <Input adornment="start"
             key={filters.search ?? ""}
-            className="h-8 text-xs pl-7 w-[180px]"
+            className="w-[180px]"
             placeholder="Search..."
             defaultValue={filters.search || ""}
             onKeyDown={(e) => {

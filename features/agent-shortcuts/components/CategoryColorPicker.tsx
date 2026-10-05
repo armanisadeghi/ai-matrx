@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { HexColorPicker } from "react-colorful";
 import { colord } from "colord";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import {
   Popover,
@@ -103,13 +103,12 @@ export function CategoryColorPicker({
             </div>
             <div>
               <Label className="text-xs font-medium mb-1 block">Hex Code</Label>
-              <Input
+              <Input mono
                 type="text"
                 value={inputValue}
                 onChange={handleInputChange}
                 onBlur={handleInputBlur}
                 placeholder="#666666"
-                className="h-8 text-[16px] font-mono"
               />
             </div>
           </div>
@@ -117,14 +116,13 @@ export function CategoryColorPicker({
       </Popover>
 
       <div className="flex-1">
-        <Input
+        <Input mono
           type="text"
           value={inputValue}
           onChange={handleInputChange}
           onBlur={handleInputBlur}
           placeholder="#666666"
           disabled={disabled}
-          className="h-10 text-[16px] font-mono"
         />
       </div>
     </div>

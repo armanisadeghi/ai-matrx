@@ -10,7 +10,7 @@ import { useMemo, useState } from "react";
 import { Layers, Loader2, ShieldCheck, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { useAnnotations } from "@/features/file-analysis/hooks/useAnnotations";
 import { useLabelCatalog } from "@/features/file-analysis/hooks/useLabelCatalog";
 import { MaskDialog } from "@/features/file-analysis/redact/MaskDialog";
@@ -232,7 +232,6 @@ function RepeatedRegionsRedactSection({ fileId }: { fileId: string }) {
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder="Reason (required, goes on the audit record)"
-              className="h-7 text-[11px]"
             />
             <Button
               icon={redacting ? (

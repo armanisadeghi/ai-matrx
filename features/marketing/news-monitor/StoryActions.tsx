@@ -153,7 +153,7 @@ export function StoryActions({
           </DialogHeader>
           <div className="flex flex-col gap-2">
             <Select value={reason} onValueChange={(v) => setReason(v as StoryDismissReason)}>
-              <SelectTrigger className="h-9 text-base sm:text-sm" aria-label="Why dismiss">
+              <SelectTrigger aria-label="Why dismiss">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -164,11 +164,10 @@ export function StoryActions({
                 ))}
               </SelectContent>
             </Select>
-            <Textarea
+            <Textarea minHeight={64}
               value={note}
               onChange={(e) => setNote(e.target.value)}
               placeholder="Anything else the monitor should know (optional)"
-              className="min-h-16 text-base sm:text-sm"
             />
           </div>
           <DialogFooter>

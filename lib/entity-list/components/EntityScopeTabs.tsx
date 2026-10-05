@@ -48,7 +48,7 @@ import {
   SelectGroup,
   SelectItem,
   SelectLabel,
-  SelectTrigger,
+  SelectTriggerLegacy as SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";

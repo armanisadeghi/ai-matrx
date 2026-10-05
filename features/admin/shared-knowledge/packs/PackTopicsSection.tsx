@@ -14,7 +14,7 @@ import { useMutation } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   Select,
   SelectContent,
@@ -93,7 +93,7 @@ function TopicPicker({ onPick, exclude }: { onPick: (t: TopicOption) => void; ex
     <div className="space-y-1.5">
       <div className="relative">
         <Search className="pointer-events-none absolute left-2 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-        <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search the topic tree…" className="h-8 pl-7 text-sm" autoFocus />
+        <Input adornment="start" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search the topic tree…" autoFocus />
       </div>
       <ul className="max-h-48 divide-y divide-border overflow-y-auto rounded-md border border-border">
         {loading && rows.length === 0 ? (
@@ -187,12 +187,12 @@ function TopicEditor({
       <div className="grid gap-2 sm:grid-cols-3">
         <label className="space-y-1">
           <span className="text-[11px] text-muted-foreground">Weight 0–100 (set as high in the tree as it is true)</span>
-          <Input value={d.weight} onChange={(e) => setD({ ...d, weight: e.target.value })} inputMode="decimal" className="h-8 text-sm tabular-nums" />
+          <Input value={d.weight} onChange={(e) => setD({ ...d, weight: e.target.value })} inputMode="decimal" />
         </label>
         <label className="space-y-1">
           <span className="text-[11px] text-muted-foreground">Lead quality</span>
           <Select value={d.lead_quality} onValueChange={(v) => setD({ ...d, lead_quality: v })}>
-            <SelectTrigger className="h-8 text-xs">
+            <SelectTrigger>
               <SelectValue placeholder="—" />
             </SelectTrigger>
             <SelectContent>
@@ -208,7 +208,7 @@ function TopicEditor({
         <label className="space-y-1">
           <span className="text-[11px] text-muted-foreground">Service match</span>
           <Select value={d.offering_match} onValueChange={(v) => setD({ ...d, offering_match: v })}>
-            <SelectTrigger className="h-8 text-xs">
+            <SelectTrigger>
               <SelectValue placeholder="—" />
             </SelectTrigger>
             <SelectContent>

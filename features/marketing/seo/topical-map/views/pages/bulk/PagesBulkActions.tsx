@@ -219,13 +219,13 @@ function BulkActionPopover({
             >
               Note (optional)
             </label>
-            <Textarea
+            <Textarea minHeight={0}
               id={`bulk-intent-note-${action.id}`}
               value={draft.note}
               maxLength={300}
               rows={2}
               placeholder="Why these pages are going there"
-              className="min-h-0 text-xs"
+              className="min-h-0"
               onChange={(event) => onDraftChange({ ...draft, note: event.target.value })}
             />
             <p className="text-[11px] text-muted-foreground">

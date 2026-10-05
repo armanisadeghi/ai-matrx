@@ -13,7 +13,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Loader2, Save, FolderPlus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { ProInput } from "@/components/official/ProInput";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { Label } from "@/components/ui/label";
@@ -283,7 +283,7 @@ export function TopicSettingsForm({
               disabled={saving}
             >
               <SelectTrigger
-                className="h-9 w-full rounded-lg"
+                className="w-full"
                 style={{ fontSize: "16px" }}
               >
                 <SelectValue placeholder="No project" />

@@ -51,7 +51,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProTextarea } from "@/components/official/ProTextarea";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -893,7 +893,7 @@ export function GeneratorForm({
               value={String(hostCount)}
               onValueChange={(v) => setHostCount(Number(v))}
             >
-              <SelectTrigger className="h-8 w-24">
+              <SelectTrigger className="w-24">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

@@ -7,7 +7,7 @@ import {
   UpdateEnumRequest,
 } from "@/types/enum-types";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { AlertCircle, Save, X, Plus, Trash2 } from "lucide-react";
@@ -193,8 +193,7 @@ export default function EnumForm(props: EnumFormProps) {
             >
               Enum Name *
             </Label>
-            <Input
-              className="font-mono bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 border-slate-300 dark:border-slate-700"
+            <Input mono
               placeholder="my_enum"
               id="name"
               value={name}
@@ -217,8 +216,7 @@ export default function EnumForm(props: EnumFormProps) {
               onChange={(e) => setSchema(e.target.value)}
               placeholder={DEFAULT_DATABASE_SCHEMA}
               required
-              disabled={isEdit} // Can't change schema in edit mode
-              className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 border-slate-300 dark:border-slate-700"
+              disabled={isEdit}
             />
           </div>
 
@@ -276,7 +274,6 @@ export default function EnumForm(props: EnumFormProps) {
                     value={value}
                     onChange={(e) => updateValue(index, e.target.value)}
                     placeholder={`Value ${index + 1}`}
-                    className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 border-slate-300 dark:border-slate-700"
                   />
                   <Button
                     type="button"

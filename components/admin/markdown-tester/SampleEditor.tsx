@@ -32,7 +32,7 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
@@ -126,7 +126,6 @@ function SampleEditorForm({
           }}
           placeholder="e.g. Mixed code + table"
           disabled={busy}
-          className="text-base"
           aria-invalid={!!error}
         />
         {error ? <p className="text-xs text-destructive">{error} <ErrorAlchemyMenu /></p> : null}
@@ -136,13 +135,12 @@ function SampleEditorForm({
         <Label htmlFor="sample-description" className="text-xs">
           Description
         </Label>
-        <Textarea
+        <Textarea minHeight={64}
           id="sample-description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="What is this sample for? Which edge cases does it cover?"
           disabled={busy}
-          className="text-base min-h-[64px]"
           rows={3}
         />
       </div>

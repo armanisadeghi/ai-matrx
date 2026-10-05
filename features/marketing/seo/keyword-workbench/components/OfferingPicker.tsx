@@ -264,7 +264,7 @@ export function OfferingPicker({
             value={newParentId || "__root__"}
             onValueChange={(next) => setNewParentId(next === "__root__" ? "" : next)}
           >
-            <SelectTrigger className="h-7 text-[11px]" aria-label="Where the new offering goes">
+            <SelectTrigger aria-label="Where the new offering goes">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

@@ -106,7 +106,7 @@ export function SurfacePicker({
           onValueChange={onClientChange}
           disabled={disabled || loading}
         >
-          <SelectTrigger className="h-9 text-sm">
+          <SelectTrigger>
             <SelectValue
               placeholder={
                 loading ? (
@@ -140,7 +140,7 @@ export function SurfacePicker({
           onValueChange={onChange}
           disabled={disabled || loading || !client}
         >
-          <SelectTrigger className="h-9 text-sm">
+          <SelectTrigger>
             {/* 🚨 `null`, NEVER `""` (FIX-11b). An empty string is a real DOM
                 text node and `null` is nothing at all, so returning `""` makes
                 this slot's child list change SHAPE — and Radix clones this

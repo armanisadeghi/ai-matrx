@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Archive, BookA, ChevronLeft, Loader2, Plus, Save } from "lucide-react";
-import { Input, Skeleton, Textarea, ToggleGroup, ToggleGroupItem, cn } from "@ai-matrx/design-system";
+import { Skeleton, Textarea, ToggleGroup, ToggleGroupItem, cn } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 import { TapTargetButtonSolid } from "@ai-matrx/tap-target";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
@@ -319,7 +320,7 @@ export function TermListEditor({
           aria-label="Name"
           value={draft.name}
           onChange={(e) => set({ name: e.target.value })}
-          className="min-w-0 max-w-md flex-1 text-base font-medium"
+          className="min-w-0 max-w-md flex-1"
         />
         <div className="ml-auto flex items-center gap-1">
           <Button
@@ -373,7 +374,7 @@ export function TermListEditor({
             aria-label="Source language"
             value={draft.source_language ?? ""}
             onChange={(e) => set({ source_language: e.target.value || null })}
-            className="h-8 w-20"
+            className="w-20"
             placeholder="en"
           />
         </label>

@@ -2,7 +2,7 @@
 
 import { Search, Loader2, Globe, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { ProInput } from "@/components/official/ProInput";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -78,7 +78,6 @@ export function ScraperKeywordSearchPageBody({
               value={maxResults}
               onChange={(e) => setMaxResults(e.target.value)}
               disabled={isLoading}
-              className="h-8 text-sm"
               style={{ fontSize: "16px" }}
             />
           </div>
@@ -205,7 +204,6 @@ export function ScraperKeywordSearchCompactControls({
             value={maxResults}
             onChange={(e) => setMaxResults(e.target.value)}
             disabled={isLoading}
-            className="h-7 text-xs px-1.5 border-border"
           />
         </div>
       </div>

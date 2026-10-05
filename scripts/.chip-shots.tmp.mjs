@@ -7,7 +7,7 @@ const TAG = process.env.TAG ?? "after";
 const ROUTES = JSON.parse(process.env.ROUTES);
 const NEEDS_LOGIN = ORIGIN.includes("localhost");
 const browser = await chromium.launch({ headless: true });
-for (const scheme of ["light", "dark"]) {
+for (const scheme of (process.env.SCHEMES ?? "light,dark").split(",")) {
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 1000 }, colorScheme: scheme });
   await ctx.addInitScript((s) => { try { localStorage.setItem("theme", s); } catch {} }, scheme);
   const page = await ctx.newPage();

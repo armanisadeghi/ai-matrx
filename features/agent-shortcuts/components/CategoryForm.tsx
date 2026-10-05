@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
@@ -237,7 +237,6 @@ export function CategoryForm({
             onChange={(e) => handleChange("label", e.target.value)}
             placeholder="Category name"
             disabled={saving}
-            className="h-9 text-[16px]"
           />
           {errors.label && (
             <p className="text-xs text-destructive mt-0.5 flex items-center gap-1">
@@ -266,7 +265,7 @@ export function CategoryForm({
             }}
             disabled={saving}
           >
-            <SelectTrigger className="h-9">
+            <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

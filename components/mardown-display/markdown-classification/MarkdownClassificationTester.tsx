@@ -281,7 +281,7 @@ const MarkdownClassificationTester = ({
                     <div className="flex-shrink-0 flex items-center gap-2">
                         <label className="text-xs font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">Coordinator:</label>
                         <Select value={selectedCoordinatorId} onValueChange={handleCoordinatorChange}>
-                            <SelectTrigger className="w-[170px] h-8 text-xs">
+                            <SelectTrigger className="w-[170px]">
                                 <SelectValue placeholder="Select a coordinator" />
                             </SelectTrigger>
                             <SelectContent className="text-xs">
@@ -298,7 +298,7 @@ const MarkdownClassificationTester = ({
                     <div className="flex-shrink-0 flex items-center gap-2">
                         <label className="text-xs font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">Sample Data:</label>
                         <Select value={selectedSampleId} onValueChange={handleSampleSelect}>
-                            <SelectTrigger className="w-[170px] h-8 text-xs">
+                            <SelectTrigger className="w-[170px]">
                                 <SelectValue placeholder="Choose a sample" />
                             </SelectTrigger>
                             <SelectContent className="text-xs">
@@ -315,7 +315,7 @@ const MarkdownClassificationTester = ({
                     <div className="flex-shrink-0 flex items-center gap-2">
                         <label className="text-xs font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">Processor:</label>
                         <Select value={selectedProcessorId} onValueChange={handleProcessorChange}>
-                            <SelectTrigger className="w-[170px] h-8 text-xs">
+                            <SelectTrigger className="w-[170px]">
                                 <SelectValue placeholder="Select a processor" />
                             </SelectTrigger>
                             <SelectContent className="text-xs">
@@ -336,7 +336,7 @@ const MarkdownClassificationTester = ({
                             onValueChange={handleConfigChange}
                             disabled={isConfigDisabled}
                         >
-                            <SelectTrigger className={`w-[170px] h-8 text-xs ${isConfigDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                            <SelectTrigger className={`w-[170px] ${isConfigDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}>
                                 <SelectValue placeholder={isConfigDisabled ? "No config needed" : "Select a config"} />
                             </SelectTrigger>
                             <SelectContent className="text-xs">
@@ -353,7 +353,7 @@ const MarkdownClassificationTester = ({
                     <div className="flex-shrink-0 flex items-center gap-2">
                         <label className="text-xs font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">View:</label>
                         <Select value={selectedViewId || undefined} onValueChange={(value) => handleViewChange(value as ViewId)}>
-                            <SelectTrigger className="w-[170px] h-8 text-xs">
+                            <SelectTrigger className="w-[170px]">
                                 <SelectValue placeholder="Select a view" />
                             </SelectTrigger>
                             <SelectContent className="text-xs">

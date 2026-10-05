@@ -6,7 +6,7 @@ import { Loader2, Maximize2 } from "lucide-react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { updateTaskFieldThunk } from "@/features/tasks/redux/thunks";
 import { useDebounce } from "../hooks/useDebounce";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   Dialog,
   DialogContent,
@@ -106,7 +106,6 @@ export default function TaskDetails({ task }: { task: TaskWithProject }) {
           type="date"
           value={dueDate}
           onChange={(e) => setDueDate(e.target.value)}
-          className="text-sm"
         />
       </div>
 

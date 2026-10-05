@@ -40,7 +40,7 @@ import {
   useExtractionJobs,
 } from "@/features/page-extraction/hooks/useExtractionJobs";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useToastManager } from "@/hooks/useToastManager";
 import {
@@ -1035,7 +1035,6 @@ function TemplateEditor({
               )
             }
             placeholder={agent?.name ?? `${documentName} extraction`}
-            className="h-7 text-[11px]"
           />
         </Field>
 
@@ -1130,7 +1129,6 @@ function TemplateEditor({
                 value={draft.scopePagesInputRaw}
                 onChange={(e) => handleRangeChange(e.target.value)}
                 placeholder="1-50, 80-90"
-                className="h-7 text-[11px]"
               />
               {draft.scopePages.length > 0 && (
                 <p className="mt-1 text-[10px] text-muted-foreground">
@@ -1163,7 +1161,6 @@ function TemplateEditor({
                   min={MIN_CHUNK_SIZE}
                   max={MAX_CHUNK_SIZE}
                   placeholder="12"
-                  className="h-7 text-[11px]"
                 />
               </Field>
               <Field label="Overlap" hint="Repeat pages">
@@ -1174,7 +1171,6 @@ function TemplateEditor({
                   min={0}
                   max={Math.max(0, (draft.chunkSize ?? 1) - 1)}
                   placeholder="0"
-                  className="h-7 text-[11px]"
                 />
               </Field>
             </div>
@@ -1236,7 +1232,7 @@ function TemplateEditor({
 
         {/* 5. Knowledge-boost override */}
         <Field label="Knowledge boost" hint="Blank = agent default">
-          <Input
+          <Input mono
             value={draft.ragBoost ?? ""}
             onChange={(e) => {
               const raw = e.target.value;
@@ -1254,7 +1250,6 @@ function TemplateEditor({
             min={-50}
             max={100}
             placeholder="inherit"
-            className="h-7 text-[11px] font-mono"
           />
         </Field>
       </div>

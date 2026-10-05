@@ -53,7 +53,7 @@ import {
   DrawerDescription,
 } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -175,10 +175,10 @@ function ShareFormContent({
         <div className="space-y-2">
           <Label>Share Link</Label>
           <div className="flex gap-2 w-full">
-            <Input
+            <Input mono
               value={shareUrl}
               readOnly
-              className="flex-1 font-mono text-sm min-w-0"
+              className="flex-1 min-w-0"
             />
             <Button
               onClick={onCopy}
@@ -266,7 +266,7 @@ function ShareFormContent({
 
   return (
     <Tabs defaultValue="details" className="w-full">
-      <TabsList className="grid w-full grid-cols-2">
+      <TabsList fill>
         <TabsTrigger value="details">Details</TabsTrigger>
         <TabsTrigger value="settings">Settings</TabsTrigger>
       </TabsList>
@@ -334,7 +334,7 @@ function ShareFormContent({
               value={visibility}
               onValueChange={(v: CanvasVisibility) => setVisibility(v)}
             >
-              <SelectTrigger className="h-10 [&>span]:flex [&>span]:items-center [&>span]:gap-2">
+              <SelectTrigger className="[&>span]:flex [&>span]:items-center">
                 <SelectValue>
                   {visibility === "public" && (
                     <>

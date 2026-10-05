@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import type { ContextPolicy } from "@ai-matrx/chat/agents/types/agent-api-types";
 import { ProTextarea } from "@/components/official/ProTextarea";

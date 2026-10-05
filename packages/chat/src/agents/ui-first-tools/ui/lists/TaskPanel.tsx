@@ -28,7 +28,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { Button } from "@ai-matrx/design-system";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Checkbox } from "@host/components/ui/checkbox";
 import { cn } from "@ai-matrx/design-system";
 import { useAppDispatch, useAppSelector } from "../../../../store/hooks";
@@ -276,7 +276,6 @@ function TasksSection({ conversationId }: { conversationId: string }) {
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             placeholder="Add a task…"
-            className="text-sm h-8"
             onKeyDown={(e) => {
               if (e.key === "Enter") void add();
             }}
@@ -344,7 +343,6 @@ function TaskRow({ task }: { task: CxAgentTaskRow }) {
                 setEditing(false);
               }
             }}
-            className="text-sm h-7"
           />
         ) : (
           <button
@@ -421,7 +419,6 @@ function TodosSection({ conversationId }: { conversationId: string }) {
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             placeholder="Add a todo for yourself…"
-            className="text-sm h-8"
             onKeyDown={(e) => {
               if (e.key === "Enter") void add();
             }}

@@ -30,7 +30,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { extractErrorMessage } from "@/utils/errors";
 import { useCreateBusinessLocation } from "@/features/marketing/data/hooks";
 import type { BusinessLocation } from "@/features/marketing/types";
@@ -112,7 +112,6 @@ export function AddLocationDialog({
                 if (event.key === "Enter") submit();
               }}
               placeholder="Irvine HQ"
-              className="h-8 text-sm"
             />
           </label>
           <div className="grid grid-cols-[minmax(0,1fr)_7rem] gap-2">
@@ -127,7 +126,6 @@ export function AddLocationDialog({
                   if (event.key === "Enter") submit();
                 }}
                 placeholder="Irvine"
-                className="h-8 text-sm"
               />
             </label>
             <label className="block space-y-1">
@@ -141,7 +139,6 @@ export function AddLocationDialog({
                   if (event.key === "Enter") submit();
                 }}
                 placeholder="CA"
-                className="h-8 text-sm"
               />
             </label>
           </div>

@@ -12,7 +12,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Loader2, X } from "lucide-react";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { toast } from "@/lib/toast";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";

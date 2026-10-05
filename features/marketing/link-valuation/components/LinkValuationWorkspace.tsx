@@ -190,7 +190,7 @@ export function LinkValuationWorkspace() {
     <div className="flex h-full flex-col overflow-hidden">
       <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2">
         <Select value={activeId} onValueChange={selectConfig}>
-          <SelectTrigger className="h-8 w-64 text-xs">
+          <SelectTrigger className="w-64">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -245,13 +245,13 @@ export function LinkValuationWorkspace() {
 
       <Tabs defaultValue="evaluate" className="flex min-h-0 flex-1 flex-col">
         <TabsList className="mx-3 mt-2 w-fit">
-          <TabsTrigger value="evaluate" className="text-xs">
+          <TabsTrigger value="evaluate">
             Evaluate
           </TabsTrigger>
-          <TabsTrigger value="tune" className="text-xs">
+          <TabsTrigger value="tune">
             Tune the algorithm
           </TabsTrigger>
-          <TabsTrigger value="json" className="text-xs">
+          <TabsTrigger value="json">
             Config JSON
           </TabsTrigger>
         </TabsList>
@@ -281,21 +281,21 @@ export function LinkValuationWorkspace() {
               <p className="text-xs font-medium text-foreground">
                 Current config
               </p>
-              <Textarea
+              <Textarea mono
                 readOnly
                 value={JSON.stringify(config, null, 2)}
-                className="h-[60dvh] font-mono text-[11px]"
+                className="h-[60dvh]"
               />
             </div>
             <div className="flex flex-col gap-2">
               <p className="text-xs font-medium text-foreground">
                 Import a config
               </p>
-              <Textarea
+              <Textarea mono
                 value={importText}
                 onChange={(event) => setImportText(event.target.value)}
                 placeholder="Paste a config JSON here"
-                className="h-[60dvh] font-mono text-[11px]"
+                className="h-[60dvh]"
               />
               <Button
                 icon={<Upload />}

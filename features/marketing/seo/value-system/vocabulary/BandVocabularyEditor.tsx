@@ -56,7 +56,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   Select,
   SelectContent,
@@ -443,7 +443,7 @@ export function BandVocabularyEditor({
                         patchRow(row.value, { label: event.target.value })
                       }
                       onBlur={() => settleIdentity(row.value)}
-                      className="h-8 min-w-[10rem] flex-1 text-xs"
+                      className="min-w-[10rem] flex-1"
                     />
                     {kind === "value_band" ? (
                       reserved ? (
@@ -466,7 +466,7 @@ export function BandVocabularyEditor({
                                 numberOrNull(event.target.value),
                               )
                             }
-                            className="h-8 w-20 text-xs tabular-nums"
+                            className="w-20"
                           />
                         </label>
                       )
@@ -487,7 +487,7 @@ export function BandVocabularyEditor({
                               numberOrNull(event.target.value),
                             )
                           }
-                          className="h-8 w-24 text-xs tabular-nums"
+                          className="w-24"
                         />
                       </label>
                     )}
@@ -517,7 +517,7 @@ export function BandVocabularyEditor({
                         description: event.target.value || null,
                       })
                     }
-                    className="mt-1.5 h-7 border-dashed text-[11px]"
+                    className="mt-1.5"
                   />
 
                   <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[10px]">
@@ -605,7 +605,7 @@ export function BandVocabularyEditor({
                         }))
                       }
                     >
-                      <SelectTrigger className="h-8 w-52 text-xs">
+                      <SelectTrigger className="w-52">
                         <SelectValue placeholder="Move them to…" />
                       </SelectTrigger>
                       <SelectContent>

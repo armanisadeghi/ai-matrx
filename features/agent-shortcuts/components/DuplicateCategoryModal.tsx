@@ -24,7 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -183,7 +183,6 @@ export function DuplicateCategoryModal({
             value={label}
             onChange={(e) => setLabel(e.target.value)}
             disabled={saving}
-            className="h-9 text-[16px]"
           />
         </div>
         <div>
@@ -198,7 +197,7 @@ export function DuplicateCategoryModal({
             onValueChange={setPlacementType}
             disabled={saving}
           >
-            <SelectTrigger id="dup-category-placement" className="h-9">
+            <SelectTrigger id="dup-category-placement">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

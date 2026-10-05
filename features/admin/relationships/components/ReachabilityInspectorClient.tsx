@@ -31,7 +31,7 @@ import {
 } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   Select,
   SelectContent,
@@ -271,7 +271,7 @@ export function ReachabilityInspectorClient({
             setContainers(null);
           }}
         >
-          <SelectTrigger className="h-8 w-64">
+          <SelectTrigger className="w-64">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -294,7 +294,7 @@ export function ReachabilityInspectorClient({
           placeholder="entity type…"
           className="w-52"
         />
-        <Input
+        <Input mono
           value={entityId}
           onChange={(e) => {
             setEntityId(e.target.value);
@@ -303,7 +303,7 @@ export function ReachabilityInspectorClient({
             setContainers(null);
           }}
           placeholder="entity UUID"
-          className="h-8 w-80 font-mono text-xs"
+          className="w-80"
         />
         <Button
           icon={loading ? (

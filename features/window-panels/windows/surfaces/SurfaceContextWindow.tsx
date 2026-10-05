@@ -12,7 +12,7 @@ import {
   TriangleAlert,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { CopyForAiButton } from "@/components/agent-copy/CopyForAiButton";
 import { CopyForAiIcon } from "@/components/agent-copy/CopyForAiIcon";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
@@ -412,11 +412,10 @@ export default function SurfaceContextWindow({
           <div className="shrink-0 border-b border-border p-2">
             <div className="relative">
               <Search className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-              <Input
+              <Input adornment="start"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Find a surface value"
-                className="h-8 pl-7 text-base sm:text-xs"
               />
             </div>
           </div>

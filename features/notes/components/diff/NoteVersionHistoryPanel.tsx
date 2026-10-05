@@ -450,17 +450,15 @@ export function NoteVersionHistoryPanel({
           )}
         >
           <div className="flex min-w-0 items-center gap-2">
-            <TabsList className="h-7 shrink-0 bg-muted/50 p-0.5">
+            <TabsList className="shrink-0">
               <TabsTrigger
                 value="compare"
-                className="h-6 gap-1 px-2 text-xs data-[state=active]:bg-background"
               >
                 <GitCompareArrows className="h-3 w-3" />
                 Compare
               </TabsTrigger>
               <TabsTrigger
                 value="history"
-                className="h-6 gap-1 px-2 text-xs data-[state=active]:bg-background"
               >
                 <History className="h-3 w-3" />
                 History

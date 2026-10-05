@@ -34,7 +34,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
@@ -514,12 +514,11 @@ export function InboxWorkspace({ mode, initialTab = "inbox", orgFilter, onOrgFil
           <div className="flex h-11 shrink-0 items-center gap-1.5 border-b border-border px-2">
             <div className="relative min-w-[6.5rem] flex-1">
               <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-              <Input
+              <Input adornment="start"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search"
                 aria-label="Search notifications"
-                className="h-8 pl-7 text-sm"
               />
             </div>
             <DropdownMenu>

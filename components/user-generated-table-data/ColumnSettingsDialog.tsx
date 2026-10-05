@@ -30,7 +30,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -489,7 +489,6 @@ function ColumnSettingsForm({
               <div className="flex gap-2">
                 <Input
                   id="col-default"
-                  className="h-9 text-sm"
                   value={defaultWords}
                   placeholder="None"
                   disabled={readOnly || saving}
@@ -534,7 +533,7 @@ function ColumnSettingsForm({
               value={summary ?? NO_SUMMARY}
               onValueChange={(v) => onSummaryChange(v === NO_SUMMARY ? null : (v as ColumnSummaryKind))}
             >
-              <SelectTrigger className="h-9 w-full sm:w-64"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="w-full sm:w-64"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value={NO_SUMMARY}>None</SelectItem>
                 {summaryKinds.map((k) => (

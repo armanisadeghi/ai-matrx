@@ -16,7 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -179,7 +179,6 @@ export function NewNodeDialog({
               value={label}
               onChange={(event) => setLabel(event.target.value)}
               placeholder="Knee Pain Treatment"
-              className="h-8"
             />
           </div>
           <div className="grid grid-cols-2 gap-2">
@@ -189,7 +188,7 @@ export function NewNodeDialog({
                 value={nodeType}
                 onValueChange={(next) => setNodeType(next as PlanNodeType)}
               >
-                <SelectTrigger className="h-8 text-sm">
+                <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -214,14 +213,13 @@ export function NewNodeDialog({
           {nodeType !== "home" ? (
             <div>
               <Label className="mb-1 block text-xs font-medium">Slug</Label>
-              <Input
+              <Input mono
                 value={effectiveSlug}
                 onChange={(event) => {
                   setSlugTouched(true);
                   setSlug(event.target.value);
                 }}
                 placeholder="knee-pain-treatment"
-                className="h-8 font-mono"
                 aria-invalid={Boolean(conflict)}
               />
             </div>

@@ -50,7 +50,7 @@ import {
   MoreHorizontal,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -412,13 +412,12 @@ export function CmsArtifactList() {
         <div className="flex items-center gap-2">
           <div className="relative min-w-0 flex-1 @3xl/artifacts:w-64 @3xl/artifacts:flex-none">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-            <Input
+            <Input adornment="start"
               placeholder="Search"
               value={filters.search}
               onChange={(e) =>
                 setFilters((prev) => ({ ...prev, search: e.target.value }))
               }
-              className="h-8 pl-8 text-sm"
             />
             {filters.search && (
               <button

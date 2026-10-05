@@ -355,7 +355,7 @@ export default function ProofRunsClient() {
                 Check to run
               </span>
               <Select value={selected} onValueChange={setSelected}>
-                <SelectTrigger className="h-9">
+                <SelectTrigger>
                   <SelectValue placeholder="Pick a check" />
                 </SelectTrigger>
                 <SelectContent className="max-h-72">

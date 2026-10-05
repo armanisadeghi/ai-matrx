@@ -369,7 +369,7 @@ export function VerifyCanonicalPanel() {
             setResult(null);
           }}
         >
-          <SelectTrigger className="h-8 w-32 text-xs">
+          <SelectTrigger className="w-32">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

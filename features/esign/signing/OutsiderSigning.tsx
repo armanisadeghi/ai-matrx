@@ -13,7 +13,7 @@ import { Loader2, Lock, XCircle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { useAppDispatch } from "@/lib/redux/hooks";
 
 import { SigningSurface } from "./SigningSurface";
@@ -222,7 +222,6 @@ export function OutsiderSigning() {
                 inputMode="numeric"
                 autoComplete="one-time-code"
                 maxLength={6}
-                className="text-base tracking-widest"
                 onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
               />
               <Button icon={busy === "verify" && <Loader2 className="animate-spin" />} variant="primary" type="submit" disabled={busy !== null || code.trim().length < 6}>Open the document

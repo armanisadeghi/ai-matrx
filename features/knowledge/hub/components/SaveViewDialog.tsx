@@ -10,7 +10,8 @@
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useEffect, useState } from "react";
 import { BellRing } from "lucide-react";
-import { Input, Switch } from "@ai-matrx/design-system";
+import { Switch } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {

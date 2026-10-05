@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@ai-matrx/design-system';
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Check, AlertCircle, Loader2, Lightbulb, Phone, Brain, Radio } from 'lucide-react';
@@ -227,7 +227,6 @@ export function RequestAccessModal({ open, onOpenChange }: RequestAccessModalPro
                 placeholder="John Smith"
                 required
                 disabled={isSubmitting}
-                className="text-base"
                 style={{ fontSize: '16px' }}
               />
             </div>
@@ -245,7 +244,6 @@ export function RequestAccessModal({ open, onOpenChange }: RequestAccessModalPro
                 placeholder="Acme Corporation"
                 required
                 disabled={isSubmitting}
-                className="text-base"
                 style={{ fontSize: '16px' }}
               />
             </div>
@@ -263,7 +261,6 @@ export function RequestAccessModal({ open, onOpenChange }: RequestAccessModalPro
                 placeholder="john@acme.com"
                 required
                 disabled={isSubmitting}
-                className="text-base"
                 style={{ fontSize: '16px' }}
               />
             </div>
@@ -292,7 +289,7 @@ export function RequestAccessModal({ open, onOpenChange }: RequestAccessModalPro
                 }}
                 disabled={isSubmitting}
               >
-                <SelectTrigger id="user_type" className="text-base" style={{ fontSize: '16px' }}>
+                <SelectTrigger id="user_type" style={{ fontSize: '16px' }}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -319,7 +316,6 @@ export function RequestAccessModal({ open, onOpenChange }: RequestAccessModalPro
                   placeholder="Your role"
                   required={step1Data.user_type === 'other'}
                   disabled={isSubmitting}
-                  className="text-base"
                   style={{ fontSize: '16px' }}
                 />
               </div>
@@ -393,7 +389,6 @@ export function RequestAccessModal({ open, onOpenChange }: RequestAccessModalPro
                   onChange={(e) => setStep2Data({ ...step2Data, phone: e.target.value })}
                   placeholder="+1 (555) 123-4567"
                   disabled={isSubmitting}
-                  className="text-base"
                   style={{ fontSize: '16px' }}
                 />
               </div>
@@ -408,7 +403,6 @@ export function RequestAccessModal({ open, onOpenChange }: RequestAccessModalPro
                   onChange={(e) => setStep2Data({ ...step2Data, referral_source: e.target.value })}
                   placeholder="LinkedIn, Twitter, colleague…"
                   disabled={isSubmitting}
-                  className="text-base"
                   style={{ fontSize: '16px' }}
                 />
               </div>

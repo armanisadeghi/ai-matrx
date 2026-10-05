@@ -688,7 +688,7 @@ export default function BatchScrapePage() {
               See everything that was blocked
             </Link>
           </div>
-          <Textarea
+          <Textarea minHeight={100}
             value={text}
             onChange={(e) => setText(e.target.value)}
             placeholder={
@@ -697,7 +697,7 @@ export default function BatchScrapePage() {
               " at a time."
             }
             disabled={isLoading}
-            className="min-h-[100px] resize-y text-sm"
+            className="resize-y"
             style={{ fontSize: "16px" }}
           />
           <div className="flex flex-wrap items-center justify-between gap-2">

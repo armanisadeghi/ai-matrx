@@ -1,5 +1,5 @@
 import React from "react";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@ai-matrx/design-system";
 import { Minus, Plus } from "lucide-react";
 

@@ -151,11 +151,10 @@ export default function TableReferenceModal({
                 <span>{copiedReference === "table" ? "Copied!" : "Copy"}</span>
               </Button>
             </div>
-            <Textarea
+            <Textarea mono
               value={generateTableReference()}
               readOnly
               rows={7}
-              className="text-xs font-mono bg-gray-50 dark:bg-gray-900"
             />
           </div>
 
@@ -177,11 +176,10 @@ export default function TableReferenceModal({
                 <span>{copiedReference === "schema" ? "Copied!" : "Copy"}</span>
               </Button>
             </div>
-            <Textarea
+            <Textarea mono
               value={generateSchemaReference()}
               readOnly
               rows={7}
-              className="text-xs font-mono bg-gray-50 dark:bg-gray-900"
             />
           </div>
 
@@ -201,11 +199,10 @@ export default function TableReferenceModal({
                 <span>{copiedReference === "row" ? "Copied!" : "Copy"}</span>
               </Button>
             </div>
-            <Textarea
+            <Textarea mono
               value={generateRowReference(rowId)}
               readOnly
               rows={7}
-              className="text-xs font-mono bg-gray-50 dark:bg-gray-900"
             />
           </div>
 

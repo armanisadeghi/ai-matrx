@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Zap, Loader2, ExternalLink, X } from "lucide-react";
 import { SaveSourceButton } from "@/features/sources/SaveSourceButton";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -156,7 +156,6 @@ export default function ScraperSearchAndScrapePage() {
                 onChange={(e) => setKeyword(e.target.value)}
                 onKeyDown={handleKeyDown}
                 disabled={isLoading}
-                className="h-8 text-sm"
                 style={{ fontSize: "16px" }}
               />
             </div>
@@ -176,7 +175,6 @@ export default function ScraperSearchAndScrapePage() {
                   value={maxPages}
                   onChange={(e) => setMaxPages(e.target.value)}
                   disabled={isLoading}
-                  className="h-8 text-sm"
                   style={{ fontSize: "16px" }}
                 />
               </div>

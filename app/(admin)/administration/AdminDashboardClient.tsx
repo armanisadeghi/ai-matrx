@@ -8,7 +8,7 @@ import {
   IconSearch,
 } from "@tabler/icons-react";
 import AppLink from "@/components/navigation/AppLink";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { AdminDomainSection } from "@/features/admin/components/AdminDomainSection";
 import { ADMIN_LAUNCHPAD_PATH } from "@/features/admin/constants/admin-categories";
 import {
@@ -107,11 +107,11 @@ export default function AdminDashboardClient({
         <div className="mb-6 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
           <div className="relative mx-0 w-full max-w-2xl flex-1 sm:mx-4">
             <IconSearch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
+            <Input adornment="start"
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
               placeholder="Search domains, sections, routes, and tools…"
-              className="w-full border-neutral-200 bg-white pl-9 shadow-sm focus-visible:ring-blue-500 dark:border-neutral-700 dark:bg-neutral-800"
+              className="w-full"
             />
           </div>
 

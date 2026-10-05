@@ -113,7 +113,7 @@ export function FrontDoorSiteSelect({
         }
         disabled={isNavigating}
       >
-        <SelectTrigger className="h-8 w-full sm:w-80" aria-label={label}>
+        <SelectTrigger className="w-full sm:w-80" aria-label={label}>
           <SelectValue />
         </SelectTrigger>
         <SelectContent>

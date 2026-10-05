@@ -42,7 +42,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -205,7 +205,7 @@ export function NewIncidentDialog({
               value={kind}
               onValueChange={(v) => chooseKind(v as HrIncidentKind)}
             >
-              <SelectTrigger id="in-kind" className="min-h-11 sm:min-h-9">
+              <SelectTrigger id="in-kind">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -225,7 +225,6 @@ export function NewIncidentDialog({
               type="datetime-local"
               value={occurredAt}
               onChange={(e) => setOccurredAt(e.target.value)}
-              className="min-h-11 sm:min-h-9"
             />
           </div>
 
@@ -324,7 +323,6 @@ export function NewIncidentDialog({
                     onChange={(e) =>
                       setOsha((o) => ({ ...o, [field.key]: e.target.value }))
                     }
-                    className="min-h-11 sm:min-h-9"
                   />
                 </div>
               ))}

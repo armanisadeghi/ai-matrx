@@ -32,7 +32,8 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input, Skeleton, Switch } from "@ai-matrx/design-system";
+import { Skeleton, Switch } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import {
     Select,
@@ -430,7 +431,6 @@ export function ActionRunDialog(props: ActionRunDialogProps) {
                                         >
                                             <SelectTrigger
                                                 id={`param-${key}`}
-                                                className="h-11"
                                             >
                                                 <SelectValue placeholder="Choose one" />
                                             </SelectTrigger>
@@ -451,7 +451,6 @@ export function ActionRunDialog(props: ActionRunDialogProps) {
                                     <Label htmlFor={`param-${key}`}>{label}</Label>
                                     <Input
                                         id={`param-${key}`}
-                                        className="h-11"
                                         value={typeof value === "string" ? value : ""}
                                         onChange={(
                                             event: React.ChangeEvent<HTMLInputElement>,

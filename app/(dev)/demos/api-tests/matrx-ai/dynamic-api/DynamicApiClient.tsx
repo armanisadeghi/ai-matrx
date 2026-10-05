@@ -5,7 +5,7 @@ import { formatDurationMs } from "@ai-matrx/kit/format";
 import { useState, useRef, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -370,17 +370,17 @@ function KVEditor({
               className="h-3 w-3"
             />
           </label>
-          <Input
+          <Input mono
             value={pair.key}
             onChange={(e) => update(i, "key", e.target.value)}
             placeholder="Key"
-            className="h-6 text-xs font-mono flex-1 min-w-0"
+            className="flex-1 min-w-0"
           />
           <Input
             value={pair.value}
             onChange={(e) => update(i, "value", e.target.value)}
             placeholder={placeholder}
-            className="h-6 text-xs flex-1 min-w-0"
+            className="flex-1 min-w-0"
           />
           <Button
             variant="quiet"
@@ -713,7 +713,7 @@ export default function DynamicApiClient() {
               }}
             >
               <SelectTrigger
-                className={`h-9 w-28 text-xs font-bold ${methodColor(method)}`}
+                className={` w-28 ${methodColor(method)}`}
               >
                 <SelectValue />
               </SelectTrigger>
@@ -732,11 +732,11 @@ export default function DynamicApiClient() {
               </SelectContent>
             </Select>
 
-            <Input
+            <Input mono
               value={path}
               onChange={(e) => setPath(e.target.value)}
               placeholder="/health"
-              className="h-9 text-sm font-mono flex-1"
+              className="flex-1"
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !isRunning) handleExecute();
               }}
@@ -802,11 +802,11 @@ export default function DynamicApiClient() {
                       </Button>
                     </div>
                   </div>
-                  <Textarea
+                  <Textarea mono minHeight={0}
                     value={body}
                     onChange={(e) => setBody(e.target.value)}
                     placeholder={'{\n  "key": "value"\n}'}
-                    className="flex-1 min-h-0 text-xs font-mono resize-none border rounded-md"
+                    className="flex-1 min-h-0 resize-none"
                   />
                 </div>
               ) : (
@@ -826,8 +826,8 @@ export default function DynamicApiClient() {
                   className="flex-1 flex flex-col overflow-hidden min-h-0"
                 >
                   <div className="flex items-center justify-between px-3 pt-2 flex-shrink-0">
-                    <TabsList className="h-7">
-                      <TabsTrigger value="headers" className="text-xs h-6 px-2">
+                    <TabsList>
+                      <TabsTrigger value="headers">
                         Headers
                         {headers.filter((h) => h.enabled && h.key).length >
                           0 && (
@@ -841,11 +841,10 @@ export default function DynamicApiClient() {
                       </TabsTrigger>
                       <TabsTrigger
                         value="templates"
-                        className="text-xs h-6 px-2"
                       >
                         Templates
                       </TabsTrigger>
-                      <TabsTrigger value="saved" className="text-xs h-6 px-2">
+                      <TabsTrigger value="saved">
                         Saved
                         {saved.length > 0 && (
                           <Badge
@@ -856,7 +855,7 @@ export default function DynamicApiClient() {
                           </Badge>
                         )}
                       </TabsTrigger>
-                      <TabsTrigger value="docs" className="text-xs h-6 px-2">
+                      <TabsTrigger value="docs">
                         Docs
                       </TabsTrigger>
                     </TabsList>
@@ -1057,13 +1056,12 @@ export default function DynamicApiClient() {
                         <div className="space-y-1">
                           <div className="relative">
                             <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
-                            <Input
+                            <Input adornment="start"
                               value={endpointFilter}
                               onChange={(e) =>
                                 setEndpointFilter(e.target.value)
                               }
                               placeholder="Filter endpoints…"
-                              className="h-6 pl-6 text-xs"
                             />
                           </div>
                           {openApiError ? (
@@ -1165,14 +1163,14 @@ export default function DynamicApiClient() {
                 defaultValue="pretty"
                 className="flex-1 flex flex-col overflow-hidden min-h-0"
               >
-                <TabsList className="grid grid-cols-3 h-8 flex-shrink-0">
-                  <TabsTrigger value="pretty" className="text-xs">
+                <TabsList fill className="flex-shrink-0">
+                  <TabsTrigger value="pretty">
                     Pretty JSON
                   </TabsTrigger>
-                  <TabsTrigger value="raw" className="text-xs">
+                  <TabsTrigger value="raw">
                     Raw
                   </TabsTrigger>
-                  <TabsTrigger value="resp-headers" className="text-xs">
+                  <TabsTrigger value="resp-headers">
                     Headers
                   </TabsTrigger>
                 </TabsList>

@@ -11,7 +11,7 @@
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { IDENTITY_PATTERN, toIdentitySlug } from "./data";
 import { ProTextarea } from "@/components/official/ProTextarea";
 
@@ -64,7 +64,6 @@ export function ValueForm({
           onChange={(event) => setLabel(event.target.value)}
           placeholder="CRT monitor"
           autoFocus
-          className="h-8 text-base sm:text-sm"
         />
         {identity ? (
           <p className="text-[11px] text-muted-foreground">

@@ -41,7 +41,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Skeleton } from "@ai-matrx/design-system";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
 import { cn } from "@/styles/themes/utils";
@@ -210,11 +210,10 @@ export function LibraryCuratePage() {
                 className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground"
                 aria-hidden
               />
-              <Input
+              <Input adornment="start"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search your packs…"
-                className="h-8 pl-8 text-sm"
               />
             </div>
           </div>

@@ -5,7 +5,7 @@ import { Loader2 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { toSlug } from "@/features/scopes/utils/slugify";
 import { Button } from "@ai-matrx/design-system";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -137,7 +137,6 @@ export function ScopeForm({
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Engineering, West Coast, Q1 2025..."
-            className="text-base"
             style={{ fontSize: "16px" }}
             autoFocus={autoFocus}
           />

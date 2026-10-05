@@ -16,7 +16,7 @@ import { parseSnapshotExtracted } from "@/features/marketing/lib/snapshot-conten
 import { CondensedFieldGrid } from "@/features/marketing/components/shared/MarketingUi";
 import { DesiredSection } from "@/features/marketing/components/pages/desired/DesiredSection";
 import { useDesiredValueSlice } from "@/features/marketing/components/pages/desired/useDesiredValueSlice";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
@@ -171,28 +171,26 @@ export function IndexabilityPlan({
           <Label htmlFor="desired-canonical" className="text-xs">
             Desired canonical URL
           </Label>
-          <Input
+          <Input mono
             id="desired-canonical"
             value={draft.canonical_url ?? ""}
             onChange={(event) =>
               desired.setDraft({ ...draft, canonical_url: event.target.value })
             }
             placeholder={head.canonicalUrl ?? page.url}
-            className="font-mono text-xs"
           />
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="desired-robots" className="text-xs">
             Desired meta robots
           </Label>
-          <Input
+          <Input mono
             id="desired-robots"
             value={draft.meta_robots ?? ""}
             onChange={(event) =>
               desired.setDraft({ ...draft, meta_robots: event.target.value })
             }
             placeholder={head.metaRobots ?? "index, follow"}
-            className="font-mono text-xs"
           />
         </div>
       </div>

@@ -613,7 +613,7 @@ export function BatchShortcutsEditor({
               Template
             </span>
             <Select value={templateId} onValueChange={onTemplateChange}>
-              <SelectTrigger className="h-8 w-[240px] text-sm">
+              <SelectTrigger className="w-[240px]">
                 <SelectValue placeholder="Standard defaults" />
               </SelectTrigger>
               <SelectContent>

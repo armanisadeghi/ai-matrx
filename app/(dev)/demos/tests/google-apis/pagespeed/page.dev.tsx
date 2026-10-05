@@ -120,11 +120,11 @@ export default function PageSpeedInsightsPage() {
                     <>
                         {/* Compact Tabs */}
                         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "desktop" | "mobile")} className="space-y-4">
-                            <TabsList className="grid w-full max-w-md grid-cols-2 bg-textured border-border">
+                            <TabsList fill className="max-w-md">
                                 <TabsTrigger
                                     value="desktop"
                                     disabled={!results.desktop}
-                                    className="flex items-center gap-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
+                                    className="flex items-center"
                                 >
                                     <Monitor className="w-4 h-4" />
                                     Desktop
@@ -137,7 +137,7 @@ export default function PageSpeedInsightsPage() {
                                 <TabsTrigger
                                     value="mobile"
                                     disabled={!results.mobile}
-                                    className="flex items-center gap-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
+                                    className="flex items-center"
                                 >
                                     <Smartphone className="w-4 h-4" />
                                     Mobile

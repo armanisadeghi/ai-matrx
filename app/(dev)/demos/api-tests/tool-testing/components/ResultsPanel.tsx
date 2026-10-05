@@ -431,32 +431,32 @@ export function ResultsPanel({
         defaultValue="stream"
         className="flex-1 flex flex-col overflow-hidden min-h-0 px-3 pt-2"
       >
-        <TabsList className="grid w-full grid-cols-7 h-8 flex-shrink-0">
-          <TabsTrigger value="stream" className="text-[10px] gap-1">
+        <TabsList fill className="flex-shrink-0">
+          <TabsTrigger value="stream">
             <Activity className="h-3 w-3" />
             Events
           </TabsTrigger>
-          <TabsTrigger value="rendered" className="text-[10px] gap-1">
+          <TabsTrigger value="rendered">
             <Eye className="h-3 w-3" />
             Rendered
           </TabsTrigger>
-          <TabsTrigger value="model-facing" className="text-[10px] gap-1">
+          <TabsTrigger value="model-facing">
             <FileText className="h-3 w-3" />
             Model
           </TabsTrigger>
-          <TabsTrigger value="schema" className="text-[10px] gap-1">
+          <TabsTrigger value="schema">
             <ShieldCheck className="h-3 w-3" />
             Schema
           </TabsTrigger>
-          <TabsTrigger value="output" className="text-[10px] gap-1">
+          <TabsTrigger value="output">
             <Code2 className="h-3 w-3" />
             Output
           </TabsTrigger>
-          <TabsTrigger value="usage" className="text-[10px] gap-1">
+          <TabsTrigger value="usage">
             <Gauge className="h-3 w-3" />
             Usage
           </TabsTrigger>
-          <TabsTrigger value="json" className="text-[10px] gap-1">
+          <TabsTrigger value="json">
             <FileJson className="h-3 w-3" />
             JSON
           </TabsTrigger>

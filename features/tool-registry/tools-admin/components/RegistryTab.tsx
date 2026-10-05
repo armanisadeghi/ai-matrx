@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { Label } from "@/components/ui/label";
@@ -328,7 +328,7 @@ function BindingsSection({ toolId }: { toolId: string }) {
             onValueChange={setPendingExecutor}
             disabled={adding || availableExecutors.length === 0}
           >
-            <SelectTrigger className="h-8 w-[320px] text-xs">
+            <SelectTrigger className="w-[320px]">
               <SelectValue
                 placeholder={
                   availableExecutors.length === 0
@@ -500,7 +500,7 @@ function SurfacesSection({ toolId }: { toolId: string }) {
             onValueChange={setPendingSurface}
             disabled={adding || available.length === 0}
           >
-            <SelectTrigger className="h-8 text-xs">
+            <SelectTrigger>
               <SelectValue
                 placeholder={
                   available.length === 0
@@ -719,7 +719,7 @@ function GatingSection({
                 <Label className="text-[11px] text-muted-foreground">
                   args (JSON)
                 </Label>
-                <Textarea
+                <Textarea mono
                   value={argsJson[idx] ?? "{}"}
                   onChange={(e) =>
                     setArgsJson((prev) =>
@@ -727,7 +727,6 @@ function GatingSection({
                     )
                   }
                   rows={3}
-                  className="font-mono text-xs"
                   style={{ fontSize: "13px" }}
                 />
               </div>
@@ -743,7 +742,7 @@ function GatingSection({
                 Add known gate
               </Label>
               <Select onValueChange={(v) => onAdd(v)}>
-                <SelectTrigger className="h-8 text-xs">
+                <SelectTrigger>
                   <SelectValue placeholder="Pick a gate to add…" />
                 </SelectTrigger>
                 <SelectContent>
@@ -768,10 +767,9 @@ function GatingSection({
               Or add custom gate name (must match a gate function in
               matrx_ai.tools.gates)
             </Label>
-            <Input
+            <Input mono
               value={customGate}
               onChange={(e) => setCustomGate(e.target.value)}
-              className="h-8 text-xs font-mono"
               data-identifier
               placeholder="my_custom_gate"
               onKeyDown={(e) => {

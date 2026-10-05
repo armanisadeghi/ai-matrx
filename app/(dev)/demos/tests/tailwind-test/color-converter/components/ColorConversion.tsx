@@ -4,7 +4,7 @@ import React, { useMemo } from 'react';
 import { Colord } from 'colord';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Input } from '@ai-matrx/design-system';
+import { Input } from "@ai-matrx/design-system/controls";
 import { getColorFormats } from '@/utils/color-utils/color-change-util';
 import { FullJsonViewer } from "@/components/ui/JsonComponents/JsonViewerComponent";
 
@@ -35,11 +35,10 @@ export default function ColorConversion({ color }: ColorConversionProps) {
                                 <Label htmlFor={name} className="text-foreground capitalize">
                                     {name}
                                 </Label>
-                                <Input
+                                <Input mono
                                     id={name}
                                     value={formatValue(value)}
                                     readOnly
-                                    className="bg-input text-foreground font-mono text-sm"
                                 />
                             </div>
                         ))}

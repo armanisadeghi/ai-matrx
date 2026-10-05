@@ -206,7 +206,7 @@ export function AddEveryoneInOrg({
           Organization
         </Label>
         <Select value={orgId} onValueChange={setOrgId} disabled={running}>
-          <SelectTrigger id="add-everyone-org" className="h-9">
+          <SelectTrigger id="add-everyone-org">
             <SelectValue placeholder="Choose one of your organizations" />
           </SelectTrigger>
           <SelectContent>

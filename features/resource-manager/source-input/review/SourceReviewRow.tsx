@@ -24,7 +24,8 @@ import {
   Trash2,
   type LucideIcon,
 } from "lucide-react";
-import { Badge, Input, SegmentedControl, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Switch, cn } from "@ai-matrx/design-system";
+import { Badge, SegmentedControl, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Switch, cn } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 import { formatChars, pagesPhrase } from "@ai-matrx/kit/tokens";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
@@ -297,7 +298,7 @@ export function SourceReviewRow({
                         if (Number.isFinite(n) && n > 0) update({ max_chars: n });
                       }}
                       aria-label="Most characters to include"
-                      className="w-32 tabular-nums"
+                      className="w-32"
                     />
                     characters ({pagesPhrase(ref.max_chars ?? 0)})
                   </span>

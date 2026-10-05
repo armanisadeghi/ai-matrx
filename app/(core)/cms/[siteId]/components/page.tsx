@@ -15,7 +15,7 @@ import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceR
 import { SurfaceRoleAgentButton } from "@ai-matrx/chat/surfaces/components/chrome/SurfaceRoleAgentButton";
 import { humanLines } from "@/features/marketing/lib/copy-payloads";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -299,7 +299,6 @@ export default function ComponentsPage() {
                       value={createName}
                       onChange={(e) => setCreateName(e.target.value)}
                       placeholder="Main Header"
-                      className="text-sm"
                     />
                   </div>
                   <div>

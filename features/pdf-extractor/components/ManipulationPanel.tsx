@@ -41,7 +41,7 @@ import {
   Zap
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { usePdfClient as usePdfDemoApi } from "@/features/pdf/api/client";
 import { useDownloadBlob } from "@/features/pdf/hooks/useDownloadBlob";
 import { saveDerivative as saveDerivativeCanonical } from "@/features/pdf/services/saveDerivative";
@@ -685,7 +685,6 @@ export function ManipulationPanel({
             value={rotPages}
             onChange={(e) => setRotPages(e.target.value)}
             placeholder="all (e.g. 1,3-5)"
-            className="h-6 text-[11px]"
           />
         </Row>
       </OpCard>
@@ -735,7 +734,6 @@ export function ManipulationPanel({
             value={delPages}
             onChange={(e) => setDelPages(e.target.value)}
             placeholder="e.g. 1,3-5"
-            className="h-6 text-[11px]"
           />
         </Row>
       </OpCard>
@@ -777,7 +775,6 @@ export function ManipulationPanel({
             value={extPages}
             onChange={(e) => setExtPages(e.target.value)}
             placeholder="e.g. 1,3-5"
-            className="h-6 text-[11px]"
           />
         </Row>
       </OpCard>
@@ -819,7 +816,6 @@ export function ManipulationPanel({
             value={dupPages}
             onChange={(e) => setDupPages(e.target.value)}
             placeholder="e.g. 1,3-5"
-            className="h-6 text-[11px]"
           />
         </Row>
         <Row label="Copies">
@@ -872,7 +868,7 @@ export function ManipulationPanel({
             min={2}
             value={splitParts}
             onChange={(e) => setSplitParts(e.target.value)}
-            className="h-6 text-[11px] w-20"
+            className="w-20"
           />
         </Row>
       </OpCard>
@@ -897,7 +893,6 @@ export function ManipulationPanel({
             value={cropPages}
             onChange={(e) => setCropPages(e.target.value)}
             placeholder="all  (e.g. 1,3-5)"
-            className="h-6 text-[11px]"
           />
         </Row>
         <p className="text-[10px] text-amber-600 dark:text-amber-400 leading-snug pt-0.5">
@@ -938,7 +933,6 @@ export function ManipulationPanel({
             value={mergeSrc2}
             onChange={(e) => setMergeSrc2(e.target.value)}
             placeholder="cld file ID or https://…"
-            className="h-6 text-[11px]"
           />
         </Row>
         <p className="text-[10px] text-muted-foreground pl-[4.5rem] leading-snug">
@@ -980,7 +974,6 @@ export function ManipulationPanel({
             value={insertSrc}
             onChange={(e) => setInsertSrc(e.target.value)}
             placeholder="cld file ID or https://…"
-            className="h-6 text-[11px]"
           />
         </Row>
         <Row label="After page">
@@ -996,7 +989,6 @@ export function ManipulationPanel({
             value={insertSrcPages}
             onChange={(e) => setInsertSrcPages(e.target.value)}
             placeholder="all source pages"
-            className="h-6 text-[11px]"
           />
         </Row>
       </OpCard>
@@ -1074,7 +1066,6 @@ export function ManipulationPanel({
               value={redactPattern}
               onChange={(e) => setRedactPattern(e.target.value)}
               placeholder="ssn / email / your-regex…"
-              className="h-6 text-[11px]"
             />
           </div>
         </Row>
@@ -1083,7 +1074,6 @@ export function ManipulationPanel({
             value={redactReason}
             onChange={(e) => setRedactReason(e.target.value)}
             placeholder="Why this redaction is running"
-            className="h-6 text-[11px]"
           />
         </Row>
       </OpCard>

@@ -22,7 +22,8 @@
 import { createElement, useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { ExternalLink, FlaskConical, FolderKanban, ListTodo, Loader2, UsersRound, Video, Workflow } from "lucide-react";
-import { ArchivedDisclosure, Input, Skeleton } from "@ai-matrx/design-system";
+import { ArchivedDisclosure, Skeleton } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { Button } from "@/components/ui/button";
 import { Command, CommandEmpty, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -417,7 +418,6 @@ function WarRoomDraftBody({ onSource }: ItemBodyProps) {
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="Q4 launch"
-        className="text-base"
       />
       <p className="text-xs text-muted-foreground">
         Several threads of work, side by side.

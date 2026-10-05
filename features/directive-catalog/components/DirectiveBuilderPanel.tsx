@@ -27,7 +27,7 @@ import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
@@ -616,7 +616,6 @@ export function DirectiveBuilderPanel({
             }}
           >
             <SelectTrigger
-              className="h-11 text-base capitalize lg:h-8 lg:text-sm"
               aria-label="Directive verb"
             >
               <SelectValue />

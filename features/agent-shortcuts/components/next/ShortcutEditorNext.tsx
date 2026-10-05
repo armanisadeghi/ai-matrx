@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, Loader2, Save, Trash2, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { toast, toastErrorAlreadyCaptured } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
@@ -479,7 +479,6 @@ export function ShortcutEditorNext({
               onChange={(e) => update("label", e.target.value)}
               placeholder={agentName}
               disabled={busy}
-              className="h-11 text-base font-medium"
               style={{ fontSize: "16px" }}
             />
           </Section>

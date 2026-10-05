@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@ai-matrx/design-system";
@@ -256,7 +256,7 @@ export function FieldFormatPicker({
               value={typeof options.relation_target === "string" ? options.relation_target : ""}
               onValueChange={(v) => v && setOption("relation_target" as keyof FieldFormatOptions, v as never)}
             >
-              <SelectTrigger className="h-8 text-xs" aria-label="Points at the records of">
+              <SelectTrigger aria-label="Points at the records of">
                 <SelectValue placeholder="Pick a table" />
               </SelectTrigger>
               <SelectContent>
@@ -295,7 +295,7 @@ export function FieldFormatPicker({
             value={options.currency ?? "USD"}
             onValueChange={(v) => setOption("currency", v)}
           >
-            <SelectTrigger className="h-7 text-xs">
+            <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -318,7 +318,7 @@ export function FieldFormatPicker({
               setOption("percentScale", v as "whole" | "fraction")
             }
           >
-            <SelectTrigger className="h-7 text-xs">
+            <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -341,7 +341,7 @@ export function FieldFormatPicker({
               )
             }
           >
-            <SelectTrigger className="h-7 text-xs">
+            <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -361,7 +361,6 @@ export function FieldFormatPicker({
             type="number"
             min={0}
             max={10}
-            className="h-10 text-base sm:h-7 sm:text-xs"
             value={options.precision ?? ""}
             placeholder="auto"
             onChange={(e) =>
@@ -381,7 +380,6 @@ export function FieldFormatPicker({
             type="number"
             min={1}
             max={10}
-            className="h-10 text-base sm:h-7 sm:text-xs"
             value={options.ratingMax ?? 5}
             onChange={(e) => setOption("ratingMax", Number(e.target.value))}
           />
@@ -397,7 +395,7 @@ export function FieldFormatPicker({
               setOption("dateStyle", v as "short" | "medium" | "long")
             }
           >
-            <SelectTrigger className="h-7 text-xs">
+            <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -413,7 +411,6 @@ export function FieldFormatPicker({
         <div className="w-24">
           <Label className="text-[11px] text-muted-foreground">Prefix</Label>
           <Input
-            className="h-10 text-base sm:h-7 sm:text-xs"
             value={options.prefix ?? ""}
             onChange={(e) => setOption("prefix", e.target.value)}
           />
@@ -424,7 +421,6 @@ export function FieldFormatPicker({
         <div className="w-24">
           <Label className="text-[11px] text-muted-foreground">Suffix</Label>
           <Input
-            className="h-10 text-base sm:h-7 sm:text-xs"
             value={options.suffix ?? ""}
             placeholder="e.g. kg"
             onChange={(e) => setOption("suffix", e.target.value)}

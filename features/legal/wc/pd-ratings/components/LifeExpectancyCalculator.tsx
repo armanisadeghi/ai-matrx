@@ -45,7 +45,7 @@ export function LifeExpectancyCalculator() {
             hint="Estimates use a standard period life table for illustration."
           >
             <Select value={birthYear} onValueChange={setBirthYear}>
-              <SelectTrigger className="h-11 text-base bg-background">
+              <SelectTrigger>
                 <SelectValue placeholder="Select year…" />
               </SelectTrigger>
               <SelectContent className="max-h-80">

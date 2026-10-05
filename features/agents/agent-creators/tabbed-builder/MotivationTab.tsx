@@ -63,7 +63,7 @@ const MotivationContent: React.FC<MotivationContentProps> = ({ updateContent }) 
           value={motivationType}
           onValueChange={setMotivationType}
         >
-          <SelectTrigger id="motivation-type" className="w-full bg-white dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700">
+          <SelectTrigger id="motivation-type" className="w-full">
             <SelectValue placeholder="Select the motivation type" />
           </SelectTrigger>
           <SelectContent className="bg-white dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700">

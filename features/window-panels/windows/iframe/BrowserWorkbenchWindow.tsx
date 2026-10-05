@@ -17,7 +17,8 @@ import {
 import { useSetting } from "@/features/settings/hooks/useSetting";
 import type { SiteWorkbenchUserBookmark } from "@/lib/redux/preferences/userPreferencesSlice";
 import { Button } from "@/components/ui/button";
-import { Input, Button as SurfaceButton } from "@ai-matrx/design-system";
+import { Button as SurfaceButton } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { BookMarked, Plus, X } from "lucide-react";
@@ -382,10 +383,10 @@ function BrowserWorkbenchWindowInner({
       sidebarExpandsWindow
       footer={
         <div className="flex w-full min-w-0 flex-wrap items-center gap-2 px-2 py-1.5">
-          <Input
+          <Input mono
             value={addressDraft}
             onChange={(e) => setAddressDraft(e.target.value)}
-            className="h-8 min-w-[12rem] flex-1 font-mono text-xs"
+            className="min-w-[12rem] flex-1"
             style={{ fontSize: "16px" }}
             placeholder="https://…"
             onKeyDown={(e) => {

@@ -232,7 +232,7 @@ export function CrawlScheduleCard({
                 })
               }
             >
-              <SelectTrigger className="h-8">
+              <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -256,7 +256,7 @@ export function CrawlScheduleCard({
                 })
               }
             >
-              <SelectTrigger className="h-8">
+              <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

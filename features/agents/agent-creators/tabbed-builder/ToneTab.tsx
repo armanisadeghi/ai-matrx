@@ -72,7 +72,7 @@ const ToneContent: React.FC<ToneContentProps> = ({ updateContent }) => {
           value={toneSelection}
           onValueChange={setToneSelection}
         >
-          <SelectTrigger id="tone-selection" className="w-full bg-white dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700">
+          <SelectTrigger id="tone-selection" className="w-full">
             <SelectValue placeholder="Select the tone for the response" />
           </SelectTrigger>
           <SelectContent className="bg-white dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700">

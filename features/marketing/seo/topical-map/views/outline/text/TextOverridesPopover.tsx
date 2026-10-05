@@ -19,7 +19,8 @@
 import { useState } from "react";
 import { RotateCcw, SlidersHorizontal } from "lucide-react";
 
-import { Input, Label, Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
+import { Label, Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 
 import type { TopicalMapKnobs } from "../../../knobs";
@@ -133,7 +134,7 @@ export function TextOverridesPopover({ knobs, overrides, onChange }: TextOverrid
                   min={0}
                   value={current(key)}
                   onChange={(event) => update(key, event.target.value)}
-                  className="h-7 w-24 text-right text-xs tabular-nums"
+                  className="w-24 text-right"
                 />
               </div>
             );

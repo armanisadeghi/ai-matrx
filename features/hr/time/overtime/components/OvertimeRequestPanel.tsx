@@ -28,7 +28,7 @@ import { useState } from "react";
 import { AlertTriangle, Check, Clock, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
 import { toast } from "@/lib/toast";
 import type { HrFixtureCase } from "@/features/hr/mock/transport";
@@ -268,7 +268,7 @@ export function OvertimeRequestPanel({
                   placeholder={`${formatHours(request.requestedHours)} requested`}
                   value={capText}
                   onChange={(e) => setCapText(e.target.value)}
-                  className="mt-1 min-h-[44px]"
+                  className="mt-1"
                 />
                 <p className="mt-1 text-[11px] leading-snug text-muted-foreground">
                   A cap is what later hours are matched against. Overtime beyond it is still paid —

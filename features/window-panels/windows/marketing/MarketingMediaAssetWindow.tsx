@@ -600,7 +600,7 @@ function AssetInspector({
                 )
               }
             >
-              <SelectTrigger className="h-7 w-36 px-2 text-[11px]">
+              <SelectTrigger className="w-36">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="text-[11px]">

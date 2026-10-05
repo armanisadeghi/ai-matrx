@@ -770,7 +770,7 @@ export default function AdminSandboxManagementPage() {
                       >
                         <SelectTrigger
                           aria-label="Sandbox status"
-                          className="h-8 w-36"
+                          className="w-36"
                         >
                           <SelectValue placeholder="Any status" />
                         </SelectTrigger>

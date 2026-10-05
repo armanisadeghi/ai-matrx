@@ -17,7 +17,8 @@ import { BookOpen, CircleAlert, Loader2, Plus } from "lucide-react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { Button } from "@/components/ui/button";
-import { Input, Skeleton } from "@ai-matrx/design-system";
+import { Skeleton } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import {
     Select,
@@ -126,7 +127,7 @@ export function RulebookParamPicker({
                             value={value ?? ""}
                             onValueChange={(next) => onChange(next || null)}
                         >
-                            <SelectTrigger id="param-rulebook_id" className="h-11">
+                            <SelectTrigger id="param-rulebook_id">
                                 <SelectValue placeholder="Choose a Rulebook" />
                             </SelectTrigger>
                             <SelectContent>
@@ -149,7 +150,6 @@ export function RulebookParamPicker({
                     {showCreate ? (
                         <div className="flex items-center gap-2">
                             <Input
-                                className="h-11"
                                 value={newName}
                                 placeholder="Name the new Rulebook"
                                 onChange={(event: React.ChangeEvent<HTMLInputElement>) =>

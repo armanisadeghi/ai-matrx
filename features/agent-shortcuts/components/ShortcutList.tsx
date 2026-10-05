@@ -467,7 +467,7 @@ export function ShortcutList({
                       value={placementFilter}
                       onValueChange={handlePlacementFilterChange}
                     >
-                      <SelectTrigger className="h-8 w-[180px]">
+                      <SelectTrigger className="w-[180px]">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -493,7 +493,7 @@ export function ShortcutList({
                     value={categoryFilter}
                     onValueChange={setCategoryFilter}
                   >
-                    <SelectTrigger className="h-8 w-[180px]">
+                    <SelectTrigger className="w-[180px]">
                       <SelectValue placeholder="All Categories" />
                     </SelectTrigger>
                     <SelectContent>
@@ -521,7 +521,7 @@ export function ShortcutList({
                       setActiveFilter(value as typeof activeFilter)
                     }
                   >
-                    <SelectTrigger className="h-8 w-[160px]">
+                    <SelectTrigger className="w-[160px]">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -544,7 +544,7 @@ export function ShortcutList({
                     value={contextTagFilter}
                     onValueChange={setContextTagFilter}
                   >
-                    <SelectTrigger className="h-8 w-[200px]">
+                    <SelectTrigger className="w-[200px]">
                       <SelectValue placeholder="Feature tag" />
                     </SelectTrigger>
                     <SelectContent>

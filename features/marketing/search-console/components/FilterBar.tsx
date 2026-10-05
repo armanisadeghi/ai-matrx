@@ -33,7 +33,7 @@ import {
   PopoverTrigger,
 } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   Select,
   SelectContent,
@@ -551,7 +551,7 @@ export function FilterBar({
               value={effectiveKey}
               onValueChange={(next) => setDraftKey(next as FilterMenuKey)}
             >
-              <SelectTrigger size="sm" aria-label="Filter type">
+              <SelectTrigger aria-label="Filter type">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -578,7 +578,6 @@ export function FilterBar({
                       if (e.key === "Enter") addFilter();
                     }}
                     placeholder="Min"
-                    className="h-8 text-xs"
                     aria-label={`${rangeSpec.label} minimum`}
                   />
                   <span className="text-xs text-muted-foreground">to</span>
@@ -592,7 +591,6 @@ export function FilterBar({
                       if (e.key === "Enter") addFilter();
                     }}
                     placeholder="Max"
-                    className="h-8 text-xs"
                     aria-label={`${rangeSpec.label} maximum`}
                   />
                 </div>
@@ -770,7 +768,6 @@ export function FilterBar({
                         ? "One word — matched whole, e.g. cost"
                         : "Value…"
                 }
-                className="h-8 text-xs"
                 aria-label="Filter value"
               />
             )}

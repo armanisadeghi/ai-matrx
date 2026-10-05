@@ -131,13 +131,12 @@ export function IngestRequestsDialog({
         </DialogHeader>
 
         <div className="space-y-3">
-            <Textarea
+            <Textarea mono minHeight={176} maxHeight={176}
             value={rawText}
             onChange={(event) => setRawText(event.target.value)}
             placeholder={
               "1) Looking for experts on…\nName: …\nMedia Outlet: …\nDeadline: 7:00 PM EST - 25 August\n\nQuery:\n…"
             }
-            className="h-44 font-mono text-xs"
             disabled={run.running}
           />
           <div className="flex flex-wrap items-center gap-4">
@@ -146,7 +145,7 @@ export function IngestRequestsDialog({
                 From
               </Label>
               <Select value={platform} onValueChange={setPlatform}>
-                <SelectTrigger id="ingest-platform" className="h-7 w-40 text-xs">
+                <SelectTrigger id="ingest-platform" className="w-40">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

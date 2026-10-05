@@ -33,7 +33,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { keyFieldsAiVariant } from "@/features/marketing/lib/copy-payloads";
@@ -261,7 +261,6 @@ function TextColumnFilter({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="h-8 text-sm"
       />
     </div>
   );
@@ -630,7 +629,7 @@ export default function TasksTableView() {
                           })
                         }
                       >
-                        <SelectTrigger className="h-8 text-sm">
+                        <SelectTrigger>
                           <SelectValue placeholder="All projects" />
                         </SelectTrigger>
                         <SelectContent>

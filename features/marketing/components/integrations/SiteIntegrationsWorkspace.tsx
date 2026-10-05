@@ -31,7 +31,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -1877,13 +1877,13 @@ function UrlChangeIntakeCard({
             <Label className="text-[9px] text-muted-foreground">
               File contents
             </Label>
-            <Input className="h-8 text-[10px]" readOnly value={indexNowKey} />
+            <Input readOnly value={indexNowKey} />
           </div>
           <div className="space-y-1">
             <Label className="text-[9px] text-muted-foreground">
               Public file location
             </Label>
-            <Input className="h-8 text-[10px]" readOnly value={keyLocation} />
+            <Input readOnly value={keyLocation} />
           </div>
           <a
             className="inline-flex text-[10px] text-primary underline"
@@ -1906,7 +1906,6 @@ function UrlChangeIntakeCard({
           {setup ? (
             <>
               <Input
-                className="h-8 text-[10px]"
                 readOnly
                 value={setup.webhookUrl}
               />
@@ -2120,7 +2119,7 @@ function ProviderReferenceFields({
             })
           }
         >
-          <SelectTrigger size="sm">
+          <SelectTrigger>
             <SelectValue placeholder="Select a connected account" />
           </SelectTrigger>
           <SelectContent>
@@ -2154,7 +2153,7 @@ function ProviderReferenceFields({
             disabled={!value.credentialRef || !availableResources.length}
             onValueChange={(resourceRef) => onChange({ ...value, resourceRef })}
           >
-            <SelectTrigger size="sm">
+            <SelectTrigger>
               <SelectValue
                 placeholder={
                   value.credentialRef && !availableResources.length
@@ -2268,7 +2267,6 @@ function CustomProviderRow({
           </Label>
           <Input
             id={`${prefix}-label`}
-            className="h-8 text-xs"
             value={value.label}
             placeholder={BING_PROVIDER.label}
             onChange={(event) =>
@@ -2280,9 +2278,8 @@ function CustomProviderRow({
           <Label htmlFor={`${prefix}-key`} className="text-[11px]">
             Provider key
           </Label>
-          <Input
+          <Input mono
             id={`${prefix}-key`}
-            className="h-8 font-mono text-[11px]"
             value={value.key}
             data-identifier
             placeholder="bing_webmaster"
@@ -2303,7 +2300,7 @@ function CustomProviderRow({
               })
             }
           >
-            <SelectTrigger size="sm">
+            <SelectTrigger>
               <SelectValue placeholder="Select type" />
             </SelectTrigger>
             <SelectContent>
@@ -2319,9 +2316,8 @@ function CustomProviderRow({
           <Label htmlFor={`${prefix}-credential`} className="text-[11px]">
             Credential reference UUID
           </Label>
-          <Input
+          <Input mono
             id={`${prefix}-credential`}
-            className="h-8 font-mono text-[11px]"
             value={value.credentialRef}
             placeholder="00000000-0000-4000-8000-000000000000"
             autoComplete="off"
@@ -2335,9 +2331,8 @@ function CustomProviderRow({
           <Label htmlFor={`${prefix}-resource`} className="text-[11px]">
             Resource reference
           </Label>
-          <Input
+          <Input mono
             id={`${prefix}-resource`}
-            className="h-8 font-mono text-[11px]"
             value={value.resourceRef}
             placeholder="resource:site-id"
             autoComplete="off"

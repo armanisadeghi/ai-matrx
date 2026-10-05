@@ -15,7 +15,7 @@ import {
   CommandGroup,
   CommandItem,
 } from "@/components/ui/command";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { cn } from "@/lib/utils";
 
 export type Option = {
@@ -162,11 +162,10 @@ const SearchableMultiSelect: React.FC<SearchableMultiSelectProps> = ({
           >
             <Command className="bg-elevation1" shouldFilter={false}>
               <div className="relative p-2">
-                <Input
+                <Input adornment="end"
                   placeholder={searchPlaceholder}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="text-sm pr-8"
                 />
                 <Search className="h-4 w-4 absolute right-4 top-1/2 transform -translate-y-1/2 text-muted-foreground pointer-events-none opacity-50" />
               </div>

@@ -36,7 +36,7 @@ import { AlertTriangle, ExternalLink, Gavel, RotateCcw, Save } from "lucide-reac
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -370,13 +370,13 @@ export function KnobRow({
               className="w-full sm:max-w-md"
             />
           ) : (
-            <Textarea
+            <Textarea mono
               id={controlId}
               value={draft}
               disabled={busy}
               rows={3}
               onChange={(event) => setDraft(event.target.value)}
-              className="w-full font-mono text-xs"
+              className="w-full"
             />
           )}
         </div>

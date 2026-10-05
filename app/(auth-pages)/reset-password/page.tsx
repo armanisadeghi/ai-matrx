@@ -2,7 +2,7 @@
 
 import { resetPasswordAction } from "@/actions/auth.actions";
 import { AuthMessageType } from "@/components/form-message";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { SubmitButton } from "@/components/submit-button";
 import AuthPageContainer from "@/components/auth/auth-page-container";
@@ -61,7 +61,7 @@ export default async function ResetPassword({
               name="password"
               placeholder="New password"
               required
-              className="appearance-none block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-neutral-700 dark:text-white"
+              className="block w-full"
             />
           </div>
         </div>
@@ -79,7 +79,7 @@ export default async function ResetPassword({
               name="confirmPassword"
               placeholder="Confirm password"
               required
-              className="appearance-none block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-neutral-700 dark:text-white"
+              className="block w-full"
             />
           </div>
         </div>

@@ -6,7 +6,7 @@ import { extractErrorMessage } from "@/utils/errors";
 import { isJsonObject, type JsonObject } from "@/types/json";
 import { Card } from "@/components/ui/card";
 import { Button } from "@ai-matrx/design-system";
-import { Textarea } from "@/components/ui/textarea";
+import { TextareaLegacy as Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "motion/react";
 import {

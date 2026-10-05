@@ -566,7 +566,7 @@ function PolicyPicker({
     <label className="flex flex-col gap-1 text-xs">
       {label}
       <Select value={value} onValueChange={onChange}>
-        <SelectTrigger className="h-8 text-xs">
+        <SelectTrigger>
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -603,7 +603,7 @@ function TopicPicker({
         value={value ?? (allowRoot ? ROOT : undefined)}
         onValueChange={(next) => onChange(next === ROOT ? null : next)}
       >
-        <SelectTrigger className="h-8 text-xs">
+        <SelectTrigger>
           <SelectValue placeholder="Pick a topic" />
         </SelectTrigger>
         <SelectContent>

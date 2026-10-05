@@ -202,7 +202,7 @@ export function DeliveryControls({
           }}
         >
           <SelectTrigger
-            className="h-8 w-64 text-sm"
+            className="w-64"
             aria-label="Slack channel"
           >
             <SelectValue placeholder={slackItems ? "No Slack" : "Loading…"} />

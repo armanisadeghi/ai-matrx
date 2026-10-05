@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -307,7 +307,7 @@ export function QuickSaveCodeCore({
                       }
                     }}
                     placeholder="Folder name"
-                    className="h-8 text-xs rounded-md w-full"
+                    className="w-full"
                     style={{ fontSize: "16px" }}
                     disabled={folderCreateBusy}
                   />
@@ -339,7 +339,7 @@ export function QuickSaveCodeCore({
                     setFolderId(v === "__root__" ? null : v);
                   }}
                 >
-                  <SelectTrigger className="h-8 text-xs rounded-md w-full">
+                  <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="max-w-[min(90vw,360px)]">
@@ -367,12 +367,12 @@ export function QuickSaveCodeCore({
                 <Label htmlFor="qsc-name" className="text-xs">
                   File Name
                 </Label>
-                <Input
+                <Input mono
                   id="qsc-name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="my-file.ts"
-                  className="h-8 text-xs rounded-md w-full font-mono"
+                  className="w-full"
                   style={{ fontSize: "16px" }}
                 />
               </div>
@@ -383,7 +383,7 @@ export function QuickSaveCodeCore({
                   value={selectedFileId}
                   onValueChange={setSelectedFileId}
                 >
-                  <SelectTrigger className="h-8 text-xs rounded-md w-full min-w-0">
+                  <SelectTrigger className="w-full min-w-0">
                     <SelectValue placeholder="Choose a file…">
                       <span className="truncate block max-w-full font-mono">
                         {selectedFile?.name ?? "Choose a file…"}
@@ -422,7 +422,7 @@ export function QuickSaveCodeCore({
               <div className="grid gap-1 min-w-0">
                 <Label className="text-xs">Language</Label>
                 <Select value={language} onValueChange={setLanguage}>
-                  <SelectTrigger className="h-8 text-xs rounded-md w-full">
+                  <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="max-h-[40dvh]">

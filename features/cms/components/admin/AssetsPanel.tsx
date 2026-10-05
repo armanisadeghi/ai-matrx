@@ -23,7 +23,7 @@ import { AssetInUseError, CmsAssetService } from '../../services/cmsService';
 import type { AssetComponentUsage, AssetPageUsage, ClientAsset, ClientSiteSummary } from '../../types';
 import { Button } from '@/components/ui/button';
 import { ReadFailure } from '@/components/read-state/ReadFailure';
-import { Input } from '@ai-matrx/design-system';
+import { Input } from "@ai-matrx/design-system/controls";
 import {
     Select,
     SelectContent,
@@ -212,7 +212,7 @@ export default function AssetsPanel({ sites }: { sites: ClientSiteSummary[] }) {
         <div className="h-full flex flex-col overflow-hidden">
             <div className="flex-none flex items-center gap-2 pb-2">
                 <Select value={siteId} onValueChange={setSiteId}>
-                    <SelectTrigger className="h-7 w-[180px] text-xs">
+                    <SelectTrigger className="w-[180px]">
                         <SelectValue placeholder="Select site" />
                     </SelectTrigger>
                     <SelectContent>
@@ -351,7 +351,6 @@ export default function AssetsPanel({ sites }: { sites: ClientSiteSummary[] }) {
                         value={editAlt}
                         onChange={(e) => setEditAlt(e.target.value)}
                         placeholder="Describe the image for accessibility/SEO"
-                        className="text-xs"
                     />
                     <DialogFooter>
                         <Button variant="quiet" onClick={() => setEditing(null)}>

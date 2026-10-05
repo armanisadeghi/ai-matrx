@@ -2,8 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { TaskCreatePanel } from "@/features/tasks/widgets/quick-create/TaskCreatePanel";
-import PageHeader from "@/features/shell/components/header/PageHeader";
-import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
+import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 
 export default function NewTaskPage() {
   const router = useRouter();
@@ -14,14 +13,11 @@ export default function NewTaskPage() {
 
   return (
     <>
-      <PageHeader>
-        <div className="flex items-center w-full min-w-0 gap-0 p-0">
-          <ChevronLeftTapButton href="/tasks" variant="transparent" ariaLabel="Back to tasks" />
-          <h1 className="ml-2 text-sm font-medium text-foreground truncate">
-            Create New Task
-          </h1>
-        </div>
-      </PageHeader>
+      <RecordPageHeader
+        backHref="/tasks"
+        parents={[{ label: "Tasks", href: "/tasks" }]}
+        record={{ name: "New task" }}
+      />
       {/* Static top UI (the form / post-save banner starts at the top) must
           clear the glass header, or it renders behind it on mobile. */}
       <div className="h-full overflow-hidden bg-textured pt-[var(--shell-header-h)]">

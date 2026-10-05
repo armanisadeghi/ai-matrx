@@ -32,7 +32,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   Popover,
   PopoverContent,
@@ -135,12 +135,11 @@ export function PlanTreeToolbar({
         {/* Search — label OR route OR slug, ancestors stay visible (dimmed). */}
         <div className="relative min-w-0 flex-1">
           <Search className="pointer-events-none absolute left-1.5 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
-          <Input
+          <Input adornment="both"
             value={search}
             onChange={(event) => onSearchChange(event.target.value)}
             placeholder="Search pages…"
             aria-label="Search plan pages"
-            className="h-7 border-border/70 bg-background/70 pl-6 pr-6 text-xs shadow-none"
             style={{ fontSize: "16px" }}
           />
           {search ? (

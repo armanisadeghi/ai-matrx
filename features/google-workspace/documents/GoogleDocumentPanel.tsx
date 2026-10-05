@@ -469,7 +469,6 @@ function AppendComposer({
         }}
         placeholder="Add to the end of this doc…"
         rows={4}
-        className="text-base"
         aria-label="Add to the end of this doc"
       />
       {block ? (

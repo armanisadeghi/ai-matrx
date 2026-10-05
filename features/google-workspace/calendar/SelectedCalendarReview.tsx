@@ -400,7 +400,7 @@ export function SelectedCalendarReviewContent({ organizationId }: { organization
             }}
             disabled={busy !== null}
           >
-            <SelectTrigger id="selected-calendar" className="min-h-11">
+            <SelectTrigger id="selected-calendar">
               <SelectValue placeholder="Choose a calendar" />
             </SelectTrigger>
             <SelectContent>

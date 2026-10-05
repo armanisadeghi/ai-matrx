@@ -30,7 +30,7 @@ import type {
   SiteCollection,
 } from "@/features/cms/types";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -362,12 +362,11 @@ export function CollectionEditorDialog({
                   }));
                 }}
                 placeholder="Contact Requests"
-                className="text-sm"
               />
             </div>
             <div>
               <label className="text-sm font-medium block mb-1.5">Slug</label>
-              <Input
+              <Input mono
                 value={form.slug}
                 onChange={(e) =>
                   setForm((f) => ({
@@ -376,7 +375,6 @@ export function CollectionEditorDialog({
                     slugTouched: true,
                   }))
                 }
-                className="text-sm font-mono"
                 data-identifier
                 placeholder="contact_requests"
               />
@@ -390,7 +388,6 @@ export function CollectionEditorDialog({
               value={form.description}
               onChange={(e) => set("description", e.target.value)}
               placeholder="Optional — what this collection holds"
-              className="text-sm"
             />
           </div>
 
@@ -419,13 +416,13 @@ export function CollectionEditorDialog({
                     className="rounded-md border border-border p-2.5 space-y-2 bg-muted/20"
                   >
                     <div className="flex flex-wrap items-center gap-2">
-                      <Input
+                      <Input mono
                         value={field.key}
                         onChange={(e) =>
                           updateField(i, { key: e.target.value })
                         }
                         placeholder="key"
-                        className="text-xs font-mono h-8 w-32 flex-1 min-w-24"
+                        className="w-32 flex-1 min-w-24"
                       />
                       <Input
                         value={field.label}
@@ -433,7 +430,7 @@ export function CollectionEditorDialog({
                           updateField(i, { label: e.target.value })
                         }
                         placeholder="Label"
-                        className="text-xs h-8 w-32 flex-1 min-w-24"
+                        className="w-32 flex-1 min-w-24"
                       />
                       <select
                         value={field.type}
@@ -498,7 +495,7 @@ export function CollectionEditorDialog({
                               })
                             }
                             placeholder="Max length"
-                            className="text-xs h-8 w-28"
+                            className="w-28"
                           />
                         )}
                         {field.type === "number" && (
@@ -514,7 +511,7 @@ export function CollectionEditorDialog({
                                 })
                               }
                               placeholder="Min"
-                              className="text-xs h-8 w-24"
+                              className="w-24"
                             />
                             <Input
                               type="number"
@@ -527,7 +524,7 @@ export function CollectionEditorDialog({
                                 })
                               }
                               placeholder="Max"
-                              className="text-xs h-8 w-24"
+                              className="w-24"
                             />
                           </>
                         )}
@@ -543,7 +540,7 @@ export function CollectionEditorDialog({
                               })
                             }
                             placeholder="Options (comma-separated)"
-                            className="text-xs h-8 flex-1 min-w-40"
+                            className="flex-1 min-w-40"
                           />
                         )}
                       </div>
@@ -646,11 +643,10 @@ export function CollectionEditorDialog({
               <label className="text-sm font-medium block mb-1.5">
                 Honeypot field
               </label>
-              <Input
+              <Input mono
                 value={form.honeypotField}
                 onChange={(e) => set("honeypotField", e.target.value)}
                 placeholder="e.g. website"
-                className="text-sm font-mono"
               />
               <p className="text-xs text-muted-foreground mt-1">
                 A hidden form field bots fill in — non-empty submissions are
@@ -667,7 +663,6 @@ export function CollectionEditorDialog({
                 value={form.retentionDays}
                 onChange={(e) => set("retentionDays", e.target.value)}
                 placeholder="Keep forever"
-                className="text-sm"
               />
               <p className="text-xs text-muted-foreground mt-1">
                 Items older than this are cleaned up automatically. Leave empty

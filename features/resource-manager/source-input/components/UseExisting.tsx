@@ -27,7 +27,8 @@
 
 import { useCallback, useEffect, useEffectEvent, useState, type ComponentType } from "react";
 import { Check, Loader2, Plus } from "lucide-react";
-import { Badge, Input } from "@ai-matrx/design-system";
+import { Badge } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { useKindCounts } from "@/features/scopes/hooks/useKindCounts";
 import { useKindItems } from "@/features/scopes/hooks/useKindItems";
 import { fetchKindItemsPage, type KindItem, type KindScope } from "@/features/scopes/service/kindInventory";
@@ -377,7 +378,6 @@ export function UseExisting({ scope, query, isPicked, onToggle }: UseExistingPro
                 onChange={(e) => setOpenQuery(e.target.value)}
                 placeholder={`Search ${openKind.plural.toLowerCase()}`}
                 aria-label={`Search ${openKind.plural.toLowerCase()}`}
-                className="text-base sm:text-sm"
               />
               <KindList kind={openKind} scope={scope} query={openQuery} isPicked={isPicked} onToggle={onToggle} />
             </div>

@@ -155,7 +155,7 @@ const AnimatedTabModal: React.FC<AnimatedTabModalProps & { className?: string }>
 
                             {tabs || customTab ? (
                                 <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-                                    <TabsList className={`grid w-full ${gridColsClass}`}>
+                                    <TabsList fill className={` ${gridColsClass}`}>
                                         {customTab && (
                                             <TabsTrigger value="custom">
                                                 {customTab.label}

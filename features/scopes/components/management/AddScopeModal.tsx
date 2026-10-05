@@ -12,7 +12,7 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { ChevronDown, ChevronRight, Loader2, Plus, X } from "lucide-react";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -461,11 +461,11 @@ export function AddScopeModal({
                 Default variable keys
               </Label>
               <div className="flex gap-2">
-                <Input
+                <Input mono
                   id={variableKeyId}
                   value={variableKeyInput}
                   onChange={(e) => setVariableKeyInput(e.target.value)}
-                  className="flex-1 font-mono"
+                  className="flex-1"
                   data-identifier
                   placeholder="e.g. budget_code"
                   onKeyDown={(e) => {

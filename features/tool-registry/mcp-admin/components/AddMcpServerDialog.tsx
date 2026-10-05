@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Loader2, ChevronLeft, ChevronRight, AlertCircle, Check } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -279,11 +279,10 @@ export function AddMcpServerDialog({
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs">Slug (URL-safe ID)</Label>
-                <Input
+                <Input mono
                   value={slug}
                   onChange={(e) => setSlug(e.target.value.toLowerCase())}
                   placeholder="e.g. notion, linear, custom-search"
-                  className="font-mono text-sm h-9"
                   style={{ fontSize: "16px" }}
                   disabled={busy}
                   autoFocus
@@ -305,7 +304,6 @@ export function AddMcpServerDialog({
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. Notion, Linear, Custom Search"
-                  className="text-sm h-9"
                   style={{ fontSize: "16px" }}
                   disabled={busy}
                 />
@@ -318,7 +316,6 @@ export function AddMcpServerDialog({
                   value={vendor}
                   onChange={(e) => setVendor(e.target.value)}
                   placeholder="e.g. Notion Labs, Inc."
-                  className="text-sm h-9"
                   style={{ fontSize: "16px" }}
                   disabled={busy}
                 />
@@ -330,7 +327,7 @@ export function AddMcpServerDialog({
                   onValueChange={(v) => setCategory(v as ProvisionMcpServerInput["category"])}
                   disabled={busy}
                 >
-                  <SelectTrigger className="h-9">
+                  <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -375,7 +372,7 @@ export function AddMcpServerDialog({
             <div className="space-y-1.5">
               <Label className="text-xs">Transport</Label>
               <Select value={transport} onValueChange={(v) => setTransport(v as ProvisionMcpServerInput["transport"])} disabled={busy}>
-                <SelectTrigger className="h-9">
+                <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -393,11 +390,10 @@ export function AddMcpServerDialog({
             {(transport === "http" || transport === "sse") && (
               <div className="space-y-1.5">
                 <Label className="text-xs">Endpoint URL</Label>
-                <Input
+                <Input mono
                   value={endpointUrl}
                   onChange={(e) => setEndpointUrl(e.target.value)}
                   placeholder="https://mcp.example.com/v1"
-                  className="font-mono text-sm h-9"
                   style={{ fontSize: "16px" }}
                   disabled={busy}
                 />
@@ -420,7 +416,7 @@ export function AddMcpServerDialog({
             <div className="space-y-1.5">
               <Label className="text-xs">Auth strategy</Label>
               <Select value={authStrategy} onValueChange={(v) => setAuthStrategy(v as ProvisionMcpServerInput["authStrategy"])} disabled={busy}>
-                <SelectTrigger className="h-9">
+                <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -441,7 +437,6 @@ export function AddMcpServerDialog({
                 <Input
                   value={docsUrl}
                   onChange={(e) => setDocsUrl(e.target.value)}
-                  className="text-sm h-9"
                   style={{ fontSize: "16px" }}
                   disabled={busy}
                 />
@@ -451,7 +446,6 @@ export function AddMcpServerDialog({
                 <Input
                   value={websiteUrl}
                   onChange={(e) => setWebsiteUrl(e.target.value)}
-                  className="text-sm h-9"
                   style={{ fontSize: "16px" }}
                   disabled={busy}
                 />

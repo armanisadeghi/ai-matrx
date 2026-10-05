@@ -26,7 +26,7 @@ import { siteSetupChecklist } from "@/features/marketing/search-console/setup/si
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { toast } from "@/lib/toast";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
@@ -568,7 +568,7 @@ export function SiteIntakeWizard() {
                         </div>
                       ) : null}
                       <Input
-                        className="mt-1.5 text-sm"
+                        className="mt-1.5"
                         placeholder="Answer in your own words (optional)"
                         value={answers[question.id] ?? ""}
                         onChange={(event) =>

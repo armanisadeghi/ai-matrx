@@ -96,7 +96,7 @@ export function GraphToolbar({
         onValueChange={(value) => onGroupByChange(value === NO_GROUPING ? null : value)}
       >
         <SelectTrigger
-          className="h-7 w-[150px] text-[11px]"
+          className="w-[150px]"
           aria-label="Group the drawing by a facet"
         >
           <SelectValue placeholder="No grouping" />

@@ -31,7 +31,7 @@ import { Archive, AlertTriangle, Factory, Loader2, Pencil, Plus, RotateCcw, Save
 
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -727,7 +727,7 @@ function IdentitySection({
             value={form.entity_form || NOT_SET}
             onValueChange={(value) => set("entity_form", value === NOT_SET ? "" : value)}
           >
-            <SelectTrigger id="entity-form" className="text-base sm:text-sm">
+            <SelectTrigger id="entity-form">
               <SelectValue placeholder="Not set" />
             </SelectTrigger>
             <SelectContent>
@@ -771,9 +771,6 @@ function IdentitySection({
             onChange={(event) => onEinChange(formatEinInput(event.target.value))}
             aria-invalid={Boolean(einCheck && !einCheck.ok)}
             aria-describedby="ein-hint"
-            // The one field surface (design-system Input = ProInput = Select).
-            // The old `bg-transparent` override read grey — disabled-looking.
-            className="text-base sm:text-sm"
           />
           {/* Under the input, never between label and input — the input stays on
               its row's line with the fields beside it. */}
@@ -1016,7 +1013,7 @@ function ApplicabilityRow({
                 >
                   <SelectTrigger
                     id={`declare-states-${flag.key}`}
-                    className="w-44 text-base sm:text-sm"
+                    className="w-44"
                   >
                     <SelectValue placeholder="Add a state" />
                   </SelectTrigger>
@@ -1121,7 +1118,7 @@ function UsStateSelect({
   const known = states.some((j) => j.jurisdiction_key.slice(3) === value);
   return (
     <Select value={value || NOT_SET} onValueChange={(v) => onChange(v === NOT_SET ? "" : v)}>
-      <SelectTrigger id={id} className="text-base sm:text-sm">
+      <SelectTrigger id={id}>
         <SelectValue placeholder="Not set" />
       </SelectTrigger>
       <SelectContent className="max-h-72">
@@ -1153,7 +1150,7 @@ function CountrySelect({
   const known = countries.some((j) => j.jurisdiction_key === value);
   return (
     <Select value={value || NOT_SET} onValueChange={(v) => onChange(v === NOT_SET ? "" : v)}>
-      <SelectTrigger id={id} className="text-base sm:text-sm">
+      <SelectTrigger id={id}>
         <SelectValue placeholder="Not set" />
       </SelectTrigger>
       <SelectContent>
@@ -1350,7 +1347,7 @@ function EstablishmentDialog({
               value={input.jurisdiction_id || undefined}
               onValueChange={(value) => set("jurisdiction_id", value)}
             >
-              <SelectTrigger id="est-jurisdiction" className="text-base sm:text-sm">
+              <SelectTrigger id="est-jurisdiction">
                 <SelectValue placeholder="Choose one" />
               </SelectTrigger>
               <SelectContent className="max-h-72">

@@ -10,7 +10,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   FileJson,
   Maximize2,
@@ -42,9 +42,8 @@ export function SchemaActions() {
         <CardTitle className="text-2xl">Schema Explorer</CardTitle>
         <div className="relative">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
+          <Input adornment="start"
             placeholder="Search tables..."
-            className="pl-8"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
           />

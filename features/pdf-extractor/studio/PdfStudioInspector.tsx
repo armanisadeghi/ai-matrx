@@ -213,7 +213,7 @@ export function PdfStudioInspector({
 
 import { useToastManager } from "@/hooks/useToastManager";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { useFile } from "@/features/files/handler/hooks/useFile";
 
 type AgentScope = "full" | "current" | "range" | "selection";
@@ -510,7 +510,6 @@ function AiActionsPanel({
             value={rangeInput}
             onChange={(e) => setRangeInput(e.target.value)}
             placeholder="e.g. 1, 3-5, 10"
-            className="h-7 text-[11px]"
           />
         )}
 
@@ -555,7 +554,6 @@ function AiActionsPanel({
                 if (e.key === "Enter") void ask(question);
               }}
               placeholder="Ask about this document…"
-              className="h-8 text-[11px]"
               disabled={asking}
             />
             <Button

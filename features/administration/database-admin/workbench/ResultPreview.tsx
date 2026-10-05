@@ -117,17 +117,15 @@ export function ResultPreview({
         className="flex-1 min-h-0 flex flex-col overflow-hidden"
       >
         <div className="flex items-center justify-between px-2 pt-2 pb-1 border-b border-slate-200 dark:border-slate-700 flex-shrink-0">
-          <TabsList className="h-7 bg-transparent gap-1">
+          <TabsList variant="underline">
             <TabsTrigger
               value="table"
-              className="text-xs h-6 px-2 data-[state=active]:bg-slate-100 dark:data-[state=active]:bg-slate-800"
             >
               <TableIcon className="h-3 w-3 mr-1" />
               Table ({rows.length})
             </TabsTrigger>
             <TabsTrigger
               value="json"
-              className="text-xs h-6 px-2 data-[state=active]:bg-slate-100 dark:data-[state=active]:bg-slate-800"
             >
               JSON
             </TabsTrigger>

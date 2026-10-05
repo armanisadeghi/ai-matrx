@@ -11,7 +11,8 @@
 
 import { useState } from "react";
 import { Plus, X } from "lucide-react";
-import { Input, Label, SegmentedControl, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Textarea } from "@ai-matrx/design-system";
+import { Label, SegmentedControl, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Textarea } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import RuleValueInput from "@/features/ai-models/components/controls/RuleValueInput";
@@ -222,10 +223,9 @@ export default function RuleFields({
 
           {mode === "native" || mode === "fixed" ? (
             <Section title="Provider key">
-              <Input
+              <Input mono
                 value={rule.provider_key ?? ""}
                 placeholder={setting?.key ?? "same key"}
-                className="font-mono text-xs"
                 onChange={(e) =>
                   onChange(
                     setField(
@@ -260,7 +260,7 @@ export default function RuleFields({
                       <span className="truncate font-mono text-xs">
                         {token}
                       </span>
-                      <Input
+                      <Input mono
                         value={
                           hasEntry && mapped !== null ? showLoose(mapped) : ""
                         }
@@ -268,7 +268,6 @@ export default function RuleFields({
                         placeholder={
                           hasEntry && mapped === null ? "not sent" : token
                         }
-                        className="h-7 font-mono text-xs"
                         aria-label={`What ${token} sends`}
                         onChange={(e) =>
                           setMapEntry(token, parseLoose(e.target.value))
@@ -285,7 +284,6 @@ export default function RuleFields({
                         type="number"
                         value={toNumber[token] ?? ""}
                         placeholder="—"
-                        className="h-7 text-xs tabular-nums"
                         aria-label={`${token} as a number`}
                         onChange={(e) =>
                           setToNumber(
@@ -328,10 +326,9 @@ export default function RuleFields({
                   </SelectContent>
                 </Select>
                 {off && "send" in off ? (
-                  <Input
+                  <Input mono
                     value={showLoose(off.send)}
                     placeholder="none"
-                    className="h-8 font-mono text-xs"
                     aria-label="Value off sends"
                     onChange={(e) =>
                       onChange({
@@ -345,7 +342,6 @@ export default function RuleFields({
                   <Input
                     value={off.why ?? ""}
                     placeholder="Why nothing is sent"
-                    className="h-8 text-xs"
                     aria-label="Why off sends nothing"
                     onChange={(e) =>
                       onChange({
@@ -369,7 +365,7 @@ export default function RuleFields({
                       type="number"
                       value={step.lte ?? ""}
                       placeholder="above"
-                      className="h-7 w-28 text-xs tabular-nums"
+                      className="w-28"
                       aria-label="Up to"
                       onChange={(e) => {
                         const next = [...ladder];
@@ -384,10 +380,10 @@ export default function RuleFields({
                       }}
                     />
                     <span className="text-xs text-muted-foreground">→</span>
-                    <Input
+                    <Input mono
                       value={step.to === null ? "" : showLoose(step.to)}
                       placeholder="dropped"
-                      className="h-7 flex-1 font-mono text-xs"
+                      className="flex-1"
                       aria-label="Becomes"
                       onChange={(e) => {
                         const next = [...ladder];
@@ -428,17 +424,17 @@ export default function RuleFields({
               <div className="space-y-1">
                 {Object.entries(toNumber).map(([word, n]) => (
                   <div key={word} className="flex items-center gap-2">
-                    <Input
+                    <Input mono
                       value={word}
                       readOnly
-                      className="h-7 w-28 font-mono text-xs"
+                      className="w-28"
                       aria-label="Value"
                     />
                     <span className="text-xs text-muted-foreground">→</span>
                     <Input
                       type="number"
                       value={n}
-                      className="h-7 w-28 text-xs tabular-nums"
+                      className="w-28"
                       aria-label={`${word} as a number`}
                       onChange={(e) =>
                         setToNumber(
@@ -459,10 +455,10 @@ export default function RuleFields({
                   </div>
                 ))}
                 <div className="flex items-center gap-2">
-                  <Input
+                  <Input mono
                     value={newWord}
                     placeholder="medium"
-                    className="h-7 w-28 font-mono text-xs"
+                    className="w-28"
                     aria-label="New value"
                     onChange={(e) => setNewWord(e.target.value)}
                   />
@@ -485,14 +481,13 @@ export default function RuleFields({
 
           {mode === "native" ? (
             <Section title="Accepts">
-              <Input
+              <Input mono
                 value={
                   Array.isArray(rule.accepts)
                     ? rule.accepts.map(showLoose).join(", ")
                     : ""
                 }
                 placeholder={acceptsExample}
-                className="font-mono text-xs"
                 onChange={(e) => {
                   const parts = e.target.value
                     .split(",")
@@ -522,7 +517,7 @@ export default function RuleFields({
                       ? String(setting.canonical_min)
                       : "min"
                   }
-                  className="h-8 w-28 text-xs tabular-nums"
+                  className="w-28"
                   aria-label="Minimum"
                   onChange={(e) => {
                     const min =
@@ -549,7 +544,7 @@ export default function RuleFields({
                       ? String(setting.canonical_max)
                       : "max"
                   }
-                  className="h-8 w-28 text-xs tabular-nums"
+                  className="w-28"
                   aria-label="Maximum"
                   onChange={(e) => {
                     const max =

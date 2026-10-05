@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Globe, Search, Zap, Loader2, ScanSearch } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   useScraperApi,
   ScraperResult,
@@ -181,7 +181,7 @@ export default function Page() {
               onKeyDown={handleKeyDown}
               disabled={isFullScraping}
               placeholder="Enter URL to scrape..."
-              className="flex-1 h-8 text-sm"
+              className="flex-1"
               style={{ fontSize: "16px" }}
             />
             <Button
@@ -261,7 +261,6 @@ export default function Page() {
               if (error) setError(null);
             }}
             onKeyDown={handleKeyDown}
-            className="text-base h-12 rounded-full px-5 shadow-sm border-border/60 focus-visible:ring-primary/40"
             style={{ fontSize: "16px" }}
             inputMode="url"
             autoComplete="url"

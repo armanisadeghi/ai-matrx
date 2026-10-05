@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import {
@@ -139,7 +139,7 @@ export default function LSIKeywordGenerator({
                     }
                     placeholder="e.g., Computer Repair Shop, Bike Shop, Breast Augmentation..."
                     disabled={isExecuting}
-                    className={`${hasResults ? "h-11" : "h-12"} text-base`}
+                    className={`${hasResults ? "h-11" : "h-12"} `}
                     autoFocus={!hasResults}
                   />
                   <Button

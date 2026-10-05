@@ -87,7 +87,7 @@ export function CodeEditorHistoryPanel({
             if (picked) onPickerMandateKeyChange(picked.mandateKey);
           }}
         >
-          <SelectTrigger className="w-full h-8 text-xs">
+          <SelectTrigger className="w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

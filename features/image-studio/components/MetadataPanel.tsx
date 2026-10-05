@@ -262,11 +262,11 @@ function Field({
         {label}
       </label>
       {multiline && mono ? (
-        <Textarea
+        <Textarea mono
           value={value}
           onChange={(e) => onChange(e.target.value)}
           rows={2}
-          className="w-full resize-none rounded-md border border-border bg-background px-2 py-1.5 font-mono text-xs leading-snug focus:outline-none focus:ring-2 focus:ring-primary/20"
+          className="w-full resize-none"
         />
       ) : multiline ? (
         <ProTextarea

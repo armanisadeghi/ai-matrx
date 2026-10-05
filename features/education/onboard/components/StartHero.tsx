@@ -25,7 +25,7 @@ import { createSourceRef } from "@ai-matrx/agents/sources";
 import { youtubeId } from "@/lib/media/youtube";
 import type { SourceTileId } from "@ai-matrx/agents/sources/runtime";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useEntitlementGuard } from "@/features/entitlements/components/useEntitlementGuard";
@@ -486,7 +486,6 @@ export function StartHero() {
               value={focus}
               onChange={(e) => setFocus(e.target.value)}
               placeholder="e.g. focus on the causes, or I have an exam on chapter 3"
-              className="text-base"
             />
           </div>
 

@@ -32,7 +32,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input, Skeleton } from "@ai-matrx/design-system";
+import { Skeleton } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { cn } from "@/lib/utils";
 import { extractErrorMessage } from "@ai-matrx/data/net";
 import { sendExportItemsToRulebook } from "../api";
@@ -213,13 +214,12 @@ export function SendToRulebookDialog({
             <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
               <div className="relative mb-3">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
+                <Input adornment="start"
                   value={search}
                   onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
                     setSearch(event.target.value)
                   }
                   placeholder="Find a Rulebook"
-                  className="h-11 pl-9 text-base lg:h-9 lg:text-sm"
                   aria-label="Find a Rulebook"
                 />
               </div>

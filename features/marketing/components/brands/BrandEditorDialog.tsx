@@ -18,7 +18,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -268,7 +268,7 @@ function BrandEditorDialogBody({
                 onValueChange={setOrganizationId}
                 disabled={orgs.loading}
               >
-                <SelectTrigger className="h-9">
+                <SelectTrigger>
                   <SelectValue placeholder="Choose an organization" />
                 </SelectTrigger>
                 <SelectContent>
@@ -371,7 +371,7 @@ function BrandEditorDialogBody({
             <div className="space-y-1">
               <Label className="text-xs">Status</Label>
               <Select value={draft.status} onValueChange={set("status")}>
-                <SelectTrigger className="h-9">
+                <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

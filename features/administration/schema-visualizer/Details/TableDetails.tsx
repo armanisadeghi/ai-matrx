@@ -53,7 +53,7 @@ export function TableDetails({ table }: TableDetailsProps) {
             setTab(value as "overview" | "fields" | "relationships")
           }
         >
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList fill>
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="fields">Fields</TabsTrigger>
             <TabsTrigger value="relationships">Relationships</TabsTrigger>

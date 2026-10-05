@@ -42,7 +42,7 @@ import {
   type UpcomingOccurrence,
 } from "@ai-matrx/meet/react";
 import { TapTargetButton, TapTargetButtonSolid } from "@ai-matrx/tap-target";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Skeleton } from "@ai-matrx/design-system";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { RouteModeNav } from "@/features/shell/components/header/RouteModeNav";
@@ -376,12 +376,11 @@ export function MeetingsHome() {
                 className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
                 aria-hidden="true"
               />
-              <Input
+              <Input adornment="start"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search meetings"
                 aria-label="Search meetings"
-                className="h-8 pl-8"
               />
             </div>
             {tab !== "recordings" ? (
@@ -389,7 +388,7 @@ export function MeetingsHome() {
                 value={scope}
                 onValueChange={(v) => setScope(v as AgendaScope)}
               >
-                <SelectTrigger className="h-8 w-40" aria-label="Whose meetings">
+                <SelectTrigger className="w-40" aria-label="Whose meetings">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

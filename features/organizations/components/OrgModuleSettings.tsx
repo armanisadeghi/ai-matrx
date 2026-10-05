@@ -251,7 +251,7 @@ export function OrgModuleSettings({
                               }
                             >
                               <SelectTrigger
-                                className="h-7 w-[120px] text-xs"
+                                className="w-[120px]"
                                 aria-label={`Default access for ${entry.labelPlural}`}
                               >
                                 <SelectValue />

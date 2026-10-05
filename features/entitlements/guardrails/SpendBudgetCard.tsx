@@ -30,7 +30,7 @@ import {
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { formatPoints, pointsToUsd } from "@ai-matrx/kit/format";
@@ -469,10 +469,10 @@ function GuardrailRow({
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-2">
           <div className="relative">
-            <Input
+            <Input adornment="end"
               autoFocus
               inputMode="numeric"
-              className="w-32 pr-10 tabular-nums"
+              className="w-32"
               placeholder="100,000"
               value={draft}
               disabled={busy}

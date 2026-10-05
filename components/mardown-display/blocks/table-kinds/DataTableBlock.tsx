@@ -98,7 +98,7 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -605,11 +605,10 @@ export function DataTableBlock({ serverData, className }: DataTableBlockProps) {
         <div className="border-b border-border/40 bg-muted/20 px-3 py-1.5">
           <div className="relative w-full max-w-xs">
             <Search className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-            <Input
+            <Input adornment="start"
               value={filter}
               onChange={(event) => setFilter(event.target.value)}
               placeholder={`Filter ${rows.length.toLocaleString()} rows…`}
-              className="h-7 pl-7 text-xs"
               // 16px prevents iOS zoom-on-focus.
               style={{ fontSize: "16px" }}
             />

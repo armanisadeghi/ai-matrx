@@ -12,7 +12,7 @@ import {
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import {
   CREDENTIAL_ID_REGEX,
@@ -236,7 +236,7 @@ export function CredentialMaintenanceEditor({
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor={`${id}-key-id`}>Provider key ID</Label>
-                <Input
+                <Input mono
                   id={`${id}-key-id`}
                   value={entry.key_id ?? ""}
                   onChange={(event) =>
@@ -244,7 +244,6 @@ export function CredentialMaintenanceEditor({
                       key_id: event.target.value || undefined,
                     })
                   }
-                  className="font-mono"
                 />
               </div>
               <div className="space-y-1.5">
@@ -317,14 +316,13 @@ export function CredentialMaintenanceEditor({
               </div>
               <div className="space-y-1.5 md:col-span-2">
                 <Label htmlFor={`${id}-source-url`}>Rotation source URL</Label>
-                <Input
+                <Input mono
                   id={`${id}-source-url`}
                   type="url"
                   value={entry.source_url}
                   onChange={(event) =>
                     updateEntry(id, { source_url: event.target.value })
                   }
-                  className="font-mono text-xs"
                 />
                 {errors[`${errorPrefix}.source_url`] ? (
                   <p className="text-xs text-destructive">
@@ -337,14 +335,13 @@ export function CredentialMaintenanceEditor({
                 <Label htmlFor={`${id}-deployment-url`}>
                   Consumer configuration URL
                 </Label>
-                <Input
+                <Input mono
                   id={`${id}-deployment-url`}
                   type="url"
                   value={entry.deployment_url}
                   onChange={(event) =>
                     updateEntry(id, { deployment_url: event.target.value })
                   }
-                  className="font-mono text-xs"
                 />
                 {errors[`${errorPrefix}.deployment_url`] ? (
                   <p className="text-xs text-destructive">
@@ -374,7 +371,7 @@ export function CredentialMaintenanceEditor({
           <Label htmlFor="new-credential-maintenance-id">
             New credential ID
           </Label>
-          <Input
+          <Input mono
             id="new-credential-maintenance-id"
             value={newId}
             placeholder="provider-credential"
@@ -388,7 +385,6 @@ export function CredentialMaintenanceEditor({
                 addCredential();
               }
             }}
-            className="font-mono"
           />
           {newIdError ? (
             <p className="text-xs text-destructive">{newIdError} <ErrorAlchemyMenu error={newIdError} /></p>

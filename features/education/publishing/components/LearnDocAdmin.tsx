@@ -42,7 +42,7 @@ import {
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -865,11 +865,10 @@ function LearnDocEditor({
             anchor="draft_slug"
             hint="URL path under /education/learn — may include / for hierarchy."
           >
-            <Input
+            <Input mono
               value={slug}
               onChange={(e) => setSlug(e.target.value)}
               placeholder="biology/photosynthesis"
-              className="font-mono"
             />
           </Field>
           <Field label={V.draft_title} anchor="draft_title">
@@ -896,19 +895,17 @@ function LearnDocEditor({
               anchor="draft_subject"
               hint="Subject slug"
             >
-              <Input
+              <Input mono
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
                 placeholder="biology"
-                className="font-mono"
               />
             </Field>
             <Field label={V.draft_letter} anchor="draft_letter" hint="2 chars">
-              <Input
+              <Input mono
                 value={letter}
                 onChange={(e) => setLetter(e.target.value)}
                 maxLength={2}
-                className="font-mono"
               />
             </Field>
             <Field
@@ -916,11 +913,10 @@ function LearnDocEditor({
               anchor="draft_updated"
               hint="YYYY-MM-DD"
             >
-              <Input
+              <Input mono
                 value={updated}
                 onChange={(e) => setUpdated(e.target.value)}
                 placeholder="2026-07-07"
-                className="font-mono"
               />
             </Field>
           </div>
@@ -963,11 +959,11 @@ function LearnDocEditor({
                 Optional expert view · EduSection[] kinds:{" "}
                 {EDU_SECTION_KINDS.join(", ")}.
               </p>
-              <Textarea
+              <Textarea mono
                 value={sectionsJson}
                 onChange={(event) => setSectionsJson(event.target.value)}
                 rows={16}
-                className="mt-3 font-mono text-xs"
+                className="mt-3"
                 spellCheck={false}
               />
             </details>
@@ -978,11 +974,10 @@ function LearnDocEditor({
             hint='JSON · { "tools": ["flashcards"], "subjects": ["biology"], "exams": ["ap-biology"] }'
             error={!parsedRelated.ok ? parsedRelated.error : undefined}
           >
-            <Textarea
+            <Textarea mono
               value={relatedJson}
               onChange={(e) => setRelatedJson(e.target.value)}
               rows={4}
-              className="font-mono text-xs"
               spellCheck={false}
             />
           </Field>

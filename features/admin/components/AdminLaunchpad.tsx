@@ -5,7 +5,7 @@ import AppLink from "@/components/navigation/AppLink";
 import { IconExternalLink, IconRefresh, IconSearch } from "@tabler/icons-react";
 import { IconResolver } from "@ai-matrx/icons";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   adminDomainHref,
   adminMenuDomains,
@@ -149,13 +149,12 @@ export default function AdminLaunchpad() {
 
           <div className="relative min-w-0 flex-1">
             <IconSearch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <Input
+            <Input adornment="start"
               type="search"
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
               placeholder="Search every admin destination…"
               aria-label="Search administration destinations"
-              className="h-9 border-slate-300 bg-white pl-9 shadow-none dark:border-slate-700 dark:bg-slate-900"
             />
           </div>
 

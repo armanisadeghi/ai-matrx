@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   Select,
   SelectContent,
@@ -117,7 +117,7 @@ export function MoveOccurrenceDialog({
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="h-9 w-40"
+              className="w-40"
               aria-label="New date"
             />
             <Input
@@ -125,14 +125,14 @@ export function MoveOccurrenceDialog({
               step={300}
               value={time}
               onChange={(e) => setTime(e.target.value)}
-              className="h-9 w-32"
+              className="w-32"
               aria-label="New start time"
             />
             <Select
               value={String(duration)}
               onValueChange={(v) => setDuration(Number(v))}
             >
-              <SelectTrigger className="h-9 w-28" aria-label="Duration">
+              <SelectTrigger className="w-28" aria-label="Duration">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

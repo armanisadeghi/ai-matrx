@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 import { UntrustedCount, type CountRead } from "@/components/official/stale-data/UntrustedCount";
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@ai-matrx/design-system";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -478,7 +478,6 @@ const ColumnHeaderMenu = ({
                   value={valueQuery}
                   onChange={(e) => setValueQuery(e.target.value)}
                   placeholder="Search values…"
-                  className="h-7 text-xs"
                   style={{ fontSize: "16px" }}
                 />
               )}
@@ -568,7 +567,6 @@ const ColumnHeaderMenu = ({
                   })
                 }
                 placeholder="From"
-                className="h-8 text-sm"
                 style={{ fontSize: "16px" }}
               />
               <span className="text-xs text-muted-foreground">to</span>
@@ -582,7 +580,6 @@ const ColumnHeaderMenu = ({
                   })
                 }
                 placeholder="To"
-                className="h-8 text-sm"
                 style={{ fontSize: "16px" }}
               />
             </div>
@@ -590,14 +587,13 @@ const ColumnHeaderMenu = ({
 
           {mode === "text" && (
             <div className="relative">
-              <Input
+              <Input adornment="end"
                 autoFocus
                 value={filter?.mode === "text" ? filter.text : ""}
                 onChange={(e) =>
                   onFilterChange({ mode: "text", text: e.target.value })
                 }
                 placeholder="Contains…"
-                className="h-8 pr-7 text-sm"
                 style={{ fontSize: "16px" }}
               />
               {filter?.mode === "text" && filter.text !== "" && (

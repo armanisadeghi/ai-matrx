@@ -85,7 +85,7 @@ export function TextActionResultModal({
 
         <Tabs defaultValue="result" className="flex-1 flex flex-col overflow-hidden">
           {/* phone-ok: three short segments fit a 390px strip; stacking tabs vertically reads as a menu */}
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList fill>
             <TabsTrigger value="result">AI Result</TabsTrigger>
             <TabsTrigger value="original">Original Text</TabsTrigger>
             <TabsTrigger value="compare">Side-by-Side</TabsTrigger>

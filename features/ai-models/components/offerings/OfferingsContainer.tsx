@@ -338,10 +338,9 @@ export default function OfferingsContainer() {
         className="flex-1 flex flex-col overflow-hidden min-h-0"
       >
         <div className="border-b px-3 shrink-0 bg-card">
-          <TabsList className="h-10 bg-transparent p-0 gap-0">
+          <TabsList variant="underline">
             <TabsTrigger
               value="manage"
-              className="h-10 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent text-sm px-4"
             >
               Manage
               <Badge variant="outline" className="ml-1.5 text-xs h-4 px-1">
@@ -350,7 +349,6 @@ export default function OfferingsContainer() {
             </TabsTrigger>
             <TabsTrigger
               value="coverage"
-              className="h-10 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent text-sm px-4"
             >
               Coverage
               {modelsWithoutOffering.length > 0 && (

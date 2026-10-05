@@ -47,7 +47,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { AuthorityRouterDoor } from "@/features/marketing/authority/AuthorityRouterDoor";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -1284,9 +1284,8 @@ export function BacklinksWorkspace({
             >
               <SelectTrigger
                 data-surface-value="refresh_profile"
-                size="sm"
                 aria-label="How deep the next refresh should look"
-                className="h-10 w-52 shrink-0 sm:h-8"
+                className="w-52 shrink-0"
               >
                 <SelectValue />
               </SelectTrigger>
@@ -1321,8 +1320,7 @@ export function BacklinksWorkspace({
               disabled={batchAnalyzing || refreshing}
             >
               <SelectTrigger
-                size="sm"
-                className="h-10 w-20 shrink-0 sm:h-8"
+                className="w-20 shrink-0"
                 aria-label="How many pages to review at a time"
               >
                 <SelectValue />
@@ -1425,7 +1423,7 @@ export function BacklinksWorkspace({
                       }))
                     }
                   >
-                    <SelectTrigger size="sm" className="w-32">
+                    <SelectTrigger className="w-32">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -1448,7 +1446,7 @@ export function BacklinksWorkspace({
                     min={DATAFORSEO_DETAIL_LIMIT_MIN}
                     max={DATAFORSEO_DETAIL_LIMIT_MAX}
                     value={schedule.detailLimit}
-                    className="h-8 w-28"
+                    className="w-28"
                     onChange={(event) =>
                       setSchedule((current) => ({
                         ...current,

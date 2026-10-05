@@ -161,19 +161,19 @@ export default function FeedbackManagementContainer() {
                     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
                             <TabsList>
-                                <TabsTrigger value="feedback" className="gap-2">
+                                <TabsTrigger value="feedback">
                                     <MessageSquare className="w-4 h-4" />
                                     <span className="hidden sm:inline">Feedback</span>
                                 </TabsTrigger>
-                                <TabsTrigger value="work-queue" className="gap-2">
+                                <TabsTrigger value="work-queue">
                                     <ListOrdered className="w-4 h-4" />
                                     <span className="hidden sm:inline">Work Queue</span>
                                 </TabsTrigger>
-                                <TabsTrigger value="announcements" className="gap-2">
+                                <TabsTrigger value="announcements">
                                     <Megaphone className="w-4 h-4" />
                                     <span className="hidden sm:inline">Announcements</span>
                                 </TabsTrigger>
-                                <TabsTrigger value="categories" className="gap-2">
+                                <TabsTrigger value="categories">
                                     <Tag className="w-4 h-4" />
                                     <span className="hidden sm:inline">Categories</span>
                                 </TabsTrigger>

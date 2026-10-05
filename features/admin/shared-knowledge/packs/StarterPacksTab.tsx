@@ -15,7 +15,7 @@ import { useSearchParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Skeleton } from "@ai-matrx/design-system";
 import { Layers, ListChecks, Package, Plus, Search, TreePine, Users } from "lucide-react";
 import { cn } from "@/styles/themes/utils";
@@ -149,11 +149,10 @@ export function StarterPacksTab({ directory }: { directory: SharedKnowledgeDirec
         <div className="mb-2 flex items-center gap-2">
           <div className="relative min-w-0 flex-1">
             <Search className="pointer-events-none absolute left-2 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-            <Input
+            <Input adornment="start"
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
               placeholder="Filter packs…"
-              className="h-8 pl-7 text-sm"
             />
           </div>
           <Button icon={<Plus />} variant="outline" className="shrink-0" onClick={onNewPack} disabled={creating}> New

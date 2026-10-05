@@ -85,19 +85,19 @@ export default function CmsAgentsAdminClient() {
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 min-h-0 flex flex-col">
                 <TabsList className="flex-none w-fit">
-                    <TabsTrigger value="activity" className="text-xs">
+                    <TabsTrigger value="activity">
                         Activity Feed
                     </TabsTrigger>
-                    <TabsTrigger value="pages" className="text-xs">
+                    <TabsTrigger value="pages">
                         Sites &amp; Pages
                     </TabsTrigger>
-                    <TabsTrigger value="policies" className="text-xs">
+                    <TabsTrigger value="policies">
                         Agent Policies
                     </TabsTrigger>
-                    <TabsTrigger value="approvals" className="text-xs">
+                    <TabsTrigger value="approvals">
                         Content Exceptions
                     </TabsTrigger>
-                    <TabsTrigger value="assets" className="text-xs">
+                    <TabsTrigger value="assets">
                         Assets
                     </TabsTrigger>
                 </TabsList>

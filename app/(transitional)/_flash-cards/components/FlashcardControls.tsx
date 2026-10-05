@@ -53,7 +53,7 @@ const FlashcardControls: React.FC<{ flashcardHook: ReturnType<typeof useFlashcar
                         className="w-full sm:w-auto flex-1"> Shuffle
                 </Button>
                 <Select onValueChange={handleSelectChange} value={currentIndex.toString()}>
-                    <SelectTrigger className="w-full sm:w-auto flex-1 hover:scale-105 transition-transform bg-card">
+                    <SelectTrigger className="w-full sm:w-auto flex-1 hover:scale-105">
                         <SelectValue placeholder="Select a flashcard"/>
                     </SelectTrigger>
                     <SelectContent>

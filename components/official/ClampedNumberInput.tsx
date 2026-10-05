@@ -8,7 +8,7 @@
 // so the field can go empty and never shows a leading zero.
 
 import { useEffect, useState } from "react";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { cn } from "@/lib/utils";
 
 type ClampedNumberInputProps = {

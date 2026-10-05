@@ -11,7 +11,7 @@ import React, { useEffect, useState } from 'react';
 import { TabBase } from './TabBase';
 import { usePromptBuilder } from './PromptBuilderContext';
 import { Label } from "@/components/ui/label";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ProTextarea } from "@/components/official/ProTextarea";
 
@@ -70,7 +70,7 @@ export const NewTab: React.FC<NewTabProps> = ({ updateContent }) => {
             Example Select
           </Label>
           <Select>
-            <SelectTrigger id="select-example" className="w-full bg-white dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700">
+            <SelectTrigger id="select-example" className="w-full">
               <SelectValue placeholder="Select an option" />
             </SelectTrigger>
             <SelectContent className="bg-white dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700">

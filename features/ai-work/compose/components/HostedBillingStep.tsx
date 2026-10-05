@@ -29,7 +29,7 @@ import {
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { toast } from "@/lib/toast";
 import { getUserMessage } from "@/lib/api/errors";
@@ -226,7 +226,6 @@ export function HostedBillingStep({
                     aria-label="Claude sign-in code"
                     autoComplete="off"
                     spellCheck={false}
-                    className="h-8 text-base sm:text-sm"
                   />
                   <Button
                     icon={busy === "code" ? (

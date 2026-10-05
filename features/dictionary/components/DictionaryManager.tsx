@@ -12,7 +12,7 @@ import {
   Plus, Search, Trash2, Pencil, MessageSquare, ChevronDown, Download, Upload,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -196,11 +196,10 @@ export function DictionaryManager({ level, ownerId, ownerName, canEdit = true, e
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative flex-1 min-w-[180px]">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
+          <Input adornment="start"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={`Search ${entries.length} term${entries.length === 1 ? "" : "s"}…`}
-            className="pl-8 h-9"
             style={{ fontSize: "16px" }}
           />
         </div>

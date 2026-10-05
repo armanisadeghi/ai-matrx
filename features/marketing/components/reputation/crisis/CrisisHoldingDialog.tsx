@@ -24,7 +24,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -91,7 +91,7 @@ function Choice({
 }) {
   return (
     <Select value={value} onValueChange={onChange}>
-      <SelectTrigger id={id} className="h-9">
+      <SelectTrigger id={id}>
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
@@ -122,7 +122,6 @@ export function CrisisIntakeForm({
       onChange={(e) => set(key, e.target.value as never)}
       rows={rows}
       disabled={disabled}
-      className="text-base sm:text-sm"
     />
   );
   return (
@@ -141,11 +140,10 @@ export function CrisisIntakeForm({
             value={form.first_known_at}
             onChange={(e) => set("first_known_at", e.target.value)}
             disabled={disabled}
-            className="text-base sm:text-sm"
           />
         </Field>
         <Field id="crisis-org" label="Organization name, exactly">
-          <Input id="crisis-org" value={form.org_name} onChange={(e) => set("org_name", e.target.value)} disabled={disabled} className="text-base sm:text-sm" />
+          <Input id="crisis-org" value={form.org_name} onChange={(e) => set("org_name", e.target.value)} disabled={disabled} />
         </Field>
         <Field id="crisis-role" label="Your role">
           <Input
@@ -154,7 +152,6 @@ export function CrisisIntakeForm({
             onChange={(e) => set("person_role", e.target.value)}
             placeholder="e.g. Founder"
             disabled={disabled}
-            className="text-base sm:text-sm"
           />
         </Field>
       </div>
@@ -197,7 +194,7 @@ export function CrisisIntakeForm({
               value={p.name}
               onChange={(e) => set("people_involved", form.people_involved.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))}
               disabled={disabled}
-              className="h-8 w-40 text-base sm:text-sm"
+              className="w-40"
             />
             <Input
               aria-label="Role"
@@ -205,7 +202,7 @@ export function CrisisIntakeForm({
               value={p.role}
               onChange={(e) => set("people_involved", form.people_involved.map((x, j) => (j === i ? { ...x, role: e.target.value } : x)))}
               disabled={disabled}
-              className="h-8 w-32 text-base sm:text-sm"
+              className="w-32"
             />
             <label className="flex items-center gap-1 text-xs">
               <Checkbox
@@ -250,15 +247,14 @@ export function CrisisIntakeForm({
           value={form.regulatory_exposure ?? ""}
           onChange={(e) => set("regulatory_exposure", e.target.value)}
           disabled={disabled}
-          className="text-base sm:text-sm"
         />
       </Field>
       <div className="grid gap-3 sm:grid-cols-2">
         <Field id="crisis-spokes" label="Spokesperson" hint="From the brand's facts; change it if someone else will speak.">
-          <Input id="crisis-spokes" value={form.spokesperson ?? ""} onChange={(e) => set("spokesperson", e.target.value)} disabled={disabled} className="text-base sm:text-sm" />
+          <Input id="crisis-spokes" value={form.spokesperson ?? ""} onChange={(e) => set("spokesperson", e.target.value)} disabled={disabled} />
         </Field>
         <Field id="crisis-contact" label="Press contact">
-          <Input id="crisis-contact" value={form.press_contact ?? ""} onChange={(e) => set("press_contact", e.target.value)} disabled={disabled} className="text-base sm:text-sm" />
+          <Input id="crisis-contact" value={form.press_contact ?? ""} onChange={(e) => set("press_contact", e.target.value)} disabled={disabled} />
         </Field>
       </div>
       <details>

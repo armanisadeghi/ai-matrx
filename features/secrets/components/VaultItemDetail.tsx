@@ -1625,11 +1625,10 @@ function RecoveryCodesSection({
           explicitly reveal them.
         </p>
       </div>
-      <Textarea
+      <Textarea mono
         value={newCodes}
         onChange={(event) => setNewCodes(event.target.value)}
         rows={5}
-        className="font-mono"
         placeholder="Paste one recovery code per line"
         autoComplete="off"
         spellCheck={false}
@@ -1768,12 +1767,11 @@ function StoredRecoveryCodes({
           <Label htmlFor={`replace-recovery-codes-${field.id}`}>
             Replace all recovery codes
           </Label>
-          <Textarea
+          <Textarea mono
             id={`replace-recovery-codes-${field.id}`}
             value={replacement}
             onChange={(event) => setReplacement(event.target.value)}
             rows={4}
-            className="font-mono"
             placeholder="Paste the complete new set, one code per line"
             autoComplete="off"
             spellCheck={false}
@@ -2302,7 +2300,7 @@ function DestinationSection({
                   })
                 }
               >
-                <SelectTrigger className="h-7 text-xs">
+                <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -2596,7 +2594,7 @@ function SharePanel({
               void actions.setAccessMode(item.id, next);
             }}
           >
-            <SelectTrigger className="h-8 text-xs">
+            <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -2620,7 +2618,7 @@ function SharePanel({
           <div className="flex flex-wrap items-center gap-2">
             <Select value={orgTarget} onValueChange={setOrgTarget}>
               <SelectTrigger
-                className="h-8 min-w-40 flex-1 text-xs"
+                className="min-w-40 flex-1"
                 aria-label="Organization"
               >
                 <SelectValue placeholder="Choose an organization" />
@@ -2645,7 +2643,7 @@ function SharePanel({
               onValueChange={(v) => setOrgPermission(v as "use" | "editor")}
             >
               <SelectTrigger
-                className="h-8 w-36 text-xs"
+                className="w-36"
                 aria-label="Permission in the organization vault"
               >
                 <SelectValue />
@@ -2910,7 +2908,7 @@ function PrincipalPicker({
       <div className="flex flex-wrap items-center gap-2">
         <Select value={target} onValueChange={setTarget}>
           <SelectTrigger
-            className="h-8 min-w-48 flex-1 text-xs"
+            className="min-w-48 flex-1"
             aria-label="Destination"
           >
             <SelectValue

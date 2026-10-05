@@ -31,7 +31,7 @@ import {
   SelectGroup,
   SelectItem,
   SelectLabel,
-  SelectTrigger,
+  SelectTriggerLegacy as SelectTrigger,
 } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";

@@ -10,7 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { MarketingComingSoon } from "@/features/marketing/components/MarketingComingSoon";
 import { assertGoogleAdsCampaignActive } from "@/features/marketing/google/ads-campaign";
@@ -335,7 +335,6 @@ export function GoogleAdsWorkspace() {
               <Label htmlFor="google-ads-start">Start</Label>
               <Input
                 id="google-ads-start"
-                className="h-11"
                 type="date"
                 value={startDate}
                 onChange={(event) => setStartDate(event.target.value)}
@@ -345,7 +344,6 @@ export function GoogleAdsWorkspace() {
               <Label htmlFor="google-ads-end">End</Label>
               <Input
                 id="google-ads-end"
-                className="h-11"
                 type="date"
                 value={endDate}
                 onChange={(event) => setEndDate(event.target.value)}

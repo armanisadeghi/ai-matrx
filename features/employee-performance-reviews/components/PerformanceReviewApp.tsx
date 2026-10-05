@@ -4,7 +4,7 @@
 
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { useRef, useState } from "react";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -356,11 +356,10 @@ export default function PerformanceReviewApp({
             </Button>
             <div className="relative">
               <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-              <Input
+              <Input adornment="start"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search reviews…"
-                className="h-8 pl-8 text-base sm:text-xs"
               />
             </div>
           </div>
@@ -447,7 +446,7 @@ export default function PerformanceReviewApp({
               value={store.activeId ?? undefined}
               onValueChange={store.selectReview}
             >
-              <SelectTrigger className="min-w-0 flex-1 text-base">
+              <SelectTrigger className="min-w-0 flex-1">
                 <SelectValue placeholder="Choose a review" />
               </SelectTrigger>
               <SelectContent>
@@ -648,7 +647,6 @@ export default function PerformanceReviewApp({
                           store.updateField("employeeName", e.target.value)
                         }
                         placeholder="e.g. Kendall Sampson"
-                        className="text-base sm:text-sm"
                       />
                     </Field>
                     <Field label={L.job_title} anchor="job_title">
@@ -658,7 +656,6 @@ export default function PerformanceReviewApp({
                           store.updateField("title", e.target.value)
                         }
                         placeholder="e.g. VP of Procurement"
-                        className="text-base sm:text-sm"
                       />
                     </Field>
                     <Field label={L.department} anchor="department">
@@ -668,7 +665,6 @@ export default function PerformanceReviewApp({
                           store.updateField("department", e.target.value)
                         }
                         placeholder="e.g. Procurement"
-                        className="text-base sm:text-sm"
                       />
                     </Field>
                     <Field label={L.date_of_hire} anchor="date_of_hire">
@@ -678,7 +674,6 @@ export default function PerformanceReviewApp({
                         onChange={(e) =>
                           store.updateField("dateOfHire", e.target.value)
                         }
-                        className="text-base sm:text-sm"
                       />
                     </Field>
                     <Field label={L.review_period} anchor="review_period">
@@ -688,7 +683,6 @@ export default function PerformanceReviewApp({
                           store.updateField("reviewPeriod", e.target.value)
                         }
                         placeholder="e.g. Jan–Dec 2025"
-                        className="text-base sm:text-sm"
                       />
                     </Field>
                     <Field
@@ -698,7 +692,6 @@ export default function PerformanceReviewApp({
                       <Input
                         type="date"
                         value={r.dateOfEvaluation}
-                        className="text-base sm:text-sm"
                         onChange={(e) =>
                           store.updateField("dateOfEvaluation", e.target.value)
                         }

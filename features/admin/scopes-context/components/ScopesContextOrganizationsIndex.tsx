@@ -21,7 +21,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { Building2, Search, Tags } from "lucide-react";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { AdminPageCapture } from "@/components/agent-copy/page-capture/AdminPageCapture";
 import { scopesService } from "@/features/scopes/service/scopesService";
 import type { AdminOrganizationDirectory, AdminOrganizationRow } from "@/features/admin/users/types";
@@ -167,11 +167,10 @@ export function ScopesContextOrganizationsIndex({
 
       <div className="relative max-w-sm">
         <Search className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-        <Input
+        <Input adornment="start"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search organizations…"
-          className="pl-8"
           aria-label="Search organizations"
         />
       </div>

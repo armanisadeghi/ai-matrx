@@ -25,7 +25,7 @@ import {
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   Select,
   SelectContent,
@@ -186,7 +186,7 @@ export function KeywordRankingsTab({
                 if (nextMode?.location === "none") setLocationName("");
               }}
             >
-              <SelectTrigger className="h-8 min-w-0 text-xs">
+              <SelectTrigger className="min-w-0">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -204,7 +204,6 @@ export function KeywordRankingsTab({
               {selectedMode?.location === "required" ? " (required)" : ""}
             </span>
             <Input
-              className="h-8 text-xs"
               value={locationName}
               onChange={(event) => setLocationName(event.target.value)}
               placeholder="Los Angeles, California"
@@ -403,7 +402,7 @@ export function KeywordSerpTab({
       </div>
       {resultPageTargets.length > 1 ? (
         <Select value={target.target_id} onValueChange={setSelectedTargetId}>
-          <SelectTrigger className="h-8 w-full min-w-48 text-xs sm:w-auto">
+          <SelectTrigger className="w-full min-w-48 sm:w-auto">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

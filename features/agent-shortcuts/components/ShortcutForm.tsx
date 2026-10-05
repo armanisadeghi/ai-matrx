@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
@@ -489,7 +489,6 @@ export function ShortcutForm({
             value={formData.label}
             onChange={(e) => handleChange("label", e.target.value)}
             placeholder="Shortcut name"
-            className="h-9 text-[16px]"
             disabled={saving}
           />
         </div>
@@ -521,7 +520,6 @@ export function ShortcutForm({
               handleChange("keyboardShortcut", e.target.value || null)
             }
             placeholder="Ctrl+Shift+K"
-            className="h-9 text-[16px]"
             disabled={saving}
           />
         </div>
@@ -729,7 +727,7 @@ export function ShortcutForm({
             }
             disabled={saving}
           >
-            <SelectTrigger id="display-mode" className="h-9">
+            <SelectTrigger id="display-mode">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -792,7 +790,7 @@ export function ShortcutForm({
               }
               disabled={saving || !formData.showVariablePanel}
             >
-              <SelectTrigger id="variables-panel-style" className="h-9">
+              <SelectTrigger id="variables-panel-style">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -836,7 +834,6 @@ export function ShortcutForm({
               }
               placeholder="Any special instructions?"
               disabled={saving || !formData.showPreExecutionGate}
-              className="h-9 text-[16px]"
             />
           </div>
           <div className="space-y-1.5">

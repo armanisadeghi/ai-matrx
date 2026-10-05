@@ -50,7 +50,7 @@ import { Button } from "@/components/ui/button";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { ProTextarea } from "@/components/official/ProTextarea";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { cn } from "@/lib/utils";
 import {
   SOURCE_OPTIONS,
@@ -343,7 +343,6 @@ function SourceStage({
                   }
                   placeholder="https://…/document.pdf"
                   inputMode="url"
-                  className="h-10"
                 />
                 {urls.length > 1 && (
                   <Button

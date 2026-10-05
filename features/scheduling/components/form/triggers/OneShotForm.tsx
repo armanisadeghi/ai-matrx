@@ -2,7 +2,7 @@
 
 "use client";
 
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 

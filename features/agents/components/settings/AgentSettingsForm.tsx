@@ -12,7 +12,7 @@ import {
 import { DEFAULT_AGENT_CATALOG_LABELS } from "@ai-matrx/agents/catalog";
 import { saveAgentField } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { AgentCategoryPicker } from "@/features/agents/components/settings/AgentCategoryPicker";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -378,7 +378,6 @@ export function AgentSettingsForm({
                 value={tagsInput}
                 onChange={(e) => setTagsInput(e.target.value)}
                 placeholder="tag1, tag2..."
-                className="bg-background/50 focus-visible:ring-primary/20"
               />
             </div>
           </div>
@@ -395,7 +394,7 @@ export function AgentSettingsForm({
                 </span>
                 <InfoHint text="Knowledge search boost: 0 none, 10–25 lift, 50+ pin near top, negative demotes; extraction jobs can override." />
               </Label>
-              <Input
+              <Input mono
                 type="number"
                 step={5}
                 min={-50}
@@ -415,7 +414,6 @@ export function AgentSettingsForm({
                   }
                 }}
                 placeholder="0"
-                className="bg-background/50 focus-visible:ring-primary/20 font-mono"
               />
             </div>
           </div>

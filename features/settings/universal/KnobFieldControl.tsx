@@ -37,7 +37,6 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import {
-  Input,
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -46,6 +45,7 @@ import {
   Slider,
   Switch, Button as SurfaceButton,
 } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
@@ -241,11 +241,10 @@ function JsonField({
   }
   return (
     <div className="w-full min-w-0 space-y-2">
-      <Textarea
+      <Textarea mono minHeight={112}
         id={inputId}
         aria-label={labelId ? undefined : `Structured value for ${knob.label}`}
         aria-labelledby={labelId}
-        className="min-h-28 font-mono text-xs"
         value={raw}
         disabled={disabled}
         onChange={(event) => {
@@ -656,7 +655,6 @@ function VoiceChooser({
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search voices"
             aria-label="Search voices"
-            className="h-8"
           />
         </div>
       )}

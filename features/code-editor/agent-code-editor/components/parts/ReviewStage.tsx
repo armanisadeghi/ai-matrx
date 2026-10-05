@@ -18,7 +18,7 @@ import React from "react";
 import dynamic from "next/dynamic";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsListLegacy as TabsList, TabsTriggerLegacy as TabsTrigger } from "@/components/ui/tabs";
 import { Rainbow, GitCompare, File, FileCode, FileText } from "lucide-react";
 import { RichContent } from "@/components/rich-content/RichContent";
 import { DiffView } from "./DiffView";

@@ -9,7 +9,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DemoPageLayout } from "../_components/DemoPageLayout";
@@ -165,14 +165,14 @@ function RenderedContent({ raw }: { raw: Record<string, unknown> }) {
         onValueChange={setActiveTab}
         className="flex-1 flex flex-col overflow-hidden"
       >
-        <TabsList className="w-full justify-start rounded-none border-b border-border h-10 px-2 shrink-0 gap-0.5 overflow-x-auto">
-          <TabsTrigger value="pretty" className="text-xs shrink-0">
+        <TabsList variant="underline" className="w-full justify-start shrink-0 overflow-x-auto">
+          <TabsTrigger value="pretty" className="shrink-0">
             Pretty
           </TabsTrigger>
-          <TabsTrigger value="plain" className="text-xs shrink-0">
+          <TabsTrigger value="plain" className="shrink-0">
             Plain text
           </TabsTrigger>
-          <TabsTrigger value="overview" className="text-xs shrink-0">
+          <TabsTrigger value="overview" className="shrink-0">
             Overview
           </TabsTrigger>
 
@@ -183,7 +183,7 @@ function RenderedContent({ raw }: { raw: Record<string, unknown> }) {
               <TabsTrigger
                 key={key}
                 value={key}
-                className="text-xs shrink-0 gap-1"
+                className="shrink-0"
               >
                 <span className="font-mono">{label}</span>
                 {isEmpty && (
@@ -192,13 +192,13 @@ function RenderedContent({ raw }: { raw: Record<string, unknown> }) {
               </TabsTrigger>
             );
           })}
-          <TabsTrigger value="links" className="text-xs shrink-0">
+          <TabsTrigger value="links" className="shrink-0">
             Links
           </TabsTrigger>
-          <TabsTrigger value="organized" className="text-xs shrink-0">
+          <TabsTrigger value="organized" className="shrink-0">
             Organized
           </TabsTrigger>
-          <TabsTrigger value="structured" className="text-xs shrink-0">
+          <TabsTrigger value="structured" className="shrink-0">
             Structured
           </TabsTrigger>
         </TabsList>
@@ -495,7 +495,7 @@ export default function QuickScrapeDemoPage() {
         onChange={(e) => setUrl(e.target.value)}
         onKeyDown={handleKeyDown}
         disabled={isLoading}
-        className="flex-1 bg-background text-foreground border-border placeholder:text-muted-foreground"
+        className="flex-1"
         style={{ fontSize: "16px" }}
       />
       <Button

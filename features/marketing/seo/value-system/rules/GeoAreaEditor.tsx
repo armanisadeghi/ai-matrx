@@ -52,7 +52,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   Select,
   SelectContent,
@@ -359,7 +359,6 @@ export function GeoAreaEditor({
                 value={form.label}
                 onChange={(e) => set("label", e.target.value)}
                 placeholder="Primary service radius"
-                className="h-8 text-sm"
               />
             </Field>
 
@@ -369,7 +368,7 @@ export function GeoAreaEditor({
                   value={form.areaKind}
                   onValueChange={(v) => set("areaKind", v)}
                 >
-                  <SelectTrigger className="h-8 text-xs">
+                  <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>

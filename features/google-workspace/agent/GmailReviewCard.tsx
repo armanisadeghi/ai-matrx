@@ -16,7 +16,7 @@
 import { useRef, useState } from "react";
 import { Send, ExternalLink, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import type { PendingAsk } from "@ai-matrx/chat/agents/ui-first-tools/redux/pending-asks.slice";
@@ -432,7 +432,6 @@ export function GmailReviewCard({ ask, organizationId, preflight, plan }: GmailR
             value={to}
             onChange={(event) => setTo(event.target.value)}
             disabled={sending}
-            className="text-base"
           />
         </div>
         <div className="grid gap-1.5">
@@ -445,7 +444,6 @@ export function GmailReviewCard({ ask, organizationId, preflight, plan }: GmailR
             onChange={(event) => setCc(event.target.value)}
             placeholder="Separate addresses with commas"
             disabled={sending}
-            className="text-base"
           />
         </div>
         <div className="grid gap-1.5">
@@ -455,7 +453,6 @@ export function GmailReviewCard({ ask, organizationId, preflight, plan }: GmailR
             value={subject}
             onChange={(event) => setSubject(event.target.value)}
             disabled={sending}
-            className="text-base"
           />
         </div>
         <div className="grid gap-1.5">

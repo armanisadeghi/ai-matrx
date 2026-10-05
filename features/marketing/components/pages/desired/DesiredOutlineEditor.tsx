@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import type { DesiredHeadingEntry } from "@/features/marketing/types";
 import { cn } from "@/lib/utils";
 
@@ -126,7 +126,6 @@ export function DesiredOutlineEditor({
               }
             }}
             placeholder={`h${clampLevel(entry.level)} heading`}
-            className="h-7 text-xs"
           />
           {skipsAfter.has(index) ? (
             <Badge variant="warning" className="shrink-0 text-[9px]">

@@ -30,7 +30,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Skeleton } from "@ai-matrx/design-system";
 import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
 import { cn } from "@/lib/utils";
@@ -380,11 +380,10 @@ export function EduNotesHome() {
           <div className="mt-4 flex flex-col gap-2.5">
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
+              <Input adornment="start"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search notes by title, folder, or tag"
-                className="pl-9"
                 aria-label="Search notes"
               />
             </div>

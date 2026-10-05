@@ -35,7 +35,7 @@ import {
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Skeleton } from "@ai-matrx/design-system";
 import { useMediaQuery } from "@ai-matrx/kit/media-query";
 import { useUserOrganizations } from "@/features/organizations/hooks";
@@ -627,7 +627,7 @@ export function VaultWorkspace({
                     }}
                   >
                     <SelectTrigger
-                      className="h-8 w-auto min-w-32"
+                      className="w-auto min-w-32"
                       aria-label="Filter by credential type"
                     >
                       <SelectValue />
@@ -656,11 +656,10 @@ export function VaultWorkspace({
               <div className="flex flex-wrap items-center gap-2">
                 <div className="relative min-w-0 flex-1 basis-40 lg:basis-full">
                   <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
+                  <Input adornment="both"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     placeholder="Search credentials"
-                    className="h-9 pl-8 pr-8"
                     aria-label="Search credentials"
                   />
                   {search && (
@@ -1025,11 +1024,10 @@ export function VaultWorkspace({
 
         <div className="relative min-w-0 flex-1 basis-56">
           <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
+          <Input adornment="both"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search vault"
-            className="h-9 pl-8 pr-8"
             aria-label="Search credentials"
           />
           {search && (
@@ -1052,7 +1050,7 @@ export function VaultWorkspace({
             }
           >
             <SelectTrigger
-              className="h-9 w-auto min-w-32 shrink-0"
+              className="w-auto min-w-32 shrink-0"
               aria-label="Filter by family"
             >
               <SelectValue />

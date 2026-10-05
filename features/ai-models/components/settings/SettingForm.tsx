@@ -2,7 +2,7 @@
 
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import React from "react";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -156,11 +156,10 @@ export default function SettingForm({
     <div className="space-y-3">
       <div className="grid grid-cols-2 gap-3">
         <FormField label="Key" required description="Canonical setting name">
-          <Input
+          <Input mono
             value={data.key}
             onChange={set("key")}
             placeholder="e.g. temperature"
-            className="h-8 text-sm font-mono"
           />
         </FormField>
         <FormField
@@ -168,11 +167,10 @@ export default function SettingForm({
           required
           description="e.g. number, string, boolean, enum, integer"
         >
-          <Input
+          <Input mono
             value={data.value_type}
             onChange={set("value_type")}
             placeholder="e.g. number"
-            className="h-8 text-sm font-mono"
           />
         </FormField>
       </div>
@@ -212,24 +210,22 @@ export default function SettingForm({
           label="Canonical Min"
           description="Lower bound for numeric value types"
         >
-          <Input
+          <Input mono
             type="number"
             value={data.canonical_min}
             onChange={set("canonical_min")}
             placeholder="e.g. 0"
-            className="h-8 text-sm font-mono"
           />
         </FormField>
         <FormField
           label="Canonical Max"
           description="Upper bound for numeric value types"
         >
-          <Input
+          <Input mono
             type="number"
             value={data.canonical_max}
             onChange={set("canonical_max")}
             placeholder="e.g. 2"
-            className="h-8 text-sm font-mono"
           />
         </FormField>
       </div>

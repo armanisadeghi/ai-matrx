@@ -27,7 +27,7 @@ import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -133,7 +133,7 @@ export function RoomHeader({
                     if (e.key === "Enter") void commitRename();
                     if (e.key === "Escape") setEditing(false);
                   }}
-                  className="h-7 w-56 text-base sm:text-sm"
+                  className="w-56"
                   aria-label="Session title"
                 />
                 <Button

@@ -1,7 +1,7 @@
 "use client";
 
 import { GripVertical, Plus, Trash2 } from "lucide-react";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { isDecisionQuestionType, type DecisionQuestion } from "./decision-form";
@@ -28,7 +28,7 @@ export function DecisionQuestionEditor({ questions, onChange }: Props) {
               onChange={(event) => update(index, { ...question, name: event.target.value })}
               aria-label={`Question ${index + 1} name`}
               placeholder="Question name"
-              className="h-8 flex-1 font-medium"
+              className="flex-1"
             />
             <select
               value={question.type}

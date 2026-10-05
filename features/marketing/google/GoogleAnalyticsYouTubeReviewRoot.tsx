@@ -96,7 +96,7 @@ export function GoogleAnalyticsYouTubeReviewRoot() {
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <Select value={preferredSite.id} onValueChange={setSiteId}>
-                  <SelectTrigger className="w-72" size="sm">
+                  <SelectTrigger className="w-72">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>

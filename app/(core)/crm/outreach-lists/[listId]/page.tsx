@@ -1,8 +1,7 @@
-import Link from "next/link";
-import { ChevronRight, Megaphone } from "lucide-react";
+import { Megaphone } from "lucide-react";
 import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { ModuleSignInGate } from "@/features/auth/components/module-landing/ModuleSignInGate";
-import PageHeader from "@/features/shell/components/header/PageHeader";
+import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { OutreachListDetailPage } from "@/features/crm/components/outreach-lists/OutreachListDetailPage";
 
 export const metadata = {
@@ -31,19 +30,14 @@ export default async function CrmOutreachListRoute({
 
   return (
     <>
-      <PageHeader>
-        <div className="flex w-full min-w-0 items-center gap-1.5 px-1 text-sm">
-          <Megaphone className="h-4 w-4 shrink-0 text-muted-foreground" />
-          <Link
-            href="/crm/outreach-lists"
-            className="shrink-0 font-medium text-muted-foreground hover:text-foreground"
-          >
-            Outreach Lists
-          </Link>
-          <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-          <h1 className="truncate font-semibold text-foreground">Outreach list</h1>
-        </div>
-      </PageHeader>
+      <RecordPageHeader
+        backHref="/crm/outreach-lists"
+        parents={[
+          { label: "CRM", href: "/crm" },
+          { label: "Outreach lists", href: "/crm/outreach-lists" },
+        ]}
+        record={{ name: "Outreach list" }}
+      />
       <OutreachListDetailPage listId={listId} />
     </>
   );

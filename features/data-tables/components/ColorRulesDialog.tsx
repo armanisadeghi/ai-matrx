@@ -137,7 +137,7 @@ function TargetSelect({
       value={value}
       onValueChange={(next) => onChange(next === "cell" ? "cell" : "row")}
     >
-      <SelectTrigger className="h-8 w-[9.5rem]" aria-label={ariaLabel}>
+      <SelectTrigger className="w-[9.5rem]" aria-label={ariaLabel}>
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
@@ -291,7 +291,7 @@ export function ColorRulesDialog({
                   );
                 }}
               >
-                <SelectTrigger className="h-8 w-[16rem]" aria-label="Column to color by">
+                <SelectTrigger className="w-[16rem]" aria-label="Column to color by">
                   <SelectValue placeholder="None" />
                 </SelectTrigger>
                 <SelectContent>
@@ -315,7 +315,7 @@ export function ColorRulesDialog({
                   });
                 }}
               >
-                <SelectTrigger className="h-8 w-[14rem]" aria-label="What the color paints">
+                <SelectTrigger className="w-[14rem]" aria-label="What the color paints">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -370,7 +370,7 @@ export function ColorRulesDialog({
                           });
                         }}
                       >
-                        <SelectTrigger className="h-8 w-[12rem]" aria-label="Column">
+                        <SelectTrigger className="w-[12rem]" aria-label="Column">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -392,7 +392,7 @@ export function ColorRulesDialog({
                           });
                         }}
                       >
-                        <SelectTrigger className="h-8 w-[11rem]" aria-label="Condition">
+                        <SelectTrigger className="w-[11rem]" aria-label="Condition">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -410,7 +410,7 @@ export function ColorRulesDialog({
                             value={rule.value ?? ""}
                             onValueChange={(next) => updateRule(rule.id, { value: next })}
                           >
-                            <SelectTrigger className="h-8 w-[12rem]" aria-label="Value">
+                            <SelectTrigger className="w-[12rem]" aria-label="Value">
                               <SelectValue placeholder="Pick an option" />
                             </SelectTrigger>
                             <SelectContent>
@@ -444,7 +444,7 @@ export function ColorRulesDialog({
                           if (isStyleColor(next)) updateRule(rule.id, { color: next });
                         }}
                       >
-                        <SelectTrigger className="h-8 w-[9rem]" aria-label="Color">
+                        <SelectTrigger className="w-[9rem]" aria-label="Color">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>

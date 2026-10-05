@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { Label } from "@/components/ui/label";
@@ -415,11 +415,10 @@ export function McpServersAdminPage() {
             <div className="p-3 border-b border-border">
               <div className="relative">
                 <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                <Input
+                <Input adornment="start"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search servers…"
-                  className="pl-7 h-8 text-xs"
                   style={{ fontSize: "16px" }}
                   data-surface-value="mcp_search"
                 />
@@ -780,19 +779,19 @@ function ServerDetail({
         className="flex flex-col"
       >
         <TabsList
-          className="h-9 self-start"
+          className="self-start"
           data-surface-value="selected_server_active_tab"
         >
-          <TabsTrigger value="tools" className="text-xs">
+          <TabsTrigger value="tools">
             Tools
           </TabsTrigger>
-          <TabsTrigger value="configs" className="text-xs">
+          <TabsTrigger value="configs">
             Configs
           </TabsTrigger>
-          <TabsTrigger value="connections" className="text-xs">
+          <TabsTrigger value="connections">
             Connected users
           </TabsTrigger>
-          <TabsTrigger value="meta" className="text-xs">
+          <TabsTrigger value="meta">
             Metadata
           </TabsTrigger>
         </TabsList>
@@ -1291,11 +1290,10 @@ function ConfigDialog({
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label className="text-xs">Label (unique within server)</Label>
-              <Input
+              <Input mono
                 value={label}
                 onChange={(e) => setLabel(e.target.value)}
                 placeholder="e.g. stdio-default, http-prod"
-                className="font-mono text-sm h-9"
                 style={{ fontSize: "16px" }}
                 disabled={busy}
                 autoFocus
@@ -1308,7 +1306,7 @@ function ConfigDialog({
                 onValueChange={setConfigType}
                 disabled={busy}
               >
-                <SelectTrigger className="h-9">
+                <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -1322,22 +1320,20 @@ function ConfigDialog({
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label className="text-xs">Command</Label>
-              <Input
+              <Input mono
                 value={command}
                 onChange={(e) => setCommand(e.target.value)}
                 placeholder="e.g. npx"
-                className="font-mono text-sm h-9"
                 style={{ fontSize: "16px" }}
                 disabled={busy}
               />
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Args (whitespace-separated)</Label>
-              <Input
+              <Input mono
                 value={argsText}
                 onChange={(e) => setArgsText(e.target.value)}
                 placeholder="e.g. -y @scope/mcp-server"
-                className="font-mono text-sm h-9"
                 style={{ fontSize: "16px" }}
                 disabled={busy}
               />
@@ -1346,22 +1342,20 @@ function ConfigDialog({
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label className="text-xs">npm package</Label>
-              <Input
+              <Input mono
                 value={npmPackage}
                 onChange={(e) => setNpmPackage(e.target.value)}
                 placeholder="@vendor/mcp-server"
-                className="font-mono text-sm h-9"
                 style={{ fontSize: "16px" }}
                 disabled={busy}
               />
             </div>
             <div className="space-y-1">
               <Label className="text-xs">pip package</Label>
-              <Input
+              <Input mono
                 value={pipPackage}
                 onChange={(e) => setPipPackage(e.target.value)}
                 placeholder="vendor-mcp-server"
-                className="font-mono text-sm h-9"
                 style={{ fontSize: "16px" }}
                 disabled={busy}
               />
@@ -1374,7 +1368,6 @@ function ConfigDialog({
                 value={minNode}
                 onChange={(e) => setMinNode(e.target.value)}
                 placeholder="e.g. 20"
-                className="text-sm h-9"
                 style={{ fontSize: "16px" }}
                 disabled={busy}
               />
@@ -1405,11 +1398,10 @@ function ConfigDialog({
             <Label className="text-xs">
               Env schema (JSON array of {`{ key, label, required, secret }`})
             </Label>
-            <Textarea
+            <Textarea mono
               value={envSchemaJson}
               onChange={(e) => setEnvSchemaJson(e.target.value)}
               rows={5}
-              className="font-mono text-xs"
               style={{ fontSize: "13px" }}
               disabled={busy}
             />
@@ -1605,13 +1597,12 @@ function MetaTabEditor({
             Save allowed tools
           </Button>
         </div>
-        <Textarea
+        <Textarea mono
           id={`mcp-tool-allowlist-${currentServer.id}`}
           value={toolAllowlistText}
           onChange={(event) => setToolAllowlistText(event.target.value)}
           placeholder={"search_projects\nget_project"}
           rows={6}
-          className="font-mono text-xs"
           aria-describedby={`mcp-tool-allowlist-help-${currentServer.id}`}
         />
         <p

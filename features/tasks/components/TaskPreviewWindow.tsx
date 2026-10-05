@@ -27,7 +27,7 @@ import {
   DrawerDescription,
   DrawerFooter,
 } from "@/components/ui/drawer";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@ai-matrx/design-system";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
@@ -322,7 +322,7 @@ export default function TaskPreviewWindow({
                   value={row.title}
                   onChange={(e) => patchRow(row.key, "title", e.target.value)}
                   disabled={!row.include}
-                  className="flex-1 h-7 text-xs"
+                  className="flex-1"
                   style={{ fontSize: "16px" }}
                 />
                 <select

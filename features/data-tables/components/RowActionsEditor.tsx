@@ -425,7 +425,7 @@ function ActionForm(props: {
             value={action.color ?? NONE}
             onValueChange={(v) => onChange({ ...action, color: v === NONE ? null : (v as StyleColor) })}
           >
-            <SelectTrigger className="h-9 w-[120px]"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-[120px]"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value={NONE}>Neutral</SelectItem>
               {STYLE_COLORS.map((c) => (
@@ -485,7 +485,7 @@ function ActionForm(props: {
                     if (row) onChange({ ...action, steps: stepsFromRow(row, fields) });
                   }}
                 >
-                  <SelectTrigger className="h-7 w-auto gap-1 text-xs">
+                  <SelectTrigger className="w-auto">
                     <SelectValue placeholder="Start from a row…" />
                   </SelectTrigger>
                   <SelectContent>
@@ -525,7 +525,7 @@ function ActionForm(props: {
           <div className="mb-1 flex items-center gap-2 text-muted-foreground">
             <span>Preview — this row now, and after the action runs:</span>
             <Select value={previewRow?.id ?? ""} onValueChange={setPreviewRowId}>
-              <SelectTrigger className="h-6 w-auto gap-1 text-xs"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="w-auto"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {rows.slice(0, 50).map((r) => (
                   <SelectItem key={r.id} value={r.id}>{nameRow(r)}</SelectItem>
@@ -585,7 +585,7 @@ function StepRow(props: {
   return (
     <div className="grid items-start gap-2 sm:grid-cols-[minmax(0,160px)_120px_minmax(0,1fr)_auto]">
       <Select value={step.field} onValueChange={(v) => onChange({ ...step, field: v } as RowActionStep)}>
-        <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+        <SelectTrigger><SelectValue /></SelectTrigger>
         <SelectContent>
           {options.map((f) => (
             <SelectItem key={f.field_name} value={f.field_name}>{f.display_name}</SelectItem>
@@ -600,7 +600,7 @@ function StepRow(props: {
           else onChange({ field: step.field, set: "formula", expression: "" });
         }}
       >
-        <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+        <SelectTrigger><SelectValue /></SelectTrigger>
         <SelectContent>
           <SelectItem value="value">Set to</SelectItem>
           <SelectItem value="clear">Clear</SelectItem>

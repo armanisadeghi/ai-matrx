@@ -15,7 +15,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { ArrowLeftRight, Check, Plus, Trash2, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { SimpleTooltip } from "@/components/matrx/Tooltip";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { cn } from "@/lib/utils";
@@ -349,7 +349,6 @@ function NodeActions(props: {
             }
           }}
           autoFocus
-          className="h-8 text-base sm:text-sm"
           aria-label="Step name"
         />
         <SimpleTooltip text="Close">
@@ -459,7 +458,6 @@ function EdgeActions(props: {
           }}
           placeholder="Connection label"
           autoFocus
-          className="h-8 text-base sm:text-sm"
           aria-label="Connection label"
         />
         <SimpleTooltip text="Close">

@@ -8,7 +8,7 @@ import { useState } from "react";
 import { toast } from "@/lib/toast";
 import { MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   Select,
   SelectContent,
@@ -174,7 +174,7 @@ export function AddressesCard({
               value={purpose}
               onValueChange={(v) => setPurpose(v as AddressPurpose)}
             >
-              <SelectTrigger className="h-11 text-base capitalize sm:h-7 sm:text-xs">
+              <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -191,7 +191,6 @@ export function AddressesCard({
             <Input
               value={line1}
               onChange={(e) => setLine1(e.target.value)}
-              className="h-11 text-base sm:h-7 sm:text-xs"
               autoFocus
             />
           </label>
@@ -200,7 +199,6 @@ export function AddressesCard({
             <Input
               value={locality}
               onChange={(e) => setLocality(e.target.value)}
-              className="h-11 text-base sm:h-7 sm:text-xs"
             />
           </label>
           <label className="col-span-2 grid gap-0.5 text-xs text-muted-foreground sm:col-span-1">
@@ -208,7 +206,6 @@ export function AddressesCard({
             <Input
               value={region}
               onChange={(e) => setRegion(e.target.value)}
-              className="h-11 text-base sm:h-7 sm:text-xs"
             />
           </label>
           <label className="col-span-2 grid gap-0.5 text-xs text-muted-foreground sm:col-span-1">
@@ -216,7 +213,6 @@ export function AddressesCard({
             <Input
               value={postal}
               onChange={(e) => setPostal(e.target.value)}
-              className="h-11 text-base sm:h-7 sm:text-xs"
             />
           </label>
           <label className="col-span-2 grid gap-0.5 text-xs text-muted-foreground sm:col-span-1">
@@ -226,7 +222,6 @@ export function AddressesCard({
               onChange={(e) => setCountry(e.target.value)}
               placeholder="US"
               maxLength={2}
-              className="h-11 text-base uppercase sm:h-7 sm:text-xs"
             />
           </label>
           <div className="col-span-6 flex justify-end">

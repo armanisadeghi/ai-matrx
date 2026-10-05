@@ -190,7 +190,7 @@ export default function MonacoTestPage() {
             </CardHeader>
             <CardContent>
               <Tabs defaultValue="javascript" className="w-full">
-                <TabsList className="grid w-full grid-cols-7">
+                <TabsList fill>
                   <TabsTrigger value="javascript">JavaScript</TabsTrigger>
                   <TabsTrigger value="typescript">TypeScript</TabsTrigger>
                   <TabsTrigger value="tsx">TSX/React</TabsTrigger>

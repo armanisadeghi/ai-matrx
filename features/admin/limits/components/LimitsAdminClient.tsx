@@ -19,7 +19,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ArrowUpRight } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsListLegacy as TabsList, TabsTriggerLegacy as TabsTrigger } from "@/components/ui/tabs";
 import { AccountAddonsPanel } from "./AccountAddonsPanel";
 import { FeatureKnobsPanel } from "./FeatureKnobsPanel";
 import { PlanAllowancesPanel } from "./PlanAllowancesPanel";

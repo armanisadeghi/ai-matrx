@@ -111,7 +111,7 @@ export function AIHelpDialog(
                         </div>
                     ) : lastContext ? (
                         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col h-full">
-                            <TabsList className="flex w-full overflow-x-auto sm:grid sm:grid-cols-5">
+                            <TabsList fill className="overflow-x-auto">
                                 <TabsTrigger value="ai-ready">
                                     <Cuboid className="h-4 w-4 mr-2"/>
                                     AI Ready

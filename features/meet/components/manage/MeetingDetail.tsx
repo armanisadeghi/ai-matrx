@@ -1064,7 +1064,7 @@ function SettingsSection({
             void save("rec", { recordingPolicy: v as RecordingPolicy })
           }
         >
-          <SelectTrigger className="h-8 w-48" aria-label="Recording">
+          <SelectTrigger className="w-48" aria-label="Recording">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

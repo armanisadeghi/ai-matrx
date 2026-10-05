@@ -174,7 +174,7 @@ export function CrmFoldControl({
             onValueChange={(value) => void changeMode(value as CrmFoldMode)}
             disabled={saving || mode === null}
           >
-            <SelectTrigger className="h-8 w-56 text-xs">
+            <SelectTrigger className="w-56">
               <SelectValue
                 placeholder={loadError ? "Unavailable" : "Loading…"}
               />

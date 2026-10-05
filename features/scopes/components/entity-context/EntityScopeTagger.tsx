@@ -384,7 +384,7 @@ export function EntityScopeTagger(props: EntityScopeTaggerProps) {
                 onValueChange={(v) => setTypeScope(type.id, v)}
               >
                 <SelectTrigger
-                  className="h-9 w-auto min-w-36 gap-1.5"
+                  className="w-auto min-w-36"
                   aria-label={
                     orgLabelOf(type)
                       ? `${type.label_singular} (${orgLabelOf(type)})`

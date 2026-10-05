@@ -42,6 +42,10 @@ const args = process.argv.slice(2);
 const DRY = args.includes("--dry-run");
 const ONLY = (args.find((a) => a.startsWith("--door="))?.slice(7) ?? "").split(",").filter(Boolean);
 const PATHS = args.filter((a) => !a.startsWith("--"));
+/** Shared checkout: `--head-index=<file>` ALSO applies the transform to each changed file's HEAD
+ *  blob and stages that into the given (private) index — so a commit carries only this codemod's
+ *  hunks, never another session's uncommitted work in the same file. */
+const HEAD_INDEX = args.find((a) => a.startsWith("--head-index="))?.slice(13);
 
 /** Areas other lanes own, or the owner froze. Their door imports go to the Legacy export. */
 const EXCLUDED = [
@@ -149,8 +153,8 @@ function lineOf(sf, pos) {
 const census = { generated: new Date().toISOString().slice(0, 10), converted: {}, legacy: [], review: [] };
 for (const d of Object.keys(DOORS)) census.converted[d] = { files: 0, sites: 0 };
 
-function transform(file) {
-  const src = readFileSync(join(ROOT, file), "utf8");
+function transform(file, srcOverride) {
+  const src = srcOverride ?? readFileSync(join(ROOT, file), "utf8");
   const sf = ts.createSourceFile(file, src, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
   const edits = [];
   const excludedWhy = EXCLUDED.some((r) => r.test(file)) ? "excluded area" : BUILDER.has(file) ? "agent builder (frozen)" : null;
@@ -384,6 +388,37 @@ const files = PATHS.length
   ? PATHS
   : execFileSync("git", ["ls-files", "*.tsx"], { cwd: ROOT, encoding: "utf8" }).split("\n").filter(Boolean);
 let changedFiles = 0;
+const STAGE_ONLY = args.includes("--stage-only");
+const headOf = (file) => {
+  try {
+    return execFileSync("git", ["show", `HEAD:${file}`], { cwd: ROOT, encoding: "utf8", maxBuffer: 64 << 20 });
+  } catch {
+    return null;
+  }
+};
+const stage = (file, content) => {
+  const env = { ...process.env, GIT_INDEX_FILE: HEAD_INDEX };
+  const sha = execFileSync("git", ["hash-object", "-w", "--stdin"], { cwd: ROOT, input: content, encoding: "utf8" }).trim();
+  execFileSync("git", ["update-index", "--add", "--cacheinfo", `100644,${sha},${file}`], { cwd: ROOT, env });
+};
+if (STAGE_ONLY) {
+  // Commit-time pass: transform each file's CURRENT HEAD blob and stage it into the private
+  // index. The working tree is not touched.
+  if (!HEAD_INDEX) throw new Error("--stage-only needs --head-index=<file>");
+  const candidates = execFileSync("git", ["grep", "-l", "-E", "@/components/ui/(select|tabs|switch|textarea)\"|<Input\\b", "HEAD", "--", "*.tsx"], { cwd: ROOT, encoding: "utf8" })
+    .split("\n").filter(Boolean).map((l) => l.replace(/^HEAD:/, ""))
+    .filter((f) => !PATHS.length || PATHS.some((p) => f.startsWith(p)));
+  for (const file of candidates) {
+    const head = headOf(file);
+    const r = head == null ? null : transform(file, head);
+    if (r?.changed) {
+      stage(file, r.out);
+      changedFiles++;
+    }
+  }
+  console.log(`[doors-codemod] staged ${changedFiles} file(s) from HEAD into ${HEAD_INDEX}`);
+  process.exit(0);
+}
 for (const file of files) {
   let r;
   try {
@@ -400,9 +435,14 @@ for (const file of files) {
   if (r.changed) {
     changedFiles++;
     if (!DRY) writeFileSync(join(ROOT, file), r.out);
+    if (!DRY && HEAD_INDEX) {
+      const head = headOf(file);
+      const staged = head == null ? null : transform(file, head)?.out;
+      if (staged) stage(file, staged);
+    }
   }
 }
-census.legacy.sort();
+census.legacy = [...new Set(census.legacy)].sort();
 census.review = [...new Set(census.review)].sort();
 if (!DRY) writeFileSync(CENSUS, JSON.stringify(census, null, 2) + "\n");
 console.log(`[doors-codemod] ${DRY ? "DRY RUN — " : ""}${changedFiles} file(s) ${DRY ? "would change" : "changed"}`);

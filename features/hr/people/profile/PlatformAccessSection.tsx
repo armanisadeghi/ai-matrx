@@ -28,7 +28,7 @@ import { useState } from "react";
 import { Copy, KeyRound, Mail, ShieldCheck } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
@@ -137,11 +137,10 @@ export function PlatformAccessSection({
           ) : null}
 
           <div className="flex items-center gap-2">
-            <Input
+            <Input mono
               readOnly
               value={link}
               aria-label="Invitation link"
-              className="h-8 font-mono text-[0.6875rem]"
               onFocus={(event) => event.currentTarget.select()}
             />
             <Button
@@ -186,7 +185,7 @@ export function PlatformAccessSection({
               : "name@company.com"
           }
           aria-label="Email address to invite"
-          className="h-8 max-w-xs text-xs"
+          className="max-w-xs"
           onChange={(event) => setEmail(event.target.value)}
         />
         <Button icon={<KeyRound />} variant="primary" type="button" disabled={issuing} onClick={() => void issue()}>

@@ -2,7 +2,7 @@
 
 import React, {useState, useEffect} from 'react';
 import {colord, Colord} from 'colord';
-import { Input } from '@ai-matrx/design-system';
+import { Input } from "@ai-matrx/design-system/controls";
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select';
 import {Button} from '@/components/ui/button';
 import {Card, CardContent, CardTitle} from '@/components/ui/card';

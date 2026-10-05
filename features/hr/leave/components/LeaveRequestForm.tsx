@@ -22,7 +22,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, CalendarDays, Info, Loader2, Send } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -349,7 +349,7 @@ export function LeaveRequestForm({
               idempotencyKey.current = mintKey();
             }}
           >
-            <SelectTrigger id="leave-policy" className="h-11 md:h-9">
+            <SelectTrigger id="leave-policy">
               <SelectValue placeholder="Choose a leave type" />
             </SelectTrigger>
             <SelectContent>
@@ -376,7 +376,6 @@ export function LeaveRequestForm({
               setDayHours({});
               idempotencyKey.current = mintKey();
             }}
-            className="h-11 md:h-10"
           />
         </div>
 
@@ -392,7 +391,6 @@ export function LeaveRequestForm({
               setDayHours({});
               idempotencyKey.current = mintKey();
             }}
-            className="h-11 md:h-10"
           />
         </div>
 
@@ -445,7 +443,6 @@ export function LeaveRequestForm({
                         [d.date as string]: e.target.value,
                       }))
                     }
-                    className="h-11 md:h-10"
                   />
                 </div>
               ))}
@@ -462,7 +459,7 @@ export function LeaveRequestForm({
             Reason{reasonRequired ? "" : " (optional)"}
           </Label>
           <Select value={reasonCategoryId} onValueChange={setReasonCategoryId}>
-            <SelectTrigger id="leave-reason" className="h-11 md:h-9">
+            <SelectTrigger id="leave-reason">
               <SelectValue placeholder="Choose a reason" />
             </SelectTrigger>
             <SelectContent>

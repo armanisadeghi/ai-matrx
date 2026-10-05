@@ -15,7 +15,7 @@
 import { useMemo, useState } from "react";
 
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -109,7 +109,7 @@ export function AttributesEditor({
             value={verticalId ?? ""}
             onValueChange={(next) => setVerticalId(next)}
           >
-            <SelectTrigger className="h-8 text-sm">
+            <SelectTrigger>
               <SelectValue placeholder="Pick the vertical profile…" />
             </SelectTrigger>
             <SelectContent>
@@ -125,7 +125,7 @@ export function AttributesEditor({
 
       {rawOpen ? (
         <div>
-          <Textarea
+          <Textarea mono minHeight={112}
             value={rawDraft ?? JSON.stringify(attributes, null, 2)}
             onChange={(event) => {
               setRawDraft(event.target.value);
@@ -139,7 +139,6 @@ export function AttributesEditor({
                 );
               }
             }}
-            className="min-h-28 font-mono text-xs"
           />
           {rawError ? (
             <p className="mt-1 text-xs text-destructive">
@@ -201,7 +200,6 @@ export function AttributesEditor({
                           .filter(Boolean),
                       )
                     }
-                    className="h-8 text-sm"
                   />
                 </div>
               );
@@ -214,7 +212,6 @@ export function AttributesEditor({
                 <Input
                   value={String(attributes[key] ?? "")}
                   onChange={(event) => setField(key, event.target.value)}
-                  className="h-8 text-sm"
                 />
               </div>
             );

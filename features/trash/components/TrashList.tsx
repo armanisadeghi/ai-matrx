@@ -305,7 +305,7 @@ export function TrashList({
               setKind(null);
             }}
           >
-            <SelectTrigger className="h-8 w-56" aria-label="Filter by member">
+            <SelectTrigger className="w-56" aria-label="Filter by member">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

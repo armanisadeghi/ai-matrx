@@ -52,7 +52,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { AddToOutreachListDialog } from "@/features/crm/components/outreach-lists/AddToOutreachListDialog";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
@@ -438,7 +438,6 @@ function ImportListDialog({
             value={label}
             onChange={(event) => setLabel(event.target.value)}
             placeholder="What is this list? e.g. Conference sponsors 2026"
-            className="h-8 text-xs"
           />
           <ProTextarea
             value={text}

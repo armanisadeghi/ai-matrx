@@ -541,7 +541,7 @@ export function ExposureAuditClient() {
             table.onStateChange({ ...table.state, page: 1 });
           }}
         >
-          <SelectTrigger className="h-11 w-36 sm:h-8">
+          <SelectTrigger className="w-36">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -555,7 +555,7 @@ export function ExposureAuditClient() {
           value={exposureFilter}
           onValueChange={(value: ExposureFilter) => selectExposure(value)}
         >
-          <SelectTrigger className="h-11 w-52 sm:h-8">
+          <SelectTrigger className="w-52">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

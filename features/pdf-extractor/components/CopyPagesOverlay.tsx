@@ -50,7 +50,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   Dialog,
   DialogContent,
@@ -654,7 +654,7 @@ export function CopyPagesOverlay({
               <label className="block text-[10px] font-medium text-muted-foreground mb-1">
                 Page range
               </label>
-              <Input
+              <Input mono
                 value={pageRange}
                 onChange={(e) => {
                   setPageRange(e.target.value);
@@ -662,7 +662,6 @@ export function CopyPagesOverlay({
                   setErrorMsg(null);
                 }}
                 placeholder={`1-${maxPage}`}
-                className="h-8 text-xs font-mono"
               />
             </div>
 
@@ -671,14 +670,13 @@ export function CopyPagesOverlay({
               <label className="block text-[10px] font-medium text-muted-foreground mb-1">
                 Pages / chunk
               </label>
-              <Input
+              <Input mono
                 value={pagesPerSection}
                 onChange={(e) => {
                   setPagesPerSection(e.target.value);
                   setGenerated(false);
                 }}
                 placeholder="10"
-                className="h-8 text-xs font-mono"
                 type="number"
                 min="1"
               />
@@ -689,7 +687,7 @@ export function CopyPagesOverlay({
               <label className="block text-[10px] font-medium text-muted-foreground mb-1">
                 Overlap
               </label>
-              <Input
+              <Input mono
                 value={overlappingPages}
                 onChange={(e) => {
                   setOverlappingPages(e.target.value);
@@ -697,7 +695,6 @@ export function CopyPagesOverlay({
                   setErrorMsg(null);
                 }}
                 placeholder="0"
-                className="h-8 text-xs font-mono"
                 type="number"
                 min="0"
                 max={Math.max(0, chunkSize - 1)}

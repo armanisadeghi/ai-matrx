@@ -248,12 +248,11 @@ export function ImportIdentifiersDialog({
             </div>
           </div>
 
-          <Textarea
+          <Textarea mono
             value={raw}
             onChange={(e) => setRaw(e.target.value)}
             rows={6}
             placeholder={"SN12345,CUST-0001\nSN12346,CUST-0002"}
-            className="font-mono text-base"
           />
           <div className="flex items-center justify-between gap-2">
             <label className="text-xs text-muted-foreground">

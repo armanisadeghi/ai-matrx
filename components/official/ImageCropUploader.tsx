@@ -47,7 +47,7 @@ import { openFilePicker } from "@/features/files/components/pickers/cloudFilesPi
 import { getAssetForFile } from "@/features/files/api/assets";
 import { extractErrorMessage } from "@/utils/errors";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   useInitialCropController,
   InitialCropViewport,
@@ -260,7 +260,7 @@ function SourcePicker({ onFile, onError, disabled }: SourcePickerProps) {
       {/* URL input */}
       {mode === "url" && (
         <div className="flex items-center gap-2">
-          <Input
+          <Input mono
             type="url"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
@@ -272,7 +272,7 @@ function SourcePicker({ onFile, onError, disabled }: SourcePickerProps) {
             }}
             placeholder="https://example.com/image.jpg"
             disabled={fetching}
-            className="flex-1 h-8 text-xs font-mono"
+            className="flex-1"
             style={{ fontSize: "16px" }}
             autoFocus
           />

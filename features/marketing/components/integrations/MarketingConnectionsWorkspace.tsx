@@ -539,7 +539,7 @@ function MarketingConnectionsContent({ reviewMode }: { reviewMode: boolean }) {
                 value={effectiveSiteId || undefined}
                 onValueChange={setSiteId}
               >
-                <SelectTrigger className="w-full sm:w-80" size="sm">
+                <SelectTrigger className="w-full sm:w-80">
                   <SelectValue
                     placeholder={
                       sites.isLoading
@@ -668,7 +668,7 @@ function MarketingConnectionsContent({ reviewMode }: { reviewMode: boolean }) {
                           value={selectedYoutubeChannelId || undefined}
                           onValueChange={setSelectedYoutubeChannelId}
                         >
-                          <SelectTrigger className="w-full sm:w-96" size="sm">
+                          <SelectTrigger className="w-full sm:w-96">
                             <SelectValue placeholder="Choose an owned channel" />
                           </SelectTrigger>
                           <SelectContent>

@@ -13,7 +13,7 @@
 
 import { Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { SourceResolverPanel } from "@/features/podcasts/generator/components/SourceResolverPanel";
 import type { SourceOption } from "@/features/podcasts/generator/constants";
@@ -58,7 +58,6 @@ export function SourceInput({
             onChange={(e) => onTextChange(e.target.value)}
             placeholder={source.placeholder}
             dir={rtl ? "rtl" : undefined}
-            className="h-12 text-base"
           />
         ) : (
           <ProTextarea

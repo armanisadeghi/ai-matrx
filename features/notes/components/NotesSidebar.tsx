@@ -22,7 +22,8 @@ import {
     XCircle,
 } from 'lucide-react';
 import AdvancedMenu, { MenuItem } from '@/components/official/AdvancedMenu';
-import { Input, Button as SurfaceButton } from '@ai-matrx/design-system';
+import { Button as SurfaceButton } from '@ai-matrx/design-system';
+import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -390,12 +391,11 @@ export function NotesSidebar({
             <div className="flex items-center gap-1 p-1.5 border-b border-border">
                 <div className="relative flex-1">
                     <Search className="absolute left-1.5 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
-                    <Input
+                    <Input adornment="start"
                         type="text"
                         placeholder="Search..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-6 h-6 text-xs bg-card border-border"
                     />
                 </div>
             </div>

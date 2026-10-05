@@ -98,27 +98,27 @@ export function WindowPanelShell({
           className="flex flex-1 flex-col overflow-hidden"
         >
           <TabsList className="mx-2 mt-2 shrink-0 self-start">
-            <TabsTrigger value="browse" className="gap-1.5">
+            <TabsTrigger value="browse">
               <FolderOpen className="h-3.5 w-3.5" />
               Browse
             </TabsTrigger>
-            <TabsTrigger value="search" className="gap-1.5">
+            <TabsTrigger value="search">
               <Search className="h-3.5 w-3.5" />
               Search
             </TabsTrigger>
-            <TabsTrigger value="upload" className="gap-1.5">
+            <TabsTrigger value="upload">
               <Upload className="h-3.5 w-3.5" />
               Upload
             </TabsTrigger>
-            <TabsTrigger value="recent" className="gap-1.5">
+            <TabsTrigger value="recent">
               <Clock className="h-3.5 w-3.5" />
               Recent
             </TabsTrigger>
-            <TabsTrigger value="shared" className="gap-1.5">
+            <TabsTrigger value="shared">
               <Users className="h-3.5 w-3.5" />
               Shared
             </TabsTrigger>
-            <TabsTrigger value="trash" className="gap-1.5">
+            <TabsTrigger value="trash">
               <Trash2 className="h-3.5 w-3.5" />
               Trash
             </TabsTrigger>

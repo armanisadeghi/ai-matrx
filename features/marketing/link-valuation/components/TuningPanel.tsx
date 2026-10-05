@@ -14,7 +14,7 @@
  */
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -76,7 +76,7 @@ function NumberField({
         step={step ?? 0.1}
         value={Number.isFinite(value) ? value : 0}
         onChange={(event) => onChange(Number(event.target.value))}
-        className={`h-7 ${width} text-xs tabular-nums`}
+        className={` ${width} `}
       />
     </span>
   );
@@ -173,7 +173,7 @@ export function TuningPanel({ config, onChange }: Props) {
                     })
                   }
                 >
-                  <SelectTrigger className="h-7 w-40 text-[11px]">
+                  <SelectTrigger className="w-40">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -242,7 +242,7 @@ export function TuningPanel({ config, onChange }: Props) {
                     })
                   }
                 >
-                  <SelectTrigger className="h-7 w-24 text-[11px]">
+                  <SelectTrigger className="w-24">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -474,7 +474,7 @@ export function TuningPanel({ config, onChange }: Props) {
                       patchGate(gate.key, { action: next as GateAction })
                     }
                   >
-                    <SelectTrigger className="h-7 w-28 text-[11px]">
+                    <SelectTrigger className="w-28">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>

@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -148,11 +148,11 @@ function ParamField({
     return (
       <div className="space-y-1">
         {label}
-        <Textarea
+        <Textarea mono minHeight={60}
           value={String(value ?? (param.type === "array" ? "[]" : "{}"))}
           onChange={(e) => onChange(e.target.value)}
           placeholder={param.description}
-          className="min-h-[60px] text-xs font-mono resize-y"
+          className="resize-y"
         />
       </div>
     );
@@ -169,7 +169,6 @@ function ParamField({
             onChange(e.target.value === "" ? "" : Number(e.target.value))
           }
           placeholder={`${param.description}${param.default !== undefined ? ` (default: ${param.default})` : ""}`}
-          className="h-7 text-xs"
         />
       </div>
     );
@@ -178,12 +177,11 @@ function ParamField({
   return (
     <div className="space-y-1">
       {label}
-      <Input
+      <Input mono
         type="text"
         value={String(value ?? "")}
         onChange={(e) => onChange(e.target.value)}
         placeholder={`${param.description}${param.default !== undefined ? ` (default: ${param.default})` : ""}`}
-        className="h-7 text-xs font-mono"
       />
     </div>
   );
@@ -653,11 +651,11 @@ export default function ToolsDemoClient() {
                 defaultValue="result"
                 className="flex-1 flex flex-col overflow-hidden min-h-0"
               >
-                <TabsList className="grid grid-cols-2 h-8 flex-shrink-0">
-                  <TabsTrigger value="result" className="text-xs">
+                <TabsList fill className="flex-shrink-0">
+                  <TabsTrigger value="result">
                     Result JSON
                   </TabsTrigger>
-                  <TabsTrigger value="request" className="text-xs">
+                  <TabsTrigger value="request">
                     Request
                   </TabsTrigger>
                 </TabsList>

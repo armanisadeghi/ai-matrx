@@ -16,7 +16,7 @@ import {
   UploadTapButton,
 } from "@ai-matrx/tap-target/buttons";
 import { PromoteToSiteDialog } from "@/features/html-pages/components/PromoteToSiteDialog";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -513,7 +513,6 @@ export default function HtmlPageEditor({
               markDirty();
             }}
             placeholder="Page title"
-            className="text-base"
             style={{ fontSize: "16px" }}
           />
           <p className="text-[11px] text-muted-foreground mt-1">
@@ -555,7 +554,6 @@ export default function HtmlPageEditor({
               markDirty();
             }}
             placeholder="comma, separated, keywords"
-            className="text-base"
             style={{ fontSize: "16px" }}
           />
         </div>
@@ -564,14 +562,13 @@ export default function HtmlPageEditor({
           <label className="text-sm font-medium block mb-1.5">
             Open Graph image URL
           </label>
-          <Input
+          <Input mono
             value={ogImage}
             onChange={(e) => {
               setOgImage(e.target.value);
               markDirty();
             }}
             placeholder="https://…"
-            className="text-base font-mono"
             style={{ fontSize: "16px" }}
           />
         </div>
@@ -580,14 +577,13 @@ export default function HtmlPageEditor({
           <label className="text-sm font-medium block mb-1.5">
             Canonical URL
           </label>
-          <Input
+          <Input mono
             value={canonicalUrl}
             onChange={(e) => {
               setCanonicalUrl(e.target.value);
               markDirty();
             }}
             placeholder="https://…"
-            className="text-base font-mono"
             style={{ fontSize: "16px" }}
           />
         </div>

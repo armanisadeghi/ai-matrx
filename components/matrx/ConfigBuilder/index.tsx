@@ -13,7 +13,7 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Textarea } from "@/components/ui/textarea";
 import {
     Select,
@@ -248,12 +248,11 @@ const ConfigBuilder = ({ initialConfig, onConfigChange, className }: ConfigBuild
             case "list":
                 return (
                     <div className="relative">
-                        <Textarea
+                        <Textarea mono minHeight={64} maxHeight={64}
                             ref={setValueInputRef}
                             value={value}
                             onChange={(e) => setValue(e.target.value)}
                             onBlur={handleBlur}
-                            className="h-16 font-mono text-xs p-1"
                             placeholder={getPlaceholder()}
                         />
                         <Button
@@ -273,7 +272,6 @@ const ConfigBuilder = ({ initialConfig, onConfigChange, className }: ConfigBuild
                         value={value}
                         onChange={(e) => setValue(e.target.value)}
                         onKeyDown={(e) => handleKeyDown(e, "value")}
-                        className="text-xs h-7"
                         placeholder={getPlaceholder()}
                     />
                 );
@@ -295,12 +293,12 @@ const ConfigBuilder = ({ initialConfig, onConfigChange, className }: ConfigBuild
                             value={field}
                             onChange={(e) => setField(e.target.value)}
                             onKeyDown={(e) => handleKeyDown(e, "field")}
-                            className="flex-1 text-xs h-7"
+                            className="flex-1"
                             placeholder="Field name..."
                             disabled={isEditing}
                         />
                         <Select value={type} onValueChange={(value) => setType(value as ConfigType)}>
-                            <SelectTrigger className="w-20 h-7 text-xs">
+                            <SelectTrigger className="w-20">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -336,7 +334,7 @@ const ConfigBuilder = ({ initialConfig, onConfigChange, className }: ConfigBuild
                             setDeleteKey(value);
                             if (value) setShowDeleteDialog(true);
                         }}>
-                            <SelectTrigger className="flex-1 h-7 text-xs">
+                            <SelectTrigger className="flex-1">
                                 <SelectValue placeholder="Delete" />
                             </SelectTrigger>
                             <SelectContent>
@@ -351,7 +349,7 @@ const ConfigBuilder = ({ initialConfig, onConfigChange, className }: ConfigBuild
                         <Select value="" onValueChange={(value) => {
                             if (value) handleEdit(value);
                         }}>
-                            <SelectTrigger className="flex-1 h-7 text-xs">
+                            <SelectTrigger className="flex-1">
                                 <SelectValue placeholder="Edit" />
                             </SelectTrigger>
                             <SelectContent>

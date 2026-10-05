@@ -5,7 +5,7 @@ import Link from 'next/link';
 import {useRouter, usePathname} from 'next/navigation';
 import {motion} from 'motion/react';
 import {ChevronLeft, Home} from 'lucide-react';
-import {Button} from "@ai-matrx/design-system";
+import {Button} from '@/components/ui/button';
 import {
     Select,
     SelectContent,
@@ -106,7 +106,7 @@ export default function PageSelection({pages, moduleHome, moduleName}: PageSelec
 
                 <div className="w-48">
                     <Select onValueChange={handleNavigation}>
-                        <SelectTrigger className="h-8">
+                        <SelectTrigger>
                             <SelectValue placeholder="Navigate to..."/>
                         </SelectTrigger>
                         <SelectContent>

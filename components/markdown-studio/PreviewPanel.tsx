@@ -209,7 +209,7 @@ export const PreviewPanel = forwardRef<HTMLDivElement, PreviewPanelProps>(
           <Select value={mode} onValueChange={(v) => onModeChange(v as PreviewMode)}>
             <SelectTrigger
               aria-label="Preview mode"
-              className="h-11 w-auto shrink-0 gap-1.5 px-2 text-xs @md:hidden"
+              className="w-auto shrink-0 @md:hidden"
             >
               {/* The closed select names the mode; the icons live in the list. */}
               <SelectValue>{MODE_META[mode].label}</SelectValue>

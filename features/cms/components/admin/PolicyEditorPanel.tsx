@@ -89,7 +89,7 @@ export default function PolicyEditorPanel({ sites, onSiteUpdated }: Props) {
                                                 onValueChange={(v) => handleChange(site, v as AgentWritePolicy)}
                                                 disabled={savingId === site.id}
                                             >
-                                                <SelectTrigger className="h-7 w-[140px] text-xs">
+                                                <SelectTrigger className="w-[140px]">
                                                     {savingId === site.id ? (
                                                         <Loader2 className="h-3.5 w-3.5 animate-spin" />
                                                     ) : (

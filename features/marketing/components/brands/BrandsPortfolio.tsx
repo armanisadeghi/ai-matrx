@@ -31,7 +31,7 @@ import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { RefreshCwTapButton } from "@ai-matrx/tap-target/buttons";
@@ -643,7 +643,7 @@ function BrandCardQueryControls({
         value={state.search}
         onChange={(event) => update({ search: event.target.value, page: 1 })}
         placeholder="Search brand name or website…"
-        className="h-9 min-w-52 flex-1"
+        className="min-w-52 flex-1"
       />
       <label className="sr-only" htmlFor="brand-card-status">
         Filter brands by status

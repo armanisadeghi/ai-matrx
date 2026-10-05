@@ -8,7 +8,7 @@ import { SettingsSection } from "@/components/official/settings/layout/SettingsS
 import { SettingsCallout } from "@/components/official/settings/layout/SettingsCallout";
 import { SettingsReadOnlyValue } from "@/components/official/settings/layout/SettingsReadOnlyValue";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   normalizeUserUrl,
   shortUrlLabel,
@@ -89,14 +89,12 @@ export default function SiteWorkbenchTab() {
               value={draftLabel}
               onChange={(e) => setDraftLabel(e.target.value)}
               placeholder="Label (optional)"
-              className="h-9 text-base"
               style={{ fontSize: "16px" }}
             />
-            <Input
+            <Input mono
               value={draftUrl}
               onChange={(e) => setDraftUrl(e.target.value)}
               placeholder="https://…"
-              className="h-9 font-mono text-base"
               style={{ fontSize: "16px" }}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {

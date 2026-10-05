@@ -636,7 +636,7 @@ function FeedbackItem({
                   value={editType}
                   onValueChange={(v) => setEditType(v as typeof editType)}
                 >
-                  <SelectTrigger className="h-6 w-auto text-xs">
+                  <SelectTrigger className="w-auto">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>

@@ -74,7 +74,7 @@ export function JobPicker({ fileId }: { fileId: string | null }) {
         value={viewedJobId ?? undefined}
         onValueChange={(jobId) => dispatch(viewJobForFile({ fileId, jobId }))}
       >
-        <SelectTrigger className="h-7 text-xs">
+        <SelectTrigger>
           <SelectValue placeholder="Pick a job to view…" />
         </SelectTrigger>
         <SelectContent>

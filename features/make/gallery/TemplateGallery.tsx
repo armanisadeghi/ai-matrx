@@ -212,7 +212,7 @@ function Facet({
 }) {
   return (
     <Select value={value ?? "__all"} onValueChange={(v) => onChange(v === "__all" ? null : v)}>
-      <SelectTrigger className="h-8 w-auto min-w-[8rem] text-xs" aria-label={label} data-make-facet={wordKey}>
+      <SelectTrigger className="w-auto min-w-[8rem]" aria-label={label} data-make-facet={wordKey}>
         <SelectValue placeholder={label} />
       </SelectTrigger>
       <SelectContent>
@@ -489,8 +489,8 @@ function tryItsOf(answer: TemplateDoorAnswer): Record<string, TemplateTryIt> {
   return out;
 }
 
-/** Live progress: every object ticks as the install makes it. */
-function Progress({ run }: { run: Extract<Run, { phase: "running" }> }) {
+/** Live progress: every object ticks as the install makes it (the gallery and the describe box). */
+export function Progress({ run }: { run: { door: "template_install" | "template_uninstall"; answer: TemplateDoorAnswer | null } }) {
   const made = (run.answer?.made ?? []) as MadeObject[];
   const steps = typeof run.answer?.steps === "number" ? run.answer.steps : null;
   const step = run.answer?.next_step ?? 0;

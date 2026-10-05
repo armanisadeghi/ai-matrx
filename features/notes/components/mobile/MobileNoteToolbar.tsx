@@ -3,7 +3,8 @@
 import React, { useState } from "react";
 import { FolderOpen, FolderPlus, Tag as TagIcon, X, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input, Button as SurfaceButton } from "@ai-matrx/design-system";
+import { Button as SurfaceButton } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Badge } from "@/components/ui/badge";
 import type { FolderReference } from "../../types";
 

@@ -441,7 +441,7 @@ function FormChooser({
     );
   return (
     <Select value={value} onValueChange={onChange}>
-      <SelectTrigger className="h-11 w-full sm:h-9 sm:w-64" aria-label="What goes in">
+      <SelectTrigger className="w-full sm:w-64" aria-label="What goes in">
         <SelectValue />
       </SelectTrigger>
       <SelectContent>

@@ -10,7 +10,7 @@ import { useRouter } from "next/navigation";
 import { Network, Plus, Search, Workflow } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Skeleton } from "@ai-matrx/design-system";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
@@ -85,11 +85,11 @@ export function OrchestrasBrowser() {
         <div className="shrink-0 px-4 pb-3 pt-[var(--shell-header-h)]">
           <div className="relative max-w-sm">
             <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-            <Input
+            <Input adornment="start"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search Orchestras…"
-              className="h-9 w-full pl-8"
+              className="w-full"
             />
           </div>
         </div>

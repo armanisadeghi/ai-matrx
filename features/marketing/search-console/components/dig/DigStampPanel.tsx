@@ -33,7 +33,7 @@ import { toast } from "@/lib/toast";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   Select,
   SelectContent,
@@ -326,8 +326,7 @@ export function DigStampPanel({
               }}
             >
               <SelectTrigger
-                size="sm"
-                className="h-7 w-full text-xs"
+                className="w-full"
                 aria-label="Segment group"
               >
                 <SelectValue
@@ -357,14 +356,12 @@ export function DigStampPanel({
                 value={newDimensionLabel}
                 onChange={(e) => setNewDimensionLabel(e.target.value)}
                 placeholder="Group name, e.g. Attention"
-                className="h-7 text-xs"
                 aria-label="New segment group name"
               />
             ) : chosen ? (
               <Select value={valueId} onValueChange={setValueId}>
                 <SelectTrigger
-                  size="sm"
-                  className="h-7 w-full text-xs"
+                  className="w-full"
                   aria-label="Segment"
                 >
                   <SelectValue placeholder="Which segment?" />
@@ -395,7 +392,6 @@ export function DigStampPanel({
               value={newValueLabel}
               onChange={(e) => setNewValueLabel(e.target.value)}
               placeholder="Segment name, e.g. Parked (≤1 impression)"
-              className="h-7 text-xs"
               aria-label="New segment name"
             />
           ) : null}

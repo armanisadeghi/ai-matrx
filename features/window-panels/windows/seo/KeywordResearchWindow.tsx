@@ -344,7 +344,7 @@ function KeywordResearchWindowInner({
                       value={selectedSiteId ?? undefined}
                       onValueChange={setPickedSiteId}
                     >
-                      <SelectTrigger className="h-11 w-56 text-base sm:h-8 sm:text-xs">
+                      <SelectTrigger className="w-56">
                         <SelectValue placeholder="Select a site to research" />
                       </SelectTrigger>
                       <SelectContent>

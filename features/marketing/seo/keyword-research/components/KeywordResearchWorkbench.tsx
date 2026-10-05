@@ -1058,7 +1058,7 @@ export default function KeywordResearchWorkbench() {
             value={selectedSiteId ?? undefined}
             onValueChange={setPickedSiteId}
           >
-            <SelectTrigger className="h-11 w-full text-base sm:w-64">
+            <SelectTrigger className="w-full sm:w-64">
               <SelectValue placeholder="Select a site to research" />
             </SelectTrigger>
             <SelectContent>
@@ -1266,7 +1266,7 @@ export default function KeywordResearchWorkbench() {
                       }
                       disabled={assigning}
                     >
-                      <SelectTrigger className="h-8 w-52 text-xs">
+                      <SelectTrigger className="w-52">
                         {assigning ? (
                           <span className="flex items-center gap-1.5">
                             <Loader2 className="h-3.5 w-3.5 animate-spin" />

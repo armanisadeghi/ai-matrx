@@ -64,7 +64,7 @@ export default function SitePageTreePanel({ sites }: { sites: ClientSiteSummary[
         <div className="flex flex-col h-full">
             <div className="flex-none flex items-center gap-2 px-1 py-2">
                 <Select value={siteId} onValueChange={setSiteId}>
-                    <SelectTrigger className="h-7 w-[200px] text-xs">
+                    <SelectTrigger className="w-[200px]">
                         <SelectValue placeholder="Select a site" />
                     </SelectTrigger>
                     <SelectContent>

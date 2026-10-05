@@ -17,7 +17,7 @@
 import { useMemo, useState } from "react";
 import { CheckCircle2, CircleSlash, Link2, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { cn } from "@/lib/utils";
 import { Panel, RuleNote } from "./preview-chrome";
 import {
@@ -172,12 +172,12 @@ export function ManifestPanel({ readOnly }: { readOnly: boolean }) {
       actions={
         <div className="relative">
           <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input
+          <Input adornment="start"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Filter values"
             aria-label="Filter declared values"
-            className="h-7 w-40 pl-7 text-xs"
+            className="w-40"
           />
         </div>
       }

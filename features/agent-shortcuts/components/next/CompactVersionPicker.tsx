@@ -124,7 +124,7 @@ export function CompactVersionPicker({
         onValueChange={onValueChange}
         disabled={disabled || loading || versions.length === 0}
       >
-        <SelectTrigger className="h-9 text-sm">
+        <SelectTrigger>
           <SelectValue
             placeholder={
               loading

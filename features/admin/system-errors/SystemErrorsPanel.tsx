@@ -16,7 +16,7 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type {
   MatrxColumnDef,
@@ -382,7 +382,7 @@ export default function SystemErrorsPanel() {
             setSourceRevision((revision) => revision + 1);
           }}
           placeholder="Source filter by kind…"
-          className="h-8 min-w-[220px] sm:w-80"
+          className="min-w-[220px] sm:w-80"
           aria-label="Source filter by error kind"
         />
       ),

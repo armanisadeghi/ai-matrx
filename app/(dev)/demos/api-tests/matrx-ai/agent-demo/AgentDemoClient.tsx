@@ -5,7 +5,7 @@ import { formatDurationMs } from "@ai-matrx/kit/format";
 import { useState, useEffect, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -196,18 +196,18 @@ function KVEditor({
       )}
       {pairs.map((pair, i) => (
         <div key={i} className="flex gap-1 items-center">
-          <Input
+          <Input mono
             value={pair.key}
             onChange={(e) => update(i, "key", e.target.value)}
             placeholder="key"
-            className="h-6 text-xs font-mono flex-1 min-w-0"
+            className="flex-1 min-w-0"
           />
           <span className="text-muted-foreground text-xs flex-shrink-0">:</span>
-          <Input
+          <Input mono
             value={pair.value}
             onChange={(e) => update(i, "value", e.target.value)}
             placeholder="value"
-            className="h-6 text-xs font-mono flex-1 min-w-0"
+            className="flex-1 min-w-0"
           />
           <Button
             variant="quiet"
@@ -536,11 +536,10 @@ export default function AgentDemoClient() {
                   <Label className="text-xs font-semibold">
                     Agent ID <span className="text-destructive">*</span>
                   </Label>
-                  <Input
+                  <Input mono
                     value={agentId}
                     onChange={(e) => setAgentId(e.target.value)}
                     placeholder="UUID or slug (e.g. my-research-agent)"
-                    className="h-8 text-xs font-mono"
                   />
                   <p className="text-[10px] text-muted-foreground">
                     Sent as:{" "}
@@ -628,7 +627,6 @@ export default function AgentDemoClient() {
                             value={temperature}
                             onChange={(e) => setTemperature(e.target.value)}
                             placeholder="0.0–2.0"
-                            className="h-7 text-xs"
                           />
                         </div>
                         <div className="space-y-1">
@@ -639,7 +637,6 @@ export default function AgentDemoClient() {
                             value={maxOutputTokens}
                             onChange={(e) => setMaxOutputTokens(e.target.value)}
                             placeholder="e.g. 4096"
-                            className="h-7 text-xs"
                           />
                         </div>
                       </div>
@@ -654,7 +651,7 @@ export default function AgentDemoClient() {
                             setReasoningEffort(v === "__none__" ? "" : v)
                           }
                         >
-                          <SelectTrigger className="h-7 text-xs">
+                          <SelectTrigger>
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -678,11 +675,10 @@ export default function AgentDemoClient() {
                         <Label className="text-[10px] text-muted-foreground">
                           Model Override (ai_model_id)
                         </Label>
-                        <Input
+                        <Input mono
                           value={modelOverride}
                           onChange={(e) => setModelOverride(e.target.value)}
                           placeholder="e.g. gpt-4o (overrides agent default)"
-                          className="h-7 text-xs font-mono"
                         />
                       </div>
 
@@ -700,11 +696,11 @@ export default function AgentDemoClient() {
                             </Badge>
                           )}
                         </div>
-                        <Textarea
+                        <Textarea mono minHeight={60}
                           value={extraOverridesRaw}
                           onChange={(e) => setExtraOverridesRaw(e.target.value)}
                           placeholder='{"top_p": 0.9, "stop_sequences": ["END"]}'
-                          className="min-h-[60px] text-xs font-mono resize-y"
+                          className="resize-y"
                         />
                       </div>
                     </div>
@@ -809,17 +805,17 @@ export default function AgentDemoClient() {
                 defaultValue="text"
                 className="flex-1 flex flex-col overflow-hidden min-h-0"
               >
-                <TabsList className="grid grid-cols-4 h-8 flex-shrink-0">
-                  <TabsTrigger value="text" className="text-xs">
+                <TabsList fill className="flex-shrink-0">
+                  <TabsTrigger value="text">
                     Text Output
                   </TabsTrigger>
-                  <TabsTrigger value="events" className="text-xs">
+                  <TabsTrigger value="events">
                     Stream Events
                   </TabsTrigger>
-                  <TabsTrigger value="usage" className="text-xs">
+                  <TabsTrigger value="usage">
                     Token Usage
                   </TabsTrigger>
-                  <TabsTrigger value="request" className="text-xs">
+                  <TabsTrigger value="request">
                     Request
                   </TabsTrigger>
                 </TabsList>

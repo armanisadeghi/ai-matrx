@@ -104,7 +104,6 @@ export function SettingsDeviceSelect({
       >
         <SelectTrigger
           id={id}
-          size={triggerSize[size]}
           className={widthClass[effectiveWidth]}
         >
           <SelectValue placeholder={defaultOptionLabel} />

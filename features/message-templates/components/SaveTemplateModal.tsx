@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { AutoResizeTextarea } from "@/features/message-templates/components/AutoResizeTextarea";
 import { MobileOverlayWrapper } from "@/components/official/MobileOverlayWrapper";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -143,7 +143,6 @@ export function SaveTemplateModal({
                         value={label}
                         onChange={(e) => setLabel(e.target.value)}
                         placeholder="Template name..."
-                        className="h-9"
                     />
                 </div>
                 <div className="flex items-center gap-1.5">
@@ -165,7 +164,7 @@ export function SaveTemplateModal({
                     onChange={(e) => setTagInput(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTag())}
                     placeholder="Add tags..."
-                    className="flex-1 h-9"
+                    className="flex-1"
                 />
                 <Button variant="primary" onClick={handleAddTag} disabled={!tagInput.trim()}>
                     <Plus className="w-4 h-4" />

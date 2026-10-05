@@ -6,7 +6,7 @@ import { useAppSelector, useAppDispatch } from '@/lib/redux/hooks';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Button as SurfaceButton } from "@ai-matrx/design-system";
-import { Textarea } from '@/components/ui/textarea';
+import { TextareaLegacy as Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ArrowUp } from 'lucide-react';
 import { useAiChat } from '@/hooks/flashcard-app/useAiChat';
@@ -247,7 +247,7 @@ const AiChatModal: React.FC<AiChatModalProps> = ({ isOpen, onClose }) => {
                         />
                         <div className="absolute right-2 bottom-2 flex items-center gap-2">
                             <Select onValueChange={handleFlashcardReference}>
-                                <SelectTrigger className="w-12 h-12 p-0 border-none hover:bg-primary/10 transition-colors">
+                                <SelectTrigger className="w-12">
                                     <WalletCards className="h-10 w-10 text-primary" />
                                     <SelectValue placeholder="" className="hidden" />
                                 </SelectTrigger>

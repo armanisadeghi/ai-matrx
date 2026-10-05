@@ -396,7 +396,7 @@ export function SurfaceBindingsBatchEditor({
               <Copy className="h-3.5 w-3.5" /> Copy from
             </Label>
             <Select value={templateId} onValueChange={onTemplateChange}>
-              <SelectTrigger className="text-sm">
+              <SelectTrigger>
                 <SelectValue placeholder="Start blank" />
               </SelectTrigger>
               <SelectContent>

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { MessageSquarePlus } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -144,12 +144,11 @@ export function AppendMessagePanel({
           <Label htmlFor="append-cid" className="text-xs">
             Conversation ID
           </Label>
-          <Input
+          <Input mono
             id="append-cid"
             placeholder="00000000-0000-0000-0000-000000000000"
             value={conversationId}
             onChange={(e) => setConversationId(e.target.value)}
-            className="h-9 font-mono text-xs"
           />
           <p className="text-[11px] text-muted-foreground">
             Paste any cx_conversation UUID from the database. The route returns
@@ -192,13 +191,12 @@ export function AppendMessagePanel({
           <Label htmlFor="append-metadata" className="text-xs">
             Metadata (JSON, optional)
           </Label>
-          <Textarea
+          <Textarea mono
             id="append-metadata"
             value={metadataJson}
             onChange={(e) => setMetadataJson(e.target.value)}
             rows={3}
             spellCheck={false}
-            className="font-mono text-xs"
           />
         </div>
 

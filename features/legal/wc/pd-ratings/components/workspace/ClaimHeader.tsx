@@ -3,7 +3,7 @@
 import * as React from "react";
 import { ChevronDown, ChevronRight, User } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Switch } from "@/components/ui/switch";
 import {
   Select,
@@ -115,7 +115,6 @@ export function ClaimHeader({ claim, onChange, className }: ClaimHeaderProps) {
               value={claim.applicant_name}
               onChange={(e) => onChange({ applicant_name: e.target.value })}
               placeholder="Jane Doe"
-              className="h-11 text-base"
             />
           </Field>
         </div>
@@ -344,7 +343,7 @@ function CaseInfoSection({
                 value={claim.gender ?? ""}
                 onValueChange={(v) => onChange({ gender: v || null })}
               >
-                <SelectTrigger className="h-11 text-base">
+                <SelectTrigger>
                   <SelectValue placeholder="Select…" />
                 </SelectTrigger>
                 <SelectContent>
@@ -367,7 +366,6 @@ function CaseInfoSection({
                   onChange({ case_number: e.target.value || null })
                 }
                 placeholder="ADJ1234567"
-                className="h-11 text-base"
               />
             </Field>
           </div>
@@ -381,7 +379,6 @@ function CaseInfoSection({
                   onChange({ evaluator_name: e.target.value || null })
                 }
                 placeholder="Dr. Smith, QME"
-                className="h-11 text-base"
               />
             </Field>
           </div>

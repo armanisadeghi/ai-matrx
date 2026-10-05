@@ -341,7 +341,7 @@ export function LoadFromLibraryDialog({
                   void loadVideos(next);
                 }}
               >
-                <SelectTrigger id="samples-library" className="h-11">
+                <SelectTrigger id="samples-library">
                   <SelectValue placeholder="Choose a Library" />
                 </SelectTrigger>
                 <SelectContent>

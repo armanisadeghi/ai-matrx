@@ -36,7 +36,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -1078,7 +1078,6 @@ export default function CompetitorAutopsyWorkspace({
                           id="autopsy-local-keyword"
                           value={autopsyLocalKeyword}
                           placeholder={LOCAL_SEARCH_KEYWORD_PLACEHOLDER}
-                          className="max-sm:text-base"
                           onChange={(event) =>
                             setAutopsyLocalKeyword(event.target.value)
                           }
@@ -1092,7 +1091,6 @@ export default function CompetitorAutopsyWorkspace({
                           id="autopsy-local-area"
                           value={autopsyLocalArea}
                           placeholder={LOCAL_SEARCH_AREA_PLACEHOLDER}
-                          className="max-sm:text-base"
                           onChange={(event) =>
                             setAutopsyLocalArea(event.target.value)
                           }
@@ -1128,7 +1126,7 @@ export default function CompetitorAutopsyWorkspace({
                           setMaxCompetitors(Number(value))
                         }
                       >
-                        <SelectTrigger className="max-sm:text-base">
+                        <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -1148,7 +1146,7 @@ export default function CompetitorAutopsyWorkspace({
                           setPagesPerCompetitor(Number(value))
                         }
                       >
-                        <SelectTrigger className="max-sm:text-base">
+                        <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -1322,7 +1320,6 @@ export default function CompetitorAutopsyWorkspace({
                     id="local-search-keyword"
                     value={localKeyword}
                     placeholder={LOCAL_SEARCH_KEYWORD_PLACEHOLDER}
-                    className="max-sm:text-base"
                     onChange={(event) => setLocalKeyword(event.target.value)}
                   />
                 </div>
@@ -1334,7 +1331,6 @@ export default function CompetitorAutopsyWorkspace({
                     id="local-search-area"
                     value={localArea}
                     placeholder={LOCAL_SEARCH_AREA_PLACEHOLDER}
-                    className="max-sm:text-base"
                     onChange={(event) => setLocalArea(event.target.value)}
                     onKeyDown={(event) => {
                       if (event.key === "Enter") void findLocalCompetitors();

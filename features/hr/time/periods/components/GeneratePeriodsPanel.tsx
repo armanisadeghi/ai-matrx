@@ -30,7 +30,7 @@ import { useState } from "react";
 import { AlertTriangle, CalendarPlus, CheckCircle2, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   Select,
   SelectContent,
@@ -164,7 +164,7 @@ export function GeneratePeriodsPanel({
             </p>
           ) : (
             <Select value={selected} onValueChange={setPayGroupId}>
-              <SelectTrigger id="generate-pay-group" className="mt-1 min-h-[44px]">
+              <SelectTrigger id="generate-pay-group" className="mt-1">
                 <SelectValue placeholder="Choose a pay group" />
               </SelectTrigger>
               <SelectContent>
@@ -196,7 +196,7 @@ export function GeneratePeriodsPanel({
             type="date"
             value={throughDate}
             onChange={(e) => setThroughDate(e.target.value)}
-            className="mt-1 min-h-[44px] w-[11rem]"
+            className="mt-1 w-[11rem]"
           />
         </div>
 

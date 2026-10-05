@@ -4,7 +4,7 @@
 import React, { useId, useState, KeyboardEvent } from "react";
 import { X, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -86,7 +86,7 @@ export function TagInput({
             }
           }}
           placeholder="Type tag..."
-          className="h-5 text-xs px-1.5 min-w-[6rem] w-24 bg-muted border-0 flex-shrink-0"
+          className="min-w-[6rem] w-24 flex-shrink-0"
           autoFocus
           list={suggestions.length > 0 ? suggestionsId : undefined}
         />

@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { cn } from "@/lib/utils";
 import type { MarketingPage, PageSnapshot } from "@/features/marketing/types";
 import { useOpenFilePreviewWindow } from "@/features/overlays/openers/filePreviewWindow";

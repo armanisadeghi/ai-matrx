@@ -17,7 +17,7 @@
 import { useEffect, useState } from "react";
 import { MoreHorizontal, RotateCcw, WalletCards, Loader2 } from "lucide-react";
 import { formatCount } from "@ai-matrx/kit/format";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { Button } from "@/components/ui/button";

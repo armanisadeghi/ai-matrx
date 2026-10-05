@@ -43,7 +43,7 @@ import {
 import { toast } from "@/lib/toast";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Skeleton } from "@ai-matrx/design-system";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
@@ -210,7 +210,6 @@ export function StudyPlanner({
           value={form.title}
           onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
           placeholder="e.g. Master Spanish verb conjugation"
-          className="text-base sm:text-sm"
         />
       </div>
       <div className="flex flex-col gap-1">
@@ -223,7 +222,6 @@ export function StudyPlanner({
           onChange={(e) =>
             setForm((f) => ({ ...f, targetDate: e.target.value }))
           }
-          className="text-base sm:text-sm"
         />
       </div>
       <div className="flex flex-col gap-1">
@@ -234,7 +232,6 @@ export function StudyPlanner({
           value={form.topic}
           onChange={(e) => setForm((f) => ({ ...f, topic: e.target.value }))}
           placeholder="e.g. Spanish verbs"
-          className="text-base sm:text-sm"
         />
       </div>
     </div>

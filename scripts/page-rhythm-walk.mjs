@@ -133,67 +133,80 @@ if (process.env.RHYTHM_LOGIN_URL) {
 } else {
   await signIn(page, ORIGIN, env.AI_ADMIN_USERNAME, env.AI_ADMIN_PASSWORD, "admin");
 }
-for (const scheme of SCHEMES) {
-  await page.emulateMedia({ colorScheme: scheme });
-  for (const route of ROUTES) {
-    for (const width of WIDTHS) {
-      await page.setViewportSize({ width, height: width < 500 ? 812 : 900 });
-      const slug = `${LABEL}-${route.replace(/[^a-z0-9]+/gi, "_").replace(/^_|_$/g, "")}-${width}-${scheme}`;
-      const row = { route, width, scheme };
-      try {
-        // The shared preview restarts under other sessions: retry a refused navigation for 3 minutes.
-        let resp = null;
-        for (let attempt = 0; attempt < 12; attempt += 1) {
-          try {
-            resp = await page.goto(`${ORIGIN}${route}`, { waitUntil: "domcontentloaded", timeout: 180000 });
-            break;
-          } catch (e) {
-            if (attempt === 11) throw e;
-            await sleep(15000);
-          }
+// One load per route × width (the shared preview is slow): light measured + shot, then the
+// same page re-themed dark (prefers-color-scheme follows emulateMedia live) and shot again.
+for (const route of ROUTES) {
+  for (const width of WIDTHS) {
+    await page.emulateMedia({ colorScheme: "light" });
+    await page.setViewportSize({ width, height: width < 500 ? 812 : 900 });
+    const slug = `${LABEL}-${route.replace(/[^a-z0-9]+/gi, "_").replace(/^_|_$/g, "")}-${width}`;
+    const row = { route, width };
+    try {
+      // The shared preview restarts under other sessions: retry a refused navigation for 3 minutes.
+      let resp = null;
+      for (let attempt = 0; attempt < 12; attempt += 1) {
+        try {
+          resp = await page.goto(`${ORIGIN}${route}`, { waitUntil: "domcontentloaded", timeout: 180000 });
+          break;
+        } catch (e) {
+          if (attempt === 11) throw e;
+          await sleep(15000);
         }
-        await page.waitForFunction(() => document.querySelectorAll(".shell-main *").length > 60, null, { timeout: 120000 }).catch(() => undefined);
-        row.status = resp?.status();
-        await page.evaluate((s) => {
-          document.documentElement.classList.toggle("dark", s === "dark");
-          try { localStorage.setItem("theme", s); } catch {}
-        }, scheme);
-        await page.waitForLoadState("networkidle", { timeout: 8000 }).catch(() => undefined);
-        await sleep(2500);
-        row.top = await page.evaluate(measureInPage);
-        await page.screenshot({ path: `${OUT}/${slug}-top.png` });
-        await page.evaluate(scrollAllToEnd);
-        await sleep(1800);
-        await page.evaluate(scrollAllToEnd);
-        await sleep(600);
-        row.bottom = await page.evaluate(measureInPage);
-        await page.screenshot({ path: `${OUT}/${slug}-bottom.png` });
-        // The chat open: the page assistant dock reveals on a scroll or a pointer dwelling at the
-        // bottom edge; then press it so it expands into the composer.
-        await page.mouse.move(width / 2, (width < 500 ? 812 : 900) - 40);
-        await page.mouse.move(width / 2 + 5, (width < 500 ? 812 : 900) - 30);
-        await sleep(1200);
-        const dock = page.locator(".ambient-assistant-dock button, .ambient-assistant-dock input, .ambient-assistant-dock textarea").first();
-        if (await dock.count()) {
-          row.chatClosed = await page.evaluate(measureInPage);
-          await page.screenshot({ path: `${OUT}/${slug}-dock.png` });
-          await dock.click({ timeout: 4000 }).catch(() => undefined);
-          await sleep(1200);
-          await page.evaluate(scrollAllToEnd);
-          await sleep(500);
-          row.chat = await page.evaluate(measureInPage);
-          await page.screenshot({ path: `${OUT}/${slug}-chat.png` });
-          await page.keyboard.press("Escape").catch(() => undefined);
-        }
-      } catch (e) {
-        row.error = String(e).slice(0, 200);
       }
-      results.push(row);
-      const b = row.bottom ?? {};
-      console.log(
-        `${route} ${width} ${scheme}: top=${row.top?.topSpace} topBlock=${row.top?.topBlockTop} cardsTop=${row.top?.cardsTopFromHeader} cardsBelow=${row.top?.cardsBottomToNext} gap=${row.top?.noticeGap} | bottom=${b.bottomSpace} aboveFloat=${b.bottomSpaceAboveFloat} pagerGap=${b.pagerBottomGap} pagerCovered=${b.pagerCovered} float=${b.floatingMeasured} | dock bottom=${row.chatClosed?.bottomSpace} aboveFloat=${row.chatClosed?.bottomSpaceAboveFloat} pagerCovered=${row.chatClosed?.pagerCovered} | chat bottom=${row.chat?.bottomSpace} aboveFloat=${row.chat?.bottomSpaceAboveFloat} pagerCovered=${row.chat?.pagerCovered}${row.error ? " ERR " + row.error : ""}`,
-      );
+      row.status = resp?.status();
+      await page.waitForFunction(() => document.querySelectorAll(".shell-main *").length > 60, null, { timeout: 120000 }).catch(() => undefined);
+      await page.waitForLoadState("networkidle", { timeout: 8000 }).catch(() => undefined);
+      await sleep(3000);
+      row.top = await page.evaluate(measureInPage);
+      await page.screenshot({ path: `${OUT}/${slug}-light-top.png` });
+      if (SCHEMES.includes("dark")) {
+        await page.emulateMedia({ colorScheme: "dark" });
+        await sleep(700);
+        await page.screenshot({ path: `${OUT}/${slug}-dark-top.png` });
+        await page.emulateMedia({ colorScheme: "light" });
+      }
+      await page.evaluate(scrollAllToEnd);
+      await sleep(1500);
+      await page.evaluate(scrollAllToEnd);
+      await sleep(600);
+      row.bottom = await page.evaluate(measureInPage);
+      row.rhythmProbe = await page.evaluate(() => window.__matrxPageRhythmProbe?.() ?? null);
+      await page.screenshot({ path: `${OUT}/${slug}-light-bottom.png` });
+      if (SCHEMES.includes("dark")) {
+        await page.emulateMedia({ colorScheme: "dark" });
+        await sleep(700);
+        await page.screenshot({ path: `${OUT}/${slug}-dark-bottom.png` });
+        await page.emulateMedia({ colorScheme: "light" });
+      }
+      // The chat open: the page assistant dock reveals on a scroll or a pointer dwelling at the
+      // bottom edge; then press it so it expands into the composer.
+      const vh = width < 500 ? 812 : 900;
+      await page.mouse.move(width / 2, vh - 40);
+      await page.mouse.move(width / 2 + 5, vh - 30);
+      await sleep(1200);
+      const dock = page.locator(".ambient-assistant-dock button, .ambient-assistant-dock input, .ambient-assistant-dock textarea").first();
+      if (await dock.count()) {
+        await page.evaluate(scrollAllToEnd);
+        await sleep(400);
+        row.dock = await page.evaluate(measureInPage);
+        await page.screenshot({ path: `${OUT}/${slug}-light-dock.png` });
+        await dock.click({ timeout: 4000 }).catch(() => undefined);
+        await sleep(1200);
+        await page.evaluate(scrollAllToEnd);
+        await sleep(500);
+        row.chat = await page.evaluate(measureInPage);
+        await page.screenshot({ path: `${OUT}/${slug}-light-chat.png` });
+        await page.keyboard.press("Escape").catch(() => undefined);
+      }
+    } catch (e) {
+      row.error = String(e).slice(0, 200);
     }
+    results.push(row);
+    const t = row.top ?? {};
+    const b = row.bottom ?? {};
+    console.log(
+      `${route} ${width}: status=${row.status} top=${t.topSpace} cardsTop=${t.cardsTopFromHeader} cardsBelow=${t.cardsBottomToNext} noticeGap=${t.noticeGap} | bottom=${b.bottomSpace} aboveFloat=${b.bottomSpaceAboveFloat} pagerGap=${b.pagerBottomGap} pagerCovered=${b.pagerCovered} float=${b.floatingMeasured} last=${b.lastEl} | dock aboveFloat=${row.dock?.bottomSpaceAboveFloat} pagerCovered=${row.dock?.pagerCovered} | chat aboveFloat=${row.chat?.bottomSpaceAboveFloat} pagerCovered=${row.chat?.pagerCovered} | probe=${row.rhythmProbe ? row.rhythmProbe.length : "n/a"}${row.error ? " ERR " + row.error.split("\n")[0] : ""}`,
+    );
   }
 }
 await context.close();

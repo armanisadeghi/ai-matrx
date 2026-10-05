@@ -22,7 +22,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { createManualPage } from "@/features/marketing/data/service";
 import {
   searchSitePages,
@@ -132,7 +132,6 @@ export function AddTrackedPageDialog({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search site pages or paste a full URL…"
-            className="h-8 text-xs"
             autoFocus
             aria-label="Page URL"
           />

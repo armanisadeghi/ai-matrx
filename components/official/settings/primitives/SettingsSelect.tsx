@@ -5,7 +5,7 @@ import {
   Select,
   SelectContent,
   SelectItem,
-  SelectTrigger,
+  SelectTriggerLegacy as SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
 import { SettingsRow } from "../SettingsRow";

@@ -280,24 +280,23 @@ function FieldControl({
       );
     case "json":
       return (
-        <Textarea
+        <Textarea mono minHeight={72}
           id={id}
           value={text}
           placeholder={placeholder || "JSON"}
           spellCheck={false}
           onChange={(e) => setText(e.target.value)}
-          className="min-h-[72px] font-mono text-base lg:text-xs"
         />
       );
     default:
       return (
-        <Textarea
+        <Textarea minHeight={36}
           id={id}
           rows={1}
           value={text}
           placeholder={placeholder}
           onChange={(e) => setText(e.target.value)}
-          className="field-sizing-content min-h-9 resize-none py-1.5 text-base lg:text-sm"
+          className="field-sizing-content resize-none"
         />
       );
   }
@@ -344,7 +343,7 @@ function ChoiceControl({
         else onChange({ raw: next, touched: true });
       }}
     >
-      <SelectTrigger id={id} className="h-9 text-base lg:text-sm">
+      <SelectTrigger id={id}>
         <SelectValue />
       </SelectTrigger>
       <SelectContent>

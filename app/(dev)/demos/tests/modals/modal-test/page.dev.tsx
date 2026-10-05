@@ -13,7 +13,7 @@ import {
     CredenzaTitle,
     CredenzaTrigger,
 } from "@/components/ui/credenza-modal/credenza"
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -44,7 +44,7 @@ function OpenModal() {
                     </CredenzaDescription>
                 </CredenzaHeader>
                 <Tabs defaultValue="general" className="w-full">
-                    <TabsList className="grid w-full grid-cols-3">
+                    <TabsList fill>
                         <TabsTrigger value="general">General</TabsTrigger>
                         <TabsTrigger value="password">Password</TabsTrigger>
                         <TabsTrigger value="notifications">Notifications</TabsTrigger>

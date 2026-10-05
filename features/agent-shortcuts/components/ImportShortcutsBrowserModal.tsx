@@ -17,7 +17,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -140,11 +140,10 @@ export function ImportShortcutsBrowserModal({
       <div className="flex items-center gap-2">
         <div className="relative flex-1">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
+          <Input adornment="start"
             placeholder="Search label, description, or owner..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-8"
             disabled={!isAdmin}
           />
         </div>

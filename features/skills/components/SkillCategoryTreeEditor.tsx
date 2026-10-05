@@ -57,7 +57,7 @@ import {
 import { toast } from "@/lib/toast";
 
 import { cn } from "@/lib/utils";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import {
@@ -509,7 +509,7 @@ function SortableCategoryRow({
               setRenaming(false);
             }
           }}
-          className="h-6 text-sm flex-1 min-w-0"
+          className="flex-1 min-w-0"
         />
       ) : (
         <button
@@ -633,11 +633,10 @@ function ColorSwatchButton({
           ))}
         </div>
         <div className="flex items-center gap-1.5">
-          <Input
+          <Input mono
             value={custom}
             onChange={(e) => setCustom(e.target.value)}
             placeholder="#000000"
-            className="h-7 text-xs font-mono"
           />
           <button
             type="button"
@@ -710,11 +709,10 @@ function IconNamePicker({
           <span className="font-mono">Folder</span>)
         </Label>
         <div className="flex items-center gap-1.5 mt-1.5">
-          <Input
+          <Input mono
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             placeholder="Brain"
-            className="h-7 text-xs font-mono"
           />
           <button
             type="button"
@@ -824,16 +822,16 @@ function CreateCategoryRow({
         value={label}
         onChange={(e) => setLabel(e.target.value)}
         placeholder="Label"
-        className="h-7 text-sm flex-1 min-w-0"
+        className="flex-1 min-w-0"
         autoFocus
       />
-      <Input
+      <Input mono
         value={key}
         onChange={(e) => {
           keyTouchedRef.current = true;
           setKey(e.target.value);
         }}
-        className="h-7 text-xs font-mono w-40"
+        className="w-40"
         data-identifier
         placeholder="category_key"
       />

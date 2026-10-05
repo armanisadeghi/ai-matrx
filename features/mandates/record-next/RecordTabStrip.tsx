@@ -131,7 +131,7 @@ export function RecordTabStrip({
         key={tab.id}
         value={tab.id}
         data-tab-measure={measuring ? "" : undefined}
-        className="h-6 flex-none gap-1 px-1.5 text-[11px]"
+        className="flex-none"
       >
         <Icon className="h-3 w-3" />
         {tab.label}
@@ -149,7 +149,7 @@ export function RecordTabStrip({
       >
         <Tabs value={value}>
           <div ref={measureRef} className="inline-flex">
-            <TabsList className="h-7 gap-0 bg-muted/60 p-0.5">
+            <TabsList>
               {tabs.map((tab) => trigger(tab, true))}
             </TabsList>
           </div>
@@ -163,7 +163,7 @@ export function RecordTabStrip({
             if (found) onChange(found.id);
           }}
         >
-          <TabsList className="h-7 gap-0 bg-muted/60 p-0.5">
+          <TabsList>
             {shown.map((tab) => trigger(tab))}
           </TabsList>
         </Tabs>

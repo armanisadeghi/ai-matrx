@@ -813,7 +813,7 @@ export function SetupBridgeSection({
               elapsed={elapsed}
             >
               <Select value={linkChoice} onValueChange={setLinkChoice}>
-                <SelectTrigger className="h-7 w-44 text-xs">
+                <SelectTrigger className="w-44">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

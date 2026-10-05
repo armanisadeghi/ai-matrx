@@ -223,11 +223,11 @@ export function SurfaceDetailPanel({
         onValueChange={(v) => setTab(v as typeof tab)}
         className="flex-1 flex flex-col min-h-0"
       >
-        <TabsList className="h-9 mx-3 mt-2 shrink-0 w-fit">
-          <TabsTrigger value="overview" className="text-xs">
+        <TabsList className="mx-3 mt-2 shrink-0 w-fit">
+          <TabsTrigger value="overview">
             Overview
           </TabsTrigger>
-          <TabsTrigger value="values" className="text-xs">
+          <TabsTrigger value="values">
             Values
             {manifestValues && (
               <Badge variant="outline" className="ml-1.5 text-xs">
@@ -235,13 +235,13 @@ export function SurfaceDetailPanel({
               </Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="agents" className="text-xs">
+          <TabsTrigger value="agents">
             Agents
             <Badge variant="outline" className="ml-1.5 text-xs">
               {surface.agentCount}
             </Badge>
           </TabsTrigger>
-          <TabsTrigger value="tools" className="text-xs">
+          <TabsTrigger value="tools">
             Tools
             <Badge variant="outline" className="ml-1.5 text-xs">
               {surface.toolCount}

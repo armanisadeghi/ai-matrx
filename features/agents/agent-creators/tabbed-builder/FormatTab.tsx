@@ -52,7 +52,7 @@ const FormatContent: React.FC<FormatContentProps> = ({ updateContent }) => {
           value={formatType}
           onValueChange={setFormatType}
         >
-          <SelectTrigger id="format-type" className="w-full bg-white dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700">
+          <SelectTrigger id="format-type" className="w-full">
             <SelectValue placeholder="Select the response format" />
           </SelectTrigger>
           <SelectContent className="bg-white dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700">
@@ -73,7 +73,7 @@ const FormatContent: React.FC<FormatContentProps> = ({ updateContent }) => {
           value={formatLength}
           onValueChange={setFormatLength}
         >
-          <SelectTrigger id="format-length" className="w-full bg-white dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700">
+          <SelectTrigger id="format-length" className="w-full">
             <SelectValue placeholder="Select the desired length" />
           </SelectTrigger>
           <SelectContent className="bg-white dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700">

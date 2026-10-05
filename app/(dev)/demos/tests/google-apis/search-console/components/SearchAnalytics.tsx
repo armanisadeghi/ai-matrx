@@ -147,20 +147,20 @@ export function SearchAnalytics({ token, property }: SearchAnalyticsProps) {
             {/* Data Tables */}
             {!loading && (
                 <Tabs defaultValue="queries" className="space-y-4">
-                    <TabsList className="grid w-full grid-cols-4 bg-textured border-border">
-                        <TabsTrigger value="queries" className="gap-2">
+                    <TabsList fill>
+                        <TabsTrigger value="queries">
                             <BarChart3 className="w-4 h-4" />
                             <span className="hidden sm:inline">Queries</span>
                         </TabsTrigger>
-                        <TabsTrigger value="pages" className="gap-2">
+                        <TabsTrigger value="pages">
                             <FileText className="w-4 h-4" />
                             <span className="hidden sm:inline">Pages</span>
                         </TabsTrigger>
-                        <TabsTrigger value="countries" className="gap-2">
+                        <TabsTrigger value="countries">
                             <Map className="w-4 h-4" />
                             <span className="hidden sm:inline">Countries</span>
                         </TabsTrigger>
-                        <TabsTrigger value="devices" className="gap-2">
+                        <TabsTrigger value="devices">
                             <Smartphone className="w-4 h-4" />
                             <span className="hidden sm:inline">Devices</span>
                         </TabsTrigger>

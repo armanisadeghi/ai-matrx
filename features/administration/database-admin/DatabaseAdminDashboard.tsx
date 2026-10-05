@@ -242,19 +242,19 @@ const DatabaseAdminDashboard = () => {
             <TabsList>
               <TabsTrigger
                 value="functions"
-                className="flex items-center gap-2"
+                className="flex items-center"
               >
                 <SquareFunction className="h-4 w-4" />
                 Functions
               </TabsTrigger>
               <TabsTrigger
                 value="permissions"
-                className="flex items-center gap-2"
+                className="flex items-center"
               >
                 <Key className="h-4 w-4" />
                 Permissions
               </TabsTrigger>
-              <TabsTrigger value="sql" className="flex items-center gap-2">
+              <TabsTrigger value="sql" className="flex items-center">
                 <Database className="h-4 w-4" />
                 SQL Query
               </TabsTrigger>

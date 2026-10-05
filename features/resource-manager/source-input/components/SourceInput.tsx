@@ -25,7 +25,8 @@
 
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { AlertCircle, ListChecks, Loader2, Search, X } from "lucide-react";
-import { Input, SegmentedControl, Textarea } from "@ai-matrx/design-system";
+import { SegmentedControl, Textarea } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
 import { knobInt } from "@/lib/knobs/featureKnobs";
@@ -362,12 +363,11 @@ export function SourceInput({
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <div className="relative min-w-0 flex-1">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
+            <Input adornment="start"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search everything you have"
               aria-label="Search everything you have"
-              className="pl-8 text-base sm:text-sm"
             />
           </div>
           {/* Lanes and the organization filter share ONE row: on a phone the
@@ -529,7 +529,7 @@ function TileArea({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Name (optional)"
-              className="min-w-0 flex-1 text-base sm:text-sm"
+              className="min-w-0 flex-1"
               aria-label="Name (optional)"
             />
             <span className="shrink-0 text-xs text-muted-foreground">{text.length ? formatChars(text.length) : ""}</span>

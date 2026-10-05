@@ -21,7 +21,8 @@ import {
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input, Button as SurfaceButton } from '@ai-matrx/design-system';
+import { Button as SurfaceButton } from '@ai-matrx/design-system';
+import { Input } from "@ai-matrx/design-system/controls";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -309,11 +310,11 @@ export default function CategoriesTab() {
             <Tabs value={activeView} onValueChange={(v) => setActiveView(v as 'grouped' | 'manage')}>
                 <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-4">
                     <TabsList>
-                        <TabsTrigger value="grouped" className="gap-1.5 text-xs">
+                        <TabsTrigger value="grouped">
                             <LayoutGrid className="w-3.5 h-3.5" />
                             By Category
                         </TabsTrigger>
-                        <TabsTrigger value="manage" className="gap-1.5 text-xs">
+                        <TabsTrigger value="manage">
                             <Settings2 className="w-3.5 h-3.5" />
                             Manage Categories
                         </TabsTrigger>
@@ -335,7 +336,7 @@ export default function CategoriesTab() {
                     {/* Filters */}
                     <div className="flex flex-wrap gap-2 items-center">
                         <Select value={filterStatus} onValueChange={(v) => setFilterStatus(v as FeedbackStatus | 'all')}>
-                            <SelectTrigger className="h-8 w-[160px] text-xs">
+                            <SelectTrigger className="w-[160px]">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -345,7 +346,7 @@ export default function CategoriesTab() {
                             </SelectContent>
                         </Select>
                         <Select value={filterType} onValueChange={(v) => setFilterType(v as FeedbackType | 'all')}>
-                            <SelectTrigger className="h-8 w-[140px] text-xs">
+                            <SelectTrigger className="w-[140px]">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -755,22 +756,20 @@ function CategoryForm({
                             slug: editing.id === null ? generateSlug(e.target.value) : editing.slug,
                         })}
                         placeholder="e.g. Authentication"
-                        className="h-8 text-sm"
                     />
                 </div>
                 <div>
                     <label className="text-xs font-medium mb-1 block">Slug</label>
-                    <Input
+                    <Input mono
                         value={editing.slug}
                         onChange={(e) => onChange({ ...editing, slug: e.target.value })}
                         placeholder="auto-generated"
-                        className="h-8 text-sm font-mono"
                     />
                 </div>
                 <div>
                     <label className="text-xs font-medium mb-1 block">Color</label>
                     <Select value={editing.color} onValueChange={(v) => onChange({ ...editing, color: v })}>
-                        <SelectTrigger className="h-8 text-sm">
+                        <SelectTrigger>
                             <SelectValue>
                                 <span className="flex items-center gap-1.5">
                                     <span className={cn('w-3 h-3 rounded-full flex-shrink-0 border', colors.bg, colors.border)} />

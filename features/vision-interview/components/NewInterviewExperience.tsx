@@ -22,7 +22,7 @@ import { ArrowRight, Mic } from "lucide-react";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { toast } from "@/lib/toast";
 import { useDurableDraft } from "@ai-matrx/kit/drafts";
@@ -126,7 +126,7 @@ export function NewInterviewExperience() {
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Name it (optional)"
               aria-label="Interview title (optional)"
-              className="h-11 max-w-xs text-base sm:text-sm"
+              className="max-w-xs"
             />
             <Button
               iconEnd={<ArrowRight aria-hidden />}

@@ -24,7 +24,7 @@ import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import dynamic from "next/dynamic";
 import { CircleAlert, Loader2, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Textarea } from "@/components/ui/textarea";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { Badge } from "@/components/ui/badge";
@@ -261,7 +261,6 @@ function ScaffoldForm({
                 setDrafts((prev) => ({ ...prev, [value.name]: e.target.value }))
               }
               placeholder={value.description || value.name}
-              className="h-7 text-[11px]"
               style={{ fontSize: "13px" }}
             />
           ) : value.kind === "markdown" ? (
@@ -276,14 +275,13 @@ function ScaffoldForm({
               style={{ fontSize: "13px" }}
             />
           ) : (
-            <Textarea
+            <Textarea mono
               value={drafts[value.name] ?? ""}
               onChange={(e) =>
                 setDrafts((prev) => ({ ...prev, [value.name]: e.target.value }))
               }
               placeholder={`JSON for ${value.kind}`}
               rows={3}
-              className="font-mono text-[11px]"
               style={{ fontSize: "13px" }}
             />
           )}

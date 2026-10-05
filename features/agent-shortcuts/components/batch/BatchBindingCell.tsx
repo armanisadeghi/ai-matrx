@@ -14,7 +14,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@ai-matrx/design-system";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Switch } from "@/components/ui/switch";
 import {
   Select,
@@ -281,7 +281,6 @@ export function InlineBindingEditor({
             }
             placeholder="Literal value"
             disabled={disabled}
-            className="h-7 text-xs"
             style={{ fontSize: "13px" }}
           />
         )}
@@ -303,7 +302,6 @@ export function InlineBindingEditor({
             }
             placeholder="Prompt text"
             disabled={disabled}
-            className="h-7 text-xs"
             style={{ fontSize: "13px" }}
           />
         )}

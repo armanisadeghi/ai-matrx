@@ -20,7 +20,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import LoadingSpinner from "@/components/ui/loading-spinner";
@@ -663,7 +663,7 @@ export function ChatImportDialog({
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search conversations"
-                className="h-8 max-w-xs"
+                className="max-w-xs"
               />
               <Button
                 variant="outline"
@@ -691,7 +691,7 @@ export function ChatImportDialog({
                   value={topic}
                   onChange={(e) => setTopic(e.target.value)}
                   placeholder="What is this Rulebook about? (helps the suggestion)"
-                  className="h-8 min-w-0 flex-1"
+                  className="min-w-0 flex-1"
                 />
                 <Button
                   variant="outline"

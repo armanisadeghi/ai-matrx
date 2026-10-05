@@ -50,7 +50,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { getManifest } from "@/features/surfaces/manifests/registry";
 import { EXTRACTOR_CHUNKER_SURFACE_NAME } from "@/features/page-extraction/constants";
 import type { SurfaceValue } from "@ai-matrx/chat/surfaces/types";
@@ -323,7 +323,7 @@ export function VariableMappingEditor({
                 </code>
                 <span className="text-muted-foreground text-[10px]">←</span>
                 {isLiteralMode ? (
-                  <Input
+                  <Input mono
                     value={literalValue}
                     onChange={(e) => {
                       const next = setAgentVarLiteral(
@@ -336,7 +336,7 @@ export function VariableMappingEditor({
                       onChangeExtraInputs(next.extraInputs);
                     }}
                     placeholder="Enter value…"
-                    className="h-6 text-[11px] flex-1 min-w-0 max-w-[55%] font-mono"
+                    className="flex-1 min-w-0 max-w-[55%]"
                     aria-label={`Literal value for ${v.name}`}
                   />
                 ) : (
@@ -695,7 +695,7 @@ function OptionSelect({
   return (
     <Select value={value} onValueChange={onChange}>
       <SelectTrigger
-        className="h-6 text-[11px] flex-1 min-w-0 max-w-[55%]"
+        className="flex-1 min-w-0 max-w-[55%]"
         aria-label="Pick a surface value"
       >
         <SelectValue placeholder="Not mapped" />
@@ -887,10 +887,10 @@ function ExtraInputRow({
   return (
     <div className="space-y-1 rounded-md border border-border/50 bg-muted/20 px-1.5 py-1">
       <div className="flex items-center gap-1.5">
-        <Input
+        <Input mono
           value={row.name}
           onChange={(e) => onPatch({ name: e.target.value })}
-          className="h-6 text-[11px] w-1/3 font-mono"
+          className="w-1/3"
           data-identifier
           placeholder="variable_name"
         />
@@ -914,11 +914,11 @@ function ExtraInputRow({
         />
       </div>
       {isLiteral ? (
-        <Input
+        <Input mono
           value={String(row.value ?? "")}
           onChange={(e) => onPatch({ value: e.target.value })}
           placeholder="Text or number"
-          className="h-6 text-[11px] w-full font-mono"
+          className="w-full"
         />
       ) : (
         <div className="flex flex-col gap-1">

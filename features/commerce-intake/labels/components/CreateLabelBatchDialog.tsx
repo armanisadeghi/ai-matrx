@@ -24,7 +24,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -149,7 +149,6 @@ export function CreateLabelBatchDialog({
               value={purpose}
               onChange={(e) => setPurpose(e.target.value)}
               placeholder="e.g. March intake — shelf A labels"
-              className="text-base"
             />
           </div>
 
@@ -183,7 +182,6 @@ export function CreateLabelBatchDialog({
                 max={maxBatchSize}
                 value={count}
                 onChange={(e) => setCount(e.target.value)}
-                className="text-base"
               />
               <p className="text-xs text-muted-foreground">
                 1–{maxBatchSize} per batch
@@ -191,12 +189,11 @@ export function CreateLabelBatchDialog({
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="lb-prefix">Code prefix (optional)</Label>
-              <Input
+              <Input mono
                 id="lb-prefix"
                 value={prefix}
                 onChange={(e) => setPrefix(e.target.value.toUpperCase())}
                 placeholder="e.g. AGR"
-                className="text-base font-mono"
               />
             </div>
           </div>

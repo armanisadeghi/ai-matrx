@@ -53,12 +53,11 @@ export function VaultEnvImportDialog({
             credential; existing entries with the same key are updated in
             place. Comments and blank lines are ignored.
           </p>
-          <Textarea
+          <Textarea mono
             value={envText}
             onChange={(e) => setEnvText(e.target.value)}
             placeholder={"OPENAI_API_KEY=sk-...\nDATABASE_URL=postgres://..."}
             rows={8}
-            className="font-mono text-xs"
             autoComplete="off"
           />
           <div className="flex flex-wrap items-center justify-between gap-2">

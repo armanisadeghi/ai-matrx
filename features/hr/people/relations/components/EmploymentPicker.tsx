@@ -25,7 +25,7 @@ import { useEffect, useState } from "react";
 import { Loader2, Search, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { fetchHrDirectory } from "@/features/hr/service";
 import { useHrWriteEmployer } from "@/features/hr/shared/hrScope";
 import type { HrDirectoryRow } from "@/features/hr/types";
@@ -141,13 +141,12 @@ export function EmploymentPicker({
     <div className="space-y-1.5">
       <div className="relative">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
+        <Input adornment="start"
           id={id}
           value={query}
           disabled={disabled}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={placeholder}
-          className="min-h-11 pl-9 sm:min-h-9"
           autoComplete="off"
         />
         {loading ? (

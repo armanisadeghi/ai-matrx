@@ -76,7 +76,7 @@ export function ProfileSelector({
           value={activeProfileId === null ? "" : activeProfileId}
           onValueChange={onSelect}
         >
-          <SelectTrigger className="h-9 min-w-0 flex-1">
+          <SelectTrigger className="min-w-0 flex-1">
             <SelectValue placeholder="Choose a Cloud Browser" />
           </SelectTrigger>
           <SelectContent>

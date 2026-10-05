@@ -48,7 +48,7 @@ import type { ColumnFilter } from "@/features/data-tables/column-filters";
 import type { ColumnFacets } from "@/features/data-tables/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
@@ -509,7 +509,7 @@ export default function CollectionItemsPage() {
           <div className="ml-auto flex items-center gap-2">
             <div className="relative">
               <Search className="h-3.5 w-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <Input
+              <Input adornment="start"
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 onKeyDown={(e) => {
@@ -519,7 +519,7 @@ export default function CollectionItemsPage() {
                   }
                 }}
                 placeholder="Search items…"
-                className="text-sm h-8 pl-8 w-44 sm:w-56"
+                className="w-44 sm:w-56"
               />
             </div>
             <Button

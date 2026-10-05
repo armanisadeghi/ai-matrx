@@ -15,7 +15,7 @@
 import { useEffect, useState } from "react";
 import { Plus } from "lucide-react";
 import { toast } from "@/lib/toast";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { formatRelativeTime } from "@/utils/datetime";
@@ -205,7 +205,6 @@ export function OutreachListPickerFields({
               if (event.key === "Enter") onSubmitKey?.();
             }}
             placeholder="Outreach list name"
-            className="h-9 text-sm"
           />
           {lists !== null && lists.length > 0 && (
             <button

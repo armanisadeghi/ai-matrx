@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { TabBase } from './TabBase';
 import { usePromptBuilder } from './PromptBuilderContext';
 import { Label } from "@/components/ui/label";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { promptTemplateSource } from './constants';
@@ -77,7 +77,7 @@ const AudienceContent: React.FC<AudienceContentProps> = ({ updateContent }) => {
           value={audienceType}
           onValueChange={setAudienceType}
         >
-          <SelectTrigger id="audience-type" className="w-full bg-white dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700">
+          <SelectTrigger id="audience-type" className="w-full">
             <SelectValue placeholder="Select target audience" />
           </SelectTrigger>
           <SelectContent className="bg-white dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700">
@@ -100,7 +100,7 @@ const AudienceContent: React.FC<AudienceContentProps> = ({ updateContent }) => {
             placeholder="Describe your specific audience..."
             value={specificAudience}
             onChange={(e) => setSpecificAudience(e.target.value)}
-            className="w-full bg-white dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400"
+            className="w-full"
           />
         </div>
       )}

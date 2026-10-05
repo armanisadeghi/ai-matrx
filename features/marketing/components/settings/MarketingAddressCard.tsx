@@ -19,7 +19,7 @@ import { Check, Link2, Pencil, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
@@ -140,9 +140,9 @@ export function MarketingAddressCard({
               <span className="font-mono text-xs text-muted-foreground">
                 {addressPrefix}
               </span>
-              <Input
+              <Input mono
                 id="marketing-address-key"
-                className="h-8 w-56 font-mono text-xs"
+                className="w-56"
                 autoFocus
                 spellCheck={false}
                 value={draft}

@@ -14,7 +14,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Loader2, Search, FileSpreadsheet } from "lucide-react";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   fetchDerivativeChunks,
   type DerivativeChunkRow,
@@ -193,11 +193,10 @@ export function TableRowsViewer({
       <div className="flex items-center gap-2 border-b border-border/60 px-3 py-2">
         <div className="relative flex-1 max-w-md">
           <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input
+          <Input adornment="start"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search cells across all tables…"
-            className="h-8 pl-7 text-xs"
           />
         </div>
         <span className="ml-auto whitespace-nowrap text-[11px] tabular-nums text-muted-foreground">

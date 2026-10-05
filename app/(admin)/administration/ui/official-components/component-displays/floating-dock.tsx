@@ -147,7 +147,7 @@ const dockItems = [
         onValueChange={handleTabChange}
         className="w-full flex-grow"
       >
-        <TabsList className="mb-4 space-x-2">
+        <TabsList className="mb-4">
           <TabsTrigger value="original">Original FloatingDock</TabsTrigger>
           <TabsTrigger value="balanced">Balanced FloatingDock</TabsTrigger>
         </TabsList>

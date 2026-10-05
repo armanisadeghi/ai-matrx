@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   Popover,
   PopoverContent,
@@ -829,7 +829,7 @@ export default function DeprecatedModelsAudit({
                           Total references
                         </span>
                         <div className="flex items-center gap-1">
-                          <Input
+                          <Input mono
                             value={
                               filterMinTotal !== undefined
                                 ? String(filterMinTotal)
@@ -842,13 +842,13 @@ export default function DeprecatedModelsAudit({
                               );
                             }}
                             placeholder="min"
-                            className="h-8 w-full font-mono text-xs"
+                            className="w-full"
                             aria-label="Minimum total references"
                           />
                           <span className="text-xs text-muted-foreground">
                             to
                           </span>
-                          <Input
+                          <Input mono
                             value={
                               filterMaxTotal !== undefined
                                 ? String(filterMaxTotal)
@@ -861,7 +861,7 @@ export default function DeprecatedModelsAudit({
                               );
                             }}
                             placeholder="max"
-                            className="h-8 w-full font-mono text-xs"
+                            className="w-full"
                             aria-label="Maximum total references"
                           />
                         </div>

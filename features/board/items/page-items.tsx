@@ -21,7 +21,7 @@
 import { useState } from "react";
 import { AppWindow } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { cn } from "@/lib/utils";
 import type { NodeSource } from "../board/document";
 import type { BoardItemType, ItemBodyProps, PickerProps } from "./types";
@@ -109,7 +109,6 @@ function PagePicker({ onPick, onCancel }: PickerProps) {
         value={value}
         onChange={(e) => setValue(e.target.value)}
         placeholder="/meetings or a link to any page here"
-        className="text-base"
       />
       {value.trim() && !path && <p className="text-xs text-destructive">Not a page of this app.</p>}
       <div className="flex justify-end gap-2">

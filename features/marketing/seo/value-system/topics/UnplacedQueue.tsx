@@ -25,7 +25,7 @@
 import { useEffect, useState } from "react";
 import { Loader2, Network } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
 import { useSeoCommandRun } from "@/features/marketing/seo/durable-run/useSeoCommandRun";
@@ -157,7 +157,7 @@ export function UnplacedQueue({
                   value={territory}
                   onChange={(event) => setTerritory(event.target.value)}
                   placeholder="Industry (e.g. itad)"
-                  className="h-7 w-40 text-xs"
+                  className="w-40"
                   aria-label="Industry territory for the offering assigner"
                 />
                 <Button

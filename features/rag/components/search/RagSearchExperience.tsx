@@ -47,7 +47,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -1753,7 +1753,6 @@ function AgentToolPanel({ scope }: { scope: Scope }) {
                 }
               }}
               placeholder={`Query ${i + 1}`}
-              className="h-9"
             />
             {queries.length > 1 && (
               <Button
@@ -2004,11 +2003,10 @@ function AgentSimulationTab({ scope }: { scope: Scope }) {
         >
           <div className="relative flex-1">
             <Brain className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
+            <Input adornment="start"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Enter a query and see EVERYTHING an AI agent sees…"
-              className="pl-9 h-10 text-base"
             />
           </div>
           <Button
@@ -2806,17 +2804,17 @@ export function RagSearchExperience() {
             {/* Below md the strip scrolls; from md up it is never squeezed — the scope chips
                 (which truncate) give way, so no tab (Diagnostics) is ever clipped. */}
             <div className="flex-1 min-w-0 overflow-x-auto overflow-y-hidden scrollbar-hide md:flex-none md:shrink-0 md:overflow-visible">
-              <TabsList className="h-9 inline-flex">
-                <TabsTrigger value="search" className="gap-1.5 shrink-0">
+              <TabsList>
+                <TabsTrigger value="search" className="shrink-0">
                   <SearchIcon className="h-3.5 w-3.5" /> Search
                 </TabsTrigger>
-                <TabsTrigger value="agent-sim" className="gap-1.5 shrink-0">
+                <TabsTrigger value="agent-sim" className="shrink-0">
                   <Brain className="h-3.5 w-3.5" /> Agent Simulation
                 </TabsTrigger>
-                <TabsTrigger value="agent-chat" className="gap-1.5 shrink-0">
+                <TabsTrigger value="agent-chat" className="shrink-0">
                   <MessageSquare className="h-3.5 w-3.5" /> Agent Chat
                 </TabsTrigger>
-                <TabsTrigger value="diagnostics" className="gap-1.5 shrink-0">
+                <TabsTrigger value="diagnostics" className="shrink-0">
                   <Stethoscope className="h-3.5 w-3.5" /> Diagnostics
                 </TabsTrigger>
               </TabsList>

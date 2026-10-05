@@ -57,7 +57,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { StepEmptyState } from "./StepEmptyState";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   Tooltip,
   TooltipContent,
@@ -164,7 +164,7 @@ function SectionCard({
           }
           placeholder="Section heading"
           aria-label={`Heading for section ${index + 1}`}
-          className="h-8 flex-1 border-transparent bg-transparent px-1 text-sm font-semibold hover:border-border focus-visible:border-border"
+          className="flex-1"
         />
         <div className="flex shrink-0 items-center gap-0.5">
           <Button
@@ -219,7 +219,7 @@ function SectionCard({
         }
         placeholder="What is this section for? (a note to whoever edits next)"
         aria-label={`Purpose of section ${index + 1}`}
-        className="mt-1 h-7 border-transparent bg-transparent px-1 text-[11px] italic text-muted-foreground hover:border-border focus-visible:border-border"
+        className="mt-1"
       />
 
       <ProTextarea
@@ -311,7 +311,7 @@ function MetaField({
           id={describedBy}
           value={value}
           onChange={(event) => onChange(event.target.value)}
-          className="mt-1 h-8 text-sm"
+          className="mt-1"
         />
       )}
       {evaluation.issues.length > 0 && value.trim() !== "" ? (
@@ -632,7 +632,7 @@ export function PageDraftEditor({
               value={value.h1}
               onChange={(event) => patch({ h1: event.target.value })}
               placeholder="The headline a visitor reads first"
-              className="mt-1 h-9 text-base font-semibold"
+              className="mt-1"
             />
           </div>
 

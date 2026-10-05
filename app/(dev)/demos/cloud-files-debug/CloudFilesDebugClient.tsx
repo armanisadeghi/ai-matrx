@@ -750,12 +750,12 @@ export function CloudFilesDebugClient() {
               </Button>
             </div>
             {(rawMethod === "POST" || rawMethod === "PATCH") && (
-              <Textarea
+              <Textarea mono
                 value={rawBody}
                 onChange={(e) => setRawBody(e.target.value)}
                 placeholder='{"key": "value"}'
                 rows={4}
-                className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-primary/30"
+                className="w-full"
               />
             )}
           </div>

@@ -24,7 +24,7 @@ import { FileSignature, Link2 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -317,7 +317,7 @@ export function CorrectiveActionPanel({
                 value={ackKind}
                 onValueChange={(v) => setAckKind(v as HrAcknowledgmentKind)}
               >
-                <SelectTrigger id="ack-kind" className="min-h-11 sm:min-h-9">
+                <SelectTrigger id="ack-kind">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -341,7 +341,6 @@ export function CorrectiveActionPanel({
                   id="ack-witness"
                   value={witness}
                   onChange={(e) => setWitness(e.target.value)}
-                  className="min-h-11 sm:min-h-9"
                 />
                 {ackKind === "wet_signature" ? (
                   // Optional, and said so — a signature on paper stands on its
@@ -360,7 +359,6 @@ export function CorrectiveActionPanel({
                   id="ack-refusal"
                   value={refusalNote}
                   onChange={(e) => setRefusalNote(e.target.value)}
-                  className="min-h-11 sm:min-h-9"
                 />
                 <p className="text-xs text-muted-foreground">
                   Declining is a valid outcome. The step still stands and the
@@ -418,7 +416,7 @@ export function CorrectiveActionPanel({
                   setOutcome(v as HrCorrectiveActionOutcome)
                 }
               >
-                <SelectTrigger id="outcome-kind" className="min-h-11 sm:min-h-9">
+                <SelectTrigger id="outcome-kind">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -442,7 +440,6 @@ export function CorrectiveActionPanel({
                 id="outcome-note"
                 value={outcomeNote}
                 onChange={(e) => setOutcomeNote(e.target.value)}
-                className="min-h-11 sm:min-h-9"
               />
             </div>
             <Button

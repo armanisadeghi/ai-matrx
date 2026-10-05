@@ -39,13 +39,13 @@ import {
 } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsListLegacy as TabsList, TabsTriggerLegacy as TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { formatFileSize } from "@ai-matrx/kit/format";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { toast } from "@/lib/toast";
 import {
   CheckCircle2,
@@ -885,13 +885,13 @@ export const SandboxDiagnosticsPanel = forwardRef<
               className="mt-2 md:h-[30rem] md:flex md:flex-col"
             >
               <div className="mb-2 flex flex-wrap items-center gap-2 shrink-0">
-                <Input
+                <Input mono
                   value={fsRootPath}
                   onChange={(e) => setFsRootPath(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") void fetchFsRoot();
                   }}
-                  className="h-8 min-w-0 flex-1 font-mono text-xs md:max-w-md"
+                  className="min-w-0 flex-1 md:max-w-md"
                   placeholder="/home/agent"
                 />
                 <Button
@@ -1007,10 +1007,10 @@ export const SandboxDiagnosticsPanel = forwardRef<
                     docker Config.Env (creation)
                   </option>
                 </select>
-                <Input
+                <Input mono
                   value={envFilter}
                   onChange={(e) => setEnvFilter(e.target.value)}
-                  className="text-xs h-8 font-mono max-w-xs"
+                  className="max-w-xs"
                   placeholder="filter by key…"
                 />
                 <Button

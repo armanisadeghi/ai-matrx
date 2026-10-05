@@ -222,7 +222,7 @@ export function VerificationRowActions({
                     setBasis(v as HrVerificationDenialBasis)
                   }
                 >
-                  <SelectTrigger id="deny-basis" className="min-h-11 sm:min-h-9">
+                  <SelectTrigger id="deny-basis">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -287,7 +287,6 @@ export function VerificationRowActions({
                 >
                   <SelectTrigger
                     id="deliver-method"
-                    className="min-h-11 sm:min-h-9"
                   >
                     <SelectValue />
                   </SelectTrigger>

@@ -234,7 +234,7 @@ function ArgRow({
         onValueChange={onChange}
         disabled={isNull}
       >
-        <SelectTrigger className="h-7 text-xs border-slate-300 dark:border-slate-600 flex-1 font-mono">
+        <SelectTrigger className="flex-1">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -245,13 +245,13 @@ function ArgRow({
     );
   } else if (isJson) {
     inputEl = (
-      <Textarea
+      <Textarea mono minHeight={48}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         disabled={isNull}
         placeholder={placeholderText}
         rows={2}
-        className="flex-1 w-full text-xs font-mono border border-slate-300 dark:border-slate-600 rounded-md p-1.5 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 resize-y disabled:opacity-40 min-h-[48px] focus:outline-none focus:ring-1 focus:ring-slate-400 dark:focus:ring-slate-500"
+        className="flex-1 w-full resize-y"
       />
     );
   } else {

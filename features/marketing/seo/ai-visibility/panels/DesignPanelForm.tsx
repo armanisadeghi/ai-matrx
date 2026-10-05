@@ -14,7 +14,7 @@
 import { useMutation } from "@tanstack/react-query";
 import { ClipboardList, Loader2 } from "lucide-react";
 import { useState } from "react";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { Button } from "@/components/ui/button";
@@ -86,7 +86,6 @@ export function DesignPanelForm({
           value={url}
           onChange={(event) => setUrl(event.target.value)}
           placeholder="https://example.com"
-          className="text-sm"
         />
         {!url.trim() ? (
           <p className="text-[11px] text-amber-700 dark:text-amber-400">
@@ -99,12 +98,11 @@ export function DesignPanelForm({
         <Label htmlFor="panel-design-description" className="text-xs">
           What the business does
         </Label>
-        <Textarea
+        <Textarea minHeight={80}
           id="panel-design-description"
           value={description}
           onChange={(event) => setTypedDescription(event.target.value)}
           placeholder="In a sentence or two: what you sell, and to whom."
-          className="min-h-20 text-sm"
         />
         {typedDescription === null && prefill ? (
           <p className="text-[11px] text-muted-foreground">
@@ -122,7 +120,6 @@ export function DesignPanelForm({
           value={name}
           onChange={(event) => setName(event.target.value)}
           placeholder={`${site.name} buyer questions`}
-          className="text-sm"
         />
       </div>
       <p className="text-[11px] text-muted-foreground">

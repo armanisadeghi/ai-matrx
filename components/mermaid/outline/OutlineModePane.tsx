@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   Select,
   SelectContent,
@@ -236,7 +236,7 @@ function FlowchartOutline({ doc, apply }: { doc: FlowchartDoc; apply: Apply }) {
           value={doc.direction === "TB" ? "TD" : doc.direction}
           onValueChange={(value) => apply({ type: "setDirection", direction: value as FlowDirection })}
         >
-          <SelectTrigger className="h-7 w-40 text-xs">
+          <SelectTrigger className="w-40">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -485,7 +485,7 @@ function SequenceOutline({ doc, apply }: { doc: SequenceDoc; apply: Apply }) {
           item.kind === "message" ? (
             <RowShell key={item.id}>
               <Select value={item.from} onValueChange={(from) => apply({ type: "editMessage", id: item.id, from })}>
-                <SelectTrigger className="h-7 w-24 shrink-0 text-xs">
+                <SelectTrigger className="w-24 shrink-0">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -498,7 +498,7 @@ function SequenceOutline({ doc, apply }: { doc: SequenceDoc; apply: Apply }) {
               </Select>
               <ArrowRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
               <Select value={item.to} onValueChange={(to) => apply({ type: "editMessage", id: item.id, to })}>
-                <SelectTrigger className="h-7 w-24 shrink-0 text-xs">
+                <SelectTrigger className="w-24 shrink-0">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -589,7 +589,7 @@ function PieOutline({ doc, apply }: { doc: PieDoc; apply: Apply }) {
                   apply({ type: "editSlice", id: slice.id, value });
                 }
               }}
-              className="h-7 w-20 shrink-0 text-right text-base sm:text-sm"
+              className="w-20 shrink-0 text-right"
             />
             {total > 0 && (
               <span className="w-12 shrink-0 text-right text-xs text-muted-foreground">
@@ -749,7 +749,7 @@ function JourneyOutline({ doc, apply }: { doc: JourneyDoc; apply: Apply }) {
                     const score = Math.max(1, Math.min(5, Math.round(raw)));
                     if (score !== task.score) apply({ type: "editTask", id: task.id, score });
                   }}
-                  className="h-7 w-14 shrink-0 text-right text-base sm:text-sm"
+                  className="w-14 shrink-0 text-right"
                 />
                 <InlineTextEdit
                   value={task.actors.join(", ")}
@@ -851,7 +851,7 @@ function QuadrantOutline({ doc, apply }: { doc: QuadrantDoc; apply: Apply }) {
                 const x = Number(e.target.value);
                 if (Number.isFinite(x) && x !== point.x) apply({ type: "editPoint", id: point.id, x });
               }}
-              className="h-7 w-16 shrink-0 text-right text-base sm:text-sm"
+              className="w-16 shrink-0 text-right"
             />
             <Input
               type="number"
@@ -865,7 +865,7 @@ function QuadrantOutline({ doc, apply }: { doc: QuadrantDoc; apply: Apply }) {
                 const y = Number(e.target.value);
                 if (Number.isFinite(y) && y !== point.y) apply({ type: "editPoint", id: point.id, y });
               }}
-              className="h-7 w-16 shrink-0 text-right text-base sm:text-sm"
+              className="w-16 shrink-0 text-right"
             />
             <IconAction label="Delete point" destructive onClick={() => apply({ type: "deletePoint", id: point.id })}>
               <Trash2 className="h-3.5 w-3.5" />
@@ -1001,7 +1001,7 @@ function ErOutline({ doc, apply }: { doc: ErDoc; apply: Apply }) {
           <RowShell key={r.id}>
             <span className="w-20 shrink-0 truncate text-sm">{erEntityName(r.left)}</span>
             <Select value={r.leftCard} onValueChange={(leftCard) => apply({ type: "setRelationshipCardinality", id: r.id, leftCard })}>
-              <SelectTrigger className="h-7 w-28 shrink-0 text-xs">
+              <SelectTrigger className="w-28 shrink-0">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -1013,7 +1013,7 @@ function ErOutline({ doc, apply }: { doc: ErDoc; apply: Apply }) {
               </SelectContent>
             </Select>
             <Select value={r.rightCard} onValueChange={(rightCard) => apply({ type: "setRelationshipCardinality", id: r.id, rightCard })}>
-              <SelectTrigger className="h-7 w-28 shrink-0 text-xs">
+              <SelectTrigger className="w-28 shrink-0">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

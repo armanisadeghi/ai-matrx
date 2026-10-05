@@ -34,7 +34,7 @@ import {
   Truck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -745,7 +745,7 @@ export default function LuluPricingDemoPage() {
                       onValueChange={(id) => chooseOption("trim", id)}
                       disabled={previewOnly}
                     >
-                      <SelectTrigger id="lulu-trim" className="h-11">
+                      <SelectTrigger id="lulu-trim">
                         <SelectValue placeholder="Choose a book size" />
                       </SelectTrigger>
                       <SelectContent>
@@ -798,7 +798,6 @@ export default function LuluPricingDemoPage() {
                       disabled={previewOnly}
                       onChange={(event) => changePageCount(event.target.value)}
                       placeholder="e.g. 200"
-                      className="h-11"
                     />
                   </div>
                 </div>
@@ -925,7 +924,6 @@ export default function LuluPricingDemoPage() {
                             : 1,
                         );
                       }}
-                      className="h-11"
                     />
                   </div>
 
@@ -939,7 +937,7 @@ export default function LuluPricingDemoPage() {
                       onValueChange={setDestinationId}
                       disabled={previewOnly}
                     >
-                      <SelectTrigger className="h-11">
+                      <SelectTrigger>
                         <SelectValue placeholder="Select a destination" />
                       </SelectTrigger>
                       <SelectContent>
@@ -968,7 +966,7 @@ export default function LuluPricingDemoPage() {
                         shippingState.data.length === 0
                       }
                     >
-                      <SelectTrigger className="h-11">
+                      <SelectTrigger>
                         <SelectValue
                           placeholder={
                             shippingState.status === "idle"

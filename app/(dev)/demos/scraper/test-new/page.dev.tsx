@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -180,11 +180,11 @@ export default function TestNewScraperPage() {
                     onValueChange={setContentTab}
                     className="w-full"
                   >
-                    <TabsList className="h-9">
-                      <TabsTrigger value="pretty" className="text-xs">
+                    <TabsList>
+                      <TabsTrigger value="pretty">
                         Pretty
                       </TabsTrigger>
-                      <TabsTrigger value="text" className="text-xs">
+                      <TabsTrigger value="text">
                         Plain text
                       </TabsTrigger>
                     </TabsList>

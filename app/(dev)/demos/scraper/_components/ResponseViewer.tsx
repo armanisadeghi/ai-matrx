@@ -456,12 +456,11 @@ export function ResponseViewer({
         onValueChange={setActiveTab}
         className="flex-1 flex flex-col overflow-hidden"
       >
-        <TabsList className="w-full justify-start rounded-none border-b border-border h-9 px-2 shrink-0">
+        <TabsList variant="underline" className="w-full justify-start shrink-0">
           {tabs.map((tab) => (
             <TabsTrigger
               key={tab.id}
               value={tab.id}
-              className="text-xs h-7 px-3 data-[state=active]:bg-background"
             >
               <tab.icon className="w-3.5 h-3.5 mr-1.5" />
               {tab.label}

@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { AlertCircle, Loader2, RefreshCw, Server, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   Drawer,
   DrawerContent,
@@ -123,11 +123,10 @@ export function ExecutorSurfacesContainer() {
       <div className="shrink-0 px-3 py-1.5 border-b border-border flex items-center gap-2 flex-wrap bg-card">
         <div className="relative flex-1 min-w-[200px] max-w-md">
           <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <Input
+          <Input adornment="start"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search executor name, parent, description…"
-            className="h-7 pl-7 text-xs"
             style={{ fontSize: "16px" }}
           />
         </div>

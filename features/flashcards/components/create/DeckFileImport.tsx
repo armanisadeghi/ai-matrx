@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { recordToast, toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
@@ -218,7 +218,7 @@ export function DeckFileImport() {
           <ClipboardPaste className="h-3.5 w-3.5" />
           Or paste term and definition pairs, one card per line
         </Label>
-        <Textarea
+        <Textarea mono minHeight={160}
           id="import-text"
           value={raw}
           onChange={(e) => {
@@ -228,7 +228,7 @@ export function DeckFileImport() {
           placeholder={
             "Mitochondria\tThe organelle that makes most of the cell's ATP\nRibosome\tWhere proteins are assembled from amino acids"
           }
-          className="min-h-40 resize-y font-mono text-base sm:text-sm"
+          className="resize-y"
           disabled={busy}
         />
       </div>
@@ -245,7 +245,6 @@ export function DeckFileImport() {
                 value={setName}
                 onChange={(e) => setSetName(e.target.value)}
                 placeholder="e.g. Spanish Unit 3 vocabulary"
-                className="text-base"
                 disabled={busy}
                 required
               />
@@ -260,7 +259,7 @@ export function DeckFileImport() {
                 }}
                 disabled={busy}
               >
-                <SelectTrigger id="import-delimiter" className="h-11 text-base sm:h-9">
+                <SelectTrigger id="import-delimiter">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

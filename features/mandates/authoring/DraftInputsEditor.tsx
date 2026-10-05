@@ -11,7 +11,7 @@
 
 import { Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import type { DraftInput } from "./service";
 
 export function DraftInputsEditor({
@@ -39,7 +39,7 @@ export function DraftInputsEditor({
             value={item.description}
             onChange={(e) => update(index, { description: e.target.value })}
             placeholder="Describe an input — e.g. current agent system prompt"
-            className="h-8 flex-1 text-[13px]"
+            className="flex-1"
             autoFocus={autoFocusNew && index === items.length - 1 && !item.description}
             aria-label={`Input ${index + 1} description`}
           />
@@ -47,7 +47,7 @@ export function DraftInputsEditor({
             value={item.name ?? ""}
             onChange={(e) => update(index, { name: e.target.value || undefined })}
             placeholder="Name (optional)"
-            className="h-8 w-32 text-[11.5px] max-sm:hidden"
+            className="w-32 max-sm:hidden"
             aria-label={`Input ${index + 1} name (optional)`}
           />
           {/* D2 — one example, so whoever binds this job later can SEE what
@@ -58,14 +58,14 @@ export function DraftInputsEditor({
             value={item.example ?? ""}
             onChange={(e) => update(index, { example: e.target.value || undefined })}
             placeholder="Example (optional)"
-            className="h-8 w-40 text-[11.5px] max-lg:hidden"
+            className="w-40 max-lg:hidden"
             aria-label={`Input ${index + 1} example (optional)`}
           />
           <Input
             value={item.kind ?? ""}
             onChange={(e) => update(index, { kind: e.target.value || undefined })}
             placeholder="Format (optional)"
-            className="h-8 w-28 text-[11.5px] max-md:hidden"
+            className="w-28 max-md:hidden"
             aria-label={`Input ${index + 1} kind (optional)`}
           />
           <Button

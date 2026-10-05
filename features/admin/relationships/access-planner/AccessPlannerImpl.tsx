@@ -55,7 +55,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -978,11 +978,10 @@ export function AccessPlannerImpl({ initialSnapshot }: AccessPlannerProps) {
           <div className="space-y-3 border-b border-border p-3">
             <div className="relative">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
+              <Input adornment="start"
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder="Find a table or entity…"
-                className="pl-8"
               />
             </div>
             <div className="flex items-center justify-between gap-2">

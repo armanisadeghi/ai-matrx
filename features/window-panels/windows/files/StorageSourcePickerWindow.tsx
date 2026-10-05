@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { formatFileSize } from "@ai-matrx/kit/format";
 import { SettingDoor } from "@/features/settings/doors/SettingDoor";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
@@ -560,7 +560,7 @@ export function StorageSourcePickerWindow({
                     <p>{failure.selection.name}: {failure.error}</p>
                     {failure.collisionProposal ? (
                       <Input
-                        className="mt-1 h-9"
+                        className="mt-1"
                         aria-label={`New name for ${failure.selection.name}`}
                         value={collisionNames[failure.selection.sourceRef] ?? failure.collisionProposal}
                         onChange={(event) => setCollisionNames((current) => ({ ...current, [failure.selection.sourceRef]: event.target.value }))}

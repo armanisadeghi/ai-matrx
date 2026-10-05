@@ -31,7 +31,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Check, Plus, Trash2, X } from "lucide-react";
 
 import { Button } from "@ai-matrx/design-system";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -233,7 +233,7 @@ export function ChoiceOptionsEditor({
               : patch({ structuredList: undefined })
           }
         >
-          <SelectTrigger className="h-8 text-sm">
+          <SelectTrigger>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -259,7 +259,7 @@ export function ChoiceOptionsEditor({
                   patch({ structuredList: { ...binding, listId } })
                 }
               >
-                <SelectTrigger className="h-8 text-sm">
+                <SelectTrigger>
                   <SelectValue
                     placeholder={lists === null ? "Loading…" : "Choose a list"}
                   />
@@ -292,7 +292,7 @@ export function ChoiceOptionsEditor({
                   })
                 }
               >
-                <SelectTrigger className="h-8 text-sm">
+                <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -331,7 +331,7 @@ export function ChoiceOptionsEditor({
                   })
                 }
               >
-                <SelectTrigger className="h-8 text-sm">
+                <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -435,7 +435,7 @@ export function ChoiceOptionsEditor({
                   <Input
                     value={choice.value}
                     onChange={(e) => updateChoice(index, { value: e.target.value })}
-                    className="h-8 flex-1 text-sm"
+                    className="flex-1"
                     aria-label="Option value"
                   />
                   <Select
@@ -496,7 +496,7 @@ export function ChoiceOptionsEditor({
                       Move them to
                     </Button>
                     <Select value={moveTo || undefined} onValueChange={setMoveTo}>
-                      <SelectTrigger className="h-7 w-36 text-xs" aria-label="Another choice">
+                      <SelectTrigger className="w-36" aria-label="Another choice">
                         <SelectValue placeholder="Another choice" />
                       </SelectTrigger>
                       <SelectContent>
@@ -547,7 +547,7 @@ export function ChoiceOptionsEditor({
             <Input
               value={draftValue}
               placeholder="Add an option…"
-              className="h-8 flex-1 text-sm"
+              className="flex-1"
               onChange={(e) => setDraftValue(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key !== "Enter") return;

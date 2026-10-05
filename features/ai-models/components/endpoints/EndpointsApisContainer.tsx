@@ -10,7 +10,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   MatrxDataTable,
   type MatrxColumnDef,
@@ -137,19 +137,17 @@ function EndpointFormFields({
           required
           description="Unique serving vendor key (admin-only fact)"
         >
-          <Input
+          <Input mono
             value={data.vendor}
             onChange={set("vendor")}
             placeholder="e.g. anthropic"
-            className="h-8 text-sm font-mono"
           />
         </FormField>
         <FormField label="Internal Name" required>
-          <Input
+          <Input mono
             value={data.internal_name}
             onChange={set("internal_name")}
             placeholder="e.g. anthropic"
-            className="h-8 text-sm font-mono"
           />
         </FormField>
       </div>
@@ -159,16 +157,14 @@ function EndpointFormFields({
             value={data.display_name}
             onChange={set("display_name")}
             placeholder="e.g. Anthropic"
-            className="h-8 text-sm"
           />
         </FormField>
         <FormField label="Base URL">
-          <Input
+          <Input mono
             type="url"
             value={data.base_url}
             onChange={set("base_url")}
             placeholder="https://api.vendor.com/v1"
-            className="h-8 text-sm font-mono"
           />
         </FormField>
       </div>
@@ -195,11 +191,10 @@ function EndpointFormFields({
           label="BYOK Secret Key"
           description="Bring-your-own-key secret reference name"
         >
-          <Input
+          <Input mono
             value={data.byok_secret_key}
             onChange={set("byok_secret_key")}
             placeholder="e.g. USER_ANTHROPIC_API_KEY"
-            className="h-8 text-sm font-mono"
           />
         </FormField>
         <FormField label="Priority" description="Lower = preferred">
@@ -207,7 +202,6 @@ function EndpointFormFields({
             type="number"
             value={data.priority}
             onChange={set("priority")}
-            className="h-8 text-sm"
           />
         </FormField>
       </div>
@@ -291,11 +285,10 @@ function ApiFormFields({
     <div className="space-y-3">
       <div className="grid grid-cols-2 gap-3">
         <FormField label="Name" required description="Unique machine key">
-          <Input
+          <Input mono
             value={data.name}
             onChange={set("name")}
             placeholder="e.g. anthropic-messages"
-            className="h-8 text-sm font-mono"
           />
         </FormField>
         <FormField label="Display Name" required>
@@ -303,7 +296,6 @@ function ApiFormFields({
             value={data.display_name}
             onChange={set("display_name")}
             placeholder="e.g. Anthropic Messages API"
-            className="h-8 text-sm"
           />
         </FormField>
       </div>
@@ -313,19 +305,17 @@ function ApiFormFields({
           required
           description="Unique wire-contract token"
         >
-          <Input
+          <Input mono
             value={data.translator_key}
             onChange={set("translator_key")}
             placeholder="e.g. anthropic"
-            className="h-8 text-sm font-mono"
           />
         </FormField>
         <FormField label="Transport" required>
-          <Input
+          <Input mono
             value={data.transport}
             onChange={set("transport")}
             placeholder="e.g. http"
-            className="h-8 text-sm font-mono"
           />
         </FormField>
       </div>
@@ -937,10 +927,9 @@ export default function EndpointsApisContainer() {
   return (
     <Tabs defaultValue="endpoints" className="flex flex-col h-full min-h-0">
       <div className="border-b px-3 shrink-0 bg-card">
-        <TabsList className="h-10 bg-transparent p-0 gap-0">
+        <TabsList variant="underline">
           <TabsTrigger
             value="endpoints"
-            className="h-10 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent text-sm px-4"
           >
             Endpoints
             <Badge variant="outline" className="ml-1.5 text-xs h-4 px-1">
@@ -949,7 +938,6 @@ export default function EndpointsApisContainer() {
           </TabsTrigger>
           <TabsTrigger
             value="apis"
-            className="h-10 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent text-sm px-4"
           >
             APIs
             <Badge variant="outline" className="ml-1.5 text-xs h-4 px-1">

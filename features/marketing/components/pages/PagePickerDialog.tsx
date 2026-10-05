@@ -23,7 +23,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 import { useDebounce } from "@ai-matrx/kit/hooks";
 import { cn } from "@/lib/utils";
@@ -151,12 +151,11 @@ export function PagePickerDialog({
 
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
+          <Input adornment="start"
             autoFocus
             value={term}
             onChange={(event) => setTerm(event.target.value)}
             placeholder="Search pages by URL…"
-            className="pl-8"
           />
         </div>
 

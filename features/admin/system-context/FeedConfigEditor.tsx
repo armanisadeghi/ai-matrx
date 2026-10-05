@@ -21,7 +21,7 @@ import {
   Plus,
 } from "lucide-react";
 
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { ProTextarea } from "@/components/official/ProTextarea";
@@ -332,11 +332,10 @@ function DefinitionFeedConfig({
               </Select>
             </FieldRow>
             <FieldRow label="Refresh (cron)" hint="Blank = on demand.">
-              <Input
+              <Input mono
                 value={cfgStr(config, "cron")}
                 onChange={(e) => set("cron", e.target.value)}
                 placeholder="0 * * * *"
-                className="font-mono text-xs"
               />
             </FieldRow>
           </div>
@@ -357,28 +356,25 @@ function DefinitionFeedConfig({
               </Select>
             </FieldRow>
             <FieldRow label="Endpoint URL">
-              <Input
+              <Input mono
                 value={cfgStr(config, "endpoint")}
                 onChange={(e) => set("endpoint", e.target.value)}
                 placeholder="https://api.example.com/v1/resource"
-                className="font-mono text-xs"
               />
             </FieldRow>
           </div>
           <FieldRow label="Extraction" hint="JSONPath / expression to pull the value from the response.">
-            <Input
+            <Input mono
               value={cfgStr(config, "extraction")}
               onChange={(e) => set("extraction", e.target.value)}
               placeholder="$.data.items"
-              className="font-mono text-xs"
             />
           </FieldRow>
           <FieldRow label="Refresh (cron)" hint="Blank = on demand.">
-            <Input
+            <Input mono
               value={cfgStr(config, "cron")}
               onChange={(e) => set("cron", e.target.value)}
               placeholder="0 6 * * *"
-              className="font-mono text-xs"
             />
           </FieldRow>
         </>
@@ -387,11 +383,10 @@ function DefinitionFeedConfig({
       {feedType === "web" && (
         <>
           <FieldRow label="Page URL">
-            <Input
+            <Input mono
               value={cfgStr(config, "url")}
               onChange={(e) => set("url", e.target.value)}
               placeholder="https://example.com/page-with-data"
-              className="font-mono text-xs"
             />
           </FieldRow>
           <FieldRow
@@ -405,11 +400,10 @@ function DefinitionFeedConfig({
             />
           </FieldRow>
           <FieldRow label="Refresh (cron)" hint="Blank = on demand.">
-            <Input
+            <Input mono
               value={cfgStr(config, "cron")}
               onChange={(e) => set("cron", e.target.value)}
               placeholder="*/30 * * * *"
-              className="font-mono text-xs"
             />
           </FieldRow>
         </>
@@ -418,12 +412,11 @@ function DefinitionFeedConfig({
       {feedType === "computed" && (
         // User-defined computed code not built yet; built-in ambient keys (current_date…) are reserved.
         <FieldRow label="Expression / code">
-          <Textarea
+          <Textarea mono
             rows={3}
             value={cfgStr(config, "expression")}
             onChange={(e) => set("expression", e.target.value)}
             placeholder="e.g. now() in the user's timezone"
-            className="font-mono text-xs"
           />
         </FieldRow>
       )}

@@ -16,7 +16,7 @@
 import React from "react";
 import { Loader2, Search, Check, ArrowLeft, Share2, Plus } from "lucide-react";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -134,12 +134,11 @@ export function ContributeResourceSheet({
             </Button>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
+              <Input adornment="start"
                 aria-label={`Search your ${selected.labelPlural.toLowerCase()}`}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder={`Search your ${selected.labelPlural.toLowerCase()}…`}
-                className="pl-9"
               />
             </div>
           </div>

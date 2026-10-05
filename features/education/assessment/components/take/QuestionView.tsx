@@ -11,7 +11,7 @@
 
 import { PenLine, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { cn } from "@/lib/utils";
 import { coerceTrustEnvelope } from "@/features/education/trust/types";
 import { SourceCitations } from "@/features/education/trust/components/SourceCitations";
@@ -171,7 +171,6 @@ export function QuestionView({
             value={response}
             onChange={(e) => onResponseChange(e.target.value)}
             placeholder="Type the missing word or phrase…"
-            className="text-base"
             disabled={locked}
           />
         ) : (

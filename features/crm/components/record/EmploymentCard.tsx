@@ -41,7 +41,7 @@ import {
 } from "@/components/ui/command";
 import { extractErrorMessage } from "@/utils/errors";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Checkbox } from "@/components/ui/checkbox";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { cn } from "@/lib/utils";
@@ -474,7 +474,7 @@ export function EmploymentCard(props: Props) {
               <Input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="h-11 w-full min-w-0 text-base sm:h-7 sm:w-32 sm:text-xs"
+                className="w-full min-w-0 sm:w-32"
               />
             </label>
             <label className="grid min-w-0 gap-0.5 text-xs text-muted-foreground">
@@ -483,7 +483,7 @@ export function EmploymentCard(props: Props) {
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="h-11 w-full min-w-0 pr-2 text-base sm:h-7 sm:w-36 sm:text-xs"
+                className="w-full min-w-0 sm:w-36"
               />
             </label>
             <label className="flex min-h-11 items-center gap-1.5 text-sm text-foreground sm:min-h-7 sm:text-xs">

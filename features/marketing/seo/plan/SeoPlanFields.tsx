@@ -13,7 +13,7 @@ import Link from "next/link";
 import { Search, Link2, X } from "lucide-react";
 
 import TextArrayInput from "@/components/official/TextArrayInput";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -209,7 +209,7 @@ export function SeoPlanRoleFields({
           value={pageRole || undefined}
           onValueChange={(next) => onPageRoleChange(next)}
         >
-          <SelectTrigger className="h-9 text-sm">
+          <SelectTrigger>
             <SelectValue placeholder="Select role" />
           </SelectTrigger>
           <SelectContent>

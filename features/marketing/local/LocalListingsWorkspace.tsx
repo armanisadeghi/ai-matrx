@@ -19,7 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -147,7 +147,7 @@ export default function LocalListingsWorkspace({
             Brand
           </Label>
           <Select value={brandId} onValueChange={selectBrand}>
-            <SelectTrigger id="local-brand-picker" className="h-8 w-64">
+            <SelectTrigger id="local-brand-picker" className="w-64">
               <SelectValue placeholder="Pick a brand" />
             </SelectTrigger>
             <SelectContent>
@@ -294,7 +294,6 @@ function BrandLocations({
               if (event.key === "Enter") void handleCreate();
             }}
             placeholder="New location name"
-            className="h-8 text-sm"
           />
           <Button
             icon={<Plus aria-hidden />}
@@ -672,7 +671,7 @@ function ProfileEditor({
                 setDraft((current) => ({ ...current, status: value }))
               }
             >
-              <SelectTrigger className="h-8 text-sm">
+              <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -753,7 +752,7 @@ function LabeledInput({
         {label}
         {required ? <span className="text-destructive"> *</span> : null}
       </Label>
-      <Input className="h-8 text-sm" {...inputProps} />
+      <Input {...inputProps} />
     </div>
   );
 }
@@ -984,7 +983,7 @@ function ListingsMatrix({
           }}
           disabled={savingPublisherId === row.publisher.id}
         >
-          <SelectTrigger className="h-7 w-32 text-xs xl:w-36">
+          <SelectTrigger className="w-32 xl:w-36">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -1011,7 +1010,7 @@ function ListingsMatrix({
             key={row.listing?.listing_url ?? ""}
             defaultValue={row.listing?.listing_url ?? ""}
             placeholder="https://…"
-            className="h-7 w-full min-w-40 max-w-72 text-xs"
+            className="w-full min-w-40 max-w-72"
             onBlur={(event) => {
               const next = event.target.value;
               if ((row.listing?.listing_url ?? "") !== next.trim()) {

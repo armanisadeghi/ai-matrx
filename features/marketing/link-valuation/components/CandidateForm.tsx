@@ -15,7 +15,7 @@
  */
 
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -118,7 +118,6 @@ export function CandidateForm({ config, input, onChange }: Props) {
                   onChange({ ...input, domain: event.target.value })
                 }
                 placeholder="example.com"
-                className="h-8 text-sm"
               />
             </div>
             <div className="flex flex-col gap-1">
@@ -130,7 +129,6 @@ export function CandidateForm({ config, input, onChange }: Props) {
                 value={input.target.keyword}
                 onChange={(event) => setTarget({ keyword: event.target.value })}
                 placeholder="what we want to rank for"
-                className="h-8 text-sm"
               />
             </div>
             <div className="flex flex-col gap-1">
@@ -142,7 +140,6 @@ export function CandidateForm({ config, input, onChange }: Props) {
                 value={input.target.page}
                 onChange={(event) => setTarget({ page: event.target.value })}
                 placeholder="the page the link should point at"
-                className="h-8 text-sm"
               />
             </div>
             <div className="flex flex-col gap-1">
@@ -156,7 +153,6 @@ export function CandidateForm({ config, input, onChange }: Props) {
                   setTarget({ campaign: event.target.value })
                 }
                 placeholder="optional"
-                className="h-8 text-sm"
               />
             </div>
           </div>
@@ -251,7 +247,6 @@ export function CandidateForm({ config, input, onChange }: Props) {
                         >
                           <SelectTrigger
                             id={`lv-${signal.key}`}
-                            className="h-8 text-xs"
                           >
                             <SelectValue placeholder="Not set" />
                           </SelectTrigger>
@@ -287,7 +282,6 @@ export function CandidateForm({ config, input, onChange }: Props) {
                             })
                           }
                           placeholder="—"
-                          className="h-8 text-xs"
                         />
                       )}
 
@@ -302,7 +296,7 @@ export function CandidateForm({ config, input, onChange }: Props) {
                           })
                         }
                       >
-                        <SelectTrigger className="hidden h-8 text-[11px] sm:flex">
+                        <SelectTrigger className="hidden sm:flex">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>

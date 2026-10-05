@@ -839,7 +839,7 @@ function RawModelJsonTab({
         </div>
       </div>
 
-      <Textarea
+      <Textarea mono minHeight={0}
         value={jsonText}
         onChange={(e) => onJsonChange(e.target.value)}
         spellCheck={false}
@@ -848,7 +848,7 @@ function RawModelJsonTab({
             ? '{\n  "name": "my-model-id",\n  "common_name": "My Model",\n  "context_window": 200000,\n  ...\n}'
             : undefined
         }
-        className={`flex-1 min-h-0 w-full resize-none rounded-md border px-3 py-2 font-mono text-[11px] leading-relaxed text-foreground shadow-sm focus-visible:outline-none focus-visible:ring-1 overflow-auto bg-background placeholder:text-muted-foreground/40 ${
+        className={`flex-1 min-h-0 w-full resize-none overflow-auto ${
           hasErrors
             ? "border-red-400 dark:border-red-600 focus-visible:ring-red-400"
             : hasWarnings
@@ -1339,16 +1339,14 @@ export default function AiModelDetailPanel({
             className="flex-1 flex flex-col overflow-hidden min-h-0"
           >
             <div className="border-b px-3 shrink-0">
-              <TabsList className="h-9 bg-transparent p-0 gap-0">
+              <TabsList variant="underline">
                 <TabsTrigger
                   value="details"
-                  className="h-9 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent text-xs px-3"
                 >
                   Form
                 </TabsTrigger>
                 <TabsTrigger
                   value="raw-model"
-                  className="h-9 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent text-xs px-3"
                 >
                   Paste JSON
                 </TabsTrigger>
@@ -1420,10 +1418,10 @@ export default function AiModelDetailPanel({
             className="flex-1 flex flex-col overflow-hidden min-h-0"
           >
             <div className="border-b px-3 shrink-0 overflow-x-auto scrollbar-none">
-              <TabsList className="h-9 bg-transparent p-0 gap-0 w-max">
+              <TabsList variant="underline" className="w-max">
                 <TabsTrigger
                   value="details"
-                  className="h-9 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent text-xs px-3 shrink-0"
+                  className="shrink-0"
                 >
                   Details
                   {(formIsDirty || rawJsonDirty) && (
@@ -1432,7 +1430,7 @@ export default function AiModelDetailPanel({
                 </TabsTrigger>
                 <TabsTrigger
                   value="json"
-                  className="h-9 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent text-xs px-3 shrink-0"
+                  className="shrink-0"
                 >
                   JSON Fields
                   {dirtySections["json-capabilities"] && (
@@ -1441,7 +1439,7 @@ export default function AiModelDetailPanel({
                 </TabsTrigger>
                 <TabsTrigger
                   value="controls"
-                  className="h-9 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent text-xs px-3 shrink-0"
+                  className="shrink-0"
                 >
                   Controls
                   {dirtySections["controls"] && (
@@ -1450,7 +1448,7 @@ export default function AiModelDetailPanel({
                 </TabsTrigger>
                 <TabsTrigger
                   value="constraints"
-                  className="h-9 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent text-xs px-3 shrink-0"
+                  className="shrink-0"
                 >
                   Constraints
                   {(dirtySections["constraints-family"] ||
@@ -1460,7 +1458,6 @@ export default function AiModelDetailPanel({
                 </TabsTrigger>
                 <TabsTrigger
                   value="pricing"
-                  className="h-9 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent text-xs px-3"
                 >
                   Pricing
                   {offerings.length > 0 && (
@@ -1483,7 +1480,6 @@ export default function AiModelDetailPanel({
                 </TabsTrigger>
                 <TabsTrigger
                   value="usage"
-                  className="h-9 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent text-xs px-3"
                 >
                   Usage
                   {model?.is_deprecated && (
@@ -1492,7 +1488,6 @@ export default function AiModelDetailPanel({
                 </TabsTrigger>
                 <TabsTrigger
                   value="provider"
-                  className="h-9 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent text-xs px-3"
                 >
                   Provider Data
                   {providers.find((p) => p.id === model?.provider_id)
@@ -1502,7 +1497,6 @@ export default function AiModelDetailPanel({
                 </TabsTrigger>
                 <TabsTrigger
                   value="raw-model"
-                  className="h-9 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent text-xs px-3"
                 >
                   Raw JSON
                 </TabsTrigger>

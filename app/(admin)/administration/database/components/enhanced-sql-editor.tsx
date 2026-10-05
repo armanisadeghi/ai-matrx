@@ -7,7 +7,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   Database,
   Play,
@@ -428,19 +428,18 @@ export const EnhancedSQLEditor = ({
                 {replacementPairs.map((pair, index) => (
                   <div key={pair.id} className="flex items-center gap-2">
                     <div className="flex-1 flex items-center gap-2">
-                      <Input
+                      <Input mono
                         placeholder="Find (e.g., TABLE_NAME)"
                         value={pair.find}
                         onChange={(e) =>
                           updateReplacementPair(pair.id, "find", e.target.value)
                         }
-                        className="flex-1 text-sm font-mono bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700"
+                        className="flex-1"
                       />
                       <span className="text-slate-500 dark:text-slate-400 text-sm">
                         →
                       </span>
-                      <Input
-                        className="font-mono"
+                      <Input mono
                         placeholder="Replace with (e.g., my_table)"
                         value={pair.replace}
                         onChange={(e) =>

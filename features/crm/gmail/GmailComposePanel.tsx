@@ -38,7 +38,7 @@ import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, ArrowLeft, Mail, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { Skeleton } from "@ai-matrx/design-system";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
@@ -515,7 +515,6 @@ export function GmailComposePanel({
           value={to}
           onChange={(event) => setTo(event.target.value)}
           placeholder="name@example.com"
-          className="text-base"
         />
         {/* The record's addresses as one-click chips; with none, the field
             and its placeholder say everything — no filler line. */}
@@ -551,7 +550,6 @@ export function GmailComposePanel({
           value={cc}
           onChange={(event) => setCc(event.target.value)}
           placeholder="Separate addresses with commas"
-          className="text-base"
         />
       </div>
 
@@ -561,7 +559,6 @@ export function GmailComposePanel({
           id="crm-gmail-subject"
           value={subject}
           onChange={(event) => setSubject(event.target.value)}
-          className="text-base"
         />
       </div>
 

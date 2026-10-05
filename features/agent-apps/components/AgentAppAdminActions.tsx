@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import {
   DropdownMenu,
@@ -289,7 +289,6 @@ export function AgentAppAdminActions({
                   min={0}
                   value={rlIp}
                   onChange={(e) => setRlIp(Number(e.target.value))}
-                  className="h-8 text-[16px]"
                 />
               </div>
               <div>
@@ -302,7 +301,6 @@ export function AgentAppAdminActions({
                   min={0}
                   value={rlWindow}
                   onChange={(e) => setRlWindow(Number(e.target.value))}
-                  className="h-8 text-[16px]"
                 />
               </div>
               <div>
@@ -315,7 +313,6 @@ export function AgentAppAdminActions({
                   min={0}
                   value={rlAuth}
                   onChange={(e) => setRlAuth(Number(e.target.value))}
-                  className="h-8 text-[16px]"
                 />
               </div>
               <div className="col-span-3 flex items-center justify-end gap-2 pt-1">

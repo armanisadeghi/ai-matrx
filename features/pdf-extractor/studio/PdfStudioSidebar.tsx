@@ -34,7 +34,8 @@ import {
   MoreHorizontal,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ArchivedDisclosure, Input } from "@ai-matrx/design-system";
+import { ArchivedDisclosure } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { ItemMenu, ItemContextMenu } from "@/components/official/item/ItemMenu";
 import { FileContextMenu } from "@/features/files/components/core/FileContextMenu/FileContextMenu";
@@ -176,11 +177,10 @@ export function PdfStudioSidebar({
             )}
             <div className="relative">
               <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-              <Input
+              <Input adornment="start"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search documents…"
-                className="h-8 pl-7 text-xs"
                 style={{ fontSize: "16px" }}
               />
             </div>

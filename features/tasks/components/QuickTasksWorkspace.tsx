@@ -15,7 +15,7 @@ import {
   type QuickTasksTaskDraft,
 } from "@/features/surfaces/manifests/quick-tasks.manifest";
 import { TASK_PRIORITIES } from "@/features/tasks/constants/priority";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { ProInput } from "@/components/official/ProInput";
 import { Button } from "@/components/ui/button";
 import { Search, Inbox, FolderKanban } from "lucide-react";
@@ -209,11 +209,10 @@ export function QuickTasksSidebar() {
       <div className="px-2 py-1.5 border-b flex items-center justify-between shrink-0">
         <div className="relative flex-1">
           <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <Input
+          <Input adornment="start"
             placeholder="Search tasks..."
             value={searchQuery}
             onChange={(e) => dispatch(setQuickTasksSearchQuery(e.target.value))}
-            className="h-7 pl-7 text-[11px]"
           />
         </div>
       </div>

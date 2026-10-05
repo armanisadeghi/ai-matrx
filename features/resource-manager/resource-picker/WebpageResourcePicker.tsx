@@ -597,14 +597,13 @@ export function WebpageResourcePickerCore({
                   onValueChange={setPreviewTab}
                   className="flex-1 flex flex-col overflow-hidden min-h-0"
                 >
-                  <TabsList className="mx-2 mt-2 h-9 w-fit shrink-0">
+                  <TabsList className="mx-2 mt-2 w-fit shrink-0">
                     <TabsTrigger
                       value="pretty"
-                      className="text-sm rounded-none"
                     >
                       Pretty
                     </TabsTrigger>
-                    <TabsTrigger value="edit" className="text-sm rounded-none">
+                    <TabsTrigger value="edit">
                       Edit text
                     </TabsTrigger>
                   </TabsList>

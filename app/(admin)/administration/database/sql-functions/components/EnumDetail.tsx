@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsListLegacy as TabsList, TabsTriggerLegacy as TabsTrigger } from "@/components/ui/tabs";
 import {
   X,
   Edit,

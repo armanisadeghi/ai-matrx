@@ -59,7 +59,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { extractErrorMessage } from "@/utils/errors";
 import { Button } from "@ai-matrx/design-system";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   Select,
   SelectContent,
@@ -560,7 +560,7 @@ function UrlTabContent({
         auto-generated; otherwise the URL is used directly.
       </p>
       <div className="flex items-center gap-2">
-        <Input
+        <Input mono
           type="url"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
@@ -572,7 +572,7 @@ function UrlTabContent({
           }}
           placeholder="https://example.com/image.jpg"
           disabled={state === "processing"}
-          className="flex-1 h-8 text-xs font-mono"
+          className="flex-1"
           style={{ fontSize: "16px" }}
           aria-label="Image URL"
         />
@@ -717,7 +717,7 @@ function GenerateTabContent({
 
       <div className="flex gap-2">
         <Select value={size} onValueChange={(v) => setSize(v as GenSize)}>
-          <SelectTrigger className="h-8 text-xs flex-1" disabled={busy}>
+          <SelectTrigger className="flex-1" disabled={busy}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -734,7 +734,7 @@ function GenerateTabContent({
           onChange={(e) => setStyle(e.target.value)}
           placeholder="Style (optional)"
           disabled={busy}
-          className="flex-[2] h-8 text-xs"
+          className="flex-[2]"
           style={{ fontSize: "16px" }}
         />
       </div>

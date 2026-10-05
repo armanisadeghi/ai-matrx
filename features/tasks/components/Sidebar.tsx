@@ -41,7 +41,7 @@ import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorC
 import EditableProjectName from "./EditableProjectName";
 import TaskScopeFilter from "./TaskScopeFilter";
 import { Button } from "@ai-matrx/design-system";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Switch } from "@/components/ui/switch";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { useTasksRead } from "@/features/tasks/hooks/useTasksRead";
@@ -165,7 +165,6 @@ export default function Sidebar(): JSX.Element {
             <Switch
               checked={showCompleted}
               onCheckedChange={(v) => dispatch(setShowCompleted(!!v))}
-              className="data-[state=checked]:bg-primary"
             />
           </div>
         </div>
@@ -185,7 +184,7 @@ export default function Sidebar(): JSX.Element {
                 onChange={(e) => dispatch(setNewProjectName(e.target.value))}
                 placeholder="New project name..."
                 disabled={isCreatingProject}
-                className="flex-1 h-8 text-sm"
+                className="flex-1"
               />
               {(newProjectName.trim() || isCreatingProject) && (
                 <Button

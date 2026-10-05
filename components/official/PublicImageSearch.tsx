@@ -12,7 +12,7 @@ import {
   ImagePlus,
   Image as ImageIcon,
 } from "lucide-react";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import {
@@ -627,7 +627,7 @@ function SearchDialog({
           {/* Search and view mode controls */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border-b border-border">
             <div className="relative w-full max-w-3xl">
-              <Input
+              <Input adornment="end"
                 ref={searchInputRef}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -635,7 +635,6 @@ function SearchDialog({
                   e.key === "Enter" && handleSearch(searchQuery)
                 }
                 placeholder="Search for images..."
-                className="pr-10"
               />
               <button
                 type="button"

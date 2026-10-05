@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { GoogleAccountSelect } from "@/features/google-workspace/GoogleAccountSelect";
 import { eligibleGoogleConnections } from "@/features/google-workspace/connection";
 import type { GoogleConnectionSummary } from "@/features/marketing/google/types";

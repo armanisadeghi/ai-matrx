@@ -39,7 +39,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { KeywordInput } from "@/features/marketing/seo/keyword/KeywordInput";
 import { Label } from "@/components/ui/label";
 import {
@@ -1558,7 +1558,7 @@ function ChangeDetail({
       className="flex h-full min-h-0 flex-col overflow-hidden"
     >
       <div className="shrink-0 border-b px-4 py-2">
-        <TabsList className="h-8">
+        <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="theories">Theories</TabsTrigger>
           <TabsTrigger value="implementation">Implementation</TabsTrigger>

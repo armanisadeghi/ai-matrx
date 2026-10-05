@@ -10,7 +10,7 @@ import {
   Search,
 } from "lucide-react";
 import { cn } from "@/styles/themes/utils";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 
 type SortDir = "asc" | "desc" | null;
 
@@ -166,11 +166,11 @@ export const JsonTableView: React.FC<JsonTableViewProps> = ({
         <div className="text-xs text-muted-foreground">{caption}</div>
         <div className="relative">
           <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <Input
+          <Input adornment="start"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Filter rows…"
-            className="h-7 pl-7 w-48 text-xs"
+            className="w-48"
             style={{ fontSize: "16px" }}
           />
         </div>

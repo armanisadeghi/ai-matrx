@@ -12,7 +12,7 @@ import React, {
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   Select,
   SelectContent,
@@ -581,7 +581,7 @@ function FilterPanel({
           placeholder="Search raw logs…"
           value={filters.search}
           onChange={(e) => onChange({ ...filters, search: e.target.value })}
-          className="h-7 text-xs flex-1"
+          className="flex-1"
         />
         <span className="text-muted-foreground shrink-0 whitespace-nowrap tabular-nums">
           {visibleLines} / {totalLines}
@@ -852,7 +852,7 @@ function LineRangePanel({
             const raw = e.target.value.trim();
             onDisplayCount(raw === "" ? null : Math.max(1, parseInt(raw) || 1));
           }}
-          className="h-6 w-20 text-xs text-center"
+          className="w-20 text-center"
         />
       </div>
       <span className="text-muted-foreground tabular-nums">
@@ -1152,7 +1152,7 @@ export default function CoolifyLogViewer({
               value={selectedApp}
               onValueChange={(v) => handleAppChange(v as AppKey)}
             >
-              <SelectTrigger className="w-56 h-8 text-xs">
+              <SelectTrigger className="w-56">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -1181,7 +1181,7 @@ export default function CoolifyLogViewer({
             value={String(lineCount)}
             onValueChange={(v) => setLineCount(parseInt(v, 10))}
           >
-            <SelectTrigger className="w-28 h-8 text-xs">
+            <SelectTrigger className="w-28">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -1197,7 +1197,7 @@ export default function CoolifyLogViewer({
             value={String(pollInterval)}
             onValueChange={(v) => setPollInterval(parseInt(v, 10))}
           >
-            <SelectTrigger className="w-32 h-8 text-xs">
+            <SelectTrigger className="w-32">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

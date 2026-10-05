@@ -33,7 +33,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -385,7 +385,7 @@ export function PageImagePlanCard({ page }: { page: MarketingPage }) {
                           value={selectValue}
                           onValueChange={(value) => onStyleSelect(entry, value)}
                         >
-                          <SelectTrigger className="h-8 text-xs">
+                          <SelectTrigger>
                             <SelectValue placeholder="Style preset" />
                           </SelectTrigger>
                           <SelectContent>

@@ -21,7 +21,7 @@ import { Check, Loader2, Search, ShieldAlert, Wand2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Textarea } from "@/components/ui/textarea";
 import { sourceHref } from "@/features/sources/api/sourcesApi";
 
@@ -238,11 +238,10 @@ export function VoicePage({ scope, ownerId, ownerName, organizationId, resolveOr
           </p>
           <div className="relative mt-3">
             <Search className="pointer-events-none absolute left-2 top-2 h-4 w-4 text-muted-foreground" aria-hidden />
-            <Input
+            <Input adornment="start"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search your Sources by name"
-              className="pl-8"
               aria-label="Search Sources"
             />
           </div>

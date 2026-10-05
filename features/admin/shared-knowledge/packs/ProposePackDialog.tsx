@@ -19,7 +19,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -192,7 +192,7 @@ export function ProposePackDialog({
               </SelectContent>
             </Select>
             {industryId === NEW ? (
-              <Input value={newIndustryName} onChange={(e) => setNewIndustryName(e.target.value)} placeholder="Industry name, e.g. Dental practices" className="h-8 text-sm" disabled={busy || creatingIndustry} />
+              <Input value={newIndustryName} onChange={(e) => setNewIndustryName(e.target.value)} placeholder="Industry name, e.g. Dental practices" disabled={busy || creatingIndustry} />
             ) : null}
           </label>
           <label className="space-y-1">
@@ -217,7 +217,7 @@ export function ProposePackDialog({
           ) : null}
           <div className="relative">
             <Search className="pointer-events-none absolute left-2 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-            <Input value={siteQuery} onChange={(e) => setSiteQuery(e.target.value)} placeholder="Search sites by domain or name…" className="h-8 pl-7 text-sm" disabled={busy} />
+            <Input adornment="start" value={siteQuery} onChange={(e) => setSiteQuery(e.target.value)} placeholder="Search sites by domain or name…" disabled={busy} />
           </div>
           <ul className="max-h-36 divide-y divide-border overflow-y-auto rounded-md border border-border">
             {searching && siteRows.length === 0 ? (

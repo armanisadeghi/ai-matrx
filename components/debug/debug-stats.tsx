@@ -76,7 +76,7 @@ export function DebugStats() {
             </CardHeader>
             <CardContent>
                 <Tabs defaultValue="memory">
-                    <TabsList className="grid w-full grid-cols-2">
+                    <TabsList fill>
                         <TabsTrigger value="memory">Memory</TabsTrigger>
                         <TabsTrigger value="performance">Performance</TabsTrigger>
                     </TabsList>

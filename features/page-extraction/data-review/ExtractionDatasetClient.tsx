@@ -32,7 +32,7 @@ import {
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   MatrxDataTable,
   type ColumnFiltersState,
@@ -1209,7 +1209,7 @@ function RenamableTitle({
               setNameDraft(name ?? "");
             }
           }}
-          className="h-7 max-w-sm text-sm"
+          className="max-w-sm"
           style={{ fontSize: "16px" }}
         />
       ) : (

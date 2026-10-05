@@ -3,7 +3,7 @@
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { RotateCcw, Plus, X } from "lucide-react";
@@ -227,7 +227,6 @@ function FieldInput({
       <Input
         value={value ?? ""}
         onChange={(e) => onChange(e.target.value)}
-        className="text-sm"
         style={{ fontSize: "16px" }}
         placeholder={placeholder}
       />
@@ -290,7 +289,7 @@ function StringListField({
             <Input
               value={item}
               onChange={(e) => updateItem(idx, e.target.value)}
-              className="text-sm flex-1"
+              className="flex-1"
               style={{ fontSize: "16px" }}
               placeholder={placeholder}
             />

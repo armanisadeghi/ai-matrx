@@ -23,7 +23,8 @@ import {
   Globe,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input, Button as SurfaceButton } from "@ai-matrx/design-system";
+import { Button as SurfaceButton } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { cn } from "@/lib/utils";
 import type {
@@ -168,7 +169,6 @@ export function Composer({ shows }: ComposerProps) {
                     }
                     placeholder="https://…/document.pdf"
                     inputMode="url"
-                    className="h-11 text-base"
                   />
                   {urls.length > 1 && (
                     <Button
@@ -197,7 +197,7 @@ export function Composer({ shows }: ComposerProps) {
             <div className="space-y-3">
               <div className="flex items-center gap-2 rounded-xl border border-border bg-background/60 px-3.5 py-2.5">
                 <Globe className="h-4 w-4 shrink-0 text-muted-foreground" />
-                <Input
+                <Input variant="bare"
                   value={resolveUrl}
                   onChange={(e) => setResolveUrl(e.target.value)}
                   placeholder={
@@ -209,7 +209,6 @@ export function Composer({ shows }: ComposerProps) {
                           ? "Upload or paste an audio link…"
                           : "https://…"
                   }
-                  className="h-9 border-0 bg-transparent px-0 text-base shadow-none focus-visible:ring-0"
                 />
               </div>
               <p className="text-xs text-muted-foreground">

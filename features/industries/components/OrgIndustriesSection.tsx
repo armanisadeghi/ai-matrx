@@ -172,7 +172,7 @@ export function OrgIndustriesSection({ orgId }: { orgId: string }) {
       {canEdit && unassigned.length > 0 && (
         <div className="flex items-center gap-2">
           <Select value={adding} onValueChange={setAdding}>
-            <SelectTrigger className="h-8 w-56">
+            <SelectTrigger className="w-56">
               <SelectValue placeholder="Add an industry…" />
             </SelectTrigger>
             <SelectContent>

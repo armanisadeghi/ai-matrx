@@ -18,7 +18,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, EyeOff, Forward, Pencil, Plus, X } from "lucide-react";
 import { useState } from "react";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { Badge } from "@/components/ui/badge";
@@ -129,7 +129,6 @@ function EditableList({
             }
           }}
           placeholder={placeholder}
-          className="h-7 text-xs"
         />
         <Button icon={<Plus />} type="button" variant="outline" onClick={add}> Add
         </Button>
@@ -416,7 +415,6 @@ function Gate3Body({
                               setKeep({ ...keep, [question.candidate_id]: event.target.value })
                             }
                             placeholder="Why keep it? (recorded with your decision)"
-                            className="h-7 text-xs"
                           />
                           <Button
                             type="button"
@@ -485,7 +483,7 @@ function Gate4Body({
                 onChange={(event) =>
                   setEdits({ ...edits, cadence_days: Number(event.target.value) })
                 }
-                className="h-7 w-24 text-xs"
+                className="w-24"
               />
             ) : (
               `${payload.cadence_days} day(s)`
@@ -501,7 +499,7 @@ function Gate4Body({
                 onChange={(event) =>
                   setEdits({ ...edits, repeats: Number(event.target.value) })
                 }
-                className="h-7 w-24 text-xs"
+                className="w-24"
               />
             ) : (
               payload.repeats
@@ -648,11 +646,10 @@ export function GateReviewCard({
       )}
 
       <div className="flex flex-col gap-2 border-t border-border/60 px-3 py-2">
-        <Textarea
+        <Textarea minHeight={56}
           value={note}
           onChange={(event) => setNote(event.target.value)}
           placeholder="A note for the record (optional) — saved with your decision, your name and the time."
-          className="min-h-14 text-xs"
         />
         <div className="flex flex-wrap items-center gap-2">
           {hasEdits ? (

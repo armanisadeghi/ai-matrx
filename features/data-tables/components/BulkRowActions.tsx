@@ -41,7 +41,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { confirm as confirmDialog } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/components/ui/use-toast";
 
@@ -212,7 +212,7 @@ export function BulkRowActions({
                 Set one column on {count} {noun}
               </p>
               <Select value={setColumnField} onValueChange={setSetColumnField}>
-                <SelectTrigger className="h-8 text-sm">
+                <SelectTrigger>
                   <SelectValue placeholder="Choose a column" />
                 </SelectTrigger>
                 <SelectContent>
@@ -227,7 +227,6 @@ export function BulkRowActions({
                 value={setColumnValue}
                 onChange={(e) => setSetColumnValue(e.target.value)}
                 placeholder="New value"
-                className="h-8 text-sm"
                 style={{ fontSize: "16px" }}
               />
               <div className="flex gap-1.5">
@@ -288,7 +287,7 @@ export function BulkRowActions({
                 {count - 1}.
               </p>
               <Select value={fillField} onValueChange={setFillField}>
-                <SelectTrigger className="h-8 text-sm">
+                <SelectTrigger>
                   <SelectValue placeholder="Choose a column" />
                 </SelectTrigger>
                 <SelectContent>

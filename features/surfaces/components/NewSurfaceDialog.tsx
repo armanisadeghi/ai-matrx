@@ -10,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -179,7 +179,7 @@ export function NewSurfaceDialog({
           <div className="space-y-1.5">
             <Label className="text-xs">Client</Label>
             <Select value={client} onValueChange={setClient} disabled={busy}>
-              <SelectTrigger className="bg-background text-foreground">
+              <SelectTrigger>
                 <SelectValue placeholder="Pick a client" />
               </SelectTrigger>
               <SelectContent>
@@ -198,7 +198,7 @@ export function NewSurfaceDialog({
               onValueChange={setParentSurface}
               disabled={busy}
             >
-              <SelectTrigger className="font-mono text-sm bg-background text-foreground">
+              <SelectTrigger>
                 <SelectValue placeholder="Pick a parent surface" />
               </SelectTrigger>
               <SelectContent className="max-h-[min(320px,50dvh)]">
@@ -228,11 +228,10 @@ export function NewSurfaceDialog({
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs">Local part of name</Label>
-            <Input
+            <Input mono
               value={local}
               onChange={(e) => setLocal(e.target.value.toLowerCase())}
               placeholder="e.g. notes or debug/state-analyzer"
-              className="font-mono text-sm bg-background text-foreground"
               style={{ fontSize: "16px" }}
               disabled={busy}
               autoFocus
@@ -257,7 +256,7 @@ export function NewSurfaceDialog({
           <div className="space-y-1.5">
             <Label className="text-xs">Tier (where it sorts in the list)</Label>
             <Select value={tier} onValueChange={setTier} disabled={busy}>
-              <SelectTrigger className="bg-background text-foreground">
+              <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

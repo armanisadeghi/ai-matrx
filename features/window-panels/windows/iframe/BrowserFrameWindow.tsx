@@ -8,7 +8,7 @@ import {
   shortUrlLabel,
 } from "@/features/window-panels/utils/embed-site-url";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { toast } from "@/lib/toast";
 import { LUCIDE_ICONS_GALLERY_URL } from "@/utils/icons/lucide-gallery-url";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
@@ -106,10 +106,10 @@ function BrowserFrameWindowInner({
       onCollectData={collectData}
       footer={
         <div className="flex w-full min-w-0 items-center gap-2 px-2 py-1.5">
-          <Input
+          <Input mono
             value={addressDraft}
             onChange={(e) => setAddressDraft(e.target.value)}
-            className="h-8 min-w-0 flex-1 font-mono text-xs"
+            className="min-w-0 flex-1"
             style={{ fontSize: "16px" }}
             placeholder="https://…"
             onKeyDown={(e) => {

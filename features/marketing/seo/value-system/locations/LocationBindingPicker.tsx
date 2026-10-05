@@ -25,7 +25,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Building2, ExternalLink, Plus, Search } from "lucide-react";
 import { cn } from "@/styles/themes/utils";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Skeleton } from "@ai-matrx/design-system";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
 import { useBusinessLocations } from "@/features/marketing/data/hooks";
@@ -120,11 +120,10 @@ export function LocationBindingPicker({
                 className="pointer-events-none absolute top-1/2 left-2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"
                 aria-hidden
               />
-              <Input
+              <Input adornment="start"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Filter locations"
-                className="h-8 pl-7 text-sm"
               />
             </div>
           ) : null}

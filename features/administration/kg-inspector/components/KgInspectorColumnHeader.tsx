@@ -4,7 +4,7 @@ import { ArrowUpDown, ChevronDown, ChevronUp, Filter } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   Popover,
   PopoverContent,
@@ -123,7 +123,6 @@ function ColumnFilterPopover({
                   numMin: e.target.value === "" ? null : Number(e.target.value),
                 })
               }
-              className="h-8 text-base"
             />
             <span className="text-xs text-muted-foreground">–</span>
             <Input
@@ -136,7 +135,6 @@ function ColumnFilterPopover({
                   numMax: e.target.value === "" ? null : Number(e.target.value),
                 })
               }
-              className="h-8 text-base"
             />
           </div>
         ) : null}
@@ -151,7 +149,7 @@ function ColumnFilterPopover({
                 onChange={(e) =>
                   onChange({ ...(value ?? {}), dateFrom: e.target.value })
                 }
-                className="mt-0.5 h-8 text-base"
+                className="mt-0.5"
               />
             </label>
             <label className="block text-[10px] uppercase tracking-wide text-muted-foreground">
@@ -162,7 +160,7 @@ function ColumnFilterPopover({
                 onChange={(e) =>
                   onChange({ ...(value ?? {}), dateTo: e.target.value })
                 }
-                className="mt-0.5 h-8 text-base"
+                className="mt-0.5"
               />
             </label>
           </div>
@@ -283,7 +281,6 @@ export function KgInspectorColumnHeader({
           placeholder="Filter…"
           value={textValue ?? ""}
           onChange={(e) => onTextChange(e.target.value)}
-          className="h-7 text-base"
           onClick={(e) => e.stopPropagation()}
         />
       ) : null}
@@ -291,7 +288,6 @@ export function KgInspectorColumnHeader({
       {showSelectFilter ? (
         <Select value={selectValue} onValueChange={onSelectChange}>
           <SelectTrigger
-            className="h-7 text-xs"
             onClick={(e) => e.stopPropagation()}
           >
             <SelectValue placeholder="All" />

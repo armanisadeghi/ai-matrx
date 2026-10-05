@@ -40,7 +40,7 @@ import {
   selectScopeSelectionsContext,
 } from "@/lib/redux/slices/appContextSlice";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Checkbox } from "@/components/ui/checkbox";
 import MobileFilterMenu from "./MobileFilterMenu";
 import MobileProjectSelector from "./MobileProjectSelector";
@@ -196,12 +196,11 @@ export default function MobileTasksList({
                 className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"
                 size={16}
               />
-              <Input
+              <Input adornment="both"
                 type="text"
                 value={searchQuery}
                 onChange={(e) => dispatch(setSearchQuery(e.target.value))}
                 placeholder="Search tasks..."
-                className="pl-9 pr-9 h-10 bg-muted/50 text-base"
                 style={{ fontSize: "16px" }}
               />
               {searchQuery && (
@@ -236,7 +235,6 @@ export default function MobileTasksList({
                       });
                     }, 300);
                   }}
-                  className="h-10 text-base"
                   style={{ fontSize: "16px" }}
                 />
                 <div className="flex items-center gap-2">

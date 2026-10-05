@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ChevronDown } from "lucide-react";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { PropertyRow } from "@/components/official/ConfigurationFields";
 import {
   ShortcutFieldRow as FieldRow,
@@ -292,7 +292,6 @@ export function AdvancedSection({
               }
               placeholder="None"
               disabled={disabled}
-              className="h-9 text-sm"
               style={{ fontSize: "16px" }}
             />
           </FieldRow>
@@ -348,7 +347,7 @@ export function AdvancedSection({
             >
               <SelectTrigger
                 aria-label="Response density"
-                className="h-9 text-sm w-40"
+                className="w-40"
               >
                 <SelectValue />
               </SelectTrigger>
@@ -582,14 +581,14 @@ function JsonFieldRow({
       state={state}
       hidden={hidden}
     >
-      <Textarea
+      <Textarea mono
         aria-label={title}
         value={draft}
         onChange={(e) => onTextChange(e.target.value)}
         rows={4}
         placeholder={placeholder}
         disabled={disabled}
-        className="text-xs font-mono resize-y"
+        className="resize-y"
         style={{ fontSize: "16px" }}
       />
       {error && <p className="text-[11px] text-destructive mt-1">{error} <ErrorAlchemyMenu error={error} /></p>}

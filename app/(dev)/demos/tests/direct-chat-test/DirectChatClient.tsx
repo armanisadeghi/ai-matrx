@@ -242,7 +242,7 @@ export default function DirectChatClient() {
             <div className="flex items-center gap-2">
               <span className="text-xs font-semibold w-24">Prompt:</span>
               <Select value={selectedPrompt} onValueChange={setSelectedPrompt}>
-                <SelectTrigger className="h-7 text-xs w-64">
+                <SelectTrigger className="w-64">
                   <SelectValue placeholder="Select a sample prompt" />
                 </SelectTrigger>
                 <SelectContent>

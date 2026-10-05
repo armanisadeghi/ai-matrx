@@ -996,24 +996,21 @@ const AdvancedTranscriptViewer = ({
                   onValueChange={(value) => setViewMode(value as ViewMode)}
                   className="w-auto rounded-full"
                 >
-                  <TabsList className="h-7 p-0">
+                  <TabsList>
                     <TabsTrigger
                       value="detailed"
-                      className="h-7 px-2 text-xs rounded-md border border-border"
                     >
                       <AlignJustify className="h-3.5 w-3.5 pr-1" />
                       <span className="hidden sm:inline">Detailed</span>
                     </TabsTrigger>
                     <TabsTrigger
                       value="compact"
-                      className="h-7 px-2 text-xs rounded-md border border-border"
                     >
                       <ChevronsUpDown className="h-3.5 w-3.5 pr-1" />
                       <span className="hidden sm:inline">Compact</span>
                     </TabsTrigger>
                     <TabsTrigger
                       value="text-only"
-                      className="h-7 px-2 text-xs rounded-md border border-border"
                     >
                       <TextIcon className="h-3.5 w-3.5 pr-1" />
                       <span className="hidden sm:inline">Text Only</span>

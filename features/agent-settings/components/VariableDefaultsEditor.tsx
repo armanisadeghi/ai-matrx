@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Plus, X, Pencil, AlertCircle } from "lucide-react";
 import { Label } from "@/components/ui/label";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -226,7 +226,7 @@ export function VariableDefaultsEditor({
           <div className="space-y-3 py-2">
             <div className="space-y-1">
               <Label className="text-xs">Variable Name</Label>
-              <Input
+              <Input mono
                 value={form.name}
                 onChange={(e) =>
                   setForm((f) => ({
@@ -234,7 +234,6 @@ export function VariableDefaultsEditor({
                     name: e.target.value.replace(/\s/g, "_"),
                   }))
                 }
-                className="text-xs h-7 font-mono"
                 data-identifier
                 placeholder="my_variable"
                 disabled={modalMode === "edit"}
@@ -249,7 +248,6 @@ export function VariableDefaultsEditor({
                   setForm((f) => ({ ...f, defaultValue: e.target.value }))
                 }
                 placeholder="Default text…"
-                className="text-xs h-7"
               />
             </div>
 
@@ -261,7 +259,6 @@ export function VariableDefaultsEditor({
                   setForm((f) => ({ ...f, helpText: e.target.value }))
                 }
                 placeholder="Shown to users as a hint"
-                className="text-xs h-7"
               />
             </div>
           </div>

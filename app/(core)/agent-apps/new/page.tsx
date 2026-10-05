@@ -1,8 +1,7 @@
 import { redirect } from "next/navigation";
 import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { CreateAgentAppFormWrapper } from "@/features/agent-apps/components/CreateAgentAppFormWrapper";
-import PageHeader from "@/features/shell/components/header/PageHeader";
-import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
+import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 
 interface NewAgentAppPageProps {
   searchParams: Promise<{ agent_id?: string }>;
@@ -29,14 +28,11 @@ export default async function NewAgentAppPage({
 
   return (
     <>
-      <PageHeader>
-        <div className="flex items-center w-full min-w-0 gap-0 p-0">
-          <ChevronLeftTapButton href="/agent-apps" ariaLabel="Back to Agent Apps" />
-          <h1 className="ml-2 text-sm font-medium text-foreground truncate">
-            New App
-          </h1>
-        </div>
-      </PageHeader>
+      <RecordPageHeader
+        backHref="/agent-apps"
+        parents={[{ label: "Agent Apps", href: "/agent-apps" }]}
+        record={{ name: "New app" }}
+      />
       <div className="h-full flex flex-col overflow-hidden bg-textured pt-[var(--shell-header-h)]">
         <div className="flex-1 overflow-y-auto">
           {/* Width is managed inside the wrapper now — the 6-card grid

@@ -29,7 +29,7 @@ import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import { toast } from "../../../host/notify";
 import { cn } from "@ai-matrx/design-system";
 import { openOverlay, CHAT_WINDOWS } from "../../../host/windows";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { fetchConversationHistory } from "../../../agents/redux/conversation-history/thunks";
 import { setScopeSearch } from "../../../agents/redux/conversation-history/slice";
 import {
@@ -263,7 +263,7 @@ export function SurfaceConversationsSection({
         </div>
         <div className="relative">
           <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input
+          <Input adornment="start"
             autoFocus
             placeholder="Search conversations"
             onChange={(e) =>
@@ -271,7 +271,6 @@ export function SurfaceConversationsSection({
                 setScopeSearch({ scopeId: allScopeId, searchTerm: e.target.value }),
               )
             }
-            className="h-8 pl-7 text-base md:text-xs"
           />
         </div>
         <div className="max-h-64 overflow-y-auto">

@@ -71,12 +71,12 @@ export function LLMDataModal({ open, onOpenChange, data }: LLMDataModalProps) {
                         }}
                         className="w-auto"
                     >
-                        <TabsList className="h-8">
-                            <TabsTrigger value="markdown" className="text-xs gap-1">
+                        <TabsList>
+                            <TabsTrigger value="markdown">
                                 <FileText className="w-3 h-3" />
                                 Markdown
                             </TabsTrigger>
-                            <TabsTrigger value="json" className="text-xs gap-1">
+                            <TabsTrigger value="json">
                                 <FileJson className="w-3 h-3" />
                                 JSON
                             </TabsTrigger>

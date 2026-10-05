@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 import { Button } from "@ai-matrx/design-system";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { CopyIcon, RefreshCw, BookmarkIcon, Brackets } from "lucide-react";
 import { IoBookmarks } from "react-icons/io5";
 import { ActionButtonsProps } from "./types";
@@ -29,7 +29,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
           value={ignorePrefix || ""}
           onChange={(e) => onIgnorePrefixChange(e.target.value)}
           placeholder="Ignore prefix..."
-          className="h-6 w-32 text-xs"
+          className="w-32"
           title="Path prefix to ignore when copying path objects"
         />
       )}

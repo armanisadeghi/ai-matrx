@@ -34,7 +34,7 @@ export const GameSettings = (props: GameSettingsProps = {}) => {
             </CardHeader>
             <CardContent>
                 <Tabs defaultValue="dimensions" className="w-full">
-                    <TabsList className="grid w-full grid-cols-4">
+                    <TabsList fill>
                         <TabsTrigger value="dimensions">Dimensions</TabsTrigger>
                         <TabsTrigger value="physics">Physics</TabsTrigger>
                         <TabsTrigger value="scroll">Scroll</TabsTrigger>

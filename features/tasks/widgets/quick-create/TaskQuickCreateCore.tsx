@@ -27,7 +27,7 @@ import {
   ArrowUpRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -580,7 +580,6 @@ export function TaskQuickCreateCore({
               }
             }}
             placeholder="What do you want to do?"
-            className="h-9 text-sm"
             style={{ fontSize: "16px" }}
           />
         </div>
@@ -639,7 +638,6 @@ export function TaskQuickCreateCore({
             >
               <SelectTrigger
                 id="tqc-project"
-                className="h-8 text-xs rounded-md"
               >
                 <SelectValue />
               </SelectTrigger>
@@ -674,7 +672,6 @@ export function TaskQuickCreateCore({
             >
               <SelectTrigger
                 id="tqc-priority"
-                className="h-8 text-xs rounded-md"
               >
                 <SelectValue />
               </SelectTrigger>
@@ -698,7 +695,6 @@ export function TaskQuickCreateCore({
               type="date"
               value={dueDate}
               onChange={(e) => setDueDate(e.target.value)}
-              className="h-8 text-xs rounded-md"
             />
           </div>
         </div>

@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   Select,
   SelectContent,
@@ -236,7 +236,7 @@ export function MergePanel({
                     onChangeConfig("leftKey", null);
                   }}
                 >
-                  <SelectTrigger className="h-8 text-xs">
+                  <SelectTrigger>
                     <SelectValue placeholder="Pick a query" />
                   </SelectTrigger>
                   <SelectContent>
@@ -252,7 +252,7 @@ export function MergePanel({
                     value={config.leftKey ?? ""}
                     onValueChange={(v) => onChangeConfig("leftKey", v)}
                   >
-                    <SelectTrigger className="h-8 text-xs">
+                    <SelectTrigger>
                       <SelectValue placeholder="Join key" />
                     </SelectTrigger>
                     <SelectContent>
@@ -283,7 +283,7 @@ export function MergePanel({
                     onChangeConfig("rightKey", null);
                   }}
                 >
-                  <SelectTrigger className="h-8 text-xs">
+                  <SelectTrigger>
                     <SelectValue placeholder="Pick a query" />
                   </SelectTrigger>
                   <SelectContent>
@@ -299,7 +299,7 @@ export function MergePanel({
                     value={config.rightKey ?? ""}
                     onValueChange={(v) => onChangeConfig("rightKey", v)}
                   >
-                    <SelectTrigger className="h-8 text-xs">
+                    <SelectTrigger>
                       <SelectValue placeholder="Join key" />
                     </SelectTrigger>
                     <SelectContent>
@@ -360,12 +360,11 @@ export function MergePanel({
                 <label className="text-[11px] font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide block mb-1">
                   Timestamp column
                 </label>
-                <Input
+                <Input mono
                   value={config.timelineKey}
                   onChange={(e) =>
                     onChangeConfig("timelineKey", e.target.value)
                   }
-                  className="h-8 text-xs font-mono"
                   data-identifier
                   placeholder="created_at"
                 />

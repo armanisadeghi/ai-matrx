@@ -243,7 +243,7 @@ export function VoiceConfigSelects({
                                     onValueChange={(intensity) => handleIntensityChange(baseEmotion, intensity)}
                                     disabled={isPlaying}
                                 >
-                                    <SelectTrigger className="h-8">
+                                    <SelectTrigger>
                                         <SelectValue placeholder="Select intensity" />
                                     </SelectTrigger>
                                     <SelectContent>

@@ -117,12 +117,12 @@ export function PageSpeedResults({ data, strategy }: PageSpeedResultsProps) {
             {/* Detailed Results */}
             <div className="bg-textured border-border rounded-lg p-4">
                 <Tabs defaultValue="metrics" className="w-full">
-                    <TabsList className="grid w-full grid-cols-5 bg-gray-100 dark:bg-gray-700 h-9">
-                        <TabsTrigger value="metrics" className="text-xs">Metrics</TabsTrigger>
+                    <TabsList fill>
+                        <TabsTrigger value="metrics">Metrics</TabsTrigger>
                         {Object.entries(categories).map(([key, category]) => {
                             if (!category) return null;
                             return (
-                                <TabsTrigger key={key} value={key} className="text-xs">
+                                <TabsTrigger key={key} value={key}>
                                     {category.title.replace(/\s+/g, ' ')}
                                 </TabsTrigger>
                             );

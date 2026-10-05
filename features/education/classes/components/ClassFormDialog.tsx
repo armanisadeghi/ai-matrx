@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/drawer";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { AccessModeField } from "./AccessModeField";
 import { DEFAULT_ACCESS_MODE } from "../constants";

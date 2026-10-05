@@ -49,11 +49,11 @@ import {
 } from "@ai-matrx/design-system/data-table";
 import {
   ArchiveFilter,
-  Input,
   Textarea,
   toArchiveFilter,
   type ArchiveFilterValue,
 } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { ItemMenu } from "@/components/official/item/ItemMenu";
 import type { ItemMenuConfig } from "@/components/official/item/types";
 import { archiveConfirmSentence } from "@/features/trash/archiveCopy";

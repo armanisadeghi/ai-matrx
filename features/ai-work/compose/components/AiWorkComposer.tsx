@@ -46,7 +46,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { recordToast, toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
@@ -686,7 +686,6 @@ function ComposerBody({
           onChange={(event) => setRequestText(event.target.value)}
           rows={6}
           placeholder="For example: Read the three attached contracts and list every deadline, who owns it, and what happens if we miss it."
-          className="text-sm"
         />
         <p className="mt-1.5 text-xs text-muted-foreground">
           Plain language is enough. You never have to write a system prompt.
@@ -767,7 +766,6 @@ function ComposerBody({
                 value={savedLabel}
                 onChange={(event) => setSavedLabel(event.target.value)}
                 placeholder="Name this request"
-                className="h-8 text-sm"
               />
               <Button
                 icon={saving ? (

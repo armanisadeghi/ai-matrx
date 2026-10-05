@@ -18,7 +18,7 @@
 // server did.
 
 import { Switch } from "@/components/ui/switch";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
@@ -69,7 +69,6 @@ export function NumberField({
         value={value}
         placeholder={String(placeholder)}
         onChange={(event) => onChange(event.target.value)}
-        className="h-7 text-xs"
       />
       <p className="text-muted-foreground">
         Empty uses the {placeholderNote}: {placeholder}.

@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { ComponentEntry } from '../parts/component-list';
 import { ComponentDisplayWrapper } from '../component-usage';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent, TabsListLegacy as TabsList, TabsTriggerLegacy as TabsTrigger } from '@/components/ui/tabs';
 import { useSelectedImages } from '@/components/image/context/SelectedImagesProvider';
 import { ImagePreviewRow } from '@/components/image/shared/ImagePreviewRow';
 import { Button } from '@/components/ui/button';

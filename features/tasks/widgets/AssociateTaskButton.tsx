@@ -18,7 +18,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@ai-matrx/design-system";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@ai-matrx/design-system";
 import { cn } from "@/utils/cn";
 import {
@@ -383,7 +383,6 @@ export default function AssociateTaskButton(props: AssociateTaskButtonProps) {
                 }
               }}
               placeholder="Task title..."
-              className="h-8 text-sm"
               style={{ fontSize: "16px" }}
             />
             <ProTextarea

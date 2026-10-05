@@ -13,7 +13,7 @@ import {
 import { toast, recordToast, dismissRecordToasts } from "@/lib/toast";
 
 import { cn } from "@/lib/utils";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -468,11 +468,10 @@ export function SkillDetailEditor({
           )}
 
           <Field label="Skill ID" required>
-            <Input
+            <Input mono
               value={draft.skillId}
               onChange={(e) => set("skillId", e.target.value)}
               placeholder="my-skill-id"
-              className="font-mono"
               disabled={!isNew || readOnly}
             />
           </Field>
@@ -781,7 +780,7 @@ function ChipListField({
             }}
             onBlur={commit}
             placeholder={placeholder}
-            className="h-7 w-44 text-xs"
+            className="w-44"
           />
         )}
       </div>

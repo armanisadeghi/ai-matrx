@@ -15,7 +15,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import JSON5 from "json5";
-import { Textarea } from "@/components/ui/textarea";
+import { TextareaLegacy as Textarea } from "@/components/ui/textarea";
 import { Button } from "@ai-matrx/design-system";
 import { AlertTriangle, GitCompareArrows } from "lucide-react";
 import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";

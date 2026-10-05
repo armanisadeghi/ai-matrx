@@ -21,7 +21,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 
 interface SaveSheetProps {
   open: boolean;
@@ -56,8 +56,6 @@ export function SaveSheet({
             value={label}
             onChange={(e) => onLabelChange(e.target.value)}
             placeholder="Scan name"
-            // 16px floor prevents the iOS focus zoom.
-            className="h-11 text-base"
             autoFocus
           />
         </div>

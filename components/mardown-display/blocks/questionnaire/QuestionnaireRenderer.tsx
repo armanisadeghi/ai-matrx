@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Bug } from "lucide-react";
@@ -376,7 +376,7 @@ const CheckboxQuestion = ({
                   // Pass array format to onChange - the hook will convert it to object format
                   onChange(Array.from(newSelected));
                 }}
-                className={`w-full ${theme.input.background} border-2 ${theme.input.border} ${theme.input.text}`}
+                className={`w-full ${theme.input.background} ${theme.input.border} ${theme.input.text}`}
               />
             )}
           </div>
@@ -466,7 +466,7 @@ const DropdownQuestion = ({
     <div className="space-y-4">
       <Select value={selectedValue} onValueChange={handleSelectionChange}>
         <SelectTrigger
-          className={`w-full ${theme.input.background} border-1 ${theme.input.border} ${theme.input.text}`}
+          className={`w-full ${theme.input.background} ${theme.input.border} ${theme.input.text}`}
         >
           <SelectValue placeholder="Select an option" />
         </SelectTrigger>
@@ -489,7 +489,7 @@ const DropdownQuestion = ({
             setOtherValue(newValue);
             onChange(`Other: ${newValue}`);
           }}
-          className={`w-full ${theme.input.background} border-2 ${theme.input.border} ${theme.input.text}`}
+          className={`w-full ${theme.input.background} ${theme.input.border} ${theme.input.text}`}
         />
       )}
     </div>
@@ -569,7 +569,7 @@ const RadioQuestion = ({
                   setOtherValue(e.target.value);
                   onChange(`Other: ${e.target.value}`);
                 }}
-                className={`w-full ${theme.input.background} border-2 ${theme.input.border} ${theme.input.text}`}
+                className={`w-full ${theme.input.background} ${theme.input.border} ${theme.input.text}`}
               />
             )}
           </div>
@@ -672,7 +672,7 @@ const InputQuestion = ({
     type="text"
     value={typeof value === "string" ? value : ""}
     onChange={(e) => onChange(e.target.value)}
-    className={`w-full ${theme.input.background} border-2 ${theme.input.border} ${theme.input.text}`}
+    className={`w-full ${theme.input.background} ${theme.input.border} ${theme.input.text}`}
   />
 );
 

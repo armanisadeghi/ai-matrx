@@ -281,7 +281,7 @@ export function AiMatrxReplyComposer({
             ? "A reply cannot be sent here."
             : "Ask AI Matrx about this session, or say what to do next."
         }
-        className="mt-3 text-sm"
+        className="mt-3"
         aria-label="Your reply to AI Matrx"
         // The visible reason a refused field cannot be typed in is the
         // server's own sentence above it, not a tooltip.

@@ -11,7 +11,7 @@
 import { useState } from "react";
 import { Loader2, X } from "lucide-react";
 import type { MeetingInvitee, MeetingRecord } from "@ai-matrx/meet/react";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   Dialog,
   DialogContent,

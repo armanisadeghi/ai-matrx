@@ -15,7 +15,7 @@ import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { formatAbsoluteDate, formatCount, formatDurationMinutes } from "@ai-matrx/kit/format";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -190,11 +190,11 @@ export function MeetingsHistoryPanel({
           onChange={(event) => setDraftQuery(event.target.value)}
           onBlur={() => setSearch((current) => (current.query === draftQuery ? current : { ...current, query: draftQuery }))}
           placeholder="Search title or link name, press Enter"
-          className="h-8 w-64 text-sm"
+          className="w-64"
           aria-label="Search meetings by title or link name"
         />
         <Select value={search.state ?? ALL} onValueChange={(value) => setSearch((current) => ({ ...current, state: isMeetingState(value) ? value : null }))}>
-          <SelectTrigger className="h-8 w-36 text-sm" aria-label="State">
+          <SelectTrigger className="w-36" aria-label="State">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -206,11 +206,11 @@ export function MeetingsHistoryPanel({
         </Select>
         <label className="flex items-center gap-1 text-xs text-muted-foreground">
           From
-          <Input type="date" value={search.from ?? ""} onChange={(event) => setSearch((current) => ({ ...current, from: event.target.value || null }))} className="h-8 w-36 text-sm" />
+          <Input type="date" value={search.from ?? ""} onChange={(event) => setSearch((current) => ({ ...current, from: event.target.value || null }))} className="w-36" />
         </label>
         <label className="flex items-center gap-1 text-xs text-muted-foreground">
           To
-          <Input type="date" value={search.to ?? ""} onChange={(event) => setSearch((current) => ({ ...current, to: event.target.value || null }))} className="h-8 w-36 text-sm" />
+          <Input type="date" value={search.to ?? ""} onChange={(event) => setSearch((current) => ({ ...current, to: event.target.value || null }))} className="w-36" />
         </label>
         {organizationId ? (
           <span className="inline-flex h-7 items-center gap-1 rounded-md border border-border bg-muted/50 pl-2 text-xs">

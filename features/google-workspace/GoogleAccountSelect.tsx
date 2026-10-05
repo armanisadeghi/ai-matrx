@@ -61,7 +61,6 @@ export function GoogleAccountSelect({
           disabled={disabled}
         >
           <SelectTrigger
-            className="h-11"
             aria-label={`Choose ${label.toLocaleLowerCase()}`}
           >
             <SelectValue placeholder={`Choose ${label.toLocaleLowerCase()}`} />

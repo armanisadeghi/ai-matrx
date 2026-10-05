@@ -5,7 +5,7 @@ import { Loader2, X } from "lucide-react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -181,7 +181,6 @@ export function ScopeTypeFormSheet({
               value={labelSingular}
               onChange={(e) => handleSingularChange(e.target.value)}
               placeholder="Department"
-              className="text-base"
               style={{ fontSize: "16px" }}
             />
           </div>
@@ -191,7 +190,6 @@ export function ScopeTypeFormSheet({
               value={labelPlural}
               onChange={(e) => setLabelPlural(e.target.value)}
               placeholder="Departments"
-              className="text-base"
               style={{ fontSize: "16px" }}
             />
           </div>
@@ -246,7 +244,6 @@ export function ScopeTypeFormSheet({
               onChange={(e) => setMaxAssignments(e.target.value)}
               placeholder="Unlimited"
               min={1}
-              className="text-base"
               style={{ fontSize: "16px" }}
             />
             <p className="text-[10px] text-muted-foreground">
@@ -277,10 +274,10 @@ export function ScopeTypeFormSheet({
         <div className="space-y-1.5">
           <Label className="text-xs">Default Variable Keys</Label>
           <div className="flex gap-2">
-            <Input
+            <Input mono
               value={variableKeyInput}
               onChange={(e) => setVariableKeyInput(e.target.value)}
-              className="font-mono text-base flex-1"
+              className="flex-1"
               data-identifier
               placeholder="e.g. budget_code"
               onKeyDown={(e) =>

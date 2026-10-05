@@ -20,7 +20,7 @@ import {
   Select,
   SelectContent,
   SelectItem,
-  SelectTrigger,
+  SelectTriggerLegacy as SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
@@ -443,12 +443,12 @@ export function ContentEditor({
                 handleContentChange(`${localContent}${text}`)
               }
             >
-              <Textarea
+              <Textarea variant="bare" minHeight={300}
                 ref={setPlainTextarea}
                 value={localContent}
                 onChange={(e) => handleContentChange(e.target.value)}
                 placeholder={placeholder}
-                className="w-full min-h-[300px] border-none rounded-none resize-none border-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-sm leading-relaxed bg-transparent p-3"
+                className="w-full resize-none"
                 style={{
                   height: "auto",
                   minHeight: "300px",

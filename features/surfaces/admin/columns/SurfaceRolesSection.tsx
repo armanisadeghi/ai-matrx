@@ -203,7 +203,7 @@ function RoleCard({
           disabled={busy}
           onValueChange={(v) => onMeModeChange(v as MeAgentMode)}
         >
-          <SelectTrigger className="h-7 w-full text-xs">
+          <SelectTrigger className="w-full">
             {busy ? (
               <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
             ) : (

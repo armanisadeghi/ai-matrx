@@ -7,7 +7,7 @@ import {
   MatrxDataTable,
   type MatrxColumnDef,
 } from "@ai-matrx/design-system/data-table";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -258,29 +258,29 @@ export default function FeatureDocsTable({
               <Badge variant="secondary" className="text-xs">
                 {filteredRows.length} / {zoneRows.length}
               </Badge>
-              <Input
+              <Input mono
                 value={filters.pathInclude}
                 onChange={(event) =>
                   updateFilter("pathInclude", event.target.value)
                 }
                 placeholder="Include: features/**, **/FEATURE.md"
-                className="h-8 w-60 font-mono text-xs"
+                className="w-60"
                 aria-label="Include paths"
               />
-              <Input
+              <Input mono
                 value={filters.pathExclude}
                 onChange={(event) =>
                   updateFilter("pathExclude", event.target.value)
                 }
                 placeholder="Exclude: **/README.md, !docs/**"
-                className="h-8 w-60 font-mono text-xs"
+                className="w-60"
                 aria-label="Exclude paths"
               />
               <Input
                 value={filters.title}
                 onChange={(event) => updateFilter("title", event.target.value)}
                 placeholder="Filter title…"
-                className="h-8 w-40 text-xs"
+                className="w-40"
                 aria-label="Filter title"
               />
               <Select
@@ -288,7 +288,7 @@ export default function FeatureDocsTable({
                 onValueChange={(value) => updateFilter("area", value)}
               >
                 <SelectTrigger
-                  className="h-8 w-32 text-xs"
+                  className="w-32"
                   aria-label="Filter area"
                 >
                   <SelectValue placeholder="All areas" />
@@ -302,11 +302,11 @@ export default function FeatureDocsTable({
                   ))}
                 </SelectContent>
               </Select>
-              <Input
+              <Input mono
                 value={filters.slug}
                 onChange={(event) => updateFilter("slug", event.target.value)}
                 placeholder="Filter slug…"
-                className="h-8 w-36 font-mono text-xs"
+                className="w-36"
                 aria-label="Filter slug"
               />
               <Select
@@ -316,7 +316,7 @@ export default function FeatureDocsTable({
                 }
               >
                 <SelectTrigger
-                  className="h-8 w-32 text-xs"
+                  className="w-32"
                   aria-label="Filter sync state"
                 >
                   <SelectValue />
@@ -333,7 +333,7 @@ export default function FeatureDocsTable({
                   updateFilter("version", event.target.value)
                 }
                 placeholder="Version…"
-                className="h-8 w-24 text-xs tabular-nums"
+                className="w-24"
                 aria-label="Filter version"
               />
               <Button

@@ -46,7 +46,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { cn } from "@/lib/utils";
 import { GitHubConnectionCard } from "@/features/github-integration/GitHubConnectionCard";
 import { useOpenItemPresentation } from "@/features/item-presentation/useOpenItemPresentation";
@@ -271,7 +271,7 @@ function ResourceAttachPickerBody({
 
         <div className="relative">
           <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input
+          <Input adornment="start"
             autoFocus
             aria-label={`Search ${providerName} ${noun}`}
             value={query}
@@ -284,7 +284,6 @@ function ResourceAttachPickerBody({
             placeholder={
               live ? `Search your ${providerName} ${noun}…` : `Search ${noun}…`
             }
-            className="h-9 pl-8 text-base sm:text-sm max-sm:min-h-11"
           />
         </div>
 

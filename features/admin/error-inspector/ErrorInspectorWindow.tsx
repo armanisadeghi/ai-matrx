@@ -15,7 +15,7 @@ import { useEffect, useMemo, useState } from "react";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { AlertTriangle, Ban, Bug, ChevronRight, Trash2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -173,7 +173,6 @@ export default function ErrorInspectorWindow({
           placeholder="Filter by source, table, code, message…"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="h-8 text-xs"
         />
         <div className="flex items-center gap-1">
           {(["all", ...TIERS_BY_RANK] as TierFilter[]).map((t) => {

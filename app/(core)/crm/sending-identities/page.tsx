@@ -1,9 +1,7 @@
 import { MailCheck } from "lucide-react";
-import Link from "next/link";
-import { ChevronRight } from "lucide-react";
 import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { ModuleSignInGate } from "@/features/auth/components/module-landing/ModuleSignInGate";
-import PageHeader from "@/features/shell/components/header/PageHeader";
+import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { SendingIdentitiesPage } from "@/features/crm/components/sending-identities/SendingIdentitiesPage";
 
 /**
@@ -32,21 +30,11 @@ export default async function SendingIdentitiesRoute() {
 
   return (
     <>
-      <PageHeader>
-        <div className="flex w-full min-w-0 items-center gap-1.5 px-1 text-sm">
-          <MailCheck className="h-4 w-4 shrink-0 text-muted-foreground" />
-          <Link
-            href="/crm"
-            className="shrink-0 font-medium text-muted-foreground hover:text-foreground"
-          >
-            CRM
-          </Link>
-          <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-          <h1 className="truncate font-semibold text-foreground">
-            Sending Mailboxes
-          </h1>
-        </div>
-      </PageHeader>
+      <RecordPageHeader
+        backHref="/crm"
+        parents={[{ label: "CRM", href: "/crm" }]}
+        record={{ name: "Sending mailboxes" }}
+      />
       <SendingIdentitiesPage />
     </>
   );

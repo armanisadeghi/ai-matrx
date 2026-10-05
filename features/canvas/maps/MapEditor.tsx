@@ -22,7 +22,7 @@ import {
   validateDiagram,
   type DiagramData,
 } from "@/components/mardown-display/blocks/diagram/parseDiagramJSON";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
@@ -315,7 +315,7 @@ export function MapEditor({ mapId }: { mapId: string }) {
             onChange={(e) => renameMap(e.target.value)}
             disabled={!diagram}
             aria-label="Map name"
-            className="h-8 w-full border-border/50 bg-background/65 px-2.5 text-center text-sm font-semibold shadow-sm backdrop-blur-xl hover:border-border focus:border-primary"
+            className="w-full text-center"
           />
         </div>
       }

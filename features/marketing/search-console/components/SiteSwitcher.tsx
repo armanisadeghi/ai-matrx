@@ -16,7 +16,7 @@ import {
   SelectChevron,
 } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { listSiteOptions } from "@/features/marketing/data/service";
 import { parseSiteIntegrations } from "@/features/marketing/data/integrations-schema";
 import type { MarketingSite } from "@/features/marketing/types";
@@ -84,7 +84,7 @@ export function SiteSwitcher({
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search sites…"
-          className="mb-1.5 h-8 text-xs"
+          className="mb-1.5"
           aria-label="Search sites"
         />
         <div className="max-h-72 overflow-y-auto">

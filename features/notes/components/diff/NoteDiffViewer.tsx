@@ -158,14 +158,13 @@ export function NoteDiffViewer({
             tabs keep their icons and drop their words (kept as names and
             tooltips) instead of clipping the last one. */}
         <div className="@container/diffbar flex shrink-0 items-center gap-3 border-b border-border bg-card/50 px-3 py-1.5">
-          <TabsList className="h-7 min-w-0 shrink-0 bg-muted/50 p-0.5">
+          <TabsList className="min-w-0 shrink-0">
             {TAB_CONFIG.map(({ value, label, icon: Icon }) => (
               <TabsTrigger
                 key={value}
                 value={value}
                 aria-label={label}
                 title={label}
-                className="h-6 gap-1 px-2 text-xs data-[state=active]:bg-background"
               >
                 <Icon className="h-3 w-3" />
                 <span className="hidden @[30rem]/diffbar:inline">{label}</span>

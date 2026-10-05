@@ -8,7 +8,7 @@ import {
   Select,
   SelectContent,
   SelectItem,
-  SelectTrigger,
+  SelectTriggerLegacy as SelectTrigger,
 } from "@/components/ui/select";
 import { ContentEditor, MODE_CONFIGS } from "./ContentEditor";
 import type { EditorMode, ContentEditorProps } from "./types";

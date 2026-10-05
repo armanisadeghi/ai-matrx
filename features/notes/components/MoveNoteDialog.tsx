@@ -21,7 +21,7 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { getFolderIconAndColor } from "../utils/folderUtils";
@@ -136,11 +136,10 @@ export function MoveNoteDialog({
       </button>
       <div className="relative">
         <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-        <Input
+        <Input adornment="start"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Search folders"
-          className="h-9 pl-8 text-base sm:text-sm"
           disabled={busy}
         />
       </div>

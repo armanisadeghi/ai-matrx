@@ -17,7 +17,7 @@
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { cn } from "@/styles/themes/utils";
 import {
   IDENTITY_PATTERN,
@@ -149,7 +149,6 @@ export function DimensionForm({
           onChange={(event) => setLabel(event.target.value)}
           placeholder="Equipment class"
           autoFocus
-          className="h-9 text-base sm:text-sm"
         />
         <p className="text-[11px] leading-4 text-muted-foreground">
           {mode === "edit" ? (

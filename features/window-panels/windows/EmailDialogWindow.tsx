@@ -10,7 +10,7 @@
 
 import React, { useCallback, useState } from "react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { Loader2, Mail } from "lucide-react";
@@ -206,7 +206,6 @@ function EmailDialogBody({
             onChange={handleEmailChange}
             disabled={loading}
             autoFocus
-            className="text-base"
           />
         </div>
       </div>

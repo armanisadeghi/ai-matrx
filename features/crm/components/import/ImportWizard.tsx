@@ -404,7 +404,7 @@ export function ImportWizard() {
                   value={resolvedOrgId ?? undefined}
                   onValueChange={(v) => setOrgId(v)}
                 >
-                  <SelectTrigger className="h-11 text-sm sm:h-8 sm:text-xs">
+                  <SelectTrigger>
                     <SelectValue placeholder="Pick an organization" />
                   </SelectTrigger>
                   <SelectContent>
@@ -611,7 +611,7 @@ export function ImportWizard() {
                               })
                             }
                           >
-                            <SelectTrigger className="h-11 w-48 text-sm sm:h-7 sm:text-xs">
+                            <SelectTrigger className="w-48">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>

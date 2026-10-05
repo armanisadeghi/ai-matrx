@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Input } from '@ai-matrx/design-system';
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
@@ -74,11 +74,10 @@ export default function AiModelForm({
         <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
                 <FormField label="Name" required>
-                    <Input
+                    <Input mono
                         value={data.name}
                         onChange={set('name')}
                         placeholder="e.g. claude-sonnet-4-6"
-                        className="h-8 text-sm font-mono"
                     />
                 </FormField>
                 <FormField label="Common Name">
@@ -86,7 +85,6 @@ export default function AiModelForm({
                         value={data.common_name}
                         onChange={set('common_name')}
                         placeholder="e.g. Claude Sonnet 4.6"
-                        className="h-8 text-sm"
                     />
                 </FormField>
             </div>
@@ -138,7 +136,6 @@ export default function AiModelForm({
                         value={data.context_window}
                         onChange={set('context_window')}
                         placeholder="e.g. 200000"
-                        className="h-8 text-sm"
                     />
                 </FormField>
                 <FormField label="Max Tokens" description="Maximum output tokens">
@@ -147,7 +144,6 @@ export default function AiModelForm({
                         value={data.max_tokens}
                         onChange={set('max_tokens')}
                         placeholder="e.g. 64000"
-                        className="h-8 text-sm"
                     />
                 </FormField>
             </div>
@@ -288,7 +284,6 @@ export default function AiModelForm({
                             value={data.retry_max_attempts}
                             onChange={set('retry_max_attempts')}
                             placeholder="0"
-                            className="h-8 text-sm"
                         />
                     </FormField>
                 </div>

@@ -9,7 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -183,11 +183,10 @@ export function TemplateBrowserModal({
         {/* Search */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
+          <Input adornment="start"
             placeholder="Search message templates..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9"
           />
         </div>
 
@@ -200,7 +199,7 @@ export function TemplateBrowserModal({
               setSelectedRole(value as MessageRole | "all")
             }
           >
-            <SelectTrigger className="w-[140px] h-8 text-xs">
+            <SelectTrigger className="w-[140px]">
               <SelectValue placeholder="Message Type" />
             </SelectTrigger>
             <SelectContent>

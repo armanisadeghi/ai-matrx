@@ -18,7 +18,7 @@ import { ChevronRight, FileText, Loader2, Search } from "lucide-react";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { cn } from "@/lib/utils";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   Popover,
   PopoverContent,
@@ -205,12 +205,11 @@ function NotePickerBody({
       <div className="border-b border-border px-2 py-1.5">
         <div className="relative">
           <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input
+          <Input variant="bare" adornment="start"
             type="search"
             placeholder="Search notes…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="h-8 border-0 bg-muted/40 pl-7 text-xs shadow-none focus-visible:ring-1"
             style={{ fontSize: "16px" }}
           />
         </div>

@@ -23,7 +23,7 @@ import {
 } from "@/features/tasks/redux/thunks";
 import { invalidateAndRefetchFullContext } from "@/features/agent-context/redux/hierarchyThunks";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { ProInput } from "@/components/official/ProInput";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
@@ -654,7 +654,6 @@ export default function MobileTaskDetails({
                     setDueDate(e.target.value);
                     setIsDirty(true);
                   }}
-                  className="text-base min-h-11"
                   style={{ fontSize: "16px" }}
                 />
               </div>
@@ -686,7 +685,6 @@ export default function MobileTaskDetails({
                     setStartDate(e.target.value);
                     setIsDirty(true);
                   }}
-                  className="text-base min-h-11"
                   style={{ fontSize: "16px" }}
                 />
               </div>
@@ -735,7 +733,7 @@ export default function MobileTaskDetails({
                     setIsDirty(true);
                   }}
                 >
-                  <SelectTrigger className="text-sm">
+                  <SelectTrigger>
                     <SelectValue>
                       <span
                         className={`px-2 py-1 rounded-md text-xs font-medium ${getPriorityColor(priority)}`}

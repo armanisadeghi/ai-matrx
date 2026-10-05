@@ -80,10 +80,10 @@ const AiVoiceFloatingWorkspace: React.FC = () => {
         <div className="flex flex-col h-full w-full min-h-0 bg-background text-foreground">
             <Tabs defaultValue="playground" className="flex flex-col h-full flex-1 min-h-0">
                 <div className="shrink-0 px-3 py-2 border-b border-border bg-muted/20">
-                    <TabsList className="w-full grid grid-cols-3 h-8 text-[11px]">
-                        <TabsTrigger value="playground" className="text-[11px] h-6 py-0">Playground</TabsTrigger>
-                        <TabsTrigger value="voices" className="text-[11px] h-6 py-0">Voices</TabsTrigger>
-                        <TabsTrigger value="actions" className="text-[11px] h-6 py-0">Custom</TabsTrigger>
+                    <TabsList fill>
+                        <TabsTrigger value="playground">Playground</TabsTrigger>
+                        <TabsTrigger value="voices">Voices</TabsTrigger>
+                        <TabsTrigger value="actions">Custom</TabsTrigger>
                     </TabsList>
                 </div>
                 

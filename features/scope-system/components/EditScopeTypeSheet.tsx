@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -507,14 +507,14 @@ export function EditScopeTypeSheet({
                   URL slug
                 </Label>
                 <div className="flex gap-2">
-                  <Input
+                  <Input mono
                     id={ids.slug}
                     value={slug}
                     onChange={(e) => setSlug(e.target.value)}
                     placeholder={toSlug(labelPlural) || "url-slug"}
                     style={{ fontSize: "16px" }}
                     disabled={busy}
-                    className="flex-1 font-mono"
+                    className="flex-1"
                   />
                   <Button
                     type="button"

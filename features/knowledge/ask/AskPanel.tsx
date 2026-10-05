@@ -259,7 +259,7 @@ export function AskPanel({
             }}
             placeholder="Ask a question your Sources can answer"
             rows={2}
-            className="resize-none text-sm"
+            className="resize-none"
           />
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground">

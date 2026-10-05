@@ -154,7 +154,7 @@ export function IslandBlockView({ node, updateAttributes, deleteNode, selected, 
           >
             <SelectTrigger
               aria-label="Code language"
-              className="ml-1 h-6 min-w-[5.5rem] max-w-[9rem] shrink gap-1 px-2 py-0 text-xs"
+              className="ml-1 min-w-[5.5rem] max-w-[9rem] shrink"
             >
               <SelectValue />
             </SelectTrigger>

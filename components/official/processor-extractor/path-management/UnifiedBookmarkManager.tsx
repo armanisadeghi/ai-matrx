@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect, useMemo } from "react";
 import { Button } from "@ai-matrx/design-system";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -226,11 +226,10 @@ const UnifiedBookmarkManager: React.FC<UnifiedBookmarkManagerProps> = ({
       <div className="flex items-center gap-2 p-2 border-b">
         <div className="relative flex-1">
           <SearchIcon className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <Input
+          <Input adornment="start"
             placeholder="Search bookmarks..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-8"
           />
         </div>
         <Select value={configFilter} onValueChange={setConfigFilter}>
@@ -249,7 +248,7 @@ const UnifiedBookmarkManager: React.FC<UnifiedBookmarkManagerProps> = ({
       </div>
       
       <Tabs defaultValue="manage" value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList fill>
           <TabsTrigger value="manage">Manage Bookmarks</TabsTrigger>
           <TabsTrigger value="import">Import/Export</TabsTrigger>
         </TabsList>
@@ -275,7 +274,7 @@ const UnifiedBookmarkManager: React.FC<UnifiedBookmarkManagerProps> = ({
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-gray-500">Sort by:</span>
                     <Select value={sortBy} onValueChange={setSortBy}>
-                      <SelectTrigger className="h-7 text-xs w-32">
+                      <SelectTrigger className="w-32">
                         <SelectValue placeholder="Sort by" />
                       </SelectTrigger>
                       <SelectContent>
@@ -561,7 +560,6 @@ const UnifiedBookmarkManager: React.FC<UnifiedBookmarkManagerProps> = ({
                 id="edit-name"
                 value={editingBookmark.name}
                 onChange={(e) => setEditingBookmark({...editingBookmark, name: e.target.value})}
-                className="h-10"
               />
             </div>
             <div>
@@ -588,7 +586,7 @@ const UnifiedBookmarkManager: React.FC<UnifiedBookmarkManagerProps> = ({
                   configName: getConfigEntry(value)?.name || value
                 })}
               >
-                <SelectTrigger className="h-10">
+                <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

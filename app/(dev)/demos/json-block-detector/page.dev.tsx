@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsListLegacy as TabsList, TabsTriggerLegacy as TabsTrigger } from "@/components/ui/tabs";
 import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
 import { ProJsonTextarea } from "@/components/official/ProJsonTextarea";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
@@ -966,7 +966,7 @@ export default function JsonBlockDetectorPage() {
                   samplesLoading || samples.length === 0 || !!samplesError
                 }
               >
-                <SelectTrigger className="h-8 w-full text-xs">
+                <SelectTrigger className="w-full">
                   <SelectValue
                     placeholder={
                       samplesLoading ? (
@@ -1027,7 +1027,7 @@ export default function JsonBlockDetectorPage() {
                   !!schemasError
                 }
               >
-                <SelectTrigger className="h-8 w-full text-xs">
+                <SelectTrigger className="w-full">
                   <SelectValue
                     placeholder={
                       schemasLoading ? (

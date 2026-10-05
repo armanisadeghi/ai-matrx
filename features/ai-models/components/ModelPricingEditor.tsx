@@ -3,7 +3,7 @@
 import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -257,7 +257,7 @@ export default function ModelPricingEditor({
                   <Label className="text-xs text-muted-foreground">
                     Max Tokens Threshold
                   </Label>
-                  <Input
+                  <Input mono
                     type="number"
                     min="0"
                     placeholder="null = no limit / highest tier"
@@ -268,7 +268,6 @@ export default function ModelPricingEditor({
                         max_tokens: raw === "" ? null : parseInt(raw),
                       });
                     }}
-                    className="h-7 text-xs font-mono"
                   />
                   <p className="text-xs text-muted-foreground/70">
                     Leave empty for the final/only tier

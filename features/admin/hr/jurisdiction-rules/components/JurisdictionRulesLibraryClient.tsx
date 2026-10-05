@@ -240,7 +240,7 @@ export function JurisdictionRulesLibraryClient() {
   const selectFilters = (
     <>
       <Select value={classFilter} onValueChange={(value) => setDomainFilter("rule_class", value)}>
-        <SelectTrigger className="h-8 w-[190px] text-sm">
+        <SelectTrigger className="w-[190px]">
           <SelectValue placeholder="All classes" />
         </SelectTrigger>
         <SelectContent>
@@ -253,7 +253,7 @@ export function JurisdictionRulesLibraryClient() {
         </SelectContent>
       </Select>
       <Select value={jurisdictionFilter} onValueChange={(value) => setDomainFilter("jurisdiction_key", value)}>
-        <SelectTrigger className="h-8 w-[190px] text-sm">
+        <SelectTrigger className="w-[190px]">
           <SelectValue placeholder="All jurisdictions" />
         </SelectTrigger>
         <SelectContent>
@@ -266,7 +266,7 @@ export function JurisdictionRulesLibraryClient() {
         </SelectContent>
       </Select>
       <Select value={statusFilter} onValueChange={(value) => setDomainFilter("status", value)}>
-        <SelectTrigger className="h-8 w-[150px] text-sm">
+        <SelectTrigger className="w-[150px]">
           <SelectValue placeholder="All statuses" />
         </SelectTrigger>
         <SelectContent>

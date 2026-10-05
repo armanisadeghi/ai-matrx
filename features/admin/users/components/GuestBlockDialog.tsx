@@ -72,7 +72,7 @@ export function GuestBlockDialog({
           <label className="grid gap-1 text-xs font-medium">
             Duration
             <Select value={duration} onValueChange={(v) => setDuration(v as DurationKey)}>
-              <SelectTrigger className="h-8 text-xs">
+              <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -90,7 +90,6 @@ export function GuestBlockDialog({
               value={reason}
               maxLength={500}
               rows={2}
-              className="text-xs"
               placeholder="e.g. scripted requests burning LLM spend"
               onChange={(event) => setReason(event.target.value)}
             />

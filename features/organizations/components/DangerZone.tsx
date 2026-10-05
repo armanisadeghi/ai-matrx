@@ -3,7 +3,8 @@
 import React, { useRef, useState } from "react";
 import { Archive, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input, Textarea } from "@ai-matrx/design-system";
+import { Textarea } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import {
   AlertDialog,

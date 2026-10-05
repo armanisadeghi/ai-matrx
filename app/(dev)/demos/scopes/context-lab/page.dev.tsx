@@ -49,7 +49,7 @@ import { toastDoor } from "@/components/official/entity-ref/toastDoor";
 import { Card } from "@/components/ui/card";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   Select,
   SelectContent,
@@ -232,7 +232,7 @@ function AssignToItemPanel({
             </span>
           </label>
           <Select value={scopeId ?? undefined} onValueChange={setScopeId}>
-            <SelectTrigger className="h-9 w-full">
+            <SelectTrigger className="w-full">
               <div className="flex min-w-0 flex-1 items-center overflow-hidden">
                 <span className="min-w-0 flex-1 truncate text-left">
                   <SelectValue placeholder="Pick a scope from any org…" />
@@ -531,7 +531,7 @@ function ScopeAsValuePanel({ orgs }: { orgs: OrgNode[] }) {
               Scope
             </label>
             <Select value={sourceId ?? undefined} onValueChange={setSourceId}>
-              <SelectTrigger className="h-9 w-full">
+              <SelectTrigger className="w-full">
                 {pickerTrigger(source?.name ?? null, "Any scope…")}
               </SelectTrigger>
               <SelectContent>
@@ -565,7 +565,7 @@ function ScopeAsValuePanel({ orgs }: { orgs: OrgNode[] }) {
               onValueChange={setItemId}
               disabled={!type}
             >
-              <SelectTrigger className="h-9 w-full">
+              <SelectTrigger className="w-full">
                 {pickerTrigger(
                   item?.display_name ?? null,
                   type ? "Pick the role…" : "Scope first",
@@ -604,7 +604,7 @@ function ScopeAsValuePanel({ orgs }: { orgs: OrgNode[] }) {
               onValueChange={setTargetId}
               disabled={!source}
             >
-              <SelectTrigger className="h-9 w-full">
+              <SelectTrigger className="w-full">
                 {pickerTrigger(
                   target?.name ?? null,
                   source ? "Another scope…" : "Scope first",
@@ -818,7 +818,7 @@ function RequiredSlotsPanel({ orgs }: { orgs: OrgNode[] }) {
               Scope type
             </label>
             <Select value={typeId ?? undefined} onValueChange={setTypeId}>
-              <SelectTrigger className="h-9 w-full">
+              <SelectTrigger className="w-full">
                 <div className="flex min-w-0 flex-1 items-center overflow-hidden">
                   <span className="min-w-0 flex-1 truncate text-left">
                     {type ? (
@@ -859,7 +859,7 @@ function RequiredSlotsPanel({ orgs }: { orgs: OrgNode[] }) {
               onValueChange={setItemId}
               disabled={!type}
             >
-              <SelectTrigger className="h-9 w-full">
+              <SelectTrigger className="w-full">
                 <div className="flex min-w-0 flex-1 items-center overflow-hidden">
                   <span className="min-w-0 flex-1 truncate text-left">
                     {item ? (
@@ -1288,11 +1288,10 @@ function CompactContextBar({ orgs }: { orgs: OrgNode[] }) {
             <PopoverContent sizing="content" align="end" className="p-2">
               <div className="relative mb-2">
                 <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-                <Input
+                <Input adornment="start"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Search scopes…"
-                  className="h-8 pl-8"
                   style={{ fontSize: "16px" }}
                 />
               </div>
@@ -1663,7 +1662,7 @@ export default function ContextLabPage() {
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-xs text-muted-foreground">Document:</span>
               <Select value={fileId ?? undefined} onValueChange={setFileId}>
-                <SelectTrigger className="h-8 w-[340px]">
+                <SelectTrigger className="w-[340px]">
                   <div className="flex min-w-0 flex-1 items-center overflow-hidden">
                     <span className="min-w-0 flex-1 truncate text-left">
                       <SelectValue />

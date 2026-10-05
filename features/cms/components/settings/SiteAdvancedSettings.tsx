@@ -40,7 +40,7 @@
 import React, { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { SurfaceRoleAgentButton } from "@ai-matrx/chat/surfaces/components/chrome/SurfaceRoleAgentButton";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, Plus, Save, Trash2, ArrowUp, ArrowDown } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -232,9 +232,9 @@ function LinkListEditor({
               )
             }
             placeholder={labelPlaceholder}
-            className="text-sm h-8 flex-1"
+            className="flex-1"
           />
-          <Input
+          <Input mono
             value={row.href}
             onChange={(e) =>
               onChange(
@@ -244,7 +244,7 @@ function LinkListEditor({
               )
             }
             placeholder={hrefPlaceholder}
-            className="text-sm h-8 flex-[1.4] font-mono"
+            className="flex-[1.4]"
           />
           <Button
             icon={<ArrowUp />}
@@ -409,7 +409,7 @@ function ThemeSection({ site, onSaved }: SectionProps) {
       <div className="space-y-1.5">
         {rows.map((row, i) => (
           <div key={i} className="flex items-center gap-1.5">
-            <Input
+            <Input mono
               aria-label={`Theme token ${i + 1} group`}
               value={row.group}
               onChange={(e) =>
@@ -420,9 +420,9 @@ function ThemeSection({ site, onSaved }: SectionProps) {
                 )
               }
               placeholder="group (colors)"
-              className="text-sm h-8 w-32 font-mono"
+              className="w-32"
             />
-            <Input
+            <Input mono
               aria-label={`Theme token ${i + 1} key`}
               value={row.key}
               onChange={(e) =>
@@ -433,10 +433,10 @@ function ThemeSection({ site, onSaved }: SectionProps) {
                 )
               }
               placeholder="key (primary)"
-              className="text-sm h-8 w-36 font-mono"
+              className="w-36"
             />
             <div className="relative flex-1">
-              <Input
+              <Input mono
                 aria-label={`Theme token ${i + 1} value`}
                 value={row.value}
                 onChange={(e) =>
@@ -447,7 +447,7 @@ function ThemeSection({ site, onSaved }: SectionProps) {
                   )
                 }
                 placeholder="value (#0f766e, 1.5rem, 'Inter', sans-serif)"
-                className={`text-sm h-8 font-mono ${COLOR_VALUE.test(row.value.trim()) ? "pl-8" : ""}`}
+                className={` ${COLOR_VALUE.test(row.value.trim()) ? "pl-8" : ""}`}
               />
               {COLOR_VALUE.test(row.value.trim()) && (
                 <span
@@ -741,7 +741,7 @@ function FooterSection({ site, onSaved }: SectionProps) {
                     )
                   }
                   placeholder="Column heading (Services)"
-                  className="text-sm h-8 flex-1"
+                  className="flex-1"
                 />
                 <Button
                   icon={<Trash2 />}
@@ -784,7 +784,6 @@ function FooterSection({ site, onSaved }: SectionProps) {
               value={contactHeading}
               onChange={(e) => setContactHeading(e.target.value)}
               placeholder="Contact heading (default: Contact)"
-              className="text-sm h-8"
               disabled={!showContact}
             />
           </div>
@@ -801,7 +800,6 @@ function FooterSection({ site, onSaved }: SectionProps) {
               value={socialHeading}
               onChange={(e) => setSocialHeading(e.target.value)}
               placeholder="Social heading (default: Follow Us)"
-              className="text-sm h-8"
               disabled={!showSocial}
             />
           </div>
@@ -815,7 +813,6 @@ function FooterSection({ site, onSaved }: SectionProps) {
             value={copyright}
             onChange={(e) => setCopyright(e.target.value)}
             placeholder={`Default: © ${new Date().getFullYear()} ${site.name}`}
-            className="text-sm h-8"
           />
         </div>
 
@@ -908,18 +905,16 @@ function ContactSection({ site, onSaved }: SectionProps) {
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             placeholder="(555) 123-4567"
-            className="text-sm h-8"
           />
         </div>
         <div>
           <label className="text-sm font-medium block mb-1.5">
             Phone (dial string)
           </label>
-          <Input
+          <Input mono
             value={phoneRaw}
             onChange={(e) => setPhoneRaw(e.target.value)}
             placeholder="+15551234567"
-            className="text-sm h-8 font-mono"
           />
         </div>
         <div>
@@ -928,7 +923,6 @@ function ContactSection({ site, onSaved }: SectionProps) {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="hello@example.com"
-            className="text-sm h-8"
           />
         </div>
       </div>
@@ -938,7 +932,6 @@ function ContactSection({ site, onSaved }: SectionProps) {
           <Input
             value={street}
             onChange={(e) => setStreet(e.target.value)}
-            className="text-sm h-8"
           />
         </div>
         <div>
@@ -946,7 +939,6 @@ function ContactSection({ site, onSaved }: SectionProps) {
           <Input
             value={city}
             onChange={(e) => setCity(e.target.value)}
-            className="text-sm h-8"
           />
         </div>
         <div className="grid grid-cols-2 gap-3">
@@ -955,7 +947,6 @@ function ContactSection({ site, onSaved }: SectionProps) {
             <Input
               value={state}
               onChange={(e) => setState(e.target.value)}
-              className="text-sm h-8"
             />
           </div>
           <div>
@@ -963,7 +954,6 @@ function ContactSection({ site, onSaved }: SectionProps) {
             <Input
               value={zip}
               onChange={(e) => setZip(e.target.value)}
-              className="text-sm h-8"
             />
           </div>
         </div>
@@ -1039,7 +1029,7 @@ function SocialSection({ site, onSaved }: SectionProps) {
       <div className="space-y-1.5">
         {rows.map((row, i) => (
           <div key={i} className="flex items-center gap-1.5">
-            <Input
+            <Input mono
               value={row.platform}
               onChange={(e) =>
                 setRows(
@@ -1049,9 +1039,9 @@ function SocialSection({ site, onSaved }: SectionProps) {
                 )
               }
               placeholder="instagram"
-              className="text-sm h-8 w-40 font-mono"
+              className="w-40"
             />
-            <Input
+            <Input mono
               value={row.url}
               onChange={(e) =>
                 setRows(
@@ -1061,7 +1051,7 @@ function SocialSection({ site, onSaved }: SectionProps) {
                 )
               }
               placeholder="https://instagram.com/…"
-              className="text-sm h-8 flex-1 font-mono"
+              className="flex-1"
             />
             <Button
               icon={<Trash2 />}

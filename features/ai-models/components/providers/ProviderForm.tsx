@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -105,15 +105,13 @@ export default function ProviderForm({
             value={data.name}
             onChange={set("name")}
             placeholder="e.g. Anthropic"
-            className="h-8 text-sm"
           />
         </FormField>
         <FormField label="Slug" description="URL-safe identifier">
-          <Input
+          <Input mono
             value={data.slug}
             onChange={set("slug")}
             placeholder="e.g. anthropic"
-            className="h-8 text-sm font-mono"
           />
         </FormField>
       </div>
@@ -134,7 +132,6 @@ export default function ProviderForm({
             value={data.documentation_link}
             onChange={set("documentation_link")}
             placeholder="https://docs.provider.com"
-            className="h-8 text-sm"
           />
         </FormField>
         <FormField label="Models Link" description="Where they list their models">
@@ -143,7 +140,6 @@ export default function ProviderForm({
             value={data.models_link}
             onChange={set("models_link")}
             placeholder="https://provider.com/models"
-            className="h-8 text-sm"
           />
         </FormField>
       </div>
@@ -155,7 +151,6 @@ export default function ProviderForm({
             value={data.website_url}
             onChange={set("website_url")}
             placeholder="https://provider.com"
-            className="h-8 text-sm"
           />
         </FormField>
         <FormField label="Logo URL">
@@ -164,7 +159,6 @@ export default function ProviderForm({
             value={data.logo_url}
             onChange={set("logo_url")}
             placeholder="https://provider.com/logo.png"
-            className="h-8 text-sm"
           />
         </FormField>
       </div>
@@ -197,7 +191,7 @@ export default function ProviderForm({
               </Select>
               <Input
                 type="url"
-                className="h-7 text-xs flex-1 min-w-0"
+                className="flex-1 min-w-0"
                 placeholder="https://…"
                 value={src.url}
                 onChange={(e) => {
@@ -207,7 +201,7 @@ export default function ProviderForm({
                 }}
               />
               <Input
-                className="h-7 text-xs w-56 shrink-0"
+                className="w-56 shrink-0"
                 placeholder="notes / gotchas"
                 value={src.notes ?? ""}
                 onChange={(e) => {

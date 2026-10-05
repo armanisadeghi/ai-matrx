@@ -336,9 +336,9 @@ function PasteBody({
         Paste a JSON object; issues show as you paste.
       </p>
 
-      <Textarea
+      <Textarea mono minHeight={0}
         wrapperClassName="flex-1 min-h-0 flex flex-col"
-        className="flex-1 min-h-0 font-mono text-xs resize-none"
+        className="flex-1 min-h-0 resize-none"
         placeholder={`Paste your ${sourceLabel} here…`}
         value={pastedText}
         onChange={(e) => onPastedTextChange(e.target.value)}

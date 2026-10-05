@@ -8,7 +8,8 @@ import {
   UpdateEnumRequest,
 } from "@/types/enum-types";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Input, Button as SurfaceButton } from "@ai-matrx/design-system";
+import { Button as SurfaceButton } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -244,17 +245,15 @@ export default function EnumsContainer({
           </div>
 
           <div className="flex items-center justify-end gap-2">
-            <TabsList className="bg-slate-100 dark:bg-slate-800">
+            <TabsList>
               <TabsTrigger
                 value="list"
-                className="text-slate-700 dark:text-slate-300 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900"
               >
                 Enum List
               </TabsTrigger>
               {activeTab === "create" && (
                 <TabsTrigger
                   value="create"
-                  className="text-slate-700 dark:text-slate-300 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900"
                 >
                   Create Enum
                 </TabsTrigger>
@@ -262,7 +261,6 @@ export default function EnumsContainer({
               {activeTab === "edit" && selectedEnum && (
                 <TabsTrigger
                   value="edit"
-                  className="text-slate-700 dark:text-slate-300 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900"
                 >
                   Edit: {selectedEnum.name}
                 </TabsTrigger>
@@ -289,12 +287,11 @@ export default function EnumsContainer({
                 <form onSubmit={handleSearch} className="flex space-x-2">
                   <div className="flex-1 relative">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
-                    <Input
+                    <Input adornment="start"
                       type="text"
                       placeholder="Search by name..."
                       value={nameSearch}
                       onChange={(e) => setNameSearch(e.target.value)}
-                      className="pl-9 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 border-slate-300 dark:border-slate-700 h-10"
                     />
                   </div>
                   <Button
@@ -328,14 +325,13 @@ export default function EnumsContainer({
                   <div className="w-[150px]">
                     {customSchemaSearch ? (
                       <div className="relative">
-                        <Input
+                        <Input adornment="end"
                           type="text"
                           placeholder="Enter schema name..."
                           value={filter.schema || ""}
                           onChange={(e) =>
                             updateUrlFilter({ schema: e.target.value })
                           }
-                          className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 border-slate-300 dark:border-slate-700 pr-8"
                         />
                         <SurfaceButton
                           type="button"
@@ -352,7 +348,7 @@ export default function EnumsContainer({
                         value={filter.schema || "all"}
                         onValueChange={handleSchemaChange}
                       >
-                        <SelectTrigger className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 border-slate-300 dark:border-slate-700">
+                        <SelectTrigger>
                           <SelectValue placeholder="Select schema" />
                         </SelectTrigger>
                         <SelectContent className="max-h-[300px]">
@@ -382,7 +378,6 @@ export default function EnumsContainer({
                       onChange={(e) =>
                         updateUrlFilter({ hasValue: e.target.value })
                       }
-                      className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 border-slate-300 dark:border-slate-700"
                     />
                   </div>
                 </div>

@@ -10,7 +10,7 @@ import {
   TAB_INDEX_ID,
   TabNavigationContext,
 } from "./stateViewerTabs";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { ChevronLeft, Search } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
@@ -58,11 +58,10 @@ export default function StateViewerWindow({
       <div className="p-3 border-b border-border shrink-0">
         <div className="relative">
           <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
+          <Input adornment="start"
             placeholder="Search slices..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-8 h-8 text-xs"
           />
         </div>
       </div>

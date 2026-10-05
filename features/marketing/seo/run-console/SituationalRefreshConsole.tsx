@@ -323,11 +323,11 @@ export function SituationalRefreshConsole({
     <div className="grid min-h-0 flex-1 grid-cols-1 gap-2 lg:grid-cols-12">
       <section className="flex min-h-0 flex-col rounded-lg border border-border bg-card lg:col-span-7">
         <Tabs defaultValue="brands" className="flex min-h-0 flex-1 flex-col">
-          <TabsList className="h-8 shrink-0 justify-start rounded-none border-b border-border bg-transparent px-1">
-            <TabsTrigger value="brands" className="h-6 text-xs">
+          <TabsList variant="underline" className="shrink-0 justify-start">
+            <TabsTrigger value="brands">
               Brands
             </TabsTrigger>
-            <TabsTrigger value="schedule" className="h-6 text-xs">
+            <TabsTrigger value="schedule">
               Schedule
             </TabsTrigger>
           </TabsList>

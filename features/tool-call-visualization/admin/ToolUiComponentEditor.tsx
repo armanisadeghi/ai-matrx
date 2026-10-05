@@ -24,7 +24,8 @@ import {
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input, Button as SurfaceButton } from "@ai-matrx/design-system";
+import { Button as SurfaceButton } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
@@ -442,7 +443,7 @@ export function ToolUiComponentEditor({
                 TSX
               </Badge>
             </div>
-            <Textarea
+            <Textarea mono minHeight={300}
               value={formData.inline_code}
               onChange={(e) =>
                 setFormData((prev) => ({
@@ -450,7 +451,6 @@ export function ToolUiComponentEditor({
                   inline_code: e.target.value,
                 }))
               }
-              className="font-mono text-xs min-h-[300px] leading-relaxed"
               style={{ fontSize: "16px" }}
               placeholder="Write your inline component code here..."
             />
@@ -481,7 +481,7 @@ export function ToolUiComponentEditor({
                 </Button>
               )}
             </div>
-            <Textarea
+            <Textarea mono minHeight={300}
               value={formData.overlay_code}
               onChange={(e) =>
                 setFormData((prev) => ({
@@ -489,7 +489,6 @@ export function ToolUiComponentEditor({
                   overlay_code: e.target.value,
                 }))
               }
-              className="font-mono text-xs min-h-[300px] leading-relaxed"
               style={{ fontSize: "16px" }}
               placeholder="Write overlay component code (shown in the full-screen modal)..."
             />
@@ -520,7 +519,7 @@ export function ToolUiComponentEditor({
                 </Button>
               )}
             </div>
-            <Textarea
+            <Textarea mono minHeight={120}
               value={formData.header_subtitle_code}
               onChange={(e) =>
                 setFormData((prev) => ({
@@ -528,7 +527,6 @@ export function ToolUiComponentEditor({
                   header_subtitle_code: e.target.value,
                 }))
               }
-              className="font-mono text-xs min-h-[120px] leading-relaxed"
               style={{ fontSize: "16px" }}
               placeholder="Function that receives entry and returns a subtitle string or null..."
             />
@@ -546,7 +544,7 @@ export function ToolUiComponentEditor({
                 </Button>
               )}
             </div>
-            <Textarea
+            <Textarea mono minHeight={150}
               value={formData.header_extras_code}
               onChange={(e) =>
                 setFormData((prev) => ({
@@ -554,7 +552,6 @@ export function ToolUiComponentEditor({
                   header_extras_code: e.target.value,
                 }))
               }
-              className="font-mono text-xs min-h-[150px] leading-relaxed"
               style={{ fontSize: "16px" }}
               placeholder="Function that receives entry and returns a ReactNode for the header..."
             />
@@ -570,7 +567,7 @@ export function ToolUiComponentEditor({
           </h3>
           <div>
             <Label className="mb-2 block">Shared Utility Code (Optional)</Label>
-            <Textarea
+            <Textarea mono minHeight={250}
               value={formData.utility_code}
               onChange={(e) =>
                 setFormData((prev) => ({
@@ -578,7 +575,6 @@ export function ToolUiComponentEditor({
                   utility_code: e.target.value,
                 }))
               }
-              className="font-mono text-xs min-h-[250px] leading-relaxed"
               style={{ fontSize: "16px" }}
               placeholder="Shared helper functions, parsers, constants available to all components..."
             />
@@ -601,7 +597,7 @@ export function ToolUiComponentEditor({
           <div className="grid grid-cols-1 gap-4">
             <div>
               <Label htmlFor="tool_name">Tool Name (identifier)</Label>
-              <Input
+              <Input mono
                 id="tool_name"
                 value={formData.tool_name}
                 onChange={(e) =>
@@ -610,7 +606,6 @@ export function ToolUiComponentEditor({
                     tool_name: e.target.value,
                   }))
                 }
-                className="font-mono text-base"
                 data-identifier
                 placeholder="e.g. web_search_v1"
                 style={{ fontSize: "16px" }}
@@ -629,7 +624,6 @@ export function ToolUiComponentEditor({
                   }))
                 }
                 placeholder="e.g. Web Search"
-                className="text-base"
                 style={{ fontSize: "16px" }}
               />
             </div>
@@ -648,7 +642,6 @@ export function ToolUiComponentEditor({
                   }))
                 }
                 placeholder="e.g. Search Results"
-                className="text-base"
                 style={{ fontSize: "16px" }}
               />
             </div>
@@ -661,7 +654,6 @@ export function ToolUiComponentEditor({
                   setFormData((prev) => ({ ...prev, version: e.target.value }))
                 }
                 placeholder="1.0.0"
-                className="text-base"
                 style={{ fontSize: "16px" }}
               />
             </div>
@@ -680,7 +672,6 @@ export function ToolUiComponentEditor({
             >
               <SelectTrigger
                 id="language"
-                className="text-base"
                 style={{ fontSize: "16px" }}
               >
                 <SelectValue />
@@ -838,24 +829,24 @@ export function ToolUiComponentEditor({
       {contractBanner}
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="inline" className="text-xs">
+        <TabsList fill>
+          <TabsTrigger value="inline">
             <FileCode className="w-3.5 h-3.5 mr-1" />
             Inline
           </TabsTrigger>
-          <TabsTrigger value="overlay" className="text-xs">
+          <TabsTrigger value="overlay">
             <Layers className="w-3.5 h-3.5 mr-1" />
             Overlay
           </TabsTrigger>
-          <TabsTrigger value="extras" className="text-xs">
+          <TabsTrigger value="extras">
             <Paintbrush className="w-3.5 h-3.5 mr-1" />
             Header
           </TabsTrigger>
-          <TabsTrigger value="utility" className="text-xs">
+          <TabsTrigger value="utility">
             <Code className="w-3.5 h-3.5 mr-1" />
             Utilities
           </TabsTrigger>
-          <TabsTrigger value="config" className="text-xs">
+          <TabsTrigger value="config">
             <Settings className="w-3.5 h-3.5 mr-1" />
             Config
           </TabsTrigger>
@@ -870,7 +861,7 @@ export function ToolUiComponentEditor({
                 TSX
               </Badge>
             </div>
-            <Textarea
+            <Textarea mono minHeight={400}
               value={formData.inline_code}
               onChange={(e) =>
                 setFormData((prev) => ({
@@ -878,7 +869,6 @@ export function ToolUiComponentEditor({
                   inline_code: e.target.value,
                 }))
               }
-              className="font-mono text-xs min-h-[400px] leading-relaxed"
               placeholder="Write your inline component code here..."
             />
             <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5">
@@ -903,7 +893,7 @@ export function ToolUiComponentEditor({
                 </Button>
               )}
             </div>
-            <Textarea
+            <Textarea mono minHeight={400}
               value={formData.overlay_code}
               onChange={(e) =>
                 setFormData((prev) => ({
@@ -911,7 +901,6 @@ export function ToolUiComponentEditor({
                   overlay_code: e.target.value,
                 }))
               }
-              className="font-mono text-xs min-h-[400px] leading-relaxed"
               placeholder="Write overlay component code (shown in the full-screen modal)..."
             />
             <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5">
@@ -936,7 +925,7 @@ export function ToolUiComponentEditor({
                 </Button>
               )}
             </div>
-            <Textarea
+            <Textarea mono minHeight={120}
               value={formData.header_subtitle_code}
               onChange={(e) =>
                 setFormData((prev) => ({
@@ -944,7 +933,6 @@ export function ToolUiComponentEditor({
                   header_subtitle_code: e.target.value,
                 }))
               }
-              className="font-mono text-xs min-h-[120px] leading-relaxed"
               placeholder="Function that receives entry and returns a subtitle string or null..."
             />
           </div>
@@ -961,7 +949,7 @@ export function ToolUiComponentEditor({
                 </Button>
               )}
             </div>
-            <Textarea
+            <Textarea mono minHeight={150}
               value={formData.header_extras_code}
               onChange={(e) =>
                 setFormData((prev) => ({
@@ -969,7 +957,6 @@ export function ToolUiComponentEditor({
                   header_extras_code: e.target.value,
                 }))
               }
-              className="font-mono text-xs min-h-[150px] leading-relaxed"
               placeholder="Function that receives entry and returns a ReactNode for the header..."
             />
           </div>
@@ -979,7 +966,7 @@ export function ToolUiComponentEditor({
         <TabsContent value="utility" className="space-y-4">
           <div>
             <Label className="mb-2 block">Shared Utility Code (Optional)</Label>
-            <Textarea
+            <Textarea mono minHeight={300}
               value={formData.utility_code}
               onChange={(e) =>
                 setFormData((prev) => ({
@@ -987,7 +974,6 @@ export function ToolUiComponentEditor({
                   utility_code: e.target.value,
                 }))
               }
-              className="font-mono text-xs min-h-[300px] leading-relaxed"
               placeholder="Shared helper functions, parsers, constants available to all components..."
             />
             <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5">
@@ -1003,7 +989,7 @@ export function ToolUiComponentEditor({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="tool_name">Tool Name (identifier)</Label>
-              <Input
+              <Input mono
                 id="tool_name"
                 value={formData.tool_name}
                 onChange={(e) =>
@@ -1012,7 +998,6 @@ export function ToolUiComponentEditor({
                     tool_name: e.target.value,
                   }))
                 }
-                className="font-mono"
                 data-identifier
                 placeholder="e.g. web_search_v1"
                 disabled={!!toolName}

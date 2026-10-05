@@ -354,7 +354,7 @@ export default function RowOrderingModal({
             value={labelSelection}
             onValueChange={(v) => setLabelSelection(v)}
           >
-            <SelectTrigger className="h-7 w-56 text-xs">
+            <SelectTrigger className="w-56">
               <SelectValue placeholder="Choose a column" />
             </SelectTrigger>
             <SelectContent>

@@ -35,11 +35,11 @@ import {
   Select as LegacySelect,
   SelectContent,
   SelectItem,
-  SelectTrigger,
+  SelectTriggerLegacy as SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
 import { Input, Button as SurfaceButton } from "@ai-matrx/design-system";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsListLegacy as TabsList, TabsTriggerLegacy as TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { Badge, Button, ControlRow, ControlScope, SearchField, SegmentedControl, Select } from "@ai-matrx/design-system/controls";

@@ -23,7 +23,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -264,7 +264,6 @@ export function HeadlinesDialog({
               rows={angleId ? 2 : 5}
               placeholder="Each line one confirmed fact, with its source if you have it."
               disabled={running}
-              className="text-base sm:text-sm"
             />
           </div>
           <div className="grid gap-1">
@@ -275,7 +274,6 @@ export function HeadlinesDialog({
               onChange={(e) => setPeg(e.target.value)}
               placeholder="e.g. Recycling plant fires hit a record in August (Resource Recycling, 2026-09-23)"
               disabled={running}
-              className="text-base sm:text-sm"
             />
           </div>
           {rejoin.following && !running ? (

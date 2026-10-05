@@ -226,7 +226,7 @@ export default function AdminRunsPage() {
                           setStatus(v as "__all__" | RunStatus)
                         }
                       >
-                        <SelectTrigger className="h-8 w-36">
+                        <SelectTrigger className="w-36">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -246,7 +246,7 @@ export default function AdminRunsPage() {
                           setSurface(v as "__all__" | Surface)
                         }
                       >
-                        <SelectTrigger className="h-8 w-40">
+                        <SelectTrigger className="w-40">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>

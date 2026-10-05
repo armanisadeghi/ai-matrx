@@ -164,12 +164,12 @@ export default function ZipCodeHeatmapPage() {
                                         </CardHeader>
                                         <CardContent>
                                             <Tabs value={dataSource} onValueChange={(v) => setDataSource(v as 'upload' | 'table')}>
-                                                <TabsList className="grid w-full grid-cols-2 mb-3">
-                                                    <TabsTrigger value="upload" className="text-xs">
+                                                <TabsList fill className="mb-3">
+                                                    <TabsTrigger value="upload">
                                                         <Upload className="w-3 h-3 mr-1" />
                                                         Upload File
                                                     </TabsTrigger>
-                                                    <TabsTrigger value="table" className="text-xs">
+                                                    <TabsTrigger value="table">
                                                         <Database className="w-3 h-3 mr-1" />
                                                         From Table
                                                     </TabsTrigger>

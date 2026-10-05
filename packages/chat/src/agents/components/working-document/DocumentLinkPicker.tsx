@@ -11,7 +11,7 @@
 
 import React, { useCallback, useMemo, useState } from "react";
 import { FileText, Loader2, NotebookPen, Search } from "lucide-react";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   Popover,
   PopoverContent,
@@ -96,12 +96,11 @@ function DocumentLinkPickerBody({
       <div className="border-b border-border px-2 py-1.5">
         <div className="relative">
           <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input
+          <Input variant="bare" adornment="start"
             type="search"
             placeholder={`Search ${noun}s…`}
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="h-8 border-0 bg-muted/40 pl-7 text-xs shadow-none focus-visible:ring-1"
             style={{ fontSize: "16px" }}
           />
         </div>

@@ -104,7 +104,7 @@ export default function AgentDefinitionSliceViewerShadcn({
         value={resolvedId ?? ids[0]}
         onValueChange={(v) => setSelectedId(v)}
       >
-        <SelectTrigger size="sm" className="h-7 min-w-0 flex-1">
+        <SelectTrigger className="min-w-0 flex-1">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -131,7 +131,7 @@ export default function AgentDefinitionSliceViewerShadcn({
           value={String(safeMsgIdx)}
           onValueChange={(v) => setMsgIdx(Number(v))}
         >
-          <SelectTrigger size="sm" className="h-7 flex-1">
+          <SelectTrigger className="flex-1">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

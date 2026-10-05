@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Puzzle, Plus, Search, Loader2 } from 'lucide-react';
-import { Input } from '@ai-matrx/design-system';
+import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useOrgProjects, useUserProjects } from '../hooks';
@@ -100,12 +100,11 @@ export function ProjectList({ organizationId, orgSlug, canCreate = false }: Proj
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
+          <Input adornment="start"
             type="text"
             placeholder="Search projects..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
           />
         </div>
         {canCreate && (

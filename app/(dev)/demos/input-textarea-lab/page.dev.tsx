@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { Input, BasicInput, EnterInput, InputWithPrefix } from "@ai-matrx/design-system";
+import { BasicInput, EnterInput, InputWithPrefix } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { CopyInput, DeleteInput } from "@/components/ui/input";
 import {
   Textarea,

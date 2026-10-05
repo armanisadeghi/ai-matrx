@@ -11,7 +11,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { CopyInput } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -147,20 +147,20 @@ function DetailPanel({ result }: { result: ScraperResult }) {
 
   return (
     <Tabs defaultValue="pretty" className="h-full flex flex-col">
-      <TabsList className="w-full justify-start rounded-none border-b border-border h-10 px-3 shrink-0">
-        <TabsTrigger value="pretty" className="text-xs">
+      <TabsList variant="underline" className="w-full justify-start shrink-0">
+        <TabsTrigger value="pretty">
           Pretty
         </TabsTrigger>
-        <TabsTrigger value="overview" className="text-xs">
+        <TabsTrigger value="overview">
           Overview
         </TabsTrigger>
-        <TabsTrigger value="text" className="text-xs">
+        <TabsTrigger value="text">
           Plain text
           {!chars && (
             <span className="ml-1.5 w-1.5 h-1.5 rounded-full bg-amber-400 inline-block" />
           )}
         </TabsTrigger>
-        <TabsTrigger value="raw" className="text-xs">
+        <TabsTrigger value="raw">
           Raw
         </TabsTrigger>
       </TabsList>
@@ -451,7 +451,6 @@ export default function SearchAndScrapeDemoPage() {
           value={maxPages}
           onChange={(e) => setMaxPages(e.target.value)}
           disabled={isLoading}
-          className="bg-background text-foreground border-border"
           style={{ fontSize: "16px" }}
         />
       </div>

@@ -25,7 +25,7 @@ import { useId, useState } from "react";
 import { AlertTriangle, Loader2, ShieldAlert } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -432,11 +432,10 @@ export function OrgLawRuleEditor({
           </div>
         ) : (
           <div className="space-y-1.5">
-            <Textarea
+            <Textarea mono
               aria-label="Rule parameters as JSON"
               value={jsonText}
               rows={10}
-              className="font-mono text-xs"
               onChange={(event) => setJsonText(event.target.value)}
             />
             <p className="text-xs text-foreground">

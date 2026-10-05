@@ -15,7 +15,7 @@ import { setUserVariableValue } from "../../../redux/execution-system/instance-v
 import { selectShowVariablePanel } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { toggleVariablePanel } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { Label } from "@ai-matrx/design-system";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Switch } from "@host/components/ui/switch";
 import { Checkbox } from "@host/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@ai-matrx/design-system";
@@ -337,7 +337,7 @@ function VariableField({ conversationId, def, value, onChange }: VariableFieldPr
               const raw = e.target.value;
               onChange(raw === "" ? "" : parseFloat(raw));
             }}
-            className="h-7 text-xs bg-transparent w-28"
+            className="w-28"
             style={IOS_INPUT_STYLE}
           />
           {(cc.min !== undefined || cc.max !== undefined) && (
@@ -362,7 +362,6 @@ function VariableField({ conversationId, def, value, onChange }: VariableFieldPr
         value={variableValueToInputText(value)}
         placeholder={`Enter ${formattedName.toLowerCase()}...`}
         onChange={(e) => onChange(e.target.value)}
-        className="h-7 text-xs bg-transparent"
         style={IOS_INPUT_STYLE}
       />
     </div>

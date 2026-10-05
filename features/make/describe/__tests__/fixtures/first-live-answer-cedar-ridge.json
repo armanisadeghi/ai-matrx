@@ -1,0 +1,368 @@
+{
+ "template": {
+  "specVersion": 1,
+  "id": "cedar-ridge-pt-intake-first-visit",
+  "useCase": "Cedar Ridge Physical Therapy, an outpatient physical therapy clinic, uses this setup to collect new patients' details and concerns through an intake form and let them book their first 60-minute evaluation online.",
+  "industry": "healthcare",
+  "vertical": "Physical therapy clinic",
+  "job": "intake",
+  "audience": "organization",
+  "teaches": "bookings",
+  "business": {
+   "name": "Cedar Ridge Physical Therapy",
+   "describes": "Outpatient physical therapy clinic offering evaluations, rehabilitation and follow-up care.",
+   "address": {
+    "line1": "1420 Cedar Ridge Drive, Suite 110",
+    "city": "Redding",
+    "region": "CA",
+    "postalCode": "96001",
+    "country": "US"
+   },
+   "phone": "+1 530-555-0142",
+   "email": "frontdesk@cedarridgept.com",
+   "timezone": "America/Los_Angeles"
+  },
+  "cleanupTag": "describe:cedar-ridge-pt-intake-first-visit",
+  "tables": [
+   {
+    "token": "patient",
+    "name": "Patients",
+    "labelSingular": "Patient",
+    "labelPlural": "Patients",
+    "type": "entity",
+    "display": "grid",
+    "weight": "light",
+    "ordered": false,
+    "icon": "user-round",
+    "titleField": "full_name",
+    "describes": "Everyone the clinic treats, with the contact details the front desk needs.",
+    "subject": "person",
+    "fields": [
+     {
+      "key": "full_name",
+      "label": "Full name",
+      "parityType": "text",
+      "required": true,
+      "sensitivity": "confidential",
+      "contextPolicy": "summarize"
+     },
+     {
+      "key": "phone",
+      "label": "Phone",
+      "parityType": "phone",
+      "format": "phone",
+      "sensitivity": "confidential",
+      "contextPolicy": "exclude"
+     },
+     {
+      "key": "email",
+      "label": "Email",
+      "parityType": "email",
+      "format": "email",
+      "sensitivity": "confidential",
+      "contextPolicy": "exclude"
+     },
+     {
+      "key": "date_of_birth",
+      "label": "Date of birth",
+      "parityType": "datetime",
+      "sensitivity": "confidential",
+      "contextPolicy": "exclude"
+     }
+    ],
+    "rows": []
+   },
+   {
+    "token": "visit",
+    "name": "Visits",
+    "labelSingular": "Visit",
+    "labelPlural": "Visits",
+    "type": "entity",
+    "display": "grid",
+    "weight": "light",
+    "ordered": false,
+    "icon": "calendar-check",
+    "titleField": "main_concern",
+    "describes": "Each scheduled appointment at the clinic, starting with the patient's first evaluation and what brought them in.",
+    "subject": "thing",
+    "fields": [
+     {
+      "key": "main_concern",
+      "label": "Main concern",
+      "parityType": "text",
+      "required": true,
+      "sensitivity": "confidential",
+      "contextPolicy": "summarize"
+     },
+     {
+      "key": "patient",
+      "label": "Patient",
+      "parityType": "relation",
+      "relationTarget": "patient",
+      "relationMax": 1,
+      "sensitivity": "confidential",
+      "contextPolicy": "summarize"
+     },
+     {
+      "key": "slot",
+      "label": "Appointment time",
+      "parityType": "datetime",
+      "required": true,
+      "sensitivity": "internal",
+      "contextPolicy": "include"
+     },
+     {
+      "key": "visit_type",
+      "label": "Visit type",
+      "parityType": "select",
+      "choices": [
+       "Initial evaluation",
+       "Follow-up",
+       "Re-evaluation",
+       "Discharge visit"
+      ],
+      "choiceColors": {
+       "Initial evaluation": "blue",
+       "Follow-up": "teal",
+       "Re-evaluation": "violet",
+       "Discharge visit": "slate"
+      },
+      "sensitivity": "internal",
+      "contextPolicy": "include"
+     },
+     {
+      "key": "status",
+      "label": "Status",
+      "parityType": "select",
+      "choices": [
+       "Booked",
+       "Checked in",
+       "Completed",
+       "No-show",
+       "Cancelled"
+      ],
+      "choiceColors": {
+       "Booked": "blue",
+       "Checked in": "amber",
+       "Completed": "green",
+       "No-show": "red",
+       "Cancelled": "slate"
+      },
+      "sensitivity": "internal",
+      "contextPolicy": "include"
+     },
+     {
+      "key": "pain_area",
+      "label": "Area of pain",
+      "parityType": "select",
+      "choices": [
+       "Neck",
+       "Shoulder",
+       "Back",
+       "Hip",
+       "Knee",
+       "Ankle or foot",
+       "Other"
+      ],
+      "choiceColors": {
+       "Neck": "blue",
+       "Shoulder": "teal",
+       "Back": "violet",
+       "Hip": "amber",
+       "Knee": "green",
+       "Ankle or foot": "red",
+       "Other": "slate"
+      },
+      "sensitivity": "confidential",
+      "contextPolicy": "summarize"
+     },
+     {
+      "key": "pain_level",
+      "label": "Pain level (0-10)",
+      "parityType": "number",
+      "sensitivity": "confidential",
+      "contextPolicy": "summarize"
+     },
+     {
+      "key": "injury_details",
+      "label": "Injury details",
+      "parityType": "long_text",
+      "sensitivity": "confidential",
+      "contextPolicy": "summarize"
+     },
+     {
+      "key": "referral_source",
+      "label": "Referral source",
+      "parityType": "select",
+      "choices": [
+       "Physician referral",
+       "Self-referral",
+       "Insurance plan",
+       "Friend or family",
+       "Online search"
+      ],
+      "choiceColors": {
+       "Physician referral": "blue",
+       "Self-referral": "green",
+       "Insurance plan": "violet",
+       "Friend or family": "amber",
+       "Online search": "teal"
+      },
+      "sensitivity": "internal",
+      "contextPolicy": "include"
+     },
+     {
+      "key": "referring_physician",
+      "label": "Referring physician",
+      "parityType": "text",
+      "sensitivity": "confidential",
+      "contextPolicy": "summarize"
+     },
+     {
+      "key": "visit_notes",
+      "label": "Therapist notes",
+      "parityType": "long_text",
+      "sensitivity": "restricted",
+      "contextPolicy": "on_request"
+     }
+    ],
+    "rows": []
+   }
+  ],
+  "relationships": [
+   {
+    "describes": "Every visit belongs to exactly one patient, and a patient can have many visits over their plan of care.",
+    "fromTable": "visit",
+    "fromField": "patient",
+    "toTable": "patient",
+    "flavor": "referenced",
+    "cardinality": "one",
+    "onDelete": "restrict",
+    "inverseKey": "visits"
+   }
+  ],
+  "sharedBlocks": [],
+  "views": [
+   {
+    "token": "visit_calendar",
+    "name": "Visit calendar",
+    "table": "visit",
+    "kind": "calendar",
+    "dateField": "slot",
+    "isDefault": true
+   }
+  ],
+  "forms": [
+   {
+    "token": "new_patient_intake",
+    "name": "New patient intake",
+    "describes": "Collects a new patient's contact details before their first visit.",
+    "audience": "public",
+    "table": "patient",
+    "fields": [
+     {
+      "fieldKey": "full_name",
+      "ask": "What is your full legal name?",
+      "required": true
+     },
+     {
+      "fieldKey": "date_of_birth",
+      "ask": "What is your date of birth?",
+      "required": true
+     },
+     {
+      "fieldKey": "phone",
+      "ask": "What's the best phone number to reach you?",
+      "required": true,
+      "help": "We'll call or text to confirm your appointment."
+     },
+     {
+      "fieldKey": "email",
+      "ask": "What email should we send your appointment details to?"
+     }
+    ],
+    "submitLabel": "Send my information",
+    "confirmation": "Thank you \u2014 we have your details. Next, pick a time for your first visit and we'll see you soon."
+   }
+  ],
+  "dimensions": [],
+  "extras": [
+   {
+    "kind": "booking",
+    "token": "first_visit_booking",
+    "title": "First visit \u2014 60 min",
+    "table": "visit",
+    "questions": [
+     {
+      "fieldKey": "main_concern",
+      "ask": "What brings you in today?",
+      "required": true
+     },
+     {
+      "fieldKey": "pain_area",
+      "ask": "Where are you feeling pain or trouble?",
+      "required": true
+     },
+     {
+      "fieldKey": "pain_level",
+      "ask": "On a scale of 0 to 10, how bad is the pain right now?"
+     },
+     {
+      "fieldKey": "injury_details",
+      "ask": "When and how did it start?",
+      "help": "For example: a fall, surgery, sports injury, or it came on gradually."
+     },
+     {
+      "fieldKey": "referral_source",
+      "ask": "How did you hear about us?"
+     },
+     {
+      "fieldKey": "referring_physician",
+      "ask": "If a doctor referred you, what is their name?"
+     }
+    ],
+    "availability": {
+     "timezone": "America/Los_Angeles",
+     "slotMinutes": 60,
+     "bufferMinutes": 15,
+     "leadMinutes": 1440,
+     "maxPerDay": 6,
+     "days": 30,
+     "windows": [
+      {
+       "weekday": 1,
+       "from": "08:00",
+       "to": "17:00"
+      },
+      {
+       "weekday": 2,
+       "from": "08:00",
+       "to": "17:00"
+      },
+      {
+       "weekday": 3,
+       "from": "08:00",
+       "to": "17:00"
+      },
+      {
+       "weekday": 4,
+       "from": "08:00",
+       "to": "17:00"
+      },
+      {
+       "weekday": 5,
+       "from": "08:00",
+       "to": "17:00"
+      }
+     ]
+    },
+    "bookedStages": [
+     "Booked"
+    ]
+   }
+  ],
+  "version": 1
+ },
+ "notes": [],
+ "reuses": []
+}

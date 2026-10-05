@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import cronstrue from "cronstrue";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -98,12 +98,11 @@ export default function CronTesterPage() {
           <CardContent className="p-4 space-y-3">
             <div className="space-y-1.5">
               <Label htmlFor="cron-expr">Expression</Label>
-              <Input
+              <Input mono
                 data-surface-value="cron_expression"
                 id="cron-expr"
                 value={expression}
                 onChange={(e) => setExpression(e.target.value)}
-                className="font-mono"
                 placeholder="0 9 * * 1-5"
                 maxLength={200}
               />

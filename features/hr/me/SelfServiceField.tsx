@@ -30,7 +30,7 @@ import Link from "next/link";
 import { Clock3, Lock, PencilLine } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { cn } from "@/lib/utils";
 
 import {
@@ -134,7 +134,6 @@ export function SelfServiceField({
           id={`self-${field}`}
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          className="min-h-11 sm:min-h-9"
           autoFocus
         />
         {policy === "request_approval" ? (

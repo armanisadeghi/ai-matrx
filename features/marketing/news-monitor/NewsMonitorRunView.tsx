@@ -455,7 +455,7 @@ export function NewsMonitorRunView({ trackerId }: { trackerId: string }) {
           <div className="flex flex-wrap items-center gap-2 text-xs">
             <span className="text-muted-foreground">Run</span>
             <Select value={selectedRunId ?? undefined} onValueChange={(v) => setParam("run", v)}>
-              <SelectTrigger className="h-8 w-72 text-sm" aria-label="Which run">
+              <SelectTrigger className="w-72" aria-label="Which run">
                 <SelectValue placeholder={runs.isPending ? "Loading runs…" : "No runs yet"} />
               </SelectTrigger>
               <SelectContent>

@@ -96,7 +96,7 @@ export function FieldDetails({ table, fieldName }: FieldDetailsProps) {
           value={tab}
           onValueChange={(value) => setTab(value as "details" | "component")}
         >
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList fill>
             <TabsTrigger value="details">Details</TabsTrigger>
             <TabsTrigger value="component">Type</TabsTrigger>
           </TabsList>

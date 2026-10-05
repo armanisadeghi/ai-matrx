@@ -22,7 +22,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import dynamic from "next/dynamic";
 import { Loader2 } from "lucide-react";
 
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/utils/supabase/client";
 import { useAppStore } from "@/lib/redux/hooks";
@@ -332,7 +332,7 @@ export function DocumentRecord({
 
   const title = (
     <>
-      <Input
+      <Input variant="bare"
         value={renameDraft}
         onChange={(e) => setRenameDraft(e.target.value)}
         onBlur={commitRename}
@@ -343,7 +343,7 @@ export function DocumentRecord({
             (e.target as HTMLInputElement).blur();
           }
         }}
-        className="h-7 min-w-0 max-w-[45vw] sm:max-w-xs text-sm font-medium border-0 bg-transparent shadow-none focus-visible:ring-1 px-1.5"
+        className="min-w-0 max-w-[45vw] sm:max-w-xs"
         disabled={!doc || !canEdit}
         // Same bound the write handler enforces and the manifest quotes,
         // from the same module — the agent path and the human path

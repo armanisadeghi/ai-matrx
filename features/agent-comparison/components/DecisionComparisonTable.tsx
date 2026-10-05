@@ -18,7 +18,7 @@
 
 import { useEffect, useState } from "react";
 import { AlertTriangle, Check, Loader2 } from "lucide-react";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { labelConversations } from "@/features/agents/decision-review/service";
@@ -422,7 +422,6 @@ export function DecisionComparisonTable() {
                         }}
                         placeholder={setId ? "What was true" : "Save first"}
                         aria-label={`True answer for ${name}`}
-                        className="h-6 text-[11px]"
                       />
                       {savingName === name ? (
                         <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />

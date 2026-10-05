@@ -16,7 +16,7 @@ import { useRouter } from "next/navigation";
 import { Database, Loader2, Search, Table2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import HeaderStructured from "@/features/shell/components/header/variants/variants/HeaderStructured";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
@@ -115,12 +115,11 @@ export function ConnectDatabasePage() {
                   Connection string
                 </label>
                 <div className="flex gap-2">
-                  <Input
+                  <Input mono
                     id="connection-string"
                     type="password"
                     autoComplete="off"
                     spellCheck={false}
-                    className="font-mono text-base sm:text-sm"
                     placeholder="postgresql://user:password@host:5432/postgres"
                     value={connection}
                     onChange={(e) => setConnection(e.target.value)}
@@ -153,8 +152,7 @@ export function ConnectDatabasePage() {
                     <>
                       <div className="relative">
                         <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
-                        <Input
-                          className="pl-8 text-base sm:text-sm"
+                        <Input adornment="start"
                           placeholder="Find a table"
                           value={find}
                           onChange={(e) => setFind(e.target.value)}

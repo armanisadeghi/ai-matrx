@@ -23,7 +23,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { cn } from "@/lib/utils";
 import {
   applyBulkSelection,
@@ -117,11 +117,10 @@ export function PlacesSelector({
       <div className="flex flex-wrap items-center gap-2 border-b border-border bg-muted/30 px-3 py-2">
         <div className="relative min-w-[180px] flex-1">
           <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input
+          <Input adornment="start"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search jobs by name or key…"
-            className="h-8 pl-8 text-sm"
             style={{ fontSize: "16px" }}
           />
         </div>

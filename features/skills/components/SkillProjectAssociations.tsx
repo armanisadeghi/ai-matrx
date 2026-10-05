@@ -9,7 +9,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@ai-matrx/design-system";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -143,7 +143,7 @@ export function SkillProjectAssociations({
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search projects…"
-                className="h-8 mb-2"
+                className="mb-2"
               />
               <div className="max-h-56 overflow-y-auto scrollbar-thin">
                 {projectsError && available.length === 0 ? (

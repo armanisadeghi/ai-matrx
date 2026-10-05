@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -144,7 +144,7 @@ export default function SmartCodeEditorDemoPage() {
             <CardTitle className="text-sm flex items-center justify-between">
               <span>Code</span>
               <Select value={language} onValueChange={setLanguage}>
-                <SelectTrigger className="w-[140px] h-7 text-xs">
+                <SelectTrigger className="w-[140px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -158,10 +158,10 @@ export default function SmartCodeEditorDemoPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <Textarea
+            <Textarea mono minHeight={320} maxHeight={320}
               value={code}
               onChange={(e) => setCode(e.target.value)}
-              className="font-mono text-xs h-[320px] resize-none"
+              className="resize-none"
             />
             <p className="text-[10px] text-muted-foreground mt-1">
               {code.length} chars · {code.split("\n").length} lines
@@ -242,10 +242,9 @@ function SlotInput({
       <Label className="text-[10px] font-mono text-muted-foreground">
         {label}
       </Label>
-      <Input
+      <Input mono
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="h-8 text-xs font-mono"
       />
     </div>
   );

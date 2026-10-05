@@ -10,7 +10,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import { Input } from '@ai-matrx/design-system';
+import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { FolderOpen } from 'lucide-react';

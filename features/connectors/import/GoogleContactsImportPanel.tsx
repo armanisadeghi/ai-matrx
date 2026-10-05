@@ -28,7 +28,7 @@ import {
   UserPlus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/lib/toast";
@@ -818,7 +818,7 @@ export function GoogleContactsImportPanel({
                                 value: event.target.value,
                               })
                             }
-                            className="h-8 min-w-0 flex-1 text-sm"
+                            className="min-w-0 flex-1"
                           />
                         </div>
                         <div className="flex min-w-0 items-center gap-2 sm:w-64">
@@ -916,11 +916,10 @@ export function GoogleContactsImportPanel({
       <div className="flex flex-col gap-2 border-b border-border px-4 py-2">
         <div className="relative">
           <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input
+          <Input adornment="start"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search your Google contacts"
-            className="h-9 pl-7 text-base sm:text-sm"
           />
         </div>
         <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">

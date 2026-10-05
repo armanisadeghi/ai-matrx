@@ -21,7 +21,7 @@ const DirectoryStructureGroup = ({ endpoints, baseUrl, onTest, responses, loadin
         <Card>
             <CardContent className="pt-6">
                 <Tabs defaultValue="text">
-                    <TabsList className="grid grid-cols-3 w-full">
+                    <TabsList fill>
                         <TabsTrigger value="text">Text Format</TabsTrigger>
                         <TabsTrigger value="json">JSON Format</TabsTrigger>
                         <TabsTrigger value="zip">All Files (ZIP)</TabsTrigger>

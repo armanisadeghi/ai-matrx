@@ -12,7 +12,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Check, Loader2 } from "lucide-react";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
@@ -197,8 +197,8 @@ export function SaveTemplateDialog({ isOpen, onClose, initialAgentId }: SaveTemp
                     Include their rows
                   </label>
                 </div>
-                <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" className="text-base" data-save-template-name="" />
-                <Textarea value={describes} onChange={(e) => setDescribes(e.target.value)} placeholder="Who it is for" className="text-base" rows={2} />
+                <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" data-save-template-name="" />
+                <Textarea value={describes} onChange={(e) => setDescribes(e.target.value)} placeholder="Who it is for" rows={2} />
                 {orgs.size > 1 ? <p className="text-sm text-destructive">These tables live in different organizations — pick agents from one</p> : null}
                 {organizationId ? <p className="text-xs text-muted-foreground">{`Saved in ${orgName ?? "its organization"}`}</p> : null}
               </>

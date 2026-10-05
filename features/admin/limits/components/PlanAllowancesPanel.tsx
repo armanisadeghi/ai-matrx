@@ -43,7 +43,7 @@ import { Loader2, Plus, X } from "lucide-react";
 import { formatFileSize } from "@ai-matrx/kit/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   Select,
   SelectContent,
@@ -601,7 +601,7 @@ export function PlanAllowancesPanel() {
           <h3 className="text-sm font-semibold">Other allowances</h3>
           <div className="ml-auto flex items-center gap-1.5">
             <Select value={newCapability} onValueChange={setNewCapability}>
-              <SelectTrigger className="h-8 w-52 text-xs" aria-label="Capability">
+              <SelectTrigger className="w-52" aria-label="Capability">
                 <SelectValue placeholder="Capability" />
               </SelectTrigger>
               <SelectContent>
@@ -613,7 +613,7 @@ export function PlanAllowancesPanel() {
               </SelectContent>
             </Select>
             <Select value={newPeriod} onValueChange={setNewPeriod}>
-              <SelectTrigger className="h-8 w-28 text-xs" aria-label="Window">
+              <SelectTrigger className="w-28" aria-label="Window">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

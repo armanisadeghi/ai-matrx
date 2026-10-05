@@ -13,7 +13,7 @@ import { Upload, ClipboardPaste, Loader2, CheckCircle2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { cn } from "@/lib/utils";
 import {
   importDeckFile,
@@ -166,7 +166,6 @@ export function ImportDeckPanel() {
             value={pasteName}
             onChange={(e) => setPasteName(e.target.value)}
             placeholder="Deck name"
-            className="text-sm"
           />
           <ProTextarea
             value={pasteText}

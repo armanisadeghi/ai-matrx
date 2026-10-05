@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { TabBase } from './TabBase';
 import { usePromptBuilder } from './PromptBuilderContext';
@@ -75,7 +75,7 @@ const TaskContent: React.FC<TaskTabProps> = ({ updateContent }) => {
           value={taskType}
           onValueChange={setTaskType}
         >
-          <SelectTrigger id="task-type" className="w-full bg-white dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700">
+          <SelectTrigger id="task-type" className="w-full">
             <SelectValue placeholder="Select the primary task" />
           </SelectTrigger>
           <SelectContent className="bg-white dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700">
@@ -97,7 +97,7 @@ const TaskContent: React.FC<TaskTabProps> = ({ updateContent }) => {
           placeholder="Enter the subject matter"
           value={subject}
           onChange={(e) => setSubject(e.target.value)}
-          className="w-full bg-white dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400"
+          className="w-full"
         />
       </div>
       
@@ -111,7 +111,7 @@ const TaskContent: React.FC<TaskTabProps> = ({ updateContent }) => {
             placeholder="e.g., poem, story, song, article"
             value={creativeType}
             onChange={(e) => setCreativeType(e.target.value)}
-            className="w-full bg-white dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400"
+            className="w-full"
           />
         </div>
       )}

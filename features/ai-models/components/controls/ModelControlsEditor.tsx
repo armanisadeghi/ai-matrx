@@ -30,7 +30,7 @@ import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotic
 import { ExternalLink, Plus } from "lucide-react";
 import { recordToast, toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   Select,
   SelectContent,
@@ -550,7 +550,6 @@ export default function ModelControlsEditor({
               <div className="border rounded-md p-2 space-y-1.5">
                 <Input
                   autoFocus
-                  className="h-7 text-xs"
                   placeholder="Search the settings dictionary…"
                   value={addKeyFilter}
                   onChange={(e) => setAddKeyFilter(e.target.value)}

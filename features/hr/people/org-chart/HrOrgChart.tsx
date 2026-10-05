@@ -43,7 +43,7 @@ import {
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import {
@@ -286,7 +286,7 @@ export function HrOrgChart() {
                 value={asOfParam ?? asOf ?? ""}
                 min={data?.earliest_known_on ?? undefined}
                 onChange={(event) => setAsOf(event.target.value || null)}
-                className="h-11 w-[10.5rem] lg:h-9"
+                className="w-[10.5rem]"
               />
               {quickAsOfChips().map((chip) => (
                 <Button
@@ -308,7 +308,7 @@ export function HrOrgChart() {
                 checked={showDotted}
                 onCheckedChange={setShowDotted}
                 aria-label="Show dotted-line reporting"
-                className="relative h-11 w-11 border-transparent bg-transparent pl-1 shadow-none before:absolute before:left-1 before:top-1/2 before:h-4 before:w-9 before:-translate-y-1/2 before:rounded-full before:border-2 before:border-zinc-300 before:bg-zinc-100 before:content-[''] data-[state=checked]:bg-transparent data-[state=checked]:before:bg-primary data-[state=unchecked]:bg-transparent dark:before:border-zinc-700 dark:before:bg-zinc-800 lg:h-4 lg:w-9 lg:border-zinc-300 lg:bg-zinc-100 lg:pl-0 lg:shadow-sm lg:before:hidden lg:data-[state=checked]:bg-primary lg:data-[state=unchecked]:bg-zinc-100 dark:lg:border-zinc-700 dark:lg:data-[state=unchecked]:bg-zinc-800"
+                className="relative w-11 before:absolute before:left-1 before:top-1/2 before:w-9 before:-translate-y-1/2 before:content-[''] lg:w-9 lg:before:hidden"
               />
               <Label
                 htmlFor="hr-dotted-lines"
@@ -432,7 +432,7 @@ export function HrOrgChart() {
             disabled
             placeholder="Ask this chart a question — “who reports to Dana two levels down”"
             aria-label="Ask the org chart a question"
-            className="h-11 max-w-md lg:h-9"
+            className="max-w-md"
           />
           <button
             type="button"

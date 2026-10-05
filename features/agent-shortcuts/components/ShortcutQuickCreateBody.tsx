@@ -23,7 +23,7 @@ import {
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -175,7 +175,7 @@ function EssentialsTab({ state }: { state: ShortcutQuickCreateState }) {
             onValueChange={(v) => setDisplayMode(v as ResultDisplayMode)}
             disabled={isSaving}
           >
-            <SelectTrigger id="qc-display-mode" className="h-9">
+            <SelectTrigger id="qc-display-mode">
               <div className="flex items-center gap-2 min-w-0">
                 <MonitorSmartphone className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                 <SelectValue placeholder="How the result is shown" />
@@ -236,7 +236,7 @@ function EssentialsTab({ state }: { state: ShortcutQuickCreateState }) {
               }
               disabled={isSaving || !showVariablePanel}
             >
-              <SelectTrigger id="qc-vars-style" className="h-9">
+              <SelectTrigger id="qc-vars-style">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -362,7 +362,6 @@ function DetailsTab({ state }: { state: ShortcutQuickCreateState }) {
             value={label}
             onChange={(e) => setLabel(e.target.value)}
             placeholder={agent?.name ?? "What users will see"}
-            className="h-9 text-[16px]"
             disabled={isSaving}
           />
           <p className="text-[11px] text-muted-foreground leading-tight">
@@ -386,7 +385,6 @@ function DetailsTab({ state }: { state: ShortcutQuickCreateState }) {
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder={agent?.description ?? "Short subtitle under the label"}
-            className="h-9 text-[16px]"
             disabled={isSaving}
           />
         </div>
@@ -434,12 +432,11 @@ function AdvancedTab({ state }: { state: ShortcutQuickCreateState }) {
           <Label htmlFor="qc-keyboard" className="text-sm">
             Keyboard shortcut
           </Label>
-          <Input
+          <Input mono
             id="qc-keyboard"
             value={keyboardShortcut}
             onChange={(e) => setKeyboardShortcut(e.target.value)}
             placeholder="e.g. cmd+shift+e"
-            className="h-9 text-[16px] font-mono"
             disabled={isSaving}
           />
         </div>
@@ -521,11 +518,10 @@ function LinkExistingTab({ state }: { state: ShortcutQuickCreateState }) {
     <div className="px-4 py-3 flex flex-col h-full min-h-0 gap-2.5">
       <div className="relative shrink-0">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
+        <Input adornment="start"
           placeholder="Search your shortcuts…"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-9 h-9 text-[16px]"
         />
       </div>
       <div className="flex items-center justify-between shrink-0">
@@ -639,11 +635,11 @@ function JsonTab({ state }: { state: ShortcutQuickCreateState }) {
       </div>
 
       <div className="flex-1 min-h-0 px-4 pb-2">
-        <Textarea
+        <Textarea mono minHeight={0}
           value={jsonDraft}
           onChange={(e) => setJsonDraft(e.target.value)}
           spellCheck={false}
-          className="h-full min-h-0 w-full resize-none font-mono text-[12px] leading-snug"
+          className="h-full min-h-0 w-full resize-none"
           placeholder='{ "label": "My shortcut", "categoryId": "…", "enabledFeatures": ["general"], … }'
         />
       </div>

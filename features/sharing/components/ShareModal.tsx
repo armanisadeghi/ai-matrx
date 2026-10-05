@@ -402,8 +402,8 @@ export function ShareModal({
             className="flex-1 flex flex-col min-h-0"
           >
             {/* phone-ok: labels are hidden below sm, icon-only tabs on phone */}
-            <TabsList className="grid w-full grid-cols-4 flex-shrink-0">
-              <TabsTrigger value="users" className="gap-2">
+            <TabsList fill className="flex-shrink-0">
+              <TabsTrigger value="users">
                 <Users className="w-4 h-4" />
                 <span className="hidden sm:inline">Users</span>
                 {userPermissions.length > 0 && (
@@ -412,7 +412,7 @@ export function ShareModal({
                   </span>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="public" className="gap-2">
+              <TabsTrigger value="public">
                 <Globe className="w-4 h-4" />
                 <span className="hidden sm:inline">Anyone link</span>
                 {publicPermission && (
@@ -424,7 +424,7 @@ export function ShareModal({
               {/* SECURE LINK — CODE REQUIRED (access ladder, secure delivery): the
                   third way to share, for anything that must not travel in a plain
                   link — a single-use link on one channel, a code on the other. */}
-              <TabsTrigger value="secure" className="gap-2">
+              <TabsTrigger value="secure">
                 <ShieldCheck className="w-4 h-4" />
                 <span className="hidden sm:inline">Secure link</span>
               </TabsTrigger>
@@ -434,7 +434,7 @@ export function ShareModal({
                   answer — owner, grant, organization default, and the container
                   that carries it — and it belongs beside the controls that
                   change them rather than on some other screen. */}
-              <TabsTrigger value="access" className="gap-2">
+              <TabsTrigger value="access">
                 <KeyRound className="w-4 h-4" />
                 <span className="hidden sm:inline">Access</span>
               </TabsTrigger>

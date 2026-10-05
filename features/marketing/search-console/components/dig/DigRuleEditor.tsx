@@ -12,7 +12,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   Select,
   SelectContent,
@@ -119,7 +119,6 @@ export function DigRuleEditor({
           value={draft.name}
           onChange={(e) => onChange({ ...draft, name: e.target.value })}
           placeholder="Rule name"
-          className="h-7 text-xs"
           aria-label="Rule name"
         />
         <Select
@@ -128,7 +127,7 @@ export function DigRuleEditor({
             setContent({ dimension: next as "query" | "page" })
           }
         >
-          <SelectTrigger size="sm" className="h-7 w-full text-xs" aria-label="Dimension">
+          <SelectTrigger className="w-full" aria-label="Dimension">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -145,7 +144,6 @@ export function DigRuleEditor({
         value={draft.description}
         onChange={(e) => onChange({ ...draft, description: e.target.value })}
         placeholder="What does this rule find? (optional)"
-        className="h-7 text-xs"
         aria-label="Rule description"
       />
       {/* Class pin — dig within ONE traffic class (money / educational /
@@ -161,8 +159,7 @@ export function DigRuleEditor({
         }
       >
         <SelectTrigger
-          size="sm"
-          className="h-7 w-full text-xs"
+          className="w-full"
           aria-label="Traffic class"
         >
           <SelectValue />
@@ -227,8 +224,7 @@ export function DigRuleEditor({
               }
             >
               <SelectTrigger
-                size="sm"
-                className="h-7 flex-1 text-xs"
+                className="flex-1"
                 aria-label={`Condition ${index + 1} metric`}
               >
                 <SelectValue />
@@ -253,8 +249,7 @@ export function DigRuleEditor({
               }
             >
               <SelectTrigger
-                size="sm"
-                className="h-7 w-14 text-xs"
+                className="w-14"
                 aria-label={`Condition ${index + 1} operator`}
               >
                 <SelectValue />
@@ -285,7 +280,7 @@ export function DigRuleEditor({
                 })
               }
               inputMode="decimal"
-              className="h-7 w-24 text-xs tabular-nums"
+              className="w-24"
               aria-label={`Condition ${index + 1} value`}
             />
             <Button
@@ -326,7 +321,7 @@ export function DigRuleEditor({
             setContent({ sortMetric: next as GscDigRuleContent["sortMetric"] })
           }
         >
-          <SelectTrigger size="sm" className="h-7 w-full text-xs" aria-label="Sort by">
+          <SelectTrigger className="w-full" aria-label="Sort by">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -346,7 +341,7 @@ export function DigRuleEditor({
             setContent({ sortDir: next as "asc" | "desc" })
           }
         >
-          <SelectTrigger size="sm" className="h-7 w-full text-xs" aria-label="Sort direction">
+          <SelectTrigger className="w-full" aria-label="Sort direction">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -369,7 +364,6 @@ export function DigRuleEditor({
               setContent({ rowLimit: parsed });
             }
           }}
-          className="h-7 text-xs tabular-nums"
           aria-label="Row limit"
         />
         <div className="flex items-center text-[11px] text-muted-foreground">
@@ -389,7 +383,6 @@ export function DigRuleEditor({
             })
           }
           placeholder="Only queries containing… (optional)"
-          className="h-7 text-xs"
           aria-label="Query contains filter"
         />
         <Input
@@ -403,7 +396,6 @@ export function DigRuleEditor({
             })
           }
           placeholder="Only pages containing… (optional)"
-          className="h-7 text-xs"
           aria-label="Page contains filter"
         />
       </div>

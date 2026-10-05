@@ -231,7 +231,7 @@ export function MandateRunHistory({
               value={url.status ?? ALL}
               onValueChange={(value) => filter({ status: value === ALL ? null : value })}
             >
-              <SelectTrigger className="h-8 w-[9.5rem] text-xs" aria-label="Status">
+              <SelectTrigger className="w-[9.5rem]" aria-label="Status">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -372,7 +372,7 @@ function FacetSelect({
   const known = value === null || options.some((option) => option.id === value);
   return (
     <Select value={value ?? ALL} onValueChange={(next) => onChange(next === ALL ? null : next)}>
-      <SelectTrigger className="h-8 w-[11rem] text-xs" aria-label={label}>
+      <SelectTrigger className="w-[11rem]" aria-label={label}>
         <SelectValue />
       </SelectTrigger>
       <SelectContent>

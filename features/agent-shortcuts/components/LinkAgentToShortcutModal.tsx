@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -329,7 +329,7 @@ export function LinkAgentToShortcutModal({
         value={activeTab}
         onValueChange={(v) => setActiveTab(v as "create" | "link")}
       >
-        <TabsList className="grid grid-cols-2 w-full">
+        <TabsList fill>
           <TabsTrigger value="create">
             <Plus className="h-4 w-4 mr-2" />
             Create New
@@ -350,7 +350,6 @@ export function LinkAgentToShortcutModal({
               value={label}
               onChange={(e) => setLabel(e.target.value)}
               placeholder="Shortcut label"
-              className="h-9 text-[16px]"
               disabled={isProcessing}
             />
           </div>
@@ -406,7 +405,6 @@ export function LinkAgentToShortcutModal({
               value={enabledFeaturesInput}
               onChange={(e) => setEnabledFeaturesInput(e.target.value)}
               placeholder="e.g. code-editor, note-editor"
-              className="h-9 text-[16px]"
               disabled={isProcessing}
             />
             <p className="text-xs text-muted-foreground">
@@ -428,11 +426,10 @@ export function LinkAgentToShortcutModal({
         <TabsContent value="link" className="space-y-3 pt-3">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
+            <Input adornment="start"
               placeholder="Search shortcuts..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 h-9 text-[16px]"
             />
           </div>
           <div className="flex items-center justify-between">

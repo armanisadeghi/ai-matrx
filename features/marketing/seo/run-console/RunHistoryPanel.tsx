@@ -37,7 +37,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   Select,
   SelectContent,
@@ -451,7 +451,7 @@ function FilterBar({
           })
         }
       >
-        <SelectTrigger className="h-7 w-[132px] text-xs" aria-label="Run kind">
+        <SelectTrigger className="w-[132px]" aria-label="Run kind">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -486,7 +486,7 @@ function FilterBar({
         }}
       >
         <SelectTrigger
-          className="h-7 w-[220px] text-xs"
+          className="w-[220px]"
           aria-label="Task or command"
         >
           <SelectValue placeholder="Every task and command" />
@@ -555,7 +555,7 @@ function FilterBar({
           value={filters.from ?? ""}
           max={filters.to ?? undefined}
           onChange={(e) => onChange({ ...filters, from: e.target.value || null })}
-          className="h-7 w-[128px] px-1.5 text-xs"
+          className="w-[128px]"
         />
         <span>to</span>
         <Input
@@ -564,18 +564,18 @@ function FilterBar({
           value={filters.to ?? ""}
           min={filters.from ?? undefined}
           onChange={(e) => onChange({ ...filters, to: e.target.value || null })}
-          className="h-7 w-[128px] px-1.5 text-xs"
+          className="w-[128px]"
         />
       </div>
 
       <div className="relative">
         <Search className="pointer-events-none absolute left-1.5 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
-        <Input
+        <Input mono
           value={runIdDraft}
           onChange={(e) => setRunIdDraft(e.target.value)}
           placeholder="Run id (part is fine)"
           aria-label="Search by run id"
-          className="h-7 w-[170px] pl-5 font-mono text-xs"
+          className="w-[170px]"
         />
       </div>
 

@@ -24,7 +24,8 @@ import {
   RefreshCw,
   Square,
 } from "lucide-react";
-import { Input, SelectChevron } from "@ai-matrx/design-system";
+import { SelectChevron } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -290,7 +291,6 @@ function HostCard({
           value={draft.name ?? ""}
           onChange={(e) => onChange(index, { name: e.target.value })}
           placeholder={effective.name}
-          className="text-base"
         />
       </div>
 
@@ -303,7 +303,7 @@ function HostCard({
               onChange(index, { gender: g as PodcastSpeakerGender })
             }
           >
-            <SelectTrigger className="h-9">
+            <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

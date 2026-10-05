@@ -152,7 +152,7 @@ function UseOnSite({ packId }: { packId: string }) {
     <div className="flex flex-wrap items-center gap-1.5">
       {options.length > 1 ? (
         <Select value={chosen.id} onValueChange={setSiteId}>
-          <SelectTrigger className="h-8 w-[190px] text-xs">
+          <SelectTrigger className="w-[190px]">
             <SelectValue placeholder="Choose a website" />
           </SelectTrigger>
           <SelectContent>

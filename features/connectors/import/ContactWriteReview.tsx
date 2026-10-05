@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { getJson, postJson } from "@/lib/python-client";
 import { getUserMessage } from "@/lib/api/errors";
 import type { components } from "@ai-matrx/agents/generated/api-types";

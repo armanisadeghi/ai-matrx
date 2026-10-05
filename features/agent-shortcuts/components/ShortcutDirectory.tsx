@@ -8,7 +8,7 @@ import {
   MatrxDataTable,
   type MatrxColumnDef,
 } from "@ai-matrx/design-system/data-table";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -534,7 +534,7 @@ export function ShortcutDirectory({
               placeholder="Search label, agent, category, or ID..."
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
-              className="h-8 min-w-[220px] text-[16px] sm:w-80 sm:text-sm"
+              className="min-w-[220px] sm:w-80"
               aria-label="Search shortcuts"
             />
           ),
@@ -575,14 +575,13 @@ export function ShortcutDirectory({
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <div className="flex min-w-[320px] items-center gap-2">
-                  <Input
+                  <Input mono
                     placeholder="Paste shortcut UUID..."
                     value={idLookup}
                     onChange={(event) => setIdLookup(event.target.value)}
                     onKeyDown={(event) => {
                       if (event.key === "Enter") handleIdLookup();
                     }}
-                    className="h-8 font-mono text-xs"
                     aria-label="Shortcut UUID"
                   />
                   <Button variant="primary" onClick={handleIdLookup}>
@@ -590,7 +589,7 @@ export function ShortcutDirectory({
                   </Button>
                 </div>
                 <Select value={scopeFilter} onValueChange={setScopeFilter}>
-                  <SelectTrigger className="h-8 w-[160px]">
+                  <SelectTrigger className="w-[160px]">
                     <SelectValue placeholder="Scope" />
                   </SelectTrigger>
                   <SelectContent>
@@ -604,7 +603,7 @@ export function ShortcutDirectory({
                 </Select>
                 {/* canonical-agent-picker-exempt: a row facet, not an agent choice — it lists only the agents these shortcuts already name (plus "All agents") and filters the table; the package picker would offer agents no row carries. */}
                 <Select value={agentFilter} onValueChange={setAgentFilter}>
-                  <SelectTrigger className="h-8 w-[180px]">
+                  <SelectTrigger className="w-[180px]">
                     <SelectValue placeholder="Agent" />
                   </SelectTrigger>
                   <SelectContent>
@@ -617,7 +616,7 @@ export function ShortcutDirectory({
                   </SelectContent>
                 </Select>
                 <Select value={surfaceFilter} onValueChange={setSurfaceFilter}>
-                  <SelectTrigger className="h-8 w-[180px]">
+                  <SelectTrigger className="w-[180px]">
                     <SelectValue placeholder="Surface" />
                   </SelectTrigger>
                   <SelectContent>
@@ -633,7 +632,7 @@ export function ShortcutDirectory({
                   value={placementFilter}
                   onValueChange={setPlacementFilter}
                 >
-                  <SelectTrigger className="h-8 w-[180px]">
+                  <SelectTrigger className="w-[180px]">
                     <SelectValue placeholder="Placement" />
                   </SelectTrigger>
                   <SelectContent>
@@ -651,7 +650,7 @@ export function ShortcutDirectory({
                     setActiveFilter(value as typeof activeFilter)
                   }
                 >
-                  <SelectTrigger className="h-8 w-[150px]">
+                  <SelectTrigger className="w-[150px]">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>

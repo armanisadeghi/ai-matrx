@@ -502,7 +502,7 @@ export function OrganizationsAdminClient() {
           onValueChange={(value) => void changeRole(member, value)}
           disabled={savingMembershipId === member.id}
         >
-          <SelectTrigger className="h-7 w-28 text-xs">
+          <SelectTrigger className="w-28">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

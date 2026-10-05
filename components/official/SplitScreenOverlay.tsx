@@ -100,7 +100,7 @@ const SplitScreenOverlay: React.FC<SplitScreenOverlayProps> = ({
     };
 
     const renderTabsList = (tabs: TabDefinition[], activeTab: string, onTabChange: (tab: string) => void) => (
-        <TabsList className="rounded-3xl space-x-2">
+        <TabsList>
             {tabs.map((tab, index) => {
                 // Determine tab position styling
                 let positionClass = "";
@@ -118,7 +118,7 @@ const SplitScreenOverlay: React.FC<SplitScreenOverlayProps> = ({
                 return (
                     <TabsTrigger
                         key={tab.id}
-                        className={`${positionClass} px-4 py-2 border-border hover:bg-gray-100 dark:hover:bg-gray-600 active:bg-gray-200 dark:active:bg-gray-600 data-[state=active]:bg-gray-200 dark:data-[state=active]:bg-gray-700`}
+                        className={`${positionClass} `}
                         value={tab.id}
                     >
                         {tab.label}

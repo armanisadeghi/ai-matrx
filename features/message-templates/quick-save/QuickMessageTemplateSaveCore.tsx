@@ -4,7 +4,7 @@ import { createPortal } from "react-dom";
 import { useEffect, useState } from "react";
 import { Check, GitCompareArrows, Save, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
@@ -299,7 +299,7 @@ export function QuickMessageTemplateSaveCore({
                 onValueChange={selectExisting}
                 disabled={isLoading}
               >
-                <SelectTrigger id="qmts-template" className="h-8 text-xs">
+                <SelectTrigger id="qmts-template">
                   <SelectValue
                     placeholder={
                       isLoading ? "Loading templates…" : "Choose a template…"
@@ -348,7 +348,6 @@ export function QuickMessageTemplateSaveCore({
                 id="qmts-name"
                 value={label}
                 onChange={(event) => setLabel(event.target.value)}
-                className="h-8 text-xs"
                 style={{ fontSize: "16px" }}
               />
             </div>
@@ -362,7 +361,7 @@ export function QuickMessageTemplateSaveCore({
                   if (isMessageRole(value)) setRole(value);
                 }}
               >
-                <SelectTrigger id="qmts-role" className="h-8 text-xs">
+                <SelectTrigger id="qmts-role">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -383,7 +382,6 @@ export function QuickMessageTemplateSaveCore({
                 value={tagsText}
                 onChange={(event) => setTagsText(event.target.value)}
                 placeholder="sales, follow-up"
-                className="h-8 text-xs"
                 style={{ fontSize: "16px" }}
               />
             </div>

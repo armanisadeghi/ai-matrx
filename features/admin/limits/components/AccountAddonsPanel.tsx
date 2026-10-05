@@ -50,12 +50,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Input,
   Popover,
   PopoverContent,
   PopoverTrigger,
   Skeleton,
 } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";

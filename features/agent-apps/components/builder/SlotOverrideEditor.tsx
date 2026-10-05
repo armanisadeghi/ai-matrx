@@ -222,13 +222,12 @@ function SlotRow({
 
       {isCustom && expanded && (
         <div className="border-t border-border/60 p-3 space-y-2 bg-muted/20">
-          <Textarea
+          <Textarea mono
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             disabled={disabled || saving}
             spellCheck={false}
             rows={14}
-            className="font-mono text-[12px] leading-relaxed bg-background"
           />
           <div className="flex items-center justify-end gap-2">
             <Button

@@ -13,7 +13,7 @@ import { useId } from "react";
 import { TriangleAlert } from "lucide-react";
 import { REFERENCE_CATEGORY_DISPLAY } from "@ai-matrx/associations";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Switch } from "@/components/ui/switch";
 import {
   Select,
@@ -102,12 +102,11 @@ export function EntityTypeForm({
     <div className="flex h-full min-h-0 flex-col gap-4 overflow-y-auto p-3">
       <div className="flex flex-col gap-1.5">
         <span className="text-xs font-medium">Token (immutable PK)</span>
-        <Input
+        <Input mono
           value={editor.token}
           disabled={!createMode}
           onChange={(e) => onChange({ ...editor, token: e.target.value })}
           placeholder="e.g. picklist"
-          className="h-8 font-mono"
           style={{ fontSize: "16px" }}
         />
         {tokenInvalid ? (
@@ -131,23 +130,21 @@ export function EntityTypeForm({
       <div className="grid grid-cols-2 gap-3 rounded-md border border-border p-3">
         <div className="flex flex-col gap-1.5">
           <span className="text-xs font-medium">Schema</span>
-          <Input
+          <Input mono
             value={editor.schemaName}
             onChange={(e) =>
               onChange({ ...editor, schemaName: e.target.value })
             }
             placeholder="e.g. workbench"
-            className="h-8 font-mono"
             style={{ fontSize: "16px" }}
           />
         </div>
         <div className="flex flex-col gap-1.5">
           <span className="text-xs font-medium">Table</span>
-          <Input
+          <Input mono
             value={editor.tableName}
             onChange={(e) => onChange({ ...editor, tableName: e.target.value })}
             placeholder="e.g. notes"
-            className="h-8 font-mono"
             style={{ fontSize: "16px" }}
           />
         </div>
@@ -164,7 +161,6 @@ export function EntityTypeForm({
             value={editor.label}
             onChange={(e) => onChange({ ...editor, label: e.target.value })}
             placeholder="e.g. Picklist"
-            className="h-8"
             style={{ fontSize: "16px" }}
           />
         </div>
@@ -174,17 +170,15 @@ export function EntityTypeForm({
             value={editor.category}
             onChange={(e) => onChange({ ...editor, category: e.target.value })}
             placeholder="optional"
-            className="h-8"
             style={{ fontSize: "16px" }}
           />
         </div>
         <div className="flex flex-col gap-1.5">
           <span className="text-xs font-medium">Base tier</span>
-          <Input
+          <Input mono
             type="number"
             value={editor.baseTier}
             onChange={(e) => onChange({ ...editor, baseTier: e.target.value })}
-            className="h-8 font-mono"
             style={{ fontSize: "16px" }}
           />
         </div>
@@ -199,7 +193,7 @@ export function EntityTypeForm({
               })
             }
           >
-            <SelectTrigger className="h-8">
+            <SelectTrigger>
               <SelectValue placeholder="(none)" />
             </SelectTrigger>
             <SelectContent>
@@ -220,12 +214,11 @@ export function EntityTypeForm({
               (optional)
             </span>
           </span>
-          <Input
+          <Input mono
             value={editor.rlsVariant}
             onChange={(e) =>
               onChange({ ...editor, rlsVariant: e.target.value })
             }
-            className="h-8 font-mono"
             style={{ fontSize: "16px" }}
           />
         </div>
@@ -282,13 +275,12 @@ export function EntityTypeForm({
         <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-1.5">
             <span className="text-xs font-medium">Title column</span>
-            <Input
+            <Input mono
               value={editor.titleColumn}
               onChange={(e) =>
                 onChange({ ...editor, titleColumn: e.target.value })
               }
               placeholder="e.g. name / title / label"
-              className="h-8 font-mono"
               style={{ fontSize: "16px" }}
             />
             <p className="text-[10px] text-muted-foreground">
@@ -306,7 +298,7 @@ export function EntityTypeForm({
                 })
               }
             >
-              <SelectTrigger className="h-8">
+              <SelectTrigger>
                 <SelectValue placeholder="(none)" />
               </SelectTrigger>
               <SelectContent>
@@ -324,7 +316,7 @@ export function EntityTypeForm({
           </div>
           <div className="col-span-2 flex flex-col gap-1.5">
             <span className="text-xs font-medium">Reference category</span>
-            <Input
+            <Input mono
               value={editor.referenceCategory}
               onChange={(e) =>
                 onChange({
@@ -336,7 +328,6 @@ export function EntityTypeForm({
               }
               list={categoryListId}
               placeholder="empty = bucket by schema"
-              className="h-8 font-mono"
               style={{ fontSize: "16px" }}
             />
             <datalist id={categoryListId}>

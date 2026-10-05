@@ -175,7 +175,7 @@ const FlashcardControls: React.FC<{
             onValueChange={handleSelectChange}
             value={currentIndex.toString()}
           >
-            <SelectTrigger className="w-full bg-card">
+            <SelectTrigger className="w-full">
               <SelectValue placeholder="Select a flashcard" />
             </SelectTrigger>
             <SelectContent>

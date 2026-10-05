@@ -21,7 +21,7 @@ import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   Popover,
   PopoverContent,
@@ -138,11 +138,10 @@ export function ColumnChooser({
       <PopoverContent sizing="content" align="end" className="p-2">
         <div className="relative mb-2">
           <Search className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input
+          <Input adornment="start"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Find a column…"
-            className="h-7 pl-7 text-xs"
             aria-label="Find a column"
           />
         </div>

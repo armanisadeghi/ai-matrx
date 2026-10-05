@@ -34,7 +34,7 @@ import {
 import { toast } from "@/lib/toast";
 
 import { cn } from "@/lib/utils";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { Badge } from "@/components/ui/badge";
@@ -442,11 +442,10 @@ function ResourceEditor({
           <Label className="text-xs uppercase tracking-wide text-muted-foreground">
             Filename
           </Label>
-          <Input
+          <Input mono
             value={filename}
             onChange={(e) => setFilename(e.target.value)}
             placeholder="usage.md"
-            className="h-8 text-sm font-mono"
             autoFocus
           />
         </div>
@@ -479,11 +478,10 @@ function ResourceEditor({
         <Label className="text-xs uppercase tracking-wide text-muted-foreground">
           MIME type
         </Label>
-        <Input
+        <Input mono
           value={mimeType}
           onChange={(e) => setMimeType(e.target.value)}
           placeholder="text/markdown"
-          className="h-8 text-xs font-mono"
         />
       </div>
 

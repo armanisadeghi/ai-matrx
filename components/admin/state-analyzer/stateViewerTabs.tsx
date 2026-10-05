@@ -8,7 +8,7 @@ import { moduleSchemas } from "@/lib/redux/dynamic/moduleSchema";
 import AgentDefinitionSliceViewer from "./sliceViewers/agent-definitions/AgentDefinitionSliceViewer";
 import AgentDefinitionSliceViewerShadcn from "./sliceViewers/agent-definitions/AgentDefinitionSliceViewerShadcn";
 import ExecutionInstanceInspector from "./execution-inspector/ExecutionInstanceInspector";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Search } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -55,11 +55,10 @@ function TabIndex({
         </h2>
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <Input
+          <Input adornment="start"
             placeholder="Search tabs..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-7 h-7 text-xs"
           />
         </div>
       </div>
@@ -164,11 +163,10 @@ function OrphanSlicesViewer({
       <div className="w-56 shrink-0 flex flex-col gap-1 overflow-hidden">
         <div className="relative">
           <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <Input
+          <Input adornment="start"
             placeholder="Filter slices..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-7 h-7 text-xs"
           />
         </div>
         <p className="text-xs text-muted-foreground px-1">

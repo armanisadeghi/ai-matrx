@@ -996,12 +996,11 @@ export function SourceStudio({ documentId, deepLink, embedded = false }: SourceS
                       ))}
                     </SelectContent>
                   </Select>
-                  <Textarea
+                  <Textarea minHeight={320}
                     value={editing.text}
                     onChange={(e) =>
                       setEditing((cur) => (cur ? { ...cur, text: e.target.value } : cur))
                     }
-                    className="min-h-[320px] text-sm"
                   />
                   <p className="text-xs text-muted-foreground">
                     Saving keeps the original capture one click away; people and AI
@@ -1360,10 +1359,10 @@ function PortionTextPane({
         <p className="text-xs text-muted-foreground">
           Your edit is saved as a new version. The original capture stays one click away.
         </p>
-        <Textarea
+        <Textarea mono minHeight={240}
           value={editing.text}
           onChange={(e) => onEditChange(e.target.value)}
-          className="min-h-[240px] flex-1 font-mono text-sm"
+          className="flex-1"
           style={{ fontSize: "16px" }}
           autoFocus
         />

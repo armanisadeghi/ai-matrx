@@ -11,7 +11,7 @@
 
 import { useState } from "react";
 import { Crown, Mail, UserPlus, X } from "lucide-react";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
@@ -128,7 +128,7 @@ export function GuestPicker({
           className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
           aria-hidden="true"
         />
-        <Input
+        <Input adornment="start"
           value={query}
           autoFocus={autoFocus}
           onChange={(e) => setQuery(e.target.value)}
@@ -140,7 +140,6 @@ export function GuestPicker({
           }}
           placeholder="Add guests by name or email"
           aria-label="Add guests"
-          className="pl-8"
           autoComplete="off"
         />
         {q !== "" && (suggestions.length > 0 || typedIsNewEmail) ? (

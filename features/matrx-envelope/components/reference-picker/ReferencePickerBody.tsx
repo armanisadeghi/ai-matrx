@@ -26,7 +26,8 @@ import {
   Plus,
 } from "lucide-react";
 import type { DirectiveClass } from "@ai-matrx/content-ir";
-import { Input, Popover, PopoverContent, PopoverTrigger, Skeleton } from "@ai-matrx/design-system";
+import { Popover, PopoverContent, PopoverTrigger, Skeleton } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -792,7 +793,6 @@ function InlineCreate({
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder={`New ${label.toLowerCase()} title`}
-          className="h-8 text-base"
           onKeyDown={(e) => {
             if (e.key === "Enter") void submit();
             if (e.key === "Escape") setOpen(false);

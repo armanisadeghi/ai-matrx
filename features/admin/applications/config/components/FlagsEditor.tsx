@@ -10,7 +10,7 @@ import { useState } from "react";
 import { AlertTriangle, Plus, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Switch } from "@/components/ui/switch";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
@@ -120,7 +120,7 @@ export function FlagsEditor({
       ))}
 
       <div className="flex items-center gap-2 pt-1">
-        <Input
+        <Input mono
           value={newKey}
           onChange={(e) => {
             setNewKey(e.target.value);
@@ -132,7 +132,7 @@ export function FlagsEditor({
               addFlag();
             }
           }}
-          className="h-8 max-w-xs font-mono text-sm"
+          className="max-w-xs"
           data-identifier
           placeholder="new_flag_key"
           spellCheck={false}

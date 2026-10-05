@@ -27,7 +27,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CalendarClock, Info, Loader2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -286,7 +286,7 @@ export function ScheduleCascadePanel({
           <div className="flex flex-col gap-1">
             <Label className="text-[10px] text-muted-foreground">Cadence</Label>
             <Select value={cadence} onValueChange={setCadence}>
-              <SelectTrigger className="h-7 text-xs">
+              <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -304,7 +304,7 @@ export function ScheduleCascadePanel({
                 value={String(dayOfWeek)}
                 onValueChange={(value) => setDayOfWeek(Number(value))}
               >
-                <SelectTrigger className="h-7 text-xs">
+                <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -331,7 +331,6 @@ export function ScheduleCascadePanel({
                 type="time"
                 value={runAt}
                 onChange={(event) => setRunAt(event.target.value)}
-                className="h-7 text-xs"
               />
             </div>
           ) : null}
@@ -351,7 +350,6 @@ export function ScheduleCascadePanel({
               max={capCeiling}
               value={maxKeywords}
               onChange={(event) => setMaxKeywords(Number(event.target.value))}
-              className="h-7 text-xs tabular-nums"
             />
           </div>
 
@@ -368,7 +366,6 @@ export function ScheduleCascadePanel({
               min={1}
               value={sitesPerRun}
               onChange={(event) => setSitesPerRun(Number(event.target.value))}
-              className="h-7 text-xs tabular-nums"
               disabled={scope.tier === "site"}
             />
           </div>
@@ -387,7 +384,6 @@ export function ScheduleCascadePanel({
               value={notes}
               onChange={(event) => setNotes(event.target.value)}
               placeholder="e.g. only the ITAD brands, never touch anything a person placed"
-              className="h-7 text-xs"
             />
           </div>
           <Button

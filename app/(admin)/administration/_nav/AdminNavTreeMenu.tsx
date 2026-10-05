@@ -5,7 +5,7 @@ import AppLink from "@/components/navigation/AppLink";
 import { usePathname } from "next/navigation";
 import { ListTree, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -103,11 +103,10 @@ export default function AdminNavTreeMenu() {
         <div className="p-2 pb-1">
           <div className="relative">
             <Search className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-            <Input
+            <Input adornment="start"
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
               placeholder="Search administration…"
-              className="h-8 pl-7 text-xs"
               onKeyDown={(event) => event.stopPropagation()}
             />
           </div>

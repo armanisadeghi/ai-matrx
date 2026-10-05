@@ -94,7 +94,7 @@ export function PlanNodeTopicField({
         onValueChange={(v) => onChange(v === NONE ? null : v)}
         disabled={disabled || topics.isPending}
       >
-        <SelectTrigger className="h-8 text-xs" aria-label="Map topic this page is written for">
+        <SelectTrigger aria-label="Map topic this page is written for">
           <SelectValue placeholder={topics.isPending ? "Loading topics…" : "No topic"} />
         </SelectTrigger>
         <SelectContent>

@@ -16,7 +16,7 @@ import { Bookmark, Check, Loader2, MoreVertical, Plus, Users } from "lucide-reac
 import { dismissRecordToasts, recordToast, toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -526,7 +526,6 @@ function SaveViewDialog({
                 if (e.key === "Enter") void submit();
               }}
               placeholder="e.g. Untouched leads — Acme"
-              className="h-9 text-sm"
               autoFocus
             />
           </div>

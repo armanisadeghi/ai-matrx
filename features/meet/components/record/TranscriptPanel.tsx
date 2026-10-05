@@ -22,7 +22,7 @@ import {
   type MeetingRecordBundle,
   type TranscriptMatch,
 } from "@ai-matrx/meet/react";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -137,7 +137,7 @@ export function TranscriptPanel({
             className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"
             aria-hidden="true"
           />
-          <Input
+          <Input adornment="both"
             value={query}
             onChange={(e) => {
               setQuery(e.target.value);
@@ -152,7 +152,6 @@ export function TranscriptPanel({
             }}
             placeholder="Search the transcript"
             aria-label="Search the transcript"
-            className="h-8 pl-8 pr-7 text-sm"
           />
           {query ? (
             <button

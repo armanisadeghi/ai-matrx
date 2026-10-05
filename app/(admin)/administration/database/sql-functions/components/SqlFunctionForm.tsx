@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { SqlFunction } from "@/types/sql-functions";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   Select,
   SelectContent,
@@ -157,8 +157,8 @@ export default function SqlFunctionForm({
             <label className="text-xs font-medium text-slate-600 dark:text-slate-400 w-20 shrink-0 text-right whitespace-nowrap">
               Name <span className="text-red-500">*</span>
             </label>
-            <Input
-              className="font-mono h-7 text-sm flex-1 border-slate-300 dark:border-slate-700"
+            <Input mono
+              className="flex-1"
               placeholder="my_function"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -174,7 +174,7 @@ export default function SqlFunctionForm({
               value={schema}
               onChange={(e) => setSchema(e.target.value)}
               placeholder={DEFAULT_DATABASE_SCHEMA}
-              className="h-7 text-sm flex-1 border-slate-300 dark:border-slate-700"
+              className="flex-1"
             />
           </div>
 
@@ -187,7 +187,7 @@ export default function SqlFunctionForm({
               onChange={(e) => setReturnType(e.target.value)}
               placeholder="void, integer, text…"
               required
-              className="h-7 text-sm flex-1 border-slate-300 dark:border-slate-700"
+              className="flex-1"
             />
           </div>
 
@@ -199,7 +199,7 @@ export default function SqlFunctionForm({
               value={arguments_}
               onChange={(e) => setArguments(e.target.value)}
               placeholder="arg1 type1, arg2 type2…"
-              className="h-7 text-sm flex-1 border-slate-300 dark:border-slate-700"
+              className="flex-1"
             />
           </div>
 
@@ -208,7 +208,7 @@ export default function SqlFunctionForm({
               Language
             </label>
             <Select value={language} onValueChange={setLanguage}>
-              <SelectTrigger className="h-7 text-sm flex-1 border-slate-300 dark:border-slate-700">
+              <SelectTrigger className="flex-1">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -230,7 +230,7 @@ export default function SqlFunctionForm({
                 setSecurityType(v as "SECURITY DEFINER" | "SECURITY INVOKER")
               }
             >
-              <SelectTrigger className="h-7 text-sm flex-1 border-slate-300 dark:border-slate-700">
+              <SelectTrigger className="flex-1">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

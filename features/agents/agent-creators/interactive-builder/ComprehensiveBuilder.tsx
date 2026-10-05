@@ -9,7 +9,7 @@ import {
   PromptBuilderProvider,
   usePromptBuilder as useBuilderContext,
 } from "../tabbed-builder/PromptBuilderContext";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsListLegacy as TabsList, TabsTriggerLegacy as TabsTrigger } from "@/components/ui/tabs";
 import { TaskTab } from "../tabbed-builder/TaskTab";
 import { ContextTab } from "../tabbed-builder/ContextTab";
 import { ToneTab } from "../tabbed-builder/ToneTab";

@@ -31,7 +31,7 @@ import { useEffect, useState } from "react";
 import { Check, Copy, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   Select,
   SelectContent,
@@ -178,7 +178,6 @@ export function PairingCodeDialogBody({
               if (event.key === "Enter") void generate();
             }}
             placeholder="Break room tablet"
-            className="min-h-[44px] text-base"
           />
         </div>
         <div className="flex min-w-56 flex-1 flex-col gap-1">
@@ -190,7 +189,7 @@ export function PairingCodeDialogBody({
             punches are checked against its location and cross-location flagging compares to it.
           */}
           <Select value={locationId} onValueChange={setLocationId}>
-            <SelectTrigger id="hr-device-location" className="min-h-[44px] text-base">
+            <SelectTrigger id="hr-device-location">
               <SelectValue placeholder="Choose a location" />
             </SelectTrigger>
             <SelectContent>

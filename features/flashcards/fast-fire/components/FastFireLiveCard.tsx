@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { setTypedAnswer } from "../redux/fastFireSlice";
 import { helpLive, type HelpLiveResult } from "../agents/helpLive.thunk";
 import { toast } from "@/lib/toast";
@@ -283,7 +283,6 @@ export function FastFireLiveCard({
               autoFocus
               autoComplete="off"
               placeholder="Type your answer, then press Enter"
-              className="h-12 text-base"
               value={typedAnswer}
               disabled={betweenCards}
               onChange={(event) =>

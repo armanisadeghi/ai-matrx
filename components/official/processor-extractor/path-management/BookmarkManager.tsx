@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { loadBookmarks, saveBookmarks, exportBookmarks, importBookmarks } from "../utils/json-path-navigation-util";
 import { copyToClipboard } from "../utils/basic-utils";
@@ -86,7 +86,7 @@ const BookmarkManager: React.FC<BookmarkManagerProps> = ({ open, onOpenChange })
                 </DialogHeader>
                 
                 <Tabs defaultValue="manage" value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-                    <TabsList className="grid w-full grid-cols-2">
+                    <TabsList fill>
                         <TabsTrigger value="manage">Manage Bookmarks</TabsTrigger>
                         <TabsTrigger value="import">Import/Export</TabsTrigger>
                     </TabsList>

@@ -166,7 +166,7 @@ export function PlannedPagesSection({
               <span className="flex flex-col gap-1">
                 <span>This map is used by several sites. Which one gets the page?</span>
                 <Select value={pickedSite ?? undefined} onValueChange={setPickedSite}>
-                  <SelectTrigger className="h-8 text-xs" aria-label="Site">
+                  <SelectTrigger aria-label="Site">
                     <SelectValue placeholder="Pick a site" />
                   </SelectTrigger>
                   <SelectContent>

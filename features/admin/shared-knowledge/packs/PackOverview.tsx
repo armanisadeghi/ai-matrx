@@ -13,7 +13,7 @@ import { useMutation } from "@tanstack/react-query";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   Select,
   SelectContent,
@@ -145,7 +145,7 @@ export function PackOverview({
             <Input value={form.name} disabled={!canAuthor} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
           </Field>
           <Field label="Slug (immutable)">
-            <Input value={form.slug} disabled readOnly className="font-mono text-xs" />
+            <Input mono value={form.slug} disabled readOnly />
           </Field>
           <Field label="Industry (taxonomy)">
             <Select

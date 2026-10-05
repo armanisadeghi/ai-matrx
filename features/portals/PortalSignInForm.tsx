@@ -12,7 +12,7 @@
 import { useState, type FormEvent } from "react";
 import { Loader2, Mail } from "lucide-react";
 
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 
 import { Button } from "@/components/ui/button";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -84,7 +84,6 @@ export function PortalSignInForm({ slug }: { slug: string }) {
         value={email}
         onChange={(event: React.ChangeEvent<HTMLInputElement>) => setEmail(event.target.value)}
         placeholder="you@yourcompany.com"
-        className="h-11 text-base"
         aria-describedby={problem ? "portal-email-problem" : undefined}
       />
       <Button variant="primary" type="submit" className="w-full" disabled={state === "sending"}>

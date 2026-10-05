@@ -51,7 +51,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { announceComingSoon } from "@/lib/coming-soon/announce";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -605,7 +605,6 @@ export function HrNewEmployee({
                     onChange={(event) =>
                       set({ legal_first_name: event.target.value })
                     }
-                    className="h-11 lg:h-9"
                   />
                 </Field>
                 <Field
@@ -617,7 +616,6 @@ export function HrNewEmployee({
                     onChange={(event) =>
                       set({ legal_last_name: event.target.value })
                     }
-                    className="h-11 lg:h-9"
                   />
                 </Field>
                 <Field
@@ -629,7 +627,6 @@ export function HrNewEmployee({
                     onChange={(event) =>
                       set({ preferred_first_name: event.target.value })
                     }
-                    className="h-11 lg:h-9"
                   />
                 </Field>
                 <Field label="Work email">
@@ -639,7 +636,6 @@ export function HrNewEmployee({
                     onChange={(event) =>
                       set({ work_email: event.target.value })
                     }
-                    className="h-11 lg:h-9"
                   />
                 </Field>
                 <Field label="Work phone">
@@ -648,7 +644,6 @@ export function HrNewEmployee({
                     onChange={(event) =>
                       set({ work_phone: event.target.value })
                     }
-                    className="h-11 lg:h-9"
                   />
                 </Field>
 
@@ -660,7 +655,7 @@ export function HrNewEmployee({
                   even when the names and emails differ.
                 */}
                 <Field label="Social Security number">
-                  <Input
+                  <Input mono
                     type="password"
                     inputMode="numeric"
                     autoComplete="off"
@@ -668,7 +663,6 @@ export function HrNewEmployee({
                     value={form.ssn}
                     onChange={(event) => set({ ssn: event.target.value })}
                     placeholder="Optional — 000-00-0000"
-                    className="h-11 font-mono lg:h-9"
                   />
                 </Field>
               </Grid>
@@ -696,7 +690,6 @@ export function HrNewEmployee({
                     type="date"
                     value={form.hire_date}
                     onChange={(event) => set({ hire_date: event.target.value })}
-                    className="h-11 lg:h-9"
                   />
                 </Field>
                 <Field label="Worker class">
@@ -704,7 +697,7 @@ export function HrNewEmployee({
                     value={form.worker_class}
                     onValueChange={(value) => set({ worker_class: value })}
                   >
-                    <SelectTrigger className="h-11 lg:h-9">
+                    <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -770,7 +763,7 @@ export function HrNewEmployee({
                         set({ pay_group_id: value === NO_PAY_GROUP ? "" : value })
                       }
                     >
-                      <SelectTrigger className="h-11 lg:h-9">
+                      <SelectTrigger>
                         <SelectValue placeholder="Choose a pay group" />
                       </SelectTrigger>
                       <SelectContent>
@@ -858,7 +851,7 @@ export function HrNewEmployee({
                       });
                     }}
                   >
-                    <SelectTrigger className="h-11 lg:h-9">
+                    <SelectTrigger>
                       <SelectValue placeholder="Pick a job title" />
                     </SelectTrigger>
                     <SelectContent>
@@ -877,7 +870,7 @@ export function HrNewEmployee({
                     value={form.department_id}
                     onValueChange={(value) => set({ department_id: value })}
                   >
-                    <SelectTrigger className="h-11 lg:h-9">
+                    <SelectTrigger>
                       <SelectValue placeholder="Pick a department" />
                     </SelectTrigger>
                     <SelectContent>
@@ -903,7 +896,7 @@ export function HrNewEmployee({
                     value={form.location_id}
                     onValueChange={(value) => set({ location_id: value })}
                   >
-                    <SelectTrigger className="h-11 lg:h-9">
+                    <SelectTrigger>
                       <SelectValue placeholder="Pick a location" />
                     </SelectTrigger>
                     <SelectContent>
@@ -921,7 +914,7 @@ export function HrNewEmployee({
                     value={form.flsa_status}
                     onValueChange={(value) => set({ flsa_status: value })}
                   >
-                    <SelectTrigger className="h-11 lg:h-9">
+                    <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -942,7 +935,6 @@ export function HrNewEmployee({
                         set({ flsa_exemption_basis: event.target.value })
                       }
                       placeholder="executive, administrative, professional…"
-                      className="h-11 lg:h-9"
                     />
                   </Field>
                 ) : null}
@@ -955,7 +947,6 @@ export function HrNewEmployee({
                     max="2"
                     value={form.fte}
                     onChange={(event) => set({ fte: event.target.value })}
-                    className="h-11 lg:h-9"
                   />
                 </Field>
 
@@ -973,7 +964,6 @@ export function HrNewEmployee({
                       set({ standard_hours_per_week: event.target.value })
                     }
                     placeholder={accruesLeave ? "e.g. 40" : "Optional"}
-                    className="h-11 lg:h-9"
                   />
                   {/* Said here, where the number is typed, not in a toast later. */}
                   <p className="mt-1 text-[0.6875rem] text-muted-foreground">
@@ -1022,7 +1012,6 @@ export function HrNewEmployee({
                         set({ platform_of_record: event.target.value })
                       }
                       placeholder="direct, upwork, an agency…"
-                      className="h-11 lg:h-9"
                     />
                   </Field>
                   <Field label="Their id there">
@@ -1031,7 +1020,6 @@ export function HrNewEmployee({
                       onChange={(event) =>
                         set({ platform_external_id: event.target.value })
                       }
-                      className="h-11 lg:h-9"
                     />
                   </Field>
                   <Field label="Link">
@@ -1040,7 +1028,6 @@ export function HrNewEmployee({
                       onChange={(event) =>
                         set({ platform_url: event.target.value })
                       }
-                      className="h-11 lg:h-9"
                     />
                   </Field>
                 </Grid>
@@ -1064,7 +1051,6 @@ export function HrNewEmployee({
                     onChange={(event) =>
                       set({ compensation_amount: event.target.value })
                     }
-                    className="h-11 lg:h-9"
                   />
                 </Field>
                 <Field label="Basis">
@@ -1072,7 +1058,7 @@ export function HrNewEmployee({
                     value={form.pay_basis}
                     onValueChange={(value) => set({ pay_basis: value })}
                   >
-                    <SelectTrigger className="h-11 lg:h-9">
+                    <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -1350,7 +1336,7 @@ function PartyPicker({
         value={term}
         onChange={(event) => setTerm(event.target.value)}
         placeholder="Search by name"
-        className="h-11 max-w-sm lg:h-9"
+        className="max-w-sm"
       />
       <ul className="max-h-64 space-y-1 overflow-y-auto">
         {results.map((row) => (

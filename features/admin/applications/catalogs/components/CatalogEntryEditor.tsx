@@ -35,7 +35,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { DiffViewer } from "@ai-matrx/diff/react";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -573,7 +573,7 @@ export function CatalogEntryEditor({
           <Label htmlFor="catalog-kind">Kind</Label>
           {isNew ? (
             <Select value={kind} onValueChange={setKind}>
-              <SelectTrigger id="catalog-kind" className="font-mono text-sm">
+              <SelectTrigger id="catalog-kind">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -588,11 +588,10 @@ export function CatalogEntryEditor({
               </SelectContent>
             </Select>
           ) : (
-            <Input
+            <Input mono
               id="catalog-kind"
               value={kind}
               disabled
-              className="font-mono text-sm"
             />
           )}
           {activeKindDef ? (

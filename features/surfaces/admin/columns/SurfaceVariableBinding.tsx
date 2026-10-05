@@ -9,7 +9,7 @@ import {
 } from "@/components/official/ConfigurationFields";
 import { useMemo } from "react";
 import { Rocket, Type, MessageCircleQuestion, Zap } from "lucide-react";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -647,7 +647,6 @@ function PromptUserDetail({
           onChange={(e) => onChange({ ...mapping, prompt: e.target.value })}
           placeholder="What should we ask the user?"
           disabled={disabled}
-          className="h-9 text-sm"
         />
       </div>
       <div className="grid grid-cols-[1fr_auto] gap-2 items-end">
@@ -669,7 +668,6 @@ function PromptUserDetail({
                 : "Pre-filled value"
             }
             disabled={disabled}
-            className="h-9 text-sm"
           />
         </div>
         <RequiredToggle

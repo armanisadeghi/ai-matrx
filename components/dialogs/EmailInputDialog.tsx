@@ -10,7 +10,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@ai-matrx/design-system';
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from '@/components/ui/label';
 import { Loader2, Mail } from 'lucide-react';
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -104,8 +104,7 @@ export function EmailInputDialog({
                   setError(null);
                 }}
                 disabled={loading}
-                autoFocus
-                className="text-base" // Prevent iOS zoom
+                autoFocus // Prevent iOS zoom
               />
               {error && (
                 <p className="text-sm text-destructive">{error} <ErrorAlchemyMenu error={error} /></p>

@@ -677,7 +677,7 @@ function AdminsManagementPageContent() {
                       }
                       disabled={busy}
                     >
-                      <SelectTrigger className="h-7 w-[140px] text-xs">
+                      <SelectTrigger className="w-[140px]">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>

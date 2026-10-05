@@ -3,7 +3,7 @@
 "use client";
 
 import { Info } from "lucide-react";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
@@ -49,21 +49,21 @@ export function ContextMatchForm({ value, onChange, error }: Props) {
       </div>
       <div className="space-y-2">
         <Label htmlFor="cm-url">URL pattern, regex (optional)</Label>
-        <Input
+        <Input mono
           id="cm-url"
           value={value.url_pattern ?? ""}
           onChange={(e) => update({ url_pattern: e.target.value })}
           placeholder="github\\.com/.+/pull/.+"
-          className="font-mono max-w-md"
+          className="max-w-md"
         />
       </div>
       <div className="space-y-2">
         <Label htmlFor="cm-kind">Kind tag (optional)</Label>
-        <Input
+        <Input mono
           id="cm-kind"
           value={value.kind ?? ""}
           onChange={(e) => update({ kind: e.target.value })}
-          className="max-w-md font-mono"
+          className="max-w-md"
           data-identifier
           placeholder="pull_request"
         />

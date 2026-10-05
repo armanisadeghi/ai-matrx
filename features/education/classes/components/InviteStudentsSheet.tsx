@@ -200,7 +200,6 @@ export function InviteStudentsSheet({
                 "student1@school.edu, student2@school.edu\nor paste a whole roster — we pick out the email addresses"
               }
               rows={4}
-              className="text-base sm:text-sm"
             />
             <div className="flex flex-wrap items-center gap-1.5">
               <Button

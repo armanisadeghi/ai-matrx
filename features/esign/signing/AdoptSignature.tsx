@@ -11,7 +11,7 @@ import { SignaturePad } from "@ai-matrx/records-ui";
 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 
 export type SignatureMark = "typed" | "drawn";
 
@@ -44,7 +44,6 @@ export function AdoptSignature({
           id="esign-typed-name"
           value={typedName}
           autoComplete="name"
-          className="text-base"
           onChange={(e) => onTypedName(e.target.value)}
         />
       </div>

@@ -37,7 +37,7 @@ import {
 import { toast } from "@/lib/toast";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Skeleton } from "@ai-matrx/design-system";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
@@ -903,7 +903,6 @@ function CardEditor({
           value={topic}
           onChange={(e) => editCard({ topic: e.target.value })}
           placeholder="e.g. Photosynthesis — groups this card for adaptive drills"
-          className="h-8 text-sm"
         />
       </div>
 
@@ -954,7 +953,6 @@ function MatchingPairsEditor({
           value={prompt}
           onChange={(e) => onPromptChange(e.target.value)}
           placeholder="e.g. Match each term to its definition"
-          className="text-sm"
         />
       </div>
       <div className="space-y-1.5">
@@ -967,14 +965,14 @@ function MatchingPairsEditor({
               value={pair.left}
               onChange={(e) => setPair(i, { left: e.target.value })}
               placeholder="Term"
-              className="flex-1 text-sm"
+              className="flex-1"
             />
             <span className="text-muted-foreground">↔</span>
             <Input
               value={pair.right}
               onChange={(e) => setPair(i, { right: e.target.value })}
               placeholder="Match"
-              className="flex-1 text-sm"
+              className="flex-1"
             />
             <Button
               icon={<X />} aria-label="Remove pair"
@@ -1068,13 +1066,13 @@ function FormulaFields({
         <label className="mb-1 block text-[10px] uppercase tracking-wider text-muted-foreground">
           Formula (LaTeX, no delimiters — e.g. x = \frac{"{-b}"}{"{2a}"})
         </label>
-        <Textarea
+        <Textarea mono
           value={formula.latex}
           onChange={(e) =>
             onFormulaChange({ ...formula, latex: e.target.value })
           }
           rows={2}
-          className="resize-y font-mono text-sm"
+          className="resize-y"
         />
         {formula.latex.trim() && (
           <div className="mt-1.5 rounded-md border border-border bg-muted/30 p-2">
@@ -1092,18 +1090,18 @@ function FormulaFields({
         <div className="space-y-1.5">
           {formula.variables.map((v, i) => (
             <div key={i} className="flex items-center gap-1.5">
-              <Input
+              <Input mono
                 value={v.symbol}
                 onChange={(e) => editVariable(i, { symbol: e.target.value })}
                 placeholder="x"
-                className="h-8 w-24 font-mono text-sm"
+                className="w-24"
                 aria-label={`Variable ${i + 1} symbol`}
               />
               <Input
                 value={v.meaning}
                 onChange={(e) => editVariable(i, { meaning: e.target.value })}
                 placeholder="what it represents"
-                className="h-8 flex-1 text-sm"
+                className="flex-1"
                 aria-label={`Variable ${i + 1} meaning`}
               />
               <Button

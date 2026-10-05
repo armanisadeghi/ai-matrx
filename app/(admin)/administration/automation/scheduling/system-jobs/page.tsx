@@ -49,7 +49,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -1248,9 +1248,8 @@ function SystemJobEditDialog({
             <>
               <div className="space-y-1.5">
                 <Label htmlFor="system-job-cron">Cron expression</Label>
-                <Input
+                <Input mono
                   id="system-job-cron"
-                  className="font-mono"
                   value={expression}
                   onChange={(e) => setExpression(e.target.value)}
                   placeholder="0 9 * * 1-5"
@@ -1274,9 +1273,8 @@ function SystemJobEditDialog({
 
           <div className="space-y-1.5">
             <Label htmlFor="system-job-args">Args (JSON object)</Label>
-            <Textarea
+            <Textarea mono
               id="system-job-args"
-              className="font-mono text-xs"
               rows={4}
               value={argsText}
               onChange={(e) => {
@@ -1392,9 +1390,8 @@ function DbJobEditDialog({
 
           <div className="space-y-1.5">
             <Label htmlFor="db-job-schedule">Schedule</Label>
-            <Input
+            <Input mono
               id="db-job-schedule"
-              className="font-mono"
               value={schedule}
               onChange={(e) => setSchedule(e.target.value)}
               placeholder="0 3 * * *  or  30 seconds"

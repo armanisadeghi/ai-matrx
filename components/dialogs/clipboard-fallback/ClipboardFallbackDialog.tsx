@@ -21,7 +21,7 @@ import * as React from "react";
 import { Check, Copy } from "lucide-react";
 
 import { Button } from "@ai-matrx/design-system";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
@@ -91,20 +91,19 @@ export function ClipboardFallbackDialog({
   };
 
   const body = multiline ? (
-    <Textarea
+    <Textarea mono
       ref={inputRef as React.RefObject<HTMLTextAreaElement>}
       value={url}
       readOnly
       rows={8}
-      className="max-h-[45dvh] resize-none font-mono text-sm"
+      className="max-h-[45dvh] resize-none"
       onFocus={(event) => event.currentTarget.select()}
     />
   ) : (
-    <Input
+    <Input mono
       ref={inputRef as React.RefObject<HTMLInputElement>}
       value={url}
       readOnly
-      className="font-mono text-base"
       onFocus={(event) => event.currentTarget.select()}
     />
   );

@@ -13,7 +13,7 @@
 
 import { useMemo, useState } from "react";
 import { ExternalLink, Lock, Search } from "lucide-react";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { cn } from "@/lib/utils";
 import { GitHubConnectionCard } from "./GitHubConnectionCard";
 import type { GitHubRepository } from "./types";
@@ -87,12 +87,11 @@ export function GitHubRepositoryPicker({
 
       <div className="relative">
         <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-        <Input
+        <Input adornment="start"
           aria-label="Search your GitHub repositories"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Search repositories, private, admin…"
-          className="h-9 pl-8 text-sm"
           disabled={disabled}
         />
       </div>

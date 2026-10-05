@@ -181,7 +181,7 @@ export function QuickDataSheet({
           data-surface-value="selected_table_id"
         >
           <Select value={selectedTableId ?? ""} onValueChange={handleTableChange}>
-            <SelectTrigger className="h-8 w-[260px] max-w-[60%] text-sm">
+            <SelectTrigger className="w-[260px] max-w-[60%]">
               <SelectValue placeholder="Select a table" />
             </SelectTrigger>
             <SelectContent>

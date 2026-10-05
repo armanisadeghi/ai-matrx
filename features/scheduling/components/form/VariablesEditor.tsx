@@ -9,7 +9,7 @@
 import { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 
 interface Row {
   key: string;
@@ -75,18 +75,18 @@ export function VariablesEditor({ value, onChange }: Props) {
       )}
       {rows.map((row, i) => (
         <div key={i} className="flex items-center gap-2">
-          <Input
+          <Input mono
             value={row.key}
             onChange={(e) => updateRow(i, { key: e.target.value })}
             placeholder="key"
-            className="w-40 font-mono text-xs"
+            className="w-40"
             maxLength={100}
           />
-          <Input
+          <Input mono
             value={row.value}
             onChange={(e) => updateRow(i, { value: e.target.value })}
             placeholder='value (string or JSON: 42, true, "foo", {"a":1})'
-            className="flex-1 font-mono text-xs"
+            className="flex-1"
             maxLength={2000}
           />
           <Button

@@ -61,7 +61,6 @@ const EvaluationContent: React.FC<EvaluationContentProps> = ({ updateContent }) 
                 id={`evaluation-${option.id}`}
                 checked={evaluationCriteria.includes(option.id)}
                 onCheckedChange={() => toggleEvaluationCriteria(option.id)}
-                className="data-[state=checked]:bg-indigo-600 dark:data-[state=checked]:bg-indigo-500"
               />
               <Label 
                 htmlFor={`evaluation-${option.id}`} 

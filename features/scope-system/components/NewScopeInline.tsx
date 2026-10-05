@@ -3,7 +3,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { Loader2, Plus, X, Info, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -284,7 +284,7 @@ export function NewScopeInline({
             URL slug
           </Label>
           <div className="flex gap-2">
-            <Input
+            <Input mono
               id={slugId}
               value={slug}
               onChange={(e) => {
@@ -294,7 +294,7 @@ export function NewScopeInline({
               placeholder={toSlug(name) || "url-slug"}
               disabled={busy}
               style={{ fontSize: "16px" }}
-              className="flex-1 font-mono"
+              className="flex-1"
             />
             <Button
               type="button"

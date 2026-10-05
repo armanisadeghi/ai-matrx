@@ -45,7 +45,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { CalendarDays, ChevronLeft, ChevronRight, Search } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { cn } from "@/lib/utils";
 
 import { HrPageState } from "@/features/hr/shared/HrStates";
@@ -442,11 +442,11 @@ export function LeaveCalendarSurface() {
             <div className="flex flex-wrap items-center gap-2">
               <div className="relative">
                 <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-                <Input
+                <Input adornment="start"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Find a person on this screen"
-                  className="h-11 w-full min-w-56 pl-7 sm:h-8 sm:w-56"
+                  className="w-full min-w-56 sm:w-56"
                   aria-label="Find a person among the absences shown"
                 />
               </div>

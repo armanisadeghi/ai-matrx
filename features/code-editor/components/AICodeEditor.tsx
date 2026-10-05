@@ -3,7 +3,7 @@
 
 import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsListLegacy as TabsList, TabsTriggerLegacy as TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -156,7 +156,7 @@ export function AICodeEditor({
                   }}
                   disabled={isLoadingPrompt}
                 >
-                  <SelectTrigger className="w-[160px] h-7 text-xs">
+                  <SelectTrigger className="w-[160px]">
                     <SelectValue placeholder="Select mode" />
                   </SelectTrigger>
                   <SelectContent>

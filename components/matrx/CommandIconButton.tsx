@@ -12,7 +12,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@ai-matrx/design-system';
-import { Input } from '@ai-matrx/design-system';
+import { Input } from "@ai-matrx/design-system/controls";
 
 export type CommandOption = {
   value: string;
@@ -94,11 +94,10 @@ const CommandIconButton: React.FC<CommandIconButtonProps> = ({
       >
         <Command className="bg-elevation1" shouldFilter={false}>
           <div className="relative">
-            <Input 
+            <Input adornment="end" 
               placeholder={searchPlaceholder}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="text-sm pr-8"
             />
             <Search className="h-4 w-4 absolute right-2 top-1/2 transform -translate-y-1/2 text-muted-foreground pointer-events-none opacity-50" />
           </div>

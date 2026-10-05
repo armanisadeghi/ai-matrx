@@ -15,7 +15,7 @@ import {
 } from "@ai-matrx/tap-target/buttons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Skeleton } from "@ai-matrx/design-system";
 import {
   Popover,
@@ -740,7 +740,7 @@ function RangeFilterContent({
         )}
       </div>
       <div className="flex items-center gap-1.5">
-        <Input
+        <Input mono
           value={min}
           onChange={(e) => setMin(e.target.value)}
           onBlur={(e) => commitMin(e.target.value)}
@@ -748,10 +748,10 @@ function RangeFilterContent({
             if (e.key === "Enter") e.currentTarget.blur();
           }}
           placeholder="min"
-          className="h-7 text-xs w-[80px] font-mono"
+          className="w-[80px]"
         />
         <span className="text-xs text-muted-foreground">–</span>
-        <Input
+        <Input mono
           value={max}
           onChange={(e) => setMax(e.target.value)}
           onBlur={(e) => commitMax(e.target.value)}
@@ -759,7 +759,7 @@ function RangeFilterContent({
             if (e.key === "Enter") e.currentTarget.blur();
           }}
           placeholder="max"
-          className="h-7 text-xs w-[80px] font-mono"
+          className="w-[80px]"
         />
       </div>
     </div>

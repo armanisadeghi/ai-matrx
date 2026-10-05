@@ -10,7 +10,7 @@
 
 import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 import { Repeat } from "lucide-react";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   Select,
   SelectContent,
@@ -95,7 +95,7 @@ export function RecurrenceEditor({
             onChange(presets[Number(next)]!.spec);
           }}
         >
-          <SelectTrigger className="h-9 w-full sm:w-72" aria-label="Repeat">
+          <SelectTrigger className="w-full sm:w-72" aria-label="Repeat">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -132,7 +132,7 @@ export function RecurrenceEditor({
               value={value.frequency}
               onValueChange={(f) => set({ frequency: f as RepeatFrequency })}
             >
-              <SelectTrigger className="h-8 w-28" aria-label="Repeat unit">
+              <SelectTrigger className="w-28" aria-label="Repeat unit">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -202,7 +202,7 @@ export function RecurrenceEditor({
               }
             >
               <SelectTrigger
-                className="h-8 w-full sm:w-72"
+                className="w-full sm:w-72"
                 aria-label="Monthly on"
               >
                 <SelectValue />
@@ -257,7 +257,7 @@ export function RecurrenceEditor({
                   if (value.ends.kind !== "on")
                     set({ ends: { kind: "on", date: start.date } });
                 }}
-                className="h-8 w-40"
+                className="w-40"
                 aria-label="Ends on date"
               />
             </label>

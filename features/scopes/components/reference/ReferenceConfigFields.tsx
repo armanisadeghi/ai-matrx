@@ -3,7 +3,7 @@
 import { useEffect, useId, useMemo, useState } from "react";
 import { AlertTriangle, Eye, Link2, Search, X } from "lucide-react";
 import { Button } from "@ai-matrx/design-system";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Field } from "@/components/official/Field";
 import {
   Select,
@@ -229,13 +229,12 @@ export function ReferenceConfigFields({
         <div id={typesId} className="space-y-1.5">
           <div className="relative max-w-md">
             <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-            <Input
+            <Input adornment="start"
               value={typeSearch}
               onChange={(e) => setTypeSearch(e.target.value)}
               placeholder="Search all types…"
               disabled={pickerDisabled}
               style={{ fontSize: "16px" }}
-              className="h-7 pl-7 pr-2 text-xs"
             />
           </div>
 
@@ -251,7 +250,7 @@ export function ReferenceConfigFields({
               }}
               disabled={pickerDisabled || groups.length === 0 || searching}
             >
-              <SelectTrigger id={groupSelectId} size="sm" aria-label="Group">
+              <SelectTrigger id={groupSelectId} aria-label="Group">
                 <SelectValue placeholder="Group" />
               </SelectTrigger>
               <SelectContent>
@@ -274,7 +273,7 @@ export function ReferenceConfigFields({
               onValueChange={addReferenceType}
               disabled={pickerDisabled || typeSelectOptions.length === 0}
             >
-              <SelectTrigger id={typeSelectId} size="sm" aria-label="Type">
+              <SelectTrigger id={typeSelectId} aria-label="Type">
                 <SelectValue
                   placeholder={
                     searching
@@ -361,7 +360,7 @@ export function ReferenceConfigFields({
           onChange={(e) => onMaxItemsChange(e.target.value)}
           style={{ fontSize: "16px" }}
           disabled={disabled || !!datasetTemplateId}
-          className="h-7 w-28 px-2 text-xs"
+          className="w-28"
         />
       </Field>
 
@@ -434,7 +433,7 @@ export function ReferenceConfigFields({
             }
             disabled={disabled || !organizationId}
           >
-            <SelectTrigger id={templateId} size="sm" className="max-w-md">
+            <SelectTrigger id={templateId} className="max-w-md">
               <SelectValue placeholder="No template" />
             </SelectTrigger>
             <SelectContent>

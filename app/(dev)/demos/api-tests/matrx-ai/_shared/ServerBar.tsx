@@ -9,7 +9,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   Tooltip,
   TooltipContent,
@@ -147,12 +147,12 @@ function AuthTokenWidget({ config }: { config: UseServerConfigReturn }) {
 
   return (
     <div className="flex items-center gap-1 flex-1 min-w-[160px] max-w-[360px]">
-      <Input
+      <Input mono
         type="text"
         value={temp}
         onChange={(e) => setTemp(e.target.value)}
         placeholder="Bearer token (optional)"
-        className="h-7 text-xs font-mono flex-1 min-w-0"
+        className="flex-1 min-w-0"
         onKeyDown={(e) => {
           if (e.key === "Enter") save();
           if (e.key === "Escape" && config.authToken) {
@@ -260,7 +260,7 @@ export function ServerBar({
         <div className="flex items-center gap-1.5 flex-shrink-0">
           <Server className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
           <Select value={selectValue} onValueChange={handleSelectChange}>
-            <SelectTrigger className="h-7 text-xs w-48 font-mono">
+            <SelectTrigger className="w-48">
               <SelectValue placeholder="Select server…" />
             </SelectTrigger>
             <SelectContent>
@@ -313,7 +313,7 @@ export function ServerBar({
 
         {/* Custom URL input */}
         {showCustomInput && (
-          <Input
+          <Input mono
             type="url"
             value={customUrl}
             onChange={(e) => setCustomUrl(e.target.value)}
@@ -322,7 +322,7 @@ export function ServerBar({
               if (e.key === "Enter") applyCustomUrl();
             }}
             placeholder="https://…"
-            className="h-7 text-xs w-56 font-mono flex-shrink-0"
+            className="w-56 flex-shrink-0"
           />
         )}
 

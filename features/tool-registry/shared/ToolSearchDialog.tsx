@@ -11,7 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/lib/toast";
 import { SourceKindBadge } from "@/features/tool-call-visualization/admin/mcp-tools/source-kind-badge";
@@ -167,11 +167,10 @@ export function ToolSearchDialog({
         <div className="shrink-0 flex items-center gap-2 pb-2 border-b border-border">
           <div className="relative flex-1">
             <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-            <Input
+            <Input adornment="start"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search name, category, description, id…"
-              className="h-8 pl-7 text-xs"
               style={{ fontSize: "16px" }}
               autoFocus
             />

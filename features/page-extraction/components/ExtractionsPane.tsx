@@ -100,11 +100,11 @@ export function ExtractionsPane({
         defaultValue="chunks"
         className="flex-1 min-h-0 flex flex-col overflow-hidden"
       >
-        <TabsList className="shrink-0 mx-2 mt-2 grid grid-cols-2 h-7 text-[10px]">
-          <TabsTrigger value="chunks" className="text-[10px]">
+        <TabsList fill className="shrink-0 mx-2 mt-2">
+          <TabsTrigger value="chunks">
             Chunks
           </TabsTrigger>
-          <TabsTrigger value="results" className="text-[10px]">
+          <TabsTrigger value="results">
             Results
           </TabsTrigger>
         </TabsList>

@@ -12,7 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -259,7 +259,7 @@ function SiteEditorDialogBody({
               onValueChange={setBrandId}
               disabled={brandOptions.isLoading}
             >
-              <SelectTrigger className="h-9">
+              <SelectTrigger>
                 <SelectValue placeholder="Choose the owning brand" />
               </SelectTrigger>
               <SelectContent>
@@ -335,7 +335,7 @@ function SiteEditorDialogBody({
                   set("status")(value as MarketingSite["status"])
                 }
               >
-                <SelectTrigger className="h-9">
+                <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

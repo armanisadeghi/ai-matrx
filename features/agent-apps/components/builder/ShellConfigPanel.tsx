@@ -7,7 +7,7 @@
  */
 
 import { Label } from "@/components/ui/label";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Switch } from "@/components/ui/switch";
 import {
   Select,
@@ -66,7 +66,6 @@ export function ShellConfigPanel({
           onChange={(e) => set("title", e.target.value || undefined)}
           placeholder="App name (default)"
           disabled={disabled}
-          className="text-[16px]"
         />
       </Row>
 
@@ -114,7 +113,7 @@ export function ShellConfigPanel({
             }
             disabled={disabled}
           >
-            <SelectTrigger className="h-9 w-[180px]" size="sm">
+            <SelectTrigger className="w-[180px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -137,7 +136,7 @@ export function ShellConfigPanel({
             }
             disabled={disabled}
           >
-            <SelectTrigger className="h-9 w-[180px]" size="sm">
+            <SelectTrigger className="w-[180px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

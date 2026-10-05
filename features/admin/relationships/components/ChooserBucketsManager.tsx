@@ -6,7 +6,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { X } from "lucide-react";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { readAllRows } from "@ai-matrx/data/db";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type {
@@ -177,14 +177,14 @@ function BucketPanel({
             void createBucket();
           }}
         >
-          <Input
+          <Input mono
             value={newKey}
             onChange={(event) =>
               setNewKey(event.target.value.toLowerCase().replace(/\s+/g, "-"))
             }
             placeholder="Slug"
             aria-label="Bucket slug"
-            className="h-8 min-w-32 flex-1 font-mono text-sm"
+            className="min-w-32 flex-1"
             disabled={createBusy}
           />
           <Input
@@ -192,7 +192,7 @@ function BucketPanel({
             onChange={(event) => setNewLabel(event.target.value)}
             placeholder="Display name"
             aria-label="Bucket display name"
-            className="h-8 min-w-40 flex-[2] text-sm"
+            className="min-w-40 flex-[2]"
             disabled={createBusy}
           />
           <Button

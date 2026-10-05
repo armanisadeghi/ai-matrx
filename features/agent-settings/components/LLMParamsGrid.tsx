@@ -14,7 +14,7 @@
 
 import { AlertTriangle } from "lucide-react";
 import { Label } from "@/components/ui/label";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -100,7 +100,7 @@ function ControlRow({
             readOnly
             value={display}
             placeholder="Not supported by this model"
-            className="h-7 px-2 text-xs w-full opacity-70"
+            className="w-full"
           />
         </div>
         <span
@@ -129,7 +129,7 @@ function ControlRow({
           onValueChange={(v) => onChange(fieldKey, v)}
           disabled={!enabled}
         >
-          <SelectTrigger className="h-7 text-xs">
+          <SelectTrigger>
             <SelectValue />
           </SelectTrigger>
           <SelectContent className="text-xs">
@@ -206,7 +206,7 @@ function ControlRow({
         value={String(resolvedValue ?? "")}
         onChange={(e) => onChange(fieldKey, e.target.value || undefined)}
         disabled={!enabled}
-        className="h-7 px-2 text-xs w-full"
+        className="w-full"
       />
     );
   };

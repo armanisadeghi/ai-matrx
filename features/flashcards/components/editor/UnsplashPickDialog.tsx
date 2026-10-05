@@ -21,7 +21,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Loader2, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   Dialog,
   DialogContent,
@@ -120,7 +120,6 @@ export function UnsplashPickDialog({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="What should the picture show?"
-          className="text-base"
           disabled={busy}
         />
         <Button icon={searching ? (
@@ -189,7 +188,6 @@ export function UnsplashPickDialog({
           value={alt}
           onChange={(e) => setAlt(e.target.value)}
           placeholder="A labeled diagram of a plant cell"
-          className="text-base"
           disabled={busy || !selected}
         />
         {selected ? (

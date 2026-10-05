@@ -9,7 +9,7 @@
 import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import { useMemo, useState } from "react";
 import { BookA, ChevronDown, Search, Settings2 } from "lucide-react";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
@@ -161,11 +161,10 @@ export function DictionaryContextCard({ surfaceKey }: { surfaceKey: string }) {
           <div className="flex items-center gap-2 p-2.5">
             <div className="relative flex-1">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-              <Input
+              <Input adornment="start"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search terms…"
-                className="pl-8 h-8 text-sm"
                 style={{ fontSize: "16px" }}
               />
             </div>

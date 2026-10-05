@@ -13,7 +13,7 @@
 
 import { useMemo, useState } from "react";
 import { Check, Copy } from "lucide-react";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
@@ -107,7 +107,7 @@ export function EmbedSnippet({
             const next = Number(e.target.value);
             if (Number.isFinite(next) && next > 0) setHeight(next);
           }}
-          className="h-8 w-32 text-[16px]"
+          className="w-32"
         />
       </div>
       <div className="rounded-md border border-border/60 bg-muted/40 p-3 space-y-2">

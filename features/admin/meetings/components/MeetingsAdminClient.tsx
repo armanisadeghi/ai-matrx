@@ -51,11 +51,11 @@ export function MeetingsAdminClient() {
       <Tabs value={tab} onValueChange={(value) => isTab(value) && go({ tab: value })} className="flex min-h-0 flex-1 flex-col">
         <div className="flex flex-wrap items-center gap-3">
           <h2 className="text-base font-semibold">Meetings</h2>
-          <TabsList className="h-8">
-            <TabsTrigger className="h-7 px-3 text-xs" value="usage">Usage</TabsTrigger>
-            <TabsTrigger className="h-7 px-3 text-xs" value="history">History</TabsTrigger>
-            <TabsTrigger className="h-7 px-3 text-xs" value="settings">Settings</TabsTrigger>
-            <TabsTrigger className="h-7 px-3 text-xs" value="retention">Retention</TabsTrigger>
+          <TabsList>
+            <TabsTrigger value="usage">Usage</TabsTrigger>
+            <TabsTrigger value="history">History</TabsTrigger>
+            <TabsTrigger value="settings">Settings</TabsTrigger>
+            <TabsTrigger value="retention">Retention</TabsTrigger>
           </TabsList>
         </div>
         <TabsContent value="usage" className="mt-2 flex min-h-0 flex-1 flex-col">

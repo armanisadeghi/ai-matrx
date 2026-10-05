@@ -17,7 +17,7 @@
 import { useEffect, useState } from "react";
 import { Plus, RotateCcw, X } from "lucide-react";
 
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
 import { createClient } from "@/utils/supabase/client";
@@ -229,7 +229,7 @@ export function SystemItemDefaultsEditor({
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Find a System item to add"
           aria-label="Find a System item to add"
-          className="h-8 w-56 text-base md:text-sm"
+          className="w-56"
         />
         {candidates.map((i) => (
           <Button

@@ -17,7 +17,7 @@ import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Skeleton } from "@ai-matrx/design-system";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { AssociationCardGrid } from "@ai-matrx/associations/react";
@@ -261,7 +261,7 @@ export function DealRecordPage({ dealId }: Props) {
                                 if (e.key === "Escape") setEditingAmount(false);
                               }}
                               inputMode="decimal"
-                              className="h-7 w-28 text-right text-sm"
+                              className="w-28 text-right"
                               autoFocus
                             />
                             <Button

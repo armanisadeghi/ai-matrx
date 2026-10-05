@@ -544,20 +544,20 @@ export function ToolViewPage({ tool }: Props) {
             className="flex-1 flex flex-col overflow-hidden"
           >
             <div className="flex-shrink-0 px-6 pt-2 border-b border-border">
-              <TabsList className="h-9">
-                <TabsTrigger value="overview" className="text-xs gap-1.5">
+              <TabsList>
+                <TabsTrigger value="overview">
                   <Info className="h-3.5 w-3.5" />
                   Overview
                 </TabsTrigger>
-                <TabsTrigger value="registry" className="text-xs gap-1.5">
+                <TabsTrigger value="registry">
                   <Network className="h-3.5 w-3.5" />
                   Registry
                 </TabsTrigger>
-                <TabsTrigger value="parameters" className="text-xs gap-1.5">
+                <TabsTrigger value="parameters">
                   <Code className="h-3.5 w-3.5" />
                   Parameters
                 </TabsTrigger>
-                <TabsTrigger value="output-schema" className="text-xs gap-1.5">
+                <TabsTrigger value="output-schema">
                   <Layers className="h-3.5 w-3.5" />
                   Output Schema
                   {!hasOutputSchema && (
@@ -566,7 +566,7 @@ export function ToolViewPage({ tool }: Props) {
                     </span>
                   )}
                 </TabsTrigger>
-                <TabsTrigger value="annotations" className="text-xs gap-1.5">
+                <TabsTrigger value="annotations">
                   <FileCode className="h-3.5 w-3.5" />
                   Annotations
                   {hasAnnotations && (
@@ -578,7 +578,7 @@ export function ToolViewPage({ tool }: Props) {
                     </Badge>
                   )}
                 </TabsTrigger>
-                <TabsTrigger value="samples" className="text-xs gap-1.5">
+                <TabsTrigger value="samples">
                   <FileCode className="h-3.5 w-3.5" />
                   Test Samples
                 </TabsTrigger>

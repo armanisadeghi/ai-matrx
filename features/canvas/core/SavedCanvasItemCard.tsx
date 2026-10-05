@@ -24,7 +24,7 @@ import {
   Star,
   Trash2,
 } from "lucide-react";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -117,7 +117,7 @@ export function SavedCanvasItemCard({
               }}
               autoFocus
               aria-label="Item title"
-              className="h-8 min-w-0 text-sm"
+              className="min-w-0"
             />
             <Button variant="primary" onClick={onSaveEdit} className="shrink-0">
               Save

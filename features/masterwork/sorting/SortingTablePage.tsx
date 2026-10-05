@@ -45,7 +45,7 @@ import {
   Undo2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { knobBool, knobInt } from "@/lib/knobs/featureKnobs";
@@ -664,7 +664,6 @@ export function SortingTablePage({
                 value={pile.name}
                 onChange={(event) => renamePile(pile.key, event.target.value)}
                 placeholder={`Pile ${i + 1}`}
-                className="min-h-11 text-base"
                 aria-label={`Name for pile ${i + 1}`}
               />
             ))}

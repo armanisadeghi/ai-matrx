@@ -14,7 +14,7 @@
 
 import { useState } from "react";
 import { PanelTop } from "lucide-react";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 import { createSourceRef, createSourceSet, type SourceSet } from "@ai-matrx/agents/sources";
 import { SourceReview } from "@/features/resource-manager/source-input/review/SourceReview";

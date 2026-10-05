@@ -3,7 +3,7 @@ import {
   MatrxDataTable,
   type MatrxColumnDef,
 } from "@ai-matrx/design-system/data-table";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Search } from "lucide-react";
 import type { DatabasePermission } from "./types";
 import { stringUrlCodec, useUrlState } from "@ai-matrx/kit/url-state";
@@ -139,7 +139,7 @@ const PermissionsList = ({
                 aria-hidden="true"
                 className="absolute left-2 top-2 h-4 w-4 text-muted-foreground"
               />
-              <Input
+              <Input adornment="start"
                 aria-label="Search permission object or role"
                 placeholder="Object or role…"
                 value={filter}
@@ -147,7 +147,6 @@ const PermissionsList = ({
                   setFilter(event.target.value);
                   setFilterUrl(event.target.value, { history: "replace" });
                 }}
-                className="h-8 pl-8"
               />
             </div>
           ),

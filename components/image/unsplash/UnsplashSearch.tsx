@@ -133,7 +133,7 @@ export function UnsplashSearch({
         
       {/* Sort Order as Select */}
       <Select value={sortOrder} onValueChange={handleSortChange}>
-        <SelectTrigger className="h-9 w-[126px] bg-background/80">
+        <SelectTrigger className="w-[126px]">
           <SlidersHorizontal className="mr-1.5 h-3.5 w-3.5 text-muted-foreground" />
           <SelectValue placeholder="Sort by" />
         </SelectTrigger>
@@ -148,7 +148,7 @@ export function UnsplashSearch({
         
       {/* Orientation as Select */}
       <Select value={orientation || 'any'} onValueChange={handleOrientationChange}>
-        <SelectTrigger className="h-9 w-[124px] bg-background/80">
+        <SelectTrigger className="w-[124px]">
           <RectangleHorizontal className="mr-1.5 h-3.5 w-3.5 text-muted-foreground" />
           <SelectValue placeholder="Orientation" />
         </SelectTrigger>
@@ -166,7 +166,7 @@ export function UnsplashSearch({
         
       {/* Premium Filter as Select */}
       <Select value={premiumFilter} onValueChange={handlePremiumChange}>
-        <SelectTrigger className="h-9 w-[118px] bg-background/80">
+        <SelectTrigger className="w-[118px]">
           <BadgeCheck className="mr-1.5 h-3.5 w-3.5 text-muted-foreground" />
           <SelectValue placeholder="Premium" />
         </SelectTrigger>

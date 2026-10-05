@@ -11,7 +11,7 @@
 import React from "react";
 import { Loader2, Search } from "lucide-react";
 import { CanvasPagePanel } from "@/features/canvas/host/pagePanel";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import { supabase } from "@/utils/supabase/client";
 import { organizationPickListsInTheNewSystem } from "@/features/user-lists/where-lists-live";
@@ -154,12 +154,11 @@ export function ContainerResourceSheet({
         <div className="px-5 py-3 border-b border-border">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
+            <Input adornment="start"
               aria-label={`Search ${entry.labelPlural.toLowerCase()}`}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={`Search ${entry.labelPlural.toLowerCase()}…`}
-              className="pl-9"
             />
           </div>
         </div>

@@ -1573,16 +1573,16 @@ export function ToolUiComponentGenerator({
                 {/* Code tabs */}
                 <Tabs defaultValue="inline">
                   <TabsList>
-                    <TabsTrigger value="inline" className="text-xs">
+                    <TabsTrigger value="inline">
                       Inline
                     </TabsTrigger>
-                    <TabsTrigger value="overlay" className="text-xs">
+                    <TabsTrigger value="overlay">
                       Overlay
                     </TabsTrigger>
-                    <TabsTrigger value="utility" className="text-xs">
+                    <TabsTrigger value="utility">
                       Utility
                     </TabsTrigger>
-                    <TabsTrigger value="headers" className="text-xs">
+                    <TabsTrigger value="headers">
                       Headers
                     </TabsTrigger>
                   </TabsList>

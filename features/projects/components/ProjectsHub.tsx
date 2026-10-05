@@ -46,7 +46,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@ai-matrx/design-system";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   Popover,
   PopoverContent,
@@ -698,11 +698,11 @@ export function ProjectsHub({
                 data-surface-value="project_search_query"
               >
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
+                <Input adornment="start"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Search projects…"
-                  className="h-11 w-full pl-8 text-base sm:w-44 lg:h-9 lg:text-sm"
+                  className="w-full sm:w-44"
                 />
               </div>
               <div
@@ -1134,7 +1134,6 @@ function TextColumnFilter({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="h-11 text-base lg:h-8 lg:text-sm"
       />
     </div>
   );
@@ -1198,7 +1197,7 @@ function NumberRangeColumnFilter({
             if (e.key === "Enter") e.currentTarget.blur();
           }}
           placeholder="min"
-          className="h-11 w-[80px] text-base tabular-nums lg:h-7 lg:text-xs"
+          className="w-[80px]"
         />
         <span className="text-xs text-muted-foreground">–</span>
         <Input
@@ -1209,7 +1208,7 @@ function NumberRangeColumnFilter({
             if (e.key === "Enter") e.currentTarget.blur();
           }}
           placeholder="max"
-          className="h-11 w-[80px] text-base tabular-nums lg:h-7 lg:text-xs"
+          className="w-[80px]"
         />
       </div>
     </div>
@@ -1482,7 +1481,7 @@ function ProjectsTable({
                         })
                       }
                     >
-                      <SelectTrigger className="h-11 text-base lg:h-8 lg:text-sm">
+                      <SelectTrigger>
                         <SelectValue placeholder="All organizations" />
                       </SelectTrigger>
                       <SelectContent>

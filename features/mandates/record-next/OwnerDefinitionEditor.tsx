@@ -12,7 +12,7 @@
 import { useEffect, useState } from "react";
 import { Check, Pencil, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
@@ -124,7 +124,6 @@ export function OwnerDefinitionEditor({
               id="owner-mandate-label"
               value={label}
               onChange={(event) => setLabel(event.target.value)}
-              className="text-base sm:text-sm"
             />
           </div>
           <div className="space-y-1">

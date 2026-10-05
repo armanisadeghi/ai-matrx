@@ -103,7 +103,7 @@ export function PortalFieldEditor({
       >
         {label}
       </label>
-      <Textarea
+      <Textarea minHeight={88}
         id={`portal-field-${fieldKey}`}
         value={value}
         rows={3}
@@ -112,7 +112,7 @@ export function PortalFieldEditor({
           setJustSaved(false);
         }}
         placeholder="Anything you want them to know about this job"
-        className="mt-1.5 min-h-[88px] resize-y text-base"
+        className="mt-1.5 resize-y"
       />
       <div className="mt-2 flex items-center gap-3">
         <Button

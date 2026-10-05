@@ -20,7 +20,7 @@
 
 import { ArrowDown, ArrowUp, Download, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   buildTemplateSchema,
   buildTextSchema,
@@ -200,7 +200,7 @@ export function SchemaEditor({
                   value={col.label}
                   onChange={(e) => update(idx, { label: e.target.value })}
                   placeholder="Label"
-                  className="h-6 text-[11px] flex-1"
+                  className="flex-1"
                 />
                 <select
                   value={col.source}
@@ -244,7 +244,7 @@ export function SchemaEditor({
                 </button>
               </div>
               <div className="flex items-center gap-1">
-                <Input
+                <Input mono
                   value={col.key}
                   onChange={(e) =>
                     update(idx, {
@@ -252,7 +252,7 @@ export function SchemaEditor({
                     })
                   }
                   placeholder="key"
-                  className="h-6 text-[10px] font-mono flex-1"
+                  className="flex-1"
                   title="Stable column key (also the payload key)"
                 />
                 <select
@@ -269,13 +269,13 @@ export function SchemaEditor({
                   ))}
                 </select>
                 {col.source === "agent" && (
-                  <Input
+                  <Input mono
                     value={col.agentField ?? ""}
                     onChange={(e) =>
                       update(idx, { agentField: e.target.value })
                     }
                     placeholder="agent field"
-                    className="h-6 text-[10px] font-mono flex-1"
+                    className="flex-1"
                     title="Which agent-output field maps into this column"
                   />
                 )}

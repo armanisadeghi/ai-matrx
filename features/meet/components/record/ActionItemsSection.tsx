@@ -18,7 +18,7 @@ import {
   type MeetingRecord,
   type MeetingRecordBundle,
 } from "@ai-matrx/meet/react";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -312,7 +312,7 @@ function CreateTaskDialog({
               Owner
             </span>
             <Select value={owner} onValueChange={setOwner}>
-              <SelectTrigger className="h-9" aria-label="Owner">
+              <SelectTrigger aria-label="Owner">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -339,7 +339,6 @@ function CreateTaskDialog({
               type="date"
               value={due}
               onChange={(e) => setDue(e.target.value)}
-              className="h-9"
               aria-label="Due date"
             />
           </label>

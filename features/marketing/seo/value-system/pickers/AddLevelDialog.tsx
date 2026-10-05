@@ -35,7 +35,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { getValueVocabulary, saveValueVocabulary } from "../data";
 import type { ValueBandDef, VocabKind } from "../types";
 import {
@@ -183,7 +183,6 @@ export function AddLevelDialog({
               placeholder={
                 kind === "value_band" ? "e.g. Flagship" : "e.g. Next county over"
               }
-              className="h-9 text-sm"
               aria-label={`New ${copy.noun} name`}
             />
           </div>
@@ -197,7 +196,6 @@ export function AddLevelDialog({
               }}
               inputMode="decimal"
               placeholder={kind === "value_band" ? "85" : "0.5"}
-              className="h-9 text-sm"
               aria-label={copy.field}
             />
             <p className="text-[11px] leading-snug text-muted-foreground">

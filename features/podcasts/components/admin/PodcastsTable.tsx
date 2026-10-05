@@ -15,7 +15,7 @@ import {
   Circle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   MatrxDataTable,
   type MatrxColumnDef,
@@ -278,11 +278,10 @@ export function PodcastsTable({
       <div className="flex items-center gap-2 px-4 py-2 border-b bg-background shrink-0">
         <div className="relative flex-1 max-w-xs">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <Input
+          <Input adornment="start"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={`Search ${activeTab}…`}
-            className="pl-8 h-8 text-sm"
           />
         </div>
         {activeTab === "shows"

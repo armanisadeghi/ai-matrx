@@ -172,7 +172,7 @@ export function ScopeContextTargetPicker({
             }
             disabled={disabled}
           >
-            <SelectTrigger className="h-8 min-w-0 flex-1 text-xs">
+            <SelectTrigger className="min-w-0 flex-1">
               <SelectValue placeholder="Choose an organization…" />
             </SelectTrigger>
             <SelectContent>
@@ -216,7 +216,7 @@ export function ScopeContextTargetPicker({
             }
             disabled={disabled || !orgId}
           >
-            <SelectTrigger className="h-8 min-w-0 flex-1 text-xs">
+            <SelectTrigger className="min-w-0 flex-1">
               <SelectValue
                 placeholder={
                   !orgId ? "Pick an organization first" : "Choose a type…"
@@ -267,7 +267,7 @@ export function ScopeContextTargetPicker({
             onValueChange={(v) => emit({ scopeId: v, contextItemId: "" })}
             disabled={disabled || !scopeTypeId}
           >
-            <SelectTrigger className="h-8 min-w-0 flex-1 text-xs">
+            <SelectTrigger className="min-w-0 flex-1">
               <SelectValue
                 placeholder={
                   !scopeTypeId
@@ -328,7 +328,7 @@ export function ScopeContextTargetPicker({
             }}
             disabled={disabled || !scopeId}
           >
-            <SelectTrigger className="h-8 min-w-0 flex-1 text-xs">
+            <SelectTrigger className="min-w-0 flex-1">
               <SelectValue
                 placeholder={
                   !scopeId

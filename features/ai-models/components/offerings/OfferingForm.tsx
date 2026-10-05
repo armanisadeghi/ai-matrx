@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -140,11 +140,10 @@ export default function OfferingForm({
         required
         description="The exact model string this service expects on the wire (e.g. claude-sonnet-4-6-20260115)"
       >
-        <Input
+        <Input mono
           value={data.provider_model_id}
           onChange={set("provider_model_id")}
           placeholder="e.g. claude-sonnet-4-6-20260115"
-          className="h-8 text-sm font-mono"
         />
       </FormField>
 
@@ -154,17 +153,15 @@ export default function OfferingForm({
             type="number"
             value={data.priority}
             onChange={set("priority")}
-            className="h-8 text-sm"
           />
         </FormField>
         <FormField
           label="Usage Basis"
           description="Billing unit override (blank = standard $/1M-token)"
         >
-          <Input
+          <Input mono
             value={data.usage_basis}
             onChange={set("usage_basis")}
-            className="h-8 text-sm font-mono"
             data-identifier
             placeholder="e.g. per_image"
           />

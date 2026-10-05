@@ -80,7 +80,7 @@ export default function PersonalConfigTab() {
               onValueChange={setChosenOrganizationId}
             >
               <SelectTrigger
-                className="h-8 w-64 min-w-0"
+                className="w-64 min-w-0"
                 aria-label="Organization whose personal configuration to show"
               >
                 <SelectValue />

@@ -43,7 +43,7 @@ import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
@@ -584,11 +584,10 @@ function EarningCodeEditor({
         <Label htmlFor="ec-external" className="text-sm font-medium">
           External code map
         </Label>
-        <Textarea
+        <Textarea mono
           id="ec-external"
           value={externalMap}
           rows={4}
-          className="font-mono text-xs"
           onChange={(e) => setExternalMap(e.target.value)}
         />
         <p className="text-sm text-muted-foreground">
@@ -861,11 +860,10 @@ function DeductionCodeEditor({
         <Label htmlFor="dc-external" className="text-sm font-medium">
           External code map
         </Label>
-        <Textarea
+        <Textarea mono
           id="dc-external"
           value={externalMap}
           rows={4}
-          className="font-mono text-xs"
           onChange={(e) => setExternalMap(e.target.value)}
         />
       </div>

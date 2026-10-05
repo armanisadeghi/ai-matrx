@@ -24,7 +24,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -167,7 +167,7 @@ export function RestoreDialog({ fileId, open, onOpenChange }: RestoreDialogProps
               <span className="text-xs font-medium">Session</span>
               {sessions.length || recoverable.length ? (
                 <Select value={sessionId} onValueChange={handleSelectSession}>
-                  <SelectTrigger className="h-9 text-xs">
+                  <SelectTrigger>
                     <SelectValue placeholder="Pick a session…" />
                   </SelectTrigger>
                   <SelectContent>
@@ -198,7 +198,6 @@ export function RestoreDialog({ fileId, open, onOpenChange }: RestoreDialogProps
                   placeholder="session-id (uuid)"
                   value={sessionId}
                   onChange={(e) => setSessionId(e.target.value)}
-                  className="h-9 text-xs"
                 />
               )}
               {escrowError ? (
@@ -210,11 +209,10 @@ export function RestoreDialog({ fileId, open, onOpenChange }: RestoreDialogProps
             </div>
             <div className="space-y-1">
               <span className="text-xs font-medium">Session key (base64)</span>
-              <Input
+              <Input mono
                 placeholder="base64 AES-256-GCM key"
                 value={key}
                 onChange={(e) => setKey(e.target.value)}
-                className="h-9 font-mono text-[11px]"
               />
               {selectedNeedsRecovery ? (
                 <Button
@@ -257,7 +255,6 @@ export function RestoreDialog({ fileId, open, onOpenChange }: RestoreDialogProps
                 value={restored}
                 readOnly
                 rows={5}
-                className="text-xs"
               />
             </div>
           ) : null}

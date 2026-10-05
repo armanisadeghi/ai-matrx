@@ -23,7 +23,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useDictionaryContext } from "@/features/dictionary/hooks/useDictionaryContext";
@@ -356,7 +356,7 @@ function CustomEntriesSection({
             if (ev.key === "Enter") commit();
           }}
           placeholder="Term"
-          className="h-8 flex-1 text-sm"
+          className="flex-1"
           aria-label="Term to pronounce"
         />
         <Input
@@ -366,7 +366,7 @@ function CustomEntriesSection({
             if (ev.key === "Enter") commit();
           }}
           placeholder="Say it like…"
-          className="h-8 flex-1 text-sm"
+          className="flex-1"
           aria-label="Pronunciation respelling"
         />
         <Button

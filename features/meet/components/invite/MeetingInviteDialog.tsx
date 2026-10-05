@@ -44,7 +44,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Skeleton } from "@ai-matrx/design-system";
 import { toast } from "@/lib/toast";
 import { useShare } from "@/features/sharing/hooks/useShare";
@@ -160,11 +160,11 @@ export function MeetingInviteDialog({
           <section className="space-y-2" aria-label="Meeting link">
             <SectionTitle>Meeting link</SectionTitle>
             <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
-              <Input
+              <Input mono
                 readOnly
                 value={link}
                 aria-label="Meeting link"
-                className="min-w-0 flex-1 basis-full font-mono text-sm sm:basis-0"
+                className="min-w-0 flex-1 basis-full sm:basis-0"
                 onFocus={(event) => event.currentTarget.select()}
               />
               <Button

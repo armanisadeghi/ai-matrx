@@ -38,7 +38,8 @@ import { useState } from "react";
 import { KeyRound, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input, Button as SurfaceButton } from "@ai-matrx/design-system";
+import { Button as SurfaceButton } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { setEmploymentPin } from "@/features/hr/time/api/service";
 import { toast } from "@/lib/toast";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -179,8 +180,6 @@ export function SetKioskPinCard({
           type="password"
           inputMode="numeric"
           autoComplete="off"
-          /* ≥16px so iOS does not zoom on focus. */
-          className="min-h-[52px] text-base tracking-widest"
         />
       </div>
 
@@ -197,7 +196,6 @@ export function SetKioskPinCard({
           type="password"
           inputMode="numeric"
           autoComplete="off"
-          className="min-h-[52px] text-base tracking-widest"
         />
         {mismatch && (
           <p className="text-sm text-foreground">Those two do not match.</p>

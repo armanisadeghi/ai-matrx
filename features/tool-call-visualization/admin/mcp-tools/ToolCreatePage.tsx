@@ -4,7 +4,7 @@ import React, { useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Save, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
@@ -219,10 +219,9 @@ export function ToolCreatePage() {
           <Label>
             Tool Name <span className="text-destructive">*</span>
           </Label>
-          <Input
+          <Input mono
             value={tool.name}
             onChange={(e) => setField("name", e.target.value)}
-            className="font-mono"
             data-identifier
             placeholder="e.g., core_web_search"
             style={{ fontSize: "16px" }}
@@ -377,10 +376,10 @@ export function ToolCreatePage() {
           </span>
         )}
       </div>
-      <Textarea
+      <Textarea mono
         value={JSON.stringify(tool.parameters, null, 2)}
         onChange={(e) => setJsonField("parameters", e.target.value)}
-        className={`font-mono text-sm flex-1 min-h-[60dvh] resize-none ${jsonErrors.parameters ? "border-destructive" : ""}`}
+        className={` flex-1 min-h-[60dvh] resize-none ${jsonErrors.parameters ? "border-destructive" : ""}`}
         style={{ fontSize: "13px" }}
       />
     </div>
@@ -397,10 +396,10 @@ export function ToolCreatePage() {
           </span>
         )}
       </div>
-      <Textarea
+      <Textarea mono
         value={JSON.stringify(tool.output_schema, null, 2)}
         onChange={(e) => setJsonField("output_schema", e.target.value)}
-        className={`font-mono text-sm flex-1 min-h-[60dvh] resize-none ${jsonErrors.output_schema ? "border-destructive" : ""}`}
+        className={` flex-1 min-h-[60dvh] resize-none ${jsonErrors.output_schema ? "border-destructive" : ""}`}
         style={{ fontSize: "13px" }}
       />
     </div>

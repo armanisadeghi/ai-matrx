@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import type { TopicQuotaFields } from "../../types";
 
 type QuotaKey = keyof TopicQuotaFields;
@@ -119,7 +119,6 @@ function FieldRow({
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
         disabled={disabled}
-        className="h-8 text-xs rounded-lg"
         style={{ fontSize: "16px" }}
       />
       <p className="text-[10px] text-muted-foreground/80 leading-snug">

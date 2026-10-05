@@ -4,7 +4,7 @@ import { useEffect, useState, use } from "react";
 import dynamic from "next/dynamic";
 import { Loader2 } from "lucide-react";
 
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { supabase } from "@/utils/supabase/client";
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
@@ -247,7 +247,7 @@ export default function WorkbookPage({
         left={
           <>
             <ChevronLeftTapButton href="/workbooks" ariaLabel="Back" />
-            <Input
+            <Input variant="bare"
               value={renameDraft}
               onChange={(e) => setRenameDraft(e.target.value)}
               onBlur={commitRename}
@@ -258,7 +258,7 @@ export default function WorkbookPage({
                   (e.target as HTMLInputElement).blur();
                 }
               }}
-              className="h-7 min-w-0 max-w-[45vw] sm:max-w-xs text-sm font-medium border-0 bg-transparent shadow-none focus-visible:ring-1 px-1.5"
+              className="min-w-0 max-w-[45vw] sm:max-w-xs"
               disabled={!workbook || !canEdit}
               placeholder="Workbook name"
             />

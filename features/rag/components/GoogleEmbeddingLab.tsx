@@ -146,12 +146,12 @@ export function GoogleEmbeddingLab() {
               <span className="font-normal text-muted-foreground">
                 (one vector per line)
               </span>
-        <Textarea
+        <Textarea mono
                 value={text}
                 onChange={(event) => setText(event.target.value)}
                 rows={7}
                 placeholder="Paste one or more passages, one per line…"
-                className="w-full resize-y rounded-md border border-input bg-background p-3 font-mono text-sm"
+                className="w-full resize-y"
               />
             </label>
 

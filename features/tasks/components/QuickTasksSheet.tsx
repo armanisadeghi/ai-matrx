@@ -461,7 +461,7 @@ function QuickTasksSheetContent({ className, prePopulate, onPrePopulated }: Quic
                             )
                           }
                         >
-                          <SelectTrigger className="h-7 w-28 text-xs">
+                          <SelectTrigger className="w-28">
                             <div className="flex items-center gap-1.5">
                               <Flag
                                 size={11}

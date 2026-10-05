@@ -51,7 +51,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { knobBool, knobInt } from "@/lib/knobs/featureKnobs";
@@ -493,7 +493,6 @@ export function PredictionLedgerDialog({
                   value={caseLabel}
                   onChange={(e) => setCaseLabel(e.target.value)}
                   placeholder="e.g. Claim #4821 — water damage, Tulsa"
-                  className="text-base sm:text-sm"
                 />
               </div>
 
@@ -564,7 +563,6 @@ export function PredictionLedgerDialog({
                   type="date"
                   value={dueAt}
                   onChange={(e) => setDueAt(e.target.value)}
-                  className="text-base sm:text-sm"
                 />
               </div>
 
@@ -663,7 +661,7 @@ export function PredictionLedgerDialog({
                               }))
                             }
                             placeholder="A line about how it went (optional)"
-                            className="mt-2 text-base sm:text-sm"
+                            className="mt-2"
                           />
                           <div className="mt-2 flex flex-wrap gap-2">
                             <Button

@@ -803,7 +803,6 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
                       >
                         <SelectTrigger
                           id="template-role"
-                          className="h-9 bg-transparent text-base shadow-sm sm:text-sm"
                         >
                           <SelectValue placeholder="Who says it" />
                         </SelectTrigger>

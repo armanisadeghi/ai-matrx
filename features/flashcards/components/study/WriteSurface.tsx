@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { useFlashcardStudy } from "../../data/useFlashcardStudy";
@@ -370,7 +370,6 @@ export function WriteSurface({ setId }: { setId: string }) {
                     autoComplete="off"
                     autoCapitalize="off"
                     spellCheck={false}
-                    className="h-12 rounded-xl bg-card px-4 text-base"
                   />
                   <div className="flex gap-2">
                     <Button

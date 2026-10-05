@@ -1026,7 +1026,6 @@ export function ApprovalQueue({
                   value={reason}
                   onChange={(event) => setReason(event.target.value)}
                   rows={3}
-                  className="text-base md:text-sm"
                   placeholder={
                     pendingCopies.find(({ copy }) => copy.keepsReason)?.copy
                       .reasonPrompt ?? "Why? (optional)"

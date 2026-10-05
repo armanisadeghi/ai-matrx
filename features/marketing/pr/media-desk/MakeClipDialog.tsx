@@ -23,7 +23,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useAppDispatch } from "@/lib/redux/hooks";
@@ -149,7 +149,6 @@ export function MakeClipDialog({
               onChange={(e) => setUrl(e.target.value)}
               placeholder="https://…"
               disabled={fixedUrl || running}
-              className="text-base sm:text-sm"
             />
           </div>
           <div className="grid gap-1">
@@ -160,7 +159,6 @@ export function MakeClipDialog({
               onChange={(e) => setClient(e.target.value)}
               placeholder="The company named in the article"
               disabled={running}
-              className="text-base sm:text-sm"
             />
             <p className="text-[11px] text-muted-foreground">
               If this name is not in the article, no clip is made — a clip never stretches an adjacent mention.

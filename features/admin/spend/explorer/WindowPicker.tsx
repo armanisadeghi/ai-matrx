@@ -8,7 +8,8 @@
 
 "use client";
 
-import { Input, SegmentedControl } from "@ai-matrx/design-system";
+import { SegmentedControl } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 
 import {
   localDateString,
@@ -53,7 +54,7 @@ export function WindowPicker({
             <Input
               type="date"
               aria-label="From day"
-              className="h-7 w-[9.5rem] text-xs"
+              className="w-[9.5rem]"
               max={today}
               value={fromDay ? localDateString(fromDay) : ""}
               onChange={(e) =>
@@ -70,7 +71,7 @@ export function WindowPicker({
             <Input
               type="date"
               aria-label="To day (inclusive)"
-              className="h-7 w-[9.5rem] text-xs"
+              className="w-[9.5rem]"
               max={today}
               value={toDay ? localDateString(toDay) : ""}
               onChange={(e) =>

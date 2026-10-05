@@ -34,7 +34,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { Button } from "@ai-matrx/design-system";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Dialog, DialogContent, DialogTitle } from "@ai-matrx/design-system";
 import { FileRagBadge } from "@host/features/files/components/core/FileBadges/FileRagBadge";
 import { FileResourceChip } from "@host/features/files/components/preview/FileResourceChip";
@@ -415,11 +415,10 @@ export function MediaVariableInput({
             <span className="flex-1 border-t border-border" />
           </div>
 
-          <Input
+          <Input mono
             value={stored}
             onChange={(e) => onChange(e.target.value)}
             placeholder={meta.urlPlaceholder}
-            className="h-8 text-xs font-mono"
             aria-label={`${meta.label} URL for ${variableName}`}
             style={{ fontSize: "16px" }}
           />

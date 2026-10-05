@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 import { BackendApiError, getUserMessage } from "@/lib/api/errors";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";

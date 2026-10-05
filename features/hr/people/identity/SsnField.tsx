@@ -33,7 +33,7 @@ import { useState } from "react";
 import { Loader2, ShieldCheck } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { useBackendApi } from "@/hooks/useBackendApi";
 import { cn } from "@/lib/utils";
 
@@ -125,7 +125,7 @@ export function SsnField({
     <div className={cn("space-y-2", className)}>
       <p className="text-sm italic text-muted-foreground">Not collected</p>
       <div className="flex flex-wrap items-center gap-2">
-        <Input
+        <Input mono
           type="password"
           inputMode="numeric"
           autoComplete="off"
@@ -138,7 +138,7 @@ export function SsnField({
               ? "Your Social Security number"
               : "This person's Social Security number"
           }
-          className="h-8 max-w-[11rem] font-mono text-xs"
+          className="max-w-[11rem]"
           disabled={busy}
         />
         <Button

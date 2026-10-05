@@ -17,7 +17,7 @@ import { AgendaPanel } from "@/features/google-workspace/calendar/AgendaPanel";
 import { CalendarView } from "@/features/google-workspace/calendar/CalendarView";
 import { SelectedCalendarReview } from "@/features/google-workspace/calendar/SelectedCalendarReview";
 import { MeetReview } from "@/features/google-workspace/meet/MeetReview";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsListLegacy as TabsList, TabsTriggerLegacy as TabsTrigger } from "@/components/ui/tabs";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
   selectIsSuperAdmin,

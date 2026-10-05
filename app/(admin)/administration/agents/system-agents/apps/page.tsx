@@ -281,7 +281,7 @@ export default function AdminSystemAppsListPage() {
               )
             }
           >
-            <SelectTrigger className="h-7 text-xs">
+            <SelectTrigger>
               <SelectValue>
                 <Badge
                   variant={STATUS_VARIANT[app.status] ?? "outline"}

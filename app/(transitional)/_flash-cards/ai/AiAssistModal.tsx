@@ -11,7 +11,7 @@ import {
   CredenzaTitle,
   CredenzaTrigger,
 } from "@/components/ui/credenza-modal/credenza";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -36,7 +36,7 @@ function AiAssistModal({ isOpen, onClose, defaultTab, message }: AiAssistModalPr
           </CredenzaDescription>
         </CredenzaHeader>
         <Tabs defaultValue={defaultTab || "confused"} className="w-full">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList fill>
             <TabsTrigger value="confused">I'm confused</TabsTrigger>
             <TabsTrigger value="example">Give me an example</TabsTrigger>
             <TabsTrigger value="question">I have a question</TabsTrigger>

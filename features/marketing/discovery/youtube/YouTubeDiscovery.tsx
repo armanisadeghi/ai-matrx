@@ -24,7 +24,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CopyButton } from "@/components/matrx/buttons/CopyButton";
-import { Input, Button as SurfaceButton } from "@ai-matrx/design-system";
+import { Button as SurfaceButton } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -398,11 +399,10 @@ export function YouTubeDiscovery({ topicId }: { topicId?: string }) {
             <div className="flex flex-col gap-3 md:flex-row">
               <div className="relative min-w-0 flex-1">
                 <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground dark:text-zinc-500" />
-                <Input
+                <Input adornment="start"
                   value={form.query}
                   onChange={(event) => update("query", event.target.value)}
                   placeholder="Search a topic, expert, question, or exact phrase…"
-                  className="h-14 rounded-2xl border-border bg-background pl-12 text-base shadow-none placeholder:text-muted-foreground focus-visible:ring-cyan-400/30 dark:border-white/10 dark:bg-white/[0.04] dark:placeholder:text-zinc-600"
                   aria-label="YouTube search query"
                 />
               </div>
@@ -661,7 +661,7 @@ function FilterSelect({
         {label}
       </Label>
       <Select value={value} onValueChange={onValueChange}>
-        <SelectTrigger className="h-7 w-full min-w-0 border-0 bg-transparent px-0 text-sm shadow-none focus:ring-0">
+        <SelectTrigger variant="bare" className="w-full min-w-0">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>

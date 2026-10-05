@@ -273,13 +273,12 @@ export function RpcTestPanel({
               Reset to default
             </Button>
           </div>
-          <Textarea
+          <Textarea mono
             id="rpc-payload"
             value={payloadJson}
             onChange={(e) => setPayloadJson(e.target.value)}
             rows={8}
             spellCheck={false}
-            className="font-mono text-xs"
           />
           {parseError && (
             <p className="text-xs text-destructive">JSON error: {parseError} <ErrorAlchemyMenu error={parseError} /></p>

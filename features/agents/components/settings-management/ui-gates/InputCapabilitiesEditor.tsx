@@ -3,7 +3,7 @@
 import { FileText, Image as ImageIcon, RotateCcw } from "lucide-react";
 import { Youtube } from "@/components/icons/brand-icons";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+import { SwitchLegacy as Switch } from "@/components/ui/switch";
 import { Button } from "@ai-matrx/design-system";
 import { cn } from "@/utils/cn";
 import {

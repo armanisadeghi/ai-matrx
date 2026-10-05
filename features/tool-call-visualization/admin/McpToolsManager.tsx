@@ -28,7 +28,7 @@ import {
   ArrowUpDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -1113,11 +1113,10 @@ export function McpToolsManager() {
           <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
             <div className="relative flex-1 max-w-sm">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
+              <Input adornment="start"
                 placeholder="Search name, description, path, tags…"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
                 style={{ fontSize: "16px" }}
               />
               {searchQuery && (
@@ -1365,7 +1364,7 @@ export function McpToolsManager() {
               onValueChange={setSelectedSourceKind}
             >
               <SelectTrigger
-                className={`h-8 w-40 text-xs ${selectedSourceKind !== "all" ? "border-primary text-primary" : ""}`}
+                className={` w-40 ${selectedSourceKind !== "all" ? "border-primary text-primary" : ""}`}
               >
                 <Filter className="h-3 w-3 mr-1 flex-shrink-0" />
                 <SelectValue placeholder="Source Kind" />
@@ -1384,7 +1383,7 @@ export function McpToolsManager() {
               onValueChange={setSelectedCategory}
             >
               <SelectTrigger
-                className={`h-8 w-40 text-xs ${selectedCategory !== "all" ? "border-primary text-primary" : ""}`}
+                className={` w-40 ${selectedCategory !== "all" ? "border-primary text-primary" : ""}`}
               >
                 <Filter className="h-3 w-3 mr-1 flex-shrink-0" />
                 <SelectValue placeholder="Category" />
@@ -1405,7 +1404,7 @@ export function McpToolsManager() {
               }
             >
               <SelectTrigger
-                className={`h-8 w-36 text-xs ${selectedStatus !== "all" ? "border-primary text-primary" : ""}`}
+                className={` w-36 ${selectedStatus !== "all" ? "border-primary text-primary" : ""}`}
               >
                 <Filter className="h-3 w-3 mr-1 flex-shrink-0" />
                 <SelectValue placeholder="Status" />
@@ -1426,7 +1425,7 @@ export function McpToolsManager() {
             {allTags.length > 1 && (
               <Select value={selectedTag} onValueChange={setSelectedTag}>
                 <SelectTrigger
-                  className={`h-8 w-36 text-xs ${selectedTag !== "all" ? "border-primary text-primary" : ""}`}
+                  className={` w-36 ${selectedTag !== "all" ? "border-primary text-primary" : ""}`}
                 >
                   <Tag className="h-3 w-3 mr-1 flex-shrink-0" />
                   <SelectValue placeholder="Tag" />
@@ -1446,7 +1445,7 @@ export function McpToolsManager() {
               onValueChange={(v) => setSelectedTestFilter(v as TestFilter)}
             >
               <SelectTrigger
-                className={`h-8 w-48 text-xs ${selectedTestFilter !== "all" ? "border-primary text-primary" : ""}`}
+                className={` w-48 ${selectedTestFilter !== "all" ? "border-primary text-primary" : ""}`}
               >
                 <TestTube2 className="h-3 w-3 mr-1 flex-shrink-0" />
                 <SelectValue placeholder="Test Readiness" />
@@ -1844,7 +1843,6 @@ function ColumnFilterControl({
             onChange={(e) =>
               onChange({ ...(value ?? {}), text: e.target.value })
             }
-            className="h-8 text-xs"
             style={{ fontSize: "16px" }}
           />
         )}
@@ -1924,7 +1922,7 @@ function ColumnFilterControl({
               })
             }
           >
-            <SelectTrigger className="h-8 text-xs">
+            <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -1952,7 +1950,6 @@ function ColumnFilterControl({
                   numMin: e.target.value === "" ? null : Number(e.target.value),
                 })
               }
-              className="h-8 text-xs"
               style={{ fontSize: "16px" }}
             />
             <span className="text-xs text-muted-foreground">–</span>
@@ -1966,7 +1963,6 @@ function ColumnFilterControl({
                   numMax: e.target.value === "" ? null : Number(e.target.value),
                 })
               }
-              className="h-8 text-xs"
               style={{ fontSize: "16px" }}
             />
           </div>
@@ -1981,7 +1977,7 @@ function ColumnFilterControl({
                 onChange={(e) =>
                   onChange({ ...(value ?? {}), dateFrom: e.target.value })
                 }
-                className="h-8 text-xs mt-0.5"
+                className="mt-0.5"
                 style={{ fontSize: "16px" }}
               />
             </label>
@@ -1993,7 +1989,7 @@ function ColumnFilterControl({
                 onChange={(e) =>
                   onChange({ ...(value ?? {}), dateTo: e.target.value })
                 }
-                className="h-8 text-xs mt-0.5"
+                className="mt-0.5"
                 style={{ fontSize: "16px" }}
               />
             </label>

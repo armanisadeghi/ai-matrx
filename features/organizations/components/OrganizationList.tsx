@@ -3,7 +3,8 @@
 import React, { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Building2, Plus, Search, Loader2 } from "lucide-react";
-import { ArchivedDisclosure, Input } from "@ai-matrx/design-system";
+import { ArchivedDisclosure } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useUserOrganizations } from "../hooks";
@@ -131,13 +132,12 @@ export function OrganizationList() {
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
+          <Input adornment="start"
             aria-label="Search organizations"
             type="text"
             placeholder="Search organizations..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
           />
         </div>
         <div className="flex items-center gap-1">

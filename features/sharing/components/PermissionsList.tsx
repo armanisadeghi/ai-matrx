@@ -485,7 +485,7 @@ export function PermissionsList({
                     >
                       {/* Widened from 90px: THE SCOPE-QUALIFIED ADMIN RULE makes the longest
                           option "Admin (this item)", which truncates at 90px. */}
-                      <SelectTrigger className="w-[140px] h-7 text-xs">
+                      <SelectTrigger className="w-[140px]">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>

@@ -5,7 +5,7 @@ import { Loader2, Zap, CheckSquare, Square, AlertCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   Dialog,
   DialogContent,
@@ -145,11 +145,11 @@ export function SurfaceCandidatesDialog({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search…"
-            className="h-8 max-w-xs text-xs"
+            className="max-w-xs"
             style={{ fontSize: "16px" }}
           />
           <Select value={client} onValueChange={setClient}>
-            <SelectTrigger className="h-8 w-[180px] text-xs">
+            <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="All clients" />
             </SelectTrigger>
             <SelectContent>
@@ -162,7 +162,7 @@ export function SurfaceCandidatesDialog({
             </SelectContent>
           </Select>
           <Select value={group} onValueChange={setGroup}>
-            <SelectTrigger className="h-8 w-[140px] text-xs">
+            <SelectTrigger className="w-[140px]">
               <SelectValue placeholder="All kinds" />
             </SelectTrigger>
             <SelectContent>

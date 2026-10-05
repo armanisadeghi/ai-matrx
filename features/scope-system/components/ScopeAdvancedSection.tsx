@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { toast } from "@/lib/toast";
@@ -124,14 +124,14 @@ export function ScopeAdvancedSection({ scope }: ScopeAdvancedSectionProps) {
               URL slug
             </Label>
             <div className="flex gap-2">
-              <Input
+              <Input mono
                 id={slugId}
                 value={slug}
                 onChange={(e) => setSlug(e.target.value)}
                 placeholder={toSlug(scope.name) || "url-slug"}
                 style={{ fontSize: "16px" }}
                 disabled={busy}
-                className="flex-1 font-mono"
+                className="flex-1"
               />
               <Button
                 type="button"

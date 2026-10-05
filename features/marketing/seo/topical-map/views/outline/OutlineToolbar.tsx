@@ -15,7 +15,8 @@
 import { useEffect, useState } from "react";
 import { ChevronsDownUp, ChevronsUpDown, Search, X } from "lucide-react";
 
-import { Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@ai-matrx/design-system";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
@@ -84,12 +85,11 @@ export function OutlineToolbar({ mapId, visibleTopics, className }: OutlineToolb
           aria-hidden
           className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"
         />
-        <Input
+        <Input adornment="both"
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
           placeholder="Find a topic…"
           aria-label="Find a topic"
-          className="h-8 pl-7 pr-7 text-sm"
         />
         {draft ? (
           <button

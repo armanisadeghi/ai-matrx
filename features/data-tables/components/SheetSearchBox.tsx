@@ -15,7 +15,8 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Search, X } from "lucide-react";
 
-import { Button, Input } from "@ai-matrx/design-system";
+import { Button } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { cn } from "@/lib/utils";
 
 /**
@@ -59,7 +60,7 @@ export function SheetSearchBox({ searchTerm, onSearchTermChange, onSubmit, onCle
     <form onSubmit={onSubmit} className="flex flex-1 gap-1">
       <div className="relative flex-1">
         <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-        <Input
+        <Input adornment="start"
           ref={open ? inputRef : undefined}
           type="text"
           placeholder="Search rows"
@@ -76,7 +77,7 @@ export function SheetSearchBox({ searchTerm, onSearchTermChange, onSubmit, onCle
           data-surface-value="search_term"
           // The clear button's room is kept only while there is something to clear: at 390 an
           // always-reserved 40px cut "Search rows" to "Search row" (DATA-V2-BASICS-2).
-          className={`h-11 w-full pl-8 text-base md:h-7 md:pl-7 md:text-sm ${searchTerm || open ? "pr-10 md:pr-7" : "pr-2 md:pr-2"}`}
+          className={` w-full ${searchTerm || open ? "pr-10 md:pr-7" : "pr-2 md:pr-2"}`}
           style={{ fontSize: "16px" }}
         />
         {(searchTerm || open) && (

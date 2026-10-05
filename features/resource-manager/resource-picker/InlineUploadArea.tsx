@@ -48,7 +48,7 @@ import type { CanonicalStorageImport } from "@/features/files/storage-sources/ty
 import { pythonFileInlineUrl } from "@/features/files/handler/utils/python-base";
 import { matchStorageAccept } from "@/features/files/storage-sources/accept";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { ImageLinkError, imageLinkToFile } from "./imageLink";
 
 export interface UploadedFile {
@@ -816,7 +816,7 @@ export function InlineUploadArea({
             placeholder="Or paste an image link"
             aria-label="Image link"
             disabled={fetchingLink}
-            className="h-9 min-w-0 flex-1 rounded-lg text-base sm:text-sm pointer-coarse:h-11"
+            className="min-w-0 flex-1"
           />
           <Button
             type="submit"

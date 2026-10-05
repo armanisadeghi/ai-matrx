@@ -11,7 +11,7 @@ import { useMemo, useState } from "react";
 import { Plus, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   Popover,
   PopoverContent,
@@ -206,7 +206,7 @@ function TopicSection({
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Search topics…"
-              className="mb-2 h-8"
+              className="mb-2"
             />
             <div className="max-h-56 overflow-y-auto">
               {topics.isLoading ? (
@@ -376,7 +376,7 @@ function EntitySection({
       <div className="mt-2 space-y-1.5 rounded border border-dashed border-border p-2">
         <div className="flex gap-1.5">
           <Select value={picked} onValueChange={setPicked}>
-            <SelectTrigger className="h-8 flex-1 text-sm">
+            <SelectTrigger className="flex-1">
               <SelectValue placeholder="Person, company or source…" />
             </SelectTrigger>
             <SelectContent>
@@ -402,7 +402,7 @@ function EntitySection({
             value={effectiveRole}
             onValueChange={(next) => setRole(next as PlanNodeEntityRole)}
           >
-            <SelectTrigger className="h-8 w-32 text-sm">
+            <SelectTrigger className="w-32">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -420,14 +420,14 @@ function EntitySection({
               type="date"
               value={reviewDate}
               onChange={(event) => setReviewDate(event.target.value)}
-              className="h-8 w-40 text-sm"
+              className="w-40"
               aria-label="Review date"
             />
             <Input
               value={notes}
               onChange={(event) => setNotes(event.target.value)}
               placeholder="Review notes (optional)"
-              className="h-8 flex-1 text-sm"
+              className="flex-1"
             />
           </div>
         ) : null}

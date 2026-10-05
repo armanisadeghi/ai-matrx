@@ -21,7 +21,7 @@ import { useRouter } from "next/navigation";
 import { ArrowRight, CircleAlert, Link2, Loader2 } from "lucide-react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { cn } from "@/lib/utils";
 import { MediaApiError, createLibrary, resolveMediaInput } from "../api";
 import { formatCompactNumber } from "../format";
@@ -162,7 +162,7 @@ export function CatalogPasteBox({ autoFocus = true }: { autoFocus?: boolean }) {
                 )}
             >
                 <Link2 className="ml-2 size-5 shrink-0 text-muted-foreground" aria-hidden />
-                <Input
+                <Input variant="bare"
                     ref={inputRef}
                     value={value}
                     autoFocus={autoFocus}
@@ -183,7 +183,6 @@ export function CatalogPasteBox({ autoFocus = true }: { autoFocus?: boolean }) {
                     }}
                     aria-label={ACCEPTED_INPUTS_LABEL}
                     placeholder={ACCEPTED_INPUTS_PLACEHOLDER}
-                    className="h-11 border-0 bg-transparent text-base shadow-none focus-visible:ring-0"
                 />
                 <Button
                     icon={busy ? (

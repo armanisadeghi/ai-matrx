@@ -19,7 +19,7 @@
 import React, { useMemo, useState } from "react";
 import { Filter, Scissors, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { ScraperKindNested } from "./ScraperKindNested";
 import { Pill } from "./scraper-kind-shared";
 import { compactNumber, items, num, readScraperKindValue, text } from "./scraper-kind-data";
@@ -128,11 +128,10 @@ export default function PageCleaningReportBlock({ serverData, className, survivo
       {removed.length > 8 && (
         <div className="relative">
           <Search className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input
+          <Input adornment="start"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search removed content — e.g. your CTA text"
-            className="h-8 pl-7 text-xs"
           />
         </div>
       )}

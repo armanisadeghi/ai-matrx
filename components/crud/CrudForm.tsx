@@ -12,7 +12,7 @@ import {
   FormControl,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   Select,
   SelectContent,
@@ -83,7 +83,7 @@ export function CrudForm<T extends z.ZodType<any, any>>({
                   defaultValue={field.value}
                   disabled={!isEditing}
                 >
-                  <SelectTrigger className="bg-background text-foreground border-input">
+                  <SelectTrigger>
                     <SelectValue placeholder="Select an option" />
                   </SelectTrigger>
                   <SelectContent>
@@ -102,7 +102,6 @@ export function CrudForm<T extends z.ZodType<any, any>>({
                 <Input
                   {...field}
                   disabled={!isEditing}
-                  className="bg-background text-foreground border-input"
                 />
               )}
             </FormControl>

@@ -36,7 +36,7 @@ import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { RunConfigOverrides } from "@ai-matrx/chat/agents/components/run-controls/RunConfigOverrides";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   Select,
   SelectContent,
@@ -500,7 +500,7 @@ function CandidateEditor({
             })
           }
         >
-          <SelectTrigger size="sm" className="w-full sm:w-64">
+          <SelectTrigger className="w-full sm:w-64">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -560,7 +560,7 @@ function CandidateEditor({
             }
             disabled={!versionAgentId || visibleVersions.length === 0}
           >
-            <SelectTrigger size="sm" className="w-32">
+            <SelectTrigger className="w-32">
               <SelectValue placeholder="Version" />
             </SelectTrigger>
             <SelectContent>
@@ -1102,7 +1102,6 @@ export function MandateTestBench({
               onChange={(event) => setNewLabel(event.target.value)}
               aria-label="Test case name"
               placeholder="Test case name"
-              className="h-8 text-xs"
             />
             {provisionKey && (
               <div className="rounded-md border border-border">
@@ -1131,12 +1130,11 @@ export function MandateTestBench({
                 )}
               </div>
             )}
-            <Textarea
+            <Textarea mono minHeight={80}
               value={newVariables}
               onChange={(event) => setNewVariables(event.target.value)}
               aria-label="Test variables as JSON"
               placeholder="Test variables (JSON)"
-              className="min-h-20 font-mono text-xs"
             />
             <ProTextarea
               value={newUserInput}

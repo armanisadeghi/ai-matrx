@@ -1,7 +1,7 @@
 'use client';
 
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTriggerLegacy as SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Map, MapPinned, MapIcon } from 'lucide-react';
 
 export type ViewMode = 'zipCode' | 'zip3' | 'county';

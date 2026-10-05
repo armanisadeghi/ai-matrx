@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { History } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/lib/toast";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
@@ -131,7 +131,7 @@ export function AssistProducerControl() {
             value={reason}
             onChange={(event) => setReason(event.target.value)}
             placeholder="Why are you changing these controls?"
-            className="mt-1 h-8 text-xs"
+            className="mt-1"
           />
         </label>
       </div>

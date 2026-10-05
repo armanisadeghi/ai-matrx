@@ -20,7 +20,7 @@ import { Filter, Search } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   Popover,
   PopoverContent,
@@ -111,11 +111,10 @@ export function ValueListFilterPopover({
         {options.length > searchThreshold ? (
           <div className="relative">
             <Search className="pointer-events-none absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
-            <Input
+            <Input adornment="start"
               placeholder="Search values…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="h-7 pl-6 text-base"
               autoFocus
             />
           </div>

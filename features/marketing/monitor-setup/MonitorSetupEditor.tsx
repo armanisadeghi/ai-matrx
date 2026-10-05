@@ -29,7 +29,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -245,7 +245,6 @@ function ItemList({
                 next[index] = { text: e.target.value, basis: USER_BASIS };
                 onChange(next);
               }}
-              className="h-8 text-sm"
             />
             <BasisChip basis={item.basis} refs={refs} />
             <Button
@@ -269,7 +268,6 @@ function ItemList({
               add();
             }
           }}
-          className="h-8 text-sm"
         />
         <Button
           icon={<Plus />}
@@ -912,7 +910,7 @@ function MonitorSetupEditorBody({
                     value={draft.siteId ?? undefined}
                     onValueChange={(v) => update({ siteId: v })}
                   >
-                    <SelectTrigger className="h-8 w-72 text-sm">
+                    <SelectTrigger className="w-72">
                       <SelectValue placeholder="Choose the website" />
                     </SelectTrigger>
                     <SelectContent>
@@ -944,7 +942,7 @@ function MonitorSetupEditorBody({
                 value={draft.name}
                 aria-label="Monitor name"
                 onChange={(e) => update({ name: e.target.value })}
-                className="h-8 max-w-md text-sm"
+                className="max-w-md"
               />
             </div>
           </Section>
@@ -1006,7 +1004,6 @@ function MonitorSetupEditorBody({
                         };
                         update({ keywords: next });
                       }}
-                      className="h-8 text-sm font-medium"
                     />
                     <BasisChip basis={k.basis} refs={refs} />
                     <Button
@@ -1032,7 +1029,7 @@ function MonitorSetupEditorBody({
                       next[index] = { ...k, means: e.target.value };
                       update({ keywords: next });
                     }}
-                    className="mt-1 h-8 text-sm"
+                    className="mt-1"
                   />
                   {!k.means.trim() ? (
                     <p className="mt-0.5 text-xs text-warning">
@@ -1051,7 +1048,7 @@ function MonitorSetupEditorBody({
                       };
                       update({ keywords: next });
                     }}
-                    className="mt-1 h-8 text-sm"
+                    className="mt-1"
                   />
                 </div>
               ))}
@@ -1107,7 +1104,6 @@ function MonitorSetupEditorBody({
                         };
                         update({ competitors: next });
                       }}
-                      className="h-8 text-sm"
                     />
                     <BasisChip basis={c.basis} refs={refs} />
                     <Button
@@ -1135,7 +1131,7 @@ function MonitorSetupEditorBody({
                           next[index] = { ...c, means: e.target.value };
                           update({ competitors: next });
                         }}
-                        className="mt-1 h-8 text-sm"
+                        className="mt-1"
                       />
                       {!c.means.trim() ? (
                         <p className="mt-0.5 text-xs text-warning">
@@ -1297,7 +1293,7 @@ function MonitorSetupEditorBody({
                 onChange={(e) =>
                   update({ exclusions: splitWords(e.target.value) })
                 }
-                className="mt-1 h-8 text-sm"
+                className="mt-1"
               />
             </div>
           </Section>
@@ -1331,7 +1327,7 @@ function MonitorSetupEditorBody({
                         name: e.target.value,
                       })
                     }
-                    className="h-8 w-48 text-sm"
+                    className="w-48"
                   />
                   <Input
                     value={newSpokesperson.title}
@@ -1342,7 +1338,7 @@ function MonitorSetupEditorBody({
                         title: e.target.value,
                       })
                     }
-                    className="h-8 w-48 text-sm"
+                    className="w-48"
                   />
                   <Button
                     icon={<Plus />}
@@ -1371,7 +1367,7 @@ function MonitorSetupEditorBody({
                     onChange={(e) =>
                       setNewProof({ ...newProof, summary: e.target.value })
                     }
-                    className="h-8 w-80 text-sm"
+                    className="w-80"
                   />
                   <Input
                     value={newProof.url}
@@ -1379,7 +1375,7 @@ function MonitorSetupEditorBody({
                     onChange={(e) =>
                       setNewProof({ ...newProof, url: e.target.value })
                     }
-                    className="h-8 w-56 text-sm"
+                    className="w-56"
                   />
                   <Button
                     icon={<Plus />}
@@ -1421,7 +1417,7 @@ function MonitorSetupEditorBody({
               ).map(([key, label, placeholder]) => (
                 <div key={key}>
                   <p className="text-xs font-medium text-foreground">{label}</p>
-                  <Textarea
+                  <Textarea minHeight={64}
                     value={draft.brief[key]}
                     placeholder={placeholder}
                     onChange={(e) =>
@@ -1429,7 +1425,7 @@ function MonitorSetupEditorBody({
                         brief: { ...draft.brief, [key]: e.target.value },
                       })
                     }
-                    className="mt-1 min-h-16 text-sm"
+                    className="mt-1"
                   />
                 </div>
               ))}
@@ -1511,7 +1507,7 @@ function MonitorSetupEditorBody({
                 value={draft.timezone}
                 onValueChange={(v) => update({ timezone: v })}
               >
-                <SelectTrigger className="h-8 w-64 text-sm">
+                <SelectTrigger className="w-64">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

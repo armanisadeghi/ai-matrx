@@ -23,7 +23,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input, Skeleton } from "@ai-matrx/design-system";
+import { Skeleton } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { cn } from "@/styles/themes/utils";
@@ -103,7 +104,6 @@ export function AddOfferingDialog({
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Hard drive shredding, ITAD, e-waste pickup…"
-            className="h-10 text-base sm:text-sm"
             aria-label="What does this business sell?"
           />
 

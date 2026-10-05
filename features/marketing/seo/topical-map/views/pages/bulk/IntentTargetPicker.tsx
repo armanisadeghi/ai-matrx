@@ -26,7 +26,7 @@ import { Loader2, Plus, Search } from "lucide-react";
 // `components/ui/input.tsx` is host residue that exports only the Copy/Fancy/
 // Delete wrappers; the plain `Input` lives in the package, which is where every
 // other marketing picker takes it from.
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Button } from "@/components/ui/button";
@@ -165,12 +165,11 @@ function TopicSegment({
               className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"
               aria-hidden
             />
-            <Input
+            <Input adornment="start"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Search live topics"
               aria-label="Search live topics"
-              className="h-7 pl-7 text-xs"
             />
           </div>
           {hits.isError ? (
@@ -268,12 +267,11 @@ function LivePageSegment({
               className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"
               aria-hidden
             />
-            <Input
+            <Input adornment="start"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Search this map's pages by URL"
               aria-label="Search this map's pages by URL"
-              className="h-7 pl-7 text-xs"
             />
           </div>
           {!ready ? (
@@ -432,7 +430,6 @@ function PlannedPageSegment({
             onChange={(event) => setLabel(event.target.value)}
             placeholder="Electronics recycling"
             aria-label="Planned page label"
-            className="h-7 text-xs"
           />
           <p className="font-mono text-[11px] text-muted-foreground">
             /{slug || "…"}

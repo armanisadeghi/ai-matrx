@@ -29,7 +29,8 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { Input, Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
+import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   Select,
   SelectContent,
@@ -258,7 +259,7 @@ function ValueEditor({
           if (choice) onCommit(choice.raw);
         }}
       >
-        <SelectTrigger aria-label={ariaLabel} className="h-7 w-full min-w-[6rem] text-xs">
+        <SelectTrigger aria-label={ariaLabel} className="w-full min-w-[6rem]">
           <SelectValue placeholder={commitOnPick ? "Pick" : "Pick a value"} />
         </SelectTrigger>
         <SelectContent>
@@ -276,7 +277,7 @@ function ValueEditor({
     <div className="flex items-center gap-1">
       <Input
         aria-label={ariaLabel}
-        className="h-7 min-w-[6rem] text-xs"
+        className="min-w-[6rem]"
         value={draft}
         disabled={busy}
         onChange={(event) => setDraft(event.target.value)}

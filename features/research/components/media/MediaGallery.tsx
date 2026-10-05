@@ -197,7 +197,7 @@ export default function MediaGallery() {
           />
         </div>
         <Select value={relevanceFilter} onValueChange={setRelevanceFilter}>
-          <SelectTrigger className="w-[4.75rem] h-6 px-2 text-[11px] rounded-full matrx-glass-card border-0 shrink-0 shadow-none [&_svg]:h-3 [&_svg]:w-3">
+          <SelectTrigger variant="bare" className="w-[4.75rem] matrx-glass-card shrink-0 [&_svg]:w-3">
             <SelectValue />
           </SelectTrigger>
           <SelectContent className="text-[11px]">
@@ -213,7 +213,7 @@ export default function MediaGallery() {
           </SelectContent>
         </Select>
         <Select value={typeFilter} onValueChange={setTypeFilter}>
-          <SelectTrigger className="w-[6.25rem] h-6 px-2 text-[11px] rounded-full matrx-glass-card border-0 shrink-0 shadow-none [&_svg]:h-3 [&_svg]:w-3">
+          <SelectTrigger variant="bare" className="w-[6.25rem] matrx-glass-card shrink-0 [&_svg]:w-3">
             <SelectValue />
           </SelectTrigger>
           <SelectContent className="text-[11px]">

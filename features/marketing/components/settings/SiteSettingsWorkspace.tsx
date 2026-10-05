@@ -13,7 +13,7 @@ import { GovernedActionDialog } from "@/features/access-gate/components/Governed
 import { fetchAccessDeniedContext } from "@/features/access-gate/service/accessDeniedContext";
 import { actionAuthority } from "@/features/access-gate/service/actionAuthority";
 import { isGovernedActionDenial } from "@/features/access-gate/lib/governedActionError";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -239,7 +239,6 @@ export function SiteSettingsWorkspace() {
                 </Label>
                 <Input
                   id="site-settings-name"
-                  className="h-8"
                   value={name}
                   onChange={(event) => setName(event.target.value)}
                 />
@@ -262,7 +261,7 @@ export function SiteSettingsWorkspace() {
                     setStatus(value as typeof site.status)
                   }
                 >
-                  <SelectTrigger size="sm">
+                  <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -415,7 +414,7 @@ export function SiteSettingsWorkspace() {
                     }))
                   }
                 >
-                  <SelectTrigger size="sm">
+                  <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -619,11 +618,10 @@ function PatternSetting({
       <Label htmlFor={id} className="text-xs">
         {label}
       </Label>
-      <Textarea
+      <Textarea mono
         id={id}
         rows={3}
         spellCheck={false}
-        className="font-mono text-xs"
         value={value}
         onChange={(event) => onChange(event.target.value)}
         aria-invalid={problems.length > 0}

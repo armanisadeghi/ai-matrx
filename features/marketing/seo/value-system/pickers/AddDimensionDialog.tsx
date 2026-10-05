@@ -26,7 +26,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { useQuickAdd } from "./useQuickAdd";
 import type { QuickAddedValue } from "../quick-add";
 
@@ -95,7 +95,6 @@ export function AddDimensionDialog({
               value={name}
               onChange={(event) => setName(event.target.value)}
               placeholder="e.g. Equipment class"
-              className="h-9 text-sm"
               aria-label="Dimension name"
             />
           </div>
@@ -106,7 +105,6 @@ export function AddDimensionDialog({
                 value={first}
                 onChange={(event) => setFirst(event.target.value)}
                 placeholder="e.g. Servers"
-                className="h-9 text-sm"
                 aria-label="First choice"
               />
             </div>
@@ -119,7 +117,6 @@ export function AddDimensionDialog({
                   if (event.key === "Enter" && ready) void save();
                 }}
                 placeholder="e.g. Laptops"
-                className="h-9 text-sm"
                 aria-label="Second choice"
               />
             </div>

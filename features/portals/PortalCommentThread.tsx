@@ -102,13 +102,13 @@ export function PortalCommentThread({
         <label htmlFor="portal-comment" className="sr-only">
           Write a message
         </label>
-        <Textarea
+        <Textarea minHeight={80}
           id="portal-comment"
           value={draft}
           rows={3}
           onChange={(event) => setDraft(event.target.value)}
           placeholder="Write a message"
-          className="min-h-[80px] resize-y text-base"
+          className="resize-y"
         />
         <Button
           icon={pending ? (

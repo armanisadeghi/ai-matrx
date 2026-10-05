@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import { Wrench } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   Select,
   SelectContent,
@@ -174,7 +174,7 @@ export function ImportQuickFixes({
             <Input
               value={nameDraft}
               onChange={(e) => setNameDraft(e.target.value)}
-              className="h-7 text-xs flex-1 min-w-[160px]"
+              className="flex-1 min-w-[160px]"
               placeholder="Agent name"
             />
             <Button
@@ -197,7 +197,7 @@ export function ImportQuickFixes({
               Type
             </Label>
             <Select onValueChange={(v) => patch({ kind: "set-agent-type" }, v)}>
-              <SelectTrigger className="h-7 text-xs w-[140px]">
+              <SelectTrigger className="w-[140px]">
                 <SelectValue placeholder="Choose type" />
               </SelectTrigger>
               <SelectContent>
@@ -234,7 +234,7 @@ export function ImportQuickFixes({
                 )
               }
             >
-              <SelectTrigger className="h-7 text-xs w-[160px]">
+              <SelectTrigger className="w-[160px]">
                 <SelectValue placeholder="Choose effort" />
               </SelectTrigger>
               <SelectContent>
@@ -270,7 +270,7 @@ export function ImportQuickFixes({
                 )
               }
             >
-              <SelectTrigger className="h-7 text-xs w-[160px]">
+              <SelectTrigger className="w-[160px]">
                 <SelectValue placeholder="Choose summary" />
               </SelectTrigger>
               <SelectContent>

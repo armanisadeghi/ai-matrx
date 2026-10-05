@@ -15,7 +15,7 @@ import {
   FolderPlus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -442,7 +442,7 @@ export function QuickNoteSaveCore({
               >
                 <SelectTrigger
                   id="qns-folder"
-                  className="h-8 text-xs rounded-md w-full"
+                  className="w-full"
                 >
                   <SelectValue />
                 </SelectTrigger>
@@ -475,7 +475,7 @@ export function QuickNoteSaveCore({
                   value={noteName}
                   onChange={(e) => setNoteName(e.target.value)}
                   placeholder="Note name..."
-                  className="h-8 text-xs rounded-md w-full"
+                  className="w-full"
                   style={{ fontSize: "16px" }}
                 />
               </div>
@@ -490,7 +490,7 @@ export function QuickNoteSaveCore({
                 >
                   <SelectTrigger
                     id="qns-select"
-                    className="h-8 text-xs rounded-md w-full min-w-0"
+                    className="w-full min-w-0"
                   >
                     <SelectValue placeholder="Choose a note…">
                       <span className="truncate block max-w-full">

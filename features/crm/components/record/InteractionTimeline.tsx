@@ -28,7 +28,7 @@ import {
 } from "lucide-react";
 import { InboundLabelBadge } from "../outreach-lists/badges";
 import type { LucideIcon } from "lucide-react";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { ProInput } from "@/components/official/ProInput";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import {
@@ -401,7 +401,7 @@ export function InteractionTimeline({
                 onChange={(e) => setMinutes(e.target.value)}
                 placeholder="0"
                 inputMode="numeric"
-                className="h-11 w-16 text-base sm:h-6 sm:w-14 sm:text-xs"
+                className="w-16 sm:w-14"
               />
             </label>
           )}

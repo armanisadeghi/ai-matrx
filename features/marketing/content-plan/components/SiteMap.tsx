@@ -39,7 +39,7 @@ import {
 import { ChevronDown, ChevronUp, ZoomIn, ZoomOut } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { webLocation } from "@/features/marketing/lib/copy-payloads";
 import {
@@ -529,10 +529,10 @@ export function SiteMap({
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           placeholder="Search pages…"
-          className="h-7 w-52 text-xs"
+          className="w-52"
         />
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="h-7 w-32 text-xs">
+          <SelectTrigger className="w-32">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -545,7 +545,7 @@ export function SiteMap({
           </SelectContent>
         </Select>
         <Select value={keywordFilter} onValueChange={setKeywordFilter}>
-          <SelectTrigger className="h-7 w-36 text-xs">
+          <SelectTrigger className="w-36">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

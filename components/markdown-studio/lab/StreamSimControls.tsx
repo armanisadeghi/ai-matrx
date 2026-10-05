@@ -60,7 +60,7 @@ export function StreamSimControls({
           value={settings.strategy}
           onValueChange={(v) => set({ strategy: v as ChunkStrategy })}
         >
-          <SelectTrigger className="h-7 w-32 text-xs" aria-label="Chunk strategy">
+          <SelectTrigger className="w-32" aria-label="Chunk strategy">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

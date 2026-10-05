@@ -211,11 +211,10 @@ function AlchemyExamples() {
                 onChange={(event) => setPlainText(event.target.value)}
               />
               <Label htmlFor="alchemy-markdown">Draft Markdown</Label>
-              <Textarea
+              <Textarea mono
                 id="alchemy-markdown"
                 value={markdown}
                 onChange={(event) => setMarkdown(event.target.value)}
-                className="font-mono text-xs"
               />
               <div className="flex items-center justify-between gap-3 rounded-md border p-2">
                 <span className="text-sm text-muted-foreground">

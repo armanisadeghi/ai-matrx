@@ -470,11 +470,10 @@ export default function TableReferenceOverlay({
                   )}
                 </div>
               </div>
-              <Textarea
+              <Textarea mono
                 value={referenceJson}
                 readOnly
                 rows={Math.min(12, referenceJson.split("\n").length)}
-                className="text-xs font-mono bg-gray-50 dark:bg-gray-900"
               />
             </div>
           )}

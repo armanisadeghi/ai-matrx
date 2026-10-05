@@ -922,7 +922,7 @@ function BrokenRow({
             onValueChange={setRemapTarget}
             disabled={busy || availableValues === null}
           >
-            <SelectTrigger className="h-7 text-[11px] flex-1 min-w-0">
+            <SelectTrigger className="flex-1 min-w-0">
               <SelectValue placeholder="Pick a replacement…" />
             </SelectTrigger>
             <SelectContent>

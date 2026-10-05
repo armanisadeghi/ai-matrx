@@ -25,7 +25,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { FileText, Link2, Loader2, Search } from "lucide-react";
 import { Button } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 import {
@@ -251,7 +251,7 @@ function ScopeTypeAdder({
     <div className={fill ? "flex min-h-0 flex-1 flex-col gap-2" : "space-y-2"}>
       <div className="relative shrink-0">
         <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-        <Input
+        <Input adornment="start"
           data-reference-autofocus
           value={search}
           onChange={(e) => {
@@ -264,7 +264,6 @@ function ScopeTypeAdder({
             candidateRefs.current[0]?.focus();
           }}
           placeholder={`Search ${referenceTypeDisplayPlural("scope").toLowerCase()}…`}
-          className="h-8 pl-8 text-sm"
           style={{ fontSize: "16px" }}
         />
       </div>
@@ -689,7 +688,7 @@ function CandidateSearch({
     <div className={fill ? "flex min-h-0 flex-1 flex-col gap-2" : "space-y-2"}>
       <div className="relative shrink-0">
         <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-        <Input
+        <Input adornment="start"
           data-reference-autofocus
           value={query}
           onChange={(e) => {
@@ -702,7 +701,6 @@ function CandidateSearch({
             candidateRefs.current[0]?.focus();
           }}
           placeholder={`Search ${plural.toLowerCase()}…`}
-          className="h-8 pl-8 text-sm"
           style={{ fontSize: "16px" }}
         />
         {loading && (

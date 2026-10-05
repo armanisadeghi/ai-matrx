@@ -23,7 +23,7 @@ import {
   SITE_CSV_COLUMNS,
 } from "@/features/cms/copy";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
@@ -344,18 +344,16 @@ export default function SitesListPage() {
                       value={newName}
                       onChange={(e) => handleNameChange(e.target.value)}
                       placeholder="My Website"
-                      className="text-sm"
                     />
                   </div>
                   <div>
                     <label className="text-sm font-medium block mb-1.5">
                       Slug
                     </label>
-                    <Input
+                    <Input mono
                       value={newSlug}
                       onChange={(e) => setNewSlug(e.target.value)}
                       placeholder="my-website"
-                      className="text-sm font-mono"
                     />
                     <p className="text-xs text-muted-foreground mt-1">
                       URL identifier — lowercase letters, numbers, and hyphens
@@ -369,7 +367,6 @@ export default function SitesListPage() {
                       value={newDomain}
                       onChange={(e) => setNewDomain(e.target.value)}
                       placeholder="www.example.com"
-                      className="text-sm"
                     />
                   </div>
                 </div>

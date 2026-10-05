@@ -25,7 +25,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { cn } from "@/lib/utils";
 
 import { slugify, type ExpandedArchetype } from "../archetypes";
@@ -312,7 +312,7 @@ export function SetupWorkOrderColumn({
                           );
                         }}
                         /* 16px on mobile: anything smaller makes iOS zoom on focus. */
-                        className="h-9 w-16 px-1.5 text-center text-base tabular-nums md:h-7 md:text-sm"
+                        className="w-16 text-center"
                       />
                       <Button
                         icon={<Plus />}
@@ -622,7 +622,7 @@ function ConceptRow({
                 placeholder={`Name this section`}
                 aria-label={`Custom name for ${item.label}`}
                 /* 16px on mobile: anything smaller makes iOS zoom on focus. */
-                className="h-6 w-36 px-1.5 text-base sm:text-[11px]"
+                className="w-36"
               />
               <Button variant="primary" type="submit">
                 Use

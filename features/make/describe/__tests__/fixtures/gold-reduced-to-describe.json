@@ -1,0 +1,584 @@
+{
+ "specVersion": 1,
+ "id": "pebblecreek-station-tire-new-customer-requests-and-first-appointments",
+ "useCase": "Hana Inglewood is the manager at Pebblecreek Station Tire, a tire and alignment shop in Missoula, and she uses this to carry every new customer from an unanswered inquiry to a first appointment with a technician named on it.",
+ "industry": "automotive",
+ "vertical": "Tire shop",
+ "job": "intake",
+ "audience": "organization",
+ "teaches": "forms",
+ "business": {
+  "name": "Pebblecreek Station Tire",
+  "describes": "A tire and alignment shop in Missoula with two bays and a Saturday-morning customer line.",
+  "address": {
+   "line1": "88 Depot Spur Rd",
+   "city": "Missoula",
+   "region": "MT",
+   "postalCode": "59802",
+   "country": "US"
+  },
+  "phone": "(406) 555-0140",
+  "website": "pebblecreekstationtire.net",
+  "email": "front@pebblecreekstationtire.net",
+  "timezone": "America/Denver"
+ },
+ "cleanupTag": "use-case:pebblecreek-station-tire-new-customer-requests-and-first-appointments",
+ "tables": [
+  {
+   "token": "intake",
+   "name": "New customers",
+   "labelSingular": "New customer",
+   "labelPlural": "New customers",
+   "type": "entity",
+   "display": "grid",
+   "weight": "light",
+   "ordered": false,
+   "titleField": "customer_name",
+   "describes": "Everyone who has asked for a first appointment, from the first contact to the day they roll in.",
+   "fields": [
+    {
+     "key": "customer_name",
+     "label": "Customer",
+     "parityType": "text",
+     "sensitivity": "confidential",
+     "contextPolicy": "summarize",
+     "required": true,
+     "askOfSubject": true
+    },
+    {
+     "key": "phone",
+     "label": "Phone",
+     "parityType": "phone",
+     "sensitivity": "confidential",
+     "contextPolicy": "exclude",
+     "format": "phone",
+     "askOfSubject": true
+    },
+    {
+     "key": "email",
+     "label": "Email",
+     "parityType": "email",
+     "sensitivity": "confidential",
+     "contextPolicy": "exclude",
+     "format": "email",
+     "askOfSubject": true
+    },
+    {
+     "key": "vehicle",
+     "label": "Vehicle",
+     "parityType": "text",
+     "sensitivity": "internal",
+     "contextPolicy": "include"
+    },
+    {
+     "key": "tire_size",
+     "label": "Tire size",
+     "parityType": "text",
+     "sensitivity": "internal",
+     "contextPolicy": "include",
+     "help": "Printed on the side of the tire, like 225/60R17."
+    },
+    {
+     "key": "service",
+     "label": "Service",
+     "parityType": "relation",
+     "sensitivity": "internal",
+     "contextPolicy": "include",
+     "relationTarget": "service",
+     "relationMax": 1
+    },
+    {
+     "key": "service_price",
+     "label": "Menu price",
+     "parityType": "lookup",
+     "sensitivity": "internal",
+     "contextPolicy": "include",
+     "via": "service",
+     "pick": "price",
+     "source": "formula",
+     "computeOn": "read"
+    },
+    {
+     "key": "how_found",
+     "label": "How they found us",
+     "parityType": "select",
+     "sensitivity": "public",
+     "contextPolicy": "include",
+     "choices": [
+      "Drove by",
+      "Google search",
+      "Referral",
+      "Fleet account",
+      "Returning customer"
+     ],
+     "choiceColors": {
+      "Drove by": "slate",
+      "Google search": "green",
+      "Referral": "amber",
+      "Fleet account": "red",
+      "Returning customer": "blue"
+     }
+    },
+    {
+     "key": "first_contact_on",
+     "label": "First contact",
+     "parityType": "datetime",
+     "sensitivity": "internal",
+     "contextPolicy": "include",
+     "format": "date",
+     "default": "@today"
+    },
+    {
+     "key": "slot",
+     "label": "Appointment",
+     "parityType": "datetime",
+     "sensitivity": "internal",
+     "contextPolicy": "include",
+     "required": true,
+     "format": "datetime",
+     "businessDays": true,
+     "help": "The day and hour of the first visit."
+    },
+    {
+     "key": "status",
+     "label": "Status",
+     "parityType": "select",
+     "sensitivity": "internal",
+     "contextPolicy": "include",
+     "choices": [
+      "New request",
+      "Booked",
+      "Completed",
+      "Cancelled",
+      "No-show"
+     ],
+     "choiceColors": {
+      "New request": "amber",
+      "Booked": "blue",
+      "Completed": "green",
+      "Cancelled": "slate",
+      "No-show": "red"
+     },
+     "required": true,
+     "default": "New request"
+    },
+    {
+     "key": "quote_amount",
+     "label": "Quote",
+     "parityType": "currency",
+     "sensitivity": "confidential",
+     "contextPolicy": "summarize",
+     "unit": "USD",
+     "format": "currency",
+     "rules": [
+      {
+       "kind": "min",
+       "value": 0
+      },
+      {
+       "kind": "max",
+       "value": 3000
+      }
+     ]
+    },
+    {
+     "key": "tech",
+     "label": "Technician",
+     "parityType": "relation",
+     "sensitivity": "internal",
+     "contextPolicy": "include",
+     "relationTarget": "team_member",
+     "relationMax": 1
+    },
+    {
+     "key": "notes",
+     "label": "Notes",
+     "parityType": "long_text",
+     "sensitivity": "internal",
+     "contextPolicy": "include"
+    }
+   ],
+   "rows": [],
+   "icon": "car",
+   "subject": "person",
+   "before": [
+    [
+     "first_contact_on",
+     "slot"
+    ]
+   ],
+   "childDates": [
+    {
+     "relation": "tech",
+     "field": "slot",
+     "parentField": "start_date"
+    }
+   ],
+   "statusImplies": [
+    {
+     "field": "status",
+     "when": [
+      "Booked",
+      "Completed"
+     ],
+     "filled": [
+      "tech"
+     ]
+    },
+    {
+     "field": "status",
+     "when": [
+      "Completed"
+     ],
+     "filled": [
+      "quote_amount"
+     ]
+    }
+   ],
+   "independentOf": {
+    "service": "The service on the menu has no date or status of its own to agree with the visit."
+   }
+  },
+  {
+   "token": "service",
+   "name": "Services",
+   "labelSingular": "Service",
+   "labelPlural": "Services",
+   "type": "entity",
+   "display": "grid",
+   "weight": "light",
+   "ordered": false,
+   "titleField": "service_name",
+   "describes": "The menu of work the shop sells, with the usual price and how long it holds a bay.",
+   "fields": [
+    {
+     "key": "service_name",
+     "label": "Service",
+     "parityType": "text",
+     "sensitivity": "public",
+     "contextPolicy": "include",
+     "required": true
+    },
+    {
+     "key": "category",
+     "label": "Category",
+     "parityType": "select",
+     "sensitivity": "public",
+     "contextPolicy": "include",
+     "choices": [
+      "Maintenance",
+      "Repair",
+      "Tires",
+      "Alignment"
+     ],
+     "choiceColors": {
+      "Maintenance": "slate",
+      "Repair": "green",
+      "Tires": "amber",
+      "Alignment": "red"
+     }
+    },
+    {
+     "key": "price",
+     "label": "Usual price",
+     "parityType": "currency",
+     "sensitivity": "public",
+     "contextPolicy": "include",
+     "unit": "USD",
+     "format": "currency",
+     "rules": [
+      {
+       "kind": "min",
+       "value": 0
+      },
+      {
+       "kind": "max",
+       "value": 2000
+      }
+     ]
+    },
+    {
+     "key": "minutes",
+     "label": "Minutes",
+     "parityType": "integer",
+     "sensitivity": "public",
+     "contextPolicy": "include",
+     "rules": [
+      {
+       "kind": "min",
+       "value": 10
+      },
+      {
+       "kind": "max",
+       "value": 240
+      }
+     ]
+    },
+    {
+     "key": "requests",
+     "label": "Requests",
+     "parityType": "relation",
+     "sensitivity": "internal",
+     "contextPolicy": "include",
+     "relationTarget": "intake",
+     "multi": true
+    },
+    {
+     "key": "booked_value",
+     "label": "Booked value",
+     "parityType": "rollup",
+     "sensitivity": "internal",
+     "contextPolicy": "include",
+     "via": "requests",
+     "pick": "quote_amount",
+     "agg": "sum",
+     "unit": "USD",
+     "format": "currency",
+     "filter": {
+      "status": "Booked"
+     }
+    }
+   ],
+   "rows": [],
+   "icon": "wrench",
+   "subject": "thing"
+  }
+ ],
+ "relationships": [
+  {
+   "describes": "Each request is for one service on the menu.",
+   "fromTable": "intake",
+   "fromField": "service",
+   "toTable": "service",
+   "flavor": "referenced",
+   "cardinality": "many",
+   "onDelete": "set_null",
+   "inverseKey": "intake_service_back"
+  },
+  {
+   "describes": "One technician takes each booked visit.",
+   "fromTable": "intake",
+   "fromField": "tech",
+   "toTable": "team_member",
+   "flavor": "referenced",
+   "cardinality": "one",
+   "onDelete": "set_null",
+   "inverseKey": "intake_tech_back"
+  },
+  {
+   "describes": "A service lists the requests that asked for it, so booked dollars add up.",
+   "fromTable": "service",
+   "fromField": "requests",
+   "toTable": "intake",
+   "flavor": "referenced",
+   "cardinality": "many",
+   "onDelete": "restrict",
+   "inverseKey": "service_requests_back"
+  }
+ ],
+ "sharedBlocks": [
+  {
+   "block": "team_member",
+   "rows": [
+    {
+     "key": "hana",
+     "values": {
+      "full_name": "Hana Inglewood",
+      "role": "Shop manager",
+      "work_email": "hana.inglewood@pebblecreekstationtire.net",
+      "mobile": "(406) 555-0141",
+      "start_date": "@today-8y"
+     }
+    },
+    {
+     "key": "teodoro",
+     "values": {
+      "full_name": "Teodoro Marchetti-Lowe",
+      "role": "Lead technician",
+      "work_email": "teodoro.marchetti-lowe@pebblecreekstationtire.net",
+      "mobile": "(406) 555-0142",
+      "start_date": "@today-6y"
+     }
+    },
+    {
+     "key": "aurelia",
+     "values": {
+      "full_name": "Aurelia Stonebridge",
+      "role": "Tire technician",
+      "work_email": "aurelia.stonebridge@pebblecreekstationtire.net",
+      "mobile": "(406) 555-0143",
+      "start_date": "@today-2y"
+     }
+    },
+    {
+     "key": "bastian",
+     "values": {
+      "full_name": "Bastian Quirke",
+      "role": "Service writer",
+      "work_email": "bastian.quirke@pebblecreekstationtire.net",
+      "mobile": "(406) 555-0144",
+      "start_date": "@today-3y"
+     }
+    }
+   ]
+  }
+ ],
+ "views": [
+  {
+   "token": "visit_calendar",
+   "name": "Visit calendar",
+   "table": "intake",
+   "kind": "calendar",
+   "dateField": "slot",
+   "isDefault": true
+  }
+ ],
+ "forms": [
+  {
+   "token": "request_an_appointment",
+   "name": "Request an appointment",
+   "describes": "Anyone new reaches this from the shop website or the QR code on the window.",
+   "audience": "public",
+   "table": "intake",
+   "fields": [
+    {
+     "fieldKey": "customer_name",
+     "ask": "What name should we put on the work order?",
+     "required": true
+    },
+    {
+     "fieldKey": "phone",
+     "ask": "What number can we reach you at?",
+     "required": true
+    },
+    {
+     "fieldKey": "email",
+     "ask": "What email can we send your quote to?"
+    },
+    {
+     "fieldKey": "vehicle",
+     "ask": "What year, make and model do you drive?",
+     "required": true
+    },
+    {
+     "fieldKey": "tire_size",
+     "ask": "Do you know your tire size?",
+     "help": "It is printed on the side of the tire."
+    },
+    {
+     "fieldKey": "service",
+     "ask": "What do you need done?"
+    },
+    {
+     "fieldKey": "how_found",
+     "ask": "How did you hear about us?"
+    },
+    {
+     "fieldKey": "slot",
+     "ask": "When would you like to come in?",
+     "required": true
+    }
+   ],
+   "submitLabel": "Ask for this time",
+   "confirmation": "Thanks. Someone from the front counter rings you by the next business day to lock in the time."
+  }
+ ],
+ "dimensions": [],
+ "extras": [
+  {
+   "kind": "booking",
+   "token": "book_a_first_visit",
+   "title": "Book a first visit",
+   "table": "intake",
+   "bookedStages": [
+    "Booked"
+   ],
+   "questions": [
+    {
+     "fieldKey": "customer_name",
+     "ask": "What name should we put on the work order?",
+     "required": true
+    },
+    {
+     "fieldKey": "phone",
+     "ask": "What number can we reach you at?",
+     "required": true
+    },
+    {
+     "fieldKey": "vehicle",
+     "ask": "What year, make and model do you drive?",
+     "required": true
+    },
+    {
+     "fieldKey": "service",
+     "ask": "What do you need done?"
+    },
+    {
+     "fieldKey": "notes",
+     "ask": "Is there anything we should know?"
+    }
+   ],
+   "availability": {
+    "timezone": "America/Denver",
+    "slotMinutes": 60,
+    "bufferMinutes": 0,
+    "leadMinutes": 120,
+    "maxPerDay": 8,
+    "days": 14,
+    "windows": [
+     {
+      "weekday": 1,
+      "from": "08:00",
+      "to": "12:00"
+     },
+     {
+      "weekday": 1,
+      "from": "13:00",
+      "to": "17:00"
+     },
+     {
+      "weekday": 2,
+      "from": "08:00",
+      "to": "12:00"
+     },
+     {
+      "weekday": 2,
+      "from": "13:00",
+      "to": "17:00"
+     },
+     {
+      "weekday": 3,
+      "from": "08:00",
+      "to": "12:00"
+     },
+     {
+      "weekday": 3,
+      "from": "13:00",
+      "to": "17:00"
+     },
+     {
+      "weekday": 4,
+      "from": "08:00",
+      "to": "12:00"
+     },
+     {
+      "weekday": 4,
+      "from": "13:00",
+      "to": "17:00"
+     },
+     {
+      "weekday": 5,
+      "from": "08:00",
+      "to": "12:00"
+     },
+     {
+      "weekday": 5,
+      "from": "13:00",
+      "to": "17:00"
+     }
+    ]
+   }
+  }
+ ],
+ "version": 1
+}

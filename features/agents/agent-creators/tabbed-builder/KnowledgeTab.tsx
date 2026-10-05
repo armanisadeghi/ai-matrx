@@ -66,7 +66,6 @@ const KnowledgeContent: React.FC<KnowledgeContentProps> = ({ updateContent }) =>
                 id={`knowledge-${option.id}`}
                 checked={knowledgeOptions.includes(option.id)}
                 onCheckedChange={() => toggleKnowledgeOption(option.id)}
-                className="data-[state=checked]:bg-indigo-600 dark:data-[state=checked]:bg-indigo-500"
               />
               <Label 
                 htmlFor={`knowledge-${option.id}`} 

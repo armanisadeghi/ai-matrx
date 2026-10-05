@@ -28,7 +28,7 @@ import {
   Zap
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   Select,
   SelectContent,
@@ -148,7 +148,7 @@ export function DocumentOpsPanel({ fileId }: Props) {
               value={compressLevel}
               onValueChange={(v) => setCompressLevel(v as "1" | "2" | "3")}
             >
-              <SelectTrigger className="h-7 flex-1 text-[11px]">
+              <SelectTrigger className="flex-1">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -191,7 +191,7 @@ export function DocumentOpsPanel({ fileId }: Props) {
               min={2}
               value={splitParts}
               onChange={(e) => setSplitParts(e.target.value)}
-              className="h-7 w-20 text-[11px]"
+              className="w-20"
             />
           </div>
         </OpCard>

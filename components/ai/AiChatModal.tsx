@@ -6,7 +6,7 @@ import { useAppSelector, useAppDispatch } from '@/lib/redux/hooks';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Button as SurfaceButton } from "@ai-matrx/design-system";
-import { Textarea } from '@/components/ui/textarea';
+import { TextareaLegacy as Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ArrowUp } from 'lucide-react';
 import { useAiChat } from '@/hooks/flashcard-app/useAiChat';

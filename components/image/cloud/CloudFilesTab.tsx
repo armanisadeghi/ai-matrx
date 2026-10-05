@@ -27,7 +27,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import Link from "next/link";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
@@ -244,11 +244,10 @@ export function CloudFilesTab({
         </Link>
         <div className="relative w-full sm:w-48 max-sm:order-2">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
+          <Input adornment="start"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Filter in folder..."
-            className="pl-8 h-8 text-base"
             style={{ fontSize: "16px" }}
           />
         </div>

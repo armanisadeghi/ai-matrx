@@ -29,7 +29,7 @@ import { toast } from "@/lib/toast";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Switch } from "@/components/ui/switch";
 import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
 import { kindSchemaToJsonSchema } from "@ai-matrx/content-ir";
@@ -339,11 +339,10 @@ export default function KindRegistryAdminClient() {
         </div>
         <div className="relative ml-auto w-64">
           <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input
+          <Input adornment="start"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search slug, label, or row id"
-            className="h-8 pl-8 text-sm"
           />
         </div>
         <Button

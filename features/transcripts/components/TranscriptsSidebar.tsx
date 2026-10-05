@@ -8,7 +8,7 @@ import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotic
 import React, { useState, useMemo } from "react";
 import { useTranscripts } from "../hooks/useTranscripts";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -168,11 +168,10 @@ export function TranscriptsSidebar({
         {/* Search */}
         <div className="relative">
           <Search className="absolute left-2.5 md:left-3 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 md:h-4 md:w-4 text-muted-foreground" />
-          <Input
+          <Input adornment="start"
             placeholder="Search transcripts..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-8 md:pl-9 h-9 text-sm md:text-base"
             style={{ fontSize: "16px" }}
           />
         </div>
@@ -276,7 +275,6 @@ export function TranscriptsSidebar({
                     <Input
                       value={renameValue}
                       onChange={(e) => setRenameValue(e.target.value)}
-                      className="h-8 text-sm"
                       style={{ fontSize: "16px" }}
                       autoFocus
                       disabled={renameBusy}

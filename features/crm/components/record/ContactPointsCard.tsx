@@ -32,7 +32,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   Select,
   SelectContent,
@@ -367,7 +367,7 @@ export function ContactPointsCard({
             value={channel}
             onValueChange={(v) => setChannel(v as ContactChannel)}
           >
-            <SelectTrigger className="h-11 w-24 text-base sm:h-7 sm:text-xs">
+            <SelectTrigger className="w-24">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -395,14 +395,14 @@ export function ContactPointsCard({
                   ? "+1 310 555 1234"
                   : "Value"
             }
-            className="h-11 min-w-[10rem] flex-1 text-base sm:h-7 sm:text-xs"
+            className="min-w-[10rem] flex-1"
             autoFocus
           />
           <Input
             value={label}
             onChange={(e) => setLabel(e.target.value)}
             placeholder="Label"
-            className="h-11 w-24 text-base sm:h-7 sm:w-20 sm:text-xs"
+            className="w-24 sm:w-20"
           />
           <Button
             variant="primary"

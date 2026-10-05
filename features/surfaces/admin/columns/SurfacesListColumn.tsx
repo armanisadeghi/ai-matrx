@@ -5,7 +5,7 @@ import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount"
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ChevronDown, Layers, Layers3, Search, Link2 } from "lucide-react";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { cn } from "@/styles/themes/utils";
 import {

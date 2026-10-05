@@ -6,7 +6,7 @@ import AppLink from "@/components/navigation/AppLink";
 import { ArrowLeft, Loader2, Play, AlertTriangle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { PdfBinaryResult } from "@/features/pdf-demo/components/PdfBinaryResult";
 import {
   EMPTY_PDF_SOURCE,

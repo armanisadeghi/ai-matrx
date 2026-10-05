@@ -315,7 +315,7 @@ export default function AdminEmailPage() {
                       onChange={(e) => setCustomEmails(e.target.value)}
                       placeholder="Enter email addresses (one per line or comma-separated)"
                       rows={3}
-                      className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                      className="w-full resize-none"
                     />
                     <p className="text-xs text-muted-foreground mt-1">
                       Separate multiple emails with commas or new lines

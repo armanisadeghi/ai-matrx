@@ -21,7 +21,7 @@ import { useMutation } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   Select,
   SelectContent,
@@ -172,11 +172,10 @@ function MeaningEditor({
             setD({ ...d, label: e.target.value, value: d.id ? d.value : slugify(e.target.value) })
           }
           placeholder="What this answer is called (e.g. CRT equipment)"
-          className="h-8 text-sm"
         />
         <div className="flex items-center gap-1.5">
           <Select value={d.worth_effect} onValueChange={(v) => setD({ ...d, worth_effect: v })}>
-            <SelectTrigger className="h-8 w-28 text-xs">
+            <SelectTrigger className="w-28">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -210,7 +209,7 @@ function MeaningEditor({
             })
           }
         >
-          <SelectTrigger className="h-8 w-44 text-xs">
+          <SelectTrigger className="w-44">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -218,18 +217,18 @@ function MeaningEditor({
             <SelectItem value="platform">A registry dimension</SelectItem>
           </SelectContent>
         </Select>
-        <Input
+        <Input mono
           value={d.dimension_slug}
           onChange={(e) => setD({ ...d, dimension_slug: e.target.value })}
           placeholder={d.dimension_scope === "site" ? "qualifiers | geo" : "audience_type"}
-          className="h-8 w-44 font-mono text-xs"
+          className="w-44"
         />
         <span className="text-xs text-muted-foreground">is</span>
-        <Input
+        <Input mono
           value={d.value}
           onChange={(e) => setD({ ...d, value: e.target.value })}
           placeholder="value slug, e.g. business"
-          className="h-8 w-44 font-mono text-xs"
+          className="w-44"
         />
       </div>
       <p className="text-[11px] text-muted-foreground">
@@ -284,7 +283,7 @@ function MeaningEditor({
         ) : null}
         <div className="flex flex-wrap items-center gap-1.5">
           <Select value={phraseKind} onValueChange={setPhraseKind}>
-            <SelectTrigger className="h-7 w-28 text-xs">
+            <SelectTrigger className="w-28">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -295,7 +294,7 @@ function MeaningEditor({
               ))}
             </SelectContent>
           </Select>
-          <Input
+          <Input mono
             value={phrase}
             onChange={(e) => setPhrase(e.target.value)}
             onKeyDown={(e) => {
@@ -305,7 +304,7 @@ function MeaningEditor({
               }
             }}
             placeholder="phrase, e.g. data destruction"
-            className="h-7 min-w-40 flex-1 font-mono text-xs"
+            className="min-w-40 flex-1"
           />
           <Button icon={<Plus />} variant="outline" onClick={addPhrase}> Add phrase
           </Button>
@@ -316,7 +315,6 @@ function MeaningEditor({
         value={d.description}
         onChange={(e) => setD({ ...d, description: e.target.value })}
         placeholder="What this catches, for a non-technical reader"
-        className="h-8 text-sm"
       />
       <ProTextarea
         value={d.notes}

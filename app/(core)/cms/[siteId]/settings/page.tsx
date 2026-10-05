@@ -8,7 +8,7 @@ import {
   SiteNotEmptyError,
 } from "@/features/cms/services/cmsService";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
@@ -312,15 +312,13 @@ export default function SiteSettingsPage() {
                 <Input
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="text-sm"
                 />
               </div>
               <div>
                 <label className="text-sm font-medium block mb-1.5">Slug</label>
-                <Input
+                <Input mono
                   value={slug}
                   onChange={(e) => setSlug(e.target.value)}
-                  className="text-sm font-mono"
                 />
               </div>
             </div>
@@ -336,7 +334,6 @@ export default function SiteSettingsPage() {
                     setDomain(normalizeDomainInput(e.target.value))
                   }
                   placeholder="www.example.com"
-                  className="text-sm"
                 />
                 <p className="text-xs text-muted-foreground mt-1.5">
                   Desired serving host (lowercase). Saving it does not redirect
@@ -351,7 +348,6 @@ export default function SiteSettingsPage() {
                   value={favicon}
                   onChange={(e) => setFavicon(e.target.value)}
                   placeholder="https://..."
-                  className="text-sm"
                 />
               </div>
             </div>
@@ -398,11 +394,10 @@ export default function SiteSettingsPage() {
                 CSS applied to all pages. Use this for base styles, typography,
                 and layout.
               </p>
-              <Textarea
+              <Textarea mono minHeight={200}
                 value={globalCss}
                 onChange={(e) => setGlobalCss(e.target.value)}
                 placeholder="/* Global styles for all pages */\n\nbody {\n  font-family: system-ui, sans-serif;\n}"
-                className="font-mono text-sm min-h-[200px]"
               />
             </section>
 

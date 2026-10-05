@@ -20,7 +20,7 @@ import {
   Network,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsListLegacy as TabsList, TabsTriggerLegacy as TabsTrigger } from "@/components/ui/tabs";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { formatSessionTimestamp } from "@/features/agent-connections/coding-sessions/verdict";
 import { ConversationAnalyzePanel } from "@/features/ai-work/analysis/ConversationAnalyzePanel";

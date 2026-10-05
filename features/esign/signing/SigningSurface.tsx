@@ -739,7 +739,6 @@ export function SigningSurface({
           </DialogHeader>
           <Textarea
             value={declineReason}
-            className="text-base"
             placeholder="I need changes to section 3"
             onChange={(e) => setDeclineReason(e.target.value)}
           />

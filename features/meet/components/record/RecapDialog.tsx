@@ -23,7 +23,7 @@ import {
   type FollowUpSendResult,
   type MeetingId,
 } from "@ai-matrx/meet/react";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
@@ -170,14 +170,13 @@ export function RecapDialog({
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
                 aria-label="Subject"
-                className="h-9"
                 maxLength={200}
               />
-              <Textarea
+              <Textarea minHeight={288} maxHeight={288}
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
                 aria-label="Message"
-                className="h-72 resize-y text-sm leading-relaxed"
+                className="resize-y"
               />
             </div>
             <div className="min-w-0 space-y-2">

@@ -22,7 +22,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
@@ -270,7 +270,7 @@ function SetCandidateBody({
           }}
           disabled={busy || liveRungPending}
         >
-          <SelectTrigger className="h-9 w-full max-w-[22rem]" aria-label="Applies to" aria-busy={liveRungPending || undefined}>
+          <SelectTrigger className="w-full max-w-[22rem]" aria-label="Applies to" aria-busy={liveRungPending || undefined}>
             <SelectValue placeholder={liveRungPending ? "Finding the live level…" : undefined} />
           </SelectTrigger>
           <SelectContent>
@@ -295,7 +295,7 @@ function SetCandidateBody({
           <Input
             id="candidate-runs"
             inputMode="numeric"
-            className="h-9 w-24"
+            className="w-24"
             value={runs}
             placeholder={defaultRuns ? String(defaultRuns) : "Default"}
             onChange={(event) => setRuns(event.target.value.replace(/[^0-9]/g, ""))}

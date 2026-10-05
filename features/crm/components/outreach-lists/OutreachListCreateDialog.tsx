@@ -8,7 +8,7 @@
 import { useState } from "react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import {
   Dialog,
@@ -118,7 +118,6 @@ export function OutreachListCreateDialog({
                 if (e.key === "Enter") void submit();
               }}
               placeholder="Q3 outreach — med device leads"
-              className="h-9 text-sm"
             />
           </div>
           <div className="space-y-1">

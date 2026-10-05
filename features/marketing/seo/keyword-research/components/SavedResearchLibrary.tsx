@@ -24,9 +24,9 @@ import { Button } from "@/components/ui/button";
 import {
   ArchiveFilter,
   DEFAULT_ARCHIVE_FILTER,
-  Input,
   type ArchiveFilterValue,
 } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   Popover,
   PopoverContent,
@@ -116,11 +116,10 @@ export default function SavedResearchLibrary({
           <div className="flex items-center gap-1.5">
             <div className="relative flex-1">
               <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-              <Input
+              <Input adornment="start"
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder="Search primary keyword…"
-                className="h-11 pl-7 text-base"
               />
             </div>
             {cleanedSearch ? (

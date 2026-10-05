@@ -50,7 +50,7 @@ import {
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
     Tooltip,
     TooltipContent,
@@ -491,7 +491,7 @@ export function SourceDetailPanel({
                             className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
                             aria-hidden="true"
                         />
-                        <Input
+                        <Input adornment="start"
                             value={query}
                             onChange={(e) => setQuery(e.target.value)}
                             onKeyDown={(e) => {
@@ -502,7 +502,6 @@ export function SourceDetailPanel({
                             }}
                             placeholder="Search this transcript"
                             aria-label="Search this transcript"
-                            className="h-11 pl-8 text-base"
                         />
                     </div>
                     <span className="shrink-0 whitespace-nowrap text-xs tabular-nums text-muted-foreground">

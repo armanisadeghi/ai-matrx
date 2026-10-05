@@ -9,7 +9,7 @@ import { useCanvasItems } from "@/features/canvas/hooks/useCanvasItems";
 import { useOpenCanvasItem } from "@/features/canvas/hooks/useOpenCanvasItem";
 import { Archive, Search, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   Select,
   SelectContent,
@@ -167,12 +167,11 @@ export function SavedCanvasItems() {
           {/* Search */}
           <div className="relative min-w-0 flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
+            <Input adornment="start"
               type="text"
               placeholder="Search saved items..."
               value={searchQuery}
               onChange={(e) => handleSearch(e.target.value)}
-              className="pl-9"
             />
           </div>
 

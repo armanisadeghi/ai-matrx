@@ -325,7 +325,6 @@ export function AutomationButton({
                 }
                 rows={2}
                 placeholder={ask.placeholder || ""}
-                className="text-[12px]"
               />
             </div>
           ))}

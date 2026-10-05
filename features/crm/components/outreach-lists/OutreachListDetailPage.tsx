@@ -779,7 +779,7 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
                 onValueChange={(value) => void chooseSendingIdentity(value)}
                 disabled={mailboxesLoading || mailboxSaving}
               >
-                <SelectTrigger className="h-7 min-w-64 text-xs">
+                <SelectTrigger className="min-w-64">
                   <SelectValue
                     placeholder={
                       mailboxesLoading

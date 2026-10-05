@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -345,7 +345,7 @@ function MappingRow({
           onValueChange={onMapTypeChange}
           disabled={disabled}
         >
-          <SelectTrigger className="h-6 w-[140px] text-[11px] shrink-0">
+          <SelectTrigger className="w-[140px] shrink-0">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -471,7 +471,7 @@ function SurfaceValueInput({
           onValueChange={(v) => onChange({ ...mapping, target: v })}
           disabled={disabled}
         >
-          <SelectTrigger className="h-7 text-[11px]">
+          <SelectTrigger>
             <SelectValue placeholder="Pick a surface value…" />
           </SelectTrigger>
           <SelectContent>
@@ -603,7 +603,7 @@ function OfferedValueInput({
           }}
           disabled={disabled}
         >
-          <SelectTrigger className="h-7 text-[11px]">
+          <SelectTrigger>
             <SelectValue placeholder="Pick an offered value…" />
           </SelectTrigger>
           <SelectContent>
@@ -636,7 +636,7 @@ function OfferedValueInput({
           }
           disabled={disabled}
         >
-          <SelectTrigger className="h-7 w-[110px] text-[11px] shrink-0">
+          <SelectTrigger className="w-[110px] shrink-0">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -663,7 +663,7 @@ function OfferedValueInput({
             }
             disabled={disabled}
           >
-            <SelectTrigger className="h-7 w-[150px] text-[11px]">
+            <SelectTrigger className="w-[150px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -679,7 +679,6 @@ function OfferedValueInput({
                 onChange({ ...mapping, default: e.target.value })
               }
               placeholder="Default value"
-              className="h-7 text-[11px]"
               style={{ fontSize: "13px" }}
               disabled={disabled}
             />
@@ -730,7 +729,7 @@ function DirectValueInput({
           onValueChange={(v) => onChange({ ...mapping, target: v === "true" })}
           disabled={disabled}
         >
-          <SelectTrigger className="h-7 text-[11px]">
+          <SelectTrigger>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -739,12 +738,11 @@ function DirectValueInput({
           </SelectContent>
         </Select>
       ) : isJson ? (
-        <Textarea
+        <Textarea mono
           value={raw}
           onChange={(e) => onRawChange(e.target.value)}
           rows={3}
           placeholder={targetType === "array" ? "[]" : "{}"}
-          className="font-mono text-[11px]"
           style={{ fontSize: "13px" }}
           disabled={disabled}
         />
@@ -753,7 +751,6 @@ function DirectValueInput({
           value={raw}
           onChange={(e) => onRawChange(e.target.value)}
           placeholder={targetType === "number" ? "0" : "Direct value…"}
-          className="h-7 text-[11px]"
           style={{ fontSize: "13px" }}
           disabled={disabled}
         />
@@ -792,7 +789,6 @@ function PromptUserInput({
           value={mapping.prompt}
           onChange={(e) => onChange({ ...mapping, prompt: e.target.value })}
           placeholder="What do you want to ask the user?"
-          className="h-7 text-[11px]"
           style={{ fontSize: "13px" }}
           disabled={disabled}
         />
@@ -811,7 +807,6 @@ function PromptUserInput({
               })
             }
             placeholder="Pre-filled input value"
-            className="h-7 text-[11px]"
             style={{ fontSize: "13px" }}
             disabled={disabled}
           />

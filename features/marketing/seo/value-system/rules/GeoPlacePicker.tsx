@@ -24,7 +24,7 @@ import { useState } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { Building2, Flag, Loader2, MapPin, Navigation, Search, X } from "lucide-react";
 import { cn } from "@/styles/themes/utils";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
 import { useDebounce } from "@ai-matrx/kit/hooks";
 import { geoPlaceSearchQueryKey, searchGeoPlaces } from "./data";
@@ -80,11 +80,10 @@ export function GeoPlacePicker({
           className="pointer-events-none absolute top-1/2 left-2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"
           aria-hidden
         />
-        <Input
+        <Input adornment="start"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Search cities, states, or “near me”"
-          className="h-8 pl-7 text-sm"
         />
         {results.isFetching ? (
           <Loader2

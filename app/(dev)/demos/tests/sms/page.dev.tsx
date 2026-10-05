@@ -29,28 +29,28 @@ export default function SMSTestPage() {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
           <div className="flex-shrink-0 border-b bg-card/30 backdrop-blur-sm">
             <div className="container mx-auto px-4">
-              <TabsList className="w-full justify-start h-12 bg-transparent">
-                <TabsTrigger value="send" className="gap-2">
+              <TabsList variant="underline" className="w-full justify-start">
+                <TabsTrigger value="send">
                   <Send className="h-4 w-4" />
                   Send SMS
                 </TabsTrigger>
-                <TabsTrigger value="verify" className="gap-2">
+                <TabsTrigger value="verify">
                   <Phone className="h-4 w-4" />
                   Verify Phone
                 </TabsTrigger>
-                <TabsTrigger value="conversations" className="gap-2">
+                <TabsTrigger value="conversations">
                   <MessageSquare className="h-4 w-4" />
                   Conversations
                 </TabsTrigger>
-                <TabsTrigger value="preferences" className="gap-2">
+                <TabsTrigger value="preferences">
                   <Settings className="h-4 w-4" />
                   Preferences
                 </TabsTrigger>
-                <TabsTrigger value="analytics" className="gap-2">
+                <TabsTrigger value="analytics">
                   <BarChart3 className="h-4 w-4" />
                   Analytics
                 </TabsTrigger>
-                <TabsTrigger value="webhooks" className="gap-2">
+                <TabsTrigger value="webhooks">
                   <Webhook className="h-4 w-4" />
                   Webhook Logs
                 </TabsTrigger>

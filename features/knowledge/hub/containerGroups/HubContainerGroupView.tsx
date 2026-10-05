@@ -33,7 +33,7 @@ import {
   X,
 } from "lucide-react";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/utils/cn";
 import { HUB_HUE_TONE, type HubKindTone } from "@/features/knowledge/hub/hubPresentation";
@@ -96,12 +96,11 @@ export function HubContainerGroupView({ token, group, onGroupChange }: HubContai
     <div className="flex min-h-0 flex-1 flex-col gap-2" data-testid={`hub-group-${token}`}>
       <div className="relative">
         <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
+        <Input adornment="start"
           value={group.q ?? ""}
           onChange={(e) => set("q", e.target.value, true)}
           placeholder={`Filter ${HUB_GROUP_LABEL[token].toLowerCase()} by name…`}
           aria-label={`Filter ${HUB_GROUP_LABEL[token].toLowerCase()} by name`}
-          className="h-9 pl-8"
         />
       </div>
       {token === "data_store" ? <DataStoresGroup group={group} /> : null}

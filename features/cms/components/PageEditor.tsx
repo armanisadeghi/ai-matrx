@@ -45,7 +45,8 @@ import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextM
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import { Button } from "@/components/ui/button";
-import { Input, Button as SurfaceButton } from "@ai-matrx/design-system";
+import { Button as SurfaceButton } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { ProTextarea } from "@/components/official/ProTextarea";
@@ -1099,7 +1100,6 @@ export default function PageEditor({
                         value={ogImage}
                         onChange={(e) => setOgImage(e.target.value)}
                         placeholder="https://…"
-                        className="text-sm"
                       />
                     </div>
                     <div>
@@ -1110,7 +1110,6 @@ export default function PageEditor({
                         value={canonicalUrl}
                         onChange={(e) => setCanonicalUrl(e.target.value)}
                         placeholder="https://…"
-                        className="text-sm"
                       />
                     </div>
 
@@ -1143,11 +1142,10 @@ export default function PageEditor({
                         <label className="text-sm font-medium text-foreground block mb-1.5">
                           Slug
                         </label>
-                        <Input
+                        <Input mono
                           value={slug}
                           onChange={(e) => setSlug(e.target.value)}
                           placeholder="page-slug"
-                          className="text-sm font-mono"
                         />
                       </div>
                       <div>
@@ -1158,7 +1156,6 @@ export default function PageEditor({
                           value={category}
                           onChange={(e) => setCategory(e.target.value)}
                           placeholder="general"
-                          className="text-sm"
                         />
                       </div>
                     </div>
@@ -1211,7 +1208,6 @@ export default function PageEditor({
                         value={tags}
                         onChange={(e) => setTags(e.target.value)}
                         placeholder="tag1, tag2, tag3"
-                        className="text-sm"
                       />
                     </div>
                     <div className="flex items-center gap-6">

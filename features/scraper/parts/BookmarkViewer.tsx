@@ -128,10 +128,9 @@ const BookmarkViewer = ({ pageData }: { pageData: unknown }) => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <Textarea
+              <Textarea minHeight={128}
                 value={importText}
                 onChange={(e) => setImportText(e.target.value)}
-                className="min-h-32"
                 placeholder="Paste your bookmark JSON here..."
               />
               <Button variant="primary" onClick={handleImport}>Import</Button>

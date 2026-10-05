@@ -12,7 +12,7 @@ import { useState } from "react";
 import { Loader2, Plus, Ruler, Save, Trash2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import { useSaveSiteMediaStandards } from "@/features/marketing/data/hooks";
@@ -169,7 +169,7 @@ export function MediaStandardsView({
                 updateSlot(slot.id, { name: event.target.value })
               }
               placeholder="Slot name (Hero, OG card…)"
-              className="col-span-2 h-7 text-xs sm:col-span-1"
+              className="col-span-2 sm:col-span-1"
             />
             <Input
               value={slot.width ?? ""}
@@ -178,7 +178,6 @@ export function MediaStandardsView({
               }
               placeholder="W"
               inputMode="numeric"
-              className="h-7 text-xs"
             />
             <Input
               value={slot.height ?? ""}
@@ -187,7 +186,6 @@ export function MediaStandardsView({
               }
               placeholder="H"
               inputMode="numeric"
-              className="h-7 text-xs"
             />
             <Input
               value={slot.format ?? ""}
@@ -197,7 +195,6 @@ export function MediaStandardsView({
                 })
               }
               placeholder="webp"
-              className="h-7 text-xs"
             />
             <Input
               value={slot.maxKb ?? ""}
@@ -206,7 +203,6 @@ export function MediaStandardsView({
               }
               placeholder="KB"
               inputMode="numeric"
-              className="h-7 text-xs"
             />
             <button
               type="button"

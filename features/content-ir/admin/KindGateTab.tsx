@@ -259,12 +259,12 @@ export default function KindGateTab({
       )}
 
       {selectedId === PASTED && (
-        <Textarea
+        <Textarea mono minHeight={192} maxHeight={192}
           value={pasted}
           onChange={(e) => setPasted(e.target.value)}
           placeholder={`{ "__kind": "${kind}", ... }`}
           spellCheck={false}
-          className="h-48 w-full rounded-md border border-border bg-card p-2 font-mono text-xs text-foreground"
+          className="w-full"
         />
       )}
 

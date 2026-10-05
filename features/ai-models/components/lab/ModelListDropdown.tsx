@@ -61,7 +61,6 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
 import { useModelFavorites } from "@/features/ai-models/hooks/useModelFavorites";
 import {
-  Input,
   Popover,
   PopoverTrigger,
   PopoverContent,
@@ -71,6 +70,7 @@ import {
   TooltipTrigger,
   selectTriggerVariants,
 } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { useDialogContainer } from "@/components/ui/dialog";
 import {
   Drawer,
@@ -2080,12 +2080,11 @@ export function ModelListDropdown({
       <div className="flex items-center gap-1.5 border-b border-border p-2">
         <div className="relative flex-1">
           <Search className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input
+          <Input adornment="start"
             ref={inputRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search models…"
-            className="h-7 pl-7 text-xs"
           />
         </div>
         <button

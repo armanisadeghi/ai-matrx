@@ -585,7 +585,7 @@ export function NoteEditor({
             value={editorMode}
             onValueChange={(value) => handleModeChange(value as EditorMode)}
           >
-            <SelectTrigger className="w-[36px] h-7 p-0 border-border">
+            <SelectTrigger className="w-[36px]">
               <div className="flex items-center justify-center w-full">
                 {editorMode === "plain" && <FileText className="h-3.5 w-3.5" />}
                 {editorMode === "wysiwyg" && (
@@ -670,7 +670,7 @@ export function NoteEditor({
               handleFolderChange(value);
             }}
           >
-            <SelectTrigger className="w-[140px] h-7 text-xs">
+            <SelectTrigger className="w-[140px]">
               <div className="flex items-center gap-1.5 min-w-0 w-full">
                 <FolderOpen className="h-3 w-3 flex-shrink-0" />
                 <div className="truncate flex-1 min-w-0">

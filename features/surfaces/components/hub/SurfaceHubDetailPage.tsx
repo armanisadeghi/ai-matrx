@@ -22,7 +22,6 @@
  */
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import {
   BookText,
   Building2,
@@ -31,8 +30,7 @@ import {
   Wrench,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
-import PageHeader from "@/features/shell/components/header/PageHeader";
-import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
+import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
@@ -68,7 +66,6 @@ type HubScope =
 
 export function SurfaceHubDetailPage({ segments }: { segments: string[] }) {
   const surfaceName = USER_CLIENT_PREFIX + segments.join("/");
-  const router = useRouter();
   const dispatch = useAppDispatch();
   const manifest = getManifest(surfaceName);
   const userId = useAppSelector((s) => s.userAuth?.id ?? null);
@@ -105,21 +102,11 @@ export function SurfaceHubDetailPage({ segments }: { segments: string[] }) {
 
   return (
     <>
-      <PageHeader>
-        <div className="flex w-full min-w-0 items-center gap-0 p-0">
-          <ChevronLeftTapButton
-            onClick={() => router.back()}
-            variant="transparent"
-            ariaLabel="Back"
-          />
-          <h1 className="ml-2 truncate text-sm font-medium text-foreground">
-            {label}
-          </h1>
-          <span className="ml-2 hidden truncate font-mono text-[11px] text-muted-foreground sm:inline">
-            {surfaceName}
-          </span>
-        </div>
-      </PageHeader>
+      <RecordPageHeader
+        backHref="/surfaces"
+        parents={[{ label: "Surfaces", href: "/surfaces" }]}
+        record={{ name: label }}
+      />
       <div className="h-full overflow-hidden">
         <div
           className="h-full overflow-y-auto"
@@ -444,6 +431,7 @@ function DictionaryPanel({
           pronunciation{pronCount === 1 ? "" : "s"} in effect.
         </p>
         <Button
+          size="sm"
           variant="outline"
           onClick={() => openDictionary({ surfaceKey: surfaceName })}
         >
@@ -541,7 +529,7 @@ function NamespaceConfigPanel({
               {JSON.stringify(merged, null, 2)}
             </pre>
           </details>
-          <Button variant="primary" onClick={() => void save()} disabled={saving}>
+          <Button size="sm" onClick={() => void save()} disabled={saving}>
             {saving ? "Saving…" : "Save"}
           </Button>
         </div>

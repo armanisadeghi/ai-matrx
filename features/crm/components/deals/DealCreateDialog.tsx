@@ -12,7 +12,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Building2, Loader2, Search, User, X } from "lucide-react";
 import { recordToast, toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import {
   Dialog,
@@ -215,7 +215,6 @@ export function DealCreateDialog({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Acme — annual plan"
-              className="h-9 text-sm"
               autoFocus
             />
           </div>
@@ -231,7 +230,7 @@ export function DealCreateDialog({
                   setStageId(p?.stages.find((s) => !s.outcome)?.id ?? "");
                 }}
               >
-                <SelectTrigger className="h-9 text-sm">
+                <SelectTrigger>
                   <SelectValue placeholder="Pipeline" />
                 </SelectTrigger>
                 <SelectContent>
@@ -246,7 +245,7 @@ export function DealCreateDialog({
             <div className="space-y-1">
               <Label className="text-xs">Stage</Label>
               <Select value={stageId} onValueChange={setStageId}>
-                <SelectTrigger className="h-9 text-sm">
+                <SelectTrigger>
                   <SelectValue placeholder="Stage" />
                 </SelectTrigger>
                 <SelectContent>
@@ -272,7 +271,6 @@ export function DealCreateDialog({
                 onChange={(e) => setAmount(e.target.value)}
                 inputMode="decimal"
                 placeholder="e.g. 12500"
-                className="h-9 text-sm"
               />
             </div>
             <div className="space-y-1">
@@ -281,7 +279,7 @@ export function DealCreateDialog({
               </Label>
               {/* A fixed set is a picker, never a free-text box. */}
               <Select value={currency} onValueChange={setCurrency}>
-                <SelectTrigger id="deal-currency" className="h-9 text-sm">
+                <SelectTrigger id="deal-currency">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -319,11 +317,10 @@ export function DealCreateDialog({
             ) : (
               <div className="relative">
                 <Search className="pointer-events-none absolute left-2 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-                <Input
+                <Input adornment="start"
                   value={partySearch}
                   onChange={(e) => setPartySearch(e.target.value)}
                   placeholder="Search your contacts…"
-                  className="h-9 pl-7 text-sm"
                 />
                 {(partyResults.length > 0 || searching || searched) &&
                   partySearch.trim() && (
@@ -371,7 +368,6 @@ export function DealCreateDialog({
               type="date"
               value={expectedClose}
               onChange={(e) => setExpectedClose(e.target.value)}
-              className="h-9 text-sm"
             />
           </div>
         </div>

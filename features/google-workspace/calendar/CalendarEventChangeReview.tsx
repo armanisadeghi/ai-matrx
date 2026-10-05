@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ExternalLink } from "lucide-react";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 
 import { Button } from "@/components/ui/button";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -175,10 +175,10 @@ function ReturnedResultFacts({ attempt }: { attempt: CalendarChangeAttempt }) {
     <p>Reviewed account: {attempt.action.preview.account_email}</p>
     <p>Returned account: {result.account_email}</p>
     <label className="grid gap-1 font-medium text-muted-foreground">Reviewed event
-      <Input readOnly value={attempt.action.preview.event_id} className="font-mono" />
+      <Input mono readOnly value={attempt.action.preview.event_id} />
     </label>
     <label className="grid gap-1 font-medium text-muted-foreground">Returned event
-      <Input readOnly value={result.event_id} className="font-mono" />
+      <Input mono readOnly value={result.event_id} />
     </label>
     <p>Reviewed version: {attempt.action.preview.etag}</p>
     <p>Returned version: {result.etag}</p>
@@ -574,7 +574,7 @@ export function CalendarEventChangeReview(props: CalendarEventChangeReviewProps)
           <p>Calendar: {activeAttempt.calendar_summary}</p>
           <p>Event: {activeAttempt.action.preview.event_summary}</p>
           <label className="grid gap-1 font-medium text-muted-foreground">Target event
-            <Input readOnly value={activeAttempt.target_event_id} className="font-mono" />
+            <Input mono readOnly value={activeAttempt.target_event_id} />
           </label>
           <p>Target scope: {activeAttempt.occurrence}</p>
           <p>Reviewed version: {activeAttempt.action.request.expected_etag}</p>

@@ -198,7 +198,7 @@ export function LibraryPublishPanel({
 
         <Tabs defaultValue="industry" className="mt-1">
           {/* phone-ok: three short segments fit a 390px strip */}
-          <TabsList className="grid grid-cols-3">
+          <TabsList fill>
             <TabsTrigger value="industry">
               <Layers className="mr-1.5 h-3.5 w-3.5" /> Industry
             </TabsTrigger>

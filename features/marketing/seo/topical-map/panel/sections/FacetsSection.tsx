@@ -199,7 +199,7 @@ function FacetValuePicker({
       disabled={busy}
     >
       <SelectTrigger
-        className="h-6 w-auto gap-1 border-dashed px-1.5 text-[11px] text-muted-foreground"
+        className="w-auto"
         aria-label={`${label} ${facet.label}`}
       >
         <Icon className="h-3 w-3" aria-hidden />

@@ -30,7 +30,7 @@ import {
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { CaptureThumb } from "@/features/media-capture/components/CaptureThumb";
 import { OrganizationTag } from "./OrganizationTag";
 import { toast } from "@/lib/toast";

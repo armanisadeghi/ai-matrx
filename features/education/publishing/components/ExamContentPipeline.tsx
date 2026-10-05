@@ -9,7 +9,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -422,7 +422,7 @@ export function ExamContentPipeline() {
               onValueChange={setExamSlug}
               disabled={running}
             >
-              <SelectTrigger id="content-exam" className="min-h-11">
+              <SelectTrigger id="content-exam">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -463,7 +463,7 @@ export function ExamContentPipeline() {
           </Label>
           <Input
             id="content-source-search"
-            className="mt-2 min-h-11"
+            className="mt-2"
             value={sourceQuery}
             onChange={(event) => setSourceQuery(event.target.value)}
             placeholder="Filter source titles"

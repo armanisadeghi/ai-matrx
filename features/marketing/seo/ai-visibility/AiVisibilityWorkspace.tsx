@@ -31,7 +31,7 @@ import { ProTextarea } from "@/components/official/ProTextarea";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   InlineQueryError,
   StatusBadge,
@@ -910,14 +910,14 @@ export function AiVisibilityWorkspace({
             }
             aria-label="Country code"
             placeholder="US"
-            className="h-8 w-20 uppercase"
+            className="w-20"
           />
           <Input
             value={city}
             onChange={(event) => setCity(event.target.value)}
             aria-label="Optional city"
             placeholder="Optional city"
-            className="h-8 w-48"
+            className="w-48"
           />
           <label className="flex items-center gap-2 px-1 text-xs text-muted-foreground">
             <Checkbox

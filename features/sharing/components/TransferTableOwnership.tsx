@@ -173,7 +173,6 @@ export function TransferTableOwnership({
               <Label htmlFor="transfer-reason">Why</Label>
               <Textarea
                 id="transfer-reason"
-                className="text-base sm:text-sm"
                 rows={3}
                 maxLength={500}
                 value={reason}

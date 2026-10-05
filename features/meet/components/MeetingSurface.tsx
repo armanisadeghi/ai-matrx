@@ -37,7 +37,7 @@ import {
 import type { MeetDiagnostic } from "@ai-matrx/meet/react";
 import { supabase } from "@/utils/supabase/client";
 import { ArrowLeft, Loader2 } from "lucide-react";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { meetBaseUrl } from "@/features/meet/lib/meetBaseUrl";
@@ -443,7 +443,6 @@ function GuestRoom({
               placeholder="How should we announce you?"
               autoComplete="name"
               autoFocus
-              className="text-base"
             />
           </div>
           <Button variant="primary" type="submit" disabled={typedName.trim().length === 0}>

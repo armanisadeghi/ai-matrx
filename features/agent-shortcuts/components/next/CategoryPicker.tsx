@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Plus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import {
   Dialog,
@@ -147,7 +147,6 @@ function NewCategoryDialog({
               onChange={(e) => setLabel(e.target.value)}
               placeholder="e.g. Editing Tools"
               disabled={busy}
-              className="h-9 text-sm"
               style={{ fontSize: "16px" }}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !busy) {

@@ -110,8 +110,8 @@ export function MemberVaultAccessControl({
 
   return (
     <Select value={value} onValueChange={(v) => void change(v)} disabled={saving}>
-      <SelectTrigger
-        className="h-7 w-auto gap-1 border-none px-2 text-xs text-muted-foreground shadow-none hover:bg-accent"
+      <SelectTrigger variant="bare"
+        className="w-auto"
         aria-label={`${memberName}'s access to the organization vault`}
         data-member-vault-access={memberUserId}
       >

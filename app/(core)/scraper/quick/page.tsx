@@ -14,7 +14,7 @@ import { SaveSourceButton } from "@/features/sources/SaveSourceButton";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Loader2,
@@ -246,7 +246,7 @@ export default function QuickScrapePage() {
               }}
               onKeyDown={handleKeyDown}
               disabled={isAnyLoading}
-              className="flex-1 h-8 text-sm"
+              className="flex-1"
               style={{ fontSize: "16px" }}
             />
             {data || fullResult ? (
@@ -487,11 +487,11 @@ export default function QuickScrapePage() {
                         onValueChange={setQuickContentTab}
                         className="w-full"
                       >
-                        <TabsList className="mb-3 h-9">
-                          <TabsTrigger value="pretty" className="text-xs">
+                        <TabsList className="mb-3">
+                          <TabsTrigger value="pretty">
                             Pretty
                           </TabsTrigger>
-                          <TabsTrigger value="text" className="text-xs">
+                          <TabsTrigger value="text">
                             Plain text
                           </TabsTrigger>
                         </TabsList>

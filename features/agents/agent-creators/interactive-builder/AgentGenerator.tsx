@@ -57,7 +57,7 @@ const GENERATOR_SHORTCUT = getSystemShortcut("agent-generator-01");
 const TOAST_POSITION = "top-center" as const;
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   Hammer,
   Check,
@@ -758,7 +758,6 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
                   value={agentName}
                   onChange={(e) => setAgentName(e.target.value)}
                   placeholder="Enter a name for your new agent"
-                  className="text-base"
                   style={{ fontSize: "16px" }}
                   disabled={isSaving}
                 />

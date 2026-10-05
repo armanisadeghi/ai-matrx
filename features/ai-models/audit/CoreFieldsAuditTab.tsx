@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { CheckCircle2, Loader2, Save, SaveAll } from "lucide-react";
 import {
   MatrxDataTable,
@@ -165,7 +165,7 @@ export default function CoreFieldsAuditTab({
           onChange={(event) =>
             setVal(r.model, "common_name", event.target.value)
           }
-          className={`h-7 text-xs ${!r.model.common_name && !editValues[r.model.id]?.common_name ? "border-destructive/50" : ""}`}
+          className={` ${!r.model.common_name && !editValues[r.model.id]?.common_name ? "border-destructive/50" : ""}`}
           placeholder="Common name…"
         />
       ),
@@ -185,13 +185,12 @@ export default function CoreFieldsAuditTab({
       filter: "number",
       width: 130,
       cell: (r) => (
-        <Input
+        <Input mono
           type="number"
           value={getVal(r.model, "context_window")}
           onChange={(event) =>
             setVal(r.model, "context_window", event.target.value)
           }
-          className="h-7 font-mono text-xs"
           placeholder="128000"
         />
       ),
@@ -203,13 +202,12 @@ export default function CoreFieldsAuditTab({
       filter: "number",
       width: 130,
       cell: (r) => (
-        <Input
+        <Input mono
           type="number"
           value={getVal(r.model, "max_tokens")}
           onChange={(event) =>
             setVal(r.model, "max_tokens", event.target.value)
           }
-          className="h-7 font-mono text-xs"
           placeholder="4096"
         />
       ),

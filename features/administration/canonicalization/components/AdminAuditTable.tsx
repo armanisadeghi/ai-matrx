@@ -21,7 +21,7 @@ import { toast } from "@/lib/toast";
 
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Skeleton } from "@ai-matrx/design-system";
 import GenericTablePagination from "@ai-matrx/design-system/data-table/pagination";
 import { cn } from "@/lib/utils";
@@ -423,11 +423,10 @@ export function AdminAuditTable<T>({
       <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2">
         <div className="relative min-w-[200px] flex-1">
           <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input
+          <Input adornment="start"
             placeholder="Search all columns…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="h-8 pl-7 text-base"
           />
         </div>
         {toolbarExtra}

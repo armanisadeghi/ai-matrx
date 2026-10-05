@@ -30,7 +30,7 @@ import { toast } from "@/lib/toast";
 import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@ai-matrx/design-system";
@@ -272,7 +272,7 @@ export function OrgPrivacyTab({ organizationId, canEdit }: OrgPrivacyTabProps) {
                         handleCancelEditingBudget();
                       }
                     }}
-                    className="h-7 w-24 text-sm tabular-nums text-base md:text-sm"
+                    className="w-24"
                     disabled={pref.saving}
                     autoFocus
                   />

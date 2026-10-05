@@ -35,7 +35,7 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowUpRight, Layers, Search, Tag, X } from "lucide-react";
 import { cn } from "@/styles/themes/utils";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
 import { formatCount } from "@/features/marketing/search-console/types";
@@ -130,12 +130,11 @@ export function DimensionSearchField({
   return (
     <div className="relative min-w-0 flex-1 sm:max-w-xs">
       <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-      <Input
+      <Input adornment="both"
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder="Search answers and matches…"
         aria-label="Search this site's dimensions, answers and matches"
-        className="h-8 pl-8 pr-8 text-xs"
       />
       {value ? (
         <Button

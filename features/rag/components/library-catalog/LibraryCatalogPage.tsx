@@ -45,7 +45,7 @@ import {
 } from "lucide-react";
 import { recordToast, toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
@@ -333,11 +333,10 @@ export function LibraryCatalogPage() {
           <div className="space-y-2 border-b p-3">
             <div className="relative">
               <Search className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-              <Input
+              <Input adornment="start"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search the Library…"
-                className="h-8 pl-7 text-xs"
               />
             </div>
             <div className="flex flex-wrap gap-1">

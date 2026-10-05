@@ -10,7 +10,7 @@ import { useEffect, useRef, useState } from "react";
 import { ChevronDown, Search, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 import {
@@ -41,7 +41,6 @@ export function ArmSetupCard({
           value={draft.label}
           onChange={(e) => onChange({ ...draft, label: e.target.value })}
           placeholder="Arm name"
-          className="h-8 text-sm font-medium"
         />
         {removable && (
           <Button
@@ -129,7 +128,6 @@ function WorkflowSelect({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search workflows…"
-            className="h-8 rounded-b-none border-0 border-b border-border text-sm"
           />
           <div className="max-h-56 overflow-y-auto p-1">
             {loading && (

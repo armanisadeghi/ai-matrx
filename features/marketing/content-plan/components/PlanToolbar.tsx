@@ -18,7 +18,7 @@ import { useState } from "react";
 import { ExternalLink, Loader2, PenLine, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import {
   Popover,
@@ -366,7 +366,6 @@ export function PlanToolbar({
                     const value = Number(event.target.value);
                     if (Number.isFinite(value)) setMaxNodes(value);
                   }}
-                  className="h-8 text-sm"
                 />
                 <p className="mt-1 text-xs text-muted-foreground">
                   10–150. The generator stops at this many planned pages.

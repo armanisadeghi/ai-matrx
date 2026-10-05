@@ -41,7 +41,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { usePages } from "@/features/file-analysis/hooks/usePages";
@@ -533,7 +533,7 @@ function PagesInput({
         if (e.key === "Enter") commit();
       }}
       placeholder="e.g. 1,3-5"
-      className="ml-2 h-6 w-24 text-[10px]"
+      className="ml-2 w-24"
     />
   );
 }

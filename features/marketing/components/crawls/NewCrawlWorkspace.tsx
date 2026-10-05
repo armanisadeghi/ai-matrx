@@ -478,7 +478,7 @@ export function NewCrawlWorkspace() {
                     if (isCrawlRenderMode(value)) update("render_mode", value);
                   }}
                 >
-                  <SelectTrigger className="h-8">
+                  <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -539,11 +539,11 @@ export function NewCrawlWorkspace() {
                     <Label htmlFor={item.id} className="text-[11px]">
                       {item.label}
                     </Label>
-                    <Textarea
+                    <Textarea mono minHeight={0}
                       id={item.id}
                       rows={2}
                       spellCheck={false}
-                      className="min-h-0 font-mono text-xs"
+                      className="min-h-0"
                       value={item.value}
                       disabled={controlsDisabled}
                       onChange={(event) => item.onChange(event.target.value)}

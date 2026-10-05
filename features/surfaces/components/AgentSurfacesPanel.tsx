@@ -40,7 +40,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import {
   Collapsible,
@@ -396,11 +396,10 @@ export function AgentSurfacesPanel({ agent }: Props) {
       <div className="shrink-0 px-3 pt-2.5 pb-2 space-y-2 border-b border-border bg-muted/20">
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <Input
+          <Input adornment="start"
             placeholder="Search surfaces…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="h-8 pl-8 text-sm"
             style={{ fontSize: "16px" }}
           />
         </div>
@@ -996,7 +995,7 @@ function BindingEditorDialog({
                 }}
                 disabled={busy || !!existing}
               >
-                <SelectTrigger className="text-sm">
+                <SelectTrigger>
                   <SelectValue placeholder="Pick a client…" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1140,7 +1139,7 @@ function SurfacePicker({
 
   return (
     <Select value={value} onValueChange={onChange} disabled={disabled}>
-      <SelectTrigger className="text-sm">
+      <SelectTrigger>
         <SelectValue placeholder={placeholder}>
           {value ? getSurfaceDisplayLabel(value) : null}
         </SelectValue>
@@ -1149,13 +1148,12 @@ function SurfacePicker({
         <div className="sticky top-0 z-10 bg-popover border-b border-border p-1.5">
           <div className="relative">
             <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-            <Input
+            <Input adornment="start"
               autoFocus
               placeholder="Search…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               onKeyDown={(e) => e.stopPropagation()}
-              className="h-7 pl-7 text-xs"
               style={{ fontSize: "16px" }}
             />
           </div>

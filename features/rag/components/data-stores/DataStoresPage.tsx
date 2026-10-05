@@ -46,7 +46,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import {
@@ -517,7 +517,6 @@ function CreateStoreInline({
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="Name (e.g. Smith case)"
-        className="h-8 text-xs"
         autoFocus
       />
       <select
@@ -537,7 +536,6 @@ function CreateStoreInline({
         value={description}
         onChange={(e) => setDescription(e.target.value)}
         placeholder="Description (optional)"
-        className="h-8 text-xs"
       />
       <div className="flex items-center gap-1.5">
         <Button
@@ -1214,11 +1212,10 @@ function AddMemberForm({
       </label>
       <label className="flex-1 flex flex-col gap-1 text-xs">
         <span className="text-muted-foreground">source_id (UUID)</span>
-        <Input
+        <Input mono
           value={sourceId}
           onChange={(e) => setSourceId(e.target.value)}
           placeholder="e.g. 7bf8b4f1-…"
-          className="h-8 text-xs font-mono"
         />
       </label>
       <label className="flex-1 flex flex-col gap-1 text-xs">
@@ -1227,7 +1224,6 @@ function AddMemberForm({
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           placeholder="why?"
-          className="h-8 text-xs"
         />
       </label>
       <div className="flex items-center gap-1.5">
@@ -1282,7 +1278,6 @@ function EditStoreForm({
         <Input
           value={draft.name}
           onChange={(e) => setDraft({ ...draft, name: e.target.value })}
-          className="h-8 text-xs"
         />
       </label>
       <label className="flex flex-col gap-1 text-xs">
@@ -1309,15 +1304,13 @@ function EditStoreForm({
         <Input
           value={draft.description}
           onChange={(e) => setDraft({ ...draft, description: e.target.value })}
-          className="h-8 text-xs"
         />
       </label>
       <label className="flex flex-col gap-1 text-xs">
         <span className="text-muted-foreground">Short code</span>
-        <Input
+        <Input mono
           value={draft.shortCode}
           onChange={(e) => setDraft({ ...draft, shortCode: e.target.value })}
-          className="h-8 text-xs font-mono"
         />
       </label>
       <label className="flex items-center gap-2 text-xs cursor-pointer">

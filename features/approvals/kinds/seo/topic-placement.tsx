@@ -30,7 +30,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { cn } from "@/styles/themes/utils";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
@@ -229,7 +229,6 @@ function RejectChooser({ scope, items, onChosen, onCancel }: ApprovalChooserProp
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           placeholder="Find an offering…"
-          className="text-base sm:text-sm"
           aria-label="Find an offering"
         />
         <div className="max-h-64 overflow-y-auto rounded-md border border-border">

@@ -108,7 +108,7 @@ export function SeoCapabilitiesWorkspace() {
             disabled={isNavigating}
           >
             <SelectTrigger
-              className="h-8 w-full sm:w-80"
+              className="w-full sm:w-80"
               aria-label="Website for evidence links"
             >
               <SelectValue />

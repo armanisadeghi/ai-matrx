@@ -61,7 +61,7 @@ import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { Button } from "@ai-matrx/design-system";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   Select,
   SelectContent,
@@ -456,7 +456,6 @@ function InlineAdd({
           if (e.key === "Escape") onCancel();
         }}
         placeholder={placeholder}
-        className="h-8"
         style={{ fontSize: "16px" }}
       />
       <Button size="sm" className="h-8" onClick={() => onCommit(v)}>
@@ -1512,7 +1511,7 @@ export function ContextAssignmentField({
                 setOrgId(v);
               }}
             >
-              <SelectTrigger className="h-9 w-full shrink-0 sm:w-[260px]">
+              <SelectTrigger className="w-full shrink-0 sm:w-[260px]">
                 {/* div (not span): the trigger's [&>span]:line-clamp-1 forces
                     -webkit-box display and would break this flex row */}
                 <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
@@ -1534,11 +1533,10 @@ export function ContextAssignmentField({
           )}
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
+            <Input adornment="start"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={searchPlaceholderForDimensions(dims)}
-              className="h-9 pl-9"
               style={{ fontSize: "16px" }}
             />
           </div>

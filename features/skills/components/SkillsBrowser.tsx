@@ -15,7 +15,7 @@ import {
 
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
@@ -134,7 +134,7 @@ export function SkillsBrowser({
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search skills…"
-          className="h-8 flex-1"
+          className="flex-1"
         />
         <ScopeChips value={scope} onChange={setScope} />
         <CategoryDropdown

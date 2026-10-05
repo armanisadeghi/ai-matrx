@@ -244,7 +244,7 @@ export default function GenerateShellClient() {
               value={size}
               onValueChange={(v) => setSize(v as ImageGenerateSize)}
             >
-              <SelectTrigger className="h-9">
+              <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -262,7 +262,7 @@ export default function GenerateShellClient() {
               value={String(count)}
               onValueChange={(v) => setCount(parseInt(v, 10))}
             >
-              <SelectTrigger className="h-9">
+              <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

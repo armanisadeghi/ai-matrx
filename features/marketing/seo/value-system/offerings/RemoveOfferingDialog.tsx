@@ -22,7 +22,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input, Skeleton } from "@ai-matrx/design-system";
+import { Skeleton } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { cn } from "@/styles/themes/utils";
 import { extractErrorMessage } from "@/utils/errors";
@@ -140,7 +141,6 @@ export function RemoveOfferingDialog({
                             value={search}
                             onChange={(event) => setSearch(event.target.value)}
                             placeholder="Search this site's offerings…"
-                            className="h-9 text-base sm:text-sm"
                           />
                           <span className="block max-h-40 overflow-y-auto overscroll-contain rounded border border-border">
                             {choices.map((candidate) => (

@@ -13,7 +13,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Save, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
@@ -475,14 +475,13 @@ export function ScheduleForm({ task, initialAgentId, initialPrompt, initialTrigg
             optional
             error={errors.persistentConversationId}
           >
-            <Input
+            <Input mono
               id="conv-id"
               value={form.persistentConversationId}
               onChange={(e) =>
                 patch("persistentConversationId", e.target.value)
               }
               placeholder="conversation UUID — leave blank for heartbeat to auto-bind on first run"
-              className="font-mono text-xs"
             />
             <p className="text-xs text-muted-foreground mt-1">
               For heartbeat triggers, all runs append to this conversation.
@@ -722,7 +721,7 @@ export function ScheduleForm({ task, initialAgentId, initialPrompt, initialTrigg
                 }
               }}
               placeholder="Add tag, press Enter"
-              className="h-11 w-44 text-base sm:h-7 sm:text-xs"
+              className="w-44"
               maxLength={100}
             />
           </div>

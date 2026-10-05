@@ -24,7 +24,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Skeleton } from "@ai-matrx/design-system";
@@ -445,7 +445,6 @@ export function AssessmentEdit({ assessmentId }: { assessmentId: string }) {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               onBlur={() => void saveTitle()}
-              className="text-base"
             />
           </div>
 
@@ -608,7 +607,6 @@ function ItemEditor({
                     next[oi] = e.target.value;
                     onChange({ options: next as never });
                   }}
-                  className="text-sm"
                 />
                 <RadioGroupItem value={opt} aria-label="Mark correct" />
               </div>
@@ -620,7 +618,7 @@ function ItemEditor({
         <Input
           value={item.correct_answer ?? ""}
           onChange={(e) => onChange({ correct_answer: e.target.value })}
-          className="mt-2 text-sm"
+          className="mt-2"
           placeholder="Correct answer"
         />
       )}

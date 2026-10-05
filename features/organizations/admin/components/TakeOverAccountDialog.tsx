@@ -24,7 +24,7 @@ import React, { useEffect, useState } from "react";
 import { FolderInput, KeyRound, Loader2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -280,7 +280,6 @@ export function TakeOverAccountDialog({
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
                 rows={3}
-                className="text-base md:text-sm"
               />
             </div>
             {mode === "account" ? (
@@ -292,7 +291,6 @@ export function TakeOverAccountDialog({
                   autoComplete="new-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="text-base md:text-sm"
                 />
                 <p className="text-xs text-muted-foreground">At least {MIN_PASSWORD} characters.</p>
               </div>

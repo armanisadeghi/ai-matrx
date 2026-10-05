@@ -87,7 +87,7 @@ export default function ActivityFeedPanel({ sites }: { sites: ClientSiteSummary[
         <div className="flex flex-col h-full">
             <div className="flex-none flex items-center gap-2 px-1 py-2 flex-wrap">
                 <Select value={siteId} onValueChange={setSiteId}>
-                    <SelectTrigger className="h-7 w-[160px] text-xs">
+                    <SelectTrigger className="w-[160px]">
                         <SelectValue placeholder="All sites" />
                     </SelectTrigger>
                     <SelectContent>
@@ -101,7 +101,7 @@ export default function ActivityFeedPanel({ sites }: { sites: ClientSiteSummary[
                 </Select>
 
                 <Select value={entityType} onValueChange={setEntityType}>
-                    <SelectTrigger className="h-7 w-[130px] text-xs">
+                    <SelectTrigger className="w-[130px]">
                         <SelectValue placeholder="All entities" />
                     </SelectTrigger>
                     <SelectContent>
@@ -119,7 +119,7 @@ export default function ActivityFeedPanel({ sites }: { sites: ClientSiteSummary[
                 </Select>
 
                 <Select value={actor} onValueChange={setActor}>
-                    <SelectTrigger className="h-7 w-[120px] text-xs">
+                    <SelectTrigger className="w-[120px]">
                         <SelectValue placeholder="All actors" />
                     </SelectTrigger>
                     <SelectContent>

@@ -723,12 +723,11 @@ function ProviderEntryDetail({
         className="flex-1 flex flex-col overflow-hidden min-h-0"
       >
         <div className="shrink-0 border-b px-3">
-          <TabsList className="h-8 bg-transparent p-0 gap-0">
+          <TabsList variant="underline">
             {(["structured", "json", "our_db"] as const).map((t) => (
               <TabsTrigger
                 key={t}
                 value={t}
-                className="h-8 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent text-xs px-3"
               >
                 {t === "structured"
                   ? "Provider Data"

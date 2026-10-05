@@ -119,7 +119,7 @@ import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
 import { isUuidValue } from "@/components/official/entity-ref/doors";
 import { entityTokenForAgentScope } from "@/features/agent-shortcuts/constants";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -938,7 +938,7 @@ Select some text first to populate \`selection\`, \`text_before\`, and \`text_af
                     value={scope}
                     onValueChange={(v) => setScope(v as Scope)}
                   >
-                    <SelectTrigger className="h-8 text-xs">
+                    <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -959,11 +959,10 @@ Select some text first to populate \`selection\`, \`text_before\`, and \`text_af
                     </span>
                   </Label>
                   <div className="flex gap-1">
-                    <Input
+                    <Input mono
                       value={scopeIdOverride}
                       onChange={(e) => setScopeIdOverride(e.target.value)}
                       placeholder={resolvedScopeId ?? "—"}
-                      className="h-8 text-xs font-mono"
                     />
                     {scopeIdOverride && (
                       <Button
@@ -991,7 +990,7 @@ Select some text first to populate \`selection\`, \`text_before\`, and \`text_af
                     setSurfaceName(v === "__none__" ? "" : v)
                   }
                 >
-                  <SelectTrigger className="h-8 text-xs">
+                  <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>

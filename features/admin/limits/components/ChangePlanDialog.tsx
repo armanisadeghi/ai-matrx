@@ -37,7 +37,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { toast } from "@/lib/toast";
 import { applyFreeMonths, fetchFreeTimeKnobs } from "@/features/admin/users/service/coupons";
 import { refusalText, validateMonths } from "@/features/admin/users/lib/coupons";

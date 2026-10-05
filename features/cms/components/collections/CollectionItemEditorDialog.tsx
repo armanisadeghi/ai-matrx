@@ -325,13 +325,12 @@ export function CollectionItemEditorDialog({
       );
     } else if (field.type === "json") {
       control = (
-        <Textarea
+        <Textarea mono
           id={`item-field-${field.key}`}
           value={value}
           onChange={(e) => set(field.key, e.target.value)}
           rows={4}
           placeholder="{ }"
-          className="font-mono text-sm"
         />
       );
     } else {

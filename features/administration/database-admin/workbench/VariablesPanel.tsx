@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   Tooltip,
   TooltipContent,
@@ -92,11 +92,11 @@ export function VariablesPanel({
               >
                 <div className="p-2 space-y-1.5">
                   <div className="flex items-center gap-1.5 min-w-0">
-                    <Input
+                    <Input mono
                       placeholder="name"
                       value={v.name}
                       onChange={(e) => onUpdate(v.id, { name: e.target.value })}
-                      className="h-7 text-xs font-mono bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 min-w-0 flex-1"
+                      className="min-w-0 flex-1"
                     />
                     <Button
                       icon={<Trash2 />} aria-label="Remove variable"
@@ -106,11 +106,10 @@ export function VariablesPanel({
                       title="Remove variable"
                     />
                   </div>
-                  <Input
+                  <Input mono
                     placeholder="value"
                     value={v.value}
                     onChange={(e) => onUpdate(v.id, { value: e.target.value })}
-                    className="h-7 text-xs font-mono bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700"
                   />
                 </div>
                 {v.name && (

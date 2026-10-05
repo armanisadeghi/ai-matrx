@@ -52,7 +52,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Skeleton } from "@ai-matrx/design-system";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
 import { formatCount } from "@/features/marketing/search-console/types";
@@ -164,14 +164,12 @@ function InlineEdit({
         value={draftLabel}
         disabled={save.isPending}
         onChange={(event) => setDraftLabel(event.target.value)}
-        className="h-7 text-xs"
         placeholder="Name"
       />
       <Input
         value={draftDescription}
         disabled={save.isPending}
         onChange={(event) => setDraftDescription(event.target.value)}
-        className="h-7 border-dashed text-[11px]"
         placeholder="What does this mean? (optional)"
       />
       <div className="flex items-center gap-1">
@@ -257,12 +255,12 @@ function AddValueForm({
         never write is a lie. Currently accepted: {allowedHint}
       </p>
       <div className="flex flex-wrap gap-1.5">
-        <Input
+        <Input mono
           autoFocus
           value={value}
           disabled={add.isPending}
           onChange={(event) => setValue(event.target.value)}
-          className="h-7 min-w-[14rem] flex-1 font-mono text-[11px]"
+          className="min-w-[14rem] flex-1"
           data-identifier
           placeholder="value_written_by_the_classifier"
         />
@@ -271,7 +269,7 @@ function AddValueForm({
           disabled={add.isPending}
           onChange={(event) => setLabel(event.target.value)}
           placeholder="Name humans read"
-          className="h-7 min-w-[12rem] flex-1 text-xs"
+          className="min-w-[12rem] flex-1"
         />
       </div>
       <Input
@@ -279,7 +277,6 @@ function AddValueForm({
         disabled={add.isPending}
         onChange={(event) => setDescription(event.target.value)}
         placeholder="What does this value mean? (optional)"
-        className="h-7 border-dashed text-[11px]"
       />
       <div className="flex items-center gap-1">
         <Button

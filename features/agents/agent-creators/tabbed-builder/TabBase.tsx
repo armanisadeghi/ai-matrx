@@ -70,7 +70,6 @@ export const TabBase: React.FC<TabBaseProps> = ({
                 id={`enable-${id}`}
                 checked={isEnabled}
                 onCheckedChange={() => onToggle(id)}
-                className="data-[state=checked]:bg-indigo-600 dark:data-[state=checked]:bg-indigo-500"
               />
             </div>
           )}

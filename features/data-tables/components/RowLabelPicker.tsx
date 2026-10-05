@@ -115,7 +115,7 @@ export function RowLabelPicker({ tableId, metadata, fields, sampleRow, disabled,
           void save(value === DEFAULT ? null : { kind: "field", field: value });
         }}
       >
-        <SelectTrigger className="h-9">
+        <SelectTrigger>
           <SelectValue />
         </SelectTrigger>
         <SelectContent>

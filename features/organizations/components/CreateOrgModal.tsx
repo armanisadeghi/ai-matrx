@@ -11,7 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@ai-matrx/design-system";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
@@ -311,7 +311,7 @@ export function CreateOrgModal({
               minLength={2}
               maxLength={3}
               disabled={isSubmitting}
-              className="w-24 font-semibold uppercase tracking-wider"
+              className="w-24"
             />
             {!abbreviationValidation.valid && (
               <p

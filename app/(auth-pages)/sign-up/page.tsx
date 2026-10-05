@@ -8,7 +8,7 @@ import {
 } from "@/actions/auth.actions";
 import { AuthMessageType } from "@/components/form-message";
 import { SubmitButton } from "@/components/submit-button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import {
@@ -126,7 +126,7 @@ export default async function SignUp({ searchParams }: SignUpProps) {
               autoComplete="email"
               required
               defaultValue={invitedEmail ?? couponEmail ?? undefined}
-              className="appearance-none block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-neutral-700 dark:text-white"
+              className="block w-full"
               placeholder="you@example.com"
               data-lpignore="true"
             />
@@ -158,7 +158,7 @@ export default async function SignUp({ searchParams }: SignUpProps) {
               autoComplete="new-password"
               required
               minLength={6}
-              className="appearance-none block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-neutral-700 dark:text-white"
+              className="block w-full"
               placeholder="••••••••"
               data-lpignore="true"
             />
@@ -180,7 +180,7 @@ export default async function SignUp({ searchParams }: SignUpProps) {
               autoComplete="new-password"
               required
               minLength={6}
-              className="appearance-none block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-neutral-700 dark:text-white"
+              className="block w-full"
               placeholder="••••••••"
               data-lpignore="true"
             />

@@ -33,7 +33,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -937,14 +937,13 @@ export function GoogleWorkspaceReviewWorkspace({
                         </div>
                         <div className="space-y-1.5">
                           <Label htmlFor="sheet-values">Sheet values</Label>
-                          <Textarea
+                          <Textarea mono minHeight={160}
                             id="sheet-values"
                             value={sheetValues}
                             onChange={(event) =>
                               setSheetValues(event.currentTarget.value)
                             }
                             placeholder={"Name\tStatus\nExample\tReady"}
-                            className="min-h-40 font-mono text-xs"
                           />
                         </div>
                         <div className="flex flex-wrap gap-2">

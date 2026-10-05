@@ -27,7 +27,7 @@ import {
 } from "lucide-react";
 import { Youtube } from "@/components/icons/brand-icons";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { NotePickerPopover } from "@/features/notes/components/NotePickerPopover";
 import { NotesAPI } from "@/features/notes/service/notesApi";
@@ -178,7 +178,7 @@ function FetchResolver({
           <div className="flex items-center gap-2">
             <div className="relative flex-1">
               <Icon className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
+              <Input adornment="start"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 onKeyDown={(e) => {
@@ -190,7 +190,6 @@ function FetchResolver({
                 placeholder={meta.placeholder}
                 inputMode="url"
                 disabled={busy}
-                className="pl-8"
               />
             </div>
             <Button

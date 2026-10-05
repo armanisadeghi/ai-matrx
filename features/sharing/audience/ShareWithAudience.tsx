@@ -251,7 +251,7 @@ export function ShareWithAudienceDialog({
                 onValueChange={(v) => setLevel(v as AudienceLevel)}
                 disabled={sharing}
               >
-                <SelectTrigger className="h-8 w-36" aria-label="Permission">
+                <SelectTrigger className="w-36" aria-label="Permission">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

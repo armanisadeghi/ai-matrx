@@ -102,9 +102,8 @@ export const BottomPanel: React.FC<BottomPanelProps> = ({
               if (tab) dispatch(setTerminalActiveTab(tab.id));
             }}
           >
-            <SelectTrigger
+            <SelectTrigger variant="bare"
               aria-label="Workspace tool"
-              className="h-11 border-0 bg-transparent text-base shadow-none"
             >
               <SelectValue />
             </SelectTrigger>

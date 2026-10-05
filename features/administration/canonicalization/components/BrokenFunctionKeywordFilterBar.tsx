@@ -5,7 +5,7 @@ import { Plus, X } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { cn } from "@/lib/utils";
 
 import type { KeywordTagFilterState } from "../utils/brokenFunctionKeywordFilter";
@@ -105,7 +105,7 @@ function TagList({
           />
         ))}
         {adding ? (
-          <Input
+          <Input variant="bare"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -114,7 +114,7 @@ function TagList({
               else setAdding(false);
             }}
             placeholder="keyword…"
-            className="h-6 w-36 border-0 bg-background px-2 text-base shadow-none"
+            className="w-36"
             autoFocus
           />
         ) : (

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -60,14 +60,13 @@ export function PageSpeedForm({ onAnalyze, loading }: PageSpeedFormProps) {
                         </Label>
                         <div className="relative">
                             <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-500" />
-                            <Input
+                            <Input adornment="start"
                                 id="url"
                                 type="url"
                                 value={url}
                                 onChange={(e) => setUrl(e.target.value)}
                                 placeholder="https://example.com"
                                 required
-                                className="pl-11 h-12 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
                             />
                         </div>
                         <p className="text-xs text-gray-500 dark:text-gray-400">

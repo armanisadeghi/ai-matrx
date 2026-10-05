@@ -10,7 +10,7 @@
 
 import { useEffect, useState } from "react";
 import { CheckCircle2, Gift, XCircle } from "lucide-react";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import { refreshUsageInBackground } from "../usage-gate/usageGate";
@@ -69,7 +69,7 @@ export function RedeemCodeField({ autoCode }: { autoCode?: string | null }) {
             placeholder="MX-XXXX-XXXX"
             aria-label="Coupon code"
             autoComplete="off"
-            className="h-8 max-w-56 text-base sm:text-sm"
+            className="max-w-56"
           />
           <Button variant="primary" type="submit" disabled={pending || !code.trim()}>
             {pending ? "Redeeming…" : "Redeem"}

@@ -68,7 +68,6 @@ const ConstraintsContent: React.FC<ConstraintsContentProps> = ({ updateContent }
                 id={`constraint-${option.id}`}
                 checked={constraintOptions.includes(option.id)}
                 onCheckedChange={() => toggleConstraintOption(option.id)}
-                className="data-[state=checked]:bg-indigo-600 dark:data-[state=checked]:bg-indigo-500"
               />
               <Label 
                 htmlFor={`constraint-${option.id}`} 

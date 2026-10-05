@@ -22,7 +22,7 @@
 import React, { useState } from "react";
 import { Database, Plus, Loader2, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { cn } from "@/lib/utils";
 import {
   useDataStores,
@@ -101,7 +101,6 @@ export function DataStoreBindPanel({
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
             placeholder="Store name (e.g. Tax 2024)"
-            className="h-7 text-xs"
             style={{ fontSize: "16px" }}
             autoFocus
             onKeyDown={(e) => {

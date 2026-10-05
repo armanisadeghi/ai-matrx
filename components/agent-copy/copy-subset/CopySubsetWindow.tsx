@@ -43,7 +43,7 @@ import type {
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { useClippedContentGuard } from "@/lib/layout/useClippedContentGuard";
@@ -580,11 +580,10 @@ function ColumnChooser<T>({
         </div>
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input
+          <Input adornment="start"
             value={search}
             onChange={(event) => onSearchChange(event.target.value)}
             placeholder="Find a column…"
-            className="h-8 pl-8 text-base"
           />
         </div>
       </div>

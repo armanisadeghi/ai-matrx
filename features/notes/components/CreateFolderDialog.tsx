@@ -19,7 +19,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -129,7 +129,6 @@ export function CreateFolderDialog({
           placeholder="e.g., Work, Personal, Ideas"
           autoFocus
           disabled={busy}
-          className="text-base"
           aria-invalid={!!error}
           aria-describedby={error ? "note-folder-name-error" : undefined}
         />

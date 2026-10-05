@@ -29,7 +29,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Check, PenLine, Type as TypeIcon, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input, Textarea } from "@ai-matrx/design-system";
+import { Textarea } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import type { PublicSignRequest } from "@/features/esign/service";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
@@ -198,7 +199,6 @@ export function SignRunner({
                 value={name}
                 onChange={(event) => setName(event.target.value)}
                 autoComplete="name"
-                className="text-base"
               />
             </div>
           ) : (
@@ -355,7 +355,6 @@ function DrawPad({
         value={name}
         onChange={(event) => onName(event.target.value)}
         autoComplete="name"
-        className="text-base"
       />
     </div>
   );

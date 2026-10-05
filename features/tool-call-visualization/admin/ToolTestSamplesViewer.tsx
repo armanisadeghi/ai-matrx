@@ -432,37 +432,37 @@ function SampleCard({ sample, index, onUpdate }: SampleCardProps) {
 
             {/* Tabs */}
             <Tabs defaultValue="annotations" className="flex-1">
-                <TabsList className="w-full rounded-none border-b border-border bg-transparent h-8 px-3 gap-1 justify-start overflow-x-auto">
-                    <TabsTrigger value="annotations" className="text-[11px] h-7 px-2.5 data-[state=active]:bg-muted shrink-0">
+                <TabsList variant="underline" className="w-full justify-start overflow-x-auto">
+                    <TabsTrigger value="annotations" className="shrink-0">
                         Annotations
                     </TabsTrigger>
-                    <TabsTrigger value="arguments" className="text-[11px] h-7 px-2.5 data-[state=active]:bg-muted shrink-0">
+                    <TabsTrigger value="arguments" className="shrink-0">
                         Arguments
                     </TabsTrigger>
-                    <TabsTrigger value="result" className="text-[11px] h-7 px-2.5 data-[state=active]:bg-muted shrink-0">
+                    <TabsTrigger value="result" className="shrink-0">
                         Result
                     </TabsTrigger>
                     {modelFacingContent && (
-                        <TabsTrigger value="model" className="text-[11px] h-7 px-2.5 data-[state=active]:bg-muted shrink-0">
+                        <TabsTrigger value="model" className="shrink-0">
                             Model
                         </TabsTrigger>
                     )}
                     {outputSchema != null && (
-                        <TabsTrigger value="schema" className="text-[11px] h-7 px-2.5 data-[state=active]:bg-muted shrink-0 gap-1">
+                        <TabsTrigger value="schema" className="shrink-0">
                             <FileCode2 className="h-3 w-3" />
                             Schema
                         </TabsTrigger>
                     )}
                     {costEstimate && (
-                        <TabsTrigger value="cost" className="text-[11px] h-7 px-2.5 data-[state=active]:bg-muted shrink-0 gap-1">
+                        <TabsTrigger value="cost" className="shrink-0">
                             <Gauge className="h-3 w-3" />
                             Cost
                         </TabsTrigger>
                     )}
-                    <TabsTrigger value="stream" className="text-[11px] h-7 px-2.5 data-[state=active]:bg-muted shrink-0">
+                    <TabsTrigger value="stream" className="shrink-0">
                         Stream ({rawStreamEvents.length})
                     </TabsTrigger>
-                    <TabsTrigger value="raw" className="text-[11px] h-7 px-2.5 data-[state=active]:bg-muted shrink-0">
+                    <TabsTrigger value="raw" className="shrink-0">
                         Raw
                     </TabsTrigger>
                 </TabsList>

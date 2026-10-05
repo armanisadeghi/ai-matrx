@@ -154,7 +154,6 @@ export function ContinueOnMyMacPanel({
             onChange={(event) => setPrompt(event.target.value)}
             rows={3}
             placeholder="What should Claude Code do next in this session?"
-            className="text-sm"
           />
           <div className="flex items-center gap-2">
             <Button icon={starting ? (

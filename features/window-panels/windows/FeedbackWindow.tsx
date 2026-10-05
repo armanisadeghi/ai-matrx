@@ -1380,7 +1380,7 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
                 onValueChange={setCategoryId}
                 disabled={isSubmitting || isLoadingAdminOptions || !!adminOptionsError}
               >
-                <SelectTrigger className="h-8 text-xs">
+                <SelectTrigger>
                   <SelectValue placeholder="None" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1402,7 +1402,7 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
                 onValueChange={setAssigneeId}
                 disabled={isSubmitting || isLoadingAdminOptions || !!adminOptionsError}
               >
-                <SelectTrigger className="h-8 text-xs">
+                <SelectTrigger>
                   <SelectValue placeholder="None" />
                 </SelectTrigger>
                 <SelectContent>

@@ -51,7 +51,7 @@ import { extractErrorMessage } from "@/utils/errors";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Switch } from "@/components/ui/switch";
 import {
   Select,
@@ -480,7 +480,7 @@ function AddMatcherForm({
       </p>
       <div className="flex min-w-0 flex-wrap items-center gap-2">
         <Select value={kind} onValueChange={(next) => setKind(next as PatternKind)}>
-          <SelectTrigger size="sm" className="h-7 w-[9.5rem] text-xs">
+          <SelectTrigger className="w-[9.5rem]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -499,7 +499,7 @@ function AddMatcherForm({
             setReachError(null);
           }}
           placeholder="crt monitor"
-          className="h-7 min-w-0 max-w-[16rem] flex-1 text-xs"
+          className="min-w-0 max-w-[16rem] flex-1"
         />
       </div>
       <p className="text-[11px] leading-4 text-muted-foreground">

@@ -2,7 +2,7 @@
 
 "use client";
 
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -72,13 +72,13 @@ export function CronForm({ value, onChange, error }: Props) {
     <div className="space-y-3">
       <div className="space-y-2">
         <Label htmlFor="cron-expr">Cron expression</Label>
-        <Input
+        <Input mono
           id="cron-expr"
           value={expression}
           onChange={(e) => onChange({ expression: e.target.value, tz })}
           placeholder="0 9 * * 1-5"
           maxLength={200}
-          className="font-mono max-w-md"
+          className="max-w-md"
         />
         <p className="text-xs text-muted-foreground">
           Standard 5-field cron syntax (min hour day month weekday).

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ExternalLink } from "lucide-react";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { BackendApiError, getUserMessage } from "@/lib/api/errors";
@@ -481,7 +481,7 @@ export function CalendarCreateReview({
           <p>Calendar: {saved.calendar_summary}</p>
           <label className="grid gap-1 text-xs font-medium text-muted-foreground">
             Event ID
-            <Input readOnly value={saved.request.event_id} className="font-mono" />
+            <Input mono readOnly value={saved.request.event_id} />
           </label>
           {!scopeMatches ? <p className="text-amber-700 dark:text-amber-300">This saved action belongs to its original account, organization, and calendar.</p> : null}
           {saved.intent ? <p>Review expires: {saved.intent.expires_at}</p> : null}
@@ -539,7 +539,7 @@ export function CalendarCreateReview({
               <p>{verifiedSource.startsAt} – {verifiedSource.endsAt}</p>
               <label className="grid gap-1 text-xs font-medium text-muted-foreground">
                 Current Google event ID
-                <Input readOnly value={verifiedSource.eventId} className="font-mono" />
+                <Input mono readOnly value={verifiedSource.eventId} />
               </label>
               <p>This source read confirms the matching event. It does not verify the create response, guests, body, or notifications.</p>
               <a
@@ -559,7 +559,7 @@ export function CalendarCreateReview({
               <CalendarSavedCopyStatus view={createResultLocalRefresh(saved.result)} />
               <label className="grid gap-1 text-xs font-medium text-muted-foreground">
                 Google event ID
-                <Input readOnly value={saved.result?.result.provider_event_id ?? ""} className="font-mono" />
+                <Input mono readOnly value={saved.result?.result.provider_event_id ?? ""} />
               </label>
               {saved.result ? (
                 <a

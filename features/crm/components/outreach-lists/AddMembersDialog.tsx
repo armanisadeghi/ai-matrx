@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { PitchAdvisoryPanel } from "@/features/crm/pitch-advisories/PitchAdvisoryPanel";
 import { usePitchAdvisories } from "@/features/crm/pitch-advisories/usePitchAdvisories";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import {
   Dialog,
@@ -373,7 +373,6 @@ export function AddMembersDialog({
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="e.g. oncology, VP, acme.com"
-                  className="h-9 text-sm"
                 />
               </div>
             </>

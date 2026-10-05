@@ -12,7 +12,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Textarea } from "@/components/ui/textarea";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import {
@@ -114,7 +114,7 @@ export function ValueEditor({
   if (vt === "enum" && (label?.enum_options ?? []).length > 0) {
     return (
       <Select value={raw} onValueChange={handleChange}>
-        <SelectTrigger className="h-8 text-xs">
+        <SelectTrigger>
           <SelectValue placeholder="Pick a value…" />
         </SelectTrigger>
         <SelectContent>
@@ -135,7 +135,6 @@ export function ValueEditor({
         value={raw}
         onChange={(e) => handleChange(e.target.value)}
         placeholder="YYYY-MM-DD or MM/DD/YYYY"
-        className="h-8 text-xs"
       />
     );
   }
@@ -149,7 +148,7 @@ export function ValueEditor({
           inputMode="decimal"
           value={raw}
           onChange={(e) => handleChange(e.target.value)}
-          className="h-8 text-xs flex-1"
+          className="flex-1"
         />
         {unit ? (
           <span className="text-[10px] text-muted-foreground shrink-0">{unit}</span>
@@ -175,7 +174,6 @@ export function ValueEditor({
       type="text"
       value={raw}
       onChange={(e) => handleChange(e.target.value)}
-      className="h-8 text-xs"
     />
   );
 }

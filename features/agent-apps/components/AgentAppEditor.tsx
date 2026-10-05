@@ -92,11 +92,11 @@ export function AgentAppEditor({ app, onSave }: AgentAppEditorProps) {
           <Label htmlFor="component-code" className="sr-only">
             Component code
           </Label>
-          <Textarea
+          <Textarea mono minHeight={0}
             id="component-code"
             value={componentCode}
             onChange={(e) => setComponentCode(e.target.value)}
-            className="flex-1 min-h-0 font-mono text-[13px]"
+            className="flex-1 min-h-0"
             spellCheck={false}
           />
         </TabsContent>

@@ -6,7 +6,7 @@ import { FilePlus2, Loader2, Pencil, Save, Trash2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
@@ -300,8 +300,8 @@ export function MathProblemAdmin() {
           </div>
           <Field label="Description"><Textarea value={draft.description} onChange={(event) => set("description", event.target.value)} /></Field>
           <Field label="Introduction"><Textarea value={draft.introText} onChange={(event) => set("introText", event.target.value)} /></Field>
-          <Field label="Problem statement JSON"><Textarea className="min-h-40 font-mono text-xs" value={draft.problemStatement} onChange={(event) => set("problemStatement", event.target.value)} /></Field>
-          <Field label="Solutions JSON"><Textarea className="min-h-52 font-mono text-xs" value={draft.solutions} onChange={(event) => set("solutions", event.target.value)} /></Field>
+          <Field label="Problem statement JSON"><Textarea mono minHeight={160} value={draft.problemStatement} onChange={(event) => set("problemStatement", event.target.value)} /></Field>
+          <Field label="Solutions JSON"><Textarea mono minHeight={208} value={draft.solutions} onChange={(event) => set("solutions", event.target.value)} /></Field>
           <Field label="Hint"><Textarea value={draft.hint} onChange={(event) => set("hint", event.target.value)} /></Field>
           <Field label="Final statement"><Textarea value={draft.finalStatement} onChange={(event) => set("finalStatement", event.target.value)} /></Field>
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={draft.published} onChange={(event) => set("published", event.target.checked)} />Publish in the learner lesson list</label>

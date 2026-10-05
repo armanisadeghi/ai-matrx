@@ -28,7 +28,7 @@ import {
   CornerDownRight,
   ArrowUpRight,
 } from "lucide-react";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/official/SearchInput";
 import { ProInput } from "@/components/official/ProInput";

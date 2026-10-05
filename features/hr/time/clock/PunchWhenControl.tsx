@@ -25,7 +25,7 @@
 import { CalendarClock } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 
 import { stampedZoneAbbreviation } from "./stampedTime";
 
@@ -96,7 +96,6 @@ export function PunchWhenControl({
               value={value.localDate ?? ""}
               disabled={disabled}
               onChange={(event) => onChange({ ...value, localDate: event.target.value })}
-              className="min-h-[44px] text-base"
             />
           </div>
           <div className="flex min-w-32 flex-1 flex-col gap-1">
@@ -109,7 +108,6 @@ export function PunchWhenControl({
               value={value.localTime ?? ""}
               disabled={disabled}
               onChange={(event) => onChange({ ...value, localTime: event.target.value })}
-              className="min-h-[44px] text-base"
             />
           </div>
         </div>

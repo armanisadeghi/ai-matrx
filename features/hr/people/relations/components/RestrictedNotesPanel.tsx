@@ -130,7 +130,7 @@ export function RestrictedNotesPanel({
               value={kind}
               onValueChange={(v) => setKind(v as HrRestrictedNoteKind)}
             >
-              <SelectTrigger id="note-kind" className="min-h-11 sm:min-h-9">
+              <SelectTrigger id="note-kind">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

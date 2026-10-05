@@ -7,7 +7,7 @@
  */
 
 import React, { useState } from "react";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Switch } from "@/components/ui/switch";
 import {
   Select,
@@ -98,7 +98,7 @@ export default function RuleValueInput({
     return (
       <Input
         type="number"
-        className="h-7 w-32 text-xs"
+        className="w-32"
         value={value === undefined || value === null ? "" : String(value)}
         min={min ?? undefined}
         max={max ?? undefined}
@@ -121,7 +121,7 @@ export default function RuleValueInput({
   if (valueType === "string" || valueType === "enum") {
     return (
       <Input
-        className="h-7 w-44 text-xs"
+        className="w-44"
         value={value === undefined || value === null ? "" : String(value)}
         placeholder={placeholder}
         disabled={disabled}

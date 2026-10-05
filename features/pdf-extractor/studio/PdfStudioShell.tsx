@@ -34,7 +34,7 @@ import { DockedSidePanel } from "@/components/official/side-panel/DockedSidePane
 import type { SidePanelSizes } from "@/components/official/side-panel/side-panel-width";
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { useDocumentSearch } from "@/features/rag/hooks/useDocumentSearch";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { usePdfExtractor, type PdfDocument } from "../hooks/usePdfExtractor";
 import { useProcessedDocumentPages } from "../hooks/useProcessedDocumentPages";
@@ -964,7 +964,7 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
                 value={findQuery}
                 onChange={(e) => setFindQuery(e.target.value)}
                 placeholder="Find in document…"
-                className="h-7 text-xs flex-1"
+                className="flex-1"
                 style={{ fontSize: "16px" }}
                 onKeyDown={(e) => {
                   if (e.key === "Escape") {

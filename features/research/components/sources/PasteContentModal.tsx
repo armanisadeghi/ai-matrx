@@ -69,7 +69,7 @@ export function PasteContentModal({
   const formContent = (
     <div className="space-y-4 p-4">
       <Select value={contentType} onValueChange={setContentType}>
-        <SelectTrigger className="text-base" style={{ fontSize: "16px" }}>
+        <SelectTrigger style={{ fontSize: "16px" }}>
           <SelectValue />
         </SelectTrigger>
         <SelectContent>

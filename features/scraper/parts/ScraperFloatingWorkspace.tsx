@@ -26,7 +26,7 @@ import {
   ArrowUpRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { ProInput } from "@/components/official/ProInput";
 import { ProcessForRagButton } from "@/features/rag/components/ProcessForRagButton";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
@@ -684,7 +684,6 @@ export function ScraperFloatingWorkspace({
                 value={maxPages}
                 onChange={(e) => setMaxPages(e.target.value)}
                 disabled={isAnyLoading}
-                className="h-7 text-xs border-border px-2"
                 placeholder="Pages"
               />
               <Button

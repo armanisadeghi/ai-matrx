@@ -4,7 +4,7 @@ import { useState } from "react";
 import AppLink from "@/components/navigation/AppLink";
 import { Braces, ChevronRight, FolderTree, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   adminDomainHref,
   adminNavigationRegistry,
@@ -172,11 +172,10 @@ export function AdminRoutesDirectory({ routes }: AdminRoutesDirectoryProps) {
           </div>
           <div className="relative w-full sm:max-w-md">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
+            <Input adornment="start"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Search domains, sections, or routes…"
-              className="pl-9 text-base sm:text-sm"
             />
           </div>
         </div>

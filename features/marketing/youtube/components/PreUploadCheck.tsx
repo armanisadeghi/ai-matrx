@@ -23,7 +23,8 @@
 import { useState } from "react";
 import { ClipboardCopy, Eye } from "lucide-react";
 
-import { Input, Textarea } from "@ai-matrx/design-system";
+import { Textarea } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -130,7 +131,6 @@ export function PreUploadCheck({ className }: PreUploadCheckProps) {
                 setDraft({ ...draft, targetKeyword: event.target.value })
               }
               placeholder="commercial roof inspection"
-              className="text-base sm:text-sm"
             />
           </div>
           <div className="flex flex-col gap-1">
@@ -142,7 +142,6 @@ export function PreUploadCheck({ className }: PreUploadCheckProps) {
               value={draft.title}
               onChange={(event) => setDraft({ ...draft, title: event.target.value })}
               placeholder="What the video is, in the words someone searches"
-              className="text-base sm:text-sm"
             />
           </div>
           <div className="flex flex-col gap-1">
@@ -169,7 +168,6 @@ export function PreUploadCheck({ className }: PreUploadCheckProps) {
               value={draft.tagsRaw}
               onChange={(event) => setDraft({ ...draft, tagsRaw: event.target.value })}
               placeholder="roof inspection, commercial roofing, flat roof"
-              className="text-base sm:text-sm"
             />
           </div>
           <div className="flex flex-col gap-1">
@@ -183,7 +181,6 @@ export function PreUploadCheck({ className }: PreUploadCheckProps) {
                 setDraft({ ...draft, thumbnailUrl: event.target.value })
               }
               placeholder="https://…"
-              className="text-base sm:text-sm"
             />
           </div>
           <div className="flex flex-col gap-1">
@@ -197,7 +194,6 @@ export function PreUploadCheck({ className }: PreUploadCheckProps) {
                 setDraft({ ...draft, thumbnailText: event.target.value })
               }
               placeholder="ROOF LEAK?"
-              className="text-base sm:text-sm"
             />
             <p className="text-[10px] leading-3 text-muted-foreground">
               We cannot read your image. Telling us the words lets us say whether

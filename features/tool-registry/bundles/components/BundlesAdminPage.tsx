@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { XTapButton } from "@ai-matrx/tap-target/buttons";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
@@ -216,11 +216,10 @@ function BundlesAdminPageInner() {
             <div className="p-3 space-y-2 border-b border-border">
               <div className="relative">
                 <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                <Input
+                <Input adornment="start"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search bundles…"
-                  className="pl-7 h-8 text-xs"
                   style={{ fontSize: "16px" }}
                 />
               </div>
@@ -412,11 +411,10 @@ function NewBundleDialog({
         <div className="space-y-3">
           <div className="space-y-1.5">
             <Label className="text-xs">Bundle name (globally unique)</Label>
-            <Input
+            <Input mono
               value={name}
               onChange={(e) => setName(e.target.value.toLowerCase())}
               placeholder="e.g. browser-tools, search-pack, my-favorites"
-              className="font-mono text-sm h-9"
               style={{ fontSize: "16px" }}
               disabled={busy}
               autoFocus
@@ -619,10 +617,9 @@ function BundleDetail({
             <Label className="text-[11px] text-muted-foreground">
               Name (globally unique)
             </Label>
-            <Input
+            <Input mono
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="font-mono text-sm h-8"
               style={{ fontSize: "16px" }}
             />
           </div>
@@ -686,11 +683,10 @@ function BundleDetail({
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-medium">Metadata (JSON)</h2>
         </div>
-        <Textarea
+        <Textarea mono
           value={metadataJson}
           onChange={(e) => setMetadataJson(e.target.value)}
           rows={5}
-          className="font-mono text-xs"
           style={{ fontSize: "13px" }}
         />
       </section>
@@ -747,13 +743,12 @@ function MemberAliasCell({
   const [dirty, setDirty] = useState(false);
   return (
     <div className="flex items-center gap-1.5">
-      <Input
+      <Input mono
         value={alias}
         onChange={(e) => {
           setAlias(e.target.value);
           setDirty(e.target.value !== item.member.local_alias);
         }}
-        className="h-7 text-xs font-mono"
         style={{ fontSize: "13px" }}
       />
       {dirty && (
@@ -904,11 +899,10 @@ function AddMemberDialog({
             <>
               <div className="relative">
                 <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                <Input
+                <Input adornment="start"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Search tools by canonical name…"
-                  className="pl-7 h-8 text-xs"
                   style={{ fontSize: "16px" }}
                   autoFocus
                 />
@@ -987,10 +981,9 @@ function AddMemberDialog({
                   <Label className="text-[11px] text-muted-foreground">
                     Local alias (within bundle)
                   </Label>
-                  <Input
+                  <Input mono
                     value={alias}
                     onChange={(e) => setAlias(e.target.value)}
-                    className="font-mono text-sm h-8"
                     style={{ fontSize: "16px" }}
                   />
                 </div>

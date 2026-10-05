@@ -38,7 +38,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/components/ui/use-toast";
@@ -461,11 +461,10 @@ export default function AgentAppsCategoriesAdminPage() {
 
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
+            <Input adornment="start"
               placeholder="Search categories..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 text-[16px]"
             />
           </div>
         </div>
@@ -613,7 +612,6 @@ export default function AgentAppsCategoriesAdminPage() {
                           id="edit-id"
                           value={editData.id ?? ""}
                           disabled
-                          className="bg-muted text-[16px]"
                         />
                         <p className="text-xs text-muted-foreground mt-1">
                           Cannot be changed after creation
@@ -628,7 +626,6 @@ export default function AgentAppsCategoriesAdminPage() {
                             handleEditChange("name", e.target.value)
                           }
                           placeholder="Category name"
-                          className="text-[16px]"
                         />
                       </div>
                     </div>
@@ -662,7 +659,6 @@ export default function AgentAppsCategoriesAdminPage() {
                               handleEditChange("icon", e.target.value)
                             }
                             placeholder="e.g., Lightbulb"
-                            className="text-[16px]"
                           />
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">
@@ -716,7 +712,6 @@ export default function AgentAppsCategoriesAdminPage() {
                     setCreateData({ ...createData, id: e.target.value })
                   }
                   placeholder="e.g., content-writing"
-                  className="text-[16px]"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
                   Lowercase, hyphenated (used in URLs)
@@ -731,7 +726,6 @@ export default function AgentAppsCategoriesAdminPage() {
                     setCreateData({ ...createData, name: e.target.value })
                   }
                   placeholder="Category name"
-                  className="text-[16px]"
                 />
               </div>
             </div>
@@ -765,7 +759,6 @@ export default function AgentAppsCategoriesAdminPage() {
                       setCreateData({ ...createData, icon: e.target.value })
                     }
                     placeholder="e.g., Lightbulb"
-                    className="text-[16px]"
                   />
                 </div>
               </div>

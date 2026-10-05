@@ -38,8 +38,8 @@ import { BulkApproveDialog } from "./BulkApproveDialog";
 import {
   ArchivedDisclosure,
   EditableLabel,
-  Input,
 } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import {
   Tooltip,
@@ -2974,7 +2974,7 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search rules…"
-                className="h-10 max-w-none text-base sm:h-8 sm:max-w-xs sm:text-sm"
+                className="max-w-none sm:max-w-xs"
                 data-surface-value="search_query"
               />
               <div className="flex min-w-0 flex-wrap gap-1">

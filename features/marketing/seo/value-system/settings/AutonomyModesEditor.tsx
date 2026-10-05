@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Skeleton } from "@ai-matrx/design-system";
 import { toast } from "@/lib/toast";
 import { fetchMandateAssignments } from "@ai-matrx/chat/mandates/service";
@@ -310,7 +310,7 @@ export function AutonomyModesEditor({
                       <Input
                         type="number"
                         min={1}
-                        className="h-7 w-16 text-xs"
+                        className="w-16"
                         aria-label={`Hours to wait for ${capability.label}`}
                         disabled={readOnly || save.isPending}
                         defaultValue={

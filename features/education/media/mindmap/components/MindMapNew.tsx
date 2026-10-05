@@ -15,7 +15,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, Loader2, Network } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { cn } from "@/lib/utils";
 import { fcService } from "@/features/flashcards/data/fcService";
 import type { FcSetRow } from "@/features/flashcards/data/types";
@@ -363,7 +363,6 @@ export function MindMapNew() {
           value={focus}
           onChange={(e) => setFocus(e.target.value)}
           placeholder="Center the map on a specific angle…"
-          className="text-base"
         />
       </section>
 

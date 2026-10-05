@@ -344,7 +344,7 @@ export function FormulaExpressionEditor({
               onValueChange={(next) => setFormula({ resultFormat: next as FieldFormatId })}
               disabled={disabled}
             >
-              <SelectTrigger className="h-8">
+              <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

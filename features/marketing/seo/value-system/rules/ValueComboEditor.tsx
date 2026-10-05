@@ -47,7 +47,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   Select,
   SelectContent,
@@ -599,7 +599,6 @@ export function ValueComboEditor({
                 value={form.label}
                 onChange={(e) => set("label", e.target.value)}
                 placeholder="Consumer + out of market"
-                className="h-8 text-sm"
               />
             </Field>
 

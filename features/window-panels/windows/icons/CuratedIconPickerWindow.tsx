@@ -15,7 +15,7 @@
 import React, { useMemo, useRef, useState } from "react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { IconResolver,
   getCuratedIconIdsForPicker,
 } from "@ai-matrx/icons";
@@ -152,7 +152,7 @@ export function CuratedIconPickerWindow({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Filter…"
-            className="h-9 shrink-0 text-sm"
+            className="shrink-0"
             style={{ fontSize: "16px" }}
             aria-label="Filter icons"
           />

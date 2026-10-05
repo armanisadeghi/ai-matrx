@@ -41,7 +41,7 @@ const MarkdownProcessingTabs = ({
     return (
         <div className="w-2/3 flex flex-col">
             <Tabs defaultValue="processor-extractor" className="w-full h-full flex flex-col">
-                <TabsList className="mx-2 my-1 gap-1 bg-transparent flex-shrink-0">
+                <TabsList variant="underline" className="mx-2 my-1 flex-shrink-0">
                     <TabsTrigger value="processor-extractor">Processor Extractor</TabsTrigger>
                     <TabsTrigger value="ast">Raw AST</TabsTrigger>
                     <TabsTrigger value="explorer">AST Explorer</TabsTrigger>

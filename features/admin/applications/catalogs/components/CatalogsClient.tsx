@@ -544,7 +544,7 @@ export function CatalogsClient({
               leading: (
                 <Select value={app} onValueChange={setApp}>
                   <SelectTrigger
-                    className="w-44 font-mono text-sm"
+                    className="w-44"
                     aria-label="Application"
                   >
                     <SelectValue />

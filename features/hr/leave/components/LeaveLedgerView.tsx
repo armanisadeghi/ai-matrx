@@ -40,7 +40,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
@@ -306,7 +306,7 @@ export function LeaveLedgerView({
                 type="date"
                 value={asOf ?? ""}
                 onChange={(e) => onAsOfChange(e.target.value || null)}
-                className="h-11 w-40 md:h-9"
+                className="w-40"
               />
             </div>
             {asOf ? (

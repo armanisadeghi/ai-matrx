@@ -20,7 +20,7 @@ import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import {
   Select,
   SelectContent,
@@ -103,12 +103,12 @@ function BandEditor({
   return (
     <div className="space-y-2 rounded-md border border-primary/40 bg-primary/5 p-3">
       <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_7rem_5rem]">
-        <Input value={d.label} onChange={(e) => setD({ ...d, label: e.target.value })} placeholder="Label (Platinum)" className="h-8 text-sm" />
-        <Input value={d.value} onChange={(e) => setD({ ...d, value: e.target.value })} placeholder="machine value (platinum)" className="h-8 font-mono text-xs" disabled={Boolean(d.id)} />
-        <Input value={d.number} onChange={(e) => setD({ ...d, number: e.target.value })} placeholder={kind === "value_band" ? "min score" : "× multiplier"} inputMode="decimal" className="h-8 text-sm tabular-nums" />
-        <Input value={d.sort} onChange={(e) => setD({ ...d, sort: e.target.value })} placeholder="sort" inputMode="numeric" className="h-8 text-sm tabular-nums" />
+        <Input value={d.label} onChange={(e) => setD({ ...d, label: e.target.value })} placeholder="Label (Platinum)" />
+        <Input mono value={d.value} onChange={(e) => setD({ ...d, value: e.target.value })} placeholder="machine value (platinum)" disabled={Boolean(d.id)} />
+        <Input value={d.number} onChange={(e) => setD({ ...d, number: e.target.value })} placeholder={kind === "value_band" ? "min score" : "× multiplier"} inputMode="decimal" />
+        <Input value={d.sort} onChange={(e) => setD({ ...d, sort: e.target.value })} placeholder="sort" inputMode="numeric" />
       </div>
-      <Input value={d.description} onChange={(e) => setD({ ...d, description: e.target.value })} placeholder="What lands here, in plain words" className="h-8 text-sm" />
+      <Input value={d.description} onChange={(e) => setD({ ...d, description: e.target.value })} placeholder="What lands here, in plain words" />
       <ProTextarea value={d.notes} onChange={(e) => setD({ ...d, notes: e.target.value })} placeholder="Why this industry reads the band this way" className="min-h-12 text-sm" />
       <div className="flex justify-end gap-2">
         <Button variant="quiet" onClick={() => onDone(false)}>
@@ -174,9 +174,9 @@ function AreaEditor({
   return (
     <div className="space-y-2 rounded-md border border-primary/40 bg-primary/5 p-3">
       <div className="grid gap-2 sm:grid-cols-[minmax(0,2fr)_8rem_minmax(0,1fr)_5rem]">
-        <Input value={d.label} onChange={(e) => setD({ ...d, label: e.target.value })} placeholder="Archetype label (Primary service radius)" className="h-8 text-sm" />
+        <Input value={d.label} onChange={(e) => setD({ ...d, label: e.target.value })} placeholder="Archetype label (Primary service radius)" />
         <Select value={d.area_kind} onValueChange={(v) => setD({ ...d, area_kind: v })}>
-          <SelectTrigger className="h-8 text-xs">
+          <SelectTrigger>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -189,7 +189,7 @@ function AreaEditor({
         </Select>
         {geoBands.length > 0 ? (
           <Select value={d.geo_band} onValueChange={(v) => setD({ ...d, geo_band: v })}>
-            <SelectTrigger className="h-8 text-xs">
+            <SelectTrigger>
               <SelectValue placeholder="geo band" />
             </SelectTrigger>
             <SelectContent>
@@ -201,9 +201,9 @@ function AreaEditor({
             </SelectContent>
           </Select>
         ) : (
-          <Input value={d.geo_band} onChange={(e) => setD({ ...d, geo_band: e.target.value })} placeholder="geo band value" className="h-8 font-mono text-xs" />
+          <Input mono value={d.geo_band} onChange={(e) => setD({ ...d, geo_band: e.target.value })} placeholder="geo band value" />
         )}
-        <Input value={d.sort} onChange={(e) => setD({ ...d, sort: e.target.value })} placeholder="sort" inputMode="numeric" className="h-8 text-sm tabular-nums" />
+        <Input value={d.sort} onChange={(e) => setD({ ...d, sort: e.target.value })} placeholder="sort" inputMode="numeric" />
       </div>
       <ProTextarea value={d.notes} onChange={(e) => setD({ ...d, notes: e.target.value })} placeholder="What this archetype stands for" className="min-h-12 text-sm" />
       <div className="flex justify-end gap-2">

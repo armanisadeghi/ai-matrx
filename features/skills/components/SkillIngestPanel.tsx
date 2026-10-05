@@ -141,14 +141,13 @@ export function SkillIngestPanel({
             <div className="text-xs uppercase tracking-wide text-muted-foreground">
               Paths to scan
             </div>
-            <Textarea
+            <Textarea mono
               value={pathsText}
               onChange={(e) => setPathsText(e.target.value)}
               rows={5}
               placeholder={
                 "/Users/me/code/some-repo\n/Users/me/code/another-repo/.claude/skills\n# comments allowed"
               }
-              className="font-mono text-xs"
               disabled={loading}
             />
             <p className="text-xs text-muted-foreground/80">

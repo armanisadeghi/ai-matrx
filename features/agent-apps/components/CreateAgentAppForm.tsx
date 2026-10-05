@@ -3,7 +3,7 @@
 import React, { useCallback, useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -161,7 +161,6 @@ export function CreateAgentAppForm({
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="My Agent App"
-          className="text-[16px]"
           required
         />
       </div>
@@ -173,7 +172,6 @@ export function CreateAgentAppForm({
           value={tagline}
           onChange={(e) => setTagline(e.target.value)}
           placeholder="One-line pitch"
-          className="text-[16px]"
         />
       </div>
 
@@ -218,7 +216,6 @@ export function CreateAgentAppForm({
               setSlugStatus("idle");
             }}
             placeholder="my-agent-app"
-            className="text-[16px]"
             required
           />
           <Button

@@ -176,7 +176,7 @@ export function MoveSiteOrganizationCard({ site }: { site: MarketingSite }) {
               Move to
             </Label>
             <Select value={targetOrgId} onValueChange={setTargetOrgId}>
-              <SelectTrigger id="site-move-org" size="sm">
+              <SelectTrigger id="site-move-org">
                 <SelectValue
                   placeholder={
                     loading

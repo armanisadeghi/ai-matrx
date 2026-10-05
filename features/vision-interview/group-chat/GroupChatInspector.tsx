@@ -12,7 +12,6 @@ import { useEffect, useRef, useState } from "react";
 import { RefreshCw } from "lucide-react";
 import {
   Checkbox,
-  Input,
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -24,6 +23,7 @@ import {
   SelectValue,
   Skeleton,
 } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { RoomViewReceipt } from "@ai-matrx/chat/agents/components/context-policies-display/MessageContextReceipt";
 import { RichDocument } from "@/features/rich-document/RichDocument";
 import { stripControlLines } from "@/lib/control-tokens/stripControlLines";

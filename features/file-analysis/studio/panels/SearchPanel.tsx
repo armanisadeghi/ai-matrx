@@ -9,7 +9,7 @@
 import { useState } from "react";
 import { Loader2, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import * as Api from "@/features/file-analysis/api/file-analysis";
@@ -86,7 +86,6 @@ export function SearchPanel({ fileId, onJumpToPage }: Props) {
             onKeyDown={(e) => {
               if (e.key === "Enter") void run();
             }}
-            className="h-7 text-xs"
           />
           <Button
             variant="primary"

@@ -4,7 +4,7 @@ import React from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MatrxSwitch } from "@/components/ui/matrx/matrix-switch";
 import { Slider } from "@/components/ui/slider";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
@@ -85,8 +85,8 @@ export const CompactSelect = <T extends string | number>({ label, icon, value, o
     return (
         <BaseControl label={label} icon={icon} onClick={handleContainerClick} ref={containerRef} className={className} focusRingColor={focusRingColor}>
             <Select open={open} onOpenChange={handleOpenChange} value={value.toString()} onValueChange={handleValueChange}>
-                <SelectTrigger
-                    className="w-full h-4 min-h-0 text-xs border-0 !bg-transparent hover:!bg-transparent focus:!bg-transparent data-[state=open]:!bg-transparent dark:!bg-transparent px-0 focus:ring-0 focus-visible:ring-0 truncate shadow-none"
+                <SelectTrigger variant="bare"
+                    className="w-full truncate"
                     onClick={(e) => e.stopPropagation()}
                 >
                     <SelectValue className="truncate pr-4 text-inherit" />
@@ -176,14 +176,14 @@ interface CompactNumberProps {
 
 export const CompactNumber: React.FC<CompactNumberProps> = ({ label, icon, value, onChange, min, max, step = 1, className, focusRingColor }) => (
     <BaseControl label={label} icon={icon} interactive={false} className={className} focusRingColor={focusRingColor}>
-        <Input
+        <Input variant="bare"
             type="number"
             value={value}
             onChange={(e) => onChange(Number(e.target.value))}
             min={min}
             max={max}
             step={step}
-            className="h-4 min-h-0 text-xs border-0 bg-transparent px-0 w-full focus-visible:ring-0"
+            className="w-full"
         />
     </BaseControl>
 );
@@ -203,13 +203,13 @@ export const CompactText: React.FC<CompactTextProps> = ({ label, icon, value, on
 
     return (
         <BaseControl label={label} icon={icon} onClick={() => inputRef.current?.focus()} className={className} focusRingColor={focusRingColor}>
-            <Input
+            <Input variant="bare"
                 ref={inputRef}
                 type="text"
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
                 placeholder={placeholder}
-                className="h-4 min-h-0 text-xs border-0 bg-transparent px-0 w-full focus-visible:ring-0"
+                className="w-full"
                 onClick={(e) => e.stopPropagation()}
             />
         </BaseControl>
@@ -325,12 +325,12 @@ export const CompactTime: React.FC<CompactTimeProps> = ({ label, icon, value, on
 
     return (
         <BaseControl label={label} icon={icon} onClick={() => inputRef.current?.focus()} className={className} focusRingColor={focusRingColor}>
-            <Input
+            <Input variant="bare"
                 ref={inputRef}
                 type="time"
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
-                className="h-4 min-h-0 text-xs border-0 bg-transparent px-0 w-full focus-visible:ring-0"
+                className="w-full"
                 onClick={(e) => e.stopPropagation()}
             />
         </BaseControl>

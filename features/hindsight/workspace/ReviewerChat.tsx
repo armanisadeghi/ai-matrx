@@ -282,7 +282,6 @@ export function ReviewerChat({
         )}
 
         <Textarea
-          className="text-base md:text-sm"
           rows={3}
           value={draft}
           disabled={send.isPending || unavailable}

@@ -30,7 +30,7 @@ import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { cn } from "@/lib/utils";
 import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
@@ -185,7 +185,7 @@ function ExpectationRow({
                 value={expectation.rule}
                 onValueChange={(rule) => set({ rule: rule as ExpectationRule })}
               >
-                <SelectTrigger className="h-8 text-xs">
+                <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -199,7 +199,7 @@ function ExpectationRow({
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Id</Label>
-              <Input
+              <Input mono
                 value={expectation.id}
                 onChange={(e) =>
                   set({
@@ -208,7 +208,6 @@ function ExpectationRow({
                       .toLowerCase(),
                   })
                 }
-                className="h-8 text-xs font-mono"
                 data-identifier
                 placeholder="no_fabricated_routes"
               />
@@ -221,7 +220,6 @@ function ExpectationRow({
               value={expectation.title ?? ""}
               onChange={(e) => set({ title: e.target.value })}
               placeholder="Every link points at a page that exists"
-              className="h-8 text-xs"
             />
           </div>
 
@@ -246,7 +244,7 @@ function ExpectationRow({
                     value={expectation.marker || ""}
                     onValueChange={(marker) => set({ marker })}
                   >
-                    <SelectTrigger className="h-8 text-xs">
+                    <SelectTrigger>
                       <SelectValue placeholder="Pick a planted marker" />
                     </SelectTrigger>
                     <SelectContent>
@@ -271,11 +269,10 @@ function ExpectationRow({
                 <Label className="text-xs">
                   Path {needs.pathRequired ? "" : "(optional)"}
                 </Label>
-                <Input
+                <Input mono
                   value={expectation.path ?? ""}
                   onChange={(e) => set({ path: e.target.value })}
                   placeholder="covers"
-                  className="h-8 font-mono text-xs"
                 />
               </div>
             ) : null}
@@ -285,10 +282,9 @@ function ExpectationRow({
                 <Label className="text-xs">
                   {expectation.rule === "matches" ? "Pattern" : "Value"}
                 </Label>
-                <Input
+                <Input mono
                   value={String(expectation.value ?? "")}
                   onChange={(e) => set({ value: e.target.value })}
-                  className="h-8 font-mono text-xs"
                 />
               </div>
             ) : null}
@@ -300,7 +296,6 @@ function ExpectationRow({
                   type="number"
                   value={expectation.count ?? 0}
                   onChange={(e) => set({ count: Number(e.target.value) })}
-                  className="h-8 text-xs"
                 />
               </div>
             ) : null}
@@ -451,7 +446,7 @@ export function ScenarioEditor({
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1">
           <Label className="text-xs">Slug — its permanent id</Label>
-          <Input
+          <Input mono
             value={scenario.slug}
             onChange={(e) =>
               setScenario((s) => ({
@@ -459,7 +454,6 @@ export function ScenarioEditor({
                 slug: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, "_"),
               }))
             }
-            className="h-8 font-mono text-xs"
             data-identifier
             placeholder="family_planted_universe"
             disabled={Boolean(initial.slug)}
@@ -473,7 +467,6 @@ export function ScenarioEditor({
               setScenario((s) => ({ ...s, label: e.target.value }))
             }
             placeholder="Page Family Analyst — planted universe"
-            className="h-8 text-xs"
           />
         </div>
       </div>
@@ -498,7 +491,7 @@ export function ScenarioEditor({
             setScenario((s) => ({ ...s, mandate_key }))
           }
         >
-          <SelectTrigger className="h-8 text-xs">
+          <SelectTrigger>
             <SelectValue placeholder="Pick the job this scenario tests" />
           </SelectTrigger>
           <SelectContent className="max-h-72">
@@ -586,11 +579,10 @@ export function ScenarioEditor({
           a marker comes back in the answer, the agent READ it — it cannot be
           guessed or remembered.
         </p>
-        <Textarea
+        <Textarea mono minHeight={220}
           value={variablesText}
           onChange={(e) => onVariablesChange(e.target.value)}
           spellCheck={false}
-          className="min-h-[220px] font-mono text-[11px]"
         />
         {variablesError ? (
           <p className="text-xs text-red-600 dark:text-red-400">
@@ -633,7 +625,7 @@ export function ScenarioEditor({
         <div className="space-y-1">
           {scenario.allowed_routes.map((route, i) => (
             <div key={i} className="flex items-center gap-1">
-              <Input
+              <Input mono
                 value={route}
                 onChange={(e) =>
                   setScenario((s) => {
@@ -643,7 +635,6 @@ export function ScenarioEditor({
                   })
                 }
                 placeholder="/guides/spindle-calibration-{{nonce}}"
-                className="h-7 font-mono text-[11px]"
               />
               <Button
                 icon={<X />}
@@ -716,7 +707,6 @@ export function ScenarioEditor({
                 live_every_seconds: Math.max(1, Number(e.target.value)) * 3600,
               }))
             }
-            className="h-8 text-xs"
           />
         </div>
         <div className="space-y-1">
@@ -731,7 +721,6 @@ export function ScenarioEditor({
                 max_cost_usd: Number(e.target.value),
               }))
             }
-            className="h-8 text-xs"
           />
         </div>
         <label className="flex items-end gap-2 pb-1 text-xs text-muted-foreground">

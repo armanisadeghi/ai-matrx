@@ -3,7 +3,8 @@
 import React, { useEffect, useMemo } from "react";
 import { useSqlFunctions } from "@/lib/hooks/useSqlFunctions";
 import { SqlFunction } from "@/types/sql-functions";
-import { Input, Button as SurfaceButton } from "@ai-matrx/design-system";
+import { Button as SurfaceButton } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -218,17 +219,15 @@ export default function SqlFunctionsContainer({
       >
         {/* Tab bar */}
         <div className="flex items-center justify-between px-3 py-1.5 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 shrink-0">
-          <TabsList className="bg-slate-100 dark:bg-slate-700 h-7">
+          <TabsList>
             <TabsTrigger
               value="list"
-              className="text-xs h-6 px-3 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900"
             >
               Function List
             </TabsTrigger>
             {activeTab === "create" && (
               <TabsTrigger
                 value="create"
-                className="text-xs h-6 px-3 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900"
               >
                 Create Function
               </TabsTrigger>
@@ -236,7 +235,6 @@ export default function SqlFunctionsContainer({
             {activeTab === "edit" && selectedFunction && (
               <TabsTrigger
                 value="edit"
-                className="text-xs h-6 px-3 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900"
               >
                 Edit: {selectedFunction.name}
               </TabsTrigger>
@@ -268,12 +266,12 @@ export default function SqlFunctionsContainer({
               >
                 <div className="relative">
                   <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-slate-400" />
-                  <Input
+                  <Input adornment="start"
                     type="text"
                     placeholder="Search by name..."
                     value={nameSearch}
                     onChange={(e) => setNameSearch(e.target.value)}
-                    className="pl-8 h-8 w-52 text-sm border-slate-300 dark:border-slate-700"
+                    className="w-52"
                   />
                 </div>
                 <SurfaceButton
@@ -312,14 +310,13 @@ export default function SqlFunctionsContainer({
                   <div className="w-36">
                     {customSchemaSearch ? (
                       <div className="relative">
-                        <Input
+                        <Input adornment="end"
                           type="text"
                           placeholder="Enter schema..."
                           value={filter.schema || ""}
                           onChange={(e) =>
                             updateUrlFilter({ schema: e.target.value })
                           }
-                          className="h-8 pr-7 text-sm border-slate-300 dark:border-slate-700"
                         />
                         <SurfaceButton
                           type="button"
@@ -336,7 +333,7 @@ export default function SqlFunctionsContainer({
                         value={filter.schema || "all"}
                         onValueChange={handleSchemaChange}
                       >
-                        <SelectTrigger className="h-8 text-sm border-slate-300 dark:border-slate-700">
+                        <SelectTrigger>
                           <SelectValue placeholder="Schema" />
                         </SelectTrigger>
                         <SelectContent className="max-h-[300px]">
@@ -365,7 +362,7 @@ export default function SqlFunctionsContainer({
                     onChange={(e) =>
                       updateUrlFilter({ returnType: e.target.value })
                     }
-                    className="h-8 w-44 text-sm border-slate-300 dark:border-slate-700"
+                    className="w-44"
                   />
                 </div>
                 <div className="flex items-center gap-1.5">
@@ -383,7 +380,7 @@ export default function SqlFunctionsContainer({
                       })
                     }
                   >
-                    <SelectTrigger className="h-8 w-32 text-sm border-slate-300 dark:border-slate-700">
+                    <SelectTrigger className="w-32">
                       <SelectValue placeholder="Any" />
                     </SelectTrigger>
                     <SelectContent>

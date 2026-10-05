@@ -31,7 +31,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -241,7 +241,7 @@ export function AddFromLinkDialog({
           <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
             <div className="flex-1 space-y-1.5">
               <Label htmlFor="add-from-link-url">Link</Label>
-              <Input
+              <Input mono
                 id="add-from-link-url"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
@@ -252,7 +252,6 @@ export function AddFromLinkDialog({
                   }
                 }}
                 placeholder="https://huggingface.co/… or https://civitai.com/models/…"
-                className="font-mono text-sm"
                 spellCheck={false}
                 autoComplete="off"
               />

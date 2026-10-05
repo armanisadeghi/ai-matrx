@@ -14,7 +14,7 @@
 import { useState } from "react";
 import { Search } from "lucide-react";
 import type { SourceRef } from "@ai-matrx/agents/sources";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { formatChars } from "@ai-matrx/kit/tokens";
@@ -52,13 +52,12 @@ export function SourcePartsPicker({ sourceRef, segments, selected, onChange }: S
     <div className="space-y-2">
       <div className="relative">
         <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
+        <Input adornment="start"
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={hasPages ? "Search parts — words, a page (12) or pages (3-10)" : "Search parts by their words"}
           aria-label="Search parts"
-          className="pl-8"
         />
       </div>
       {words && (partsText.reading || partsText.error || partsText.truncated) && (

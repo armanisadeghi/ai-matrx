@@ -28,7 +28,7 @@ import Link from "next/link";
 import { Clock3, PencilLine } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { cn } from "@/lib/utils";
 
 import { humanFieldName } from "./selfServicePolicy";
@@ -143,7 +143,6 @@ export function SelfServiceAddressField({
                 onChange={(e) =>
                   setDraft((prev) => ({ ...prev, [key]: e.target.value }))
                 }
-                className="min-h-11 sm:min-h-9"
               />
             </div>
           ))}

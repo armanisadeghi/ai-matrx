@@ -34,7 +34,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -275,12 +275,11 @@ function ContextItemsSidebar({
         <div className="flex items-center gap-1.5">
           <div className="relative flex-1">
             <Search className="pointer-events-none absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
-            <Input
+            <Input adornment="start"
               aria-label="Search context items"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search items…"
-              className="h-7 pl-6 text-xs"
               style={{ fontSize: "13px" }}
             />
           </div>

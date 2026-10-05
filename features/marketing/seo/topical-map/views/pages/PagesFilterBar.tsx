@@ -365,7 +365,7 @@ export function PagesFilterBar({
             patch({ disposition: fromSelect<PageIntentDisposition>(value) })
           }
         >
-          <SelectTrigger className="h-7 w-32 text-xs" aria-label="Disposition">
+          <SelectTrigger className="w-32" aria-label="Disposition">
             <SelectValue placeholder="Any disposition" />
           </SelectTrigger>
           <SelectContent>
@@ -382,7 +382,7 @@ export function PagesFilterBar({
           value={filters.state ?? ANY}
           onValueChange={(value) => patch({ state: fromSelect<PageIntentState>(value) })}
         >
-          <SelectTrigger className="h-7 w-28 text-xs" aria-label="State">
+          <SelectTrigger className="w-28" aria-label="State">
             <SelectValue placeholder="Any state" />
           </SelectTrigger>
           <SelectContent>
@@ -399,7 +399,7 @@ export function PagesFilterBar({
           value={filters.source ?? ANY}
           onValueChange={(value) => patch({ source: fromSelect<PageIntentSource>(value) })}
         >
-          <SelectTrigger className="h-7 w-32 text-xs" aria-label="Decided by">
+          <SelectTrigger className="w-32" aria-label="Decided by">
             <SelectValue placeholder="Decided by anyone" />
           </SelectTrigger>
           <SelectContent>

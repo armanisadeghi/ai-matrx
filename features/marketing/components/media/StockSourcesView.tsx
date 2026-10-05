@@ -425,7 +425,7 @@ export function StockSourcesView({
           value={orientation}
           onValueChange={(value) => setOrientation(value as StockOrientation)}
         >
-          <SelectTrigger className="h-7 w-[8.5rem] px-2 text-[11px]">
+          <SelectTrigger className="w-[8.5rem]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent className="text-[11px]">

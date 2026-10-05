@@ -31,7 +31,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Card, CardContent } from "@/components/ui/card";
 import IconInputWithValidation from "@/components/official/icons/IconInputWithValidation";
 import { toast } from "@/lib/toast-service";
@@ -558,7 +558,6 @@ export function LiveBuilder({
                   setName(e.target.value);
                 }}
                 placeholder={`${agent?.name ?? "App"} App`}
-                className="text-[16px] font-medium"
               />
             </div>
             <div className="space-y-1.5">
@@ -796,7 +795,7 @@ export function LiveBuilder({
                   value={inputPlaceholder}
                   onChange={(e) => setInputPlaceholder(e.target.value)}
                   placeholder="e.g. Ask the agent…"
-                  className="mt-2 h-9 text-[16px]"
+                  className="mt-2"
                 />
               </div>
             </div>

@@ -33,7 +33,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -193,7 +193,7 @@ export function NewCorrectiveActionDialog({
                 value={level}
                 onValueChange={(v) => setLevel(v as HrCorrectiveActionLevel)}
               >
-                <SelectTrigger id="ca-level" className="min-h-11 sm:min-h-9">
+                <SelectTrigger id="ca-level">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -241,7 +241,6 @@ export function NewCorrectiveActionDialog({
                 type="date"
                 value={issuedOn}
                 onChange={(e) => setIssuedOn(e.target.value)}
-                className="min-h-11 sm:min-h-9"
               />
             </div>
             {!coaching ? (
@@ -252,7 +251,6 @@ export function NewCorrectiveActionDialog({
                   type="date"
                   value={incidentOn}
                   onChange={(e) => setIncidentOn(e.target.value)}
-                  className="min-h-11 sm:min-h-9"
                 />
                 {dateOrderBroken ? (
                   <p className="text-xs text-destructive">
@@ -273,7 +271,6 @@ export function NewCorrectiveActionDialog({
                     id="ca-policy"
                     value={policyCited}
                     onChange={(e) => setPolicyCited(e.target.value)}
-                    className="min-h-11 sm:min-h-9"
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -282,7 +279,6 @@ export function NewCorrectiveActionDialog({
                     id="ca-reason"
                     value={reasonCategory}
                     onChange={(e) => setReasonCategory(e.target.value)}
-                    className="min-h-11 sm:min-h-9"
                   />
                 </div>
               </div>
@@ -311,7 +307,6 @@ export function NewCorrectiveActionDialog({
                   type="date"
                   value={followUpOn}
                   onChange={(e) => setFollowUpOn(e.target.value)}
-                  className="min-h-11 sm:min-h-9"
                 />
               </div>
             </>

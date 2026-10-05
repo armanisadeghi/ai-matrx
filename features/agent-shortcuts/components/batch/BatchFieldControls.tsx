@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { AlertTriangle } from "lucide-react";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -168,12 +168,12 @@ function JsonControl({
 
   return (
     <div className="space-y-1 w-full">
-      <Textarea
+      <Textarea mono
         value={raw}
         onChange={(e) => onRaw(e.target.value)}
         rows={compact ? 2 : 3}
         placeholder="{ }"
-        className="font-mono text-[11px] resize-none"
+        className="resize-none"
         style={{ fontSize: "13px" }}
         disabled={disabled}
       />

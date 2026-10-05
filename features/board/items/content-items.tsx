@@ -9,7 +9,7 @@
 import { useState } from "react";
 import { FileText, Globe, Image as ImageIcon, Type } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import type { NodeSource } from "../board/document";
 import { HtmlTileBody, ImageTileBody } from "../tiles/MediaTileBodies";
 import { MarkdownTileBody } from "../tiles/MarkdownTileBody";
@@ -43,7 +43,6 @@ function UrlPicker({
         value={value}
         onChange={(e) => setValue(e.target.value)}
         placeholder={placeholder}
-        className="text-base"
       />
       {value.trim() && !url && <p className="text-xs text-destructive">That is not a web address.</p>}
       <div className="flex justify-end gap-2">

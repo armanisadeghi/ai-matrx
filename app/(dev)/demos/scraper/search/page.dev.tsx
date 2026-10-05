@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { Search, Loader2, ExternalLink, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { DemoPageLayout } from "../_components/DemoPageLayout";
 import { ResponseViewer } from "../_components/ResponseViewer";
@@ -133,7 +133,6 @@ export default function SearchDemoPage() {
           onChange={(e) => setKeywords(e.target.value)}
           onKeyDown={handleKeyDown}
           disabled={isLoading}
-          className="bg-background text-foreground border-border placeholder:text-muted-foreground"
           style={{ fontSize: "16px" }}
         />
       </div>
@@ -152,7 +151,6 @@ export default function SearchDemoPage() {
           value={maxResults}
           onChange={(e) => setMaxResults(e.target.value)}
           disabled={isLoading}
-          className="bg-background text-foreground border-border"
           style={{ fontSize: "16px" }}
         />
       </div>
