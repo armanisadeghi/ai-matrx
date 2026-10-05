@@ -9,6 +9,7 @@
 - Agent bridge in two requests (`board_items` value, then `board_open_item` / `board_item_act`), 15 `board_*` tools, surface `matrx-user/board` (values `board_title`, `board_items`, `selected_tile`). Gather a topic: `board_find_records` → `board_add_items` → `board_group` (see Agents manage the board). Board comments: the Board's own thread plus one comment door per tile. Tile errors are isolated by an error boundary per tile.
 - Note tiles never wait on the notes list for their body (the editor reads it itself; a stalled read says so with Retry). Picklist default tile is 1240 wide so the table's Name column is readable.
 - Fixed 2026-10-04 (remount ledger all green, two-tab per-tile merge, placement in rows, phone toolbar, tap-target fixes): unsent chat tile no longer lost on reload; "New board" in the title menu opens the board; two-tab per-tile merge; tile placement in rows; phone toolbar "More tools"; documents no longer render black; file Versions loads in about 2.5 s.
+- Opening a saved board never asks for an organization: tiles read the board's own (`items/board-organization.tsx`); only creating something goes through the gate. Right-click inside a multi-selection acts on the selection; Shift/⌘ also work from a click event alone; far-zoom status chips fall back to the tile's saved `basics` (details and open platform-level findings in CHANGELOG 2026-10-05).
 - Feature boards mount the same engine: War Room (Board mode), meetings (`UserBoard` over a saved board linked by `settings.meeting_id`), workflow runs (run board).
 
 ## Vision — Arman's words
