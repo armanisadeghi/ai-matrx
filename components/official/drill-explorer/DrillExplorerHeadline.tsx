@@ -23,13 +23,13 @@ export function DrillExplorerHeadline({
   return (
     <div data-drill-explorer-headline className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-0.5">
       <div className="flex shrink-0 items-baseline gap-3">
-        <h1 className="whitespace-nowrap text-sm font-semibold">{title}</h1>
+        <h1 className="whitespace-nowrap type-title ">{title}</h1>
         <span data-drill-explorer-total className="whitespace-nowrap text-2xl font-semibold tabular-nums">
           {total}
         </span>
       </div>
       {facts.length > 0 ? (
-        <ul data-drill-explorer-facts className="flex min-w-0 flex-wrap items-baseline gap-x-1.5 text-xs text-muted-foreground">
+        <ul data-drill-explorer-facts className="flex min-w-0 flex-wrap items-baseline gap-x-1.5 type-secondary text-muted-foreground">
           {facts.map((fact, i) => (
             <li key={fact.key} title={fact.title} {...fact.attrs} className="whitespace-nowrap">
               {i > 0 ? <span aria-hidden="true">· </span> : null}

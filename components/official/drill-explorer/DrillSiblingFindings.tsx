@@ -108,13 +108,13 @@ export function DrillSiblingFindings({
         const measure = measures.find((m) => m.key === measureKey);
         return (
           <li key={`${sibling.token}:${finding.key}`} data-drill-explorer-finding={`${sibling.token}:${finding.key}`} className="px-3 py-2">
-            <p className="text-sm font-medium text-foreground">{finding.label}</p>
+            <p className="type-title text-foreground">{finding.label}</p>
             {answer.state === "reading" ? (
               <div className="mt-1 h-4 w-40 animate-pulse rounded bg-muted" />
             ) : answer.state === "failed" ? (
-              <p className="mt-1 text-xs text-destructive">{answer.message}</p>
+              <p className="mt-1 type-secondary text-destructive">{answer.message}</p>
             ) : answer.rows.length === 0 ? (
-              <p className="mt-1 text-xs text-muted-foreground" data-drill-explorer-finding-none>
+              <p className="mt-1 type-secondary text-muted-foreground" data-drill-explorer-finding-none>
                 none
               </p>
             ) : (
@@ -134,7 +134,7 @@ export function DrillSiblingFindings({
                     </button>
                   </li>
                 ))}
-                {answer.more > 0 ? <li className="px-1 text-[11px] text-muted-foreground">{`and ${answer.more.toLocaleString()} more`}</li> : null}
+                {answer.more > 0 ? <li className="px-1 type-meta text-muted-foreground">{`and ${answer.more.toLocaleString()} more`}</li> : null}
               </ul>
             )}
           </li>

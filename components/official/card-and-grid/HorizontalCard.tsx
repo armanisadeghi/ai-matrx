@@ -147,7 +147,7 @@ export const HorizontalCard = ({
         <div>
           <h3 className="font-medium">{title}</h3>
           {description && (
-            <p className="text-sm text-gray-500 dark:text-gray-400">
+            <p className="type-body text-gray-500 dark:text-gray-400">
               {description}
             </p>
           )}

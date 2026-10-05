@@ -106,7 +106,7 @@ export default function IconDropdownMenu<T extends string = string>({
                 )}
               />
               <span className={cn(
-                "text-sm flex-1 leading-tight",
+                "type-body flex-1 leading-tight",
                 isSelected ? "font-medium text-blue-600 dark:text-blue-400" : "text-gray-700 dark:text-gray-300"
               )}>
                 {option.label}

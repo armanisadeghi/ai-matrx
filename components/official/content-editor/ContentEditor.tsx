@@ -317,7 +317,7 @@ export function ContentEditor({
                         <config.icon className="h-3.5 w-3.5" />
                         <div className="flex flex-col">
                           <span className="font-medium">{config.label}</span>
-                          <span className="text-[10px] text-zinc-500">
+                          <span className="type-meta text-zinc-500">
                             {config.description}
                           </span>
                         </div>
@@ -330,7 +330,7 @@ export function ContentEditor({
 
             {/* Title */}
             {title && (
-              <div className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
+              <div className="type-secondary font-medium text-zinc-700 dark:text-zinc-300">
                 {title}
               </div>
             )}
@@ -384,7 +384,7 @@ export function ContentEditor({
 
             {/* Auto-save status */}
             {autoSave && onSave && (
-              <div className="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400">
+              <div className="flex items-center gap-1.5 type-secondary text-zinc-500 dark:text-zinc-400">
                 {isSaving ? (
                   <>
                     <Save className="h-3 w-3 animate-pulse" />

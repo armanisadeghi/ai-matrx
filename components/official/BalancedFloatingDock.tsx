@@ -371,7 +371,7 @@ function BalancedIconContainer({
                   animate={{ opacity: 1, x: 15 }}
                   exit={{ opacity: 0, x: 5 }}
                   className={cn(
-                    "p-1 px-2 whitespace-pre rounded-md bg-zinc-100 dark:bg-zinc-800 text-gray-800 dark:text-gray-100 w-fit text-xs shadow-sm",
+                    "p-1 px-2 whitespace-pre rounded-md bg-zinc-100 dark:bg-zinc-800 text-gray-800 dark:text-gray-100 w-fit type-secondary shadow-sm",
                     "border-border",
                   )}
                 >

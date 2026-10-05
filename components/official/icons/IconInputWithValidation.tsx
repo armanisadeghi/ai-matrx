@@ -221,7 +221,7 @@ export default function IconInputWithValidation({
       </div>
 
       {showLucideLink || showCuratedIconGallery ? (
-        <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] leading-snug text-muted-foreground">
+        <p className="flex flex-wrap items-center gap-x-3 gap-y-1 type-meta leading-snug text-muted-foreground">
           {showLucideLink ? (
             <>
               <button
@@ -263,14 +263,14 @@ export default function IconInputWithValidation({
       ) : null}
 
       {validationState === "invalid" && (
-        <p className="text-xs text-red-600 dark:text-red-400">
+        <p className="type-secondary text-red-600 dark:text-red-400">
           Unknown icon. Use the gallery, Search Lucide, or type a name /{" "}
           <code className="font-mono">&lt;Icon /&gt;</code> /{" "}
           <code className="font-mono">svg:…</code>.
         </p>
       )}
       {validationState === "valid" && validatedIconName !== value && (
-        <p className="text-xs text-green-600 dark:text-green-400">
+        <p className="type-secondary text-green-600 dark:text-green-400">
           Auto-corrected to:{" "}
           <code className="font-mono">{validatedIconName}</code>
         </p>

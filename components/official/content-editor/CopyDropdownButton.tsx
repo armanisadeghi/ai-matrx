@@ -105,7 +105,7 @@ export function CopyDropdownButton({
       >
         <Copy className="h-3.5 w-3.5" />
         {copied ? (
-          <span className="text-xs text-green-600 dark:text-green-400">
+          <span className="type-secondary text-green-600 dark:text-green-400">
             Copied!
           </span>
         ) : (

@@ -207,13 +207,13 @@ export function ContentEditorTree({
     >
       {title && (
         <div className="flex-none px-3 py-2 border-b border-border bg-zinc-50 dark:bg-zinc-900/60">
-          <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+          <div className="type-secondary font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
             {title}
           </div>
         </div>
       )}
       {nodes.length === 0 ? (
-        <div className="px-3 py-4 text-xs text-zinc-500 dark:text-zinc-400">
+        <div className="px-3 py-4 type-secondary text-zinc-500 dark:text-zinc-400">
           {emptyMessage}
         </div>
       ) : (

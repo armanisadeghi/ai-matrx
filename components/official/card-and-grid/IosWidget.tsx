@@ -79,11 +79,11 @@ export const IosWidget = ({
 
       {/* Bottom: title + description */}
       <div>
-        <p className="text-white font-semibold text-[13px] leading-tight line-clamp-2">
+        <p className="text-white type-title leading-tight line-clamp-2">
           {title}
         </p>
         {description && (
-          <p className="text-white/70 text-[10px] leading-tight mt-0.5 line-clamp-2">
+          <p className="text-white/70 type-meta leading-tight mt-0.5 line-clamp-2">
             {description}
           </p>
         )}

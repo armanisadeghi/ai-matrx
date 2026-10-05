@@ -260,7 +260,7 @@ export const Card = ({
         </div>
         <h3 className="font-semibold text-lg">{title}</h3>
         {description && (
-          <p className="text-sm text-gray-500 dark:text-gray-400">
+          <p className="type-body text-gray-500 dark:text-gray-400">
             {description}
           </p>
         )}

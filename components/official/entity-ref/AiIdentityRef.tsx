@@ -63,7 +63,7 @@ function IdentityLabel({ id, name, showId }: IdentityLabelProps) {
     >
       <span className="min-w-0 truncate font-medium">{name}</span>
       {showId ? (
-        <span className="select-all break-all font-mono text-[0.625rem] font-normal text-muted-foreground">
+        <span className="select-all break-all font-mono type-meta font-normal text-muted-foreground">
           {id}
         </span>
       ) : null}

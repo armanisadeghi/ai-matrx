@@ -110,13 +110,13 @@ export function DeepLinkMissNotice({
         className,
       )}
     >
-      <div className="flex min-w-0 items-center gap-2 text-sm">
+      <div className="flex min-w-0 items-center gap-2 type-body">
         <AlertCircle className="h-4 w-4 shrink-0 text-warning" />
         <span className="min-w-0">
           This link points at {article} {noun} that is not in this{" "}
           {containerLabel} — it may have been deleted, or it may sit outside what
           this view loads.{" "}
-          <code className="rounded bg-muted px-1 text-xs">{id}</code>
+          <code className="rounded bg-muted px-1 type-secondary">{id}</code>
         </span>
         {/* "Not here" is not "unreachable": if the token resolves, these still
             open the record where it does live. */}

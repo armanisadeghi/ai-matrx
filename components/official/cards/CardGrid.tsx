@@ -39,7 +39,7 @@ const SimpleCard: React.FC<SimpleCardProps> = ({
         </span>
       )}
       {description && (
-        <p className={cn("text-xs text-center text-gray-600 dark:text-gray-400 mt-1", descriptionClassName)}>
+        <p className={cn("type-secondary text-center text-gray-600 dark:text-gray-400 mt-1", descriptionClassName)}>
           {description}
         </p>
       )}

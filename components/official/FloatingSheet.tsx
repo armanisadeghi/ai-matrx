@@ -483,7 +483,7 @@ const FloatingSheet: React.FC<FloatingSheetProps> = ({
                                 )}
                                 {description &&
                                     (typeof description === "string" ? (
-                                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{description}</p>
+                                        <p className="type-body text-gray-500 dark:text-gray-400 mt-1">{description}</p>
                                     ) : (
                                         <div className="mt-1">{description}</div>
                                     ))}

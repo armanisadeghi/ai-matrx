@@ -38,7 +38,7 @@ export function FilterSection({
   return (
     <div className="space-y-1.5">
       <div className="flex items-center gap-1.5">
-        <span className="text-xs font-semibold uppercase tracking-wider text-foreground">
+        <span className="type-secondary font-semibold uppercase tracking-wider text-foreground">
           {label}
         </span>
         {active && <span className="h-1.5 w-1.5 rounded-full bg-primary" />}
@@ -83,7 +83,7 @@ export function RadioSelect<T extends string>({
           </span>
           <span className="flex-1 truncate">{opt.label}</span>
           {opt.hint && (
-            <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+            <span className="shrink-0 type-secondary tabular-nums text-muted-foreground">
               {opt.hint}
             </span>
           )}
@@ -206,7 +206,7 @@ export function FacetChips({
         </button>
       )}
       {matches.length === 0 && (
-        <p className="text-xs text-muted-foreground">No matches</p>
+        <p className="type-secondary text-muted-foreground">No matches</p>
       )}
     </div>
   );

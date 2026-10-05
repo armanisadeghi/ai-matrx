@@ -242,7 +242,7 @@ const ImageCropper = ({
             <div className="space-y-2">
               <div className="flex justify-between items-center">
                 <Label className="text-sm font-medium">Zoom</Label>
-                <span className="text-xs text-muted-foreground">{zoom.toFixed(1)}x</span>
+                <span className="type-secondary text-muted-foreground">{zoom.toFixed(1)}x</span>
               </div>
               <Slider
                 value={[zoom]}

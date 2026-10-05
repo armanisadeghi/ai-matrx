@@ -54,9 +54,9 @@ export function CalloutBanner({
       <div className="flex min-w-0 flex-1 items-start gap-2">
         {Icon && <Icon className={cn("mt-0.5 h-4 w-4 shrink-0", t.icon)} aria-hidden />}
         <div className="min-w-0">
-          <p className="text-sm font-medium text-foreground">{title}</p>
+          <p className="type-title text-foreground">{title}</p>
           {description && (
-            <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
+            <p className="mt-0.5 type-secondary text-muted-foreground">{description}</p>
           )}
         </div>
       </div>

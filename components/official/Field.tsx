@@ -210,7 +210,7 @@ export function Field({
             </span>
           )}
           {!required && optional && (
-            <span className="text-muted-foreground ml-1.5 text-xs font-normal">
+            <span className="text-muted-foreground ml-1.5 type-secondary font-normal">
               (optional)
             </span>
           )}
@@ -227,7 +227,7 @@ export function Field({
                   <HelpCircle className="h-3.5 w-3.5" />
                 </button>
               </TooltipTrigger>
-              <TooltipContent side="top" className="max-w-xs text-xs">
+              <TooltipContent side="top" className="max-w-xs type-secondary">
                 {help}
               </TooltipContent>
             </Tooltip>
@@ -236,7 +236,7 @@ export function Field({
       </div>
 
       {description && !error && (
-        <p className="text-xs text-muted-foreground">{description}</p>
+        <p className="type-secondary text-muted-foreground">{description}</p>
       )}
 
       {/*
@@ -268,7 +268,7 @@ export function Field({
           )}
         >
           {error ? (
-            <p className="text-xs text-destructive flex items-center gap-1">
+            <p className="type-secondary text-destructive flex items-center gap-1">
               <AlertCircle className="h-3 w-3 flex-shrink-0" />
               <span>{error}</span>
               <ErrorAlchemyMenu error={error} />
@@ -276,7 +276,7 @@ export function Field({
           ) : requiredEmpty ? (
             <p
               data-slot="field-empty-notice"
-              className="hidden text-xs text-muted-foreground items-center gap-1 [[data-field-root]:has(:placeholder-shown)_&]:flex"
+              className="hidden type-secondary text-muted-foreground items-center gap-1 [[data-field-root]:has(:placeholder-shown)_&]:flex"
             >
               <AlertCircle className="h-3 w-3 flex-shrink-0" />
               <span>Empty — the grey text is an example, not your answer.</span>
@@ -287,7 +287,7 @@ export function Field({
           {hasCounter && (
             <span
               className={cn(
-                "text-xs tabular-nums text-muted-foreground ml-auto",
+                "type-secondary tabular-nums text-muted-foreground ml-auto",
                 nearLimit && "text-warning",
                 overLimit && "text-destructive font-medium",
               )}

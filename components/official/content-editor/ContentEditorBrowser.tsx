@@ -130,7 +130,7 @@ function BrowserHeader({
   return (
     <div className="flex-none border-b border-border bg-zinc-50 dark:bg-zinc-900/60">
       {title && (
-        <div className="px-3 pt-2 pb-1 text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+        <div className="px-3 pt-2 pb-1 type-secondary font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
           {title}
         </div>
       )}

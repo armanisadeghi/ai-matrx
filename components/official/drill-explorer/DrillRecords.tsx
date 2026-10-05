@@ -294,7 +294,7 @@ export function DrillRecords({
   return (
     <div className="flex min-h-0 flex-col" data-drill-explorer-records>
       {/* ONE header row: the count in the records' own noun, what they add up to, when they are cut */}
-      <div data-drill-explorer-records-header className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 px-4 py-1 text-xs text-muted-foreground">
+      <div data-drill-explorer-records-header className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 px-4 py-1 type-secondary text-muted-foreground">
         {total !== null ? (
           <span data-drill-explorer-records-count className="font-medium text-foreground">
             {`${formatCount(total)} ${pluralNoun(noun, total)}`}
@@ -315,7 +315,7 @@ export function DrillRecords({
           </span>
         ) : null}
         {settling ? (
-          <span data-drill-explorer-records-settling className="inline-flex items-center gap-1 rounded bg-amber-500/15 px-1.5 py-0.5 text-[11px] font-medium text-amber-700 dark:text-amber-300">
+          <span data-drill-explorer-records-settling className="inline-flex items-center gap-1 rounded bg-amber-500/15 px-1.5 py-0.5 type-meta font-medium text-amber-700 dark:text-amber-300">
             Settling
             <InfoHint text={settlingTip || "A late cost moved these records off the counted number."} label="Why these differ" />
           </span>

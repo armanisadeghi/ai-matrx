@@ -276,7 +276,7 @@ export function ContentEditorTabsWithList({
 
       <div className="flex-1 min-w-0">
         {tabs.length === 0 ? (
-          <div className="flex items-center justify-center h-48 border border-dashed border-border rounded-lg text-xs text-zinc-500 dark:text-zinc-400">
+          <div className="flex items-center justify-center h-48 border border-dashed border-border rounded-lg type-secondary text-zinc-500 dark:text-zinc-400">
             Select a document from the sidebar to open it.
           </div>
         ) : (

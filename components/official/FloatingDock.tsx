@@ -269,7 +269,7 @@ function IconContainer({
               animate={{ opacity: 1, y: 0, x: "-50%" }}
               exit={{ opacity: 0, y: 1, x: "-50%" }}
               className={cn(
-                "p-0 whitespace-pre rounded-md bg-transparent text-gray-800 dark:text-gray-100 absolute left-1/2 -translate-x-1/2 -top-0 w-fit text-xs",
+                "p-0 whitespace-pre rounded-md bg-transparent text-gray-800 dark:text-gray-100 absolute left-1/2 -translate-x-1/2 -top-0 w-fit type-secondary",
                 bgColor,
               )}
             >

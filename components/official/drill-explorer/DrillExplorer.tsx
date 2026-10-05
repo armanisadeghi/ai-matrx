@@ -411,7 +411,7 @@ export function DrillExplorer({
               : []),
           ]}
         />
-        <div className="ml-auto flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+        <div className="ml-auto flex flex-wrap items-center gap-2 type-secondary text-muted-foreground">
           <span data-drill-explorer-freshness>
             {freshness?.recounting ? "Recounting…" : countedThrough ? `Counted through ${clockWords(countedThrough, zone)}` : null}
           </span>
@@ -532,7 +532,7 @@ export function DrillExplorer({
           def && records ? (
             <DrillRecords client={client} source={source} lane={lane} def={def} records={records} question={question} dimensions={dimensions} measures={measures} rowNoun={rowNoun} carried={asking} resolvers={resolvers} book={nameBook} siblings={{ offered: (siblings ?? []).map((x) => x.token), described: siblingDefs }} openRecord={openRecord} timeZone={zone} />
           ) : (
-            <p data-drill-explorer-no-grouping className="flex flex-wrap items-center gap-1.5 p-6 text-sm text-muted-foreground">
+            <p data-drill-explorer-no-grouping className="flex flex-wrap items-center gap-1.5 p-6 type-body text-muted-foreground">
               <span>No grouping. Pick one in Group by.</span>
               {recordsLink ? (
                 <span className="inline-flex items-center gap-1">

@@ -196,7 +196,7 @@ export function ContentEditorTabs({
                 aria-selected={isActive}
                 onClick={() => setActiveTab(tab.id)}
                 className={cn(
-                  "group flex items-center gap-1.5 px-3 py-1.5 text-xs cursor-pointer border-r border-border select-none transition-colors max-w-[200px]",
+                  "group flex items-center gap-1.5 px-3 py-1.5 type-secondary cursor-pointer border-r border-border select-none transition-colors max-w-[200px]",
                   isActive
                     ? "bg-white dark:bg-zinc-850 text-zinc-900 dark:text-zinc-100 font-medium"
                     : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/60 dark:hover:bg-zinc-800/60",
@@ -255,7 +255,7 @@ export function ContentEditorTabs({
                       <config.icon className="h-3.5 w-3.5" />
                       <div className="flex flex-col">
                         <span className="font-medium">{config.label}</span>
-                        <span className="text-[10px] text-zinc-500">
+                        <span className="type-meta text-zinc-500">
                           {config.description}
                         </span>
                       </div>

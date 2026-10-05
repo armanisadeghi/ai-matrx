@@ -156,8 +156,8 @@ export function DrillFindings({
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-[min(28rem,calc(100vw-2rem))] p-0">
-        <ul className="max-h-[70vh] divide-y divide-border overflow-auto text-sm">
-          {sections?.length && findings.length > 0 ? <li className="bg-muted/40 px-3 py-1 text-[11px] font-medium text-muted-foreground">{label ?? "Findings"}</li> : null}
+        <ul className="max-h-[70vh] divide-y divide-border overflow-auto type-body">
+          {sections?.length && findings.length > 0 ? <li className="bg-muted/40 px-3 py-1 type-meta font-medium text-muted-foreground">{label ?? "Findings"}</li> : null}
           {findings.map((finding) => {
             const answer = answers[finding.key] ?? { state: "reading" };
             const asked = findingQuestion(finding, question);
@@ -165,10 +165,10 @@ export function DrillFindings({
             const measure = measures.find((m) => m.key === measureKey);
             return (
               <li key={finding.key} data-drill-explorer-finding={finding.key} className="px-3 py-2">
-                <p className="flex items-center gap-1.5 text-sm font-medium text-foreground">
+                <p className="flex items-center gap-1.5 type-title text-foreground">
                   <span className="min-w-0 truncate">{finding.label}</span>
                   {answer.state === "answered" && answer.count > 0 ? (
-                    <span data-drill-explorer-finding-count className="rounded bg-muted px-1.5 text-[11px] font-medium tabular-nums text-muted-foreground">
+                    <span data-drill-explorer-finding-count className="rounded bg-muted px-1.5 type-meta font-medium tabular-nums text-muted-foreground">
                       {formatCount(answer.count)}
                     </span>
                   ) : null}
@@ -179,9 +179,9 @@ export function DrillFindings({
                 {answer.state === "reading" ? (
                   <div className="mt-1 h-4 w-40 animate-pulse rounded bg-muted" />
                 ) : answer.state === "failed" ? (
-                  <p className="mt-1 text-xs text-destructive">{answer.message}</p>
+                  <p className="mt-1 type-secondary text-destructive">{answer.message}</p>
                 ) : answer.rows.length === 0 ? (
-                  <p className="mt-1 text-xs text-muted-foreground" data-drill-explorer-finding-none>
+                  <p className="mt-1 type-secondary text-muted-foreground" data-drill-explorer-finding-none>
                     none
                   </p>
                 ) : (
@@ -204,7 +204,7 @@ export function DrillFindings({
                         </button>
                       </li>
                     ))}
-                    {answer.more > 0 ? <li className="px-1 text-[11px] text-muted-foreground">{`and ${answer.more.toLocaleString()} more`}</li> : null}
+                    {answer.more > 0 ? <li className="px-1 type-meta text-muted-foreground">{`and ${answer.more.toLocaleString()} more`}</li> : null}
                   </ul>
                 )}
               </li>
@@ -213,7 +213,7 @@ export function DrillFindings({
           {(sections ?? []).map((section) => (
             <li key={section.label} className="contents">
               <ul className="divide-y divide-border">
-                <li className="bg-muted/40 px-3 py-1 text-[11px] font-medium text-muted-foreground">{section.label}</li>
+                <li className="bg-muted/40 px-3 py-1 type-meta font-medium text-muted-foreground">{section.label}</li>
                 {section.render(open, () => setOpen(false))}
               </ul>
             </li>

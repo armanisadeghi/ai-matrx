@@ -305,7 +305,7 @@ const FullScreenOverlay: React.FC<FullScreenOverlayProps> = ({
           </DrawerTitle>
         ) : (
           <DialogTitle
-            className={cn("shrink-0 text-sm", hideTitle && "sr-only")}
+            className={cn("shrink-0 type-body", hideTitle && "sr-only")}
           >
             {title}
           </DialogTitle>
@@ -418,13 +418,13 @@ const FullScreenOverlay: React.FC<FullScreenOverlayProps> = ({
         )}
       >
         {errorMessage ? (
-          <div role="alert" className="mr-auto px-2 text-sm text-destructive">
+          <div role="alert" className="mr-auto px-2 type-body text-destructive">
             {errorMessage}
             {onRetry ? <Button variant="link" size="sm" onClick={onRetry}>Retry</Button> : null}
             <ErrorAlchemyMenu className="ml-auto" />
           </div>
         ) : null}
-        {isPending ? <span className="mr-auto px-2 text-sm text-muted-foreground">{pendingMessage}</span> : null}
+        {isPending ? <span className="mr-auto px-2 type-body text-muted-foreground">{pendingMessage}</span> : null}
         {showCancelButton &&
           (isMobile ? (
             <Button

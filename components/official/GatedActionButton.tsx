@@ -131,7 +131,7 @@ export function GatedActionButton({
           // (jobs-bar-2026-09-16, item 6). The contract above is explicit:
           // "phrased as an instruction — not a validation complaint."
           className={cn(
-            "min-w-0 text-xs font-medium text-muted-foreground",
+            "min-w-0 type-secondary font-medium text-muted-foreground",
             reasonClassName,
           )}
         >

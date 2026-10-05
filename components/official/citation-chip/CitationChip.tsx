@@ -75,16 +75,16 @@ export function CitationPopoverBody({
           aria-hidden
         />
         <div className="min-w-0">
-          <p className="truncate text-sm font-medium text-foreground">
+          <p className="truncate type-title text-foreground">
             {label}
           </p>
           {locator && (
-            <p className="text-xs text-muted-foreground">{locator}</p>
+            <p className="type-secondary text-muted-foreground">{locator}</p>
           )}
         </div>
       </div>
       {excerpt && (
-        <blockquote className="flex gap-2 rounded-md bg-muted/60 p-2 text-xs italic text-muted-foreground">
+        <blockquote className="flex gap-2 rounded-md bg-muted/60 p-2 type-secondary italic text-muted-foreground">
           <Quote className="h-3 w-3 shrink-0" aria-hidden />
           <span className={cn("not-italic", clampExcerpt && "line-clamp-6")}>
             {excerpt}

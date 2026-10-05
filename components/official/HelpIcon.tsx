@@ -165,7 +165,7 @@ const HelpIcon: React.FC<HelpIconProps> = ({
             <div className="flex items-center gap-2 mb-2">
               <HelpCircleIcon className="h-4 w-4 flex-shrink-0 text-blue-500 dark:text-blue-400" />
               {title && (
-                <h3 className="font-medium text-gray-900 dark:text-gray-100 text-sm">
+                <h3 className="text-gray-900 dark:text-gray-100 type-title">
                   {title}
                 </h3>
               )}
@@ -181,13 +181,13 @@ const HelpIcon: React.FC<HelpIconProps> = ({
             </div>
             
             {/* Content */}
-            <div className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+            <div className="type-body text-gray-700 dark:text-gray-300 leading-relaxed">
               {content ? content : (text && formatTextWithLineBreaks(text))}
             </div>
             
             {/* Required field pill */}
             {required && (
-              <div className="mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-100 dark:bg-amber-900/20 text-amber-800 dark:text-amber-400 text-xs font-medium rounded-full">
+              <div className="mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-100 dark:bg-amber-900/20 text-amber-800 dark:text-amber-400 type-secondary font-medium rounded-full">
                 <div className="w-1.5 h-1.5 bg-amber-600 dark:bg-amber-500 rounded-full"></div>
                 Required Field
               </div>

@@ -42,7 +42,7 @@ export const Grid = ({
   return (
     <div className={className}>
       {title && <h2 className="text-md font-semibold mb-4">{title}</h2>}
-      {description && <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{description}</p>}
+      {description && <p className="type-body text-gray-500 dark:text-gray-400 mb-4">{description}</p>}
       
       <div className={cn("grid", compact ? "gap-2" : "gap-4", colsClass)}>
         {items.map((item, index) => (
@@ -85,7 +85,7 @@ export const Grid = ({
                 </svg>
               </div>
               <h3 className="font-semibold text-lg">{addButtonText}</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">This is coming soon!</p>
+              <p className="type-body text-gray-500 dark:text-gray-400">This is coming soon!</p>
             </div>
           </div>
         )}

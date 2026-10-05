@@ -169,7 +169,7 @@ export function FieldHelp({
         }}
         className={cn(
           styles.help,
-          "w-80 max-w-[calc(100vw-2rem)] space-y-2 text-sm",
+          "w-80 max-w-[calc(100vw-2rem)] space-y-2 type-body",
         )}
         onOpenAutoFocus={(event) => event.preventDefault()}
       >
@@ -214,7 +214,7 @@ export function StatusToken({
     <span
       className={cn(
         styles.status,
-        "inline-flex max-w-full items-center gap-1.5 text-xs",
+        "inline-flex max-w-full items-center gap-1.5 type-secondary",
         color,
       )}
     >
@@ -243,7 +243,7 @@ export function PropertyRow({
   return (
     <div
       className={cn(
-        "flex min-w-0 flex-col gap-1 border-b border-border py-2 text-sm last:border-b-0 sm:flex-row sm:items-center sm:gap-4",
+        "flex min-w-0 flex-col gap-1 border-b border-border py-2 type-body last:border-b-0 sm:flex-row sm:items-center sm:gap-4",
         className,
       )}
     >
@@ -256,7 +256,7 @@ export function PropertyRow({
           {value}
         </div>
         {source != null || state != null ? (
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-foreground">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 type-secondary text-foreground">
             {source != null ? (
               <span>
                 <span className="font-semibold">Source:</span> {source}
@@ -289,7 +289,7 @@ export function ConfigurationValueList({
   entries: readonly { key: string; label: string; value: ReactNode }[];
 }) {
   return (
-    <dl aria-label={label} className="min-w-0 divide-y divide-border rounded-lg border border-border bg-card text-sm text-foreground">
+    <dl aria-label={label} className="min-w-0 divide-y divide-border rounded-lg border border-border bg-card type-body text-foreground">
       {entries.map((entry) => (
         <div key={entry.key} className="min-w-0 p-3">
           <dt className="mb-2 break-words font-semibold">{entry.label}</dt>
@@ -315,7 +315,7 @@ export function ConfigurationTable({
       <Table
         wrap={false}
         aria-label={label}
-        className={cn(styles.table, "text-sm text-foreground")}
+        className={cn(styles.table, "type-body text-foreground")}
       >
         <TableHeader className={styles.head}>
           <TableRow className="bg-accent/40 hover:bg-accent/40">

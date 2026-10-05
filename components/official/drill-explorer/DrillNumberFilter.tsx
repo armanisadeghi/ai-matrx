@@ -75,11 +75,11 @@ export function DrillNumberFilter({
         <Button icon={<ListFilter />} type="button" variant="quiet" data-drill-explorer-number-filter> Filter{mine.length > 0 ? ` (${mine.length})` : ""}
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-[min(22rem,calc(100vw-2rem))] p-2 text-sm">
+      <PopoverContent align="end" className="w-[min(22rem,calc(100vw-2rem))] p-2 type-body">
         {mine.length > 0 ? (
           <ul className="mb-2 flex flex-col gap-1">
             {mine.map((h, i) => (
-              <li key={`${h.measure}-${i}`} className="flex items-center justify-between gap-2 rounded bg-muted px-2 py-1 text-xs" data-drill-number-filter-line>
+              <li key={`${h.measure}-${i}`} className="flex items-center justify-between gap-2 rounded bg-muted px-2 py-1 type-secondary" data-drill-number-filter-line>
                 <span className="truncate">{label(h)}</span>
                 <button type="button" aria-label={`Remove ${label(h)}`} onClick={() => onChange(having.filter((x) => x !== h))} className="text-muted-foreground hover:text-foreground">
                   <X className="h-3 w-3" />

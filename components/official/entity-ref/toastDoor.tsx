@@ -54,7 +54,7 @@ export function toastDoor(
   return (
     <Link
       href={href}
-      className="shrink-0 rounded bg-primary px-2 py-1 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+      className="shrink-0 rounded bg-primary px-2 py-1 type-secondary font-medium text-primary-foreground transition-colors hover:bg-primary/90"
     >
       {options.label ?? "Open"}
     </Link>
