@@ -35,7 +35,7 @@ import {
   Zap,
   Wrench,
 } from "lucide-react";
-import MarkdownStream from "@/components/MarkdownStream";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -122,9 +122,9 @@ function RawValue({ value }: { value: unknown }) {
   const { text, clipped } = stringifyClipped(value);
   return (
     <div>
-      <MarkdownStream imagePolicy="ai"
-        content={"```json\n" + text + "\n```"}
-        isStreamActive={false}
+      <RichContent level="full" imagePolicy="ai"
+        source={"```json\n" + text + "\n```"}
+        isStreaming={false}
         hideCopyButton
       />
       {clipped && (
@@ -140,7 +140,7 @@ function Md({ content }: { content: string }) {
   const { text, clipped } = stringifyClipped(content);
   return (
     <div>
-      <MarkdownStream imagePolicy="ai" content={text} isStreamActive={false} hideCopyButton />
+      <RichContent level="full" imagePolicy="ai" source={text} isStreaming={false} hideCopyButton />
       {clipped && (
         <div className="mt-1 text-[10px] text-muted-foreground">
           Clipped for display — the stored payload is larger.
