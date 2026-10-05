@@ -21,7 +21,7 @@ jest.mock("../../../../store/hooks", () => ({
   useAppDispatch: () => () => undefined,
 }));
 // The host code this test renders reads the app's own hooks (P3): one double covers both.
-jest.mock("@host/lib/redux/hooks", () => jest.requireMock("../../../../store/hooks"));
+
 
 jest.mock(
   "../../../redux/execution-system/messages/messages.selectors",
@@ -94,10 +94,7 @@ registerChatUi({
   traceWarRoomRenderPath: jest.fn(),
 });
 
-jest.mock("@host/lib/error-boundary/ErrorBoundaryWithCapture", () => ({
-  ErrorBoundaryWithCapture: ({ children }: { children: React.ReactNode }) =>
-    children,
-}));
+
 
 import { AgentConversationDisplay } from "../AgentConversationDisplay";
 

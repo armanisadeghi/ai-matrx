@@ -8,7 +8,7 @@ const state: { instanceResources: { byConversationId: Record<string, Record<stri
 };
 jest.mock("../../../../store/hooks", () => ({ useAppDispatch: () => dispatch, useAppStore: () => ({ getState: () => state }) }));
 // The host code this test renders reads the app's own hooks (P3): one double covers both.
-jest.mock("@host/lib/redux/hooks", () => jest.requireMock("../../../../store/hooks"));
+
 jest.mock("../../../../context/sources/scopes", () => ({
   ...jest.requireActual("../../../../context/sources/scopes"),
   ...(() => ({ getAssociationsStore: () => ({ add, remove: jest.fn(), load: jest.fn(), getEdges: () => ({ status: "ready", edges: [] }) }) }))(),

@@ -55,12 +55,8 @@ jest.mock(
   "../../instance-input-capabilities/input-capabilities-snapshot",
   () => ({ fetchInputCapabilitiesSnapshot: async () => ({}) }),
 );
-jest.mock("@host/features/code/redux/codeEditHistoryHydration", () => ({
-  loadCodeEditHistoryThunk: () => ({ type: "test/loadCodeEditHistory" }),
-}));
-jest.mock("@host/features/canvas/materialization/reconcileArtifacts", () => ({
-  reconcileMessagesArtifacts: async () => undefined,
-}));
+
+
 
 function bundle() {
   const now = "2026-10-01T09:28:09.000Z";

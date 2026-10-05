@@ -13,7 +13,7 @@ let answer = SET_JSON;
 
 jest.mock("../../../../store/hooks", () => ({ useAppSelector: (sel: () => unknown) => sel() }));
 // The host code this test renders reads the app's own hooks (P3): one double covers both.
-jest.mock("@host/lib/redux/hooks", () => jest.requireMock("../../../../store/hooks"));
+
 jest.mock("../../../redux/execution-system/selectors/aggregate.selectors", () => ({
   selectLatestAccumulatedText: () => () => answer,
   selectLatestRequestStatus: () => () => "complete",
@@ -26,7 +26,7 @@ jest.mock("../../../hooks/useAgentLauncher", () => ({
 }));
 jest.mock("../../../hooks/useWidgetHandle", () => ({ useWidgetHandle: () => ({}) }));
 jest.mock("../../../redux/agent-definition/selectors", () => ({ selectAgentName: () => () => "" }));
-jest.mock("@host/components/official/entity-ref/EntityDoorControls", () => ({ EntityDoorControls: () => null }));
+
 jest.mock("@ai-matrx/design-system", () => ({
   ...jest.requireActual<Record<string, unknown>>("@ai-matrx/design-system"),
   ...({

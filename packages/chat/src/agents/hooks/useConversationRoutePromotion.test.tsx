@@ -15,7 +15,7 @@ jest.mock("../../store/hooks", () => ({
   useAppStore: jest.fn(),
 }));
 // The host code this test renders reads the app's own hooks (P3): one double covers both.
-jest.mock("@host/lib/redux/hooks", () => jest.requireMock("../../store/hooks"));
+
 
 jest.mock("../../host/navigation", () => ({
   useRouter: jest.fn(),

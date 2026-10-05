@@ -14,7 +14,7 @@ import { registerChatUi } from "../../../../host/ui-slots";
 
 jest.mock("../../../../store/hooks", () => ({ useAppSelector: () => null }));
 // The host code this test renders reads the app's own hooks (P3): one double covers both.
-jest.mock("@host/lib/redux/hooks", () => jest.requireMock("../../../../store/hooks"));
+
 const useUrlSync = jest.fn();
 registerChatUi({ useUrlSync: (...a: unknown[]) => useUrlSync(...a) });
 

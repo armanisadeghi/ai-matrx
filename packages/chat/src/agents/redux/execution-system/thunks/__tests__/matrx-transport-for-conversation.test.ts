@@ -12,16 +12,10 @@ jest.mock("@ai-matrx/data/net", () => ({
   resilientFetch: jest.fn(),
   isNetError: () => false,
 }));
-jest.mock("@host/lib/diagnostics/captureApiError", () => ({
-  captureApiError: jest.fn(),
-}));
-jest.mock("@host/lib/api/log-api-target", () => ({ logApiTarget: jest.fn() }));
+
+
 // The host's own transport (behind the server port) reads these.
-jest.mock("@host/lib/redux/slices/apiConfigSlice", () => ({
-  selectResolvedBaseUrl: () => "https://backend.test",
-  selectEndpointOverrideConfig: () => null,
-  selectAiApiVersion: () => "v1",
-}));
+
 jest.mock("../resolve-base-url", () => ({
   resolveBackendForConversation: jest.fn(),
 }));

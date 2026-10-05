@@ -48,11 +48,8 @@ jest.mock("../../../../../store/hooks", () => ({
   useAppStore: () => ({ getState: () => mockState }),
 }));
 // The host code this test renders reads the app's own hooks (P3): one double covers both.
-jest.mock("@host/lib/redux/hooks", () => jest.requireMock("../../../../../store/hooks"));
-jest.mock("@host/components/MarkdownStream", () => ({
-  __esModule: true,
-  default: ({ content }: { content: string }) => <div>{content}</div>,
-}));
+
+
 jest.mock("../UserActionBar", () => ({ UserActionBar: () => null }));
 jest.mock("../../MessageAttachmentStrip", () => ({
   MessageAttachmentStrip: () => null,
@@ -61,9 +58,7 @@ jest.mock(
   "../../../context-policies-display/ContextPolicyChipStrip",
   () => ({ ContextPolicyChipStrip: () => null }),
 );
-jest.mock("@host/components/official/entity-ref/EntityRef", () => ({
-  EntityRef: () => null,
-}));
+
 
 function buildState(): Record<string, unknown> {
   let variables = variablesReducer(

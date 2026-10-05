@@ -26,7 +26,21 @@ import {
 
 // ProTextarea carries the whole voice/AI toolbar (Redux, recording); the cells'
 // VALUE is what this suite is about, so a plain textarea stands in for it.
-
+jest.mock("@host/components/official/ProTextarea", () => {
+  const ReactActual = jest.requireActual("react");
+  return {
+    ProTextarea: ReactActual.forwardRef(
+      (
+        props: Record<string, unknown>,
+        ref: React.Ref<HTMLTextAreaElement>,
+      ) => {
+        const { autoGrow, minHeight, maxHeight, wrapperClassName, ...rest } = props;
+        void autoGrow; void minHeight; void maxHeight; void wrapperClassName;
+        return ReactActual.createElement("textarea", { ...rest, ref });
+      },
+    ),
+  };
+});
 
 jest.mock("@host/features/podcasts/generator/useVoices", () => ({
   useVoices: () => ({
@@ -45,7 +59,7 @@ const mockSpeak = jest.fn();
 jest.mock("@host/features/audio/service/speak", () => ({
   speak: (request: unknown) => mockSpeak(request),
 }));
-jest.mock("@host/features/audio/unlock", () => ({ primeAudioOutput: () => {} }));
+
 
 // eslint-disable-next-line import/first
 import { SpeechScriptEditor } from "@host/features/agents/components/builder/message-builders/SpeechScriptEditor";

@@ -50,6 +50,7 @@ import {
 import { fetchAgentOutputSchemas } from "../../../../../mandates/output-contract";
 import { Popover, PopoverContent, PopoverTrigger, Skeleton } from "@ai-matrx/design-system";
 import { cn } from "@ai-matrx/design-system";
+import { SegmentedControl } from "@ai-matrx/design-system/controls";
 import { ErrorNotice } from "@ai-matrx/chat/host/ui-slots";
 import { useAppDispatch, useAppSelector } from "../../../../../store/hooks";
 import { selectBuilderAdvancedSettings } from "../../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
@@ -354,28 +355,17 @@ function ShapePicker({
           </button>
         ) : null}
       </label>
-      <div className="mx-1 mt-1 flex shrink-0 gap-0.5" role="tablist" aria-label="Shape source">
-        {SHAPE_SOURCES.map((option) => {
-          const active = option.id === source;
-          const count = catalog.totals[option.id];
-          return (
-            <button
-              key={option.id}
-              type="button"
-              role="tab"
-              aria-selected={active}
-              onClick={() => setSource(option.id)}
-              className={cn(
-                "flex h-7 min-w-0 flex-1 items-center justify-center gap-1 rounded-md px-1.5 text-xs transition-colors",
-                active ? "bg-accent font-medium text-foreground" : "text-muted-foreground hover:bg-accent/60",
-              )}
-            >
-              <span className="truncate">{option.label}</span>
-              {count !== undefined ? <span className="shrink-0 tabular-nums opacity-70">{count}</span> : null}
-            </button>
-          );
-        })}
-      </div>
+      <SegmentedControl
+        className="mx-1 mt-1 shrink-0"
+        aria-label="Shape source"
+        value={source}
+        onValueChange={setSource}
+        data={SHAPE_SOURCES.map((option) => ({
+          value: option.id,
+          label: option.label,
+          count: catalog.totals[option.id],
+        }))}
+      />
       <DetailsError details={details} />
       <div ref={listRef} className="mt-1 max-h-64 min-h-0 flex-1 overflow-y-auto">
         {pinned.map((kind) => row(kind, kindLabel(kind), true))}

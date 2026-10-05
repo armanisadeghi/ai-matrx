@@ -193,7 +193,7 @@ export default function EnumDetail({
           onValueChange={(value) => setActiveTab(value as EnumDetailTab)}
           className="w-full"
         >
-          <TabsList variant="underline" overflow="scroll" className="px-4 pt-2">
+          <TabsList variant="underline" overflow="scroll" className="mx-4 mt-2">
             <TabsTrigger
               value="details"
             >

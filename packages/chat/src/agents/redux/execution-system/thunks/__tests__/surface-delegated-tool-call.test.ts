@@ -61,14 +61,8 @@ jest.mock(
   "../../../../ui-first-tools/dispatcher/dispatch-ui-first-tool.thunk",
   () => ({ dispatchUiFirstTool: mockExecutor("uiFirst") }),
 );
-jest.mock(
-  "@host/features/agents/war-room-tools/dispatcher/dispatch-war-room-tool.thunk",
-  () => ({ dispatchWarRoomTool: mockExecutor("warRoom") }),
-);
-jest.mock(
-  "@host/features/agents/war-room-master-tools/dispatcher/dispatch-war-room-master-tool.thunk",
-  () => ({ dispatchWarRoomMasterTool: mockExecutor("warRoomMaster") }),
-);
+
+
 jest.mock(
   "../../../../scribe-tools/dispatcher/dispatch-scribe-tool.thunk",
   () => ({ dispatchScribeTool: mockExecutor("scribe") }),

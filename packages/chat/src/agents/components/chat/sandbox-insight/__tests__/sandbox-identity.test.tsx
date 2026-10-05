@@ -26,9 +26,7 @@ import { configureStore } from "@reduxjs/toolkit";
 
 import { SandboxCanvasBody } from "../SandboxCanvasBody";
 
-jest.mock("@host/features/code/terminal/SimpleTerminal", () => ({
-  SimpleTerminal: () => <div data-testid="simple-terminal" />,
-}));
+
 jest.mock("../../../debug/SandboxFileViewer", () => ({
   SandboxFileViewer: () => <div data-testid="sandbox-file-viewer" />,
 }));

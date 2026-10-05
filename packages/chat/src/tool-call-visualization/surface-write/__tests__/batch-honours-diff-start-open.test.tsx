@@ -29,14 +29,12 @@ jest.mock("../../../store/hooks", () => ({
   useAppDispatch: () => jest.fn(),
 }));
 // The host code this test renders reads the app's own hooks (P3): one double covers both.
-jest.mock("@host/lib/redux/hooks", () => jest.requireMock("../../../store/hooks"));
+
 jest.mock(
   "../../../agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors",
   () => ({ selectToolDisplayPreference: jest.fn() }),
 );
-jest.mock("@host/components/loaders/ShimmerText", () => ({
-  ShimmerText: ({ text }: { text: string }) => <span>{text}</span>,
-}));
+
 jest.mock("../../registry/registry", () => ({ getToolDisplayName: () => "Context" }));
 jest.mock("../../db-renderer/useDbToolMeta", () => ({ useDbToolMeta: () => null }));
 jest.mock("../../components/toolCardUiSession", () => ({

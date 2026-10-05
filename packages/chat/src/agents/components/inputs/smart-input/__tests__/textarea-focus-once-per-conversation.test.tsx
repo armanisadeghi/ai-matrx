@@ -15,8 +15,8 @@ jest.mock("../../../../../store/hooks", () => ({
   // Every selector reads as empty: no draft, not executing, nothing to send.
   useAppSelector: () => "",
 }));
-jest.mock("@host/lib/redux/hooks", () => jest.requireMock("../../../../../store/hooks"));
-jest.mock("@host/components/ui/file-upload/useClipboardPaste", () => ({ useClipboardPaste: () => undefined }));
+
+
 jest.mock("../../resources/usePasteImageResource", () => ({ usePasteImageResource: () => ({ handlePaste: () => false }) }));
 jest.mock("../../../../hooks/useInstanceInputUndoRedo", () => ({ useInstanceInputUndoRedo: () => undefined }));
 jest.mock("../ComposerDraftNotice", () => ({ ComposerDraftNotice: () => null }));

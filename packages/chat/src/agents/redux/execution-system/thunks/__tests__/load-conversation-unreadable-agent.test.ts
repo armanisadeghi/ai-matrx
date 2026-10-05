@@ -42,9 +42,7 @@ jest.mock(
 );
 const mockToastInfo = jest.fn();
 jest.mock("../../../../../host/notify", () => ({ toast: { info: (...a: unknown[]) => mockToastInfo(...a) } }));
-jest.mock("@host/features/code/redux/codeEditHistoryHydration", () => ({
-  loadCodeEditHistoryThunk: () => ({ type: "test/loadCodeEditHistory" }),
-}));
+
 
 const CONVERSATION_ID = "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee";
 const AGENT_ID = "6cb7be35-719a-43a0-8faf-075cf300d4a7";

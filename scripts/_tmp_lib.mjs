@@ -12,3 +12,9 @@ export async function go(ctx, page, path) {
     if (!page.url().includes("__dev-walk")) return;
   }
 }
+export async function seat(ctx, name) {
+  for (let i = 0; i < 4; i++) {
+    try { return await ctx.page(name, { org: null, fresh: i > 0 }); } catch (e) { console.log("[seat] retry", name, String(e).slice(0, 100)); await sleep(5000); }
+  }
+  throw new Error("could not sign in " + name);
+}

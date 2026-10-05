@@ -66,7 +66,7 @@ jest.mock("../../../../../store/hooks", () => ({
   useAppDispatch: () => jest.fn(),
   useAppStore: () => ({ getState: () => mockState }),
 }));
-jest.mock("@host/lib/redux/hooks", () => jest.requireMock("../../../../../store/hooks"));
+
 jest.mock("@host/components/MarkdownStream", () => ({
   __esModule: true,
   default: ({ content }: { content: string }) => <div>{content}</div>,
@@ -83,9 +83,7 @@ jest.mock(
   "../../../context-policies-display/ContextPolicyChipStrip",
   () => ({ ContextPolicyChipStrip: () => null }),
 );
-jest.mock("@host/components/official/entity-ref/EntityRef", () => ({
-  EntityRef: () => null,
-}));
+
 
 const CONVERSATION = "11111111-1111-4111-8111-111111111111";
 const REQUEST = "55555555-5555-4555-8555-555555555555";

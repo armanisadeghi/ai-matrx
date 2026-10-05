@@ -13,6 +13,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { cn } from "@ai-matrx/design-system";
+import { Tabs } from "@ai-matrx/design-system/controls";
 
 export interface CanvasPropertiesTab {
   id: string;
@@ -38,28 +39,16 @@ export function CanvasPropertiesPanel({
       aria-label={variant === "sheet" ? "Properties" : undefined}
       className={cn("flex h-full min-h-0 flex-col bg-background px-2.5 pt-1.5", className)}
     >
-      <div role="tablist" aria-label="Properties tabs" className="flex shrink-0 gap-2.5">
-        {tabs.map((tab) => {
-          const on = tab.id === active?.id;
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              role="tab"
-              aria-selected={on}
-              onClick={() => setActiveId(tab.id)}
-              className={cn(
-                "border-b-2 px-1 py-1.5 text-[13px] transition-colors",
-                on
-                  ? "border-foreground font-medium text-foreground"
-                  : "border-transparent text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {tab.label}
-            </button>
-          );
-        })}
-      </div>
+      {active ? (
+        <Tabs
+          variant="underline"
+          className="shrink-0"
+          aria-label="Properties tabs"
+          value={active.id}
+          onValueChange={setActiveId}
+          data={tabs.map((tab) => ({ value: tab.id, label: tab.label }))}
+        />
+      ) : null}
       {active ? (
         <FadingScroll key={active.id} className="min-h-0 flex-1">
           {active.content}

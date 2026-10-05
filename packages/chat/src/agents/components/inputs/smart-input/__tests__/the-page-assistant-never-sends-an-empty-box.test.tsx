@@ -25,9 +25,7 @@ jest.mock("../SmartAgentInputStacked", () => ({
 }));
 jest.mock("../InboxQueueStrip", () => ({ InboxQueueStrip: () => null }));
 jest.mock("../ViewOnlyComposerBar", () => ({ ViewOnlyComposerBar: () => null }));
-jest.mock("@host/components/official/composer/useTouchOnlyDevice", () => ({
-  useTouchOnlyDevice: () => false,
-}));
+
 jest.mock("../../../../redux/execution-system/conversations/conversations.selectors", () => ({
   selectViewerCanReply: () => () => true,
 }));
@@ -38,7 +36,7 @@ jest.mock("../../../../../store/hooks", () => ({
   useAppDispatch: () => () => undefined,
   useAppSelector: (selector: (s: unknown) => unknown) => selector(state),
 }));
-jest.mock("@host/lib/redux/hooks", () => jest.requireMock("../../../../../store/hooks"));
+
 
 import { SmartAgentInput } from "../SmartAgentInput";
 

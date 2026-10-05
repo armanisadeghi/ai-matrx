@@ -21,9 +21,7 @@ import { featureRegExp } from "@host/scripts/lib/source-roots.cjs";
 
 // Keep the cache module light in jest: the compiler + fetch paths are not
 // under test here (invalidation + version bookkeeping are).
-jest.mock("@host/features/agent-apps/utils/compile-slot", () => ({
-  compileSlotComponent: jest.fn(() => ({ Component: () => null })),
-}));
+
 jest.mock(
   "../db-renderer/fetchToolRendererRow",
   () => ({ fetchToolRendererRow: jest.fn(async () => null) }),

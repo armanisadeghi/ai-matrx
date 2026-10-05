@@ -37,16 +37,9 @@ jest.mock("../../../host/diagnostics", () => ({
 }));
 // The subject still reaches the app's Error Inspector through other host
 // modules; both sinks share one mock so no capture escapes the assertions.
-jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({
-  ...jest.requireActual("@/lib/diagnostics/errorCaptureStore"),
-  captureError: jest.fn(),
-}));
-jest.mock("@/features/surfaces/manifests/registry", () => ({
-  getManifest: mockGetManifest,
-}));
-jest.mock("@/features/content-ir/registry/schema-source-kind-tables", () => ({
-  getKindInputContractBySlug: jest.fn(),
-}));
+
+
+
 
 import {
   applySurfaceWrite,

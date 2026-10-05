@@ -39,11 +39,8 @@ jest.mock("../../../store/hooks", () => ({
     }),
 }));
 // The host code this test renders reads the app's own hooks (P3): one double covers both.
-jest.mock("@host/lib/redux/hooks", () => jest.requireMock("../../../store/hooks"));
-jest.mock("@host/lib/redux/slices/appContextSlice", () => ({
-  selectOrganizationId: () => "org-1",
-  selectShouldPromptForOrganization: () => false,
-}));
+
+
 // The org seam (P7) carries the names this test stood in for above; the rest stay real.
 jest.mock("../../../host/org", () => {
   const standIns: Record<string, unknown> = {

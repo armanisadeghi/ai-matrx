@@ -94,6 +94,7 @@ import { ConversationSourceFilterTree } from "./ConversationSourceFilterTree";
 import { AllLanesOffNotice } from "./ConversationLaneToggles";
 import { ConversationTrashSection } from "./ConversationTrashSection";
 import { ArchivedDisclosure } from "@ai-matrx/design-system";
+import { SegmentedControl } from "@ai-matrx/design-system/controls";
 import { ItemRow } from "@host/components/official/item/ItemRow";
 import { toast } from "../../../host/notify";
 import {
@@ -1191,49 +1192,16 @@ interface GroupingToggleProps {
   onChange: (next: HistoryGrouping) => void;
 }
 
-const GroupingToggle: React.FC<GroupingToggleProps> = ({ value, onChange }) => {
-  return (
-    <div
-      role="tablist"
-      aria-label="Group conversations by"
-      className="flex h-6 items-stretch rounded-sm border border-border"
-    >
-      <ToggleBtn
-        active={value === "date"}
-        onClick={() => onChange("date")}
-        title="Group by date"
-        aria-label="Group by date"
-      >
-        <CalendarDays size={11} />
-      </ToggleBtn>
-      <ToggleBtn
-        active={value === "agent"}
-        onClick={() => onChange("agent")}
-        title="Group by agent"
-        aria-label="Group by agent"
-      >
-        <Cpu size={11} />
-      </ToggleBtn>
-    </div>
-  );
-};
-
-const ToggleBtn: React.FC<
-  React.ButtonHTMLAttributes<HTMLButtonElement> & { active: boolean }
-> = ({ active, className, children, ...rest }) => (
-  <button
-    type="button"
-    role="tab"
-    aria-selected={active}
-    className={cn(
-      "flex items-center justify-center px-1.5 text-muted-foreground first:rounded-l-sm last:rounded-r-sm hover:bg-accent/60",
-      active && "bg-accent text-accent-foreground",
-      className,
-    )}
-    {...rest}
-  >
-    {children}
-  </button>
+const GroupingToggle: React.FC<GroupingToggleProps> = ({ value, onChange }) => (
+  <SegmentedControl
+    aria-label="Group conversations by"
+    value={value}
+    onValueChange={onChange}
+    data={[
+      { value: "date", label: <CalendarDays />, ariaLabel: "Group by date", title: "Group by date" },
+      { value: "agent", label: <Cpu />, ariaLabel: "Group by agent", title: "Group by agent" },
+    ]}
+  />
 );
 
 interface SectionProps {
