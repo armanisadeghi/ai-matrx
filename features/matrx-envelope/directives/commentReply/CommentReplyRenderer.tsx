@@ -84,6 +84,7 @@ function CommentReplyLine({ handle, conversationId, streaming }: { handle: strin
           id: thread.id,
           title: thread.title,
           focus: remark?.commentId ?? link?.rootId ?? null,
+          conversationId: thread.entity === "message" ? conversationId : null,
         })
       }
     >

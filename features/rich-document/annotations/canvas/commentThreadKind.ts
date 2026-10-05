@@ -36,6 +36,8 @@ export type CommentThreadData = {
   title: string;
   /** The root comment to bring forward (a reply's id resolves to its root's card). */
   focus: string | null;
+  /** The chat this thread is about (a message's thread) — the tab closes when another chat is on screen. */
+  conversationId?: string | null;
 };
 
 export function commentThreadKey(entity: string, id: string): string {
@@ -52,13 +54,14 @@ export function commentThreadOpenInput(data: CommentThreadData): CanvasOpenInput
 
 export function readCommentThreadData(data: unknown): CommentThreadData | null {
   if (!data || typeof data !== "object" || Array.isArray(data)) return null;
-  const { entity, id, title, focus } = data as Record<string, unknown>;
+  const { entity, id, title, focus, conversationId } = data as Record<string, unknown>;
   if (typeof entity !== "string" || !entity || typeof id !== "string" || !id) return null;
   return {
     entity,
     id,
     title: typeof title === "string" && title ? title : "Comments",
     focus: typeof focus === "string" && focus ? focus : null,
+    ...(typeof conversationId === "string" && conversationId ? { conversationId } : {}),
   };
 }
 
@@ -69,7 +72,7 @@ export function readCommentThreadData(data: unknown): CommentThreadData | null {
  */
 export function openCommentThread(
   canvas: CanvasController | null,
-  input: { entity: string; id: string; title?: string | null; focus?: string | null },
+  input: { entity: string; id: string; title?: string | null; focus?: string | null; conversationId?: string | null },
 ): CanvasItemId | null {
   const opened = openCanvasItem(
     canvas,
@@ -78,6 +81,7 @@ export function openCommentThread(
       id: input.id,
       title: input.title || "Comments",
       focus: input.focus ?? null,
+      ...(input.conversationId ? { conversationId: input.conversationId } : {}),
     }),
   );
   if (opened) openDockFor(commentThreadKey(input.entity, input.id));
