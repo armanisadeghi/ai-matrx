@@ -12,6 +12,7 @@ import {
 } from "@/lib/seo/search-engine-indexed";
 import { searchEngineRobots } from "@/lib/seo/search-engine-indexed.server";
 import { PublicResourceView } from "./PublicResourceView";
+import { publicResourceDescription, publicResourceTitle } from "../../publicResourceText";
 
 /**
  * `/p/e/[resourceType]/[id]` — the id-addressed, INDEXABLE public viewer for
@@ -38,11 +39,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       robots: NOT_INDEXED_ROBOTS,
     };
   }
+  // Plain-text slots: a title / description holding kind JSON reads as its words (K7).
+  const title = publicResourceTitle(resource.title);
   const description =
-    resource.description ?? `A ${resource.displayLabel.toLowerCase()} shared publicly on AI Matrx.`;
+    publicResourceDescription(resource.description) ??
+    `A ${resource.displayLabel.toLowerCase()} shared publicly on AI Matrx.`;
   const canonical = `/p/e/${resource.resourceType}/${resource.resourceId}`;
   return {
-    title: resource.title, // the root layout's title template adds the brand
+    title, // the root layout's title template adds the brand
     description,
     alternates: { canonical },
     // THE INDEXED SWITCH (access ladder T-12): published to the web is not the same as
@@ -53,12 +57,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         ])
       : NOT_INDEXED_ROBOTS,
     openGraph: {
-      title: resource.title,
+      title,
       description,
       url: canonical,
       type: "article",
     },
-    twitter: { card: "summary", title: resource.title, description },
+    twitter: { card: "summary", title, description },
   };
 }
 

@@ -17,6 +17,7 @@ import { PublicFlashcardDeck } from "@/features/flashcards/components/public/Pub
 import { isForkable } from "@/utils/permissions/shareLinks";
 import { RecordFieldsView } from "@/features/sharing/lenses/record-fields-view";
 import type { PublicResource } from "../../loadPublicResource";
+import { publicResourceTitle } from "../../publicResourceText";
 
 /** `reading` for a document body; card faces keep the default density. */
 function Markdown({
@@ -122,7 +123,7 @@ export function PublicResourceView({ resource }: { resource: PublicResource }) {
         {headerActions}
         <PublicFlashcardDeck
           setId={resource.resourceId}
-          title={resource.title}
+          title={publicResourceTitle(resource.title)}
           description={resource.description}
           label={resource.displayLabel}
           cards={resource.cards ?? []}
@@ -149,7 +150,7 @@ export function PublicResourceView({ resource }: { resource: PublicResource }) {
         <div className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
           {resource.displayLabel}
         </div>
-        <h1 className="text-3xl font-semibold tracking-tight text-foreground">{resource.title}</h1>
+        <h1 className="text-3xl font-semibold tracking-tight text-foreground">{publicResourceTitle(resource.title)}</h1>
       </div>
       {renderBody(resource)}
     </div>
