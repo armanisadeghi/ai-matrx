@@ -114,6 +114,7 @@ import { loadDbEnv } from "../lib/direct-db";
 import { loadBranchDbEnv, loadBranchRef } from "../lib/migration-target";
 import { boundaryVerdict } from "./boundary-verdict";
 import { DOOR_MISSING_TOLERANCE, doorSurfaceVerdict } from "./door-surface";
+import { unexpectedUserTriggers } from "./trigger-precondition";
 import {
   DEFAULT_MAX_BOUNDARY_AGE_HOURS,
   boundaryAgeVerdict,
