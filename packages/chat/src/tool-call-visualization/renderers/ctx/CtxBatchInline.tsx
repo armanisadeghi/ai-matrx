@@ -36,6 +36,7 @@ import { ToolErrorCard } from "../../result-fields/ToolErrorCard";
 import { CtxItemCard, type CtxItem } from "./CtxItemCard";
 import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 import { contextEntryLabel } from "../../../agents/components/context-policies-display/contextEntryLabel";
+import { Button } from "@ai-matrx/design-system/controls";
 
 const INLINE_ITEM_CAP = 4;
 
@@ -197,16 +198,10 @@ export const CtxBatchInline: React.FC<Props> = ({
       </div>
 
       {remaining > 0 && (
-        <button
-          type="button"
-          onClick={(e) => {
+        <Button variant="quiet" tone="primary" onClick={(e) => {
             e.stopPropagation();
             setShowAll(true);
-          }}
-          className="text-xs font-medium text-primary hover:underline"
-        >
-          +{remaining} more
-        </button>
+          }}>+{remaining}more</Button>
       )}
     </div>
   );

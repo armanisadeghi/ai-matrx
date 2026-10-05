@@ -16,6 +16,7 @@
 import { createContext, forwardRef, useContext, useEffect, type ComponentType, type CSSProperties, type KeyboardEventHandler, type ReactNode } from "react";
 import { ChevronDown, ChevronLeft, ChevronRight, Link2, Loader2, Search, X } from "lucide-react";
 import { cn } from "@ai-matrx/design-system";
+import { Button } from "@ai-matrx/design-system/controls";
 
 /**
  * Inside a phone sheet the sheet's own iOS nav bar owns Back (and the title),
@@ -63,15 +64,7 @@ export function ResourcePickerSubViewHeader({
   }
   return (
     <div className="flex shrink-0 items-center gap-1.5 border-b border-border p-1.5">
-      <button
-        type="button"
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-50 pointer-coarse:h-11 pointer-coarse:w-11"
-        onClick={onBack}
-        disabled={disabled}
-        aria-label="Back"
-      >
-        <ChevronLeft className="h-5 w-5" />
-      </button>
+      <Button variant="quiet" icon={<ChevronLeft />} onClick={onBack} disabled={disabled} aria-label="Back" className="shrink-0" />
       {search ? (
         <div className="min-w-0 flex-1">{search}</div>
       ) : (
@@ -125,14 +118,7 @@ export const PickerSearchField = forwardRef<
         className="h-9 w-full disabled:opacity-60 rounded-lg border border-border bg-muted/40 pl-8 pr-8 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-primary/40 focus:bg-background pointer-coarse:h-11"
       />
       {value ? (
-        <button
-          type="button"
-          aria-label="Clear"
-          onClick={() => onChange("")}
-          className="absolute right-1.5 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
-        >
-          <X className="h-3.5 w-3.5" />
-        </button>
+        <Button variant="quiet" icon={<X />} aria-label="Clear" onClick={() => onChange("")} className="absolute right-1.5 top-1/2" />
       ) : null}
     </div>
   );

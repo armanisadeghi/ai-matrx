@@ -52,6 +52,7 @@ import {
 } from "../search/parseSearch";
 import { SearchInline } from "../search/SearchInline";
 import { SubagentReportBlock } from "./SubagentReportBlock";
+import { Button } from "@ai-matrx/design-system/controls";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Atoms
@@ -265,23 +266,13 @@ export const ResearchInline: React.FC<ToolRendererProps> = ({
 
             {/* View all → overlay (Report / Sources / Full Text / Raw) */}
             {onOpenOverlay && (parsed.sources.length > 0 || parsed.reads.length > 0) && (
-                <button
-                    type="button"
-                    onClick={(e) => {
+                <Button variant="outline" iconEnd={<ArrowRight />} onClick={(e) => {
                         e.stopPropagation();
                         onOpenOverlay(`tool-group-${toolGroupId}`);
-                    }}
-                    className="group flex w-full items-center justify-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm font-medium text-foreground transition-colors hover:border-primary/40 hover:bg-muted/50"
-                >
-                    <span>
-                        View full research
+                    }} className="w-full">View full research
                         {parsed.sources.length > 0
                             ? ` · ${parsed.sources.length} sources`
-                            : ""}
-                        {parsed.reads.length > 0 ? ` · ${parsed.reads.length} read` : ""}
-                    </span>
-                    <ArrowRight className="h-3.5 w-3.5 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
-                </button>
+                            : ""}{parsed.reads.length > 0 ? ` · ${parsed.reads.length} read` : ""}</Button>
             )}
         </div>
     );

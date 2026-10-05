@@ -34,6 +34,7 @@ import { ResultRecordRef } from "./ResultRecordRef";
 import { TextWithDoors } from "@ai-matrx/chat/host/ui-slots";
 import { valueCarriesKind } from "@ai-matrx/chat/utils/content-ir/surfaces/json-kind-signal";
 import { useReportKindAtRawRenderer } from "@host/features/content-ir/surfaces/report-kind-at-raw-renderer";
+import { Button } from "@ai-matrx/design-system/controls";
 
 export type ResultDensity = "inline" | "full";
 
@@ -75,16 +76,10 @@ const InlineText: React.FC<{ value: string }> = ({ value }) => {
     return (
         <div>
             <p className="whitespace-pre-wrap break-words text-sm text-foreground">{shown}</p>
-            <button
-                type="button"
-                onClick={(e) => {
+            <Button variant="quiet" tone="primary" onClick={(e) => {
                     e.stopPropagation();
                     setExpanded((v) => !v);
-                }}
-                className="mt-1 text-xs font-medium text-primary hover:underline"
-            >
-                {expanded ? "Show less" : "Show more"}
-            </button>
+                }} className="mt-1">{expanded ? "Show less" : "Show more"}</Button>
         </div>
     );
 };
@@ -116,16 +111,10 @@ const ScalarList: React.FC<{
                 ))}
             </ul>
             {remaining > 0 && (
-                <button
-                    type="button"
-                    onClick={(e) => {
+                <Button variant="quiet" tone="primary" onClick={(e) => {
                         e.stopPropagation();
                         setShowAll(true);
-                    }}
-                    className="text-xs font-medium text-primary hover:underline"
-                >
-                    +{remaining} more
-                </button>
+                    }}>+{remaining}more</Button>
             )}
         </div>
     );

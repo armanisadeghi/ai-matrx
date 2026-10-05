@@ -53,6 +53,7 @@ import { KindValueNode } from "./KindValueNode";
 import { rootKindSlug } from "@ai-matrx/chat/utils/content-ir/surfaces/json-kind-signal";
 import { useReportKindAtRawRenderer } from "@host/features/content-ir/surfaces/report-kind-at-raw-renderer";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
+import { Button } from "@ai-matrx/design-system/controls";
 
 export interface KeyValueGridProps {
   value: Record<string, unknown>;
@@ -259,16 +260,10 @@ const IdentifierListRow: React.FC<{ label: string; ids: string[] }> = ({
   const [open, setOpen] = React.useState(false);
   return (
     <div className="text-xs text-muted-foreground">
-      <button
-        type="button"
-        onClick={(e) => {
+      <Button variant="quiet" onClick={(e) => {
           e.stopPropagation();
           setOpen((v) => !v);
-        }}
-        className="font-medium hover:underline"
-      >
-        {label} ({ids.length}){open ? " — hide" : " — show"}
-      </button>
+        }}>{label}({ids.length}){open ? " — hide" : " — show"}</Button>
       {open && (
         <div className="mt-1 flex flex-wrap items-center gap-1.5">
           {ids.map((id, i) => (
@@ -295,17 +290,10 @@ const NotApplicableRow: React.FC<{
   const [open, setOpen] = React.useState(false);
   return (
     <div className="text-xs text-muted-foreground">
-      <button
-        type="button"
-        onClick={(e) => {
+      <Button variant="quiet" onClick={(e) => {
           e.stopPropagation();
           setOpen((v) => !v);
-        }}
-        className="font-medium hover:underline"
-      >
-        {`${entries.length} ${entries.length === 1 ? "field" : "fields"} did not apply`}
-        {open ? " — hide" : " — show"}
-      </button>
+        }}>{`${entries.length} ${entries.length === 1 ? "field" : "fields"} did not apply`}{open ? " — hide" : " — show"}</Button>
       {open && (
         <dl className="mt-1 grid grid-cols-[fit-content(40%)_minmax(0,1fr)] items-baseline gap-x-4 gap-y-1">
           {entries.map(([key, val]) => (
@@ -505,16 +493,10 @@ const KeyValueGridBody: React.FC<KeyValueGridProps> = ({
       )}
 
       {remaining > 0 && (
-        <button
-          type="button"
-          onClick={(e) => {
+        <Button variant="quiet" tone="primary" onClick={(e) => {
             e.stopPropagation();
             setShowAll(true);
-          }}
-          className="text-xs font-medium text-primary hover:underline"
-        >
-          +{remaining} more {remaining === 1 ? "field" : "fields"}
-        </button>
+          }}>+{remaining}more {remaining === 1 ? "field" : "fields"}</Button>
       )}
     </div>
   );

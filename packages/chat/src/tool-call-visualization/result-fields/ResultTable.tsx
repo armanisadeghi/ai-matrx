@@ -34,6 +34,7 @@ import {
   MOBILE_TABLE_FROZEN_CELL,
   MOBILE_TABLE_FROZEN_HEAD,
 } from "@ai-matrx/chat/ui/mobileTable";
+import { Button } from "@ai-matrx/design-system/controls";
 
 export interface ResultTableProps {
     rows: Array<Record<string, unknown>>;
@@ -117,32 +118,18 @@ const NestedCell: React.FC<{ value: unknown; depth: number; embedMedia: boolean 
         : `{${Object.keys(value as Record<string, unknown>).length} fields}`;
     if (!open) {
         return (
-            <button
-                type="button"
-                onClick={(e) => {
+            <Button variant="quiet" onClick={(e) => {
                     e.stopPropagation();
                     setOpen(true);
-                }}
-                className="whitespace-nowrap font-mono text-xs text-muted-foreground hover:text-foreground"
-                title="Expand"
-            >
-                {summary}
-            </button>
+                }} title="Expand">{summary}</Button>
         );
     }
     return (
         <div className="min-w-0">
-            <button
-                type="button"
-                onClick={(e) => {
+            <Button variant="quiet" onClick={(e) => {
                     e.stopPropagation();
                     setOpen(false);
-                }}
-                className="mb-1 whitespace-nowrap font-mono text-xs text-muted-foreground hover:text-foreground"
-                title="Collapse"
-            >
-                {summary} ×
-            </button>
+                }} title="Collapse" className="mb-1">{summary}×</Button>
             <ResultValue value={value} density="inline" depth={depth + 1} embedMedia={embedMedia} />
         </div>
     );
@@ -160,17 +147,10 @@ const TechnicalDetailsCell: React.FC<{
 
     return (
         <div className="min-w-0">
-            <button
-                type="button"
-                onClick={(event) => {
+            <Button variant="quiet" onClick={(event) => {
                     event.stopPropagation();
                     setOpen((value) => !value);
-                }}
-                aria-expanded={open}
-                className="whitespace-nowrap text-xs font-medium text-muted-foreground hover:text-foreground"
-            >
-                {open ? "Hide details" : `${count} ${count === 1 ? "detail" : "details"}`}
-            </button>
+                }} aria-expanded={open}>{open ? "Hide details" : `${count} ${count === 1 ? "detail" : "details"}`}</Button>
             {open ? (
                 <div className="mt-2 min-w-[16rem] max-w-md rounded-md bg-muted/30 p-2">
                     <ResultValue
@@ -505,31 +485,18 @@ export const ResultTable: React.FC<ResultTableProps> = ({
             {(remaining > 0 || canSave) && (
                 <div className="flex flex-wrap items-center gap-3">
                     {remaining > 0 && (
-                        <button
-                            type="button"
-                            onClick={(e) => {
+                        <Button variant="quiet" tone="primary" onClick={(e) => {
                                 e.stopPropagation();
                                 setShowAll(true);
-                            }}
-                            className="text-xs font-medium text-primary "
-                        >
-                            +{remaining} more {remaining === 1 ? "row" : "rows"}
-                        </button>
+                            }}>+{remaining}more {remaining === 1 ? "row" : "rows"}</Button>
                     )}
                     {canSave && (
                         // THE ONE "Save to a table" (W1.6, AGENTS-ON-DATA item 3): every row the
                         // tool returned — never only the inline three — through the host's overlay.
-                        <button
-                            type="button"
-                            onClick={(e) => {
+                        <Button variant="quiet" icon={<TableProperties />} onClick={(e) => {
                                 e.stopPropagation();
                                 saveRows(rows);
-                            }}
-                            className="ml-auto inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground"
-                        >
-                            <TableProperties className="h-3 w-3" aria-hidden />
-                            Save to a table
-                        </button>
+                            }} className="ml-auto">Save to a table</Button>
                     )}
                 </div>
             )}

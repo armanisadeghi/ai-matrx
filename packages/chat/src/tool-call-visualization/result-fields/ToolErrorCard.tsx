@@ -17,6 +17,7 @@ import { cn } from "@ai-matrx/design-system";
 import type { ToolLifecycleEntry } from "../../agents/types/request.types";
 import { guardRoutingOf } from "./guard-routing";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
+import { Button } from "@ai-matrx/design-system/controls";
 
 export interface ToolErrorCardProps {
     entry: ToolLifecycleEntry;
@@ -115,16 +116,10 @@ export const ToolErrorCard: React.FC<ToolErrorCardProps> = ({
                 )}
             </div>
             {onOpenOverlay && (
-                <button
-                    type="button"
-                    onClick={(e) => {
+                <Button variant="quiet" onClick={(e) => {
                         e.stopPropagation();
                         onOpenOverlay(`tool-group-${groupId}`);
-                    }}
-                    className="flex-shrink-0 text-xs text-muted-foreground hover:text-foreground"
-                >
-                    Details
-                </button>
+                    }}>Details</Button>
             )}
         </div>
     );

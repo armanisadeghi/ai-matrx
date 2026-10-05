@@ -42,6 +42,7 @@ import {
     type SearchSource,
     type SearchRead,
 } from "../search/parseSearch";
+import { Button } from "@ai-matrx/design-system/controls";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared atoms
@@ -160,13 +161,7 @@ const ReadCard: React.FC<{ read: SearchRead; index: number; copied: number | nul
                             content={expanded || !isLong ? read.text : `${read.text.slice(0, 500)}…`}
                         />
                         {isLong && (
-                            <button
-                                type="button"
-                                onClick={() => setExpanded((p) => !p)}
-                                className="mt-2 text-xs font-medium text-primary hover:underline"
-                            >
-                                {expanded ? "Show less" : `Show full content (${Math.round(read.text.length / 1000)}k chars)`}
-                            </button>
+                            <Button variant="quiet" tone="primary" onClick={() => setExpanded((p) => !p)} className="mt-2">{expanded ? "Show less" : `Show full content (${Math.round(read.text.length / 1000)}k chars)`}</Button>
                         )}
                     </div>
                 )}

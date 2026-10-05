@@ -78,6 +78,7 @@ import {
     type SearchSource,
 } from "./parseSearch";
 import { useGraduatedReveal } from "./useGraduatedReveal";
+import { Button } from "@ai-matrx/design-system/controls";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Small building blocks
@@ -233,18 +234,10 @@ const ResultRow: React.FC<{
                 <div className="mt-1.5 flex items-center gap-3 text-xs text-muted-foreground">
                     {date && <span className="opacity-80">{date}</span>}
                     {onReadPage && source.url && (
-                        <button
-                            type="button"
-                            onClick={(e) => {
+                        <Button variant="quiet" icon={<BookOpen />} onClick={(e) => {
                                 e.stopPropagation();
                                 onReadPage(source.url);
-                            }}
-                            className="inline-flex items-center gap-1 rounded text-muted-foreground opacity-0 transition-all hover:text-primary group-hover/result:opacity-100"
-                            title="Read this page"
-                        >
-                            <BookOpen className="h-3 w-3" />
-                            <span>Read</span>
-                        </button>
+                            }} title="Read this page" className="opacity-0 group-hover/result:opacity-100">Read</Button>
                     )}
                 </div>
             )}
@@ -258,17 +251,10 @@ const ViewAllButton: React.FC<{ label: string; onClick: () => void }> = ({
     label,
     onClick,
 }) => (
-    <button
-        type="button"
-        onClick={(e) => {
+    <Button variant="outline" iconEnd={<ArrowRight />} onClick={(e) => {
             e.stopPropagation();
             onClick();
-        }}
-        className="group flex w-full items-center justify-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm font-medium text-foreground transition-colors hover:border-primary/40 hover:bg-muted/50"
-    >
-        <span>{label}</span>
-        <ArrowRight className="h-3.5 w-3.5 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
-    </button>
+        }} className="w-full">{label}</Button>
 );
 
 /**
@@ -414,18 +400,10 @@ const FoldedQuerySummary: React.FC<{
                     <div className="truncate text-xs text-success/90">{topSite}</div>
                 </div>
                 {onReadPage && top.url && (
-                    <button
-                        type="button"
-                        onClick={(e) => {
+                    <Button variant="quiet" icon={<BookOpen />} onClick={(e) => {
                             e.stopPropagation();
                             onReadPage(top.url);
-                        }}
-                        className="mt-0.5 inline-flex flex-shrink-0 items-center gap-1 rounded text-xs text-muted-foreground opacity-0 transition-all hover:text-primary group-hover/fold:opacity-100"
-                        title="Read this page"
-                    >
-                        <BookOpen className="h-3 w-3" />
-                        <span>Read</span>
-                    </button>
+                        }} title="Read this page" className="mt-0.5 opacity-0 group-hover/fold:opacity-100">Read</Button>
                 )}
             </div>
 

@@ -29,7 +29,7 @@ import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import { toast } from "../../../host/notify";
 import { cn } from "@ai-matrx/design-system";
 import { openOverlay, CHAT_WINDOWS } from "../../../host/windows";
-import { Input } from "@ai-matrx/design-system/controls";
+import { Input, Button } from "@ai-matrx/design-system/controls";
 import { fetchConversationHistory } from "../../../agents/redux/conversation-history/thunks";
 import { setScopeSearch } from "../../../agents/redux/conversation-history/slice";
 import {
@@ -249,14 +249,7 @@ export function SurfaceConversationsSection({
     return (
       <div className="flex min-w-0 flex-col gap-1.5 border-t border-border pt-2">
         <div className="flex items-center gap-1">
-          <button
-            type="button"
-            onClick={() => setShowAll(false)}
-            aria-label="Back to recent conversations"
-            className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-          >
-            <ChevronLeft className="h-3.5 w-3.5" />
-          </button>
+          <Button variant="quiet" icon={<ChevronLeft />} onClick={() => setShowAll(false)} aria-label="Back to recent conversations" />
           <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
             All conversations
           </p>
@@ -304,21 +297,14 @@ export function SurfaceConversationsSection({
                 onOpen={handleOpen}
               />
               {hasMore && !serverSearch.isActive && (
-                <button
-                  type="button"
-                  disabled={status === "loading-more"}
-                  onClick={() =>
+                <Button variant="quiet" disabled={status === "loading-more"} onClick={() =>
                     void dispatch(
                       fetchConversationHistory({
                         scopeId: allScopeId,
                         replace: false,
                       }),
                     )
-                  }
-                  className="mt-1 w-full rounded-md px-2 py-1.5 text-center text-[11px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-60"
-                >
-                  {status === "loading-more" ? "Loading more" : "Load more"}
-                </button>
+                  } className="mt-1 w-full">{status === "loading-more" ? "Loading more" : "Load more"}</Button>
               )}
             </>
           )}

@@ -51,6 +51,7 @@ import { getDomain, getFaviconUrl } from "../search/parseSearch";
 import { parseScrape, type ScrapePage } from "./parseScrape";
 import { AGENT_ICON } from "@ai-matrx/icons/domain";
 import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
+import { Button } from "@ai-matrx/design-system/controls";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Small building blocks
@@ -242,17 +243,10 @@ const ReadPageCard: React.FC<{
                         {page.charCount.toLocaleString()} chars
                     </span>
                     {onOpen && (
-                        <button
-                            type="button"
-                            onClick={(e) => {
+                        <Button variant="quiet" tone="primary" iconEnd={<ArrowRight />} onClick={(e) => {
                                 e.stopPropagation();
                                 onOpen();
-                            }}
-                            className="ml-auto inline-flex items-center gap-1 text-primary hover:underline"
-                        >
-                            View page
-                            <ArrowRight className="h-3 w-3" />
-                        </button>
+                            }} className="ml-auto">View page</Button>
                     )}
                 </div>
             </div>
