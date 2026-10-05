@@ -508,6 +508,8 @@ export function SigningSurface({
       const signed = await act("sign", {
         observed: docs.map((d) => ({ document_id: d.id, content_hash: d.seenHash ?? "" })),
         action_id: SIGN_ACTION_ID,
+        // So the signed copy's "Date signed" is the signer's own day, not UTC's.
+        time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       });
       if (signed.granted) {
         const progress = signed.envelope;
