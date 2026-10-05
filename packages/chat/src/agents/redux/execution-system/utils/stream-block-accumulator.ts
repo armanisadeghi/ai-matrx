@@ -17,6 +17,7 @@
 import { parseDecisionOptionsFromBody } from "@host/components/mardown-display/blocks/inline-decision/decision-options";
 import { QuotedKindLift } from "@host/features/content-ir/surfaces/quoted-kind-lift";
 import { MarkdownEscapedKindJson } from "@host/features/content-ir/surfaces/markdown-escaped-kind";
+import { KindImageAltUnwrap } from "@host/features/content-ir/surfaces/kind-image-alt";
 import { FENCE_META_KEY, splitFenceInfo } from "@host/components/markdown-core/fence-meta";
 import {
   hasUnclosedBacktickRun,
@@ -666,6 +667,8 @@ export class StreamBlockAccumulator {
   private quoteLift = new QuotedKindLift();
   /** Un-escapes a markdown-escaped kind (`"\_\_kind"`) before the quote lift (P8). */
   private kindUnescape = new MarkdownEscapedKindJson();
+  /** Drops the `![`…`](url)` wrapper of a kind written as image alt text (P9). */
+  private imageAlt = new KindImageAltUnwrap();
 
   constructor(
     requestId: string,
@@ -689,12 +692,15 @@ export class StreamBlockAccumulator {
     this.ingestCount++;
     // A JSON region inside a blockquote leaves the quote before the line
     // machine sees it — the same transform the static splitter runs (V1).
-    this.ingestText(this.quoteLift.push(this.kindUnescape.push(delta)), dispatch);
+    this.ingestText(
+      this.quoteLift.push(this.imageAlt.push(this.kindUnescape.push(delta))),
+      dispatch,
+    );
   }
 
   /** Release what the quote lift still holds (stream end or a hard boundary). */
   private flushQuoteLift(dispatch: DispatchFn): void {
-    const unescaped = this.kindUnescape.flush();
+    const unescaped = this.imageAlt.push(this.kindUnescape.flush()) + this.imageAlt.flush();
     const held = (unescaped ? this.quoteLift.push(unescaped) : "") + this.quoteLift.flush();
     if (held) this.ingestText(held, dispatch);
   }
@@ -895,6 +901,7 @@ export class StreamBlockAccumulator {
     this.suppressEmptyTrailingSlot = false;
     this.quoteLift = new QuotedKindLift();
     this.kindUnescape = new MarkdownEscapedKindJson();
+    this.imageAlt = new KindImageAltUnwrap();
   }
 
   /**

@@ -64,6 +64,7 @@ import {
   decodeDoubleEncodedKindText,
   unescapeMarkdownKindJson,
 } from "@/features/content-ir/surfaces/markdown-escaped-kind";
+import { unwrapKindImageAlt } from "@/features/content-ir/surfaces/kind-image-alt";
 import { IR_ENVELOPE_KEY, type CanonicalBlockIR } from "@ai-matrx/content-ir";
 import { ALLOWED_RAW_HTML_TAGS } from "@/components/mardown-display/chat-markdown/rehypeSafeRawHtml";
 import { isPageBreakLine } from "@ai-matrx/print/directives";
@@ -2055,7 +2056,7 @@ export const splitContentIntoBlocksWith = (
   // same transform the live accumulator runs on every delta — and a whole
   // answer that is a double-encoded kind string reads as that kind.
   const lines = liftQuotedKindRegions(
-    unescapeMarkdownKindJson(decodeDoubleEncodedKindText(mdContent)),
+    unwrapKindImageAlt(unescapeMarkdownKindJson(decodeDoubleEncodedKindText(mdContent))),
   ).split(/\r?\n/);
 
   let currentText = "";
