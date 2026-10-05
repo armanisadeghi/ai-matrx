@@ -515,9 +515,10 @@ webhook handlers in `app/api/stripe/webhook/route.ts`. FE consumers:
       section below it.
 - [x] Admin usage read surface (`/administration/entitlements`, super-admin) + `usage_admin_summary` / `usage_my_summary` (P5).
 - [x] Stripe machinery: SDK, checkout, customer portal (one-click cancel), webhooks, lifecycle sync, idempotency + ordering guard.
-- [x] Stripe TEST secret/publishable keys are in `.env.local` (`STRIPE_TEST_MODE_SECRET_KEY` /
-      `STRIPE_TEST_MODE_PUBLISHABLE_KEY`, required outside confirmed Vercel production); a
-      test `billing.product`/`price` row is seeded (`AI Matrx Premium (TEST)`, $10/mo).
+- [x] Stripe mode isolation: development/preview require test credentials; confirmed Vercel
+      production uses live credentials. `billing.plan_catalog()` owns displayed plan prices;
+      the canonical Stripe catalog sync materializes recurring prices in each ledger. The old
+      fixed $10 TEST row is not the platform pricing contract.
 - [ ] Stripe Connect production activation: live/test standard endpoints share the production URL,
       use mode-pinned signature verification, and have the four Stripe API keys plus both endpoint
       secrets installed in their required Vercel scopes across all three projects. AI Matrx branding,
@@ -525,8 +526,8 @@ webhook handlers in `app/api/stripe/webhook/route.ts`. FE consumers:
       now reports **Review in progress** (2–3 days), disables the remaining identity/final-details
       controls, and still refuses live Express creation. The live create/onboard/delete canary follows
       Stripe's review; there is no agent-actionable activation step while that external review runs.
-- [ ] **Blocked on Arman:** seed `billing.price` with the REAL Premium number (product decision).
-      `/pricing` is already DB-backed off the TEST row — swapping the number needs no code change.
+- [x] Platform plan pricing comes from the canonical catalog and its Stripe price sync, not a
+      pending manual Premium price seed. Admin sandbox Entry monthly checkout has been exercised.
 - [ ] **Blocked on Arman:** aidream-side spend re-check per capability → then flip `enforced` per
       capability (never flip without both the limit row and the re-check).
 - [ ] **Blocked on Arman:** trial pre-renewal reminder email (wire the platform email path).
@@ -535,12 +536,12 @@ webhook handlers in `app/api/stripe/webhook/route.ts`. FE consumers:
       forward COMMITMENTS, not live capabilities, and are now marked "Before paid launch" on the page
       rather than claimed present-tense (a trust page over-promising is the inverted dark pattern P8
       kills). Arman owns the final copy + the underlying product/legal calls:
-      1. **Pre-charge reminder email** — no `invoice.upcoming` handler / email dispatch exists (email
-         path blocked on Arman, above). Ship the reminder before flipping paid billing on.
-      2. **Refunds & proration** — no refund policy page anywhere and no in-app plan-change path yet
-         (checkout mints a NEW subscription so proration is N/A; plan-switch proration is a Stripe
-         *portal dashboard* config, not a `proration_behavior` code param — nothing honest to wire in
-         code today). Refund policy = product/legal (Arman); post the written terms before paid launch.
+      1. **Pre-charge reminder email** — `invoice.upcoming` now refreshes the canonical subscription
+         mirror; it does not send a reminder. Email behavior still needs separate acceptance.
+      2. **Refunds & proration** — existing subscribers open Stripe's portal rather than creating
+         duplicate subscriptions; portal plan changes are configured with `create_prorations`.
+         Explicit change timing, preview, and subscription-refund behavior remain in the approved
+         self-service plan. This is not evidence that every lifecycle journey is complete.
 
 ## Capability consumers & ownership
 
