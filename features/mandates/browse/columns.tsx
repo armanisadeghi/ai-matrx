@@ -88,7 +88,7 @@ export function mandateColumnsFor(
         filter: "text",
         width: 240,
         cell: (row) => (
-          <span className="block truncate font-mono text-[11px] text-muted-foreground">
+          <span className="block truncate font-mono type-meta text-muted-foreground">
             {row.mandate_key}
           </span>
         ),
@@ -206,7 +206,7 @@ export function mandateColumnsFor(
           ) : row.resolved_use_latest ? (
             <Muted>latest</Muted>
           ) : row.pinned_version_number !== null ? (
-            <span className="font-mono text-[11px]">
+            <span className="font-mono type-meta">
               v{row.pinned_version_number}
             </span>
           ) : (
@@ -253,7 +253,7 @@ export function mandateColumnsFor(
         width: 120,
         cell: (row) =>
           row.provision_key ? (
-            <span className="text-[12px] text-muted-foreground">
+            <span className="type-secondary text-muted-foreground">
               {row.offered_count} offered
             </span>
           ) : (

@@ -232,7 +232,7 @@ export function AutomationButton({
         >
           {label}
         </Button>
-        <span className="text-[11px] leading-snug text-muted-foreground">
+        <span className="type-meta leading-snug text-muted-foreground">
           {CHOOSE_WORKSPACE_LINE}
         </span>
       </div>
@@ -249,7 +249,7 @@ export function AutomationButton({
             exact "a tooltip is not words on the screen" state §1 of this file
             forbids, and a disabled control whose reason nobody can see is the
             fourth law's silent failure. The reason renders inline again. */}
-        <span className="text-[11px] leading-snug text-amber-700 dark:text-amber-400">
+        <span className="type-meta leading-snug text-amber-700 dark:text-amber-400">
           {unavailableAutomationMandateLine(mandateKey, refusedReason)}
           <ErrorAlchemyMenu />
         </span>
@@ -280,7 +280,7 @@ export function AutomationButton({
         {surfaceBroken ? (
           <>
             <StatusToken status="error" label="Unavailable" />
-            <span className="text-[11px] leading-snug text-amber-700 dark:text-amber-400">
+            <span className="type-meta leading-snug text-amber-700 dark:text-amber-400">
               {surfaceState.status === "error" ? surfaceState.message : ""}{" "}
               Until it can be read, this cannot run — nothing else on this page
               is blocked by it.

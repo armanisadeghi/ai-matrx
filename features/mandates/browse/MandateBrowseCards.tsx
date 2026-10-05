@@ -63,11 +63,11 @@ export function MandateBrowseCards({
                 <a
                   href={hrefFor(row)}
                   onClick={(e) => e.stopPropagation()}
-                  className="block truncate text-[14px] font-semibold text-foreground hover:underline"
+                  className="block truncate type-title text-foreground hover:underline"
                 >
                   {row.label}
                 </a>
-                <div className="truncate font-mono text-[11px] text-muted-foreground/80">
+                <div className="truncate font-mono type-meta text-muted-foreground/80">
                   {row.mandate_key}
                 </div>
               </div>
@@ -120,7 +120,7 @@ export function MandateBrowseCards({
                 {dropped}
               </p>
             ) : null}
-            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground/80">
+            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 type-meta text-muted-foreground/80">
               {row.provision_key ? (
                 <span className="inline-flex items-center gap-1">
                   <Boxes className="h-3 w-3" />

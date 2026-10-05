@@ -126,7 +126,7 @@ function ReachFactRows({ facts }: { facts: ReachFacts }): ReactNode {
   ];
   return (
     <div className="mt-1 space-y-3">
-      <p className="text-xs text-muted-foreground">Mandate pins after this save</p>
+      <p className="type-secondary text-muted-foreground">Mandate pins after this save</p>
       <div className="grid grid-cols-3 gap-2">
         {rows.map(({ label, value, icon: Icon, tone, background }) => (
           <div key={label} className={`min-w-0 rounded-xl p-3 ${background}`}>
@@ -134,12 +134,12 @@ function ReachFactRows({ facts }: { facts: ReachFacts }): ReactNode {
               <span className="text-2xl font-semibold leading-none tabular-nums">{value}</span>
               <Icon className="size-4 shrink-0" aria-hidden="true" />
             </div>
-            <p className="mt-2 text-[11px] font-medium leading-4 text-foreground">{label}</p>
+            <p className="mt-2 type-meta font-medium leading-4 text-foreground">{label}</p>
           </div>
         ))}
       </div>
       {(facts.blocked > 0 || facts.current > 0) && (
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-border pt-3 text-xs text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-border pt-3 type-secondary text-muted-foreground">
           {facts.blocked > 0 && <span className="inline-flex items-center gap-1.5"><LockKeyhole className="size-3.5" aria-hidden="true" /><span className="font-semibold text-foreground">{facts.blocked}</span> blocked {facts.blocked === 1 ? "pin" : "pins"}</span>}
           {facts.current > 0 && <span className="inline-flex items-center gap-1.5"><CircleCheck className="size-3.5" aria-hidden="true" /><span className="font-semibold text-foreground">{facts.current}</span> current {facts.current === 1 ? "pin" : "pins"}</span>}
         </div>
@@ -404,7 +404,7 @@ export function useAgentChangeReach(agentId: string) {
         data-testid="agent-change-reach-badge"
       >
         <Radar className="h-3.5 w-3.5" />
-        <span className="text-[10px] font-medium tabular-nums">{reach.counts.mandates}</span>
+        <span className="type-meta font-medium tabular-nums">{reach.counts.mandates}</span>
       </button>
     );
 

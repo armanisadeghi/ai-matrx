@@ -99,7 +99,7 @@ interface BatchPart {
 
 function MovesList({ moves }: { moves: string[] }) {
   return (
-    <ul className="max-h-48 space-y-0.5 overflow-y-auto rounded border border-border bg-muted/30 p-2 font-mono text-[11px]">
+    <ul className="max-h-48 space-y-0.5 overflow-y-auto rounded border border-border bg-muted/30 p-2 font-mono type-meta">
       {moves.map((move, index) => (
         <li key={`${index}-${move}`}>{move}</li>
       ))}
@@ -170,7 +170,7 @@ export function useImpactAdvance({
     const ok = await confirm({
       title,
       description: (
-        <div className="space-y-2 text-xs">
+        <div className="space-y-2 type-secondary">
           <p>{description}</p>
           <MovesList moves={moves} />
         </div>
@@ -248,7 +248,7 @@ export function useImpactAdvance({
     const ok = await confirm({
       title,
       description: (
-        <div className="space-y-2 text-xs">
+        <div className="space-y-2 type-secondary">
           <p>{description}</p>
           <MovesList moves={moves} />
         </div>

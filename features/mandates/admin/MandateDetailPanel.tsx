@@ -172,9 +172,9 @@ function Section({
             open && "rotate-90",
           )}
         />
-        <span className="text-sm font-medium">{title}</span>
+        <span className="type-title">{title}</span>
         {meta && (
-          <span className="ml-auto truncate text-[11px] text-muted-foreground">
+          <span className="ml-auto truncate type-meta text-muted-foreground">
             {meta}
           </span>
         )}
@@ -374,7 +374,7 @@ function DriftPanel({
     <div className="space-y-2.5 rounded-md border border-amber-500/40 bg-amber-500/10 p-3">
       <div className="flex items-start gap-2">
         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
-        <div className="min-w-0 text-xs">
+        <div className="min-w-0 type-secondary">
           <div className="font-medium text-amber-700 dark:text-amber-500">
             A newer version of this agent exists.
           </div>
@@ -387,7 +387,7 @@ function DriftPanel({
       {/* The split view: running now vs newest. */}
       <div className="grid grid-cols-[1fr_auto_1fr] items-stretch gap-2">
         <div className="rounded-md border border-border bg-card px-2.5 py-2">
-          <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+          <div className="type-meta font-medium uppercase tracking-wider text-muted-foreground">
             Running now
           </div>
           <div className="mt-0.5 flex items-baseline gap-1.5">
@@ -399,14 +399,14 @@ function DriftPanel({
             </Badge>
           </div>
           {pinnedInfo?.name && (
-            <div className="mt-1 truncate text-[11px] text-muted-foreground">
+            <div className="mt-1 truncate type-meta text-muted-foreground">
               {pinnedInfo.name}
             </div>
           )}
         </div>
         <ArrowRight className="h-4 w-4 self-center text-muted-foreground" />
         <div className="rounded-md border border-amber-500/50 bg-card px-2.5 py-2">
-          <div className="text-[10px] font-medium uppercase tracking-wider text-amber-600">
+          <div className="type-meta font-medium uppercase tracking-wider text-amber-600">
             Newest
           </div>
           <div className="mt-0.5 flex items-baseline gap-1.5">
@@ -415,7 +415,7 @@ function DriftPanel({
             </span>
           </div>
           {latestSaved?.name && (
-            <div className="mt-1 truncate text-[11px] text-muted-foreground">
+            <div className="mt-1 truncate type-meta text-muted-foreground">
               {latestSaved.name}
             </div>
           )}
@@ -474,7 +474,7 @@ function DriftPanel({
           title={`This update is graded ${GRADE_META[versionImpact.verdict.grade].label.toLowerCase()}`}
           description={`Moving from v${pinnedNumber} to v${latestSaved?.versionNumber} changes what every run of ${row.mandateKey} uses. ${GRADE_META[versionImpact.verdict.grade].meaning}`}
           content={
-            <div className="space-y-2 text-xs">
+            <div className="space-y-2 type-secondary">
               <VerdictDetail verdict={versionImpact.verdict} />
               {versionImpact.impact &&
               versionImpact.impact.variables.some(
@@ -488,7 +488,7 @@ function DriftPanel({
                       key={`${item.name}-${item.verdict}`}
                       className="flex flex-wrap items-center gap-1.5 py-0.5"
                     >
-                      <code className="rounded bg-muted px-1 py-0.5 font-mono text-[11px]">
+                      <code className="rounded bg-muted px-1 py-0.5 font-mono type-meta">
                         {item.name}
                       </code>
                       <Badge
@@ -537,7 +537,7 @@ function DriftPanel({
       {diffOpen && (
         <div className="rounded-md border border-border bg-card">
           {diffError ? (
-            <div className="space-y-1 p-3 text-xs">
+            <div className="space-y-1 p-3 type-secondary">
               <p className="text-destructive">{diffError} <ErrorAlchemyMenu error={diffError} /></p>
               <a
                 href={getAgentModeHref("versions", agentId, SYSTEM_AGENT_BASE)}
@@ -549,7 +549,7 @@ function DriftPanel({
               </a>
             </div>
           ) : !diff ? (
-            <div className="flex items-center gap-2 p-3 text-xs text-muted-foreground">
+            <div className="flex items-center gap-2 p-3 type-secondary text-muted-foreground">
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
               Loading both versions…
             </div>
@@ -583,7 +583,7 @@ function NonSystemPanel({
   if (!row.agentId) return null;
   const twin = lineage.systemTwin;
   return (
-    <div className="space-y-2 rounded-md border border-rose-500/40 bg-rose-500/10 p-3 text-xs">
+    <div className="space-y-2 rounded-md border border-rose-500/40 bg-rose-500/10 p-3 type-secondary">
       <div className="flex items-start gap-2">
         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-rose-600" />
         <div className="min-w-0">
@@ -680,7 +680,7 @@ function UnresolvedPinPanel({
   const agent = result?.agent ?? null;
 
   return (
-    <div className="space-y-2 rounded-md border border-rose-500/40 bg-rose-500/10 p-3 text-xs">
+    <div className="space-y-2 rounded-md border border-rose-500/40 bg-rose-500/10 p-3 type-secondary">
       <div className="flex items-start gap-2">
         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-rose-600" />
         <div className="min-w-0">
@@ -832,7 +832,7 @@ function CodeAgentDriftPanel({
     : null;
 
   return (
-    <div className="space-y-3 rounded-md border border-border p-3 text-xs">
+    <div className="space-y-3 rounded-md border border-border p-3 type-secondary">
       <PropertyRow
         label="Preliminary code / agent check"
         value={<StatusToken status="caution" label="Mismatch" />}
@@ -941,7 +941,7 @@ function StatusBanner({
       );
     case "code truth import failed":
       return (
-        <div className="space-y-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-xs">
+        <div className="space-y-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-3 type-secondary">
           <div className="flex items-start gap-2">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
             <div>
@@ -963,7 +963,7 @@ function StatusBanner({
       );
     case "code ↔ contract drift":
       return (
-        <div className="space-y-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-xs">
+        <div className="space-y-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-3 type-secondary">
           <div className="flex items-start gap-2">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
             <div>
@@ -1010,7 +1010,7 @@ function StatusBanner({
     // "fails at run time": only an answer missing a required key stops.
     case "output contract unmet":
       return (
-        <div className="space-y-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-xs">
+        <div className="space-y-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-3 type-secondary">
           <div className="flex items-start gap-2">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
             <div className="space-y-1">
@@ -1054,7 +1054,7 @@ function StatusBanner({
         return <DriftPanel row={row} onSaved={onSaved} onTest={onTest} />;
       }
       return (
-        <div className="flex items-center gap-2 rounded-md border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-xs">
+        <div className="flex items-center gap-2 rounded-md border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 type-secondary">
           <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
           <span className="font-medium text-emerald-700 dark:text-emerald-500">
             Healthy
@@ -1074,7 +1074,7 @@ function StatusBanner({
       return <NonSystemPanel row={row} lineage={lineage} onSaved={onSaved} />;
     case "workflow archived":
       return (
-        <div className="space-y-2 rounded-md border border-rose-500/40 bg-rose-500/10 p-3 text-xs">
+        <div className="space-y-2 rounded-md border border-rose-500/40 bg-rose-500/10 p-3 type-secondary">
           <div className="flex items-start gap-2">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-rose-600" />
             <div className="min-w-0">
@@ -1096,7 +1096,7 @@ function StatusBanner({
       );
     case "agent archived":
       return (
-        <div className="space-y-2 rounded-md border border-rose-500/40 bg-rose-500/10 p-3 text-xs">
+        <div className="space-y-2 rounded-md border border-rose-500/40 bg-rose-500/10 p-3 type-secondary">
           <div className="flex items-start gap-2">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-rose-600" />
             <div className="min-w-0">
@@ -1123,7 +1123,7 @@ function StatusBanner({
     // not exist.
     case "no Mandate Holder yet":
       return (
-        <div className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-xs">
+        <div className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-2 type-secondary">
           <Info className="h-4 w-4 shrink-0 text-muted-foreground" />
           <span className="font-medium text-foreground">No Mandate Holder yet</span>
           <span className="text-muted-foreground">
@@ -1153,10 +1153,10 @@ function Fact({
 }) {
   return (
     <>
-      <div className="text-[11px] font-medium text-muted-foreground">
+      <div className="type-meta font-medium text-muted-foreground">
         {label}
       </div>
-      <div className="min-w-0 text-xs">{children}</div>
+      <div className="min-w-0 type-secondary">{children}</div>
     </>
   );
 }
@@ -1367,7 +1367,7 @@ function FactsPanel({
           </ConfigurationTable>
         ) : null}
         {notMeasured ? (
-          <p className="text-xs text-muted-foreground">{notMeasured}</p>
+          <p className="type-secondary text-muted-foreground">{notMeasured}</p>
         ) : null}
       </div>
     );
@@ -1402,7 +1402,7 @@ function FactsPanel({
                       )}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="ml-auto inline-flex h-6 shrink-0 items-center gap-1 rounded border border-border px-1.5 text-[11px] text-muted-foreground hover:bg-accent hover:text-foreground"
+                      className="ml-auto inline-flex h-6 shrink-0 items-center gap-1 rounded border border-border px-1.5 type-meta text-muted-foreground hover:bg-accent hover:text-foreground"
                       title={`Version history for ${row.agentName}`}
                     >
                       <History className="h-3 w-3" />
@@ -1459,7 +1459,7 @@ function FactsPanel({
             <Fact label="Provision">
               {/* The provision is the entire input declaration; the binding's consumption map decides what the Mandate Holder consumes. */}
               <span className="inline-flex flex-wrap items-center gap-1.5">
-                <code className="rounded border border-border bg-muted/40 px-1 py-0.5 text-[11px]">
+                <code className="rounded border border-border bg-muted/40 px-1 py-0.5 type-meta">
                   {wave1.provisionKey}
                 </code>
               </span>
@@ -1489,7 +1489,7 @@ function FactsPanel({
                 {wave1.pinnedContext.map((name) => (
                   <code
                     key={name}
-                    className="rounded border border-border bg-muted/40 px-1 py-0.5 text-[11px]"
+                    className="rounded border border-border bg-muted/40 px-1 py-0.5 type-meta"
                   >
                     {name}
                   </code>
@@ -1504,7 +1504,7 @@ function FactsPanel({
               offeredValues={offeredNames}
             />
             {offerFailed && factProvisionKey ? (
-              <p className="mt-1 text-[11px] text-muted-foreground">
+              <p className="mt-1 type-meta text-muted-foreground">
                 Couldn&apos;t read the offer; showing its key instead.
                 <ErrorAlchemyMenu operation="Read the provision offer" />
               </p>
@@ -1528,7 +1528,7 @@ function FactsPanel({
             <MandateUserTextLine
               mandateKey={row.mandateKey}
               showIcon={false}
-              className="text-xs"
+              className="type-secondary"
             />
           </Fact>
         </>
@@ -1541,7 +1541,7 @@ function FactsPanel({
                 {row.codeTruth.code_variables.map((name) => (
                   <code
                     key={name}
-                    className="rounded border border-border bg-muted/40 px-1 py-0.5 text-[11px]"
+                    className="rounded border border-border bg-muted/40 px-1 py-0.5 type-meta"
                   >
                     {humanizeIdentifier(name) || name}
                   </code>
@@ -1557,7 +1557,7 @@ function FactsPanel({
                 {row.codeTruth.bound_agent?.declared_variables.map((name) => (
                   <code
                     key={name}
-                    className="rounded border border-border bg-muted/40 px-1 py-0.5 text-[11px]"
+                    className="rounded border border-border bg-muted/40 px-1 py-0.5 type-meta"
                   >
                     {humanizeIdentifier(name) || name}
                   </code>
@@ -1664,16 +1664,16 @@ function MandateProvisionPanel({ row }: { row: MandateRow }) {
     >
       <div className="space-y-2 p-3">
         {loading ? (
-          <p className="text-xs text-muted-foreground">Loading the offer…</p>
+          <p className="type-secondary text-muted-foreground">Loading the offer…</p>
         ) : error ? (
-          <p className="text-xs text-rose-600">
+          <p className="type-secondary text-rose-600">
             The Provision could not be read: <TextWithDoors text={error} />
             <ErrorAlchemyMenu />
           </p>
         ) : offer ? (
           <>
             {offer.description ? (
-              <p className="text-xs text-muted-foreground">
+              <p className="type-secondary text-muted-foreground">
                 {offer.description}
               </p>
             ) : null}
@@ -1683,7 +1683,7 @@ function MandateProvisionPanel({ row }: { row: MandateRow }) {
             />
           </>
         ) : (
-          <p className="text-xs text-rose-600">
+          <p className="type-secondary text-rose-600">
             Provision <code>{provisionKey}</code> is missing — a data defect,
             not an empty offer.
           </p>

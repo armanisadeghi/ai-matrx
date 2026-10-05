@@ -96,7 +96,7 @@ function facetColumn(
 function Checking({ what }: { what: string }) {
   return (
     <span
-      className="text-xs text-muted-foreground animate-pulse"
+      className="type-secondary text-muted-foreground animate-pulse"
       title={`Still reading ${what} — fills in on its own`}
     >
       Checking…
@@ -191,7 +191,7 @@ function HealthCell({ row }: { row: MandateAdminRow }) {
         </Badge>
       ) : null}
       {row.health === "code ↔ agent drift" && row.codeTruth && (
-        <span className="basis-full text-[10px] leading-tight text-rose-600">
+        <span className="basis-full type-meta leading-tight text-rose-600">
           code: {row.codeTruth.code_variables.join(", ") || "none"}
           {" · "}agent:{" "}
           {row.codeTruth.bound_agent?.declared_variables.join(", ") || "none"}
@@ -266,7 +266,7 @@ function ListCell({ values, detail }: { values: string[]; detail?: string[] }) {
   const text = values.join(", ");
   return (
     <span
-      className="block truncate text-xs"
+      className="block truncate type-secondary"
       title={detail && detail.length > 0 ? detail.join("\n") : text}
     >
       {text}
@@ -311,7 +311,7 @@ function SourceCell({
   if (row.sourcesPending) return <Checking what="the code scan" />;
   if (row.sourcesFailed) {
     return (
-      <span className="text-xs text-amber-700 dark:text-amber-300" title="The code scan read failed — see the notice above the list.">
+      <span className="type-secondary text-amber-700 dark:text-amber-300" title="The code scan read failed — see the notice above the list.">
         Unavailable
         <ErrorAlchemyMenu />
       </span>
@@ -320,7 +320,7 @@ function SourceCell({
   if (!row.sources) {
     return (
       <span
-        className="text-xs text-muted-foreground"
+        className="type-secondary text-muted-foreground"
         title="The code scan has no reference to this key. Until every repository has a complete scan this means nobody looked — not that it is unused."
       >
         {NONE_FOUND}
@@ -331,7 +331,7 @@ function SourceCell({
   if (Array.isArray(value)) {
     return value.length > 0 ? <ListCell values={value} /> : <Muted>{NONE_FOUND}</Muted>;
   }
-  return <span className="text-xs tabular-nums">{value}</span>;
+  return <span className="type-secondary tabular-nums">{value}</span>;
 }
 
 /**
@@ -396,7 +396,7 @@ export const ADMIN_MANDATE_COLUMNS: Spec[] = [
       width: 230,
       cell: (row) => (
         <span
-          className="block truncate font-mono text-[11px] text-muted-foreground"
+          className="block truncate font-mono type-meta text-muted-foreground"
           title={row.mandateKey}
         >
           {/* key-is-the-subject: the admin list's Key column — the one place an owner ruling lets a key show (Mandate name → Feature → Key) */}
@@ -487,7 +487,7 @@ export const ADMIN_MANDATE_COLUMNS: Spec[] = [
     "Bindings",
     80,
     (row) => (
-      <span className="text-xs tabular-nums">{row.overridesCount}</span>
+      <span className="type-secondary tabular-nums">{row.overridesCount}</span>
     ),
     { sortWords: NUMBER_WORDS },
   ),
@@ -506,7 +506,7 @@ export const ADMIN_MANDATE_COLUMNS: Spec[] = [
   ),
   facetColumn("serves", "Serves", 150, (row) =>
     row.serves.length === 0 ? (
-      <span title="The places this job serves could not be read." className="text-xs text-muted-foreground">
+      <span title="The places this job serves could not be read." className="type-secondary text-muted-foreground">
         Unknown
       </span>
     ) : (
@@ -533,7 +533,7 @@ export const ADMIN_MANDATE_COLUMNS: Spec[] = [
   )),
   facetColumn("defaultState", "Default", 110, (row) => (
     <span
-      className="text-xs"
+      className="type-secondary"
       title={row.fallbackKey ? `Fallback: ${row.fallbackKey}` : undefined}
     >
       {row.defaultState}
@@ -582,7 +582,7 @@ export const ADMIN_MANDATE_COLUMNS: Spec[] = [
     "Code",
     110,
     (row) => (
-      <span className="text-xs">{CODE_STATE_LABEL[row.codeState]}</span>
+      <span className="type-secondary">{CODE_STATE_LABEL[row.codeState]}</span>
     ),
     { defaultHidden: true },
   ),
@@ -592,7 +592,7 @@ export const ADMIN_MANDATE_COLUMNS: Spec[] = [
     150,
     (row) =>
       row.declaredIn ? (
-        <span className="block truncate text-xs" title={row.declaredFile ?? undefined}>
+        <span className="block truncate type-secondary" title={row.declaredFile ?? undefined}>
           {row.declaredIn}
         </span>
       ) : (
@@ -604,7 +604,7 @@ export const ADMIN_MANDATE_COLUMNS: Spec[] = [
     "backsCount",
     "Backs",
     70,
-    (row) => <span className="text-xs tabular-nums">{row.backsCount}</span>,
+    (row) => <span className="type-secondary tabular-nums">{row.backsCount}</span>,
     { defaultHidden: true, sortWords: NUMBER_WORDS },
   ),
   facetColumn(
@@ -613,7 +613,7 @@ export const ADMIN_MANDATE_COLUMNS: Spec[] = [
     200,
     (row) =>
       row.fallbackKey ? (
-        <span className="block truncate font-mono text-[11px]">{row.fallbackKey}</span>
+        <span className="block truncate font-mono type-meta">{row.fallbackKey}</span>
       ) : (
         <Muted>None</Muted>
       ),
@@ -658,7 +658,7 @@ export const MANDATE_OWNER_COLUMN: Spec = facetColumn(
   170,
   (row) => (
     <span className="flex min-w-0 items-center gap-1.5">
-      <span className="shrink-0 rounded bg-muted px-1 text-[10px] font-medium uppercase text-muted-foreground">
+      <span className="shrink-0 rounded bg-muted px-1 type-meta font-medium uppercase text-muted-foreground">
         {row.ownerLevel === "system" ? "System" : row.ownerLevel === "user" ? "User" : "Org"}
       </span>
       {row.ownerLevel === "system" ? null : <TextCell value={row.homeLabel} />}

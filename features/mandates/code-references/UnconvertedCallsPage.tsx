@@ -45,7 +45,7 @@ function CodeLink({ row }: { row: UnconvertedCall }) {
       target="_blank"
       rel="noreferrer"
       title={`${row.location} — open on GitHub`}
-      className="block truncate font-mono text-xs text-primary hover:underline"
+      className="block truncate font-mono type-secondary text-primary hover:underline"
       onClick={(event) => event.stopPropagation()}
     >
       {text}
@@ -73,8 +73,8 @@ const COLUMNS: Spec[] = [
       cell: (row) =>
         row.calls ? (
           <span className="flex min-w-0 items-baseline gap-1.5" title={row.via ? `${row.via}: ${row.calls}` : row.calls}>
-            <span className="truncate font-mono text-xs">{row.calls}</span>
-            {row.via ? <span className="shrink-0 text-[11px] text-muted-foreground">{row.via}</span> : null}
+            <span className="truncate font-mono type-secondary">{row.calls}</span>
+            {row.via ? <span className="shrink-0 type-meta text-muted-foreground">{row.via}</span> : null}
           </span>
         ) : (
           <Muted>Not recorded</Muted>
@@ -144,7 +144,7 @@ const COLUMNS: Spec[] = [
       filter: "select",
       width: 150,
       cell: (row) => (
-        <span className="truncate text-xs" title={row.revision}>
+        <span className="truncate type-secondary" title={row.revision}>
           {row.revisionLabel} <span className="font-mono text-muted-foreground">{row.revision.slice(0, 7)}</span>
         </span>
       ),
@@ -249,7 +249,7 @@ export function UnconvertedCallsPage() {
       headerActions={
         <Link
           href={ADMIN_MANDATES_HEALTH}
-          className="whitespace-nowrap rounded px-1.5 py-0.5 text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
+          className="whitespace-nowrap rounded px-1.5 py-0.5 type-secondary text-muted-foreground hover:bg-accent hover:text-foreground"
         >
           Mandate health
         </Link>

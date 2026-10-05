@@ -86,7 +86,7 @@ export function DraftInputsEditor({
           Add input
         </Button>
         {items.length > 0 ? (
-          <span className="text-[11px] text-muted-foreground/70">
+          <span className="type-meta text-muted-foreground/70">
             A description is enough to create.
           </span>
         ) : null}

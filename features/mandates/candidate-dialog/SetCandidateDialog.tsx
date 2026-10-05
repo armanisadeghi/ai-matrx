@@ -258,7 +258,7 @@ function SetCandidateBody({
       />
 
       <div className="grid gap-x-3 gap-y-2 sm:grid-cols-[9.5rem_minmax(0,1fr)] sm:items-center">
-        <span className="text-[12px] font-medium">Applies to</span>
+        <span className="type-secondary font-medium">Applies to</span>
         <Select
           value={liveRungPending ? "" : rungValue(rung)}
           onValueChange={(value) => {
@@ -284,7 +284,7 @@ function SetCandidateBody({
         </Select>
 
         <span className="hidden sm:block" />
-        <span className="min-h-4 text-[11px] text-muted-foreground" data-candidate-rung-collects>
+        <span className="min-h-4 type-meta text-muted-foreground" data-candidate-rung-collects>
           {liveRungPending ? null : RUNG_COLLECTS[rung.rung]}
         </span>
 
@@ -301,7 +301,7 @@ function SetCandidateBody({
             onChange={(event) => setRuns(event.target.value.replace(/[^0-9]/g, ""))}
             disabled={busy}
           />
-          <span className="text-[11px] text-muted-foreground">
+          <span className="type-meta text-muted-foreground">
             {runsInvalid ? "1 to 50" : runs ? "" : "Default for this organization"}
           </span>
         </div>
@@ -310,7 +310,7 @@ function SetCandidateBody({
       <Forecast state={state} failure={readFailure} />
 
       {replaces ? (
-        <p className="text-[12px] text-amber-700 dark:text-amber-400">
+        <p className="type-secondary text-amber-700 dark:text-amber-400">
           Replaces {replaces.holder_name} ({replaces.counts.runs_in ?? 0} of {replaces.counts.runs_wanted} in).
         </p>
       ) : null}
@@ -374,14 +374,14 @@ function Forecast({
 }) {
   if (failure) {
     return (
-      <p className="text-[12px] text-destructive">
+      <p className="type-secondary text-destructive">
         Forecast unavailable: {failure} <ErrorAlchemyMenu error={failure} />
       </p>
     );
   }
   if (!state) {
     return (
-      <p className="flex items-center gap-1.5 text-[12px] text-muted-foreground">
+      <p className="flex items-center gap-1.5 type-secondary text-muted-foreground">
         <Loader2 className="h-3 w-3 animate-spin" /> Reading recent runs
       </p>
     );
@@ -391,7 +391,7 @@ function Forecast({
   const doors = Object.entries(forecast.doors ?? {}).sort((a, b) => b[1] - a[1]);
   return (
     <div data-testid="candidate-forecast" className="space-y-1.5 rounded-md border border-border bg-muted/20 px-3 py-2">
-      <div className="flex flex-wrap items-baseline gap-x-2 text-[12px]">
+      <div className="flex flex-wrap items-baseline gap-x-2 type-secondary">
         <span className="font-medium">Last {forecast.window_days} days</span>
         <span className={eligible === 0 ? "text-amber-700 dark:text-amber-400" : "text-muted-foreground"}>
           {recent === 0

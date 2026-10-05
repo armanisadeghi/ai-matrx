@@ -265,7 +265,7 @@ export function NewMandatePage() {
             back, and given the one control that throws them away. */}
         {restoredAt !== null ? (
           <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border/60 bg-muted/40 px-3 py-2">
-            <span className="text-[12px] leading-snug text-muted-foreground">
+            <span className="type-secondary leading-snug text-muted-foreground">
               {restoredDraftSentence(restoredAt)}
             </span>
             <Button
@@ -286,7 +286,7 @@ export function NewMandatePage() {
           </div>
         ) : null}
         {unstorable !== null ? (
-          <p className="rounded-lg border border-amber-500/40 bg-amber-500/5 px-3 py-2 text-[12px] leading-snug text-amber-700 dark:text-amber-400">
+          <p className="rounded-lg border border-amber-500/40 bg-amber-500/5 px-3 py-2 type-secondary leading-snug text-amber-700 dark:text-amber-400">
             {draftUnstorableSentence(unstorable)}
           </p>
         ) : null}
@@ -294,7 +294,7 @@ export function NewMandatePage() {
         {/* Identity — a name people read, a key code calls. */}
         <header className="space-y-2">
           <div className="space-y-1 px-1">
-            <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground/80">
+            <span className="type-meta font-medium uppercase tracking-wide text-muted-foreground/80">
               Name
             </span>
             <Input
@@ -324,7 +324,7 @@ export function NewMandatePage() {
               placeholder="feature.specific_job"
               aria-label="Mandate key"
             />
-            <span className="text-[11px] text-muted-foreground/70">
+            <span className="type-meta text-muted-foreground/70">
               lowercase, dot-separated — code calls this key forever
             </span>
           </div>
@@ -341,7 +341,7 @@ export function NewMandatePage() {
                 href={keyState.href}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-1 text-[12px] font-medium underline underline-offset-2"
+                className="inline-flex items-center gap-1 type-secondary font-medium underline underline-offset-2"
               >
                 <ExternalLink className="h-3 w-3" />
                 Open {keyState.label} in a new tab
@@ -349,7 +349,7 @@ export function NewMandatePage() {
             </div>
           ) : null}
           {keyState.status === "unknown" ? (
-            <p className="px-1 text-[12px] leading-snug text-amber-700 dark:text-amber-400">
+            <p className="px-1 type-secondary leading-snug text-amber-700 dark:text-amber-400">
               {keyUnknownSentence(mandateKey.trim(), keyState.reason)}
             </p>
           ) : null}

@@ -48,7 +48,7 @@ const KindInputForm = dynamic(
     loading: () => (
       <div className="flex items-center gap-2 py-4 text-muted-foreground">
         <Loader2 className="h-4 w-4 animate-spin" />
-        <span className="text-xs">Loading the offer form…</span>
+        <span className="type-secondary">Loading the offer form…</span>
       </div>
     ),
   },
@@ -136,13 +136,13 @@ export function ProvisionOfferComposer({
     return (
       <div className="flex items-center gap-2 py-2 text-muted-foreground">
         <Loader2 className="h-3.5 w-3.5 animate-spin" />
-        <span className="text-[11px]">Loading the provision offer…</span>
+        <span className="type-meta">Loading the provision offer…</span>
       </div>
     );
   }
   if (state.status === "error") {
     return (
-      <p className="flex items-start gap-1.5 text-[11px] text-destructive">
+      <p className="flex items-start gap-1.5 type-meta text-destructive">
         <CircleAlert className="mt-0.5 h-3 w-3 shrink-0" />
         Couldn&apos;t load provision &quot;{provisionKey}&quot;: {state.message}
         <ErrorAlchemyMenu error={state.message} />
@@ -151,7 +151,7 @@ export function ProvisionOfferComposer({
   }
   if (state.status === "missing") {
     return (
-      <p className="flex items-start gap-1.5 text-[11px] text-muted-foreground">
+      <p className="flex items-start gap-1.5 type-meta text-muted-foreground">
         <CircleAlert className="mt-0.5 h-3 w-3 shrink-0" />
         Provision &quot;{provisionKey}&quot; not synced; use the JSON below.
       </p>
@@ -161,7 +161,7 @@ export function ProvisionOfferComposer({
   if (state.status === "kind-form") {
     return (
       <div className="rounded-md border border-border bg-card p-2">
-        <p className="mb-2 text-[11px] text-muted-foreground">
+        <p className="mb-2 type-meta text-muted-foreground">
           Submitting fills the variables JSON below.
         </p>
         <KindInputForm
@@ -193,7 +193,7 @@ export function ProvisionOfferComposer({
   return (
     <>
       {state.kindLookupError ? (
-        <p className="mb-1 flex items-start gap-1.5 text-[11px] text-muted-foreground">
+        <p className="mb-1 flex items-start gap-1.5 type-meta text-muted-foreground">
           <CircleAlert className="mt-0.5 h-3 w-3 shrink-0" />
           Couldn&apos;t look up kind{" "}
           <code className="font-mono">{state.offer.offerKindSlug}</code>;
@@ -236,13 +236,13 @@ function ScaffoldForm({
 
   return (
     <div className="space-y-2 rounded-md border border-border bg-card p-2">
-      <p className="text-[11px] text-muted-foreground">
+      <p className="type-meta text-muted-foreground">
         Fields come from the provision; blank ones are omitted.
       </p>
       {offer.values.map((value) => (
         <div key={value.name} className="space-y-1">
           <div className="flex flex-wrap items-center gap-1.5">
-            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[11px] text-foreground">
+            <code className="rounded bg-muted px-1.5 py-0.5 font-mono type-meta text-foreground">
               {value.name}
             </code>
             <Badge variant="outline" className="text-[10px] font-mono">
@@ -286,7 +286,7 @@ function ScaffoldForm({
         </div>
       ))}
       {problem && (
-        <p className="flex items-start gap-1.5 text-[11px] text-destructive">
+        <p className="flex items-start gap-1.5 type-meta text-destructive">
           <CircleAlert className="mt-0.5 h-3 w-3 shrink-0" />
           <span>
             <TextWithDoors text={problem} />

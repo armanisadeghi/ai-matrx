@@ -49,7 +49,7 @@ export function WorkflowVerdictDetail({ verdict }: { verdict: WorkflowImpactVerd
     grade: verdict.breaks[way] ?? "identical",
   }));
   return (
-    <div className="space-y-1.5 text-xs">
+    <div className="space-y-1.5 type-secondary">
       <div className="flex flex-wrap items-center gap-1.5">
         <Badge variant="outline" className={GRADE_META[verdict.grade].toneClassName}>
           {GRADE_META[verdict.grade].label}
@@ -60,7 +60,7 @@ export function WorkflowVerdictDetail({ verdict }: { verdict: WorkflowImpactVerd
           name={verdict.workflow_name}
           showIcon={false}
         />
-        <span className="text-[11px] text-muted-foreground">
+        <span className="type-meta text-muted-foreground">
           {RUNG_WORDS[verdict.principal_kind]}
         </span>
         <span className="inline-flex items-center gap-1 tabular-nums">
@@ -73,7 +73,7 @@ export function WorkflowVerdictDetail({ verdict }: { verdict: WorkflowImpactVerd
         {ways.map(({ way, grade }) => (
           <span
             key={way}
-            className="inline-flex items-center gap-1 rounded border border-border px-1 text-[10px]"
+            className="inline-flex items-center gap-1 rounded border border-border px-1 type-meta"
             title={`${BREAK_WAY_LABEL[way]}: ${GRADE_META[grade].label}`}
           >
             <span className={`h-1.5 w-1.5 rounded-full ${DOT[grade]}`} />
@@ -131,13 +131,13 @@ export function WorkflowImpactGradeCell({
           <Badge variant="outline" className={GRADE_META[lead.grade].toneClassName}>
             {GRADE_META[lead.grade].label}
           </Badge>
-          <span className="text-[10px] text-muted-foreground">
+          <span className="type-meta text-muted-foreground">
             workflow{verdicts.length > 1 ? ` ×${verdicts.length}` : ""}
           </span>
         </button>
       </HoverCardTrigger>
       <HoverCardContent align="start" className="w-[min(28rem,96vw)] space-y-2 p-3">
-        <div className="text-xs font-medium">What changed in the workflow</div>
+        <div className="type-secondary font-medium">What changed in the workflow</div>
         {verdicts.map((verdict, index) => (
           <div
             key={`${verdict.holder_kind}:${verdict.row_id}`}

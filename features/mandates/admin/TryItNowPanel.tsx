@@ -457,7 +457,7 @@ export function TryItNowPanel({
           2026-09-26: it was below a screen of input fields — Postman keeps
           Send beside the request, never under it). */}
       <div className="flex items-center justify-between gap-3">
-        <h3 className="text-sm font-semibold">Run once</h3>
+        <h3 className="type-title">Run once</h3>
         <div className="flex items-center gap-2">
         <Button
           icon={running ? (
@@ -488,7 +488,7 @@ export function TryItNowPanel({
         </div>
       </div>
       {sampleError ? (
-        <ErrorNotice size="inline" className="text-sm" message={sampleError} />
+        <ErrorNotice size="inline" className="type-body" message={sampleError} />
       ) : null}
       {sampleSource ? (
         <section
@@ -496,7 +496,7 @@ export function TryItNowPanel({
           aria-label="Agent samples"
         >
           <div className="flex items-center justify-between">
-            <h4 className="text-sm font-semibold">Agent samples</h4>
+            <h4 className="type-title">Agent samples</h4>
             <Button
               variant="quiet"
               onClick={() => setSampleSource(null)}
@@ -571,7 +571,7 @@ export function TryItNowPanel({
         />
       ) : null}
       {surfaceState.status === "loading" ? (
-        <div role="status" className="flex items-center gap-2 text-sm">
+        <div role="status" className="flex items-center gap-2 type-body">
           <Loader2 className="size-4 animate-spin" />
           Reading input declaration
         </div>
@@ -602,7 +602,7 @@ export function TryItNowPanel({
               key={field.name}
               className="min-w-0 space-y-2 rounded-lg border border-border p-3"
             >
-              <h4 className="flex items-center gap-2 text-sm font-medium">
+              <h4 className="flex items-center gap-2 type-title">
                 {label}
                 {field.help ? (
                   <FieldHelp label={label}>{field.help}</FieldHelp>
@@ -636,7 +636,7 @@ export function TryItNowPanel({
               {field.origin === "binding_prompt" &&
               field.sourcing === "optional" &&
               !field.pinned ? (
-                <p className="text-xs leading-snug text-warning">
+                <p className="type-secondary leading-snug text-warning">
                   This job asks you for this. Leave it blank and the run uses
                   the Mandate Holder&rsquo;s own default instead of an answer from you.
                 </p>
@@ -728,7 +728,7 @@ export function TryItNowPanel({
         <PropertyRow label="Declared inputs" value="None" />
       ) : null}
       <div className="min-w-0 space-y-2 rounded-lg border border-border p-3">
-        <h4 className="flex items-center gap-2 text-sm font-medium">
+        <h4 className="flex items-center gap-2 type-title">
           User message
           <FieldHelp label="User message">
             Optional text from the person running the test. Provision values are
@@ -769,7 +769,7 @@ export function TryItNowPanel({
       {failure ? <RunFailureCard failure={failure} /> : null}
       {result ? (
         <section className="space-y-3 rounded-lg border border-border p-3">
-          <h3 className="text-sm font-semibold">Test result</h3>
+          <h3 className="type-title">Test result</h3>
           <PropertyRow
             label="Execution"
             value={
@@ -906,7 +906,7 @@ export function TryItNowPanel({
             folded
           />
           {result.error ? (
-            <div className="whitespace-pre-wrap break-words text-sm text-destructive">
+            <div className="whitespace-pre-wrap break-words type-body text-destructive">
               {result.error}
               <ErrorAlchemyMenu error={result.error} />
             </div>

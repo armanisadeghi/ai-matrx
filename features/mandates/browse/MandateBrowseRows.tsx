@@ -60,7 +60,7 @@ export function MandateBrowseRows({
                 <a
                   href={hrefFor(row)}
                   onClick={(e) => e.stopPropagation()}
-                  className="truncate text-[13px] font-medium text-foreground hover:underline"
+                  className="truncate type-title text-foreground hover:underline"
                 >
                   {row.label}
                 </a>
@@ -100,7 +100,7 @@ export function MandateBrowseRows({
                 {row.resolved_agent_name ? ` · ${row.resolved_agent_name}` : ""}
               </div>
               {dropped ? (
-                <p className="mt-0.5 text-[11px] leading-snug text-amber-700 dark:text-amber-400">
+                <p className="mt-0.5 type-meta leading-snug text-amber-700 dark:text-amber-400">
                   {dropped}
                 </p>
               ) : null}

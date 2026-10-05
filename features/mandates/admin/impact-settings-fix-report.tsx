@@ -110,7 +110,7 @@ export function SettingsFixReportCard({
 }) {
   if (pending.length === 0 && reports.length === 0) return null;
   return (
-    <div className="space-y-1.5 rounded-md border border-border bg-card px-3 py-2 text-xs">
+    <div className="space-y-1.5 rounded-md border border-border bg-card px-3 py-2 type-secondary">
       <div className="flex items-center gap-2">
         <Wrench className="h-3.5 w-3.5 text-muted-foreground" />
         <span className="font-medium">Settings fixes</span>
@@ -138,7 +138,7 @@ export function SettingsFixReportCard({
             <span>{report.sentence}</span>
           </p>
           {report.after && report.after.filter((row) => MOVABLE_TIERS.has(row.tier) || row.afterTier !== row.tier).length > 1 ? (
-            <ul className="ml-5 space-y-0.5 font-mono text-[11px] text-muted-foreground">
+            <ul className="ml-5 space-y-0.5 font-mono type-meta text-muted-foreground">
               {report.after.filter((row) => MOVABLE_TIERS.has(row.tier) || row.afterTier !== row.tier).map((row) => (
                 <li key={row.rungId}>
                   {row.mandateKey}: {BATCH_TIER_META[row.tier].label} → {row.afterTier ? BATCH_TIER_META[row.afterTier].label : "no longer in this read"}

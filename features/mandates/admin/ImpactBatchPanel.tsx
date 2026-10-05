@@ -196,7 +196,7 @@ function GradeHover({ verdict }: { verdict: ImpactVerdict }) {
             {GRADE_META[verdict.grade].label}
           </Badge>
           {verdict.findings && verdict.findings.length > 0 ? (
-            <span className="text-[11px] tabular-nums text-muted-foreground">
+            <span className="type-meta tabular-nums text-muted-foreground">
               {verdict.findings.length}
             </span>
           ) : null}
@@ -206,10 +206,10 @@ function GradeHover({ verdict }: { verdict: ImpactVerdict }) {
         align="start"
         className="w-[min(28rem,96vw)] space-y-2 p-3"
       >
-        <div className="text-xs font-medium">{verdict.agent_name} — what changed</div>
+        <div className="type-secondary font-medium">{verdict.agent_name} — what changed</div>
         <VerdictDetail verdict={verdict} />
         {verdict.lineage_path && verdict.lineage_path.length > 1 ? (
-          <p className="border-t border-border pt-2 text-[11px] text-muted-foreground">
+          <p className="border-t border-border pt-2 type-meta text-muted-foreground">
             Reached through lineage:{" "}
             {verdict.lineage_path
               .map((step) =>
@@ -524,7 +524,7 @@ export function ImpactBatchPanel({
             >
               {r.mandateKey}
             </button>
-            <span className="text-[10px] text-muted-foreground">{r.rungLabel}</span>
+            <span className="type-meta text-muted-foreground">{r.rungLabel}</span>
           </div>
         ),
       },
@@ -544,7 +544,7 @@ export function ImpactBatchPanel({
             />
             {r.verdict.lineage_path && r.verdict.lineage_path.length > 1 ? (
               <span
-                className="block text-[10px] text-muted-foreground"
+                className="block type-meta text-muted-foreground"
                 title={`Reached through lineage: ${r.verdict.lineage_path
                   .map((step) => step.agent_name)
                   .join(" → ")}`}
@@ -564,7 +564,7 @@ export function ImpactBatchPanel({
         filter: "text",
         width: 110,
         cell: (r) => (
-          <span className="inline-flex items-center gap-1 tabular-nums text-xs">
+          <span className="inline-flex items-center gap-1 tabular-nums type-secondary">
             {pinnedLabelOf(r.verdict)}
             <ArrowRight className="h-3 w-3 text-muted-foreground" />
             {mode === "dry_run" ? "proposed" : newestLabelOf(r.verdict)}
@@ -599,7 +599,7 @@ export function ImpactBatchPanel({
           const signal = settingsSignalOf(r.verdict);
           if (signal.state === "clean") {
             return (
-              <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+              <span className="inline-flex items-center gap-1 type-secondary text-muted-foreground">
                 <CheckCircle2 className="h-3 w-3 text-emerald-500" /> clean
               </span>
             );
@@ -627,7 +627,7 @@ export function ImpactBatchPanel({
           if (r.tier === "blocked") {
             if (r.ownerUserId) {
               return (
-                <span className="inline-flex flex-wrap items-center gap-1 text-[11px] text-muted-foreground">
+                <span className="inline-flex flex-wrap items-center gap-1 type-meta text-muted-foreground">
                   <UserRound className="h-3 w-3" />
                   Theirs to advance —
                   <AdminUserRef
@@ -642,7 +642,7 @@ export function ImpactBatchPanel({
             const blocker = r.verdict.blocker;
             const eligibility = batchEligibilityOf(r.verdict, writeContext);
             return (
-              <span className="text-[11px] text-muted-foreground">
+              <span className="type-meta text-muted-foreground">
                 {blocker
                   ? `${BLOCKER_META[blocker].label}: ${BLOCKER_META[blocker].remedy}`
                   : eligibility.batchable
@@ -655,12 +655,12 @@ export function ImpactBatchPanel({
             );
           }
           if (r.tier === "current") {
-            return <span className="text-[11px] text-muted-foreground">Already current.</span>;
+            return <span className="type-meta text-muted-foreground">Already current.</span>;
           }
           const tooYoung = tooYoungReasonOf(r.verdict);
           if (tooYoung) {
             return (
-              <span className="text-[11px] text-muted-foreground" title="Not automatic — a person may still advance it.">
+              <span className="type-meta text-muted-foreground" title="Not automatic — a person may still advance it.">
                 {tooYoung}.
               </span>
             );
@@ -739,7 +739,7 @@ export function ImpactBatchPanel({
   return (
     <div className={`flex h-full min-h-0 flex-col gap-2 ${compact ? "" : "p-2"}`}>
       {/* The headline — the sentence Arman asked for, plus what the read withheld. */}
-      <div className="space-y-1 rounded-md border border-border bg-card px-3 py-2 text-xs">
+      <div className="space-y-1 rounded-md border border-border bg-card px-3 py-2 type-secondary">
         <div className="flex flex-wrap items-center gap-2">
           {mode === "dry_run" ? (
             <Badge variant="outline" className="gap-1 border-sky-500/40 text-sky-700 dark:text-sky-400">
@@ -848,7 +848,7 @@ export function ImpactBatchPanel({
       </div>
 
       {focusAgentId && impact && !error ? (
-        <div className="flex flex-wrap items-center gap-1 text-xs" role="tablist" aria-label="This agent">
+        <div className="flex flex-wrap items-center gap-1 type-secondary" role="tablist" aria-label="This agent">
           {(
             [
               { id: "pins", label: "Pins", icon: ListChecks, title: "Every job this change reaches, graded." },
@@ -939,7 +939,7 @@ export function ImpactBatchPanel({
                   Advance selected ({selectedRows.length})
                 </Button>
               ) : (
-                <span className="text-xs text-muted-foreground">
+                <span className="type-secondary text-muted-foreground">
                   {selectedRows.length} chosen to advance after the change
                 </span>
               ),

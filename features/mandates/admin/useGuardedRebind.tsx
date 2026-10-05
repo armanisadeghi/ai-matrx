@@ -200,7 +200,7 @@ export function useGuardedRebind({
       }
       // Block-level content must live here — `description` renders inside a <p>.
       content={
-        <div className="space-y-2 text-xs">
+        <div className="space-y-2 type-secondary">
           {pending.impact.indeterminate && (
             <div className="flex items-start gap-1.5 text-amber-600">
               <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0" />

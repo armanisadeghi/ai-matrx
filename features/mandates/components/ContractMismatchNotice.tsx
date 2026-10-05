@@ -61,7 +61,7 @@ export function ContractMismatchNotice({
       data-testid="contract-mismatch-notice"
       data-runs-anyway={runsAnyway ? "true" : undefined}
       className={cn(
-        "flex items-start gap-2 rounded-xl border px-3 py-2 text-[12px] leading-relaxed",
+        "flex items-start gap-2 rounded-xl border px-3 py-2 type-secondary leading-relaxed",
         runsAnyway
           ? "border-amber-500/50 bg-amber-500/10 text-amber-800 dark:text-amber-200"
           : "border-destructive/50 bg-destructive/10 text-destructive",

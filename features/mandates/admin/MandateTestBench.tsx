@@ -261,7 +261,7 @@ function ResultRow({
           : "border-border"
       }`}
     >
-      <summary className="flex cursor-pointer flex-wrap items-center gap-1.5 px-2 py-1.5 text-xs hover:bg-accent/40">
+      <summary className="flex cursor-pointer flex-wrap items-center gap-1.5 px-2 py-1.5 type-secondary hover:bg-accent/40">
         <span className="font-semibold">{result.candidate_label}</span>
         {result.error ? (
           <Badge variant="destructive">failed</Badge>
@@ -282,7 +282,7 @@ function ResultRow({
 
       <div className="space-y-2 border-t border-border p-2">
         {agentId && (
-          <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+          <div className="flex items-center gap-1 type-meta text-muted-foreground">
             Ran:
             <EntityRef
               token="agent"
@@ -306,21 +306,21 @@ function ResultRow({
         />
 
         {result.error ? (
-          <div className="rounded bg-destructive/10 p-2 text-[11px] text-destructive">
+          <div className="rounded bg-destructive/10 p-2 type-meta text-destructive">
             {result.error}
             <ErrorAlchemyMenu error={result.error} />
           </div>
         ) : (
           <>
             {(structural.errors ?? []).length > 0 && (
-              <div className="text-[11px] text-destructive">
+              <div className="type-meta text-destructive">
                 <TextWithDoors
                   text={(structural.errors ?? []).slice(0, 4).join("; ")}
                 />
               </div>
             )}
             {structural.degraded_reason && (
-              <div className="text-[11px] text-muted-foreground">
+              <div className="type-meta text-muted-foreground">
                 <TextWithDoors text={structural.degraded_reason} />
               </div>
             )}
@@ -575,7 +575,7 @@ function CandidateEditor({
         )}
 
         {workflowHeld ? (
-          <span className="text-[11px] text-muted-foreground">
+          <span className="type-meta text-muted-foreground">
             Uses the workflow's own step settings.
           </span>
         ) : (
@@ -605,7 +605,7 @@ function CandidateEditor({
             <RunConfigOverrides conversationId={overridesId} />
           </div>
         ) : (
-          <div className="flex items-center gap-2 p-2 text-xs text-muted-foreground">
+          <div className="flex items-center gap-2 p-2 type-secondary text-muted-foreground">
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
             Reading comparison overrides
           </div>
@@ -625,7 +625,7 @@ function ReferenceRow({
     return <PropertyRow label="Reference output" value="Not set" />;
   return (
     <details className="rounded-md border border-border">
-      <summary className="flex cursor-pointer items-center gap-1.5 px-2 py-1.5 text-xs font-semibold hover:bg-accent/40">
+      <summary className="flex cursor-pointer items-center gap-1.5 px-2 py-1.5 type-secondary font-semibold hover:bg-accent/40">
         <Star className="h-3.5 w-3.5" /> Reference output
       </summary>
       <div className="border-t border-border p-2">
@@ -1047,7 +1047,7 @@ export function MandateTestBench({
         <div className="flex flex-wrap items-center gap-2">
           <FlaskConical className="h-4 w-4 text-muted-foreground" />
           <div className="min-w-0">
-            <div className="flex items-center gap-2 text-sm font-semibold">
+            <div className="flex items-center gap-2 type-title">
               Compare saved test cases
               <FieldHelp label="Saved test comparisons">
                 Each case runs through the system default and each selected
@@ -1067,7 +1067,7 @@ export function MandateTestBench({
         {adding && (
           <div className="grid gap-2 rounded-md border border-border bg-muted/20 p-2">
             {contract.requiredVariables.length > 0 && (
-              <div className="flex flex-wrap items-center gap-1 text-[11px] text-muted-foreground">
+              <div className="flex flex-wrap items-center gap-1 type-meta text-muted-foreground">
                 <span>Required variables:</span>
                 {contract.requiredVariables.map((name) => (
                   <button
@@ -1215,11 +1215,11 @@ export function MandateTestBench({
         </Button>
 
         {loading ? (
-          <div className="flex items-center gap-2 py-2 text-xs text-muted-foreground">
+          <div className="flex items-center gap-2 py-2 type-secondary text-muted-foreground">
             <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading test cases…
           </div>
         ) : exemplars.length === 0 ? (
-          <div className="rounded-md border border-dashed border-border p-3 text-xs text-muted-foreground">
+          <div className="rounded-md border border-dashed border-border p-3 type-secondary text-muted-foreground">
             <PropertyRow
               label="Saved test cases"
               value="None"
@@ -1240,7 +1240,7 @@ export function MandateTestBench({
                 key={exemplar.id}
                 className="space-y-2 rounded-md border border-border p-2"
               >
-                <div className="flex flex-wrap items-center gap-2 text-xs">
+                <div className="flex flex-wrap items-center gap-2 type-secondary">
                   <span className="font-semibold">{exemplar.label}</span>
                   <span className="text-muted-foreground">
                     Source: {humanizeIdentifier(exemplar.source) || exemplar.source}
@@ -1307,7 +1307,7 @@ export function MandateTestBench({
 
                 {history.length > 0 && (
                   <details>
-                    <summary className="flex cursor-pointer items-center gap-1 text-[11px] font-medium text-muted-foreground">
+                    <summary className="flex cursor-pointer items-center gap-1 type-meta font-medium text-muted-foreground">
                       <History className="h-3.5 w-3.5" /> Past runs (
                       {history.length})
                     </summary>

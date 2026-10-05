@@ -227,7 +227,7 @@ function ReviewBlock({
       <div className="flex flex-wrap items-center gap-2">
         <span
           className={cn(
-            "inline-flex items-center rounded-md px-2 py-1 text-sm font-semibold",
+            "inline-flex items-center rounded-md px-2 py-1 type-title",
             run.verdict && run.status === "completed"
               ? VERDICT_TONE[run.verdict]
               : run.status === "failed" || run.status === "timed_out"
@@ -241,7 +241,7 @@ function ReviewBlock({
           {headline}
         </span>
         {candidate ? (
-          <span className="text-xs text-muted-foreground">
+          <span className="type-secondary text-muted-foreground">
             Run {run.number} of {candidate.counts.runs_wanted}
           </span>
         ) : null}
@@ -252,7 +252,7 @@ function ReviewBlock({
           </Chip>
         ) : null}
       </div>
-      {reasoning ? <p className="text-sm leading-relaxed">{reasoning}</p> : null}
+      {reasoning ? <p className="type-body leading-relaxed">{reasoning}</p> : null}
       {run.status === "failed" || run.status === "timed_out" ? (
         <ErrorNotice
           size="compact"
@@ -295,7 +295,7 @@ function Agreement({ run, onRun }: { run: LiveCandidateRun; onRun: (run: LiveCan
   };
   return (
     <div className="flex items-center gap-1.5" data-candidate-agreement>
-      <span className="mr-1 text-xs text-muted-foreground">This review</span>
+      <span className="mr-1 type-secondary text-muted-foreground">This review</span>
       {(["agree", "disagree"] as const).map((choice) => {
         const Icon = choice === "agree" ? ThumbsUp : ThumbsDown;
         const chosen = run.human_agreement === choice;
@@ -345,10 +345,10 @@ function InputBlock({
 
   return (
     <section className="space-y-2" data-candidate-input>
-      <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Input</h4>
+      <h4 className="type-secondary font-semibold uppercase tracking-wide text-muted-foreground">Input</h4>
       <p
         className={cn(
-          "text-sm font-medium",
+          "type-title",
           lead.tone === "same" && "text-emerald-700 dark:text-emerald-400",
           lead.tone === "differed" && "text-red-700 dark:text-red-400",
           lead.tone === "unknown" && "text-amber-700 dark:text-amber-400",
@@ -357,7 +357,7 @@ function InputBlock({
       >
         {lead.text}
       </p>
-      <div className="flex flex-wrap items-center gap-1.5 text-xs" data-candidate-input-line>
+      <div className="flex flex-wrap items-center gap-1.5 type-secondary" data-candidate-input-line>
         {expected.map((part) => (
           <Chip key={`e-${part}`}>{inputPartWord(part)}: the candidate's own</Chip>
         ))}
@@ -380,7 +380,7 @@ function InputBlock({
       {payload && hasInput ? (
         <div className="space-y-1.5">
           {input.userInput ? (
-            <p className="line-clamp-3 rounded-md bg-muted/60 px-2.5 py-1.5 text-sm">{input.userInput}</p>
+            <p className="line-clamp-3 rounded-md bg-muted/60 px-2.5 py-1.5 type-body">{input.userInput}</p>
           ) : null}
           {input.variables && Object.keys(input.variables).length > 0 ? (
             <>
@@ -412,7 +412,7 @@ function AnswersBlock({
 }) {
   return (
     <section className="@container space-y-2" data-candidate-answers>
-      <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Answers</h4>
+      <h4 className="type-secondary font-semibold uppercase tracking-wide text-muted-foreground">Answers</h4>
       <div className="grid grid-cols-1 gap-3 @lg:grid-cols-2">
         <AnswerColumn
           side="live"
@@ -468,9 +468,9 @@ function AnswerColumn(props: {
   return (
     <div className="flex min-w-0 flex-col gap-2 rounded-lg border border-border p-2.5" data-candidate-answer={props.side}>
       <div className="min-w-0">
-        <div className="text-xs font-semibold">{props.title}</div>
+        <div className="type-secondary font-semibold">{props.title}</div>
         {props.holder ? (
-          <div className="truncate text-xs text-muted-foreground" title={props.holder}>
+          <div className="truncate type-secondary text-muted-foreground" title={props.holder}>
             {props.holder}
           </div>
         ) : null}
@@ -531,7 +531,7 @@ function VersionLine({ versionId, holderType }: { versionId: string; holderType:
   }, [versionId, holderType]);
   const n = number?.id === versionId ? number.n : null;
   return (
-    <div className="text-[11px] text-muted-foreground tabular-nums" title={versionId} data-candidate-version>
+    <div className="type-meta text-muted-foreground tabular-nums" title={versionId} data-candidate-version>
       {n != null ? `Version ${n}` : `Version ${versionId.slice(0, 8)}`}
     </div>
   );
@@ -628,17 +628,17 @@ function ToolsBlock({
   if (dispositions.length === 0 && !stopped) {
     return (
       <section className="space-y-2" data-candidate-tools>
-        <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Tool calls</h4>
-        <p className="text-xs text-muted-foreground">The candidate made no tool calls.</p>
+        <h4 className="type-secondary font-semibold uppercase tracking-wide text-muted-foreground">Tool calls</h4>
+        <p className="type-secondary text-muted-foreground">The candidate made no tool calls.</p>
       </section>
     );
   }
   return (
     <section className="space-y-2" data-candidate-tools>
-      <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Tool calls</h4>
+      <h4 className="type-secondary font-semibold uppercase tracking-wide text-muted-foreground">Tool calls</h4>
       <ol className="divide-y divide-border/60 rounded-lg border border-border">
         {dispositions.map((d, index) => (
-          <li key={`${d.seq ?? index}-${d.tool ?? ""}`} className="flex items-center gap-2 px-2.5 py-1.5 text-xs">
+          <li key={`${d.seq ?? index}-${d.tool ?? ""}`} className="flex items-center gap-2 px-2.5 py-1.5 type-secondary">
             <span className="w-5 shrink-0 text-right tabular-nums text-muted-foreground">{d.seq ?? index + 1}</span>
             <span className="min-w-0 flex-1 truncate font-mono" title={d.tool ?? undefined}>
               {d.tool ?? "unnamed tool"}
@@ -659,17 +659,17 @@ function ToolsBlock({
       </ol>
       {stopped && payload ? (
         <div className="@container space-y-1.5" data-candidate-stop>
-          <div className="text-xs font-medium">
+          <div className="type-secondary font-medium">
             At step {String(stopped.step ?? "?")} the candidate wanted to call{" "}
             <span className="font-mono">{str(stopped.tool) ?? "a tool"}</span>
           </div>
           <div className="grid grid-cols-1 gap-2 @lg:grid-cols-2">
             <div className="min-w-0 space-y-1">
-              <div className="text-[11px] text-muted-foreground">Candidate proposed</div>
+              <div className="type-meta text-muted-foreground">Candidate proposed</div>
               <JsonBlock value={structuredArgs(stopped.args ?? null)} />
             </div>
             <div className="min-w-0 space-y-1">
-              <div className="text-[11px] text-muted-foreground">
+              <div className="type-meta text-muted-foreground">
                 {liveAtStep ? (
                   <>
                     Live run called <span className="font-mono">{str(liveAtStep.tool) ?? "a tool"}</span>

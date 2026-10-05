@@ -197,7 +197,7 @@ export function MandateCoverageBadge({
 
   if (verdict.kind === "unknown") {
     return (
-      <span className="text-[11px] text-muted-foreground" title={verdict.title}>
+      <span className="type-meta text-muted-foreground" title={verdict.title}>
         unknown
       </span>
     );
@@ -206,7 +206,7 @@ export function MandateCoverageBadge({
   if (verdict.kind === "unanswered") {
     return (
       <span
-        className="text-[11px] text-muted-foreground/70"
+        className="type-meta text-muted-foreground/70"
         title="Another owner's Mandate — this organization's coverage does not answer for it."
       >
         —

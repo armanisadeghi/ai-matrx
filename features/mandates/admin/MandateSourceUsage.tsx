@@ -114,19 +114,19 @@ function RowLine({
         ) : null}
         <LocationText location={row.location} />
         {/* On a phone the type drops under the name rather than squeezing it. */}
-        <span className="shrink-0 text-xs text-muted-foreground max-sm:order-last max-sm:w-full">
+        <span className="shrink-0 type-secondary text-muted-foreground max-sm:order-last max-sm:w-full">
           {referenceTypeWords(row.reference_type)}
         </span>
         <CopyButton content={row.location} label={copyLabel} size="sm" />
       </div>
       {row.flag_sentence ? (
-        <p className="mt-1 text-xs text-destructive">
+        <p className="mt-1 type-secondary text-destructive">
           {row.flag_sentence}
           {row.remedy ? ` ${row.remedy}` : ""}
         </p>
       ) : null}
       {singleSiteByDesign ? (
-        <p className="mt-1 text-xs text-muted-foreground">
+        <p className="mt-1 type-secondary text-muted-foreground">
           {SINGLE_SITE_SENTENCE}
         </p>
       ) : null}
@@ -143,7 +143,7 @@ function LocationText({ location }: { location: string }) {
         <span className="text-muted-foreground"> · line {line}</span>
       ) : null}
       {where ? (
-        <span className="block truncate text-xs text-muted-foreground">
+        <span className="block truncate type-secondary text-muted-foreground">
           {where}
         </span>
       ) : null}
@@ -213,7 +213,7 @@ export function MandateSourceUsage({
       {loading ? (
         <div
           role="status"
-          className="flex items-center gap-2 rounded-md border border-border p-3 text-sm text-muted-foreground"
+          className="flex items-center gap-2 rounded-md border border-border p-3 type-body text-muted-foreground"
         >
           <Loader2 className="size-4 animate-spin" aria-hidden="true" />
           Reading the reported references…
@@ -223,7 +223,7 @@ export function MandateSourceUsage({
       {error ? (
         <div
           role="alert"
-          className="flex items-start gap-2 rounded-md border border-destructive p-3 text-sm"
+          className="flex items-start gap-2 rounded-md border border-destructive p-3 type-body"
         >
           <AlertTriangle
             className="mt-0.5 size-4 shrink-0 text-destructive"
@@ -240,7 +240,7 @@ export function MandateSourceUsage({
       {!error && report && report.unscanned_repos.length > 0 ? (
         <div
           role="status"
-          className="flex items-start gap-2 rounded-md border border-warning p-3 text-sm"
+          className="flex items-start gap-2 rounded-md border border-warning p-3 type-body"
         >
           <AlertTriangle
             className="mt-0.5 size-4 shrink-0 text-warning"
@@ -255,8 +255,8 @@ export function MandateSourceUsage({
       ) : null}
 
       <section className="space-y-2" aria-label="Defined in">
-        <h3 className="text-sm font-semibold">Defined in</h3>
-        <div className="divide-y divide-border rounded-md border border-border text-sm">
+        <h3 className="type-title">Defined in</h3>
+        <div className="divide-y divide-border rounded-md border border-border type-body">
           {definedIn.length > 0 ? (
             definedIn.map((row, index) => (
               <RowLine
@@ -276,7 +276,7 @@ export function MandateSourceUsage({
                   size="sm"
                 />
               </div>
-              <p className="mt-1 text-xs text-muted-foreground">
+              <p className="mt-1 type-secondary text-muted-foreground">
                 Not confirmed by a code scan yet
               </p>
             </div>
@@ -297,8 +297,8 @@ export function MandateSourceUsage({
       </section>
 
       <section className="space-y-2" aria-label="Used by">
-        <h3 className="text-sm font-semibold">Used by</h3>
-        <div className="divide-y divide-border rounded-md border border-border text-sm">
+        <h3 className="type-title">Used by</h3>
+        <div className="divide-y divide-border rounded-md border border-border type-body">
           {usedBy.length > 0 ? (
             usedBy.map((row, index) => (
               <RowLine

@@ -108,7 +108,7 @@ export function MandateCoverageNotice({
   return (
     <div
       className={cn(
-        "flex items-center gap-2 rounded-lg border px-3 py-1.5 text-[12px]",
+        "flex items-center gap-2 rounded-lg border px-3 py-1.5 type-secondary",
         active === "orange"
           ? "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400"
           : "border-rose-500/40 bg-rose-500/10 text-rose-700 dark:text-rose-400",

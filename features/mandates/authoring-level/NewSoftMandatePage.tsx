@@ -314,14 +314,14 @@ export function NewSoftMandatePage({ level, orgId = null, orgName = null }: NewS
         left={
           <div className="flex min-w-0 items-center gap-1">
             <ChevronLeftTapButton href={listHref} ariaLabel="All mandates" />
-            <span className="truncate text-sm font-medium">
+            <span className="truncate type-title">
               {level === "organization" && orgName ? `New mandate for ${orgName}` : "New mandate"}
             </span>
           </div>
         }
       />
       <div className="mx-auto w-full max-w-3xl space-y-6 px-4 pb-16 pt-[calc(var(--shell-header-h)+0.75rem)] sm:px-6">
-        <p className="rounded-lg border border-border/60 bg-card px-3 py-2 text-[12px] leading-snug text-muted-foreground">
+        <p className="rounded-lg border border-border/60 bg-card px-3 py-2 type-secondary leading-snug text-muted-foreground">
           {level === "organization" ? (
             <>
               A custom mandate for{" "}
@@ -339,7 +339,7 @@ export function NewSoftMandatePage({ level, orgId = null, orgName = null }: NewS
             back, and given the one control that throws them away. */}
         {restoredAt !== null ? (
           <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border/60 bg-muted/40 px-3 py-2">
-            <span className="text-[12px] leading-snug text-muted-foreground">
+            <span className="type-secondary leading-snug text-muted-foreground">
               {restoredDraftSentence(restoredAt)}
             </span>
             <Button
@@ -361,7 +361,7 @@ export function NewSoftMandatePage({ level, orgId = null, orgName = null }: NewS
           </div>
         ) : null}
         {unstorable !== null ? (
-          <p className="rounded-lg border border-amber-500/40 bg-amber-500/5 px-3 py-2 text-[12px] leading-snug text-amber-700 dark:text-amber-400">
+          <p className="rounded-lg border border-amber-500/40 bg-amber-500/5 px-3 py-2 type-secondary leading-snug text-amber-700 dark:text-amber-400">
             {draftUnstorableSentence(unstorable)}
           </p>
         ) : null}
@@ -369,7 +369,7 @@ export function NewSoftMandatePage({ level, orgId = null, orgName = null }: NewS
         {/* Identity — a name people read, a key code calls. */}
         <header className="space-y-2">
           <div className="space-y-1 px-1">
-            <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground/80">
+            <span className="type-meta font-medium uppercase tracking-wide text-muted-foreground/80">
               Name
             </span>
             <Input
@@ -390,7 +390,7 @@ export function NewSoftMandatePage({ level, orgId = null, orgName = null }: NewS
               letters to make one from) opens it for them. */}
           {showAdvanced || (!keyIsAuto && keyIsTaken) || (label.trim() && !mandateKey) ? (
             <div className="space-y-1 px-1">
-              <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground/80">
+              <span className="type-meta font-medium uppercase tracking-wide text-muted-foreground/80">
                 Key
               </span>
               <div className="flex flex-wrap items-center gap-2">
@@ -407,7 +407,7 @@ export function NewSoftMandatePage({ level, orgId = null, orgName = null }: NewS
                   className="h-8 w-72 font-mono text-[12.5px]"
                   aria-label="Mandate key"
                 />
-                <span className="text-[11px] text-muted-foreground/70">
+                <span className="type-meta text-muted-foreground/70">
                   {keyIsAuto
                     ? "Made from the name; type to use your own."
                     : "Your own key; clear it to use the generated one."}
@@ -437,7 +437,7 @@ export function NewSoftMandatePage({ level, orgId = null, orgName = null }: NewS
                 href={takenHref ?? keyState.href}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-1 text-[12px] font-medium underline underline-offset-2"
+                className="inline-flex items-center gap-1 type-secondary font-medium underline underline-offset-2"
               >
                 <ExternalLink className="h-3 w-3" />
                 Open {keyState.label} in a new tab
@@ -445,7 +445,7 @@ export function NewSoftMandatePage({ level, orgId = null, orgName = null }: NewS
             </div>
           ) : null}
           {keyState.status === "unknown" ? (
-            <p className="px-1 text-[12px] leading-snug text-amber-700 dark:text-amber-400">
+            <p className="px-1 type-secondary leading-snug text-amber-700 dark:text-amber-400">
               {keyUnknownSentence(mandateKey.trim(), keyState.reason)}
             </p>
           ) : null}

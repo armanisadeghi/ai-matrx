@@ -15,7 +15,7 @@ export function Chip({ className, children }: { className?: string; children: Re
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] font-medium leading-none",
+        "inline-flex items-center rounded-md px-1.5 py-0.5 type-meta font-medium leading-none",
         className ?? "bg-muted text-muted-foreground",
       )}
     >
@@ -35,7 +35,7 @@ export function StateLine({
   return (
     <p
       className={cn(
-        "rounded-md px-2.5 py-1.5 text-xs",
+        "rounded-md px-2.5 py-1.5 type-secondary",
         tone === "muted" && "bg-muted/60 text-muted-foreground",
         tone === "warn" && "bg-amber-500/10 text-amber-800 dark:text-amber-300",
       )}
@@ -56,7 +56,7 @@ export function MetricsLine({ metrics }: { metrics: Record<string, unknown> | nu
   const tokensIn = num(m.tokens_in);
   const tokensOut = num(m.tokens_out);
   return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground tabular-nums">
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 type-secondary text-muted-foreground tabular-nums">
       <span title="Cost">
         <Cost usd={num(m.cost_usd)} short />
       </span>
@@ -78,7 +78,7 @@ export function NewTabLink({ href, label = "Open in new tab" }: { href: string; 
       href={absolute}
       target="_blank"
       rel="noopener noreferrer"
-      className="inline-flex h-7 items-center gap-1 rounded-md px-2 text-xs text-muted-foreground hover:bg-accent hover:text-foreground pointer-coarse:h-10"
+      className="inline-flex h-7 items-center gap-1 rounded-md px-2 type-secondary text-muted-foreground hover:bg-accent hover:text-foreground pointer-coarse:h-10"
       data-candidate-new-tab
     >
       <ExternalLink className="h-3.5 w-3.5" />
@@ -102,7 +102,7 @@ export function JsonBlock({ value, className }: { value: unknown; className?: st
   return (
     <pre /* rich-content-exempt: debug or inspector output: logs, JSON, code or source view */
       className={cn(
-        "max-h-60 overflow-auto whitespace-pre-wrap break-words rounded-md bg-muted/60 p-2 font-mono text-[11px] leading-snug",
+        "max-h-60 overflow-auto whitespace-pre-wrap break-words rounded-md bg-muted/60 p-2 font-mono type-meta leading-snug",
         className,
       )}
     >

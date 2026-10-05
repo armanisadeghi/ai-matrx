@@ -31,7 +31,7 @@ export function CompactMandateText({ text, description = text }: { text: string;
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <span tabIndex={0} className="block min-w-0 max-w-full truncate text-xs">{text}</span>
+        <span tabIndex={0} className="block min-w-0 max-w-full truncate type-secondary">{text}</span>
       </TooltipTrigger>
       <TooltipContent /* rich-content-exempt: tooltip or title text, plain by design */ className="max-w-md whitespace-pre-wrap break-words">{description}</TooltipContent>
     </Tooltip>
@@ -86,7 +86,7 @@ function ChipRow({
         </Badge>
       ))}
       {hidden > 0 && (
-        <span className="text-[10px] text-muted-foreground">
+        <span className="type-meta text-muted-foreground">
           +{hidden} additional
         </span>
       )}
@@ -115,10 +115,10 @@ export function MandateInputsCell({
       // Has an input declaration; we just do not hold its values yet.
       return (
         <span
-          className="text-xs text-muted-foreground"
+          className="type-secondary text-muted-foreground"
           title={`Inputs are declared by the Provision "${row.provisionKey}" — open the mandate to see every offered value.`}
         >
-          <span className="text-[10px]">Declared by its provision</span>
+          <span className="type-meta">Declared by its provision</span>
         </span>
       );
     }
@@ -149,7 +149,7 @@ export function MandateInputsCell({
     }
     return (
       <span
-        className="text-xs text-muted-foreground"
+        className="type-secondary text-muted-foreground"
         title="No inputs are declared; it runs on the user's message alone."
       >
         User text
@@ -213,7 +213,7 @@ export function MandateOutputCell({
           </Badge>
         ))}
         {hidden > 0 && (
-          <span className="text-[10px] text-muted-foreground">+{hidden}</span>
+          <span className="type-meta text-muted-foreground">+{hidden}</span>
         )}
       </div>
     );

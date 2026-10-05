@@ -99,14 +99,14 @@ export function CandidateSummaryBody({ row }: { row: CandidateSummaryRow }) {
           {candidate.recommendation ? (
             <span
               className={cn(
-                "inline-flex items-center rounded-md px-2 py-1 text-sm font-semibold",
+                "inline-flex items-center rounded-md px-2 py-1 type-title",
                 RECOMMENDATION_TONE[candidate.recommendation],
               )}
             >
               Recommended: {RECOMMENDATION_WORD[candidate.recommendation].toLowerCase()}
             </span>
           ) : (
-            <span className="inline-flex items-center rounded-md bg-muted px-2 py-1 text-sm font-semibold">
+            <span className="inline-flex items-center rounded-md bg-muted px-2 py-1 type-title">
               No recommendation yet
             </span>
           )}
@@ -116,9 +116,9 @@ export function CandidateSummaryBody({ row }: { row: CandidateSummaryRow }) {
           ) : null}
         </div>
         {candidate.recommendation_reason ? (
-          <p className="text-sm leading-relaxed">{candidate.recommendation_reason}</p>
+          <p className="type-body leading-relaxed">{candidate.recommendation_reason}</p>
         ) : null}
-        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground tabular-nums" data-candidate-counts>
+        <div className="flex flex-wrap gap-x-4 gap-y-1 type-secondary text-muted-foreground tabular-nums" data-candidate-counts>
           <span>
             <span className="font-semibold text-foreground">{counts.runs_in ?? 0}</span> of {counts.runs_wanted} in
           </span>
@@ -128,7 +128,7 @@ export function CandidateSummaryBody({ row }: { row: CandidateSummaryRow }) {
             <Chip className="bg-amber-500/15 text-amber-700 dark:text-amber-400">{counts.runs_failed} didn&apos;t finish</Chip>
           ) : null}
         </div>
-        <div className="text-xs text-muted-foreground">
+        <div className="type-secondary text-muted-foreground">
           <CandidateHolderName
             type={candidate.holder_type}
             id={candidate.holder_id}
@@ -152,7 +152,7 @@ export function CandidateSummaryBody({ row }: { row: CandidateSummaryRow }) {
       <Decisions candidate={candidate} runs={runs} onCandidate={setCandidate} />
 
       <section className="space-y-2" data-candidate-runs>
-        <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Runs</h4>
+        <h4 className="type-secondary font-semibold uppercase tracking-wide text-muted-foreground">Runs</h4>
         {runs.length === 0 ? (
           <StateLine>No real run has come through yet.</StateLine>
         ) : (
@@ -162,7 +162,7 @@ export function CandidateSummaryBody({ row }: { row: CandidateSummaryRow }) {
 
       {skips.length > 0 ? (
         <section className="space-y-2" data-candidate-skips>
-          <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          <h4 className="type-secondary font-semibold uppercase tracking-wide text-muted-foreground">
             Runs not used
           </h4>
           <div className="flex flex-wrap gap-1.5">
@@ -205,7 +205,7 @@ function RunsList({ runs }: { runs: LiveCandidateRun[] }) {
               <span className="w-10 shrink-0 tabular-nums text-muted-foreground">#{run.number}</span>
               <Chip className={tone}>{runOutcomeWord(run)}</Chip>
               {attemptWord(run.attempts) ? (
-                <span className="shrink-0 text-[10px] text-muted-foreground" title="Interrupted, then run again.">
+                <span className="shrink-0 type-meta text-muted-foreground" title="Interrupted, then run again.">
                   {attemptWord(run.attempts)}
                 </span>
               ) : null}
@@ -346,7 +346,7 @@ function Decisions({
                     disabled={!v.version_id}
                   />
                   <span className="min-w-0 flex-1 truncate">{v.label}</span>
-                  <span className="shrink-0 text-xs text-muted-foreground">
+                  <span className="shrink-0 type-secondary text-muted-foreground">
                     {v.runs} run{v.runs === 1 ? "" : "s"}
                   </span>
                 </label>

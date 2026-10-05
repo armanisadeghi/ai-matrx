@@ -105,7 +105,7 @@ export function MandateContextGate({
             disabled={saving || holderClosed}
             onCheckedChange={handleChange}
           />
-          <span className="text-sm">{gateClosed ? "No" : "Yes"}</span>
+          <span className="type-body">{gateClosed ? "No" : "Yes"}</span>
         </label>
       </ShortcutFieldRow>
       <ShortcutFieldRow
@@ -115,7 +115,7 @@ export function MandateContextGate({
           row.requiredContextPolicyKeys.length ? "Required" : "None required"
         }
       >
-        <span className="text-sm">
+        <span className="type-body">
           {row.requiredContextPolicyKeys.length
             ? row.requiredContextPolicyKeys
                 .map((key) => (humanizeIdentifier(key) || key))

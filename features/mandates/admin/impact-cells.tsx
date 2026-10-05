@@ -84,12 +84,12 @@ export function VerdictDetail({ verdict }: { verdict: ImpactVerdict }) {
   const tooYoung = tooYoungReasonOf(verdict);
   const findings = changeFindingsOf(verdict);
   return (
-    <div className="space-y-1.5 text-xs">
+    <div className="space-y-1.5 type-secondary">
       <div className="flex flex-wrap items-center gap-1.5">
         <Badge variant="outline" className={GRADE_META[verdict.grade].toneClassName}>
           {GRADE_META[verdict.grade].label}
         </Badge>
-        <span className="font-mono text-[11px] text-muted-foreground">
+        <span className="font-mono type-meta text-muted-foreground">
           {verdict.holder_kind === "binding"
             ? `${verdict.principal.kind} binding`
             : "mandate default"}
@@ -172,7 +172,7 @@ export function ImpactGradeCell({
   if (!defaultVerdict) {
     return (
       <span
-        className="inline-flex items-center gap-1 text-xs text-muted-foreground"
+        className="inline-flex items-center gap-1 type-secondary text-muted-foreground"
         title={UNGRADED_SENTENCE[ungraded ?? "not_returned"]}
       >
         {ungraded === "loading" ? (
@@ -209,7 +209,7 @@ export function ImpactGradeCell({
             {GRADE_META[defaultVerdict.grade].label}
           </Badge>
           {defaultVerdict.findings && defaultVerdict.findings.length > 0 ? (
-            <span className="text-[11px] tabular-nums text-muted-foreground">
+            <span className="type-meta tabular-nums text-muted-foreground">
               {defaultVerdict.findings.length}
             </span>
           ) : null}
@@ -231,7 +231,7 @@ export function ImpactGradeCell({
             </Badge>
           ) : null}
           {worstBinding ? (
-            <span className="text-[10px] text-muted-foreground">
+            <span className="type-meta text-muted-foreground">
               +{bindingVerdicts.length} binding
               {bindingVerdicts.length === 1 ? "" : "s"}
             </span>
@@ -242,13 +242,13 @@ export function ImpactGradeCell({
         align="start"
         className="w-[min(28rem,96vw)] space-y-2 p-3"
       >
-        <div className="text-xs font-medium">
+        <div className="type-secondary font-medium">
           {defaultVerdict.agent_name} — what changed
         </div>
         <VerdictDetail verdict={defaultVerdict} />
         {bindingVerdicts.length > 0 ? (
           <div className="space-y-2 border-t border-border pt-2">
-            <div className="text-[11px] text-muted-foreground">
+            <div className="type-meta text-muted-foreground">
               {bindingVerdicts.length} binding rung
               {bindingVerdicts.length === 1 ? "" : "s"}, graded separately in the mandate
             </div>
@@ -276,7 +276,7 @@ export function ImpactBlockerCell({
 }) {
   const openMandateWindow = useOpenMandateWindow();
   if (!verdict) {
-    return <span className="text-xs text-muted-foreground">—</span>;
+    return <span className="type-secondary text-muted-foreground">—</span>;
   }
   const key = blockerKeyOf(verdict);
   const meta = BLOCKER_META[key];
@@ -342,7 +342,7 @@ export function ImpactLegend() {
       <PopoverContent
         /* sizing: fixed — fixed-shape panel wider than the content-sizing 28rem ceiling */
         align="end"
-        className="w-[min(30rem,96vw)] space-y-2 p-3 text-xs"
+        className="w-[min(30rem,96vw)] space-y-2 p-3 type-secondary"
       >
         <div className="font-medium">Grade — how dangerous the change is</div>
         <ul className="space-y-1">
@@ -419,7 +419,7 @@ export function StandingImpactStrip({
 }) {
   if (error) {
     return (
-      <div className="flex items-start gap-2 rounded-md border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-xs text-rose-700 dark:text-rose-400">
+      <div className="flex items-start gap-2 rounded-md border border-rose-500/40 bg-rose-500/10 px-3 py-2 type-secondary text-rose-700 dark:text-rose-400">
         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
         <div>
           <div className="font-medium">
@@ -432,7 +432,7 @@ export function StandingImpactStrip({
     );
   }
   return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-md border border-border bg-card px-3 py-1.5 text-xs">
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-md border border-border bg-card px-3 py-1.5 type-secondary">
       <span className="inline-flex items-center gap-1.5">
         <BrainCircuit className="h-3.5 w-3.5 text-muted-foreground" />
         <span className="text-muted-foreground">Behind latest &amp; safe to move</span>
@@ -526,7 +526,7 @@ export function AdvanceResultBadge({
         {meta.label}
       </Badge>
       {!compact && result.reason ? (
-        <span className="text-[11px] leading-snug text-muted-foreground">
+        <span className="type-meta leading-snug text-muted-foreground">
           {result.reason}
         </span>
       ) : null}
@@ -560,13 +560,13 @@ export function AdvanceResultsCard({
   const stillRevertable = (batch: AdvanceReport) =>
     revertableRows(batch, batches.slice(0, batches.indexOf(batch)));
   return (
-    <div className="space-y-2 rounded-md border border-border bg-card px-3 py-2 text-xs">
+    <div className="space-y-2 rounded-md border border-border bg-card px-3 py-2 type-secondary">
       <div className="flex flex-wrap items-center gap-2">
         <span className="font-medium">
           {latest.action === "revert" ? "Revert" : "Batch"}{" "}
           {latest.batch_label ? `“${latest.batch_label}”` : ""} — {summarizeAdvanceReport(latest)}
         </span>
-        <span className="font-mono text-[10px] text-muted-foreground">{latest.batch_id}</span>
+        <span className="font-mono type-meta text-muted-foreground">{latest.batch_id}</span>
         {latest.action === "advance" && stillRevertable(latest).length > 0 ? (
           <Button
             icon={busy === "revert" ? (
@@ -607,7 +607,7 @@ export function AdvanceResultsCard({
               key={rungIdentityOf(row.token)}
               className="flex flex-wrap items-start gap-x-2 gap-y-0.5 border-t border-border/60 pt-1 first:border-t-0 first:pt-0"
             >
-              <span className="font-mono text-[11px]">
+              <span className="font-mono type-meta">
                 {row.mandate_key ?? row.token.row_id}
                 {verdict ? rungSuffixOf(verdict) : row.token.holder_kind === "binding" ? " (binding)" : ""}
               </span>
@@ -646,7 +646,7 @@ export function AdvanceResultsCard({
                   {batch.action === "revert" ? "Revert" : "Batch"}{" "}
                   {batch.batch_label ? `“${batch.batch_label}”` : ""} — {summarizeAdvanceReport(batch)}
                 </span>
-                <span className="font-mono text-[10px]">{batch.batch_id}</span>
+                <span className="font-mono type-meta">{batch.batch_id}</span>
                 {batch.action === "advance" && stillRevertable(batch).length > 0 ? (
                   <Button
                     icon={<Undo2 />}

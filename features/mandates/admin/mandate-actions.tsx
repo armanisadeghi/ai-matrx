@@ -49,7 +49,7 @@ export function LineageChip({
   Icon?: typeof GitBranch;
 }) {
   return (
-    <span className="inline-flex max-w-full items-center gap-1 rounded border border-border bg-muted/40 px-1.5 py-0.5 text-[11px]">
+    <span className="inline-flex max-w-full items-center gap-1 rounded border border-border bg-muted/40 px-1.5 py-0.5 type-meta">
       <Icon className="h-3 w-3 shrink-0 text-muted-foreground" />
       <span className="shrink-0 text-muted-foreground">{label}</span>
       <EntityRef
@@ -334,7 +334,7 @@ export function PromoteToSystemMandateButton({
         >
           {busy ? "Promoting…" : "Promote to system mandate"}
         </Button>
-        <span className="text-[11px] leading-snug text-muted-foreground">
+        <span className="type-meta leading-snug text-muted-foreground">
           {alreadySystem
             ? "Already in Matrx System; it decides for every user."
             : "Copies it to Matrx System, with no bindings, for all users."}

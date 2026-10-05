@@ -297,7 +297,7 @@ export interface UseImpactSettingsFixOptions {
 
 function FixList({ plans }: { plans: SettingsFixPlan[] }) {
   return (
-    <div className="max-h-56 space-y-2 overflow-y-auto rounded border border-border bg-muted/30 p-2 text-[11px]">
+    <div className="max-h-56 space-y-2 overflow-y-auto rounded border border-border bg-muted/30 p-2 type-meta">
       {plans.map((plan) => (
         <div key={plan.agentId} className="space-y-0.5">
           <div className="font-medium">
@@ -396,7 +396,7 @@ export function useImpactSettingsFix({ onFixed }: UseImpactSettingsFixOptions) {
             ? `Fix settings on ${fixable[0].agentName}?`
             : `Fix settings on ${n} agents?`,
         description: (
-          <div className="space-y-2 text-xs">
+          <div className="space-y-2 type-secondary">
             <p>
               Saves a new version of {n === 1 ? "the agent" : "each agent"}; jobs
               tracking latest use it at once, pinned jobs wait until you advance.

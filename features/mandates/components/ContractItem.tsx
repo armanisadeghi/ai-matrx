@@ -59,7 +59,7 @@ export function ContractItem({
           ) : null}
         </div>
         {row.helpText ? (
-          <p className="mt-0.5 text-[12px] leading-relaxed text-muted-foreground line-clamp-2">
+          <p className="mt-0.5 type-secondary leading-relaxed text-muted-foreground line-clamp-2">
             {row.helpText}
           </p>
         ) : null}

@@ -142,13 +142,13 @@ const COLUMNS: Spec[] = [
             target="_blank"
             rel="noreferrer"
             title={`${row.location} — open on GitHub`}
-            className="block truncate font-mono text-xs text-primary hover:underline"
+            className="block truncate font-mono type-secondary text-primary hover:underline"
             onClick={(event) => event.stopPropagation()}
           >
             {row.location}
           </a>
         ) : (
-          <TextCell value={row.location} className="font-mono text-xs" />
+          <TextCell value={row.location} className="font-mono type-secondary" />
         ),
     },
   },
@@ -331,7 +331,7 @@ export function MandateHealthPage() {
       headerActions={
         <Link
           href={UNCONVERTED_PATH}
-          className="whitespace-nowrap rounded px-1.5 py-0.5 text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
+          className="whitespace-nowrap rounded px-1.5 py-0.5 type-secondary text-muted-foreground hover:bg-accent hover:text-foreground"
         >
           Unconverted AI calls
         </Link>

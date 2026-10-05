@@ -130,7 +130,7 @@ export function AdvancedMandateCrud() {
     header: (
       <span className="whitespace-nowrap">
         {humanizeIdentifier(column.name)}
-        <span className="ml-1 text-[10px] text-muted-foreground">{column.dataType}</span>
+        <span className="ml-1 type-meta text-muted-foreground">{column.dataType}</span>
       </span>
     ),
     cell: (row) => {
@@ -140,7 +140,7 @@ export function AdvancedMandateCrud() {
       // and in the row inspector, so nothing is hidden, only folded.
       const clipped = text.length > 160 ? `${text.slice(0, 160)}…` : text;
       return (
-        <span className="block max-w-[28rem] font-mono text-xs" title={text}>
+        <span className="block max-w-[28rem] font-mono type-secondary" title={text}>
           {clipped}
         </span>
       );
@@ -219,7 +219,7 @@ export function AdvancedMandateCrud() {
       <div className="shrink-0 border-b border-border bg-card px-4 py-3">
         <div className="flex flex-wrap items-center gap-2">
           <h1 className="text-base font-semibold">Mandate storage — advanced (raw rows)</h1>
-          <span className="rounded bg-amber-500/15 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400">
+          <span className="rounded bg-amber-500/15 px-2 py-0.5 type-secondary font-medium text-amber-700 dark:text-amber-400">
             <AlertTriangle className="mr-1 inline h-3 w-3" />
             No guardrails: writes bypass RLS and go straight to the table
           </span>
@@ -247,7 +247,7 @@ export function AdvancedMandateCrud() {
           })}
         </div>
         {relation && (
-          <p className="mt-2 text-xs text-muted-foreground">{relation.blurb}</p>
+          <p className="mt-2 type-secondary text-muted-foreground">{relation.blurb}</p>
         )}
       </div>
 
@@ -322,7 +322,7 @@ export function AdvancedMandateCrud() {
             ) : undefined,
             actions: (
               <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">
+                <span className="type-secondary text-muted-foreground">
                   <UntrustedCount read={rowsRead} label="Rows shown" value={rows.length} /> of{" "}
                   <UntrustedCount read={rowsRead} label="Total rows" value={total} /> row
                   {total === 1 ? "" : "s"}
@@ -350,7 +350,7 @@ export function AdvancedMandateCrud() {
 
       {sql && (
         <div className="shrink-0 border-t border-border bg-muted/40 px-4 py-2">
-          <p className="font-mono text-[11px] leading-relaxed text-muted-foreground break-all">
+          <p className="font-mono type-meta leading-relaxed text-muted-foreground break-all">
             {sql}
           </p>
         </div>
@@ -370,7 +370,7 @@ export function AdvancedMandateCrud() {
               onChange={(e) => setInsertJson(e.target.value)}
               rows={12}
             />
-            <p className="text-xs text-muted-foreground">
+            <p className="type-secondary text-muted-foreground">
               Columns available:{" "}
               <span className="font-mono">{columns.map((c) => c.name).join(", ")}</span>
             </p>

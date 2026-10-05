@@ -134,7 +134,7 @@ function VersionHistory({
 
   if (pairs.length === 0) {
     return (
-      <div className="space-y-2 p-3 text-xs text-muted-foreground">
+      <div className="space-y-2 p-3 type-secondary text-muted-foreground">
         <p>
           Every job this change reaches already runs the newest saved version, or tracks
           latest — there is no pinned version to compare against.
@@ -153,7 +153,7 @@ function VersionHistory({
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex flex-wrap items-center gap-1 border-b border-border px-2 py-1.5 text-xs">
+      <div className="flex flex-wrap items-center gap-1 border-b border-border px-2 py-1.5 type-secondary">
         {pairs.map((entry) => (
           <Button
             key={entry.pinned}
@@ -168,7 +168,7 @@ function VersionHistory({
           href={historyHref}
           target="_blank"
           rel="noopener noreferrer"
-          className="ml-auto inline-flex items-center gap-1 text-[11px] text-primary hover:underline"
+          className="ml-auto inline-flex items-center gap-1 type-meta text-primary hover:underline"
           title="Every saved version of this agent, on its own page"
         >
           <ExternalLink className="h-3 w-3" /> Full history
@@ -176,13 +176,13 @@ function VersionHistory({
       </div>
       <div className="min-h-0 flex-1 overflow-auto p-2">
         {error ? (
-          <p className="flex items-start gap-1.5 text-xs text-rose-700 dark:text-rose-400">
+          <p className="flex items-start gap-1.5 type-secondary text-rose-700 dark:text-rose-400">
             <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
             <span>Couldn&apos;t load both versions: {error}</span>
             <ErrorAlchemyMenu error={error} />
           </p>
         ) : loading || !diff || diff.key !== pairKey ? (
-          <p className="inline-flex items-center gap-2 text-xs text-muted-foreground">
+          <p className="inline-flex items-center gap-2 type-secondary text-muted-foreground">
             <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading both versions…
           </p>
         ) : pair ? (
@@ -243,13 +243,13 @@ function QuickTest({ mandateKeys }: { mandateKeys: AnyMandateKey[] }) {
 
   if (mandateKeys.length === 0) {
     return (
-      <p className="p-3 text-xs text-muted-foreground">No job to test — this change reaches none you can see.</p>
+      <p className="p-3 type-secondary text-muted-foreground">No job to test — this change reaches none you can see.</p>
     );
   }
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex flex-wrap items-center gap-1 border-b border-border px-2 py-1.5 text-xs">
+      <div className="flex flex-wrap items-center gap-1 border-b border-border px-2 py-1.5 type-secondary">
         <FlaskConical className="h-3.5 w-3.5 text-muted-foreground" />
         {mandateKeys.map((key) => (
           <Button
@@ -263,13 +263,13 @@ function QuickTest({ mandateKeys }: { mandateKeys: AnyMandateKey[] }) {
       </div>
       <div className="min-h-0 flex-1 overflow-auto p-2">
         {error ? (
-          <p className="flex items-start gap-1.5 text-xs text-rose-700 dark:text-rose-400">
+          <p className="flex items-start gap-1.5 type-secondary text-rose-700 dark:text-rose-400">
             <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
             <span>{error}</span>
             <ErrorAlchemyMenu error={error} />
           </p>
         ) : loading || !loaded || loaded.key !== activeKey ? (
-          <p className="inline-flex items-center gap-2 text-xs text-muted-foreground">
+          <p className="inline-flex items-center gap-2 type-secondary text-muted-foreground">
             <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading {activeKey}…
           </p>
         ) : (

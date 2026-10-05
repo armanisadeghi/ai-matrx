@@ -47,7 +47,7 @@ function ScanLine({
   scan: MandateReferenceBoardRepo["last_complete_candidate"];
 }) {
   return (
-    <div className="flex items-baseline gap-2 text-xs">
+    <div className="flex items-baseline gap-2 type-secondary">
       <span className="text-muted-foreground">{label}</span>
       {scan ? (
         <>
@@ -128,13 +128,13 @@ function FindingRow({ finding }: { finding: MandateReferenceFinding }) {
         ) : null}
         {finding.revision ? (
           <code
-            className="shrink-0 text-xs text-muted-foreground"
+            className="shrink-0 type-secondary text-muted-foreground"
             title={finding.revision}
           >
             {finding.revision_kind} {finding.revision.slice(0, 12)}
           </code>
         ) : null}
-        <span className="shrink-0 text-xs text-muted-foreground">
+        <span className="shrink-0 type-secondary text-muted-foreground">
           {finding.mandate_key}
         </span>
         <CopyButton
@@ -144,7 +144,7 @@ function FindingRow({ finding }: { finding: MandateReferenceFinding }) {
         />
       </div>
       {isOpen && finding.sentence ? (
-        <p className="mt-1 text-xs text-destructive">
+        <p className="mt-1 type-secondary text-destructive">
           {finding.sentence}
           {finding.remedy ? ` ${finding.remedy}` : ""}
         </p>
@@ -176,31 +176,31 @@ function RepoCard({ repo }: { repo: MandateReferenceBoardRepo }) {
         ) : (
           <Badge variant="destructive">unverified — no complete scan</Badge>
         )}
-        <span className="text-xs text-muted-foreground">
+        <span className="type-secondary text-muted-foreground">
           {repo.reference_count} references
         </span>
         {repo.open_finding_count > 0 ? (
-          <span className="text-xs text-destructive">
+          <span className="type-secondary text-destructive">
             {repo.open_finding_count} open
           </span>
         ) : null}
         {awaitingCount > 0 ? (
-          <span className="text-xs text-muted-foreground">
+          <span className="type-secondary text-muted-foreground">
             {awaitingCount} fixed on main
           </span>
         ) : null}
         {byDesignCount > 0 ? (
-          <span className="text-xs text-muted-foreground">
+          <span className="type-secondary text-muted-foreground">
             {byDesignCount} by design
           </span>
         ) : null}
         {repo.conversion_count > 0 ? (
-          <span className="text-xs text-warning">
+          <span className="type-secondary text-warning">
             {repo.conversion_count} to convert
           </span>
         ) : null}
         {repo.github_full_name ? (
-          <span className="ml-auto text-xs text-muted-foreground">
+          <span className="ml-auto type-secondary text-muted-foreground">
             {repo.github_full_name}
           </span>
         ) : null}
@@ -209,7 +209,7 @@ function RepoCard({ repo }: { repo: MandateReferenceBoardRepo }) {
         <ScanLine label="Last complete candidate" scan={repo.last_complete_candidate} />
         <ScanLine label="Last complete deployed" scan={repo.last_complete_deployed} />
         {findingCodes.length > 0 ? (
-          <div className="flex flex-wrap gap-2 pt-1 text-xs">
+          <div className="flex flex-wrap gap-2 pt-1 type-secondary">
             {findingCodes.map(([code, count]) => (
               <span key={code} className="rounded border border-border px-1.5 py-0.5">
                 {code} {count}
@@ -219,7 +219,7 @@ function RepoCard({ repo }: { repo: MandateReferenceBoardRepo }) {
         ) : null}
       </div>
       {allFindings.length > 0 ? (
-        <div className="divide-y divide-border border-t border-border text-sm">
+        <div className="divide-y divide-border border-t border-border type-body">
           {visibleFindings.map((finding, index) => (
             <FindingRow
               key={`${finding.status}:${finding.location}:${index}`}
@@ -263,7 +263,7 @@ function PatrolRunsTable({ patrol }: { patrol: MandatePatrolSection }) {
   return (
     <section className="space-y-2" aria-label="Scheduled patrol">
       <div className="flex flex-wrap items-center gap-3">
-        <h2 className="text-sm font-semibold">Scheduled patrol</h2>
+        <h2 className="type-title">Scheduled patrol</h2>
         {patrol.enabled && patrol.trigger_enabled ? (
           <Badge variant="outline">enabled</Badge>
         ) : (
@@ -271,29 +271,29 @@ function PatrolRunsTable({ patrol }: { patrol: MandatePatrolSection }) {
             {patrol.enabled ? "trigger disabled" : "disabled — nothing re-scans"}
           </Badge>
         )}
-        <code className="text-xs">{patrol.tool_name}</code>
+        <code className="type-secondary">{patrol.tool_name}</code>
         {patrol.schedule ? (
-          <span className="text-xs text-muted-foreground">{patrol.schedule}</span>
+          <span className="type-secondary text-muted-foreground">{patrol.schedule}</span>
         ) : (
-          <span className="text-xs text-destructive">
+          <span className="type-secondary text-destructive">
             no trigger — this task has no schedule
           </span>
         )}
         {(patrol.failing_streak ?? 0) > 0 ? (
-          <span className="text-xs text-destructive">
+          <span className="type-secondary text-destructive">
             failing — the last {patrol.failing_streak} run
             {patrol.failing_streak === 1 ? "" : "s"} failed
             <ErrorAlchemyMenu />
           </span>
         ) : (patrol.recent_runs_failed ?? 0) > 0 ? (
-          <span className="text-xs text-amber-700 dark:text-amber-400">
+          <span className="type-secondary text-amber-700 dark:text-amber-400">
             passing now — {patrol.recent_runs_failed} of the last{" "}
             {patrol.recent_runs_counted} failed
             <ErrorAlchemyMenu />
           </span>
         ) : null}
         {patrol.runs_failed > 0 ? (
-          <span className="text-xs text-muted-foreground">
+          <span className="type-secondary text-muted-foreground">
             all time: {patrol.runs_failed} of {patrol.runs_counted} failed
           </span>
         ) : null}
@@ -302,7 +302,7 @@ function PatrolRunsTable({ patrol }: { patrol: MandatePatrolSection }) {
       {patrol.read_error ? (
         <div
           role="alert"
-          className="flex items-start gap-2 rounded-md border border-destructive p-3 text-sm"
+          className="flex items-start gap-2 rounded-md border border-destructive p-3 type-body"
         >
           <AlertTriangle
             className="mt-0.5 size-4 shrink-0 text-destructive"
@@ -314,7 +314,7 @@ function PatrolRunsTable({ patrol }: { patrol: MandatePatrolSection }) {
       ) : null}
 
       <div className="overflow-x-auto rounded-md border border-border">
-        <table className="w-full text-xs">
+        <table className="w-full type-secondary">
           <tbody className="divide-y divide-border">
             <tr>
               <th scope="row" className="px-3 py-1.5 text-left font-medium">
@@ -375,10 +375,10 @@ function PatrolRunsTable({ patrol }: { patrol: MandatePatrolSection }) {
 
       {/* The one sentence on this table, and it is load-bearing: it is what
           stops "no rate set" being read as "broken" or as "$0.00". */}
-      <p className="text-xs text-muted-foreground">{patrol.cost_note}</p>
+      <p className="type-secondary text-muted-foreground">{patrol.cost_note}</p>
 
       <div className="overflow-x-auto rounded-md border border-border">
-        <table className="w-full text-xs">
+        <table className="w-full type-secondary">
           <thead className="border-b border-border text-left text-muted-foreground">
             <tr>
               <th scope="col" className="px-3 py-2 font-medium">Started</th>
@@ -586,7 +586,7 @@ export function MandateReferenceBoardView() {
       ) : !organizationId ? (
         <div
           role="status"
-          className="flex items-center gap-2 rounded-md border border-border p-3 text-sm text-muted-foreground"
+          className="flex items-center gap-2 rounded-md border border-border p-3 type-body text-muted-foreground"
         >
           <Loader2 className="size-4 animate-spin" aria-hidden="true" />
           Waiting for your organization to load — the board reads nothing until
@@ -595,7 +595,7 @@ export function MandateReferenceBoardView() {
       ) : loading ? (
         <div
           role="status"
-          className="flex items-center gap-2 rounded-md border border-border p-3 text-sm text-muted-foreground"
+          className="flex items-center gap-2 rounded-md border border-border p-3 type-body text-muted-foreground"
         >
           <Loader2 className="size-4 animate-spin" aria-hidden="true" />
           Reading the reported references…
@@ -605,7 +605,7 @@ export function MandateReferenceBoardView() {
       {error ? (
         <div
           role="alert"
-          className="flex items-start gap-2 rounded-md border border-destructive p-3 text-sm"
+          className="flex items-start gap-2 rounded-md border border-destructive p-3 type-body"
         >
           <AlertTriangle
             className="mt-0.5 size-4 shrink-0 text-destructive"
@@ -629,7 +629,7 @@ export function MandateReferenceBoardView() {
           ) : (
             <div
               role="status"
-              className="flex items-start gap-2 rounded-md border border-border p-3 text-sm"
+              className="flex items-start gap-2 rounded-md border border-border p-3 type-body"
             >
               <AlertTriangle
                 className="mt-0.5 size-4 shrink-0 text-muted-foreground"
@@ -644,7 +644,7 @@ export function MandateReferenceBoardView() {
 
           <div
             role="status"
-            className="rounded-md border border-border p-3 text-sm"
+            className="rounded-md border border-border p-3 type-body"
           >
             {board.unverified_repos.length > 0 ? (
               <>
@@ -674,7 +674,7 @@ export function MandateReferenceBoardView() {
           </div>
 
           <section className="space-y-3" aria-label="Repositories">
-            <h2 className="text-sm font-semibold">
+            <h2 className="type-title">
               Repositories ({board.repos.length})
             </h2>
             {board.repos.length > 0 ? (
@@ -682,7 +682,7 @@ export function MandateReferenceBoardView() {
                 <RepoCard key={repo.repo_slug} repo={repo} />
               ))
             ) : (
-              <div className="rounded-md border border-destructive p-3 text-sm">
+              <div className="rounded-md border border-destructive p-3 type-body">
                 No active repository is registered in{" "}
                 <code>platform.repo</code>. That is a registry defect, not an
                 empty fleet.
@@ -691,11 +691,11 @@ export function MandateReferenceBoardView() {
           </section>
 
           <section className="space-y-2" aria-label="Conversion list">
-            <h2 className="flex items-center gap-1 text-sm font-semibold">
+            <h2 className="flex items-center gap-1 type-title">
               Conversion list ({board.conversion_count})
               <InfoHint text="Work that runs outside a mandate today; the list may shrink, never grow" />
             </h2>
-            <div className="divide-y divide-border rounded-md border border-border text-sm">
+            <div className="divide-y divide-border rounded-md border border-border type-body">
               {board.conversion_list.length > 0 ? (
                 board.conversion_list.map((row, index) => (
                   <div
@@ -705,7 +705,7 @@ export function MandateReferenceBoardView() {
                     <span className="min-w-0 flex-1 [overflow-wrap:anywhere]">
                       {row.location}
                     </span>
-                    <span className="shrink-0 text-xs text-muted-foreground">
+                    <span className="shrink-0 type-secondary text-muted-foreground">
                       {row.mandate_key}
                     </span>
                     <CopyButton
