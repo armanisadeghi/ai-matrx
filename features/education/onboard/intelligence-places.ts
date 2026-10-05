@@ -23,7 +23,14 @@ export const MEDIA_PLACES: FeaturePlaces = {
       trigger: "Paste a YouTube link",
       urlPattern: "/education/start",
       mandateKeys: [K.media__youtube_analyzer],
-      sources: ["features/education/onboard/components/StartHero.tsx"],
+      // Start's Source input hands the link to the shared intake, which calls the
+      // transcript endpoint; the server names and runs the job.
+      sources: ["features/resource-manager/source-input/useSourceIntake.ts"],
+      calls: "fetchYouTubeTranscript",
+      server: [
+        "aidream/api/routers/youtube_transcript.py",
+        "aidream/services/media_resolvers/youtube.py",
+      ],
     },
   ],
 };

@@ -46,8 +46,9 @@ export interface MandatePlace {
    */
   app?: "workflow-studio";
   /**
-   * Studio places whose code asks the server rather than naming the job: the
-   * endpoint fragment every source calls (`/conductor-context`)…
+   * Places whose code asks the server rather than naming the job (Studio
+   * places, and app places whose shared client door calls the server): the
+   * endpoint or function fragment every source calls (`/conductor-context`)…
    */
   calls?: string;
   /** …and the aidream files that route that call and name the job it runs. */

@@ -30,6 +30,7 @@ import { storedMandateKey } from "@ai-matrx/agents/mandates";
 
 const ROOT = process.cwd();
 const OWN_GUARD = new Set(["flashcards", "research"]);
+const AIDREAM_ROOT = process.env.AIDREAM_DIR ?? join(process.cwd(), "..", "aidream");
 const ALL_KEYS = new Set<string>(Object.values(MANDATE_KEYS) as string[]);
 const BY_ID = MANDATE_KEYS as unknown as Record<string, string>;
 
@@ -98,12 +99,42 @@ describe("declared intelligence places", () => {
       "place %s: every job runs in its sources, every source runs a job",
       (_id, place) => {
         const named = new Set<string>();
+        // A place whose shared client door asks the server (`calls`) proves the
+        // call in the client source and the job in the aidream `server` files.
+        const serverRun = Boolean(place.calls);
         for (const source of place.sources) {
           expect({ source, exists: existsSync(join(ROOT, source)) }).toEqual({ source, exists: true });
-          const keys = keysNamedIn(read(source), feature);
+          const code = read(source);
+          if (serverRun) {
+            expect({ source, calls: place.calls, found: code.includes(place.calls!) }).toEqual({
+              source,
+              calls: place.calls,
+              found: true,
+            });
+            continue;
+          }
+          const keys = keysNamedIn(code, feature);
           const runsOne = place.mandateKeys.some((key) => keys.has(key));
           expect({ source, runsOneOfItsJobs: runsOne }).toEqual({ source, runsOneOfItsJobs: true });
           keys.forEach((key) => named.add(key));
+        }
+        if (serverRun) {
+          const server = place.server ?? [];
+          expect({ place: place.id, hasServer: server.length > 0 }).toEqual({
+            place: place.id,
+            hasServer: true,
+          });
+          if (existsSync(join(AIDREAM_ROOT, "aidream"))) {
+            for (const file of server) {
+              expect({ file, exists: existsSync(join(AIDREAM_ROOT, file)) }).toEqual({ file, exists: true });
+              keysNamedIn(readFileSync(join(AIDREAM_ROOT, file), "utf8"), feature).forEach((key) =>
+                named.add(key),
+              );
+            }
+          } else {
+            console.warn("UNMEASURED: aidream checkout not found; server leg of " + place.id + " skipped.");
+            place.mandateKeys.forEach((key) => named.add(key));
+          }
         }
         for (const key of place.mandateKeys) {
           expect({ key, real: ALL_KEYS.has(key) }).toEqual({ key, real: true });
@@ -143,7 +174,6 @@ describe("declared intelligence places", () => {
 
 // ── Workflow Studio places ──────────────────────────────────────────────────
 
-const AIDREAM_ROOT = process.env.AIDREAM_DIR ?? join(process.cwd(), "..", "aidream");
 const STUDIO_ROOT = join(AIDREAM_ROOT, "apps", "workflow-studio");
 const hasStudio = existsSync(join(STUDIO_ROOT, "src"));
 const studioFeatures = DECLARED_FEATURES.map((entry) => ({
