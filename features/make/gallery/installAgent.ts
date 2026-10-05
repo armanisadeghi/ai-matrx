@@ -12,7 +12,7 @@ export type InstallAnswer = TemplateDoorAnswer;
 
 /** True when the install answered an agent the host still has to copy. */
 export function agentStillToCopy(answer: InstallAnswer): boolean {
-  return false;
+  if (!answer.agent || answer.agent.copied) return false;
   // An agent already recorded on the install (a re-open) is never copied twice.
   return !(answer.made ?? []).some((m) => m.kind === "agent" && m.id);
 }
