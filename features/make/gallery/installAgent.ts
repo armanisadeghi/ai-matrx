@@ -133,14 +133,17 @@ export interface AddAgentPorts {
 
 export type Claim =
   | { state: "made"; id: string }
-  | { state: "held" }
+  | { state: "held"; retryAt: string | null }
   | { state: "claimed"; orphans: string[] };
 
-function heldSentence(what: string): string {
-  return `"${what}" is being made in another tab or window. Reopen this page in a few minutes to finish.`;
+/** Another tab holds the claim; `retryAt` is when its hold runs out (null when unknown). */
+export class HeldElsewhere extends Error {
+  constructor(what: string, readonly retryAt: string | null) {
+    super(`"${what}" is being made in another tab or window.`);
+  }
 }
 
-export type AddAgentResult = { ok: true; answer: InstallAnswer } | { ok: false; why: string; answer: InstallAnswer };
+export type AddAgentResult = { ok: true; answer: InstallAnswer } | { ok: false; why: string; answer: InstallAnswer; retryAt?: string | null };
 
 async function copyAndNote(
   copier: TemplateAgentCopier,
@@ -151,7 +154,7 @@ async function copyAndNote(
 ): Promise<{ answer: InstallAnswer; agentId: string }> {
   const claim = await ports.claim(installId, "agent", agent.name, agent.platformAgentId || null);
   if (claim.state === "made") return { agentId: claim.id, answer: await ports.note(installId, claim.id, agent.name) };
-  if (claim.state === "held") throw new Error(heldSentence(agent.name));
+  if (claim.state === "held") throw new HeldElsewhere(agent.name, claim.retryAt);
   const [adopt, ...extra] = claim.orphans;
   let created: string | null = adopt ?? null;
   try {
@@ -238,7 +241,7 @@ export async function addInstalledAgent(
         if (madeOf(current, "workflow").some((m) => m.title === wf.name)) continue;
         if (!ports.createWorkflow) throw new Error(`The workflow "${wf.name}" could not be made: this screen cannot create workflows.`);
         const claim = await ports.claim(installId, "workflow", wf.name, null);
-        if (claim.state === "held") throw new Error(heldSentence(wf.name));
+        if (claim.state === "held") throw new HeldElsewhere(wf.name, claim.retryAt);
         let workflowId: string;
         if (claim.state === "made") workflowId = claim.id;
         else if (claim.orphans.length) {
@@ -255,7 +258,7 @@ export async function addInstalledAgent(
     return { ok: true, answer: current };
   } catch (err) {
     const why = err instanceof Error ? err.message : String(err);
-    return { ok: false, why, answer: current };
+    return { ok: false, why, answer: current, ...(err instanceof HeldElsewhere ? { retryAt: err.retryAt } : {}) };
   }
 }
 

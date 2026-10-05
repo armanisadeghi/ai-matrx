@@ -26,6 +26,7 @@
 // the missing door goes to the chair (store doors are the chair's).
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Check, CircleDashed, ExternalLink, Loader2 } from "lucide-react";
 import { supabaseDataSource } from "@ai-matrx/records/core";
@@ -38,7 +39,7 @@ import { Skeleton } from "@ai-matrx/design-system";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { templateAgentArchiver, templateAgentCopier, templateWorkflowCreator } from "@/features/templates/agentCopyHost";
 import { addInstalledAgent, agentsLeftBy, hostStepsPending, type Claim } from "./installAgent";
-import { InstalledTemplate, type TemplateTryIt } from "@/features/templates/components/InstalledTemplate";
+import { InstalledTemplate, type InstalledShow, type TemplateTryIt } from "@/features/templates/components/InstalledTemplate";
 import { TEMPLATES_CHANGED_EVENT } from "@/features/templates/events";
 import { useOpenSaveTemplateDialog } from "@/features/overlays/openers/saveTemplateDialog";
 import { EntityOrgFilter } from "@/lib/entity-list/components/EntityOrgFilter";
@@ -268,7 +269,7 @@ export function TemplatePreview({ templateId }: { templateId: string }) {
   const [confirmRemove, setConfirmRemove] = useState(false);
   const dispatch = useAppDispatch();
   // The agent is the host's step of an install; `copying` while it runs, `failed` says why.
-  const [agent, setAgent] = useState<{ phase: "idle" | "copying" } | { phase: "failed"; why: string }>({ phase: "idle" });
+  const [agent, setAgent] = useState<AgentStep>({ phase: "idle" });
   const [agentNote, setAgentNote] = useState<string | null>(null);
 
   const addAgent = async (answer: TemplateDoorAnswer, orgId: string) => {
@@ -283,6 +284,7 @@ export function TemplatePreview({ templateId }: { templateId: string }) {
       archiveAgent: templateAgentArchiver(dispatch),
       archiveWorkflow: (workflowId) => setWorkflowFlag(workflowId, { is_archived: true }),
       claim: async (installId, kind, label, sourceId) => {
+        const lease = await templateKnob("run_lease_seconds");
         const { data, error } = await supabase
           .schema("custom")
           .rpc("template_install_claim", {
@@ -291,10 +293,14 @@ export function TemplatePreview({ templateId }: { templateId: string }) {
             p_kind: kind,
             p_label: label,
             ...(sourceId ? { p_source_id: sourceId } : {}),
-            p_lease_seconds: await templateKnob("run_lease_seconds"),
+            p_lease_seconds: lease,
           });
         if (error) throw new Error(error.message);
-        return (data as unknown as { claim: Claim }).claim;
+        const claim = (data as unknown as { claim: Claim & { claimed_at?: string } }).claim;
+        if (claim.state !== "held") return claim;
+        // When the other tab's hold runs out: its claim time plus the lease.
+        const at = claim.claimed_at ? Date.parse(claim.claimed_at) + lease * 1000 : NaN;
+        return { state: "held", retryAt: Number.isFinite(at) ? new Date(at).toISOString() : null };
       },
       note: async (installId, agentId, label, kind) => {
         const { data, error } = await supabase
@@ -311,7 +317,7 @@ export function TemplatePreview({ templateId }: { templateId: string }) {
       },
     });
     setRun({ phase: "installed", answer: result.answer });
-    setAgent(result.ok ? { phase: "idle" } : { phase: "failed", why: result.why });
+    setAgent(result.ok ? { phase: "idle" } : { phase: "failed", why: result.why, retryAt: result.retryAt ?? null });
   };
 
   const go = async (door: "template_install" | "template_uninstall", id: string) => {
@@ -395,6 +401,7 @@ export function TemplatePreview({ templateId }: { templateId: string }) {
             </Button>
           ) : null}
           <SavesTo />
+          {card.scope === "org" ? <ArchiveOrgTemplate templateId={card.id} name={card.name} /> : null}
         </div>
 
         {askOrganization && !organizationId ? (
@@ -425,7 +432,12 @@ export function TemplatePreview({ templateId }: { templateId: string }) {
           />
         ) : null}
         {run.phase === "installed" && agent.phase === "idle" && typeof run.answer.organization_id === "string" ? (
-          <InstalledTemplate organizationId={run.answer.organization_id} made={made} tryIts={tryItsOf(run.answer)} />
+          <InstalledTemplate
+            organizationId={run.answer.organization_id}
+            made={made}
+            tryIts={tryItsOf(run.answer)}
+            show={(run.answer["show"] ?? null) as InstalledShow | null}
+          />
         ) : null}
       </section>
 
@@ -433,7 +445,7 @@ export function TemplatePreview({ templateId }: { templateId: string }) {
         open={confirmRemove}
         onOpenChange={(open) => !open && setConfirmRemove(false)}
         title={`Remove ${card.name}?`}
-        description="Every table, form, view and row it made is archived. You can restore them from Trash."
+        description="Everything it made is archived — tables and their rows, views, forms, dashboards, digests, agents and workflows. You can restore them from Trash."
         confirmLabel="Remove"
         variant="destructive"
         onConfirm={() => {
@@ -489,6 +501,78 @@ function Progress({ run }: { run: Extract<Run, { phase: "running" }> }) {
   );
 }
 
+/**
+ * An organization's own template is archived, never deleted (custom.template_archive: the person who
+ * saved it or an organization admin; anyone else is told so by the door). Installs stay as they are.
+ */
+function ArchiveOrgTemplate({ templateId, name }: { templateId: string; name: string }) {
+  const router = useRouter();
+  const [confirm, setConfirm] = useState(false);
+  const [why, setWhy] = useState<string | null>(null);
+  const archive = async () => {
+    setConfirm(false);
+    const { error } = await createClient().schema("custom").rpc("template_archive", { p_template_id: templateId });
+    if (error) {
+      setWhy(error.message);
+      return;
+    }
+    window.dispatchEvent(new Event(TEMPLATES_CHANGED_EVENT));
+    router.push("/make#make-templates");
+  };
+  return (
+    <>
+      <Button variant="ghost" onClick={() => setConfirm(true)} data-make-template-archive="">
+        Archive template
+      </Button>
+      {why ? <span className="text-sm text-destructive" role="alert">{why}</span> : null}
+      <ConfirmDialog
+        open={confirm}
+        onOpenChange={(open) => !open && setConfirm(false)}
+        title={`Archive ${name}?`}
+        description="It leaves your organization's templates. What it already installed stays."
+        confirmLabel="Archive"
+        variant="destructive"
+        onConfirm={() => void archive()}
+      />
+    </>
+  );
+}
+
+type AgentStep = { phase: "idle" | "copying" } | { phase: "failed"; why: string; retryAt?: string | null };
+
+/**
+ * Retry, honestly: while another tab's claim holds, it says when the hold runs out, stays off until
+ * then, and tries once by itself at that moment.
+ */
+function RetryAt({ retryAt, retry }: { retryAt: string | null; retry: () => void }) {
+  const at = retryAt ? Date.parse(retryAt) : NaN;
+  const [now, setNow] = useState(() => Date.now());
+  const waiting = Number.isFinite(at) && now < at;
+  useEffect(() => {
+    if (!Number.isFinite(at)) return;
+    const ms = at - Date.now();
+    if (ms <= 0) return;
+    const timer = setTimeout(() => {
+      setNow(Date.now());
+      retry();
+    }, ms + 500);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one automatic retry per hold
+  }, [at]);
+  return (
+    <>
+      {waiting ? (
+        <span className="text-xs text-muted-foreground" data-make-template-retry-at={retryAt ?? ""}>
+          {`Tries again at ${new Date(at).toLocaleTimeString()}`}
+        </span>
+      ) : null}
+      <Button size="sm" variant="outline" onClick={retry} disabled={waiting}>
+        Retry
+      </Button>
+    </>
+  );
+}
+
 /** The landing: every object the install made that a person opens, each one a link. */
 export function Landing({
   made,
@@ -496,7 +580,7 @@ export function Landing({
   retryAgent,
 }: {
   made: MadeObject[];
-  agent?: { phase: "idle" | "copying" } | { phase: "failed"; why: string };
+  agent?: AgentStep;
   retryAgent?: () => void;
 }) {
   const rows = openableMade(made);
@@ -513,11 +597,7 @@ export function Landing({
       {agent.phase === "failed" ? (
         <div className="flex flex-wrap items-center gap-2 text-sm" role="alert" data-make-template-agent="failed">
           <span className="text-destructive">{`The assistant was not added — ${agent.why}`}</span>
-          {retryAgent ? (
-            <Button size="sm" variant="outline" onClick={retryAgent}>
-              Retry
-            </Button>
-          ) : null}
+          {retryAgent ? <RetryAt retryAt={agent.retryAt ?? null} retry={retryAgent} /> : null}
         </div>
       ) : null}
       <ul className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card">

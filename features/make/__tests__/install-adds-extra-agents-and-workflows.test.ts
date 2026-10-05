@@ -142,12 +142,14 @@ describe("claim, then create: an interrupted install never makes a copy twice", 
 
   it("an entry already made is never created again; a claim held by another tab stops with a sentence", async () => {
     const p = ports();
-    p.claim.mockImplementation(async (_i: string, kind: string) => (kind === "agent" ? { state: "made", id: "agent-x" } : { state: "held" }));
+    p.claim.mockImplementation(async (_i: string, kind: string) => (kind === "agent" ? { state: "made", id: "agent-x" } : { state: "held", retryAt: "2026-10-05T10:00:00.000Z" }));
     const r = await addInstalledAgent(ANSWER, "org-1", p);
     expect(p.copier).not.toHaveBeenCalled();
     expect(p.extraCopier).not.toHaveBeenCalled();
     expect(p.createWorkflow).not.toHaveBeenCalled();
     expect(r.ok).toBe(false);
     expect(!r.ok && r.why).toMatch(/another tab/);
+    // The hold's end travels with the failure, so Retry can say when and try again then.
+    expect(!r.ok && r.retryAt).toBe("2026-10-05T10:00:00.000Z");
   });
 });

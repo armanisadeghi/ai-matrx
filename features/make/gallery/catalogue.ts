@@ -279,6 +279,13 @@ export function hrefForMade(m: MadeObject): string | null {
       return m.table_id ? `/data/${m.table_id}?rail=portals&item=${m.id}` : null;
     case "agent":
       return `/agents/${m.id}`;
+    case "workflow":
+      return `/workflows/${m.id}`;
+    case "rule":
+      // A digest or notification opens in its table's notifications rail; a stage rule set or row
+      // action is a rule OF its table, so it opens the table (the card counts every one of them).
+      if (!m.table_id) return null;
+      return /^(digests|notifications)\./.test(m.ref) ? `/data/${m.table_id}?rail=notifications&item=${m.id}` : `/data/${m.table_id}`;
     default:
       return null;
   }

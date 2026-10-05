@@ -34246,11 +34246,6 @@ export type Database = {
       }
       context_scopes: { Args: { p_scope_ids: string[] }; Returns: Json }
       context_system_items: { Args: never; Returns: Json }
-      context_tag_copy: { Args: { p_organization_id: string }; Returns: Json }
-      context_tag_copy_batch: {
-        Args: { p_cursor?: Json; p_organization_id: string; p_rows?: number }
-        Returns: Json
-      }
       context_tags_set: {
         Args: {
           p_entity_id: string
@@ -38796,6 +38791,10 @@ export type Database = {
           table_id: string
           table_name: string
         }[]
+      }
+      template_archive: {
+        Args: { p_restore?: boolean; p_template_id: string }
+        Returns: Json
       }
       template_declare: {
         Args: { p_scope: string; p_spec: Json }

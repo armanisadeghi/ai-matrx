@@ -147,7 +147,13 @@ export function SaveTemplateDialog({ isOpen, onClose, initialAgentId }: SaveTemp
               }}
               triggerSlot={
                 <Button variant="outline" className="w-full justify-between" data-save-template-agent="">
-                  <span className="truncate">{ok?.agents[0]?.name ?? (agentId ? "Reading the agent…" : "Choose an agent…")}</span>
+                  <span className="truncate">
+                    {ok?.agents[0]
+                      ? `${ok.agents[0].name}${orgName ? ` · ${orgName}` : ""}`
+                      : agentId
+                        ? "Reading the agent…"
+                        : "Choose an agent…"}
+                  </span>
                 </Button>
               }
             />
