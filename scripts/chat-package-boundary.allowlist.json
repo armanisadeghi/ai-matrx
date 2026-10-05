@@ -1,6 +1,6 @@
 {
   "$note": "SHRINK-ONLY budget of host ties per specifier in packages/chat/src. Never raise a number or add a key by hand — route the need through the chat host adapter or a registration (common-docs/projects/chat-package-move/PACKAGE-INDEPENDENCE.md). Lower it with: node scripts/check-chat-package-boundary.mjs --write",
-  "total": 1000,
+  "total": 990,
   "budget": {
     "@/features/content-ir/registry/schema-source-kind-tables": 1,
     "@/features/surfaces/manifests/registry": 1,
@@ -121,11 +121,6 @@
     "@host/features/agent-connections/redux/skl/content-block-compat": 1,
     "@host/features/agent-connections/redux/skl/slice": 1,
     "@host/features/agent-connections/redux/skl/types": 1,
-    "@host/features/agent-shortcuts/constants": 3,
-    "@host/features/agent-shortcuts/draft-seed": 1,
-    "@host/features/agent-shortcuts/resolveShortcutWriteScope": 2,
-    "@host/features/agent-shortcuts/types": 1,
-    "@host/features/agent-shortcuts/utils/resolveShortcutMappings": 2,
     "@host/features/agents/browse/agentPaths": 1,
     "@host/features/agents/components/builder/message-builders/SpeechScriptEditor": 1,
     "@host/features/agents/components/context-policies-management/AgentEditAccessControl": 2,
@@ -382,7 +377,7 @@
     "@host/lib/organization/__tests__/gate-harness": 1,
     "@host/lib/organization/organization-gate": 2,
     "@host/lib/organizations/globalOwnership": 2,
-    "@host/lib/organizations/systemOrg": 4,
+    "@host/lib/organizations/systemOrg": 3,
     "@host/lib/output-feedback/service": 2,
     "@host/lib/output-feedback/useOutputFeedback": 1,
     "@host/lib/print/print-outcome-toast": 2,
