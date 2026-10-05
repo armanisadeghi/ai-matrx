@@ -135,6 +135,8 @@ function valueText(c: EntityColumn, v: unknown): string {
 }
 
 function Cell({ c, v }: { c: EntityColumn; v: unknown }) {
+  // A bare id is not something a person reads; the module names it through a lookup column (NEEDS.md).
+  if (isBareId(v)) return null;
   const text = valueText(c, v);
   if (!text) return null;
   if (c.type === "choice") return <span className="spaces-entity-pill">{text}</span>;
@@ -547,7 +549,7 @@ function EntityPeek({ entity, rowId, as, editable, onClose }: { entity: Entity; 
       <div className="spaces-entity-props">
         {entity.columns
           // A bare id is not a property a person reads (the module's lookup column carries its name).
-          .filter((c) => c !== title && !(isBareId(row[c.api_name]) && !c.writable))
+          .filter((c) => c !== title && !isBareId(row[c.api_name]))
           .map((c) => (
             <PropRow key={c.api_name} c={c} value={row[c.api_name]} editable={editable && c.writable === true && !c.lookup} onWrite={(v) => entity.write(rowId, c.api_name, v)} />
           ))}
