@@ -11,7 +11,7 @@ import katex from "katex";
 import { FileText, Globe, Paperclip, TriangleAlert } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useParams } from "next/navigation";
-import { useMemo, useSyncExternalStore } from "react";
+import { Component, useMemo, useSyncExternalStore, type ReactNode } from "react";
 
 import type { RichSpan, SpaceMedia } from "../contract";
 import { useSpaceMediaUrl } from "../page/media";
@@ -125,13 +125,13 @@ function MediaBlock({ type, p }: { type: string; p: Record<string, unknown> }) {
       {type === "image" ? <img src={src} alt={Array.isArray(p.caption) ? (p.caption as RichSpan[]).map((s) => s.text).join("") : ""} className="spaces-image" draggable={false} /> : null}
       {type === "video" ? (
         videoEmbed(src) ? (
-          <iframe className="spaces-frame spaces-frame-video" src={videoEmbed(src)!} allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen title={name} />
+          <iframe className="spaces-iframe spaces-iframe-video" src={videoEmbed(src)!} allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen title={name} />
         ) : (
           <video className="spaces-video" src={src} controls preload="metadata" />
         )
       ) : null}
       {type === "audio" ? <audio className="spaces-audio" src={src} controls preload="metadata" /> : null}
-      {type === "pdf" ? <iframe className="spaces-frame spaces-frame-pdf" src={src} title={name} /> : null}
+      {type === "pdf" ? <iframe className="spaces-iframe spaces-iframe-pdf" src={src} title={name} /> : null}
       <Caption spans={p.caption} />
     </figure>
   );
@@ -158,7 +158,7 @@ function EmbedBlock({ p }: { p: Record<string, unknown> }) {
   const src = videoEmbed(url) ?? url;
   return (
     <figure className="spaces-media" contentEditable={false}>
-      <iframe className="spaces-frame spaces-frame-embed" src={src} title={hostOf(url)} sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-presentation" />
+      <iframe className="spaces-iframe spaces-iframe-embed" src={src} title={hostOf(url)} sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-presentation" />
       <Caption spans={p.caption} />
     </figure>
   );
@@ -240,6 +240,17 @@ function Breadcrumb() {
   );
 }
 
+/** A data block that throws keeps the page: it says so in place, and the rest of the page still works. */
+class BlockBoundary extends Component<{ children: ReactNode }, { error: string | null }> {
+  state = { error: null as string | null };
+  static getDerivedStateFromError(e: unknown) {
+    return { error: e instanceof Error ? e.message : "This block could not be drawn." };
+  }
+  render() {
+    return this.state.error ? <div className="spaces-unknown">This block could not be drawn: {this.state.error}</div> : this.props.children;
+  }
+}
+
 const dataProp = { data: { default: "{}" } } as const;
 
 function storedSpec(type: string, render: (p: Record<string, unknown>, ctx: { blockId: string; editor: never; update: (next: Record<string, unknown>) => void }) => React.ReactNode) {
@@ -276,7 +287,9 @@ export const storedBlockSpecs = {
   breadcrumb: storedSpec("breadcrumb", () => <Breadcrumb />),
   database: storedSpec("database", (p, ctx) => (
     <div className="spaces-db-host" contentEditable={false} onMouseDown={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
-      <DatabaseBlockView blockId={ctx.blockId} props={p} onChange={ctx.update} editable={(ctx.editor as unknown as { isEditable: boolean }).isEditable} />
+      <BlockBoundary>
+        <DatabaseBlockView blockId={ctx.blockId} props={p} onChange={ctx.update} editable={(ctx.editor as unknown as { isEditable: boolean }).isEditable} />
+      </BlockBoundary>
     </div>
   )),
   unknownBlock: createReactBlockSpec(
