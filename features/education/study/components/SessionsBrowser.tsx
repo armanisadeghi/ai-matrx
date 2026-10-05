@@ -141,8 +141,17 @@ export function SessionsBrowser({
   const [lane, setLane] = useLaneParam("study_session", SESSION_LANES);
   const [orgFilter, setOrgFilter] = useOrgFilterParam([]);
   const laneRows = useLaneRows(
-    () => (embedded ? Promise.resolve([]) : studyService.listSessionLanes({ setId, mode })),
-    `${embedded}:${setId ?? ""}:${mode ?? ""}:${reloadKey}`,
+    async () => {
+      if (embedded) return [];
+      const lanes = await studyService.listSessionLanes({ setId, mode });
+      if (!hideEmpty) return lanes;
+      // The list hides sessions with no answers (see `shown`), so the header counts the same
+      // sessions the list shows — a count never disagrees with its rows.
+      const ids = [...new Set(lanes.map((l) => l.id))];
+      const visible = await studyService.listVisibleSessionIds(ids);
+      return lanes.filter((l) => visible.has(l.id));
+    },
+    `${embedded}:${hideEmpty}:${setId ?? ""}:${mode ?? ""}:${reloadKey}`,
   );
   const laneScope = embedded ? null : lane;
   const laneOrgId = embedded ? null : orgFilter;

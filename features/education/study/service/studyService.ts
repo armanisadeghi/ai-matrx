@@ -285,6 +285,26 @@ export const studyService = {
     return data ?? [];
   },
 
+  /**
+   * Which of these sessions the history list shows when it hides empty ones: still active, or
+   * with at least one answer (the same rule as SessionsBrowser's `shown`).
+   */
+  async listVisibleSessionIds(sessionIds: string[]): Promise<Set<string>> {
+    const visible = new Set<string>();
+    for (let i = 0; i < sessionIds.length; i += 100) {
+      const chunk = sessionIds.slice(i, i + 100);
+      const [attempts, active] = await Promise.all([
+        this.getAttemptSummariesForSessions(chunk),
+        EDU().from("study_session").select("id").in("id", chunk).eq("status", "active"),
+      ]);
+      if (attempts.error) throw new Error(`[study] visible sessions failed: ${attempts.error}`);
+      if (active.error) throw new Error(`[study] visible sessions failed: ${active.error.message}`);
+      for (const [id, sum] of Object.entries(attempts.data ?? {})) if (sum.total > 0) visible.add(id);
+      for (const r of active.data ?? []) visible.add(r.id);
+    }
+    return visible;
+  },
+
   /** Attempt rollups for many sessions — powers the history list stats line. */
   async getAttemptSummariesForSessions(
     sessionIds: string[],
