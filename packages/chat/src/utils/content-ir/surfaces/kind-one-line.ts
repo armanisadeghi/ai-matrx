@@ -20,7 +20,10 @@ import {
 import {
   firstKindSlug,
   hasKindKey,
+  hasPythonKindKey,
   normalizeKindSpellings,
+  pythonBalancedEnd,
+  pythonReprAsJson,
   quotedSourceRanges,
 } from "./json-kind-signal";
 
@@ -107,4 +110,54 @@ export function inlineKindText(raw: string, options: { plain?: boolean } = {}): 
 export function catalogProseText(text: string | null | undefined): string {
   if (!text) return "";
   return inlineKindText(text, { plain: true });
+}
+
+/** A Python-repr key still arriving at the very end of the text (`{'__k`, `{'__kind': `). */
+const PYTHON_PARTIAL_KIND_TAIL = /\{\s*'(?:_(?:_(?:k(?:i(?:n(?:d(?:'\s*(?::\s*)?)?)?)?)?)?)?)?$/;
+
+/**
+ * PROSE holding a Python-repr kind (`{'__kind': 'flashcard_set', …}` — what
+ * `str(dict)` prints into an error or an echo) with each one read as its
+ * ONE-LINE label (round 7, K4b). A repr is never lifted into a kind block —
+ * the stream parser speaks JSON — so the one prose leaf every text block
+ * passes through, live and reloaded alike, calls this: live ≡ reload by
+ * construction. A complete repr → `**Title** · Kind Name`; one still arriving
+ * at the end of the text → the kind's name (or nothing while its key types).
+ * Quoted source (inline code, non-JSON fences) stays as written; text with no
+ * repr kind comes back as the same string.
+ */
+export function pythonKindsAsOneLine(text: string): string {
+  if (!text || !text.includes("'__k")) return text;
+  const quoted = quotedSourceRanges(text);
+  let out = "";
+  let cursor = 0;
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] !== "{" || inside(quoted, i)) continue;
+    const end = pythonBalancedEnd(text, i);
+    if (end === null) {
+      const tail = text.slice(i);
+      if (hasPythonKindKey(tail)) {
+        const slug = /'__kind'\s*:\s*'([A-Za-z0-9_.:-]+)'/.exec(tail)?.[1] ?? null;
+        out += text.slice(cursor, i) + kindName(slug);
+        cursor = text.length;
+        break;
+      }
+      if (PYTHON_PARTIAL_KIND_TAIL.test(tail)) {
+        out += text.slice(cursor, i);
+        cursor = text.length;
+        break;
+      }
+      continue;
+    }
+    const region = text.slice(i, end);
+    if (hasPythonKindKey(region)) {
+      const json = pythonReprAsJson(region);
+      if (json !== null) {
+        out += text.slice(cursor, i) + kindOneLine(JSON.parse(json));
+        cursor = end;
+      }
+    }
+    i = end - 1;
+  }
+  return cursor === 0 ? text : out + text.slice(cursor);
 }

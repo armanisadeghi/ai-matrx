@@ -404,8 +404,13 @@ export function pythonReprAsJson(text: string): string | null {
   }
 }
 
+/** Whether text holds a Python-repr `'__kind'` key (key position, quoted value). */
+export function hasPythonKindKey(text: string): boolean {
+  return PYTHON_KIND_KEY.test(withoutZeroWidth(text));
+}
+
 /** Where the Python-repr value opening at `start` (`{` or `[`) closes (exclusive), or null. */
-function pythonBalancedEnd(text: string, start: number): number | null {
+export function pythonBalancedEnd(text: string, start: number): number | null {
   let depth = 0;
   let quote: string | null = null;
   for (let i = start; i < text.length; i++) {
