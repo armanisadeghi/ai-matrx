@@ -2,6 +2,8 @@
 import React, { useState } from "react";
 import { Globe, ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
 import { ToggledDataBody } from "./ToggledDataBody";
+// The preview line is a fragment: a kind in it reads as its one-line label (K8).
+import { snippetKindText } from "@/features/content-ir/surfaces/kind-snippet-text";
 
 export interface FetchResultsBlockProps {
   results?: Record<string, unknown>[];
@@ -97,7 +99,7 @@ const FetchResultsBlock: React.FC<FetchResultsBlockProps> = ({
                       )}
                       {content && !isOpen && (
                         <p className="text-xs text-muted-foreground mt-1 ml-6 line-clamp-2 leading-relaxed">
-                          {content}
+                          {snippetKindText(content)}
                         </p>
                       )}
                     </div>

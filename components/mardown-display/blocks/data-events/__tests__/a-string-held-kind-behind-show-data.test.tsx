@@ -174,6 +174,33 @@ describe("K7: the search-error card", () => {
   });
 });
 
+// K8: the collapsed preview line of a search / fetch result printed the
+// item's snippet / content field as written — a kind there reads as its
+// one-line label, never JSON. The toggle stays CLOSED here.
+describe("K8: the collapsed preview line", () => {
+  const PREVIEWS: Array<[string, string]> = [
+    ["kind JSON", KIND_TEXT],
+    ["prose with a kind", `Saved deck: ${KIND_TEXT}`],
+    ["a Python repr", "Saved deck: {'__kind': 'flashcard_set', 'title': 'Cell biology'}"],
+  ];
+  it.each(PREVIEWS)("search snippet: %s", (_name, text) => {
+    act(() => root.render(<SearchResultsBlock results={[{ title: "Deck", snippet: text }]} />));
+    expect(door()).toBeNull();
+    expect(container.textContent).not.toMatch(/__kind/);
+    expect(container.textContent).toContain("Flashcard Set");
+  });
+  it.each(PREVIEWS)("fetch content: %s", (_name, text) => {
+    act(() => root.render(<FetchResultsBlock results={[{ title: "Deck", content: text }]} />));
+    expect(door()).toBeNull();
+    expect(container.textContent).not.toMatch(/__kind/);
+    expect(container.textContent).toContain("Flashcard Set");
+  });
+  it("a kindless preview is unchanged", () => {
+    act(() => root.render(<SearchResultsBlock results={[{ title: "Deck", snippet: "Mitochondria make ATP." }]} />));
+    expect(container.textContent).toContain("Mitochondria make ATP.");
+  });
+});
+
 describe("K1 source guard: no kind check that refuses strings first", () => {
   it("no wrapper returns false for non-objects before asking valueCarriesKind", () => {
     const repo = path.resolve(__dirname, "../../../../..");
