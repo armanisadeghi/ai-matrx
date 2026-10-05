@@ -111,3 +111,47 @@ describe("the double-padding detector", () => {
     scroller.remove();
   });
 });
+
+describe("free space is never padding", () => {
+  function box(tag: string, top: number, bottom: number) {
+    const el = document.createElement(tag);
+    el.getBoundingClientRect = () =>
+      ({ top, bottom, left: 0, right: 800, width: 800, height: bottom - top, x: 0, y: top, toJSON: () => ({}) }) as DOMRect;
+    return el;
+  }
+
+  beforeAll(() => {
+    Object.defineProperty(window, "innerHeight", { value: 900, configurable: true });
+  });
+
+  // 2026-10-05 /agents/all: measured while its rows loaded, a 6-row skeleton left the pager 437px
+  // above the list frame's foot; the guard called that "padded twice" and the outline stayed.
+  it("a frame its content does not fill (loading, a short list) is not judged", () => {
+    const surface = box("div", 213, 900);
+    const column = box("div", 217, 884);
+    const pager = box("button", 410, 443);
+    pager.textContent = "1";
+    column.appendChild(pager);
+    surface.appendChild(column);
+    document.body.appendChild(surface);
+    const end = measurePageEnd(surface, []);
+    expect(end.endSpacePx).toBeGreaterThan(400);
+    expect(end.contentFills).toBe(false);
+    surface.remove();
+  });
+
+  it("a frame its content fills is judged on its end space (its padding is the end)", () => {
+    const surface = box("div", 213, 900);
+    surface.style.paddingBottom = "40px";
+    const column = box("div", 217, 860);
+    const pager = box("button", 832, 860);
+    pager.textContent = "1";
+    column.appendChild(pager);
+    surface.appendChild(column);
+    document.body.appendChild(surface);
+    const end = measurePageEnd(surface, []);
+    expect(end.contentFills).toBe(true);
+    expect(isDoublePadded(end.endSpacePx, 1440)).toBe(true);
+    surface.remove();
+  });
+});

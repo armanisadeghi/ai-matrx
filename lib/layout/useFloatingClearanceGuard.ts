@@ -80,7 +80,17 @@ export function useFloatingClearanceGuard(enabled: boolean = process.env.NODE_EN
     const rhythmFlagged = new WeakSet<Element>();
     const checkRhythm = (scroller: Element) => {
       const end = measurePageEnd(scroller, floatingBottomBoxes().map((b) => b.rect));
-      if (!end.last || !isDoublePadded(end.endSpacePx, window.innerWidth)) return null;
+      // A scroller at its end is full by definition; a non-scrolling surface whose content is
+      // shorter than its frame (rows still loading, a short list) has free space, not padding.
+      const scrolls = scroller.scrollHeight > scroller.clientHeight + END_SLACK_PX;
+      if (!end.last || !(scrolls || end.contentFills) || !isDoublePadded(end.endSpacePx, window.innerWidth)) {
+        // A surface flagged while it was settling is cleared once it reads right.
+        if (rhythmFlagged.has(scroller)) {
+          rhythmFlagged.delete(scroller);
+          (scroller as HTMLElement).style.outline = "";
+        }
+        return null;
+      }
       const finding = { scroller: describe(scroller), last: describe(end.last), endSpacePx: end.endSpacePx, allowedPx: pageRhythmFor(window.innerWidth).end };
       if (rhythmFlagged.has(scroller)) return finding;
       rhythmFlagged.add(scroller);

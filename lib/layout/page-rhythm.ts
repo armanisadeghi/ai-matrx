@@ -87,6 +87,44 @@ export interface PageEnd {
   floatingTop: number;
   /** Empty space between the last content and the floating chrome (or the visible edge). */
   endSpacePx: number;
+  /**
+   * False when some box between the last element and the scroller holds unclaimed room under its
+   * children — the content is SHORTER than its frame (a loading skeleton, a three-row list), so the
+   * empty space is free space, never padding. Only a frame its content fills can be padded twice.
+   */
+  contentFills: boolean;
+}
+
+/**
+ * Walk up from the last element to the scroller: at each box, the room between its children's
+ * lowest outer edge and its own content edge (bottom − padding − border). Room beyond the
+ * tolerance is free space the content does not claim. 2026-10-05: /agents/all measured while its
+ * rows were still loading (a 6-row skeleton, the pager 437px above the frame's foot) was called
+ * "padded twice", and the amber outline stayed after the rows arrived.
+ */
+function contentFillsFrame(last: Element, scroller: Element): boolean {
+  let child: Element = last;
+  let parent = last.parentElement;
+  while (parent && parent !== scroller.parentElement) {
+    const style = getComputedStyle(parent);
+    const contentBottom =
+      parent.getBoundingClientRect().bottom -
+      (Number.parseFloat(style.paddingBottom) || 0) -
+      (Number.parseFloat(style.borderBottomWidth) || 0);
+    let lowest = Number.NEGATIVE_INFINITY;
+    for (const sibling of parent.children) {
+      const rect = sibling.getBoundingClientRect();
+      if (rect.height <= 0 && rect.width <= 0) continue;
+      const margin = Number.parseFloat(getComputedStyle(sibling).marginBottom) || 0;
+      lowest = Math.max(lowest, rect.bottom + margin);
+    }
+    if (lowest === Number.NEGATIVE_INFINITY) lowest = child.getBoundingClientRect().bottom;
+    if (contentBottom - lowest > PAGE_RHYTHM_TOLERANCE_PX) return false;
+    if (parent === scroller) break;
+    child = parent;
+    parent = parent.parentElement;
+  }
+  return true;
 }
 
 /**
@@ -122,7 +160,8 @@ export function measurePageEnd(
     }
   }
   const endSpacePx = last ? Math.round(floatingTop - lastBottom) : 0;
-  return { last, viewBottom, floatingTop, endSpacePx };
+  const contentFills = last ? contentFillsFrame(last, scroller) : true;
+  return { last, viewBottom, floatingTop, endSpacePx, contentFills };
 }
 
 /** True when a page ends with more empty space than the scale allows — the double-padding class. */
