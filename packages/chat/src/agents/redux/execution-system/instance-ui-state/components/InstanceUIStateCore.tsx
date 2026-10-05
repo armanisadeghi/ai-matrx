@@ -1,6 +1,6 @@
 "use client";
 
-import { Badge, Button } from "@ai-matrx/design-system/controls";
+import { Badge, Button, Tile } from "@ai-matrx/design-system/controls";
 import React, { useState } from "react";
 import { cn } from "@ai-matrx/design-system";
 import {
@@ -237,20 +237,7 @@ function RawJsonSection({ data }: { data: InstanceUIState }) {
   return (
     <div className="border border-border rounded-sm overflow-hidden">
       <div className="flex items-center gap-1.5 px-2 py-1.5">
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          className="flex items-center gap-1.5 flex-1 text-left hover:text-foreground transition-colors"
-        >
-          {open ? (
-            <ChevronDown className="h-3 w-3 text-muted-foreground shrink-0" />
-          ) : (
-            <ChevronRight className="h-3 w-3 text-muted-foreground shrink-0" />
-          )}
-          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Raw JSON
-          </span>
-        </button>
+        <Tile variant="quiet" icon={open ? <ChevronDown /> : <ChevronRight />} title="Raw JSON" onClick={() => setOpen((v) => !v)} className="flex-1" />
         <Button variant="quiet" icon={copied ? <Check /> : <Copy />} onClick={copy} title="Copy full JSON" aria-label="Copy full JSON" className="shrink-0" />
         {open ? (
           <EyeOff className="h-3.5 w-3.5 text-muted-foreground shrink-0" />

@@ -46,6 +46,7 @@ import {
   ComposerChip,
   ComposerChipPart,
 } from "../../inputs/smart-input/ComposerChip";
+import { Tile } from "@ai-matrx/design-system/controls";
 
 /** Tri-state editability. `null` = the type doesn't support the toggle. */
 export type ResourceEditableState = "readonly" | "editable" | null;
@@ -248,38 +249,17 @@ export function ResourceAttachmentTile({
               </p>
             </div>
             {onClick ? (
-              <button
-                type="button"
-                onClick={(e) => {
+              <Tile variant="quiet" icon={<ExternalLink />} title="Open" onClick={(e) => {
                   stop(e);
                   setMenuOpen(false);
                   onClick();
-                }}
-                className={cn(
-                  "flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm text-foreground hover:bg-accent",
-                  MENU_ROW_TOUCH,
-                )}
-              >
-                <ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground" />
-                <span>Open</span>
-              </button>
+                }} />
             ) : null}
             {showToggle ? (
-              <button
-                type="button"
-                onClick={(e) => {
+              <Tile variant="quiet" icon={editable ? <Lock /> : <Pencil />} title={editable ? "Make read-only" : "Allow agent editing"} onClick={(e) => {
                   stop(e);
                   toggleEditable();
-                }}
-                className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm text-foreground hover:bg-accent max-lg:min-h-11 pointer-coarse:min-h-11"
-              >
-                {editable ? (
-                  <Lock className="h-4 w-4 shrink-0 text-muted-foreground" />
-                ) : (
-                  <Pencil className="h-4 w-4 shrink-0 text-muted-foreground" />
-                )}
-                <span>{editable ? "Make read-only" : "Allow agent editing"}</span>
-              </button>
+                }} />
             ) : null}
             {onRemove ? (
               <button
@@ -436,21 +416,10 @@ export function ResourceAttachmentTile({
             </p>
           </div>
           {showToggle ? (
-            <button
-              type="button"
-              onClick={(e) => {
+            <Tile variant="quiet" icon={editable ? <Lock /> : <Pencil />} title={editable ? "Make read-only" : "Allow agent editing"} onClick={(e) => {
                 stop(e);
                 toggleEditable();
-              }}
-              className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm text-foreground hover:bg-accent max-lg:min-h-11 pointer-coarse:min-h-11"
-            >
-              {editable ? (
-                <Lock className="h-4 w-4 shrink-0 text-muted-foreground" />
-              ) : (
-                <Pencil className="h-4 w-4 shrink-0 text-muted-foreground" />
-              )}
-              <span>{editable ? "Make read-only" : "Allow agent editing"}</span>
-            </button>
+              }} />
           ) : null}
           {onRemove ? (
             <button

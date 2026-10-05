@@ -12,7 +12,7 @@
 // Dense, dark, monospace — a diagnostic tool, not a product surface. Gated to
 // admins by the caller.
 
-import { Badge, Button } from "@ai-matrx/design-system/controls";
+import { Badge, Button, Tile } from "@ai-matrx/design-system/controls";
 import { useEffect, useReducer, useState } from "react";
 import { Bug, Check, ChevronDown, ChevronUp, Copy, Trash2 } from "lucide-react";
 import { toast } from "../../host/notify";
@@ -126,14 +126,7 @@ export function VoiceDebugPanel({
   return (
     <div className="pointer-events-auto w-full overflow-hidden rounded-lg border border-border bg-zinc-950/95 text-zinc-100 shadow-lg backdrop-blur">
       <div className="flex w-full items-center justify-between gap-2 px-3 py-1.5">
-        <button
-          type="button"
-          onClick={() => setOpen((o) => !o)}
-          className="flex flex-1 items-center gap-2 text-left text-xs font-semibold"
-        >
-          <Bug className="h-3.5 w-3.5 text-emerald-400" />
-          Live voice debug
-        </button>
+        <Tile variant="quiet" icon={<Bug />} title="Live voice debug" onClick={() => setOpen((o) => !o)} className="flex-1" />
         <span className="flex items-center gap-2">
           <Badge
             tone={

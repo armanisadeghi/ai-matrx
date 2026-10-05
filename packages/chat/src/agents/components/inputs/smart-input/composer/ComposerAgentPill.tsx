@@ -19,7 +19,7 @@
 
 import { useState } from "react";
 import { AppWindow, ChevronDown, Gauge, Layers, Star, Webhook } from "lucide-react";
-import { Button } from "@ai-matrx/design-system/controls";
+import { Button, Tile } from "@ai-matrx/design-system/controls";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
@@ -137,14 +137,7 @@ export function ComposerAgentPill({ conversationId, mode, size, agentControl, me
               agentFilter={agentFilter}
               contentSide="left"
               triggerSlot={
-                <button
-                  type="button"
-                  className="flex h-8 w-full items-center gap-2.5 rounded-md px-2.5 text-left text-sm text-foreground hover:bg-accent"
-                >
-                  <Webhook className="h-4 w-4 shrink-0 text-muted-foreground" />
-                  <span className="min-w-0 flex-1 truncate">{info.agentName ?? "Agent"}</span>
-                  <ChevronDown className="h-4 w-4 shrink-0 -rotate-90 text-muted-foreground" />
-                </button>
+                <Tile variant="quiet" icon={<Webhook />} title={info.agentName ?? "Agent"} end={<ChevronDown />} />
               }
             />
           ) : (
@@ -347,14 +340,7 @@ function ChatPresetsPanel({
         agentFilter={agentFilter}
         contentSide="left"
         triggerSlot={
-          <button
-            type="button"
-            className="flex h-8 w-full items-center gap-2.5 rounded-md px-2.5 text-left text-sm text-foreground hover:bg-accent"
-          >
-            <Layers className="h-4 w-4 shrink-0 text-muted-foreground" />
-            <span className="min-w-0 flex-1 truncate">All agents</span>
-            <ChevronDown className="h-4 w-4 shrink-0 -rotate-90 text-muted-foreground" />
-          </button>
+          <Tile variant="quiet" icon={<Layers />} title="All agents" end={<ChevronDown />} />
         }
       />
       <ComposerMenuDivider />

@@ -14,7 +14,7 @@
  * Keep tab content and badge logic HERE so the presentations can never drift.
  */
 
-import { Badge } from "@ai-matrx/design-system/controls";
+import { Badge, Tile } from "@ai-matrx/design-system/controls";
 import { type ComponentType, type ReactNode } from "react";
 import {
   Paperclip,
@@ -451,30 +451,12 @@ export function RunControlsTabPanel({
               )}
 
               {showDebugAction && (
-                <button
-                  type="button"
-                  onClick={onOpenDebug}
-                  className="flex h-8 w-full items-center gap-2 rounded-md px-2 text-left text-xs text-foreground transition-colors hover:bg-muted/60"
-                >
-                  <Bug className="h-3.5 w-3.5 shrink-0 text-orange-500" />
-                  <span className="min-w-0 flex-1 truncate">
-                    Debug instance state
-                  </span>
-                </button>
+                <Tile variant="quiet" icon={<Bug />} title="Debug instance state" onClick={onOpenDebug} />
               )}
 
-              <button
-                type="button"
-                onClick={() => {
+              <Tile variant="quiet" icon={<ScrollText />} title="Preview full prompt" onClick={() => {
                   openPromptPreview({ conversationId });
-                }}
-                className="flex h-8 w-full items-center gap-2 rounded-md px-2 text-left text-xs text-foreground transition-colors hover:bg-muted/60"
-              >
-                <ScrollText className="h-3.5 w-3.5 shrink-0 text-sky-500" />
-                <span className="min-w-0 flex-1 truncate">
-                  Preview full prompt
-                </span>
-              </button>
+                }} />
             </div>
           </div>,
         )}

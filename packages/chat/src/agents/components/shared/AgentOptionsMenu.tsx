@@ -82,7 +82,7 @@ import { useAgentLifecycleActions } from "../../lifecycle/useAgentLifecycleActio
 import { getUserMessage } from "@ai-matrx/agents/matrx";
 import { selectIsSuperAdmin } from "../../../host/identity";
 import { selectOrganizationId, isOrganizationSelectionCancelled } from "../../../host/org";
-import { Button } from "@ai-matrx/design-system/controls";
+import { Button, Tile } from "@ai-matrx/design-system/controls";
 
 const INTERFACE_VARIATIONS = [
   "Full Modal",
@@ -968,19 +968,7 @@ function MobileMenuContent({
           );
         })}
 
-        <button
-          onClick={() => setVariationsOpen(!variationsOpen)}
-          className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-foreground hover:bg-muted/50 active:bg-muted/70 transition-colors"
-        >
-          <Layers className="w-4 h-4 text-muted-foreground shrink-0" />
-          <span className="flex-1 text-left">Try Interface Variations</span>
-          <ChevronRight
-            className={cn(
-              "w-3.5 h-3.5 text-muted-foreground transition-transform ml-1",
-              variationsOpen && "rotate-90",
-            )}
-          />
-        </button>
+        <Tile variant="quiet" icon={<Layers />} title="Try Interface Variations" end={<ChevronRight />} onClick={() => setVariationsOpen(!variationsOpen)} />
         {variationsOpen && (
           <div className="pl-6 bg-muted/20">
             {INTERFACE_VARIATIONS.map((v) => (
@@ -1073,14 +1061,7 @@ function MobileMenuContent({
           </div>
           <div className="py-1">
             {adminItems.map(({ label, icon: Icon }) => (
-              <button
-                key={label}
-                onClick={() => handleItem(label)}
-                className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-foreground hover:bg-muted/50 active:bg-muted/70 transition-colors"
-              >
-                <Icon className="w-4 h-4 text-muted-foreground shrink-0" />
-                <span className="flex-1 text-left">{label}</span>
-              </button>
+              <Tile variant="quiet" icon={<Icon />} title={label} key={label} onClick={() => handleItem(label)} />
             ))}
           </div>
         </>
@@ -1096,21 +1077,10 @@ function MobileMenuContent({
         </span>
       </div>
       <div className="py-1">
-        <button
-          disabled={lifecycle.isBusy}
-          onClick={() => {
+        <Tile variant="quiet" icon={lifecycle.isArchived ? <ArchiveRestore /> : <Archive />} title={lifecycle.archiveLabel} disabled={lifecycle.isBusy} onClick={() => {
             onClose();
             void lifecycle.toggleArchived();
-          }}
-          className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-foreground hover:bg-muted/50 active:bg-muted/70 transition-colors disabled:opacity-50"
-        >
-          {lifecycle.isArchived ? (
-            <ArchiveRestore className="w-4 h-4 text-muted-foreground shrink-0" />
-          ) : (
-            <Archive className="w-4 h-4 text-muted-foreground shrink-0" />
-          )}
-          <span className="flex-1 text-left">{lifecycle.archiveLabel}</span>
-        </button>
+          }} />
         <button
           disabled={lifecycle.isBusy}
           onClick={() => {

@@ -6,6 +6,7 @@
 
 import { ChevronDown, Network } from "lucide-react";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
+import { Tile } from "@ai-matrx/design-system/controls";
 
 interface SidebarAgent {
   promptId: string;
@@ -32,16 +33,7 @@ export function SsrSidebarAgents({
         resolveAgentHref={(agent) => `/demos/chat/a/${agent.id}`}
         contentSide="right"
         triggerSlot={
-          <button
-            type="button"
-            className="flex h-8 w-full items-center gap-2 rounded-md px-2 text-left text-xs text-foreground/80 transition-colors hover:bg-accent/40 hover:text-foreground"
-          >
-            <Network className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-            <span className="min-w-0 flex-1 truncate">
-              {selectedAgent?.name ?? "Browse agents"}
-            </span>
-            <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground" />
-          </button>
+          <Tile variant="quiet" icon={<Network />} title={selectedAgent?.name ?? "Browse agents"} end={<ChevronDown />} />
         }
       />
     </div>

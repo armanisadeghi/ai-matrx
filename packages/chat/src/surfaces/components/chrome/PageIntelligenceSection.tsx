@@ -17,6 +17,7 @@ import { mandateDisplayName } from "@ai-matrx/chat/ui/mandate-words";
 import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 import { useOpenMandateWindow } from "../../../host/window-openers";
+import { Tile } from "@ai-matrx/design-system/controls";
 
 /**
  * The page's jobs, after agents and conversations in the menu. A row opens the
@@ -100,9 +101,7 @@ export function PageIntelligenceSection({
       <ul className="space-y-0.5">
         {entries.map(([key, href]) => (
           <li key={key} className="flex min-w-0 items-center gap-0.5">
-            <button
-              type="button"
-              onClick={() => {
+            <Tile variant="quiet" title={mandateDisplayName(key, identities[key]?.label)} onClick={() => {
                 openMandate({
                   initialMandateKey: key,
                   mandateKeys: entries.map(([entryKey]) => entryKey),
@@ -110,11 +109,7 @@ export function PageIntelligenceSection({
                   initialView: isAdmin ? "admin" : "yours",
                 });
                 onOpened?.();
-              }}
-              className="flex min-w-0 flex-1 items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs text-foreground hover:bg-accent"
-            >
-              <span className="min-w-0 flex-1 truncate">{mandateDisplayName(key, identities[key]?.label)}</span>
-            </button>
+              }} className="min-w-0 flex-1" />
             {/* No intelligence page in this host (no port registered): no secondary door. */}
             {href ? (
               <Link

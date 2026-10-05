@@ -17,6 +17,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@ai-matrx/design-system";
+import { Tile } from "@ai-matrx/design-system/controls";
 
 // ============================================================================
 // TYPES
@@ -43,11 +44,7 @@ function PlaceholderDropdownRow({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className="flex items-center gap-2.5 w-full px-2.5 py-1.5 rounded-md text-foreground/80 hover:bg-accent/50 hover:text-foreground transition-colors text-left group">
-          <Icon className="h-3.5 w-3.5 text-muted-foreground group-hover:text-foreground transition-colors flex-shrink-0" />
-          <span className="text-xs flex-1">{label}</span>
-          <ChevronRight className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-        </button>
+        <Tile variant="quiet" icon={<Icon />} title={label} end={<ChevronRight />} />
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="start"

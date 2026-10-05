@@ -44,6 +44,7 @@ import {
   getToolCardUserChoice,
   setToolCardUserChoice,
 } from "./toolCardUiSession";
+import { Tile } from "@ai-matrx/design-system/controls";
 
 export interface AgentWorkGroupProps {
   /**
@@ -125,22 +126,7 @@ export const AgentWorkGroup: React.FC<AgentWorkGroupProps> = ({
   return (
     <div className={cn("group/agentwork relative w-full mb-2", className)}>
       {showHeader && (
-        <button
-          type="button"
-          onClick={toggle}
-          className="flex w-full items-center gap-1.5 text-left"
-        >
-          {/* Same font/size as body markdown + tool lines, just dimmer — reads
-              as part of the response, not a separate widget. */}
-          <span className="truncate font-sans text-sm leading-relaxed tracking-wide text-muted-foreground">
-            {label}
-          </span>
-          {isExpanded ? (
-            <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-          ) : (
-            <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-          )}
-        </button>
+        <Tile variant="quiet" title={label} end={isExpanded ? <ChevronDown /> : <ChevronRight />} onClick={toggle} />
       )}
 
       {/* Expanded body: the original items rendered FLAT below the line — no

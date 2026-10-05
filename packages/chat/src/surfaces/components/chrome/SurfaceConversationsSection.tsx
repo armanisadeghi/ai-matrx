@@ -29,7 +29,7 @@ import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import { toast } from "../../../host/notify";
 import { cn } from "@ai-matrx/design-system";
 import { openOverlay, CHAT_WINDOWS } from "../../../host/windows";
-import { Input, Button } from "@ai-matrx/design-system/controls";
+import { Input, Button, Tile } from "@ai-matrx/design-system/controls";
 import { fetchConversationHistory } from "../../../agents/redux/conversation-history/thunks";
 import { setScopeSearch } from "../../../agents/redux/conversation-history/slice";
 import {
@@ -343,16 +343,7 @@ export function SurfaceConversationsSection({
           Nothing started from here yet.
         </p>
       )}
-      <button
-        type="button"
-        onClick={() => setShowAll(true)}
-        className={cn(
-          "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground",
-        )}
-      >
-        <History className="h-3.5 w-3.5 shrink-0" />
-        All conversations
-      </button>
+      <Tile variant="quiet" icon={<History />} title="All conversations" onClick={() => setShowAll(true)} />
     </div>
   );
 }

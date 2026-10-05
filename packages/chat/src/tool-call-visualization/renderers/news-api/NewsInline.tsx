@@ -5,6 +5,7 @@ import { Newspaper, Calendar, ExternalLink, Loader2, AlertCircle } from "lucide-
 import type { ToolRendererProps } from "../../types";
 import { getArg, resultAsObject, isTerminal } from "../_shared";
 import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
+import { Tile } from "@ai-matrx/design-system/controls";
 
 interface NewsArticle {
     source: { id: string | null; name: string };
@@ -196,25 +197,16 @@ export const NewsInline: React.FC<ToolRendererProps> = ({
             </div>
 
             {onOpenOverlay && (
-                <button
-                    onClick={(e) => {
+                <Tile variant="quiet" icon={<Newspaper />} title={hasMore
+                            ? `View all ${data.totalResults} articles`
+                            : `View ${data.articles.length} ${data.articles.length === 1 ? "article" : "articles"}`} onClick={(e) => {
                         e.stopPropagation();
                         onOpenOverlay(`tool-group-${toolGroupId}`);
-                    }}
-                    className="w-full py-2.5 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer animate-in fade-in slide-in-from-bottom"
-                    style={{
+                    }} style={{
                         animationDelay: `${displayArticles.length * 80}ms`,
                         animationDuration: "300ms",
                         animationFillMode: "backwards",
-                    }}
-                >
-                    <Newspaper className="w-4 h-4" />
-                    <span>
-                        {hasMore
-                            ? `View all ${data.totalResults} articles`
-                            : `View ${data.articles.length} ${data.articles.length === 1 ? "article" : "articles"}`}
-                    </span>
-                </button>
+                    }} />
             )}
         </div>
     );

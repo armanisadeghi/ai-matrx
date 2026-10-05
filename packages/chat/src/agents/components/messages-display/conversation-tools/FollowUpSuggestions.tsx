@@ -21,6 +21,7 @@ import { CornerDownRight } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "../../../../store/hooks";
 import { selectMessageById } from "../../../redux/execution-system/messages/messages.selectors";
 import { setUserInputText } from "../../../redux/execution-system/instance-user-input/instance-user-input.slice";
+import { Tile } from "@ai-matrx/design-system/controls";
 
 export const FOLLOW_UP_METADATA_KEY = "follow_up_suggestions";
 
@@ -63,15 +64,7 @@ export function FollowUpSuggestions({
   return (
     <nav aria-label="Suggested follow-up questions" className="mt-2 flex flex-col gap-1" data-find-ignore="">
       {suggestions.map((q) => (
-        <button
-          key={q}
-          type="button"
-          onClick={() => pick(q)}
-          className="flex w-fit max-w-full items-start gap-2 rounded-md px-2 py-1 text-left text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-        >
-          <CornerDownRight className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-          <span className="min-w-0">{q}</span>
-        </button>
+        <Tile variant="quiet" icon={<CornerDownRight />} title={q} key={q} onClick={() => pick(q)} className="w-fit" />
       ))}
     </nav>
   );

@@ -20,6 +20,7 @@ import { ResourceFamilyPolicyEditor } from "./ResourceFamilyPolicyEditor";
 import { ComposerChip, ComposerChipPart } from "../smart-input/ComposerChip";
 import { compactChipLabel } from "../../messages-display/user/compact-chip-label";
 import { primaryFormShortLabel } from "./resource-family-words";
+import { Tile } from "@ai-matrx/design-system/controls";
 
 export interface AttachedDocumentSettings {
   representation?: DocumentRepresentation;
@@ -194,15 +195,7 @@ export function AttachedDocumentChip({
             <Loader2 className="h-3.5 w-3.5 animate-spin" /> Saving your choice…
           </div>
         ) : null}
-        <button
-          type="button"
-          onClick={(event) => void openDetails(event)}
-          disabled={saving}
-          className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-foreground hover:bg-accent"
-        >
-          <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-          <span>See file details</span>
-        </button>
+        <Tile variant="quiet" icon={<ArrowUpRight />} title="See file details" onClick={(event) => void openDetails(event)} disabled={saving} />
       </PopoverContent>
     </Popover>
   );

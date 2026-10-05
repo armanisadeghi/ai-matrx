@@ -41,6 +41,7 @@ import { ToolErrorCard } from "../../result-fields/ToolErrorCard";
 import { ToolResultCard } from "../_shared-entity/ToolResultCard";
 import type { ToolResultCardProps } from "../_shared-entity/ToolResultCard";
 import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
+import { Tile } from "@ai-matrx/design-system/controls";
 
 /** How much output the collapsed view shows before offering the rest. */
 export const TAIL_LINES = 12;
@@ -152,18 +153,12 @@ const OutputBlock: React.FC<{
   return (
     <div className="border-t border-border/30">
       {hidden > 0 && (
-        <button
-          type="button"
-          onClick={(ev) => {
+        <Tile variant="quiet" title={showAll
+            ? `Show last ${TAIL_LINES} lines`
+            : `Show all ${lines.length} lines`} onClick={(ev) => {
             ev.stopPropagation();
             setShowAll((v) => !v);
-          }}
-          className="flex w-full items-center px-4 py-1.5 text-left text-xs font-medium text-muted-foreground hover:text-foreground"
-        >
-          {showAll
-            ? `Show last ${TAIL_LINES} lines`
-            : `Show all ${lines.length} lines`}
-        </button>
+          }} />
       )}
       <pre
         className={cn(

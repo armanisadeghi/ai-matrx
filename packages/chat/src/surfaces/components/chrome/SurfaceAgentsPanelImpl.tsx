@@ -12,7 +12,7 @@
  * rendered as a breadcrumb (Brand › Site › [Page]) with children below.
  */
 
-import { Chip } from "@ai-matrx/design-system/controls";
+import { Chip, Tile } from "@ai-matrx/design-system/controls";
 import { useState } from "react";
 import { Braces, ChevronRight, ShieldCheck } from "lucide-react";
 import { toast } from "../../../host/notify";
@@ -119,50 +119,22 @@ export default function SurfaceAgentsPanelImpl({
         )}
       </div>
       <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
-        <button
-          type="button"
-          onClick={() => {
+        <Tile variant="outline" icon={<Braces />} title="Surface Context" line="Live page values" onClick={() => {
             openSurfaceContext({
               surfaceName: primaryName ?? "",
               isEditable: runtime?.isEditable === true,
             });
             onRequestClose?.();
-          }}
-          className="flex min-w-0 items-center gap-2 rounded-md border border-border bg-card px-2.5 py-2 text-left transition-colors hover:border-primary/40 hover:bg-primary/5"
-        >
-          <Braces className="h-4 w-4 shrink-0 text-primary" />
-          <span className="min-w-0">
-            <span className="block truncate text-xs font-medium">
-              Surface Context
-            </span>
-            <span className="block truncate text-[10px] text-muted-foreground">
-              Live page values
-            </span>
-          </span>
-        </button>
+          }} className="min-w-0" />
         {isAdmin && (
-          <button
-            type="button"
-            onClick={() => {
+          <Tile variant="outline" icon={<ShieldCheck />} title="Admin" line="Contract &amp; provenance" onClick={() => {
               openSurfaceContextAdmin({
                 surfaceName: primaryName,
                 isEditable: runtime?.isEditable === true,
                 preferRuntime: true,
               });
               onRequestClose?.();
-            }}
-            className="flex min-w-0 items-center gap-2 rounded-md border border-border bg-card px-2.5 py-2 text-left transition-colors hover:border-violet-500/40 hover:bg-violet-500/5"
-          >
-            <ShieldCheck className="h-4 w-4 shrink-0 text-violet-500" />
-            <span className="min-w-0">
-              <span className="block truncate text-xs font-medium">
-                Admin
-              </span>
-              <span className="block truncate text-[10px] text-muted-foreground">
-                Contract &amp; provenance
-              </span>
-            </span>
-          </button>
+            }} className="min-w-0" />
         )}
       </div>
     </div>

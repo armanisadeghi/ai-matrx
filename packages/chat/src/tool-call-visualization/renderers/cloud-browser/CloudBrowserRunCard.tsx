@@ -28,6 +28,7 @@ import {
   cloudBrowserRunTitle,
   rawEntryObject,
 } from "./cloudBrowserRun";
+import { Tile } from "@ai-matrx/design-system/controls";
 
 interface CloudBrowserRunCardProps {
   entries: ToolLifecycleEntry[];
@@ -170,21 +171,7 @@ export function CloudBrowserRunCard({
       <div className={cn("mb-1 w-full min-w-0", className)}>
         <div className="flex min-h-7 min-w-0 items-center gap-1.5 text-[12px] text-muted-foreground">
           <Globe2 className="size-3.5 shrink-0 text-info" />
-          <button
-            type="button"
-            onClick={onToggleExpanded}
-            className="flex min-w-0 items-center gap-1.5 rounded px-1 py-0.5 text-left transition-colors hover:bg-accent/40 hover:text-foreground"
-            aria-expanded={expanded}
-          >
-            <span className="min-w-0 truncate">
-              Continued browsing · {entries.length} actions
-            </span>
-            {expanded ? (
-              <ChevronDown className="size-3 shrink-0" />
-            ) : (
-              <ChevronRight className="size-3 shrink-0" />
-            )}
-          </button>
+          <Tile variant="quiet" title={`Continued browsing · ${entries.length} actions`} end={expanded ? <ChevronDown /> : <ChevronRight />} onClick={onToggleExpanded} aria-expanded={expanded} className="min-w-0" />
           {latestUrl && (
             <span className="hidden min-w-0 flex-1 sm:block">
               <ActivityUrl url={latestUrl} />
