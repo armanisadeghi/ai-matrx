@@ -138,10 +138,10 @@ export function StudioSidebar({
         className,
       )}
     >
-      <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border px-3 py-2">
+      <div className="@container flex shrink-0 items-center justify-between gap-2 border-b border-border px-3 py-2">
         <div className="flex min-w-0 items-center gap-1.5 text-sm font-semibold">
           <Mic className="h-4 w-4 shrink-0 text-primary" />
-          Sessions
+          <span className="truncate">Sessions</span>
         </div>
         <div className="flex shrink-0 items-center gap-1">
           {isHydrated && sessions.length > 0 && (
@@ -188,6 +188,7 @@ export function StudioSidebar({
             type="button"
             onClick={handleCreate}
             disabled={!userId}
+            aria-label="New session"
             className={cn(
               "inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition-colors",
               userId
@@ -196,7 +197,8 @@ export function StudioSidebar({
             )}
           >
             <Plus className="h-3.5 w-3.5" />
-            New
+            {/* A narrow sidebar keeps the + and drops the word, so the title never runs under the actions. */}
+            <span className="@max-[240px]:hidden">New</span>
           </button>
           {onCollapse && (
             <button
