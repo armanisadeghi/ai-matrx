@@ -126,6 +126,9 @@ in a nested Popover (a child Radix layer — clicks inside never dismiss the par
 
 ## Invariants & gotchas
 
+- **The launcher is the one size without +** (Arman, 2026-10-04). It sits at the foot of a page to ask about
+  that page: the page is its context, nothing more — no agents, tools or models. Anything fancier is the
+  side composer. Long-term it is the seed of an embeddable "instant help" widget for outside websites.
 - **Never fork the composer.** A new arrangement is a branch on the `composer` prop, composed from the
   SAME engine pieces. Source strings are pinned by `__tests__/textarea-auto-resize`,
   `responsive-run-controls` and `composer-controls-are-named` (send, queue and stop each carry an accessible name).
@@ -169,6 +172,7 @@ in a nested Popover (a child Radix layer — clicks inside never dismiss the par
 
 ## Change Log
 
+- **2026-10-04** — Documented the launcher exception to "no mode has less capability"; page context (the eye chip) is ON by default on every page-hosted chat, Quick Chat included (Arman: a chat on a page is about that page).
 - **2026-10-04** — The classic stacked layout, the single-row layout (`SmartAgentInputSingleRow`, `SingleRowActionButtons`) and the ambient layout were deleted; `composer` is now required on `SmartAgentInput`, `SmartAgentInputStacked` and `InputActionButtons`. The inert `singleRowTextarea`, `sendButtonVariant` and `showSubmitOnEnterToggle` props went with them, and the classic-only Auto-clear and Enter-toggle toolbar buttons. Named: the Smart Agent Input, styles Full · Compact · Launcher.
 
 - **2026-10-03** — Arman's layout pass: meta row = Scope · surface values (eye + count, no text) | Agent · Output · Effort, nothing bordered, no chevrons on Output/Effort; in the card the mic and its device chevron are one group, live audio stands alone, and send is a bare return glyph whose tooltip lists the keys; while a run streams the same spot shows a spinner that stops it. Compact: send sits in the card, + · voice · Scope · surface values | Agent · Effort ride the row under it. "Values to send" is now "Surface values".
