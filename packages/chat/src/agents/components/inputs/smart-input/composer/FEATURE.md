@@ -75,8 +75,13 @@ Utilities Hub "AI Results" tab (`ChatHistoryWorkspace enableInput`, compact, fix
   after the attachments read succeeded — a failed read is its own retry chip, never "nothing chosen".
 - `ComposerOutput` — Output pill/panel, two multi-select levels, sticky per chat (× resets to Text only).
   **Types** (Text on by default · Image · Audio · Video · Voice · Music · Document · Spreadsheet · Presentation ·
-  PDF · Code · Data) live in `builderAdvancedSettings.outputTypes` and are NOT sent (no request field exists; the
-  agent picker cannot filter by them yet) — the panel says so. **Shapes** = the whole kind catalog (System ·
+  PDF · Code · Data) live in `builderAdvancedSettings.outputTypes` and are NOT sent (no request field exists) — the
+  panel says so. They DO narrow the agent picker (`agent-output-filter.ts` + `useComposerAgentFilter`): Text→text,
+  Image→image, Audio/Voice/Music→audio, Video→video, the file types do not filter; an agent passes when its MODEL's
+  output modalities (model registry `capabilities.output`) include ANY asked modality; unknown model = shown; Text
+  only (or text-equivalent) = no filter. Every `AgentListDropdown` the pill opens (Work/Advanced pill, folded menu,
+  Chat's "All agents") gets `agentFilter` — the picker shows a "Makes: Image" chip with Show all (for this open),
+  and the current agent stays pinned. **Shapes** = the whole kind catalog (System ·
   Organization · Mine tabs with counts) read through the canonical `fetchShapePage` → `shx_list_scoped`
   (`useOutputShapeCatalog`), searchable, paged 50 at a time, selected pinned on top. A kind with a render_block
   skill (curated chip skill or `kind_<kind>`) toggles it in `addedSkills` (sent as `skill_config.included`, same
@@ -172,6 +177,7 @@ in a nested Popover (a child Radix layer — clicks inside never dismiss the par
 
 ## Change Log
 
+- **2026-10-04** — Output types narrow the agent picker: every picker the agent pill opens passes `agentFilter` (`@ai-matrx/agents` 0.44.0) built from the chat's Output types by model output modality; the picker names it in a "Makes: …" chip with Show all, current agent pinned. The Output note now says "Narrows the agent list. Not sent to the model."
 - **2026-10-04** — Documented the launcher exception to "no mode has less capability"; page context (the eye chip) is ON by default on every page-hosted chat, Quick Chat included (Arman: a chat on a page is about that page).
 - **2026-10-04** — The classic stacked layout, the single-row layout (`SmartAgentInputSingleRow`, `SingleRowActionButtons`) and the ambient layout were deleted; `composer` is now required on `SmartAgentInput`, `SmartAgentInputStacked` and `InputActionButtons`. The inert `singleRowTextarea`, `sendButtonVariant` and `showSubmitOnEnterToggle` props went with them, and the classic-only Auto-clear and Enter-toggle toolbar buttons. Named: the Smart Agent Input, styles Full · Compact · Launcher.
 

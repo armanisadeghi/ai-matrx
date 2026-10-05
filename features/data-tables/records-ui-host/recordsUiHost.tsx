@@ -17,6 +17,7 @@
  * doors answer who sees and changes what.
  */
 
+import { RecordBodyEditor } from "@/features/data-tables/records-ui-host/RecordBodyEditor";
 import { useCallback, useMemo, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -134,6 +135,8 @@ export function recordsUiHostFor({ ports, merged, gridContext, layouts, rights }
     hrefForRecord: ({ table, recordId }) => recordPageHref(table.id, recordId),
     // The platform's ONE chat column bound to the record (AGT-N-9) — never a second chat.
     chat: (ctx) => <RecordScopedChat ctx={ctx} organizationId={ports.organizationId} />,
+    // A record page's body, in the platform's one rich editor (records-ui ≥0.96 `editRichText`).
+    editRichText: (props) => <RecordBodyEditor {...props} />,
     // "What ran on this record" in the record rail (records-ui `recordSections`, lane 11 wave 2).
     // Spread as its own object: a records-ui build before the port ignores the key.
     ...recordSectionsPort(ports.organizationId),

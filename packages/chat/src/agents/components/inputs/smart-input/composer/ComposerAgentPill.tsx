@@ -50,6 +50,7 @@ import { ComposerEffortRows, useComposerEffort } from "./ComposerEffortPill";
 import { composerShows } from "./composer-mode-visibility";
 import type { ComposerAgentControl, ComposerMode, ComposerSize } from "./composer-types";
 import { useComposerAgent, useEffectiveModelId, type ComposerAgentInfo } from "./useComposerAgent";
+import { useComposerAgentFilter } from "./useComposerAgentFilter";
 import { presentOrganizationRefusal } from "@host/lib/organizations/organizationRefusalToast";
 import { ensureOrgId, isOrganizationSelectionCancelled } from "../../../../../host/org";
 
@@ -87,6 +88,7 @@ export function ComposerAgentPill({ conversationId, mode, size, agentControl, me
   const info = useComposerAgent(conversationId);
   const label = pillLabel(info, mode);
   const onSelectAgent = agentControl?.onSelectAgent;
+  const agentFilter = useComposerAgentFilter(conversationId);
 
   // An override is in force (the person picked another model for this chat):
   // the pill names the model that will run AND marks it. Custom's model is
@@ -141,6 +143,7 @@ export function ComposerAgentPill({ conversationId, mode, size, agentControl, me
                 if (agentId !== info.agentId) onSelectAgent(agentId);
               }}
               activeAgentId={info.agentId}
+              agentFilter={agentFilter}
               contentSide="left"
               triggerSlot={
                 <button
@@ -186,6 +189,7 @@ export function ComposerAgentPill({ conversationId, mode, size, agentControl, me
           if (agentId !== info.agentId) onSelectAgent(agentId);
         }}
         activeAgentId={info.agentId}
+        agentFilter={agentFilter}
         contentSide={menuSide}
         triggerSlot={pill}
       />
@@ -238,6 +242,7 @@ function ChatPresetsPanel({
   const personalModelLabel =
     useAppSelector((s) => selectModelLabelWithClass(s, personalModelId, pinnedOfferingId)) ?? null;
   const onSelectAgent = agentControl?.onSelectAgent;
+  const agentFilter = useComposerAgentFilter(conversationId);
 
   if (!onSelectAgent) {
     return (
@@ -346,6 +351,7 @@ function ChatPresetsPanel({
       <AgentListDropdown
         onSelect={(agentId: string) => choose(agentId)}
         activeAgentId={info.agentId}
+        agentFilter={agentFilter}
         contentSide="left"
         triggerSlot={
           <button

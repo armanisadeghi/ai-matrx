@@ -1,0 +1,27 @@
+"use client";
+
+// features/data-tables/records-ui-host/RecordBodyEditor.tsx — records-ui's `editRichText` port.
+//
+// A RECORD IS A PAGE (v7 TABLE-EXPERIENCE item 1): the body under a record's fields is written in the
+// platform's ONE editor (`components/rich-editor`, the notes editor) — never a second one. Bare chrome
+// (Notion's page: no toolbar row; slash menu, shortcuts and the selection toolbar still work). The
+// package owns the saving; this only reports every change.
+
+import RichEditor from "@/components/rich-editor/RichEditor";
+import type { RichTextEditProps } from "@ai-matrx/records-ui";
+
+export function RecordBodyEditor({ value, onChange, readOnly, placeholder }: RichTextEditProps) {
+  return (
+    <div className="min-h-[12rem] rounded-md text-sm" data-record-body-editor="">
+      <RichEditor
+        value={value}
+        onChange={onChange}
+        readOnly={readOnly}
+        placeholder={placeholder}
+        chrome="bare"
+        defaultView="visual"
+        defaultOutlineOpen={false}
+      />
+    </div>
+  );
+}

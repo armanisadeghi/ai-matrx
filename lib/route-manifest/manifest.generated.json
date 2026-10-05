@@ -1,7 +1,7 @@
 {
   "version": 1,
   "app": "matrx-frontend",
-  "routeCount": 1333,
+  "routeCount": 1334,
   "routes": [
     {
       "pattern": "/",
@@ -1862,6 +1862,11 @@
       "pattern": "/board/all",
       "status": "live",
       "source": "app/(core)/board/all/page.tsx"
+    },
+    {
+      "pattern": "/bring-your-work",
+      "status": "live",
+      "source": "app/(core)/bring-your-work/page.tsx"
     },
     {
       "pattern": "/c/[handle]",

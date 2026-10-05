@@ -8,8 +8,8 @@
  *  - Output TYPES: Text (on by default), Image, Audio, Video, Voice, Music,
  *    Document, Spreadsheet, Presentation, PDF, Code, Data. Saved in
  *    `builderAdvancedSettings.outputTypes`. NOT SENT — no request field
- *    carries requested output types yet, and the agent picker cannot filter by
- *    them yet — and the panel says exactly that.
+ *    carries requested output types yet, and the panel says so. They DO narrow
+ *    the agent picker by the agents' model outputs (`agent-output-filter.ts`).
  *  - SHAPES: the whole kind catalog (system + organization + mine) through the
  *    canonical Shapes list RPC, searchable, paged, selected pinned on top. A
  *    kind with a render_block skill toggles that skill in `addedSkills` (sent
@@ -280,7 +280,7 @@ export function ComposerOutputPanel({ conversationId }: { conversationId: string
     <div className="@container flex min-h-0 flex-col">
       <ComposerMenuLabel>Output types</ComposerMenuLabel>
       <TypeGrid types={output.types} onToggle={output.toggleType} />
-      <ComposerMenuHelp>Saved for this chat. Not sent to the model or used to filter agents yet.</ComposerMenuHelp>
+      <ComposerMenuHelp>Narrows the agent list. Not sent to the model.</ComposerMenuHelp>
       <ComposerMenuDivider />
       <ShapePicker kinds={output.kinds} skills={output.skills} onToggle={output.toggleKind} />
       {unsent.length > 0 ? (
