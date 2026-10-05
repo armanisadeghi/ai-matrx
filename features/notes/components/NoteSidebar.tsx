@@ -859,7 +859,9 @@ export function NoteSidebar({ instanceId, onNoteOpened }: NoteSidebarProps) {
       // sidebar footer keeps its established create-a-note behavior.
       if (createFolderIntent?.kind === "move-note") {
         const note = allNotes.find((candidate) => candidate.id === createFolderIntent.noteId);
-        if (!note) throw new Error("Note not found in state");
+        // The row that opened this dialog is no longer in the loaded list (a
+        // realtime move/refresh landed meanwhile) — say only what we know.
+        if (!note) throw new Error("That note isn't in this list anymore. Reopen its menu and try again.");
         const organizationId = requireOrganizationContext(note.organization_id);
         const folderId = await createFolder(folderName, organizationId);
         await dispatch(

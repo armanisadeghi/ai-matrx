@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useSyncExternalStore } from "react"
 import { usePathname } from "next/navigation"
 import { Toaster as Sonner } from "sonner"
 import {
@@ -210,8 +210,38 @@ function useToastHold() {
   }, [])
 }
 
+/**
+ * A MODAL IS OPEN. On a phone every dialog is a bottom sheet (up to 90dvh), so a
+ * toast resting at the foot covers the sheet's content and its footer — the
+ * buttons the person is about to press. While a modal holds the page (Radix /
+ * vaul lock scroll with `data-scroll-locked` on <body>), the stack moves to the
+ * top edge on phones, over the dimmed page instead of over the sheet.
+ */
+const MODAL_LOCK_ATTRIBUTE = "data-scroll-locked"
+const PHONE_QUERY = "(max-width: 767px)"
+
+function subscribeModalOnPhone(onChange: () => void): () => void {
+  const observer = new MutationObserver(onChange)
+  observer.observe(document.body, { attributes: true, attributeFilter: [MODAL_LOCK_ATTRIBUTE] })
+  const media = window.matchMedia(PHONE_QUERY)
+  media.addEventListener("change", onChange)
+  return () => {
+    observer.disconnect()
+    media.removeEventListener("change", onChange)
+  }
+}
+
+function useModalOpenOnPhone(): boolean {
+  return useSyncExternalStore(
+    subscribeModalOnPhone,
+    () => document.body.hasAttribute(MODAL_LOCK_ATTRIBUTE) && window.matchMedia(PHONE_QUERY).matches,
+    () => false,
+  )
+}
+
 const Toaster = ({ ...props }: ToasterProps) => {
   const theme = useThemeMode()
+  const modalOnPhone = useModalOpenOnPhone()
   useToastHold()
   useStaleToastHeightHeal()
   useStaleToastSweepOnReturn()
@@ -222,6 +252,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
       theme={theme as ToasterProps["theme"]}
       closeButton
       className="toaster group"
+      position={modalOnPhone ? "top-center" : "bottom-right"}
       // Right-anchored: the stack stays left of an open canvas column
       // (--app-right-inset, styles/shell.css). 24px is sonner's own gap.
       // Bottom: a toast rests ABOVE whatever floats over the viewport's foot
@@ -238,6 +269,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
         left: "16px",
         right: "16px",
         bottom: "max(16px, var(--matrx-toast-clearance))",
+        top: "calc(12px + env(safe-area-inset-top, 0px))",
       }}
       toastOptions={{
         classNames: {
