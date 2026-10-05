@@ -83,9 +83,18 @@ Utilities Hub "AI Results" tab (`ChatHistoryWorkspace enableInput`, compact, fix
   Chat's "All agents") gets `agentFilter` — the picker shows a "Makes: Image" chip with Show all (for this open),
   and the current agent stays pinned. **Shapes** = the whole kind catalog (System ·
   Organization · Mine tabs with counts) read through the canonical `fetchShapePage` → `shx_list_scoped`
-  (`useOutputShapeCatalog`), searchable, paged 50 at a time, selected pinned on top. A kind with a render_block
-  skill (curated chip skill or `kind_<kind>`) toggles it in `addedSkills` (sent as `skill_config.included`, same
-  write as the Quickset chips); a kind with none is kept in `outputKinds` and marked "no skill". Pure logic:
+  (`useOutputShapeCatalog`), searchable, paged 50 at a time, selected pinned on top, each row with the shape's one-line description (`kind_definition.metadata.description`,
+  read per page by `fetchShapeDescriptions`). A pick is recorded in `outputKinds` ONLY and sent as `output_kinds` on EVERY
+  request (start, continue, manual; `[]` = explicitly none) — the SERVER resolves shape → skill, so the browser adds no
+  skill ids and keeps no resolver (`resolveKindSkillId` is gone; Quickset chips toggle the same `outputKinds`). Picks
+  persist at `chat.conversation.metadata.run_configuration.outputKinds` / `.outputTypes` (camelCase — the server reads
+  `outputKinds`), restored on load and fork; loading an old chat moves kind skills out of `addedSkills` into
+  `outputKinds` (`migrateKindSkills`). **Locked agent**: when the agent's output schema fixes the root `__kind`
+  (`const`/`enum`, read with `fetchAgentOutputSchemas`; mirror of the server's `locked_shapes`) the Shapes list is
+  replaced by the agent's shape(s) marked locked with a short reason, and any pick the agent would refuse is listed
+  with a remove row. The server refusal (`error_type: output_kind_locked`) renders as the normal assistant error with
+  the server's `user_message`; the typed message is already saved server-side. A `output_kind_without_skill` stream
+  warning renders inline in the turn. The Output TYPES "not sent" label stays (types are still not sent). Pure logic:
   `output-selection.ts` (test `__tests__/composer-output-selection.test.ts`).
 - `ComposerEffortPill` — **Auto = no override** (the agent's own setting runs, named in the Auto row); any other
   choice is sent as exactly that `reasoning_effort` override; the literal "auto" is never sent. `ComposerMenu` (the row primitives), `ComposerSplash`
@@ -237,3 +246,6 @@ in a nested Popover (a child Radix layer — clicks inside never dismiss the par
   phone tab filtering, `/demos/composer`; `chat-agent` seeded on three quick-start agents.
 - **2026-09-27** — Memory's pending switch is keyed per conversation (`memoryToggleByConversationId`); it was one
   global flag that rode whichever conversation sent next.
+- **2026-10-04** — chat-shape-picks lane C: picks travel as `output_kinds` (every request) and persist on the chat;
+  shape "no skill" labels removed; locked-agent state; shape descriptions in picker rows; unknown-shape notice
+  promoted inline.
