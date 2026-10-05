@@ -20,6 +20,7 @@ import {
   PanelRight,
   Loader2,
   Pencil,
+  TextCursorInput,
   Plus,
   Search,
   Trash2,
@@ -42,6 +43,7 @@ import type { Note, NoteListItem } from "@/features/notes/types";
 import { parseNoteOutline, type NoteOutlineItem } from "@/features/notes/utils/noteOutline";
 import { RichDocument } from "@/features/rich-document/RichDocument";
 import { EditInPlace } from "@/components/rich-editor/in-place/EditInPlace";
+import { EditInPlaceText } from "@/components/rich-editor/in-place/EditInPlaceText";
 import { NotesView } from "@/features/notes/components/NotesView";
 import { deleteNote, saveNote } from "@/features/notes/redux/thunks";
 import { setNoteEditorMode, updateNoteLabel } from "@/features/notes/redux/slice";
@@ -240,6 +242,11 @@ function ReaderContent({ guide, onEdit, onDelete, canDelete, deleting, jumpReque
   // the changed block, CAS on the note's version). A guide someone else owns
   // never offers it.
   const [editingBody, setEditingBody] = useState(false);
+  const [editingTitle, setEditingTitle] = useState(false);
+  const saveTitle = async (title: string) => {
+    await updateStudyGuide(guide, { title: title.trim() });
+    onBodySaved();
+  };
   const saveBody = async (text: string) => {
     await spliceSaveBody({ body: guide.content ?? "", version: guide.version ?? 1 }, text, noteBodyStore(guide.id));
     onBodySaved();
@@ -269,12 +276,18 @@ function ReaderContent({ guide, onEdit, onDelete, canDelete, deleting, jumpReque
     <div className="absolute right-3 top-2 z-20 flex gap-1">
       <Button size="icon" variant="outline" className="h-8 w-8 bg-background" aria-label="Search this guide" title="Search this guide" onClick={openFind}><Search className="h-4 w-4" aria-hidden /></Button>
       <Button size="icon" variant="outline" className="h-8 w-8 bg-background" aria-label="Edit study guide" title="Edit study guide" onClick={canEdit ? () => setEditingBody(true) : onEdit}><Pencil className="h-4 w-4" aria-hidden /></Button>
+      {canEdit && <Button size="icon" variant="outline" className="h-8 w-8 bg-background" aria-label="Rename study guide" title="Rename study guide" onClick={() => setEditingTitle(true)}><TextCursorInput className="h-4 w-4" aria-hidden /></Button>}
       {canDelete && <Button size="icon" variant="outline" className="h-8 w-8 bg-background text-destructive hover:text-destructive" aria-label="Delete study guide" title="Delete study guide" onClick={onDelete} disabled={deleting}><Trash2 className="h-4 w-4" aria-hidden /></Button>}
     </div>
     {findOpen && <div className="absolute right-3 top-11 z-30 w-[min(96%,520px)]"><RenderedFindBar rootRef={readerRef} onClose={() => setFindOpen(false)} label="Find in this guide" focusRequest={findFocusRequest} /></div>}
     <div className="scroll-page-end-space min-h-0 flex-1 overflow-y-auto">
       <div ref={readerRef} className="w-full px-3 py-3">
-        {!/^\s*#\s/.test(guide.content ?? "") && <div className="mb-7 border-b border-border pb-5"><p className="text-xs font-medium uppercase tracking-wide text-primary">Study guide</p><h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground">{guide.label || "Untitled guide"}</h1></div>}
+        {(editingTitle || !/^\s*#\s/.test(guide.content ?? "")) && <div className="mb-7 border-b border-border pb-5"><p className="text-xs font-medium uppercase tracking-wide text-primary">Study guide</p>
+          {/* EDIT IN PLACE, inline: double-click the title (or Rename in the bar). */}
+          <EditInPlaceText value={guide.label ?? ""} canEdit={canEdit} editing={editingTitle} onEditingChange={setEditingTitle} write={saveTitle} label="Study guide title" className="mt-1" inputClassName="text-2xl font-semibold tracking-tight text-foreground">
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground">{guide.label || "Untitled guide"}</h1>
+          </EditInPlaceText>
+        </div>}
         <AnnotatedContent className="study-guide-reader-content" passageActions={passage.actions}>
           <EditInPlace
             value={guide.content ?? ""}

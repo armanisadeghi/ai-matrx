@@ -174,6 +174,19 @@ describe("edit in place — bytes are sacred", () => {
     expect(changedWords(STORED, writes[0] ?? "")).toEqual({ from: ["lazy"], to: ["sleepy"] });
   });
 
+  test("study guide title (inline): one label write with exactly the edited word; nothing on cancel or no change", async () => {
+    const labels: string[] = [];
+    const title = "Cell biology: the lazy mitochondria";
+    const s1 = createInPlaceSession({ openedOn: title, mode: "explicit", write: (t) => void labels.push(t) });
+    await s1.cancel();
+    await s1.save(title);
+    expect(labels).toEqual([]);
+    const s2 = createInPlaceSession({ openedOn: title, mode: "explicit", write: (t) => void labels.push(t) });
+    await s2.save(title.replace("lazy", "busy"));
+    expect(labels).toEqual(["Cell biology: the busy mitochondria"]);
+    expect(changedWords(title, labels[0]!)).toEqual({ from: ["lazy"], to: ["busy"] });
+  });
+
   test("AI answer: the session never calls the answer save for an unchanged text", async () => {
     // saveAnswerEdit's own splice is proven in packages/chat …/save-answer-edit.test.ts;
     // here: the shared shell's gate in front of it.

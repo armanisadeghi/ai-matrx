@@ -53,7 +53,7 @@ const EXEMPT: Record<string, string> = {
 
 const RENDERS = /<(RichDocument|MarkdownStream|RichContent|EnhancedChatMarkdown)\b/;
 const EDITS = /onContentChange=\{|<MarkdownSourceEditProvider\b|<MaybeSourceEdit\b/;
-const WIRED = /<EditInPlace\b|useInPlaceTrigger\(|<InPlaceEditor\b/;
+const WIRED = /<EditInPlace\b|<EditInPlaceText\b|useInPlaceTrigger\(|<InPlaceEditor\b/;
 
 function walk(dir: string, out: string[] = []): string[] {
   if (!fs.existsSync(dir)) return out;
