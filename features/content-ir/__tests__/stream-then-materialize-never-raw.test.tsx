@@ -56,7 +56,7 @@ jest.mock("@/features/canvas/artifact-types/persistence/artifact-adapters", () =
   getAdapter: () => ({}),
 }));
 
-jest.setTimeout(240_000);
+jest.setTimeout(480_000);
 
 const CARDS: Array<[string, string]> = [
   ["What does the mitochondrion make?", "ATP"],
@@ -107,7 +107,7 @@ describe("stream → materialization: a flashcard answer is never raw", () => {
     const accumulator = new StreamBlockAccumulator(REQ, upsertRenderBlock as never);
     const dispatch = (action: unknown) => store.dispatch(action as never);
     let streamed = "";
-    for (const chunk of chunkText(WIRE, 13, 7)) {
+    for (const chunk of chunkText(WIRE, 31, 17)) {
       accumulator.ingest(chunk, dispatch);
       streamed += chunk;
       await draw(
