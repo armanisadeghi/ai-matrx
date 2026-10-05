@@ -33,7 +33,7 @@ import {
   type InlineLinks,
 } from "./prose/inline-level-elements";
 import { withImagePolicy, type ImagePolicyDeclaration } from "@/components/rich-content/prose/remote-image-policy";
-import { inlineKindText } from "@/features/content-ir/surfaces/kind-one-line";
+import { inlineKindText, nonJsonKindsAsCode } from "@/features/content-ir/surfaces/kind-one-line";
 
 // The element map lives ONCE in prose/inline-level-elements.tsx (shared with
 // the server level and the static leaf). Never re-declare it here — a copy
@@ -75,7 +75,10 @@ export function RichContentInline({
 }: RichContentInlineProps) {
   // The never-raw law at the inline level (P6): a kind region reads as its
   // one-line form (title · kind name) — an inline level mounts no kind component.
-  const prose = inlineKindText(gfmCell ? unescapeCellPipes(source) : source);
+  // A non-JSON spelling (`{\"__kind\":…}`, entities) is drawn exactly as
+  // written — as BasicMarkdownContent draws it — never markdown-decoded into a
+  // literal `{"__kind": …}` (round 11, L1: table cells and inline leaves).
+  const prose = nonJsonKindsAsCode(inlineKindText(gfmCell ? unescapeCellPipes(source) : source));
   const { text, violations } = guardMarkdownDelimiters(gfmCell ? preprocessCellProse(prose) : preprocessProse(prose));
 
   // Loud recovery — same channel as every other level (never silent). The
