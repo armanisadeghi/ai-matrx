@@ -45,6 +45,7 @@ import {
 } from "./agent-run-history-scope";
 import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 import { CHAT_WINDOWS } from "../../../host/windows";
+import { Button } from "@ai-matrx/design-system/controls";
 
 const SURFACE_KEY = "agent-run-history-window";
 
@@ -114,27 +115,18 @@ function VersionGroupRow({
 
   return (
     <div>
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className={cn(
-          "flex items-center gap-1.5 w-full px-2 py-1.5 text-left transition-colors",
-          "hover:bg-muted/40",
-          hasActive && "text-primary",
-        )}
-      >
-        {open ? (
-          <ChevronDown className="w-3 h-3 text-muted-foreground shrink-0" />
+      <Button variant="quiet" pressed={hasActive} icon={open ? (
+          <ChevronDown />
         ) : (
-          <ChevronRight className="w-3 h-3 text-muted-foreground shrink-0" />
-        )}
+          <ChevronRight />
+        )} onClick={() => setOpen((v) => !v)} className="w-full">
         <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide flex-1 min-w-0 truncate">
           {group.versionNumber ? `Version ${group.versionNumber}` : "Latest"}
         </span>
         <span className="text-[10px] text-muted-foreground/60 shrink-0 ml-1">
           {group.conversations.length}
         </span>
-      </button>
+      </Button>
 
       {open && (
         <div className="pl-2">

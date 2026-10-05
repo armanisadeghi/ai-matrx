@@ -8,6 +8,7 @@ import { useFile } from "@/features/files/handler/hooks/useFile";
 import { toast } from "@/lib/toast";
 
 import type { SpaceMedia } from "../contract";
+import { GALLERY_PREFIX, galleryImage } from "./gallery";
 
 /** Upload one image; null (and a toast) when it fails. */
 export async function uploadSpaceImage(file: File): Promise<{ fileId: string } | null> {
@@ -20,10 +21,11 @@ export async function uploadSpaceImage(file: File): Promise<{ fileId: string } |
   }
 }
 
-/** The URL to draw a media value with: a link as is, an uploaded file through the file handler. */
+/** The URL to draw a media value with: a link as is, a bundled gallery picture by its key, an uploaded
+ *  file through the file handler. A gallery gradient has no URL (the cover draws it as CSS). */
 export function useSpaceMediaUrl(media: SpaceMedia | null | undefined): string | null {
   const fileId = media && "fileId" in media ? media.fileId : null;
   const { file } = useFile(fileId ? { kind: "file_id", fileId } : null);
-  if (media && "url" in media) return media.url;
+  if (media && "url" in media) return media.url.startsWith(GALLERY_PREFIX) ? galleryImage(media.url) : media.url;
   return file?.url ?? null;
 }

@@ -84,17 +84,7 @@ export function AgentSaveStatus({
             <Badge tone="warning">{isNewRoute ? "Not saved" : "Unsaved"}</Badge>
             <ErrorAlchemyMenu />
             {!isNewRoute && (
-              <button
-                onClick={() => diffTab.toggle({ title: "Unsaved changes", data: { agentId } })}
-                aria-pressed={diffTab.isVisible}
-                className={cn(
-                  "flex items-center justify-center w-6 h-6 rounded-md transition-colors text-amber-500 hover:bg-amber-500/10 active:bg-amber-500/20",
-                  diffTab.isVisible && "bg-amber-500/15",
-                )}
-                title="View unsaved changes"
-              >
-                <Eye className="w-3.5 h-3.5" />
-              </button>
+              <Button variant="quiet" pressed={diffTab.isVisible} icon={<Eye />} onClick={() => diffTab.toggle({ title: "Unsaved changes", data: { agentId } })} title="View unsaved changes" aria-label="View unsaved changes" />
             )}
           </>
         )}

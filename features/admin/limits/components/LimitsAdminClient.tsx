@@ -36,7 +36,7 @@ export function LimitsAdminClient() {
   const searchParams = useSearchParams();
   const defaultTab = searchParams?.get("knob") ? "knobs" : "allowances";
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6 px-[var(--matrx-page-gutter)] pt-[var(--matrx-page-top)] pb-[var(--matrx-page-end)]">
       <header>
         <h2 className="text-xl font-semibold">Limits &amp; Knobs</h2>
         <p className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
@@ -54,7 +54,9 @@ export function LimitsAdminClient() {
         </p>
       </header>
       <Tabs defaultValue={defaultTab}>
-        <TabsList overflow="scroll">
+        {/* wrap: at 375 a scrolling row cut the last tab to "Feature kn"; three tabs wrap to a
+            second row instead. The page sits on the page-rhythm scale, not a p-6 of its own. */}
+        <TabsList overflow="wrap">
           <TabsTrigger value="allowances">Plan allowances</TabsTrigger>
           <TabsTrigger value="addons">Account add-ons</TabsTrigger>
           <TabsTrigger value="knobs">Feature knobs</TabsTrigger>

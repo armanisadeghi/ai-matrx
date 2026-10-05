@@ -42,7 +42,7 @@ import { cn } from "@/lib/utils";
 // THE package duration formatter (`@ai-matrx/kit/format`, census H1
 // 2026-09-07). THE UNIT LAW: the unit is in the name.
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
-import { Button } from "@ai-matrx/design-system/controls";
+import { Button, DisclosureHeader } from "@ai-matrx/design-system/controls";
 
 const formatDuration = (seconds: number): string =>
   formatDurationSeconds(seconds, { style: "compact" });
@@ -188,25 +188,13 @@ export function LessonScriptSectionCard({
   return (
     <section className="rounded-lg border border-border bg-card">
       <div className="flex items-center gap-2 px-3 py-2">
-        <button
-          type="button"
+        <DisclosureHeader
+          open={open}
           onClick={() => setOpen((value) => !value)}
-          aria-expanded={open}
-          className="flex min-w-0 flex-1 items-center gap-2 text-left"
-        >
-          <span className="shrink-0 text-xs font-medium tabular-nums text-muted-foreground">
-            {index + 1}
-          </span>
-          <span className="truncate text-sm font-semibold text-foreground">
-            {section.heading}
-          </span>
-          <ChevronDown
-            className={cn(
-              "ml-auto h-4 w-4 shrink-0 text-muted-foreground transition-transform",
-              open && "rotate-180",
-            )}
-          />
-        </button>
+          title={section.heading}
+          meta={index + 1}
+          className="min-w-0 flex-1"
+        />
         {section.duration_seconds !== null ? (
           <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border bg-muted/50 px-1.5 py-0.5 text-[11px] tabular-nums text-muted-foreground">
             <Clock className="h-3 w-3" />

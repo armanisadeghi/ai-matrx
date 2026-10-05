@@ -6,3 +6,5 @@
  */
 import "@/providers/chatUiRegistration";
 import "@/providers/chatMarkdownRegistration";
+import "@/providers/chatContentIrRegistration";
+import "@/providers/chatRichDocumentRegistration";

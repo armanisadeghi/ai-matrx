@@ -156,6 +156,8 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
       dictionary: { ...en, placeholders: PLACEHOLDERS },
       extensions: [notionKeys()],
       tabBehavior: "prefer-indent",
+      // Notion keeps no empty line after the last block; the page end (SpacePage) adds one on click.
+      trailingBlock: false,
     },
     [spaceId],
   ) as unknown as SpacesEditor;
@@ -195,7 +197,15 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
   return (
     <div
       className="contents"
-      onKeyDownCapture={(e) => turnIntoKey(editor, e)}
+      onKeyDownCapture={(e) => {
+        turnIntoKey(editor, e);
+        // Escape with text selected drops the selection, so the selection toolbar goes with it
+        // (it used to stay up with nothing selected). Menus that are open take Escape first.
+        if (e.key === "Escape" && !e.defaultPrevented && !document.querySelector(".bn-suggestion-menu, [role='menu']")) {
+          const { from, to } = editor.prosemirrorState.selection;
+          if (from !== to) editor.setTextCursorPosition(editor.getTextCursorPosition().block, "end");
+        }
+      }}
       onKeyDown={(e) => {
         // Tab / Shift+Tab the editor could not apply (top level, first child): stay in the editor, as
         // Notion does — never hand focus to the title or the next control.

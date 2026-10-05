@@ -36,33 +36,33 @@ import { createRoot, type Root } from "react-dom/client";
 import { Provider } from "react-redux";
 import { configureStore } from "@reduxjs/toolkit";
 
-import messages from "../../../redux/execution-system/messages/messages.slice";
+import messages from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.slice";
 import conversations, {
   createInstance,
-} from "../../../redux/execution-system/conversations/conversations.slice";
+} from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.slice";
 import instanceUserInput, {
   setUserInputText,
-} from "../../../redux/execution-system/instance-user-input/instance-user-input.slice";
+} from "@ai-matrx/chat/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
 import instanceResources, {
   addResource,
-} from "../../../redux/execution-system/instance-resources/instance-resources.slice";
+} from "@ai-matrx/chat/agents/redux/execution-system/instance-resources/instance-resources.slice";
 
 import { registerChatUi } from "@ai-matrx/chat/host/ui-slots";
 import Host_FloatingSheet from "@/components/official/FloatingSheet";
 
-import { AgentSidebarOverlay } from "../AgentSidebarOverlay";
-import { AgentPanelOverlay } from "../AgentPanelOverlay";
-import { AgentFullModal } from "../AgentFullModal";
-import { AgentCompactModal } from "../AgentCompactModal";
-import { AgentInlineOverlay } from "../AgentInlineOverlay";
+import { AgentSidebarOverlay } from "@ai-matrx/chat/agents/components/agent-widgets/AgentSidebarOverlay";
+import { AgentPanelOverlay } from "@ai-matrx/chat/agents/components/agent-widgets/AgentPanelOverlay";
+import { AgentFullModal } from "@ai-matrx/chat/agents/components/agent-widgets/AgentFullModal";
+import { AgentCompactModal } from "@ai-matrx/chat/agents/components/agent-widgets/AgentCompactModal";
+import { AgentInlineOverlay } from "@ai-matrx/chat/agents/components/agent-widgets/AgentInlineOverlay";
 
-jest.mock("../../smart/AgentRunner", () => ({
+jest.mock("@ai-matrx/chat/agents/components/smart/AgentRunner", () => ({
   AgentRunner: ({ conversationId }: { conversationId: string }) => (
     <textarea data-testid="agent-runner" data-conversation-id={conversationId} />
   ),
 }));
 
-jest.mock("../useAgentShellAddress", () => ({
+jest.mock("@ai-matrx/chat/agents/components/agent-widgets/useAgentShellAddress", () => ({
   useAgentShellAddress: () => undefined,
 }));
 

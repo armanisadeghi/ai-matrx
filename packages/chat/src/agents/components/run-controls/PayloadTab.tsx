@@ -21,7 +21,7 @@
  *   - Raw payload (collapsed JSON) + Copy button
  */
 
-import { Badge } from "@ai-matrx/design-system/controls";
+import { Badge, Button } from "@ai-matrx/design-system/controls";
 import { useCallback, useMemo, useState } from "react";
 import { Copy, Check } from "lucide-react";
 import { useAppSelector } from "../../../store/hooks";
@@ -640,21 +640,14 @@ export function PayloadTab({ conversationId }: PayloadTabProps) {
           {/* turn-1 fields added on first send: conversation_id, is_new, is_version, store, cache_bypass */}
           + turn-1 fields added on first send
         </span>
-        <button
-          type="button"
+        <Button
+          variant="outline"
           onClick={handleCopy}
-          className="inline-flex items-center gap-1 px-2 py-1 text-[10px] rounded border border-border/40 bg-muted/30 hover:bg-muted/50 text-foreground/80 hover:text-foreground transition-colors shrink-0"
+          icon={copied ? <Check /> : <Copy />}
+          glyphTone={copied ? "success" : undefined}
         >
-          {copied ? (
-            <>
-              <Check className="w-3 h-3" /> Copied
-            </>
-          ) : (
-            <>
-              <Copy className="w-3 h-3" /> Copy as JSON
-            </>
-          )}
-        </button>
+          {copied ? "Copied" : "Copy as JSON"}
+        </Button>
       </div>
 
       <details>

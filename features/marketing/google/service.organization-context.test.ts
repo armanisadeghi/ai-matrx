@@ -12,6 +12,7 @@ jest.mock("@/utils/supabase/client", () => {
   return { createClient: () => client, supabase: client };
 });
 jest.mock("@/lib/redux/store-singleton", () => ({
+  getStore: () => ({ getState }),
   getStoreSingleton: () => ({ getState }),
 }));
 

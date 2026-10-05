@@ -282,8 +282,9 @@ export default function MobileTasksList({
         {/* Active scope-filter chips */}
         <ActiveScopeFilterChips />
 
-        {/* Task List */}
-        <div className="flex-1 overflow-y-auto overscroll-contain pb-20">
+        {/* Task List — the page's scroll owner: it takes the shell's runway (what floats, a
+            toast included, + the page end), never a hand pb-20 that a toast still covered. */}
+        <div data-matrx-page-scroll="" className="flex-1 overflow-y-auto overscroll-contain">
           {!canShowTasks ? (
             <div className="flex items-center justify-center h-full p-8">
               <div className="text-center">

@@ -128,23 +128,17 @@ export function DesktopPresenceIndicator({
                 const color = computeTargetIconColor(target, false);
                 const label = computeTargetKindLabel(target.kind);
                 return (
-                  <button
-                    key={target.id}
-                    type="button"
-                    onClick={() => applyBinding(target)}
-                    className="flex w-full items-center gap-2 rounded px-1.5 py-1.5 text-left hover:bg-accent"
-                  >
-                    <TargetIcon
+                  <Button variant="quiet" icon={<TargetIcon
                       kind={target.kind}
-                      className={`h-3.5 w-3.5 shrink-0 ${color}`}
-                    />
+                     
+                    />} key={target.id} onClick={() => applyBinding(target)} className="w-full">
                     <span className="min-w-0 flex-1 truncate text-xs">
                       {target.name}
                     </span>
                     <span className="text-[10px] text-muted-foreground">
                       {label}
                     </span>
-                  </button>
+                  </Button>
                 );
               })}
             </div>

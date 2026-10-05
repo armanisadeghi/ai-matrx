@@ -15,7 +15,7 @@ import { setUserVariableValue } from "../../../redux/execution-system/instance-v
 import { selectShowVariablePanel } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { toggleVariablePanel } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { Label } from "@ai-matrx/design-system";
-import { Input } from "@ai-matrx/design-system/controls";
+import { Input, DisclosureHeader } from "@ai-matrx/design-system/controls";
 import { Switch } from "@ai-matrx/chat/ui/switch";
 import { Checkbox } from "@ai-matrx/chat/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@ai-matrx/design-system";
@@ -81,22 +81,13 @@ export function AgentVariableForm({ conversationId }: AgentVariableFormProps) {
   return (
     <div className="flex flex-col max-h-72 border-b border-border overflow-hidden">
       {/* Always-visible toggle header */}
-      <button
-        className="flex items-center justify-between w-full px-2.5 py-1.5 hover:bg-accent/50 transition-colors shrink-0"
+      <DisclosureHeader
+        open={showVariables}
         onClick={() => dispatch(toggleVariablePanel(conversationId))}
-      >
-        <span className="text-xs font-medium text-foreground">
-          {showVariables
-            ? "Fill in the details below"
-            : `${filledCount}/${definitions.length} details provided`}
-        </span>
-        <motion.div
-          animate={{ rotate: showVariables ? 180 : 0 }}
-          transition={{ duration: 0.2, ease: "easeInOut" }}
-        >
-          <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
-        </motion.div>
-      </button>
+        chevron="end"
+        title={showVariables ? "Fill in the details below" : `${filledCount}/${definitions.length} details provided`}
+        className="shrink-0"
+      />
 
       {showVariables && (
         <div className="border-t border-border flex-1 min-h-0 overflow-y-auto">

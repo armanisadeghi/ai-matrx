@@ -26,17 +26,13 @@ import {
   RecordLabelProvider,
   RecordValue,
   RecordsUiProvider,
-  personActor,
-  recordsDataSource,
   scalarText,
 } from "@ai-matrx/records-ui";
 import { MatrxDataTable, MatrxTableCard } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { createClient } from "@/utils/supabase/client";
+import { useAppRecordsConfig } from "@/features/data-tables/records-ui-host/recordsUiHost";
 import { useOpenSaveToTable } from "@/features/overlays/openers/saveToTable";
 import { useTableKind } from "@/components/mardown-display/blocks/result-kinds/use-table-record";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -52,12 +48,6 @@ import {
 
 /** Rows before "Show more" inside a chat turn. */
 const ROWS_IN_A_TURN = 8;
-
-let dataSource: ReturnType<typeof recordsDataSource> | null = null;
-function sharedDataSource() {
-  dataSource ??= recordsDataSource(createClient());
-  return dataSource;
-}
 
 function Line({ children }: { children: React.ReactNode }) {
   return <p className="text-xs leading-relaxed text-muted-foreground">{children}</p>;
@@ -86,17 +76,14 @@ function WithTable({
   fallback?: React.ReactNode;
 }) {
   const kind = useTableKind(tableKindSlug(tableId));
-  const userId = useAppSelector(selectUserId);
   if (kind.state === "loading") return <>{fallback ?? <Line>Loading the table…</Line>}</>;
   if (kind.state === "refused") return <Line>{kind.sentence}</Line>;
   return (
-    <RecordsProvider
-      config={{ dataSource: sharedDataSource(), actor: personActor(userId), organizationId: kind.facts.organization_id }}
-    >
+    <TableRecordsProvider organizationId={kind.facts.organization_id}>
       <RecordsUiProvider value={{}}>
         <RecordLabelProvider>{children({ name: kind.name, fields: kind.fields })}</RecordLabelProvider>
       </RecordsUiProvider>
-    </RecordsProvider>
+    </TableRecordsProvider>
   );
 }
 
@@ -252,4 +239,10 @@ export function answerRenderer(Fallback: React.ComponentType<ToolRendererProps>)
   }
   DataToolAnswer.displayName = `DataToolAnswer(${Fallback.displayName ?? Fallback.name ?? "Renderer"})`;
   return DataToolAnswer;
+}
+
+/** The records provider for the table's organization, from the app's one config. */
+function TableRecordsProvider({ organizationId, children }: { organizationId: string; children: React.ReactNode }) {
+  const recordsConfig = useAppRecordsConfig(organizationId);
+  return <RecordsProvider config={recordsConfig}>{children}</RecordsProvider>;
 }

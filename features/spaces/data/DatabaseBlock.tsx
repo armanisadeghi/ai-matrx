@@ -12,7 +12,7 @@
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { Button, Input, Switch } from "@ai-matrx/design-system/controls";
 import { DashboardCanvas, Peek, RecordForm, ViewSwitcher, type SavedViewSpec } from "@ai-matrx/records-ui";
-import { useFields, useTable, type Field } from "@ai-matrx/records/react";
+import { useFields, useRecordsClient, useTable, type Field } from "@ai-matrx/records/react";
 import {
   ArrowDownUp,
   ArrowUpRight,
@@ -46,9 +46,10 @@ import {
 import { useState, type ReactNode } from "react";
 
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { toast } from "@/lib/toast";
 
 import { DataMount } from "./DataMount";
-import { ChartView } from "./ChartView";
+import { ChartView, choicesOfField } from "./ChartView";
 import { AGENCY_SAMPLE_ID, newViewId, readDatabaseProps, type ChartSettings, type DatabaseBlockProps, type SpaceDbView, type SpaceViewLayout } from "./sources";
 
 type Layout = SpaceViewLayout | "dashboard";
@@ -108,7 +109,7 @@ export function DatabaseBlock({ props: raw, onChange, editable }: DatabaseBlockV
         </div>
       )}
     >
-      <DatabaseFrame tableId={tableId} props={props} raw={raw} onChange={onChange} editable={editable} />
+      <DatabaseFrame tableId={tableId} props={props} raw={raw} onChange={onChange} editable={editable} sample={props.sample === AGENCY_SAMPLE_ID} />
     </DataMount>
   );
 }
@@ -119,13 +120,16 @@ function DatabaseFrame({
   raw,
   onChange,
   editable,
+  sample,
 }: {
   tableId: string;
   props: DatabaseBlockProps;
   raw: Record<string, unknown>;
   onChange: (next: Record<string, unknown>) => void;
   editable: boolean;
+  sample: boolean;
 }) {
+  const client = useRecordsClient();
   const table = useTable(tableId);
   const fields = useFields(tableId).data ?? [];
   const sourceName = table.data?.name ?? props.title ?? "Untitled";
@@ -139,14 +143,25 @@ function DatabaseFrame({
   const saveView = (patch: Partial<SpaceDbView>) => save({ views: views.map((v) => (v.id === active.id ? { ...v, ...patch } : v)), activeViewId: active.id });
   const isChart = active.layout === "chart";
 
+  // "+ New page" (F7): Notion adds a row in place and opens it. A refused empty row (a required
+  // column, a read-only sample) falls back to the whole-record form, which says why.
+  const addRow = () => {
+    void client.recordWrite({ table_id: tableId, data: {} }).then((res) => {
+      if (res.ok) setOpen(res.data);
+      else if (sample) toast.info("The sample is read-only. Add your own table to add rows.");
+      else setCreating(true);
+    });
+  };
+
   const body = (
     <DatabaseBody
       tableId={tableId}
       view={active}
       fields={fields}
       onOpenRecord={setOpen}
-      onNew={() => setCreating(true)}
+      onNew={addRow}
       editable={editable}
+      sample={sample}
     />
   );
 
@@ -166,8 +181,9 @@ function DatabaseFrame({
               <ViewTab
                 key={v.id}
                 view={v}
-                icon={<Icon size={14} strokeWidth={1.8} />}
+                icon={<Icon size={isChart ? 16 : 14} strokeWidth={1.8} />}
                 active={v.id === active.id}
+                pill={isChart}
                 editable={editable}
                 onSelect={() => save({ activeViewId: v.id })}
                 onRename={(name) => save({ views: views.map((x) => (x.id === v.id ? { ...x, name } : x)), activeViewId: v.id })}
@@ -220,7 +236,7 @@ function DatabaseFrame({
       <Dialog open={expanded} onOpenChange={setExpanded}>
         <DialogContent className="spaces-db-expanded max-w-[min(1200px,96vw)] h-[90dvh] overflow-auto">
           <DialogTitle>{props.title || sourceName}</DialogTitle>
-          <DatabaseBody tableId={tableId} view={active} fields={fields} onOpenRecord={setOpen} onNew={() => setCreating(true)} editable={editable} />
+          <DatabaseBody tableId={tableId} view={active} fields={fields} onOpenRecord={setOpen} onNew={addRow} editable={editable} sample={sample} />
         </DialogContent>
       </Dialog>
     </div>
@@ -249,6 +265,7 @@ function DatabaseBody({
   onOpenRecord,
   onNew,
   editable,
+  sample,
 }: {
   tableId: string;
   view: SpaceDbView;
@@ -256,10 +273,11 @@ function DatabaseBody({
   onOpenRecord: (id: string) => void;
   onNew: () => void;
   editable: boolean;
+  sample: boolean;
 }) {
   if (view.layout === "chart") {
     const settings = { ...DEFAULT_CHART, ...view.chart };
-    return <ChartView tableId={tableId} settings={settings} title={view.name} />;
+    return <ChartView tableId={tableId} settings={settings} title={view.name} overRows={sample} />;
   }
   if ((view.layout as Layout) === "dashboard") return <DashboardCanvas tableId={tableId} />;
   const needsGroup = view.layout === "kanban" && !view.groupField;
@@ -288,9 +306,11 @@ function ViewTab({
   onRename,
   onDuplicate,
   onDelete,
+  pill,
 }: {
   view: SpaceDbView;
   icon: ReactNode;
+  pill?: boolean;
   active: boolean;
   editable: boolean;
   onSelect: () => void;
@@ -303,15 +323,23 @@ function ViewTab({
   return (
     <Popover open={menu} onOpenChange={(o) => (editable ? setMenu(o) : null)}>
       <PopoverTrigger asChild>
-        <Button variant="quiet" role="tab" aria-selected={active} data-active={active ? "true" : undefined} onClick={(e) => {
-            if (!active) {
-              e.preventDefault();
-              onSelect();
-            }
-          }}>
-          {icon}
-          <span>{view.name}</span>
-        </Button>
+        {pill ? (
+          // A chart tile's title is the tile's own layout (Notion's grey pill), not a toolbar control.
+          <button type="button" className="spaces-chart-title" role="tab" aria-selected={active}>
+            {icon}
+            <span>{view.name}</span>
+          </button>
+        ) : (
+          <Button variant="quiet" role="tab" aria-selected={active} data-active={active ? "true" : undefined} onClick={(e) => {
+              if (!active) {
+                e.preventDefault();
+                onSelect();
+              }
+            }}>
+            {icon}
+            <span>{view.name}</span>
+          </Button>
+        )}
       </PopoverTrigger>
       <PopoverContent surface="solid" align="start" className="w-[240px] p-1">
         <div className="p-1">
@@ -379,7 +407,22 @@ function FilterButton({ view, fields, onView, editable }: { view: SpaceDbView; f
           />
         ))}
         {editable ? (
-          field ? (
+          field && choicesOfField(fields.find((f) => f.key === field)).length ? (
+            <div className="flex flex-col p-1">
+              <span className="px-1 pb-1 type-secondary text-muted-foreground">{fields.find((f) => f.key === field)?.label} is</span>
+              {choicesOfField(fields.find((f) => f.key === field)).map((c) => (
+                <MenuRow
+                  key={c.value}
+                  label={c.value}
+                  icon={<span className="spaces-db-choice-dot" data-color={c.color ?? "gray"} />}
+                  onClick={() => {
+                    onView({ filters: { ...filters, [field]: c.value } });
+                    setField(null);
+                  }}
+                />
+              ))}
+            </div>
+          ) : field ? (
             <div className="flex flex-col gap-2 p-1">
               <span className="type-secondary text-muted-foreground">{fields.find((f) => f.key === field)?.label} is</span>
               <Input

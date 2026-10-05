@@ -13,9 +13,9 @@ import {
   fromCxAudioPart,
   fromCxVideoPart,
 } from "@ai-matrx/media/files";
-import { DECISION_ANSWERS_BLOCK_TYPE } from "@host/features/content-ir/kinds/decision-answers";
+import { DECISION_ANSWERS_BLOCK_TYPE } from "@ai-matrx/chat/utils/content-ir/decision-answers-ids";
 import { withPerformedScript } from "../../../speech-script/types";
-import { seedPersistedEnvelopeCache } from "@host/features/content-ir/registry/region-envelope-memo";
+import { seedPersistedEnvelopeCache } from "@ai-matrx/chat/host/content-ir-slots";
 
 /**
  * Normalizes `cx_message.content[]` items into the canonical `RenderBlockPayload`

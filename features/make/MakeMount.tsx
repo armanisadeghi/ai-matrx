@@ -12,41 +12,37 @@
 //     right there — the control is never hidden for want of an organization, and none is picked
 //     for the person. Guard: __tests__/new-table-is-never-hidden-and-opens-where-pressed.test.tsx.
 
-import { useMemo, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Building2, Database } from "lucide-react";
-import { RecordsMount, TablesHome, personActor } from "@ai-matrx/records-ui";
+import { RecordsMount, TablesHome } from "@ai-matrx/records-ui";
 import { TEMPLATE_GALLERY_HREF } from "./gallery/galleryHref";
 
 import { Button } from "@ai-matrx/design-system";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectActiveOrganizationName } from "@/features/scopes/redux/selectors/active-context";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { OrganizationPickerPopover } from "@/features/organizations/components/OrganizationPickerPopover";
 import {
   recordsUiHostFor,
-  useRecordsDataSource,
+  useAppRecordsConfig,
   useRecordsUiPorts,
 } from "@/features/data-tables/records-ui-host/recordsUiHost";
-import { createRecordsRealtimePort } from "@/features/unified-data/realtime/recordsRealtimePort";
 
 /** The no-organization notice's line here: nothing failed to load, a new thing needs a home. */
 export const SAVED_WHERE_CHOSEN = "New things are saved in the organization you choose";
 
 export function MakeMount({ organizationId, children }: { organizationId: string; children: ReactNode }) {
-  const userId = useAppSelector(selectUserId);
-  const dataSource = useRecordsDataSource();
-  const ports = useRecordsUiPorts({ organizationId, dataSource });
-  const realtime = useMemo(() => createRecordsRealtimePort(organizationId), [organizationId]);
+  const recordsConfig = useAppRecordsConfig(organizationId);
+  const ports = useRecordsUiPorts({ organizationId, dataSource: recordsConfig.dataSource });
   return (
     // org-filter: write-target the mount is where the made thing lives: the chosen table's organization, or where new things are saved
     <RecordsMount
       letTheStoreDecideRights
-      config={{ dataSource, actor: personActor(userId), organizationId, realtime }}
+      config={recordsConfig}
       host={recordsUiHostFor({ ports, merged: false })}
     >
       {children}

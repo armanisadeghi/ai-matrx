@@ -22,13 +22,13 @@ import React, { useEffect, useRef, useState } from "react";
 import { useAppSelector } from "../../../../store/hooks";
 import type { ChatRootState } from "../../../../store/root-state";
 import { cn } from "@ai-matrx/design-system";
-import { RichDocumentActions } from "@host/features/rich-document/RichDocumentActions";
-import { RegistryContextMenu } from "@host/features/rich-document/RegistryContextMenu";
-import { buildChatMessageActions } from "@host/features/rich-document/chat/chatMessageActions";
 import {
+  RichDocumentActions,
+  RegistryContextMenu,
+  buildChatMessageActions,
   convertOriginForSource,
   useDocumentDialogsHost,
-} from "@host/features/rich-document/hosts/DocumentDialogsHost";
+} from "@ai-matrx/chat/host/rich-document-slots";
 import { useOutputFeedback } from "@ai-matrx/chat/host/ui-slots";
 import { NegativeVerdictFollowUp } from "../../../../host/ui-slots";
 import { RulebookNudge } from "../../../../host/ui-slots";

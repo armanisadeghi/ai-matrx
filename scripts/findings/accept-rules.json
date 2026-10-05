@@ -75,6 +75,9 @@
     "floating-clearance": {
       "no_accept": "Only an inline `// ui-exception:` reason beside data-floating-clearance=\"off\" (scripts/check-floating-clearance.mjs) — no key list; every item is new."
     },
+    "ssr-viewport-branch": {
+      "no_accept": "Shrink-only baseline (scripts/ssr-viewport-branch/baseline.json, --write-baseline never raises a count) or an inline `// ssr-viewport-ok: <reason>` above the site — no key list."
+    },
     "canonical-agent-model-pickers": {
       "no_accept": "Only an inline exemption in the source file (scripts/check-canonical-pickers.ts documents it) — no key list."
     },

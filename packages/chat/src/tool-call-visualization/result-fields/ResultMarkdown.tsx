@@ -16,6 +16,7 @@ import { BasicMarkdownContent } from "../../host/markdown-slots";
 import { Collapsible, CollapsibleContent } from "@ai-matrx/design-system";
 import { cn } from "@ai-matrx/design-system";
 
+import { Button } from "@ai-matrx/design-system/controls";
 export interface ResultMarkdownProps {
     content: string;
     density?: "inline" | "full";
@@ -64,24 +65,18 @@ export const ResultMarkdown: React.FC<ResultMarkdownProps> = ({ content, density
             <CollapsibleContent>
                 <BasicMarkdownContent imagePolicy="ai" content={content} showCopyButton={false} />
             </CollapsibleContent>
-            <button
-                type="button"
+            <Button
+                variant="link"
+                aria-expanded={expanded}
                 onClick={(e) => {
                     e.stopPropagation();
                     setExpanded((v) => !v);
                 }}
-                className="mt-1.5 inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                icon={expanded ? <ChevronUp /> : <ChevronDown />}
+                className="mt-1.5"
             >
-                {expanded ? (
-                    <>
-                        <ChevronUp className="h-3.5 w-3.5" /> Show less
-                    </>
-                ) : (
-                    <>
-                        <ChevronDown className="h-3.5 w-3.5" /> Show more
-                    </>
-                )}
-            </button>
+                {expanded ? "Show less" : "Show more"}
+            </Button>
         </Collapsible>
     );
 };

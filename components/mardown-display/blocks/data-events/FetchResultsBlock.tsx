@@ -4,7 +4,7 @@ import { Globe, ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
 import { ToggledDataBody } from "./ToggledDataBody";
 // The preview line is a fragment: a kind in it reads as its one-line label (K8).
 import { snippetKindText } from "@/features/content-ir/surfaces/kind-snippet-text";
-import { Button } from "@ai-matrx/design-system/controls";
+import { Button, DisclosureHeader } from "@ai-matrx/design-system/controls";
 
 export interface FetchResultsBlockProps {
   results?: Record<string, unknown>[];
@@ -33,28 +33,14 @@ const FetchResultsBlock: React.FC<FetchResultsBlockProps> = ({
 
   return (
     <div className="rounded-lg border bg-card my-2 overflow-hidden">
-      <button
+      <DisclosureHeader
+        className="w-full"
+        open={isExpanded}
         onClick={() => setIsExpanded((v) => !v)}
-        className="w-full flex items-center justify-between px-3 py-2 text-sm hover:bg-muted/40 transition-colors"
-      >
-        <div className="flex items-center gap-2">
-          <Globe className="w-4 h-4 text-primary" />
-          <span className="font-medium text-foreground">Fetched Pages</span>
-          <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">
-            {results.length}
-          </span>
-          {Boolean(metadata?.query) && (
-            <span className="text-xs text-muted-foreground italic truncate max-w-40">
-              "{String(metadata?.query)}"
-            </span>
-          )}
-        </div>
-        {isExpanded ? (
-          <ChevronUp className="w-3.5 h-3.5 text-muted-foreground" />
-        ) : (
-          <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
-        )}
-      </button>
+        icon={<Globe />}
+        title="Fetched Pages"
+        meta={metadata?.query ? `${results.length} · "${String(metadata.query)}"` : results.length}
+      />
 
       {isExpanded && (
         <div className="divide-y divide-border/50">

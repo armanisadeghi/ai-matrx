@@ -63,6 +63,12 @@ This is AI Matrx's focused, reviewer-visible Google Workspace product surface. I
 
 ## Data and API flow
 
+The shared Google transport in `features/marketing/google/service.ts` resolves
+`resolveBaseUrl()` from the canonical Python client for each request. Catalog reads
+and operation posts follow the shared API server selection, including a selection
+changed after the module loaded; they do not pin production or keep a separate
+server setting. `service.server-target.test.ts` checks the outbound URLs.
+
 1. The browser receives an authorization code from Google Identity Services through the normal popup or the explicit same-tab redirect fallback; both paths request the same bounded scopes.
 2. The browser sends that one-time code directly to aidream `/api/google-integrations/exchange` with the signed-in user's Supabase JWT.
 3. aidream stores the refresh token in the canonical vault and safe connection metadata in `users.integration_connections`.

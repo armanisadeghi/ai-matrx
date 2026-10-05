@@ -155,3 +155,52 @@ describe("free space is never padding", () => {
     surface.remove();
   });
 });
+
+describe("a row's own padding is the row's, never the page's", () => {
+  function box(tag: string, top: number, bottom: number, cls?: string) {
+    const el = document.createElement(tag);
+    if (cls) el.className = cls;
+    el.getBoundingClientRect = () =>
+      ({ top, bottom, left: 0, right: 800, width: 800, height: bottom - top, x: 0, y: top, toJSON: () => ({}) }) as DOMRect;
+    return el;
+  }
+
+  beforeAll(() => {
+    Object.defineProperty(window, "innerHeight", { value: 900, configurable: true });
+  });
+
+  // 2026-10-05 /tasks at 375: the last task title ended 28px above the foot — 16px of it the row's
+  // own padding — and the guard reported a doubled page end.
+  it("measures from the last ROW's bottom, not the text inside it", () => {
+    const scroller = box("div", 0, 900);
+    const list = box("div", 0, 888);
+    const rowA = box("div", 760, 824, "task-row flex py-4");
+    const rowB = box("div", 824, 888, "task-row flex py-4");
+    const title = box("span", 840, 872);
+    title.textContent = "Ship pricing page";
+    rowB.appendChild(title);
+    const titleA = box("span", 776, 808);
+    titleA.textContent = "Earlier task";
+    rowA.appendChild(titleA);
+    list.append(rowA, rowB);
+    scroller.appendChild(list);
+    document.body.appendChild(scroller);
+    const end = measurePageEnd(scroller, []);
+    expect(end.endSpacePx).toBe(12);
+    expect(isDoublePadded(end.endSpacePx, 375)).toBe(false);
+    scroller.remove();
+  });
+
+  it("a page wrapper's own padding is still the page's (a lone wrapper is not a row)", () => {
+    const scroller = box("div", 0, 900);
+    const wrapper = box("div", 0, 900, "px-4 pb-10");
+    const last = box("button", 832, 860);
+    last.textContent = "Next";
+    wrapper.appendChild(last);
+    scroller.appendChild(wrapper);
+    document.body.appendChild(scroller);
+    expect(measurePageEnd(scroller, []).endSpacePx).toBe(40);
+    scroller.remove();
+  });
+});
+

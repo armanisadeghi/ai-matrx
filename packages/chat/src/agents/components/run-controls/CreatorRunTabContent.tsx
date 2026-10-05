@@ -48,6 +48,7 @@ import { BackendTargetPanel } from "./panels/BackendTargetPanel";
 import { ModelContextPanel } from "./panels/ModelContextPanel";
 import { cn } from "@ai-matrx/design-system";
 import { selectIsSuperAdmin } from "../../../host/identity";
+import { Button } from "@ai-matrx/design-system/controls";
 
 // =============================================================================
 // Tab ids + labels (shared source of truth for both hosts' tab lists)
@@ -110,16 +111,11 @@ function ActionButton({
   iconClassName?: string;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex flex-col items-center justify-center gap-1.5 w-[84px] h-[84px] text-muted-foreground hover:text-foreground bg-muted/10 hover:bg-muted/30 border border-transparent hover:border-border rounded-xl transition-all shrink-0"
-    >
-      <Icon className={cn("w-7 h-7", iconClassName)} />
+    <Button variant="outline" icon={<Icon className={cn("w-7 h-7", iconClassName)} />} onClick={onClick} className="shrink-0">
       <span className="text-[10px] text-center leading-tight font-medium px-1">
         {label}
       </span>
-    </button>
+    </Button>
   );
 }
 

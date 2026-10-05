@@ -38,6 +38,7 @@ import { getArtifactDef } from "@/features/canvas/artifact-types/artifact-type-r
 import IconButton from "@/components/official/IconButton";
 import { matchesSearch as matchesSearchScoring } from "@ai-matrx/kit/search-scoring";
 
+import { DisclosureHeader } from "@ai-matrx/design-system/controls";
 interface ResourceCollectionBlockProps {
   collection: ResourceCollectionData;
   taskId?: string;
@@ -461,30 +462,14 @@ const ResourceCollectionBlock: React.FC<ResourceCollectionBlockProps> = ({
                       key={category.id}
                       className="rounded-lg border border-border bg-background/50 overflow-hidden"
                     >
-                      <button
-                        type="button"
+                      <DisclosureHeader
+                        className="w-full"
+                        open={isExpanded}
                         onClick={() => toggleCategory(category.id)}
-                        className="w-full px-2 py-2 flex items-center gap-2 hover:bg-muted/50 transition-colors text-left"
-                      >
-                        {isExpanded ? (
-                          <ChevronDown className="h-3.5 w-3.5 flex-shrink-0 text-muted-foreground" />
-                        ) : (
-                          <ChevronRight className="h-3.5 w-3.5 flex-shrink-0 text-muted-foreground" />
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <h2 className="text-sm font-semibold text-foreground truncate">
-                            {category.name}
-                          </h2>
-                          {category.description && (
-                            <p className="text-xs text-muted-foreground truncate">
-                              {category.description}
-                            </p>
-                          )}
-                        </div>
-                        <span className="text-[10px] font-medium text-muted-foreground tabular-nums flex-shrink-0">
-                          {category.resources.length}
-                        </span>
-                      </button>
+                        title={category.name}
+                        meta={category.description || undefined}
+                        end={category.resources.length}
+                      />
 
                       {isExpanded && (
                         <div className="border-t border-border p-2">

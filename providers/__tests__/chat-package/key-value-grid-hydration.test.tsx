@@ -2,8 +2,8 @@ import "@/__tests__/helpers/register-chat-host";
 import React, { act } from "react";
 import { hydrateRoot, type Root } from "react-dom/client";
 import { renderToString } from "react-dom/server";
-import { KeyValueGrid, formatMetaNumber } from "../KeyValueGrid";
-import { isTechnicalTableColumn, ResultTable } from "../ResultTable";
+import { KeyValueGrid, formatMetaNumber } from "@ai-matrx/chat/tool-call-visualization/result-fields/KeyValueGrid";
+import { isTechnicalTableColumn, ResultTable } from "@ai-matrx/chat/tool-call-visualization/result-fields/ResultTable";
 
 jest.mock("@ai-matrx/media/react", () => ({
   InlineMediaRef: ({

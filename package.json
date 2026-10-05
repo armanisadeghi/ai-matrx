@@ -1,6 +1,6 @@
 {
   "name": "app-matrx",
-  "version": "0.4.2893",
+  "version": "0.4.2895",
   "private": true,
   "scripts": {
     "dev": "bash scripts/agent-dev-server.sh start",
@@ -209,6 +209,9 @@
     "check:floating-clearance": "node scripts/check-floating-clearance.mjs",
     "check:floating-clearance:strict": "node scripts/check-floating-clearance.mjs --strict",
     "check:floating-clearance:self-test": "node scripts/check-floating-clearance.mjs --self-test",
+    "check:ssr-viewport-branch": "node scripts/check-ssr-viewport-branch.mjs",
+    "check:ssr-viewport-branch:strict": "node scripts/check-ssr-viewport-branch.mjs --strict",
+    "check:ssr-viewport-branch:self-test": "node scripts/check-ssr-viewport-branch.mjs --self-test",
     "check:blocking-dialogs": "tsx scripts/check-blocking-dialogs.ts",
     "check:blocking-dialogs:self-test": "tsx scripts/check-blocking-dialogs.ts --self-test",
     "check:scroll-chain:strict": "tsx scripts/check-scroll-chain.ts --strict",

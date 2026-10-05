@@ -1,7 +1,7 @@
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import React, { useState } from 'react';
 import { Copy, Check, FileText, Hash, Type, List, Minus } from 'lucide-react';
-import { Button } from "@ai-matrx/design-system/controls";
+import { Button, Tile } from "@ai-matrx/design-system/controls";
 
 export interface ContentItem {
   type: string;
@@ -350,30 +350,15 @@ const SectionsViewer = ({ data }: { data: unknown }) => {
               const contentCount = validChildren.length;
               
               return (
-                <button
+                <Tile
                   key={index}
+                  variant="quiet"
+                  selected={selectedSectionIndex === index}
                   onClick={() => setSelectedSectionIndex(index)}
-                  className={`w-full p-4 text-left border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
-                    selectedSectionIndex === index 
-                      ? 'bg-blue-50 dark:bg-blue-900/20 border-r-2 border-r-blue-500' 
-                      : ''
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    {getSectionIcon(section.type)}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-800 dark:text-gray-200 mb-1 break-words">
-                        {getSectionLabel(section.type)}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                        {summary}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
-                        {contentCount} content item{contentCount !== 1 ? 's' : ''}
-                      </p>
-                    </div>
-                  </div>
-                </button>
+                  icon={getSectionIcon(section.type)}
+                  title={getSectionLabel(section.type)}
+                  line={`${summary} · ${contentCount} content item${contentCount !== 1 ? "s" : ""}`}
+                />
               );
             })}
           </div>

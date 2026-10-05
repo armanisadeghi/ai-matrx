@@ -2,7 +2,7 @@
 
 import { useCallback, useRef } from "react";
 import { NoteEditorCore } from "@ai-matrx/chat/host/ui-slots";
-import type { ContentSource } from "@host/features/rich-document/types";
+import type { RichDocumentSource } from "@ai-matrx/chat/host/rich-document-slots";
 import { buildApplicationScopeFromMenuContext } from "../../../context-menu/utils/build-application-scope";
 import type { WorkingDocumentKind } from "../../redux/execution-system/instance-working-document/instance-working-document.slice";
 import { useAppSelector } from "../../../store/hooks";
@@ -37,7 +37,7 @@ interface WorkingDocumentEditorProps {
    * panel header carries the always-visible action bar, so the in-body bar is
    * suppressed (`previewActionsVariant="none"`).
    */
-  actionsSource?: ContentSource;
+  actionsSource?: RichDocumentSource;
   /**
    * Host page context (conversation id + the conversation's context). Carried
    * into the document SURFACE so agents launched from the highlight→agent menu

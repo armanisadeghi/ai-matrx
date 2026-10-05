@@ -31,7 +31,7 @@ import {
   Workflow,
   type LucideIcon,
 } from "lucide-react";
-import { personActor, recordsDataSource } from "@ai-matrx/records-ui";
+import { recordsDataSource } from "@ai-matrx/records-ui";
 import { RecordsProvider, useTable } from "@ai-matrx/records/react";
 import {
   RecordPicker,
@@ -68,6 +68,7 @@ import {
 import { TRIGGER_LABEL, emptySpec, specForSave, type BuilderSpec } from "./builderSpec";
 import { BuilderEditor } from "./BuilderEditor";
 import { BuilderRunsList } from "./BuilderRunsList";
+import { useAppRecordsConfig } from "@/features/data-tables/records-ui-host/recordsUiHost";
 
 const KIND_ICON: Record<TableWorkflowKind, LucideIcon> = {
   workflow: Workflow,
@@ -609,8 +610,6 @@ export function WorkflowBuilderPage({ tableId }: { tableId: string }) {
       {header}
       {organizationId ? (
         <TableNameProbe
-          dataSource={dataSource}
-          userId={userId}
           organizationId={organizationId}
           tableId={tableId}
           onName={setTableRead}
@@ -836,22 +835,17 @@ function TestWithRecord({
 
 /** Reports the table's own name, read through the store as the person (`useTable`). */
 function TableNameProbe({
-  dataSource,
-  userId,
   organizationId,
   tableId,
   onName,
 }: {
-  dataSource: ReturnType<typeof recordsDataSource>;
-  userId: string | null;
   organizationId: string;
   tableId: string;
   onName: (name: string) => void;
 }) {
+  const recordsConfig = useAppRecordsConfig(organizationId);
   return (
-    <RecordsProvider
-      config={{ dataSource, actor: personActor(userId), organizationId }}
-    >
+    <RecordsProvider config={recordsConfig}>
       <NameOf tableId={tableId} onName={onName} />
     </RecordsProvider>
   );

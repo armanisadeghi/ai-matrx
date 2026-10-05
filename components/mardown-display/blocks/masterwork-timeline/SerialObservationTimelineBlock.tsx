@@ -18,7 +18,7 @@
  * instead of drawing a disclosure that would open onto nothing.
  */
 
-import { Chip, ChipSet } from "@ai-matrx/design-system/controls";
+import { Chip, ChipSet, DisclosureHeader } from "@ai-matrx/design-system/controls";
 import { useState } from "react";
 import { ChevronDown, ChevronRight, Eye, EyeOff, HelpCircle } from "lucide-react";
 
@@ -191,20 +191,13 @@ export function SerialObservationTimelineBlock({
         </p>
       ) : data.resolution ? (
         <div className="mt-2 border-t border-border pt-3">
-          <button
-            type="button"
+          <DisclosureHeader
+            className="w-full"
+            open={showResolution}
             onClick={() => setShowResolution((v) => !v)}
-            aria-expanded={showResolution}
-            className="flex items-center gap-1.5 text-xs font-medium text-primary"
-          >
-            {showResolution ? (
-              <ChevronDown className="h-3.5 w-3.5" />
-            ) : (
-              <ChevronRight className="h-3.5 w-3.5" />
-            )}
-            <Eye className="h-3.5 w-3.5" />
-            {showResolution ? "Hide how it turned out" : "Show how it turned out"}
-          </button>
+            icon={<Eye />}
+            title={showResolution ? "Hide how it turned out" : "Show how it turned out"}
+          />
           {showResolution ? (
             <div className="mt-2 space-y-1.5">
               <p className="text-sm text-foreground">

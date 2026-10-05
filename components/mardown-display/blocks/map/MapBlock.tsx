@@ -22,7 +22,7 @@ import { soleFence } from "@/lib/markdown/code-ranges";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useCanvasPresentation } from "@ai-matrx/canvas/react";
 import { mapPlacesList } from "@/components/mardown-display/blocks/canvas-adaptive";
-import { Button } from "@ai-matrx/design-system/controls";
+import { Button, Tile } from "@ai-matrx/design-system/controls";
 
 interface MapSpec {
   title?: string;
@@ -235,8 +235,8 @@ export const MapBlock: React.FC<MapBlockProps> = ({
               >
                 {spec.markers.map((m, i) => (
                   <li key={i}>
-                    <button
-                      type="button"
+                    <Tile
+                      variant="quiet"
                       onClick={() =>
                         setFocus({
                           lat: m.lat,
@@ -244,21 +244,11 @@ export const MapBlock: React.FC<MapBlockProps> = ({
                           seq: i + Date.now(),
                         })
                       }
-                      className="flex w-full min-w-0 items-start gap-2 rounded px-2 py-1.5 text-left hover:bg-muted"
-                    >
-                      <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
-                      <span className="min-w-0">
-                        <span className="block truncate text-sm text-foreground">
-                          {m.label ??
-                            `${m.lat.toFixed(3)}, ${m.lng.toFixed(3)}`}
-                        </span>
-                        {m.description && (
-                          <span className="block truncate text-xs text-muted-foreground">
-                            {m.description}
-                          </span>
-                        )}
-                      </span>
-                    </button>
+                      icon={<MapPin />}
+                      glyphTone="primary"
+                      title={m.label ?? `${m.lat.toFixed(3)}, ${m.lng.toFixed(3)}`}
+                      line={m.description || undefined}
+                    />
                   </li>
                 ))}
               </ol>

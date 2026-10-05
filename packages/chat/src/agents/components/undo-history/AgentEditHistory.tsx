@@ -2,7 +2,7 @@
 
 import { useCallback, type ReactNode } from "react";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
-import { Button } from "@ai-matrx/design-system/controls";
+import { Button, Tile } from "@ai-matrx/design-system/controls";
 import { Badge } from "@ai-matrx/design-system";
 import { ScrollArea } from "@ai-matrx/design-system";
 import { Separator } from "@ai-matrx/design-system";
@@ -222,30 +222,16 @@ export function AgentEditHistory({ agentId }: AgentEditHistoryProps) {
               {[...future].reverse().map((entry, visualIdx) => {
                 const stackIdx = future.length - 1 - visualIdx;
                 return (
-                  <button
+                  <Tile
                     key={`redo-${stackIdx}`}
+                    variant="quiet"
                     onClick={() => handleRedoToEntry(stackIdx)}
-                    className="w-full text-left px-2 py-1.5 rounded-md text-xs hover:bg-accent/50 transition-colors group flex items-start gap-2"
-                  >
-                    <Redo2 className="h-3 w-3 mt-0.5 text-blue-500 flex-shrink-0 opacity-60 group-hover:opacity-100" />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <Badge
-                          variant="outline"
-                          className="text-[10px] px-1 py-0 h-4"
-                        >
-                          {formatField(entry.field)}
-                        </Badge>
-                        <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
-                          <Clock className="h-2.5 w-2.5" />
-                          {formatTimestamp(entry.timestamp)}
-                        </span>
-                      </div>
-                      <div className="mt-0.5 text-[10px] text-muted-foreground">
-                        {previewValue(entry)}
-                      </div>
-                    </div>
-                  </button>
+                    icon={<Redo2 />}
+                    glyphTone="info"
+                    title={formatField(entry.field)}
+                    line={previewValue(entry)}
+                    end={formatTimestamp(entry.timestamp)}
+                  />
                 );
               })}
               <Separator className="my-1" />
@@ -272,30 +258,16 @@ export function AgentEditHistory({ agentId }: AgentEditHistoryProps) {
               {[...past].reverse().map((entry, visualIdx) => {
                 const stackIdx = past.length - 1 - visualIdx;
                 return (
-                  <button
+                  <Tile
                     key={`undo-${stackIdx}`}
+                    variant="quiet"
                     onClick={() => handleUndoToEntry(stackIdx)}
-                    className="w-full text-left px-2 py-1.5 rounded-md text-xs hover:bg-accent/50 transition-colors group flex items-start gap-2"
-                  >
-                    <Undo2 className="h-3 w-3 mt-0.5 text-orange-500 flex-shrink-0 opacity-60 group-hover:opacity-100" />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <Badge
-                          variant="outline"
-                          className="text-[10px] px-1 py-0 h-4"
-                        >
-                          {formatField(entry.field)}
-                        </Badge>
-                        <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
-                          <Clock className="h-2.5 w-2.5" />
-                          {formatTimestamp(entry.timestamp)}
-                        </span>
-                      </div>
-                      <div className="mt-0.5 text-[10px] text-muted-foreground">
-                        {previewValue(entry)}
-                      </div>
-                    </div>
-                  </button>
+                    icon={<Undo2 />}
+                    glyphTone="warning"
+                    title={formatField(entry.field)}
+                    line={previewValue(entry)}
+                    end={formatTimestamp(entry.timestamp)}
+                  />
                 );
               })}
             </>

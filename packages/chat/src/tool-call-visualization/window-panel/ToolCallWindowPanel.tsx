@@ -70,6 +70,7 @@ import {
 } from "../service/fetchConversationToolCalls";
 import { CHAT_WINDOWS } from "../../host/windows";
 
+import { Button } from "@ai-matrx/design-system/controls";
 // ─── Tab descriptor used by the browser-tab strip ─────────────────────────────
 
 interface ToolTab {
@@ -203,21 +204,16 @@ const EntrySidebar: React.FC<{
       )}
       {scope === "conversation" && (hasMore || loadingMore) && (
         <div className="flex-shrink-0 border-t border-border p-1.5">
-          <button
-            type="button"
+          <Button
+            variant="quiet"
             disabled={loadingMore}
             onClick={onLoadMore}
-            className="flex w-full items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-60"
+            icon={loadingMore ? <LoaderCircle className="animate-spin" /> : undefined}
+            meta={loadingMore ? undefined : CONVERSATION_TOOL_CALL_PAGE_SIZE}
+            className="w-full"
           >
-            {loadingMore ? (
-              <>
-                <LoaderCircle className="h-3 w-3 animate-spin" />
-                Loading…
-              </>
-            ) : (
-              `Load older (${CONVERSATION_TOOL_CALL_PAGE_SIZE})`
-            )}
-          </button>
+            {loadingMore ? "Loading…" : "Load older"}
+          </Button>
         </div>
       )}
     </div>

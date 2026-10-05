@@ -9,6 +9,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system
 import { Button, Field, SearchField, Tabs } from "@ai-matrx/design-system/controls";
 import { useState, type ReactNode } from "react";
 
+import { ICON_PICTURES } from "./gallery";
 import { uploadSpaceImage } from "./media";
 import type { SpaceMedia } from "../contract";
 import { SPACE_ICONS, SPACE_ICON_NAMES } from "../icons-registry";
@@ -83,6 +84,13 @@ export function IconPicker({
         {tab === "icons" ? (
           <div className="p-2">
             <SearchField placeholder="Filter…" value={query} onChange={(e) => setQuery(e.target.value)} autoFocus className="w-full" />
+            {!q ? (
+              <div className="mt-2 flex gap-1">
+                {ICON_PICTURES.map((pic) => (
+                  <button key={pic.key} type="button" title={pic.label} aria-label={pic.label} className="size-10 rounded bg-cover bg-center hover:opacity-85" style={{ backgroundImage: `url("${pic.src}")` }} onClick={() => pick({ url: `gallery:${pic.key}` })} />
+                ))}
+              </div>
+            ) : null}
             <div className="mt-2 grid max-h-[280px] grid-cols-12 gap-0.5 overflow-y-auto">
               {names.map((name) => {
                 const Icon = SPACE_ICONS[name];

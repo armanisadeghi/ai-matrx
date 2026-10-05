@@ -54,6 +54,9 @@ jest.mock("@/features/scopes/hooks/useCategories", () => ({ useCategories: () =>
 jest.mock("@/features/scopes/hooks/useAssociations", () => ({ useAssociations: () => ({ edges: [], setTargets: jest.fn() }) }));
 jest.mock("@ai-matrx/associations/react", () => ({ CategorySelect: () => null, CategoryTagPicker: () => null }));
 jest.mock("@/utils/supabase/client", () => ({ createClient: () => ({}) }));
+jest.mock("@/features/data-tables/records-ui-host/recordsUiHost", () => ({
+  useAppRecordsConfig: (organizationId: string | null) => ({ dataSource: {}, actor: null, organizationId }),
+}));
 jest.mock("@/lib/toast", () => ({ toast: { error: jest.fn() } }));
 jest.mock("@/components/ui/switch", () => ({ Switch: () => null }));
 jest.mock("../../service", () => ({ allowPartyContact: jest.fn(), blockPartyContact: jest.fn(), updateParty: jest.fn() }));

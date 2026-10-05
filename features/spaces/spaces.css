@@ -604,6 +604,99 @@
 .spaces-page-icon:hover {
   background: var(--spaces-hover);
 }
+/* An image icon (an upload, a link, a bundled portrait) is Notion's 136px picture, 77px over the cover. */
+.spaces-page-icon[data-image="true"] {
+  width: 136px;
+  height: 136px;
+  padding: 0;
+}
+.spaces-header[data-has-cover="true"] .spaces-page-icon[data-image="true"] {
+  margin-top: -77px;
+  margin-left: 8px;
+  border-radius: 4px;
+}
+.spaces-page-icon[data-image="true"] img {
+  border-radius: 3px !important;
+}
+
+/* ---------- page end (Notion: the room under the last block adds a line) ---------- */
+.spaces-page-end {
+  display: block;
+  width: 100%;
+  height: 30vh;
+  min-height: 120px;
+  cursor: text;
+  background: transparent;
+}
+
+/* ---------- floating table of contents (A11) ---------- */
+.spaces-toc {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  height: 0;
+  pointer-events: none;
+}
+.spaces-toc-sticky {
+  position: absolute;
+  right: 0;
+  pointer-events: auto;
+}
+.spaces-toc-rail {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 13px;
+  padding: 0 22px 0 14px;
+}
+.spaces-toc-dash {
+  display: block;
+  width: 14px;
+  height: 2px;
+  border-radius: 2px;
+  background: hsl(var(--foreground) / 0.13);
+}
+.spaces-toc-dash[data-active="true"] {
+  width: 18px;
+  background: hsl(var(--foreground) / 0.75);
+}
+.spaces-toc-panel {
+  position: absolute;
+  top: -12px;
+  right: 10px;
+  display: none;
+  flex-direction: column;
+  width: 240px;
+  max-height: 70vh;
+  overflow-y: auto;
+  padding: 8px 6px;
+  border-radius: 10px;
+  background: hsl(var(--popover));
+  box-shadow: 0 0 0 1px hsl(var(--foreground) / 0.08), 0 8px 24px hsl(var(--foreground) / 0.12);
+}
+.spaces-toc-sticky:hover .spaces-toc-panel {
+  display: flex;
+}
+.spaces-toc-item {
+  display: block;
+  width: 100%;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 1.4;
+  text-align: left;
+  color: var(--spaces-ink-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.spaces-toc-item[data-level="2"] { padding-left: 18px; }
+.spaces-toc-item[data-level="3"] { padding-left: 28px; }
+.spaces-toc-item[data-active="true"] { color: #2383e2; }
+.spaces-toc-item:hover { background: var(--spaces-hover); color: var(--spaces-ink); }
+@media (max-width: 1023px) {
+  .spaces-toc { display: none; }
+}
 .spaces-header-controls {
   display: flex;
   gap: 2px;
@@ -678,6 +771,8 @@
   font-weight: 600;
   line-height: 1.3;
 }
+/* Level 1 is BlockNote's default, so its block carries no data-level: the base rule is Heading 1. */
+.spaces-editor [data-content-type="heading"],
 .spaces-editor [data-content-type="heading"][data-level="1"] {
   --level: 1.875em;
 }
@@ -714,6 +809,10 @@
 }
 .spaces-editor .bn-block-content[data-content-type="checkListItem"][data-checked="true"]:not([data-text-color]) .bn-inline-content {
   color: hsl(var(--foreground) / 0.4);
+}
+.spaces-editor .bn-block-content[data-content-type="checkListItem"][data-checked="true"][data-text-color] .bn-inline-content {
+  opacity: 0.7;
+  text-decoration-color: currentColor;
 }
 .spaces-editor .bn-block-content[data-content-type="checkListItem"] > div > input {
   width: 16px;
@@ -902,7 +1001,7 @@
 .spaces-editor .bn-block:has(> .react-renderer > .bn-block-content[data-content-type="columnList"]) > .bn-block-group > .bn-block-outer {
   flex: 1 1 0;
   min-width: 0;
-  padding: 0 23px;
+  padding: 0 33px;
   margin-top: 0;
 }
 .spaces-editor .bn-block:has(> .react-renderer > .bn-block-content[data-content-type="columnList"]) > .bn-block-group > .bn-block-outer:first-child {
@@ -925,7 +1024,7 @@
   position: absolute;
   z-index: 3;
   top: 0;
-  right: -27px;
+  right: -37px;
   bottom: 0;
   width: 8px;
   height: auto;
@@ -1105,17 +1204,18 @@
 
 /* ── Data blocks: database (C24/C25, F1–F9) and chart view (C26, G1–G4) ── */
 .spaces-db-frame { position: relative; display: flex; flex-direction: column; gap: 4px; padding: 14px 16px 10px; border: 1px solid var(--spaces-rule); border-radius: 10px; background: var(--spaces-page-bg); min-width: 0; margin: 4px 0; }
-.spaces-db-frame[data-layout="chart"] { min-height: 380px; padding: 18px 16px 16px; }
+.spaces-db-frame[data-layout="chart"] { min-height: 402px; padding: 18px 16px 16px 22px; border-radius: 12px; }
 .spaces-db-note { flex-direction: row; align-items: center; gap: 8px; font-size: 14px; color: var(--spaces-ink-soft); }
 .spaces-db-title { display: flex; align-items: center; gap: 4px; font-size: 20px; font-weight: 700; padding: 2px 2px 4px; }
 .spaces-db-linked { color: var(--spaces-ink-soft); }
 .spaces-db-bar { display: flex; align-items: center; gap: 8px; min-height: 32px; min-width: 0; }
 .spaces-db-tabs { display: flex; align-items: center; gap: 2px; min-width: 0; flex: 1 1 auto; overflow: hidden; }
-.spaces-db-tab { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border-radius: 999px; font-size: 14px; font-weight: 500; color: var(--spaces-ink-soft); white-space: nowrap; min-width: 0; }
-.spaces-db-tab > span { overflow: hidden; text-overflow: ellipsis; text-transform: none; }
-.spaces-db-frame[data-layout="chart"] .spaces-db-tab > span { text-transform: uppercase; letter-spacing: 0.01em; }
-.spaces-db-tab:hover { background: var(--spaces-hover); }
-.spaces-db-tab[data-active="true"] { background: var(--spaces-hover-strong); color: var(--spaces-ink); }
+/* A chart tile's view name is Notion's grey pill: icon + the name as typed, cut at the pill's edge
+   (no ellipsis), the view-settings icon right after it. */
+.spaces-db-frame[data-layout="chart"] .spaces-db-tabs { gap: 6px; }
+.spaces-chart-title { display: inline-flex; align-items: center; gap: 6px; height: 32px; min-width: 0; max-width: calc(100% - 28px); padding: 0 8px; border-radius: 6px; background: var(--spaces-hover-strong); color: var(--spaces-ink); font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; }
+.spaces-chart-title > svg { flex: none; }
+.spaces-chart-title > span { overflow: hidden; text-overflow: clip; }
 .spaces-db-tools { display: flex; align-items: center; gap: 2px; flex: none; }
 .spaces-db-icon { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 6px; color: var(--spaces-ink-soft); flex: none; }
 .spaces-db-icon-sm { width: 22px; height: 22px; }
@@ -1134,13 +1234,22 @@
 .spaces-db-menuicon { display: inline-flex; color: var(--spaces-ink-soft); }
 .spaces-db-charttype { display: flex; align-items: center; justify-content: center; height: 36px; border: 1px solid var(--spaces-rule); border-radius: 6px; color: var(--spaces-ink-soft); }
 .spaces-db-charttype[data-active="true"] { border-color: #2383e2; color: #2383e2; }
+.spaces-db-choice-dot { display: inline-block; width: 8px; height: 8px; border-radius: 999px; background: #b4b2ad; }
+.spaces-db-choice-dot[data-color="green"], .spaces-db-choice-dot[data-color="teal"] { background: #73b98f; }
+.spaces-db-choice-dot[data-color="orange"] { background: #d69258; }
+.spaces-db-choice-dot[data-color="yellow"], .spaces-db-choice-dot[data-color="amber"] { background: #e9c26c; }
+.spaces-db-choice-dot[data-color="blue"] { background: #5c9be3; }
+.spaces-db-choice-dot[data-color="purple"], .spaces-db-choice-dot[data-color="violet"] { background: #b98fd5; }
+.spaces-db-choice-dot[data-color="pink"] { background: #e295bf; }
+.spaces-db-choice-dot[data-color="red"] { background: #e08679; }
+.spaces-db-choice-dot[data-color="brown"] { background: #b89a83; }
 .spaces-db-pill { height: 26px; padding: 0 8px; border-radius: 6px; border: 1px solid var(--spaces-rule); font-size: 13px; }
 .spaces-db-pill[data-active="true"] { border-color: #2383e2; color: #2383e2; }
 .spaces-chart { position: relative; display: flex; flex: 1 1 auto; flex-direction: column; align-items: stretch; gap: 10px; min-height: 0; }
 .spaces-chart-overflow { align-self: flex-start; max-width: 100%; padding: 4px 12px; border-radius: 999px; background: var(--spaces-hover-strong); color: var(--spaces-ink-soft); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.spaces-chart-donut { display: flex; flex: 1 1 auto; flex-direction: column; align-items: center; justify-content: center; gap: 10px; min-height: 260px; }
-.spaces-chart-donut svg { width: 100%; max-width: 160px; height: auto; overflow: visible; }
-.spaces-chart-center { font-size: 34px; font-weight: 600; fill: var(--spaces-ink); }
+.spaces-chart-donut { display: flex; flex: 1 1 auto; flex-direction: column; align-items: center; justify-content: center; gap: 10px; min-height: 260px; padding-bottom: 24px; }
+.spaces-chart-donut svg { flex: none; max-width: 100%; height: auto; overflow: visible; }
+.spaces-chart-center { font-weight: 600; letter-spacing: -0.02em; fill: var(--spaces-ink); }
 .spaces-chart-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 12px; font-size: 12px; color: var(--spaces-ink-soft); }
 .spaces-chart-legend li { display: inline-flex; align-items: center; gap: 4px; }
 .spaces-chart-legend span { width: 8px; height: 8px; border-radius: 999px; }

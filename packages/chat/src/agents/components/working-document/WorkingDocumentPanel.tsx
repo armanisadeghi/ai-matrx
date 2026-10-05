@@ -42,9 +42,7 @@ import {
   detachScratchpadFromConversationThunk,
   setScratchpadGateThunk,
 } from "../../redux/execution-system/instance-working-document/scratchpad.thunks";
-import { RichDocumentActionProvider } from "@host/features/rich-document/RichDocumentActionProvider";
-import { RichDocumentActionSurface } from "@host/features/rich-document/RichDocumentActionSurface";
-import type { ContentSource } from "@host/features/rich-document/types";
+import { RichDocumentActionProvider, RichDocumentActionSurface, type RichDocumentSource } from "@ai-matrx/chat/host/rich-document-slots";
 import { WorkingDocumentEditor } from "./WorkingDocumentEditor";
 import {
   sourceFeatureForKind,
@@ -241,7 +239,7 @@ export function WorkingDocumentPanel({
   // the header bar renders it — so the toolbar is present in every editor mode,
   // not just preview.
   const wdSurfaceId = workingDocumentSurfaceId(conversationId, kind);
-  const wdSource: ContentSource = {
+  const wdSource: RichDocumentSource = {
     type: "working-document",
     conversationId,
     kind,

@@ -20,9 +20,9 @@
  * (`makingOnly`, filed in the active organization), whose create answers the new table's id.
  */
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Database, Rows3 } from "lucide-react";
-import { Peek, RecordsMount, TablesHome, personActor, recordsDataSource, rowName } from "@ai-matrx/records-ui";
+import { Peek, RecordsMount, TablesHome, recordsDataSource, rowName } from "@ai-matrx/records-ui";
 import { useRecords, useTable } from "@ai-matrx/records/react";
 
 import { Button } from "@/components/ui/button";
@@ -35,8 +35,7 @@ import { OrganizationContextNotice } from "@/features/organizations/components/O
 import { countsByOrganization, inOrganization, useTablesEverywhere } from "@/features/unified-data/hub/useTablesEverywhere";
 import { EntityOrgFilter } from "@/lib/entity-list/components/EntityOrgFilter";
 import { CustomDataRecordsScope } from "@/features/agents/components/variables-management/custom-data/CustomDataRecordsScope";
-import { createRecordsRealtimePort } from "@/features/unified-data/realtime/recordsRealtimePort";
-import { recordsUiHostFor, useRecordsUiPorts } from "@/features/data-tables/records-ui-host/recordsUiHost";
+import { recordsUiHostFor, useAppRecordsConfig, useRecordsUiPorts } from "@/features/data-tables/records-ui-host/recordsUiHost";
 import { NO_ADDRESS, UnifiedTableBody, useUnifiedTable } from "@/features/unified-data/table-page/UnifiedTable";
 import { RecordStoreRecordSurface } from "@/features/unified-data/grid-agent-context/RecordStoreRecordSurface";
 import { DATA_TABLES_SURFACE } from "@/features/unified-data/grid-agent-context/RecordStoreTableSurface";
@@ -70,20 +69,15 @@ function WorkingOrganizationRecords({ children }: { children: ReactNode }) {
   const userId = useAppSelector(selectUserId);
   // org-filter: write-target a new table is filed in the organization the person works in
   const active = useOrganizationRequired();
-  const dataSource = useMemo(() => recordsDataSource(createClient()), []);
-  const ports = useRecordsUiPorts({ organizationId: active.organizationId, dataSource });
+  const recordsConfig = useAppRecordsConfig(active.organizationId ?? null);
+  const ports = useRecordsUiPorts({ organizationId: active.organizationId, dataSource: recordsConfig.dataSource });
   if (active.organizationState !== "ready" || !active.organizationId) {
     return <OrganizationContextNotice state={active.organizationState} what="Data records" />;
   }
   return (
     <RecordsMount // org-filter: write-target the record store only for MAKING a table; choosing one reads across every organization
       letTheStoreDecideRights
-      config={{
-        dataSource,
-        actor: personActor(userId),
-        organizationId: active.organizationId,
-        realtime: createRecordsRealtimePort(active.organizationId),
-      }}
+      config={recordsConfig}
       host={recordsUiHostFor({ ports, merged: false })}
     >
       {children}

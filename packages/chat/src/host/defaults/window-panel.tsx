@@ -129,17 +129,12 @@ export function DefaultFullScreenOverlay({
       <div className="flex items-center gap-2 border-b px-3 py-2 text-sm">
         <span className="font-medium">{title}</span>
         {tabs.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            className={t.id === current?.id ? "font-medium underline" : "text-muted-foreground"}
-            onClick={() => {
+          <Button variant="quiet" pressed={t.id === current?.id} key={t.id} onClick={() => {
               setActive(t.id);
               onTabChange?.(t.id);
-            }}
-          >
+            }}>
             {t.label}
-          </button>
+          </Button>
         ))}
         <Button variant="quiet" aria-label="Close" onClick={onClose} className="ml-auto">×</Button>
       </div>

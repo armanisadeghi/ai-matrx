@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import { ClipboardList, ChevronDown, ChevronUp } from "lucide-react";
-import { Input } from "@ai-matrx/design-system/controls";
+import { Input, DisclosureHeader } from "@ai-matrx/design-system/controls";
 import { Button } from "@ai-matrx/design-system";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { stageRemark } from "@ai-matrx/chat/agents/redux/execution-system/instance-resources/remarks";
@@ -69,27 +69,14 @@ const DisplayQuestionnaireBlock: React.FC<DisplayQuestionnaireBlockProps> = ({
 
   return (
     <div className="rounded-lg border bg-card my-2 overflow-hidden">
-      <button
+      <DisclosureHeader
+        className="w-full"
+        open={isExpanded}
         onClick={() => setIsExpanded((v) => !v)}
-        className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-muted/40 transition-colors"
-      >
-        <div className="flex items-center gap-2">
-          <ClipboardList className="w-4 h-4 text-primary" />
-          <span className="text-sm font-medium text-foreground">
-            Questionnaire
-          </span>
-          {questions.length > 0 && (
-            <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">
-              {questions.length} question{questions.length !== 1 ? "s" : ""}
-            </span>
-          )}
-        </div>
-        {isExpanded ? (
-          <ChevronUp className="w-3.5 h-3.5 text-muted-foreground" />
-        ) : (
-          <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
-        )}
-      </button>
+        icon={<ClipboardList />}
+        title="Questionnaire"
+        meta={questions.length > 0 ? `${questions.length} question${questions.length !== 1 ? "s" : ""}` : undefined}
+      />
 
       {isExpanded && (
         <div className="border-t border-border/40 px-3 py-3 space-y-3">

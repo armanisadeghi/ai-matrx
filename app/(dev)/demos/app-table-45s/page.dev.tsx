@@ -12,13 +12,12 @@
 import { useState } from "react";
 import { defineAppTable, f, type InsertOf, type RowOf } from "@ai-matrx/records/app-table";
 import { RecordsProvider, useAppTable } from "@ai-matrx/records/react";
-import { personActor, recordsDataSource } from "@ai-matrx/records-ui";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
-import { createClient } from "@/utils/supabase/client";
 import { Button } from "@ai-matrx/design-system/controls";
+import { useAppRecordsConfig } from "@/features/data-tables/records-ui-host/recordsUiHost";
 
 // ── 1. the table, declared once ────────────────────────────────────────────────────────────
 export const supplyReorderPoints = defineAppTable({
@@ -44,12 +43,12 @@ type NewRow = InsertOf<typeof supplyReorderPoints>; // item + reorder_at require
 export default function AppTable45sPage() {
   const userId = useAppSelector(selectUserId);
   const active = useOrganizationRequired();
-  const [dataSource] = useState(() => recordsDataSource(createClient()));
+  const recordsConfig = useAppRecordsConfig(active.organizationId ?? null);
   if (!userId || active.organizationState !== "ready" || !active.organizationId) {
     return <OrganizationContextNotice state={userId ? active.organizationState : "resolving"} what="Supply reorder points" />;
   }
   return (
-    <RecordsProvider config={{ dataSource, actor: personActor(userId), organizationId: active.organizationId }}>
+    <RecordsProvider config={recordsConfig}>
       <ReorderBoard />
     </RecordsProvider>
   );

@@ -2266,6 +2266,20 @@
           "signal": "live database host"
         }
       ]
+    },
+    "ssr-viewport-branch": {
+      "label": "SSR viewport branch",
+      "class": "repo-only",
+      "cmd": "pnpm check:ssr-viewport-branch:strict",
+      "reason": "no database access in 2 file(s) reached",
+      "evidence": []
+    },
+    "ssr-viewport-branch-self-test": {
+      "label": "SSR viewport branch — self-test",
+      "class": "repo-only",
+      "cmd": "pnpm check:ssr-viewport-branch:self-test",
+      "reason": "no database access in 2 file(s) reached",
+      "evidence": []
     }
   }
 }

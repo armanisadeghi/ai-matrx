@@ -120,6 +120,7 @@ import { RunConfigOverrides } from "../../../run-controls/RunConfigOverrides";
 import { RunInputCapabilities } from "../../../run-controls/RunInputCapabilities";
 import { RunToolPicker } from "../RunToolPicker";
 import { RunSkillPicker } from "../RunSkillPicker";
+import { Button } from "@ai-matrx/design-system/controls";
 
 /** A link box sizes to its content (Notion's embed popover), growing as a
  *  preview arrives, up to the screen. */
@@ -637,15 +638,9 @@ function SheetQuickAdd({
   return (
     <div className="sheet-gap mb-6 grid shrink-0 grid-cols-3 gap-2.5">
       {tiles.map(({ label, icon: Icon, onClick }) => (
-        <button
-          key={label}
-          type="button"
-          onClick={onClick}
-          className="flex h-[76px] flex-col items-center justify-center gap-1.5 rounded-xl bg-card text-sm text-foreground active:bg-accent"
-        >
-          <Icon className="h-6 w-6" />
+        <Button variant="quiet" icon={<Icon />} key={label} onClick={onClick}>
           {label}
-        </button>
+        </Button>
       ))}
       <input
         ref={camera}

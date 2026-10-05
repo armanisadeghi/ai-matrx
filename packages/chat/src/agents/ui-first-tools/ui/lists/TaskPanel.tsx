@@ -311,15 +311,7 @@ function TaskRow({ task }: { task: CxAgentTaskRow }) {
 
   return (
     <div className="group flex items-start gap-1.5 rounded-md hover:bg-muted/50 px-1.5 py-1">
-      <button
-        type="button"
-        onClick={cycle}
-        className="mt-0.5 shrink-0"
-        title={`Status: ${task.status}. Click to advance.`}
-        aria-label={`Toggle status of "${task.title}"`}
-      >
-        <StatusIcon status={task.status} />
-      </button>
+      <Button variant="quiet" icon={<StatusIcon status={task.status} />} onClick={cycle} title={`Status: ${task.status}. Click to advance.`} aria-label={`Toggle status of "${task.title}"`} className="mt-0.5 shrink-0" />
       <div className="flex-1 min-w-0">
         {editing ? (
           <Input

@@ -15,7 +15,9 @@
  */
 
 import { parseDecisionOptionsFromBody } from "@ai-matrx/chat/utils/inline-decision/decision-options";
-import { QuotedKindLift } from "@host/features/content-ir/surfaces/quoted-kind-lift";
+import { QuotedKindLift } from "@ai-matrx/chat/utils/content-ir/surfaces/quoted-kind-lift";
+import { canonicalizeCompletedLegacyQuizEnvelope } from "@ai-matrx/chat/utils/content-ir/legacy-quiz-envelope";
+import { envelopeMatchesParsedSource } from "@ai-matrx/chat/utils/content-ir/envelope-parity";
 import { MarkdownEscapedKindJson } from "@ai-matrx/chat/utils/content-ir/surfaces/markdown-escaped-kind";
 import { KindImageAltUnwrap } from "@ai-matrx/chat/utils/content-ir/surfaces/kind-image-alt";
 import { FENCE_META_KEY, splitFenceInfo } from "@ai-matrx/content-ir/source";
@@ -71,28 +73,24 @@ import {
   startUnrecognizedXmlContainer,
   type UnrecognizedXmlContainerTracker,
   normalizeCodeLanguage,
-  SPECIAL_CODE_LANGUAGES,
-} from "@host/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
+  isSpecialCodeLanguage,
+  kindRegistry,
+  componentRegistry,
+  envelopeForCompletedFenceRegion,
+  envelopeForCompletedXmlRegion,
+  withIrEnvelope,
+  sessionEnvelope,
+} from "@ai-matrx/chat/host/content-ir-slots";
 import { disposeParseSession, openParseSession } from "@ai-matrx/content-ir";
 import type { ParseSession } from "@ai-matrx/content-ir";
-import { kindRegistry } from "@host/features/content-ir/registry/kind-registry";
-import { componentRegistry } from "@host/features/content-ir/registry/component-registry";
 import {
   IR_ENVELOPE_KEY,
   type CanonicalBlockIR,
 } from "@ai-matrx/content-ir";
-import { envelopeMatchesParsedSource } from "@host/features/content-ir/redux/render-block-envelope";
-import {
-  envelopeForCompletedFenceRegion,
-  envelopeForCompletedXmlRegion,
-} from "@host/features/content-ir/surfaces/xml-finalize";
 import {
   normalizeRecoveredContainerPiece,
   splitAroundEmbeddedKindJson,
 } from "@ai-matrx/chat/utils/content-ir/surfaces/embedded-kind-json";
-import { withIrEnvelope } from "@host/features/content-ir/registry/region-envelope-memo";
-import { sessionEnvelope } from "@host/features/content-ir/registry/kind-correctors";
-import { canonicalizeCompletedLegacyQuizEnvelope } from "@host/features/content-ir/registry/legacy-quiz-envelope";
 import { captureError } from "../../../../host/diagnostics";
 
 // ============================================================================
@@ -1320,7 +1318,7 @@ export class StreamBlockAccumulator {
         // sub-type via the early/close detection below.
         const normalizedLang = normalizeCodeLanguage(fence.language);
         const blockType =
-          normalizedLang && SPECIAL_CODE_LANGUAGES.includes(normalizedLang)
+          normalizedLang && isSpecialCodeLanguage(normalizedLang)
             ? normalizedLang
             : "code";
         this.openBlock(blockType, dispatch);

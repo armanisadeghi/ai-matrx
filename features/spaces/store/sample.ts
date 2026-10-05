@@ -2,7 +2,7 @@
 // every sub-page through the store, so the sample is a real saved Space like any other.
 
 import type { RichSpan, SpaceBlock, SpaceDoc, SpaceId, SpacesStore } from "../contract";
-import { SAMPLE_CLIENT_HIDDEN, SEED_ROOT_ID, sampleClientsDatabase, sampleRings, seedSpaces } from "./seed";
+import { RING_NAMES, SAMPLE_CLIENT_HIDDEN, SAMPLE_COLUMNS, SAMPLE_COVER, SAMPLE_ICON, SEED_ROOT_ID, sampleClientsDatabase, sampleRings, seedSpaces } from "./seed";
 
 export const SAMPLE_TITLE = "The Traveling SMM™ OS";
 
@@ -35,9 +35,37 @@ function upgradeSlots(blocks: SpaceBlock[]): { blocks: SpaceBlock[]; changed: bo
         changed = true;
         return { ...blk, props: { ...blk.props, views: views.map((v, i) => (i === 0 ? { ...v, hiddenFields: SAMPLE_CLIENT_HIDDEN } : v)) } };
       }
+      // Round 4: ring view names in capitals, as the reference shows them.
+      if (blk.type === "database" && Array.isArray(blk.props?.views)) {
+        const views = blk.props.views as Array<{ name?: string; layout?: string }>;
+        if (views.some((v) => v.layout === "chart" && v.name && RING_NAMES[v.name])) {
+          changed = true;
+          return { ...blk, props: { ...blk.props, views: views.map((v) => (v.layout === "chart" && v.name && RING_NAMES[v.name] ? { ...v, name: RING_NAMES[v.name] } : v)) } };
+        }
+      }
+      // Round 4: the toggles under the plan are Notion toggle headings (H3), not bold toggle lines.
+      const only = blk.text?.length === 1 ? blk.text[0] : null;
+      if (blk.type === "toggle" && only?.bold) {
+        changed = true;
+        const { bold: _bold, ...plain } = only;
+        return { ...blk, type: "heading", text: [plain], props: { ...blk.props, level: 3, toggleable: true }, children: blk.children ? walk(blk.children) : undefined };
+      }
+      // Round 4: the page's two columns at the reference's measured split.
+      if (blk.type === "columnList" && blk.children?.length === 2 && blk.children[0].props?.width === 0.3) {
+        changed = true;
+        return { ...blk, children: blk.children.map((c, i) => ({ ...c, props: { ...c.props, width: SAMPLE_COLUMNS[i] }, children: c.children ? walk(c.children) : undefined })) };
+      }
       return blk.children ? { ...blk, children: walk(blk.children) } : blk;
     });
   return { blocks: walk(blocks), changed };
+}
+
+/** The phase-1 cover and icon (a CSS gradient, a palm glyph) become the bundled landscape and portrait. */
+function upgradeMedia(doc: SpaceDoc): Partial<SpaceDoc> | null {
+  const oldCover = doc.cover && "url" in doc.cover && doc.cover.url === "gallery:gradient-sunset";
+  const oldIcon = doc.icon && "icon" in doc.icon && doc.icon.icon === "TreePalm";
+  if (!oldCover && !oldIcon) return null;
+  return { ...(oldCover ? { cover: SAMPLE_COVER } : {}), ...(oldIcon ? { icon: SAMPLE_ICON } : {}) };
 }
 
 /** Adds the sample once: when it is already in the tree, that copy is brought up to date and returned
@@ -48,7 +76,8 @@ export async function addTravelingSmmSample(store: SpacesStore, onProgress?: (do
     const doc = await store.get(existing.id);
     if (doc) {
       const up = upgradeSlots(doc.blocks);
-      return up.changed ? store.save({ ...doc, blocks: up.blocks }, doc.version) : doc;
+      const media = upgradeMedia(doc);
+      return up.changed || media ? store.save({ ...doc, ...media, blocks: up.blocks }, doc.version) : doc;
     }
   }
   const docs = seedSpaces();

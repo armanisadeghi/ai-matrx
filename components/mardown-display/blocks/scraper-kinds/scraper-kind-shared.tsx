@@ -22,6 +22,7 @@ import {
   getBreadcrumbParts,
 } from "@ai-matrx/chat/tool-call-visualization/renderers/search/parseSearch";
 
+import { DisclosureHeader } from "@ai-matrx/design-system/controls";
 /** Favicon for a page: favicon service derived from the URL → Globe. */
 export const SiteFavicon: React.FC<{ url?: string | null; className?: string }> = ({
   url,
@@ -199,23 +200,15 @@ export const Disclosure: React.FC<{
   const [open, setOpen] = useState(defaultOpen);
   return (
     <div className="relative overflow-hidden rounded-lg border border-border bg-card">
-      <button
-        type="button"
+      <DisclosureHeader
+        open={open}
         onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center gap-2 px-3 py-2 pr-24 text-left transition-colors hover:bg-muted/40"
-      >
-        <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
-        <span className="text-sm font-medium text-foreground">{label}</span>
-        {typeof count === "number" && (
-          <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
-            {count}
-          </span>
-        )}
-        <span className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
-          {summary}
-          <span aria-hidden>{open ? "▾" : "▸"}</span>
-        </span>
-      </button>
+        icon={<Icon />}
+        title={label}
+        meta={typeof count === "number" ? count : undefined}
+        end={summary}
+        className="w-[calc(100%-6rem)]"
+      />
       {copy && (
         <div className="absolute right-9 top-1.5">
           <CopyButtons

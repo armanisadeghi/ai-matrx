@@ -66,7 +66,7 @@ try {
   await page.fill('input[type="email"]', user);
   await fillSecret(page, 'input[type="password"]', pass);
   await page.evaluate(() => document.querySelector("form")?.requestSubmit());
-  await page.waitForFunction(() => !document.querySelector('input[type="email"]'), null, { timeout: 60000 });
+  await page.waitForURL((u) => !u.pathname.startsWith("/login"), { timeout: 60000 });
   await reclaim();
   await page.goto(`${base}${route}`, { timeout: 300000 });
   await resumeIfParked();

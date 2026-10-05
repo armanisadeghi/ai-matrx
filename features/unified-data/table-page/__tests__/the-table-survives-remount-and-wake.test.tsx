@@ -66,10 +66,17 @@ jest.mock("@/features/organizations/hooks", () => ({
 }));
 jest.mock("@/features/unified-data/realtime/recordsRealtimePort", () => ({ createRecordsRealtimePort: () => undefined }));
 jest.mock("@/features/data-tables/components/SheetLayout", () => ({ SheetLayout: () => null }));
-jest.mock("@/features/data-tables/records-ui-host/recordsUiHost", () => ({
-  recordsUiHostFor: () => ({}),
-  useRecordsUiPorts: () => ({}),
-}));
+jest.mock("@/features/data-tables/records-ui-host/recordsUiHost", () => {
+  // The host's one data seam: the mocked records-ui seam, one per run (the real hook shares one).
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const seam = () => require("@ai-matrx/records-ui").recordsDataSource();
+  return {
+    recordsUiHostFor: () => ({}),
+    useRecordsUiPorts: () => ({}),
+    useRecordsDataSource: seam,
+    useAppRecordsConfig: (organizationId: string | null) => ({ dataSource: seam(), actor: null, organizationId }),
+  };
+});
 jest.mock("@/features/data-tables/records-ui-host/mergedGridKnob", () => ({ useMergedGridKnob: () => true }));
 jest.mock("@/lib/toast", () => ({ toast: { error: jest.fn(), loading: jest.fn(), success: jest.fn(), info: jest.fn() } }));
 jest.mock("@/features/unified-data/row-change-agent/RowChangeAgentLink", () => ({

@@ -2,7 +2,7 @@
 
 import { Webhook } from "lucide-react";
 import { RichDocument } from "@ai-matrx/chat/host/ui-slots";
-import type { ContentSource } from "@host/features/rich-document/types";
+import type { RichDocumentSource } from "@ai-matrx/chat/host/rich-document-slots";
 
 interface AssistantMessageCardProps {
   content: string;
@@ -25,7 +25,7 @@ export function AssistantMessageCard({
           <div className="min-w-0 flex-1 text-xs leading-relaxed [&_p]:m-0 [&_pre]:text-[10px] [&_code]:text-[10px] overflow-hidden">
             <RichDocument imagePolicy="ai"
               content={content}
-              source={{ type: "raw" } as ContentSource}
+              source={{ type: "raw" } as RichDocumentSource}
               isStreamActive={isStreaming}
               // Hide actions while streaming; once done, an unobtrusive
               // hover ⋯ in the top-right exposes copy / save / print / etc.

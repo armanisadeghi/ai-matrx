@@ -1,4 +1,4 @@
-import { Button, Badge, Chip } from "@ai-matrx/design-system/controls";
+import { Button, Badge, Chip, Tile } from "@ai-matrx/design-system/controls";
 import React, { useState } from "react";
 import { AlertTriangle, Lightbulb, Eye, FileJson, Copy, Check } from "lucide-react";
 import {
@@ -387,30 +387,15 @@ const IntelligentViewer = ({ data, bookmark }: IntelligentViewerProps) => {
                                 : "Raw Data";
 
                             return (
-                                <button
-                                    key={section.id}
-                                    onClick={() => setSelectedSectionIndex(index)}
-                                    className={`w-full p-4 text-left border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
-                                        selectedSectionIndex === index ? "bg-blue-50 dark:bg-blue-900/20 border-r-2 border-r-blue-500" : ""
-                                    }`}
-                                >
-                                    <div className="flex items-start gap-3">
-                                        {section.icon}
-                                        <div className="flex-1 min-w-0">
-                                            <p
-                                                className={`text-sm font-medium mb-1 break-words ${
-                                                    section.isUnknown
-                                                        ? "text-red-600 dark:text-red-400"
-                                                        : "text-gray-800 dark:text-gray-200"
-                                                }`}
-                                            >
-                                                {section.title}
-                                            </p>
-                                            <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{summary}</p>
-                                            {section.isUnknown && <p className="text-xs text-red-500 mt-1">Unknown structure</p>}
-                                        </div>
-                                    </div>
-                                </button>
+                                <Tile
+                                  key={section.id}
+                                  variant="quiet"
+                                  selected={selectedSectionIndex === index}
+                                  onClick={() => setSelectedSectionIndex(index)}
+                                  icon={section.icon}
+                                  title={section.title}
+                                  line={section.isUnknown ? `${summary} · Unknown structure` : summary}
+                                />
                             );
                         })}
                     </div>

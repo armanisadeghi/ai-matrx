@@ -11,7 +11,7 @@ import {
   countValidItems
 } from './viewer-utilities';
 import RawJsonExplorer from "@/components/official/json-explorer/RawJsonExplorer";
-import { Button } from "@ai-matrx/design-system/controls";
+import { Button, Tile } from "@ai-matrx/design-system/controls";
 
 
 
@@ -206,30 +206,15 @@ const SectionViewerWithSidebar = ({ data }: { data: unknown }) => {
                 const contentCount = validChildren.length;
                 
                 return (
-                  <button
+                  <Tile
                     key={index}
+                    variant="quiet"
+                    selected={selectedSectionIndex === index && !showJsonExplorer}
                     onClick={() => setSelectedSectionIndex(index)}
-                    className={`w-full p-4 text-left border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
-                      selectedSectionIndex === index && !showJsonExplorer
-                        ? 'bg-blue-50 dark:bg-blue-900/20 border-r-2 border-r-blue-500' 
-                        : ''
-                    }`}
-                  >
-                    <div className="flex items-start gap-3">
-                      {getSectionTypeIcon(section.type || 'unknown')}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-800 dark:text-gray-200 mb-1 break-words">
-                          {getSectionTypeLabel(section.type || 'Unknown Section')}
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                          {summary}
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {contentCount} content item{contentCount !== 1 ? 's' : ''}
-                        </p>
-                      </div>
-                    </div>
-                  </button>
+                    icon={getSectionTypeIcon(section.type || "unknown")}
+                    title={getSectionTypeLabel(section.type || "Unknown Section")}
+                    line={`${summary} · ${contentCount} content item${contentCount !== 1 ? "s" : ""}`}
+                  />
                 );
               })
             ) : (

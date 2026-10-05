@@ -14,7 +14,7 @@ import { makeSelectFilteredAgents } from "@ai-matrx/agents/catalog";
 import { initializeChatAgents } from "../../redux/agent-definition/thunks";
 import { useAppStore } from "../../../store/hooks";
 import { stageChatAgentSwitch } from "./begin-fresh-chat";
-import { Button } from "@ai-matrx/design-system/controls";
+import { Button, DisclosureHeader } from "@ai-matrx/design-system/controls";
 
 interface PinnedAgentsSectionProps {
   /** Currently active agentId — used to highlight the row when present. */
@@ -90,27 +90,16 @@ export function PinnedAgentsSection({
 
   return (
     <div className="shrink-0 border-b border-border">
-      <button
-        type="button"
+      <DisclosureHeader
+        className="w-full"
+        open={open}
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/70 hover:text-foreground"
-        aria-expanded={open}
+        variant="label"
+        chevron="end"
         aria-label="Toggle pinned agents"
-      >
-        {/* Label keeps the shared 12px left edge; the collapse chevron sits on
-            the RIGHT so the text aligns with every other section + row. */}
-        <span className="flex items-baseline gap-1.5">
-          <span>Pinned Agents</span>
-          <span className="text-[10px] text-muted-foreground/70 normal-case tracking-normal">
-            {pinned.length}
-          </span>
-        </span>
-        {open ? (
-          <ChevronDown className="h-3 w-3 shrink-0" />
-        ) : (
-          <ChevronRight className="h-3 w-3 shrink-0" />
-        )}
-      </button>
+        title="Pinned Agents"
+        meta={pinned.length}
+      />
       {open && (
         <ul className="pb-1.5">
           {visiblePins.map((agent) => {

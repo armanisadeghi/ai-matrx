@@ -159,6 +159,12 @@ export const FINDINGS_CHECKS = [
     ...fromRules("floating-clearance"),
   },
   {
+    id: "ssr-viewport-branch",
+    watch: featureRegExp(/^(app|features|components|lib|providers|packages\/[^/]+\/src)\/.*\.tsx$/),
+    fix: "Render both trees and let CSS pick (md:hidden / hidden md:block, or @container) — or keep useIsMobile to behaviour (props, handlers, effects). Two stateful trees that must not both mount: `// ssr-viewport-ok: request-hinted …` (ViewportHintProvider answers the server render).",
+    ...fromRules("ssr-viewport-branch"),
+  },
+  {
     id: "canonical-agent-model-pickers",
     watch: /\.tsx?$/,
     fix: "Use the ONE agent picker (@ai-matrx/agents/catalog/react) or the canonical model picker instead of a local one.",

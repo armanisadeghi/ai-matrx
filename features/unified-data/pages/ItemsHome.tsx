@@ -17,7 +17,7 @@ import { useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ExternalLink, FolderOpen, Share2 } from "lucide-react";
-import { RecordsMount, personActor } from "@ai-matrx/records-ui";
+import { RecordsMount } from "@ai-matrx/records-ui";
 import { useRecordsClient } from "@ai-matrx/records/react";
 import type { RecordsDataSource } from "@ai-matrx/records";
 
@@ -31,7 +31,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { recordStoreShare } from "@/features/sharing/components/RecordStoreShareSurface";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
-import { useRecordsDataSource } from "@/features/data-tables/records-ui-host/recordsUiHost";
+import { useAppRecordsConfig } from "@/features/data-tables/records-ui-host/recordsUiHost";
 import { DATA_HOME_SHELL_LANES } from "@/features/unified-data/hub/dataHomeScope";
 import { createDataHomeCorpus } from "@/features/unified-data/home/dataHomeCorpus";
 import { createDataHomeService } from "@/features/unified-data/home/dataHomeService";
@@ -58,7 +58,8 @@ export function ItemsHome({ kind }: { kind: ItemsHomeKind }) {
   const home = HOMES[kind];
   const router = useRouter();
   const userId = useAppSelector(selectUserId);
-  const dataSource = useRecordsDataSource();
+  const recordsConfig = useAppRecordsConfig(null);
+  const dataSource = recordsConfig.dataSource;
   const back = () => {
     if (typeof window !== "undefined" && window.history.length > 1) router.back();
     else router.replace("/data");
@@ -75,7 +76,7 @@ export function ItemsHome({ kind }: { kind: ItemsHomeKind }) {
           // org-filter: none — All organizations; the doors answer for the person.
           <RecordsMount
             letTheStoreDecideRights
-            config={{ dataSource, actor: personActor(userId), organizationId: null }}
+            config={recordsConfig}
             host={{ Link, density: "condensed" }}
           >
             <ItemsList kind={kind} dataSource={dataSource} />

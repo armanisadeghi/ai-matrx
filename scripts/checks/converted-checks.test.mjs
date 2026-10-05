@@ -225,6 +225,14 @@ export const CONVERTED = [
     mayBeClean: true,
   },
   {
+    // Shrink-only baseline + inline `ssr-viewport-ok:`: `<rule>|<file>`.
+    id: "ssr-viewport-branch",
+    cmd: "pnpm check:ssr-viewport-branch",
+    allowKeys: () => Object.keys(JSON.parse(readFileSync("scripts/ssr-viewport-branch/baseline.json", "utf8")).sites),
+    keyShape: /^(structural|unhinted)-viewport-branch\|[^|]+\.tsx$/,
+    mayBeClean: true,
+  },
+  {
     // Accepted only by an inline `canonical-*-picker-exempt:` comment: all new, `<rule>|<file>`.
     id: "canonical-agent-model-pickers",
     cmd: "pnpm check:canonical-pickers",

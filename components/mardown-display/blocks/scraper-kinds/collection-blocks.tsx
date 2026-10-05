@@ -18,6 +18,7 @@ import ScrapedPageBlock from "./ScrapedPageBlock";
 import { Pill, SiteFavicon } from "./scraper-kind-shared";
 import { compactNumber, items, num, readScraperKindValue, text } from "./scraper-kind-data";
 
+import { Tile } from "@ai-matrx/design-system/controls";
 interface Props {
   serverData?: unknown;
   className?: string;
@@ -38,28 +39,16 @@ function PageIndex({
         const url = text(page.response_url) ?? text(page.url);
         const ok = page.success !== false;
         return (
-          <button
+          <Tile
             key={i}
-            type="button"
+            variant="quiet"
+            selected={selected === i}
             onClick={() => onSelect(i)}
-            className={cn(
-              "flex w-full items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-muted/40",
-              selected === i && "bg-muted/60",
-            )}
-          >
-            <SiteFavicon url={url} className="h-4 w-4 shrink-0" />
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-sm text-foreground">
-                {text(page.title) ?? url ?? "Untitled"}
-              </span>
-              <span className="block truncate text-[11px] text-muted-foreground">{url}</span>
-            </span>
-            {ok ? (
-              <CheckCircle2 className="h-4 w-4 shrink-0 text-success" />
-            ) : (
-              <XCircle className="h-4 w-4 shrink-0 text-destructive" />
-            )}
-          </button>
+            icon={<SiteFavicon url={url} />}
+            title={text(page.title) ?? url ?? "Untitled"}
+            line={url}
+            end={ok ? <CheckCircle2 className="text-success" /> : <XCircle className="text-destructive" />}
+          />
         );
       })}
     </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { Badge } from "@ai-matrx/design-system/controls";
+import { Badge, Button } from "@ai-matrx/design-system/controls";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 import React, { useState } from "react";
 import { Terminal, CheckCircle2, XCircle, ChevronDown, ChevronUp, Clock } from "lucide-react";
@@ -50,13 +50,15 @@ const FunctionResultBlock: React.FC<FunctionResultBlockProps> = ({
           )}
         </div>
         {hasResult && (
-          <button
+          <Button
+            variant="quiet"
+            iconEnd={showResult ? <ChevronUp /> : <ChevronDown />}
+            aria-expanded={showResult}
             onClick={() => setShowResult((v) => !v)}
-            className="flex-shrink-0 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded hover:bg-muted/50"
+            className="shrink-0"
           >
             {showResult ? "Hide" : "Result"}
-            {showResult ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-          </button>
+          </Button>
         )}
       </div>
       {showResult && hasResult && (

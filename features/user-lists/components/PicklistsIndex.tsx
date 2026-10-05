@@ -17,7 +17,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ListChecks } from "lucide-react";
-import { ArchivedDisclosure, RecordsMount, personActor } from "@ai-matrx/records-ui";
+import { ArchivedDisclosure, RecordsMount } from "@ai-matrx/records-ui";
 import { useRecordsClient } from "@ai-matrx/records/react";
 import type { RecordsDataSource, RecordsError } from "@ai-matrx/records";
 import { BasicInput, Skeleton } from "@ai-matrx/design-system";
@@ -36,6 +36,7 @@ import { restoreTableIn, tableKernelId } from "@/features/unified-data/hub/doors
 import { createList } from "../service";
 import { listAddress } from "../where-lists-live";
 import { readPickListIndex, type PickListEntry } from "../pick-list-index";
+import { useAppRecordsConfig } from "@/features/data-tables/records-ui-host/recordsUiHost";
 
 type IndexState =
   | { phase: "reading" }
@@ -63,6 +64,7 @@ export function PicklistsIndex({ organizationName, userId, dataSource }: Picklis
   // The organization FILTER: a visible control, URL-backed, All organizations by default. It is
   // never the active organization (that one is only where a new picklist is saved).
   const [orgFilter, setOrgFilter] = useOrgFilterParam();
+  const recordsConfig = useAppRecordsConfig(orgFilter ?? null);
   const [state, setState] = useState<IndexState>({ phase: "reading" });
   const [filter, setFilter] = useState("");
   const [reread, setReread] = useState(0);
@@ -240,7 +242,7 @@ export function PicklistsIndex({ organizationName, userId, dataSource }: Picklis
         <RecordsMount
           key={orgFilter}
           letTheStoreDecideRights
-          config={{ dataSource, actor: personActor(userId), organizationId: orgFilter }}
+          config={recordsConfig}
           host={{ Link, density: "condensed", notify: RECORDS_NOTIFY }}
         >
           <PicklistsArchive

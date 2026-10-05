@@ -172,20 +172,12 @@ const TechnicalDetailsCell: React.FC<{
 const LongTextCell: React.FC<{ value: string }> = ({ value }) => {
     const [open, setOpen] = React.useState(false);
     return (
-        <button
-            type="button"
-            onClick={(e) => {
+        <Button variant="quiet" onClick={(e) => {
                 e.stopPropagation();
                 setOpen((v) => !v);
-            }}
-            title={open ? "Collapse" : "Expand"}
-            className={cn(
-                "block max-w-md text-left break-words",
-                !open && "line-clamp-2",
-            )}
-        >
+            }} title={open ? "Collapse" : "Expand"} className="break-words">
             {value}
-        </button>
+        </Button>
     );
 };
 

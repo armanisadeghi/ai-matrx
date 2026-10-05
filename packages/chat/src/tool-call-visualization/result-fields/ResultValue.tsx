@@ -33,7 +33,7 @@ import { KindValueNode } from "./KindValueNode";
 import { ResultRecordRef } from "./ResultRecordRef";
 import { TextWithDoors } from "@ai-matrx/chat/host/ui-slots";
 import { valueCarriesKind } from "@ai-matrx/chat/utils/content-ir/surfaces/json-kind-signal";
-import { useReportKindAtRawRenderer } from "@host/features/content-ir/surfaces/report-kind-at-raw-renderer";
+import { useReportKindAtRawRenderer } from "../../utils/content-ir/report-kind-at-raw-renderer";
 import { Button } from "@ai-matrx/design-system/controls";
 
 export type ResultDensity = "inline" | "full";

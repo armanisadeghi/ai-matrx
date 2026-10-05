@@ -128,6 +128,39 @@ function contentFillsFrame(last: Element, scroller: Element): boolean {
 }
 
 /**
+ * A list item: an `<li>`, a `role` row / listitem / option, or one of several siblings sharing its
+ * tag and class list (a mapped row). Its own padding is the ROW's — part of the content, never the
+ * page's end space.
+ */
+function isListItem(element: Element): boolean {
+  const tag = element.tagName.toUpperCase();
+  if (tag === "LI" || tag === "TR") return true;
+  const role = element.getAttribute("role");
+  if (role === "row" || role === "listitem" || role === "option" || role === "treeitem") return true;
+  const cls = element.getAttribute("class");
+  if (!cls || !element.parentElement) return false;
+  for (const sibling of element.parentElement.children) {
+    if (sibling !== element && sibling.tagName === element.tagName && sibling.getAttribute("class") === cls) return true;
+  }
+  return false;
+}
+
+/**
+ * The visible bottom of the content `last` belongs to: the text inside a row sits above the row's
+ * own padding, and that padding is the row's, not the page's. 2026-10-05 /tasks: the last task's
+ * title ended 28px above the foot because its row padded under it, and the guard called the page
+ * "padded twice". Every list item between `last` and the scroller extends the content to its box.
+ */
+function contentBottomOf(last: Element, scroller: Element, bottom: number, viewBottom: number): number {
+  let end = bottom;
+  for (let el: Element | null = last; el && el !== scroller; el = el.parentElement) {
+    if (el.closest("[data-matrx-floating-bottom]")) break;
+    if (isListItem(el)) end = Math.max(end, Math.min(el.getBoundingClientRect().bottom, viewBottom));
+  }
+  return end;
+}
+
+/**
  * Where a scroller's content visibly ends, and how much empty space sits under it — measured
  * against the floating chrome's top when something floats over its bottom edge, else against the
  * scroller's own visible bottom. Call it with the scroller at its end.
@@ -159,6 +192,7 @@ export function measurePageEnd(
       last = element;
     }
   }
+  if (last) lastBottom = contentBottomOf(last, scroller, lastBottom, viewBottom);
   const endSpacePx = last ? Math.round(floatingTop - lastBottom) : 0;
   const contentFills = last ? contentFillsFrame(last, scroller) : true;
   return { last, viewBottom, floatingTop, endSpacePx, contentFills };

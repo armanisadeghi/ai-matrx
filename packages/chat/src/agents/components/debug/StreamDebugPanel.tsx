@@ -1,6 +1,6 @@
 "use client";
 
-import { Chip, type ChipTone, Button } from "@ai-matrx/design-system/controls";
+import { Chip, type ChipTone, Button, DisclosureHeader } from "@ai-matrx/design-system/controls";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 
 import React, { useState, useRef, useEffect, useMemo } from "react";
@@ -180,23 +180,13 @@ function JsonView({
 
   return (
     <div className="text-[10px]">
-      <button
-        type="button"
+      <DisclosureHeader
+        className="w-full"
+        open={open}
         onClick={() => setOpen(!open)}
-        className="inline-flex items-center gap-0.5 text-muted-foreground hover:text-foreground cursor-pointer"
-      >
-        {open ? (
-          <ChevronDown className="h-2.5 w-2.5" />
-        ) : (
-          <ChevronRight className="h-2.5 w-2.5" />
-        )}
-        {label && <span>{label}</span>}
-        {!open && (
-          <span className="text-muted-foreground/60 ml-1">
-            {json.length > 100 ? `${json.length} chars` : json.slice(0, 60)}
-          </span>
-        )}
-      </button>
+        title={label ?? "Value"}
+        meta={!open ? (json.length > 100 ? `${json.length} chars` : json.slice(0, 60)) : undefined}
+      />
       {open && (
         <div className="relative mt-0.5 ml-2">
           <CopyBtn text={json} id={id} className="absolute top-0 right-0" />

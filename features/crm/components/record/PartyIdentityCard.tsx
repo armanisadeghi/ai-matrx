@@ -39,10 +39,10 @@ import {
   type CrmRecordCopyParent,
 } from "./record-copy";
 import { SectionCard } from "./SectionCard";
-import { RecordsMount, StandardRecordForm, personActor, recordsDataSource } from "@ai-matrx/records-ui";
+import { RecordsMount, StandardRecordForm } from "@ai-matrx/records-ui";
 import type { StandardColumn } from "@ai-matrx/records-ui";
 import { useCustomFieldsHost } from "@/features/unified-data/components/useCustomFieldsHost";
-import { createClient } from "@/utils/supabase/client";
+import { useAppRecordsConfig } from "@/features/data-tables/records-ui-host/recordsUiHost";
 
 interface Props {
   party: PartyListRow;
@@ -70,6 +70,7 @@ const FIELDS: FieldSpec[] = [
 
 export function PartyIdentityCard({ party, onChanged }: Props) {
   const userId = useAppSelector(selectUserId);
+  const recordsConfig = useAppRecordsConfig(party.organization_id);
   // "Contact" is the CRM's word for a party; own-table offer + dormant-aware agent door are the shared host's.
   const { custom: customHost, dialog: customDialog } = useCustomFieldsHost({
     entityToken: "party",
@@ -282,11 +283,7 @@ export function PartyIdentityCard({ party, onChanged }: Props) {
     >
       <RecordsMount
         letTheStoreDecideRights
-        config={{
-          dataSource: recordsDataSource(createClient()),
-          actor: personActor(userId),
-          organizationId: party.organization_id,
-        }}
+        config={recordsConfig}
       >
         <StandardRecordForm
           token="entity:party"

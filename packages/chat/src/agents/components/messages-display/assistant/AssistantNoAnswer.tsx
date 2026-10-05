@@ -5,6 +5,7 @@ import { CircleSlash, Loader2 } from "lucide-react";
 import { useAppSelector } from "../../../../store/hooks";
 import { selectIsSuperAdmin } from "../../../../host/identity";
 
+import { Button } from "@ai-matrx/design-system/controls";
 /**
  * The words for a turn that finished and produced no answer. The decision of
  * WHEN this shows lives in `answerless-turn.ts`; this file owns only what the
@@ -42,15 +43,14 @@ export function AssistantNoAnswer({
           This run finished without writing an answer.
         </span>
         {onRetry && (
-          <button
-            type="button"
+          <Button
+            variant="link"
             onClick={onRetry}
             disabled={retrying}
-            className="inline-flex items-center gap-1 underline-offset-2 transition-colors hover:text-foreground hover:underline disabled:opacity-60"
+            icon={retrying ? <Loader2 className="animate-spin" /> : undefined}
           >
-            {retrying && <Loader2 className="h-3 w-3 animate-spin" />}
             {retrying ? "Running again…" : "Run it again"}
-          </button>
+          </Button>
         )}
       </div>
       <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground/80">

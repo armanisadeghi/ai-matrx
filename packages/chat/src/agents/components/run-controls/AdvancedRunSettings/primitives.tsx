@@ -21,7 +21,7 @@ import React from 'react';
 import { Check } from 'lucide-react';
 import { cn } from '@ai-matrx/design-system';
 import { LEVELS, type Level } from './constants';
-import { SegmentedControl } from '@ai-matrx/design-system/controls';
+import { Button, SegmentedControl } from '@ai-matrx/design-system/controls';
 
 // ── Accent colors per section ────────────────────────────────────────────────
 
@@ -219,22 +219,9 @@ export function PillChoiceGroup<T extends string>({
       {options.map((o) => {
         const selected = isSelected(o.id);
         return (
-          <button
-            key={o.id}
-            type="button"
-            role={mode === 'single' ? 'radio' : 'checkbox'}
-            aria-checked={selected}
-            onClick={() => handleClick(o.id)}
-            className={cn(
-              'shrink-0 rounded-full border px-3 py-1 text-xs font-medium transition-colors',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-              selected
-                ? 'border-transparent bg-blue-600 text-white dark:bg-blue-500'
-                : 'border-border bg-card text-muted-foreground hover:text-foreground hover:bg-accent/50',
-            )}
-          >
+          <Button variant="outline" pressed={selected} key={o.id} role={mode === 'single' ? 'radio' : 'checkbox'} aria-checked={selected} onClick={() => handleClick(o.id)} className="shrink-0">
             {o.label}
-          </button>
+          </Button>
         );
       })}
     </div>

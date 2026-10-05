@@ -51,7 +51,7 @@ import {
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 import { KindValueNode } from "./KindValueNode";
 import { rootKindSlug } from "@ai-matrx/chat/utils/content-ir/surfaces/json-kind-signal";
-import { useReportKindAtRawRenderer } from "@host/features/content-ir/surfaces/report-kind-at-raw-renderer";
+import { useReportKindAtRawRenderer } from "../../utils/content-ir/report-kind-at-raw-renderer";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { Button } from "@ai-matrx/design-system/controls";
 

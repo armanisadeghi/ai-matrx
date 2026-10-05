@@ -17,8 +17,7 @@
  */
 
 import { useEffect, useState } from "react";
-import { fetchShapeByKind, fetchShapePage } from "@host/features/content-ir/browse/service";
-import type { ShapeBrowseRow } from "@host/features/content-ir/browse/types";
+import { fetchShapeByKind, fetchShapePage, type ShapeBrowseRow } from "@ai-matrx/chat/host/content-ir-slots";
 import type { EntityFilters, EntityListQuery, EntityListSort } from "@ai-matrx/records/list";
 import type { ListScope } from "@ai-matrx/records/list";
 

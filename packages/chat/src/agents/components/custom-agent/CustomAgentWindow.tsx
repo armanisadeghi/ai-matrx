@@ -34,7 +34,7 @@ import { useAgentLauncher } from "../../hooks/useAgentLauncher";
 import { fetchAgentExecutionMinimal } from "../../redux/agent-definition/thunks";
 import { selectAgentVariableDefinitions } from "../../redux/agent-definition/selectors";
 import { AgentPickerFrame } from "../../../window-panels/windows/agents/AgentPickerFrame";
-import { bindConversationToApplyTarget } from "@host/features/rich-document/review/applyTargets";
+import { bindConversationToApplyTarget } from "@ai-matrx/chat/host/rich-document-slots";
 import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 import {
   SKIP,

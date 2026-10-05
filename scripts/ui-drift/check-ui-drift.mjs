@@ -200,6 +200,17 @@ export function category(base) {
   return "other";
 }
 const VISUAL = new Set(["spacing", "size", "radius", "shadow", "typography", "border", "color"]);
+// Owner ruling 2026-10-05: sizing-in-layout on Tabs / TabsList / TabsContent (h-full, min-h-0, w-full…)
+// is PLACEMENT — it decides how the tab frame fills its parent, not how it looks. Colour, radius, text,
+// spacing and border on them stay visual.
+const TABS_LAYOUT_SIZE = /^(h-full|h-auto|h-fit|min-h-0|min-h-full|max-h-full|size-full|w-full|w-auto|w-fit|min-w-0|min-w-full|max-w-full)$/;
+const TABS_PARTS = new Set(["Tabs", "TabsList", "TabsContent"]);
+export function isVisualFor(prim, base) {
+  const cat = category(base);
+  if (!VISUAL.has(cat)) return false;
+  if (TABS_PARTS.has(prim) && TABS_LAYOUT_SIZE.test(base)) return false;
+  return true;
+}
 
 const PALETTE = "slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose";
 const RAW_COLOR = new RegExp(`^(bg|text|border(-[trblxyse])?|ring|ring-offset|fill|stroke|from|to|via|outline|divide|decoration|placeholder|caret|accent|shadow)-((${PALETTE})-\\d{2,3}|black|white)(\\/\\[?[\\d.]+\\]?)?$`);
@@ -388,8 +399,8 @@ export function scanSource(file, text) {
         const hex = s.map((x) => x.match(HEX_LITERAL)?.[0]).filter(Boolean);
         if (hex.length) add("raw-color", open, `<${tag}> style ${[...new Set(hex)].sort().join(" ")}`);
       }
-      const visualToks = toks.filter((t) => VISUAL.has(category(stripVariants(t).base)));
       const prim = local[tag];
+      const visualToks = toks.filter((t) => isVisualFor(prim, stripVariants(t).base));
       if (prim && !defLayer && visualToks.length) add("primitive-visual-class", open, `<${prim}> ${[...new Set(visualToks)].sort().join(" ")}`);
       const primSite = Boolean(prim && !defLayer && visualToks.length);
       const rawButtonSite = tag === "button" && visualToks.length > 0;
@@ -629,7 +640,7 @@ function writeBaseline(counts, previous) {
 const PLANTED = `
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@/components/ui/badge"; import { Tabs, TabsList, TabsContent } from "@/components/ui/tabs";
 import { TapTargetButton, CopyTapButton, TapTargetButtonGroup } from "@ai-matrx/tap-target";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 export function Bad() {
@@ -651,6 +662,7 @@ export function Bad() {
       <MatrxDataTable data={rows} tableClassName="h-auto" />
       <section className="[&_[data-matrx-table-tabs]]:border-b-0" />
       <span className="inline-flex rounded-full bg-warning/10 px-2.5 text-xs font-semibold text-warning">3 due</span>
+      <TabsList className="h-full min-h-0 w-full rounded-lg bg-muted">x</TabsList>
     </Card>
   );
 }
@@ -658,7 +670,7 @@ export function Bad() {
 const COMPLIANT = `
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@/components/ui/badge"; import { Tabs, TabsList, TabsContent } from "@/components/ui/tabs";
 import { TapTargetButton, CopyTapButton, TapTargetButtonGroup } from "@ai-matrx/tap-target";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 export function Good() {
@@ -678,6 +690,7 @@ export function Good() {
       <MatrxDataTable data={rows} density="condensed" frameHeight="content" emptyHeader="hide" />
       <section className="contents [&_[data-row-id]:focus-visible]:bg-accent" />
       <Chip tone="warning" label="3 due" />
+      <Tabs className="h-full min-h-0 w-full flex-1"><TabsList className="h-full min-h-0 w-full"><TabsContent value="a" className="min-h-0 flex-1">x</TabsContent></TabsList></Tabs>
       <span className="flex size-8 items-center justify-center rounded-md bg-primary/10 text-primary" />
     </Card>
   );
@@ -703,6 +716,7 @@ const PLANTED_SITES = [
   "canonical-override :: <MatrxDataTable> tableClassName",
   "canonical-override :: <section> [&_[data-matrx-table-tabs]]:border-b-0",
   "hand-built-chip :: <span> bg-warning/10 px-2.5 rounded-full text-warning text-xs",
+  "primitive-visual-class :: <TabsList> bg-muted rounded-lg",
 ];
 
 export function selfTest() {

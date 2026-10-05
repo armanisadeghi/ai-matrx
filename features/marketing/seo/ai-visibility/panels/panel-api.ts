@@ -46,12 +46,15 @@ async function request<T>(
     body,
     organizationId,
     what,
+    nullMeans,
   }: {
     path: string;
     method: "GET" | "POST";
     body?: unknown;
     organizationId: string;
     what: string;
+    /** A door whose `null` is an answer ("never designed"), not an empty reply. */
+    nullMeans?: "none";
   },
 ): Promise<T> {
   const result = await dispatch(
@@ -70,6 +73,7 @@ async function request<T>(
     // load …"), so the door's own verb would be said twice.
     throw new PanelApiError(explanation.headline, result.error.status ?? null);
   }
+  if (result.data === null && nullMeans === "none") return null as T;
   if (result.data === undefined || result.data === null) {
     throw new PanelApiError(`Could not ${what}: the server sent an empty reply.`, null);
   }
@@ -101,6 +105,7 @@ export function fetchDesignRun(
     method: "GET",
     organizationId,
     what: "load this panel's design run",
+    nullMeans: "none",
   });
 }
 

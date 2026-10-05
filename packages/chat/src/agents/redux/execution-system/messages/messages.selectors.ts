@@ -41,11 +41,11 @@ import {
   fromCxAudioPart,
   fromCxVideoPart,
 } from "@ai-matrx/media/files";
-import { seedPersistedEnvelopeCache } from "@host/features/content-ir/registry/region-envelope-memo";
+import { seedPersistedEnvelopeCache } from "@ai-matrx/chat/host/content-ir-slots";
 import {
   readEnvelope,
   reconstructRegionValue,
-} from "@host/features/content-ir/redux/render-block-envelope";
+} from "@ai-matrx/content-ir";
 import { removeThinkingContent } from "@ai-matrx/print/markdown";
 import { NON_ANSWER_BLOCK_TYPES } from "../active-requests/active-requests.selectors";
 import type { ApiEndpointMode } from "../../../types/instance.types";

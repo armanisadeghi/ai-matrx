@@ -33,9 +33,9 @@ import { Boxes } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import {
   AnchorRecordsList,
+  CONVERSATION_ANCHOR_TYPE,
   useAnchorRecords,
-} from "@host/features/content-ir/records/AnchorRecordsList";
-import { CONVERSATION_ANCHOR_TYPE } from "@host/features/content-ir/records/kind-record-service";
+} from "@ai-matrx/chat/host/content-ir-slots";
 
 export function ConversationRecordsChip({
   conversationId,

@@ -19,6 +19,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
 import { AgentUserMessage } from "@ai-matrx/chat/agents/components/messages-display/user/AgentUserMessage";
+import { registerChatUi } from "@ai-matrx/chat/host/ui-slots";
 import { TranscriptAudienceProvider } from "@ai-matrx/chat/agents/components/shared/transcript-audience";
 import { resolveMarkdownContext } from "@ai-matrx/chat/context-menu/utils/resolveMarkdownContext";
 import { chatMessageSubject, menuHeader } from "@/features/context-menu-v3/alchemy-provider";
@@ -40,10 +41,9 @@ jest.mock("@ai-matrx/chat/store/hooks", () => ({
 }));
 // The host code this test renders reads the app's own hooks (P3): one double covers both.
 jest.mock("@/lib/redux/hooks", () => jest.requireMock("@ai-matrx/chat/store/hooks"));
-jest.mock("@/components/MarkdownStream", () => ({
-  __esModule: true,
-  default: ({ content }: { content: string }) => <p>{content}</p>,
-}));
+// The transcript draws its text through the host's MarkdownStream slot (P14), so the double
+// is registered there, exactly where the package reads it.
+registerChatUi({ MarkdownStream: ({ content }: { content?: string }) => <p>{content}</p> });
 jest.mock("@ai-matrx/chat/agents/components/messages-display/user/UserActionBar", () => ({ UserActionBar: () => null }));
 jest.mock("@ai-matrx/chat/agents/components/messages-display/MessageAttachmentStrip", () => ({ MessageAttachmentStrip: () => null }));
 jest.mock("@ai-matrx/chat/agents/components/context-policies-display/ContextPolicyChipStrip", () => ({

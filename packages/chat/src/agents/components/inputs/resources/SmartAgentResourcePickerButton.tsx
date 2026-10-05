@@ -21,6 +21,7 @@ import { selectAttachmentCapabilities } from "../../../redux/execution-system/in
 import { PlusAttachMenu } from "../smart-input/PlusAttachMenu";
 import { useAttachResource, useDetachResource } from "./attach-resource";
 import type { Resource } from "../../../resources/types";
+import { Button } from "@ai-matrx/design-system/controls";
 
 interface SmartAgentResourcePickerButtonProps {
   conversationId: string;
@@ -60,18 +61,7 @@ export function SmartAgentResourcePickerButton({
   };
 
   const defaultTrigger = (
-    <button
-      type="button"
-      title="Chat options"
-      aria-label="Chat options"
-      className={cn(
-        "relative flex items-center justify-center rounded-full transition-colors",
-        triggerSize === "compact" ? "h-6 w-6" : "h-9 w-9",
-        "text-muted-foreground/70 hover:text-foreground hover:bg-muted/60",
-      )}
-    >
-      <Plus className={triggerSize === "compact" ? "h-4 w-4" : "h-5 w-5"} />
-    </button>
+    <Button variant="quiet" icon={<Plus className={triggerSize === "compact" ? "h-4 w-4" : "h-5 w-5"} />} title="Chat options" aria-label="Chat options" />
   );
 
   const trigger = triggerSlot ?? defaultTrigger;
@@ -82,21 +72,9 @@ export function SmartAgentResourcePickerButton({
         {triggerSlot ? (
           <span onClick={() => setIsOpen(true)}>{triggerSlot}</span>
         ) : (
-          <button
-            type="button"
-            title="Attach resource"
-            aria-label="Attach resource"
-            onClick={() => setIsOpen(true)}
-            className={cn(
-              "relative flex items-center justify-center rounded-full transition-colors",
-              triggerSize === "compact" ? "h-6 w-6" : "h-9 w-9",
-              "text-muted-foreground/70 hover:text-foreground hover:bg-muted/60",
-            )}
-          >
-            <Plus
+          <Button variant="quiet" icon={<Plus
               className={triggerSize === "compact" ? "h-4 w-4" : "h-5 w-5"}
-            />
-          </button>
+            />} title="Attach resource" aria-label="Attach resource" onClick={() => setIsOpen(true)} />
         )}
         <ResourcePickerWindow
           isOpen={isOpen}

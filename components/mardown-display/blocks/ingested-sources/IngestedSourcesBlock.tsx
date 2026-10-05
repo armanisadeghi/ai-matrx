@@ -28,6 +28,7 @@ import { createElement, useState } from "react";
 import {
   AlertTriangle,
   ChevronDown,
+  ChevronUp,
   FileText,
   Globe,
   Loader2,
@@ -45,6 +46,7 @@ import {
 import { cn } from "@/lib/utils";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
+import { Tile } from "@ai-matrx/design-system/controls";
 /**
  * Accepts either the bridge output (already coerced, with `isComplete`) or a
  * raw value object — persisted surfaces hand the block the stored output.
@@ -135,34 +137,16 @@ export function IngestedSourceRow({ source }: { source: IngestedSourceData }) {
 
   return (
     <div className="rounded-lg border border-border bg-card">
-      <button
-        type="button"
+      <Tile
+        variant="quiet"
         onClick={() => setOpen((value) => !value)}
         aria-expanded={open}
         disabled={!hasText}
-        className={cn(
-          "flex w-full items-center gap-2.5 p-2.5 text-left",
-          hasText && "hover:bg-accent/50",
-        )}
-      >
-        {sourceIcon(source.kind, "h-4 w-4 shrink-0 text-muted-foreground")}
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-sm font-medium text-foreground">
-            {source.label}
-          </span>
-          <span className="block text-xs text-muted-foreground">
-            {source.kindLabel} · {describeSize(source.chars)}
-          </span>
-        </span>
-        {hasText ? (
-          <span className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
-            {open ? "Hide" : "Read"}
-            <ChevronDown
-              className={cn("h-4 w-4 transition-transform", open && "rotate-180")}
-            />
-          </span>
-        ) : null}
-      </button>
+        icon={sourceIcon(source.kind, "")}
+        title={source.label}
+        line={`${source.kindLabel} · ${describeSize(source.chars)}`}
+        end={hasText ? (open ? <ChevronUp /> : <ChevronDown />) : undefined}
+      />
 
       {open && hasText ? (
         <p className="max-h-80 overflow-y-auto whitespace-pre-wrap border-t border-border px-3 py-2.5 text-sm leading-relaxed text-muted-foreground">
