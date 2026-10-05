@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
-import { withOrganizationRefusalShown } from "@/lib/organizations/organizationRefusalToast";
+import { withOrganizationRefusalShown } from "@ai-matrx/chat/host/org";
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import { toast } from "@/lib/toast";
 import type {

@@ -6,7 +6,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "@/lib/toast";
-import { presentOrganizationRefusal } from "@/lib/organizations/organizationRefusalToast";
+import { presentOrganizationRefusal } from "@ai-matrx/chat/host/org";
 import {
   Webhook as WebhookIcon,
   Plus,

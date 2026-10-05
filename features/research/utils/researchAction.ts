@@ -19,7 +19,7 @@
  */
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
-import { presentOrganizationRefusal } from "@/lib/organizations/organizationRefusalToast";
+import { presentOrganizationRefusal } from "@ai-matrx/chat/host/org";
 import { toast } from "@/lib/toast";
 import { sourceRefusalSentence } from "@/features/sources/api/sourcesApi";
 

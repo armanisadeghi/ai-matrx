@@ -13,7 +13,7 @@ import { writeOne } from "@/utils/supabase/writeOne";
 import type { TablesUpdate } from "@/types/database.types";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
-import { withOrganizationRefusalShown } from "@/lib/organizations/organizationRefusalToast";
+import { withOrganizationRefusalShown } from "@ai-matrx/chat/host/org";
 import {
   getProjectTasks,
   getTopLevelProjectTasks,

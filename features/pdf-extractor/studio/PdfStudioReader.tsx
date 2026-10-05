@@ -35,7 +35,7 @@ import { toast } from "@/lib/toast";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
-import { organizationRefusalMessage } from "@/lib/organizations/organizationRefusalToast";
+import { organizationRefusalMessage } from "@ai-matrx/chat/host/org";
 import React, {
   useEffect,
   useRef,

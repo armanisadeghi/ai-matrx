@@ -28,8 +28,11 @@ const client = {
 jest.mock("@/utils/supabase/client", () => ({ createClient: () => client }));
 jest.mock("@/utils/auth/getUserId", () => ({ requireUserId: () => "user-1" }));
 jest.mock("@/lib/organizations/ensureOrgId", () => ({ ensureOrgId: async () => "org-1" }));
-jest.mock("@/lib/organizations/organizationRefusalToast", () => ({
+jest.mock("@ai-matrx/chat/host/org", () => ({
+  ...jest.requireActual("@ai-matrx/chat/host/org"),
+  ...(() => ({
   withOrganizationRefusalShown: (_verb: string, fn: () => Promise<string>) => fn(),
+}))(),
 }));
 jest.mock("@/lib/toast", () => ({ toast: { error: jest.fn() } }));
 

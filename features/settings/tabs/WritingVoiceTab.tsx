@@ -10,7 +10,7 @@
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectDisplayName, selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
-import { withOrganizationRefusalShown } from "@/lib/organizations/organizationRefusalToast";
+import { withOrganizationRefusalShown } from "@ai-matrx/chat/host/org";
 import { VoicePage } from "@/features/marketing/voice/VoicePage";
 
 export default function WritingVoiceTab() {

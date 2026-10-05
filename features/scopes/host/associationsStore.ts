@@ -26,7 +26,7 @@ import type { AssociationsDataSource } from "@ai-matrx/associations";
 import { supabase } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
-import { withOrganizationRefusalShown } from "@/lib/organizations/organizationRefusalToast";
+import { withOrganizationRefusalShown } from "@ai-matrx/chat/host/org";
 import { associationsErrorSink } from "./errorSink";
 import { getAssociationsEntityOverlay } from "@/features/scopes/registry/entityRegistry";
 import { readAssociationPages } from "./readAssociationPages";

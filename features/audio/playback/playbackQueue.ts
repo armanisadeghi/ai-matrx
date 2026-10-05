@@ -142,7 +142,7 @@ async function startItem(id: string): Promise<void> {
       "@/lib/organizations/organizationRequiredError"
     );
     const { organizationRefusalMessage } = await import(
-      "@/lib/organizations/organizationRefusalToast"
+      "@ai-matrx/chat/host/org"
     );
     if (isOrganizationSelectionCancelled(err)) {
       items = items.filter((i) => i.id !== id);

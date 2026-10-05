@@ -24,7 +24,7 @@
 // features/scraper/failure/__tests__/scrapeFailure.test.ts.
 
 import type { ScraperApiErrorDiagnostics } from "@/features/scraper/hooks/useScraperApi";
-import { ORGANIZATION_REQUIRED_REMEDY } from "@/lib/organizations/organizationRefusalToast";
+import { ORGANIZATION_REQUIRED_REMEDY } from "@ai-matrx/chat/host/org";
 
 /** What actually went wrong, in the terms a REMEDY depends on. */
 export type ScrapeFailureKind =

@@ -27,7 +27,7 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { EntityOrgFilter } from "@/lib/entity-list/components/EntityOrgFilter";
 import { useOrgFilterParam } from "@/lib/entity-list/orgFilterUrl";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
-import { withOrganizationRefusalShown } from "@/lib/organizations/organizationRefusalToast";
+import { withOrganizationRefusalShown } from "@ai-matrx/chat/host/org";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import { RECORDS_NOTIFY } from "@/features/unified-data/recordsNotify";
 import { ArchivedTablesList, type ArchivedTable } from "@/features/unified-data/hub/ArchivedTablesList";

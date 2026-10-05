@@ -62,7 +62,7 @@ import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-c
 import {
   organizationRefusalMessage,
   presentOrganizationRefusal,
-} from "@/lib/organizations/organizationRefusalToast";
+} from "@ai-matrx/chat/host/org";
 import { selectKindEnvelope } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
 import type { Depth } from "@/features/education/assessment/data/types";

@@ -19,7 +19,7 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/utils/supabase/client";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
-import { organizationRefusalMessage } from "@/lib/organizations/organizationRefusalToast";
+import { organizationRefusalMessage } from "@ai-matrx/chat/host/org";
 import {
   knobRefusalSentence,
   setKnobOverride,

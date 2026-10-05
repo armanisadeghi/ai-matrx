@@ -73,7 +73,7 @@ import { isOrganizationRequiredError } from "@/lib/organizations/organizationReq
 import {
   organizationRefusalMessage,
   presentOrganizationRefusal,
-} from "@/lib/organizations/organizationRefusalToast";
+} from "@ai-matrx/chat/host/org";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { EntityOrgFilter } from "@/lib/entity-list/components/EntityOrgFilter";
 import { useUserOrganizations } from "@/features/organizations/hooks";

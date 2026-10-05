@@ -28,7 +28,7 @@ import {
   removeTaskFromSlice,
 } from "@/features/agent-context/redux/tasksSlice";
 import { matchesSearch } from "@ai-matrx/kit/search-scoring";
-import { presentOrganizationRefusal } from "@/lib/organizations/organizationRefusalToast";
+import { presentOrganizationRefusal } from "@ai-matrx/chat/host/org";
 
 const KEYS = {
   tree: () => ["hierarchy-tree"] as const,

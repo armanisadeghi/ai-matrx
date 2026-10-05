@@ -18,7 +18,7 @@ import { NotesAPI } from "@/features/notes/service/notesApi";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { toast } from "@/lib/toast";
 import type { ContentSource } from "@/features/rich-document/types";
-import { presentOrganizationRefusal } from "@/lib/organizations/organizationRefusalToast";
+import { presentOrganizationRefusal } from "@ai-matrx/chat/host/org";
 
 const COPY_FOLDER = "Rich editor proving copies";
 

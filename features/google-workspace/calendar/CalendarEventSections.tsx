@@ -20,7 +20,7 @@ import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useOpenDetail } from "@ai-matrx/detail/react";
 import { useOpenGoogleConnectWindow } from "@/features/overlays/openers/googleConnectWindow";
 import { extractErrorMessage } from "@/utils/errors";
-import { presentOrganizationRefusal } from "@/lib/organizations/organizationRefusalToast";
+import { presentOrganizationRefusal } from "@ai-matrx/chat/host/org";
 // 🚨 REUSE, NEVER FORK: ONE generic server pair serves every synced record
 // table (B-29). This is not a second implementation — it is the SAME two
 // functions the Doc panel calls, with THIS table's own address.

@@ -52,7 +52,7 @@ import type {
   SidecarCapabilities,
 } from "./types";
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
-import { organizationRefusalMessage } from "@/lib/organizations/organizationRefusalToast";
+import { organizationRefusalMessage } from "@ai-matrx/chat/host/org";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { createEchoLedger, isOwnEcho } from "./echo";
 import {

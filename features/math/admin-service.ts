@@ -6,7 +6,7 @@
 
 import { guardedUpdate, readAllRows } from "@ai-matrx/data/db";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
-import { withOrganizationRefusalShown } from "@/lib/organizations/organizationRefusalToast";
+import { withOrganizationRefusalShown } from "@ai-matrx/chat/host/org";
 import { supabase } from "@/utils/supabase/client";
 import type { Database, Json } from "@/types/database.types";
 

@@ -12,7 +12,7 @@ import { projectsDb } from "@/utils/supabase/projectsDb";
 import { writeOne } from "@/utils/supabase/writeOne";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
-import { withOrganizationRefusalShown } from "@/lib/organizations/organizationRefusalToast";
+import { withOrganizationRefusalShown } from "@ai-matrx/chat/host/org";
 import type { NavProject, ProjectScopeTag } from "./hierarchySlice";
 import type { DataLevel, DataLevelMeta } from "./organizationsSlice";
 import { isStale } from "./organizationsSlice";

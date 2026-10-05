@@ -23,7 +23,7 @@ import { isOrganizationRequiredError } from "@/lib/organizations/organizationReq
 import {
   organizationRefusalMessage,
   presentOrganizationRefusal,
-} from "@/lib/organizations/organizationRefusalToast";
+} from "@ai-matrx/chat/host/org";
 import {
   appendGoogleDocument,
   approvalQueueHref,

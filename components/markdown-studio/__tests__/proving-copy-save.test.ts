@@ -8,7 +8,10 @@ jest.mock("@/components/rich-editor/RichEditor", () => ({ __esModule: true, defa
 jest.mock("@/features/notes/service/notesApi", () => ({ NotesAPI: {} }));
 jest.mock("@/lib/organizations/ensureOrgId", () => ({ ensureOrgId: jest.fn() }));
 jest.mock("@/lib/toast", () => ({ toast: { success: jest.fn(), error: jest.fn() } }));
-jest.mock("@/lib/organizations/organizationRefusalToast", () => ({ presentOrganizationRefusal: () => false }));
+jest.mock("@ai-matrx/chat/host/org", () => ({
+  ...jest.requireActual("@ai-matrx/chat/host/org"),
+  ...(() => ({ presentOrganizationRefusal: () => false }))(),
+}));
 
 import { saveToProvingCopy, type ProvingCopy } from "@/components/markdown-studio/StudioEditorMode";
 

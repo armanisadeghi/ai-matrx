@@ -32,7 +32,7 @@ import {
 import type { WorkflowBrowseRow } from "./types";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import { getUserMessage } from "@/lib/api/errors";
-import { presentOrganizationRefusal } from "@/lib/organizations/organizationRefusalToast";
+import { presentOrganizationRefusal } from "@ai-matrx/chat/host/org";
 
 export interface WorkflowRowActionsHost {
   /** Build the full menu for one row. Lazy — pass straight to ItemMenu/ItemRow. */

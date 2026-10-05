@@ -30,7 +30,7 @@ import {
   type RequestAccessTarget,
 } from "@/features/access-gate/service/requestAccess";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
-import { presentOrganizationRefusal } from "@/lib/organizations/organizationRefusalToast";
+import { presentOrganizationRefusal } from "@ai-matrx/chat/host/org";
 
 export type { RequestAccessTarget } from "@/features/access-gate/service/requestAccess";
 

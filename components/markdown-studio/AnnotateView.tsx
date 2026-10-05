@@ -28,7 +28,7 @@ import {
 } from "@/features/rich-document/annotations/documentSource";
 import type { AnnotationSource } from "@/features/rich-document/annotations/types";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
-import { presentOrganizationRefusal } from "@/lib/organizations/organizationRefusalToast";
+import { presentOrganizationRefusal } from "@ai-matrx/chat/host/org";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import { toastWriteFailure } from "@/lib/errors/toastWriteFailure";
 import { fenceOpenerOf } from "@ai-matrx/content-ir/source";

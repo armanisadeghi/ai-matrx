@@ -6,7 +6,7 @@
 // signed-in person, for the actor envelope.
 
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
-import { withOrganizationRefusalShown } from "@/lib/organizations/organizationRefusalToast";
+import { withOrganizationRefusalShown } from "@ai-matrx/chat/host/org";
 
 import { signedInUserId, type RecordStoreHome } from "./table-home";
 

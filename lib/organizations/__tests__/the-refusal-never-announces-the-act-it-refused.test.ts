@@ -23,7 +23,7 @@
 import {
   ORGANIZATION_REQUIRED_REMEDY,
   organizationRefusalMessage,
-} from "@/lib/organizations/organizationRefusalToast";
+} from "@ai-matrx/chat/host/org";
 
 /**
  * THE CENSUS — every `subject`/`act` pair passed to

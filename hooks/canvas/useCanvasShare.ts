@@ -6,7 +6,7 @@ import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import {
   presentOrganizationRefusal,
   organizationRefusalMessage,
-} from "@/lib/organizations/organizationRefusalToast";
+} from "@ai-matrx/chat/host/org";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectDisplayName } from "@/lib/redux/slices/userSlice";
 import { createShareLink } from "@/utils/permissions/shareLinks";

@@ -11,7 +11,7 @@
 import { supabase } from "@/utils/supabase/client";
 import { operationFailed } from "@/utils/errors";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
-import { withOrganizationRefusalShown } from "@/lib/organizations/organizationRefusalToast";
+import { withOrganizationRefusalShown } from "@ai-matrx/chat/host/org";
 import { readAllRows } from "@ai-matrx/data/db";
 import { durableRecordId } from "@ai-matrx/kit/ids";
 import type { Database } from "@/types/database.types";

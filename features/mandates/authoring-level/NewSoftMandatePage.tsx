@@ -30,7 +30,7 @@ import { type DraftInput } from "../authoring/service";
 import { createSoftMandate } from "./service";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
-import { organizationRefusalMessage } from "@/lib/organizations/organizationRefusalToast";
+import { organizationRefusalMessage } from "@ai-matrx/chat/host/org";
 import {
   memberMandateListHref,
   memberMandateRecordHref,

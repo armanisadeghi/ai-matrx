@@ -53,7 +53,10 @@ jest.mock("@/features/scopes/host/associationsStore", () => ({
 jest.mock("@/features/scopes/registry/entityRegistry", () => ({ tryGetEntityInfo: () => null }));
 jest.mock("@/utils/auth/getUserId", () => ({ getUserId: () => "me" }));
 jest.mock("@/lib/organizations/organizationRequiredError", () => ({ isOrganizationRequiredError: () => false }));
-jest.mock("@/lib/organizations/organizationRefusalToast", () => ({ organizationRefusalMessage: () => "" }));
+jest.mock("@ai-matrx/chat/host/org", () => ({
+  ...jest.requireActual("@ai-matrx/chat/host/org"),
+  ...(() => ({ organizationRefusalMessage: () => "" }))(),
+}));
 
 import { useAnnotationSidecar } from "../useAnnotationSidecar";
 import { SIDECAR_GRACE_MS } from "../sidecarStore";

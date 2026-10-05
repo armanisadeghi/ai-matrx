@@ -17,7 +17,7 @@ import { toast } from "@/lib/toast";
 import { duplicateWorkflow } from "@/features/workflow-runtime/browse/service";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import { extractErrorMessage } from "@/utils/errors";
-import { presentOrganizationRefusal } from "@/lib/organizations/organizationRefusalToast";
+import { presentOrganizationRefusal } from "@ai-matrx/chat/host/org";
 
 export function useCopyMandateWorkflow(): {
   copyingWorkflow: boolean;

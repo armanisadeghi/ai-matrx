@@ -31,7 +31,10 @@ jest.mock("@/features/scopes/registry/entityRegistry", () => ({ tryGetEntityInfo
 jest.mock("@/features/scopes/service/associationCandidates", () => ({ searchCandidatesAcrossTokens: jest.fn(async () => ({ results: [], failures: [] })) }));
 jest.mock("@/utils/auth/getUserId", () => ({ getUserId: () => "me" }));
 jest.mock("@/lib/organizations/organizationRequiredError", () => ({ isOrganizationRequiredError: () => false }));
-jest.mock("@/lib/organizations/organizationRefusalToast", () => ({ organizationRefusalMessage: () => "" }));
+jest.mock("@ai-matrx/chat/host/org", () => ({
+  ...jest.requireActual("@ai-matrx/chat/host/org"),
+  ...(() => ({ organizationRefusalMessage: () => "" }))(),
+}));
 jest.mock("@/lib/toast", () => ({ toast: { success: jest.fn(), error: jest.fn(), info: jest.fn(), warning: jest.fn() } }));
 jest.mock("@/components/official/entity-ref/EntityRef", () => ({ EntityRef: () => null }));
 jest.mock("@/components/rich-content/RichContent", () => ({ RichContent: ({ source }: { source: string }) => <span>{source}</span> }));

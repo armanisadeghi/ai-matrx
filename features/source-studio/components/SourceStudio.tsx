@@ -103,7 +103,7 @@ import {
 import { processSourceNow } from "@/features/sources/api/processNow";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
-import { presentOrganizationRefusal } from "@/lib/organizations/organizationRefusalToast";
+import { presentOrganizationRefusal } from "@ai-matrx/chat/host/org";
 import { useScraperApi } from "@/features/scraper/hooks/useScraperApi";
 import { downloadFile, exportFilename } from "@/components/agent-copy/export";
 import {

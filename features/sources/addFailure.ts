@@ -9,7 +9,7 @@
 
 import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
-import { organizationRefusalMessage } from "@/lib/organizations/organizationRefusalToast";
+import { organizationRefusalMessage } from "@ai-matrx/chat/host/org";
 import { sourceRefusalSentence } from "@/features/sources/api/sourcesApi";
 
 export const WORKSPACE_NOT_CHOSEN =

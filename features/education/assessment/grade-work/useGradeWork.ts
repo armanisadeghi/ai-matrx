@@ -18,7 +18,7 @@
 
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
-import { organizationRefusalMessage } from "@/lib/organizations/organizationRefusalToast";
+import { organizationRefusalMessage } from "@ai-matrx/chat/host/org";
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import { useState } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
