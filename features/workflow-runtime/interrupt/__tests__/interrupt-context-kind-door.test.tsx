@@ -20,6 +20,9 @@ const interrupt = {
       many: [{ __kind: "a_kind" }, { __kind: "b_kind" }],
       wrapper: { inner: { __kind: "quiz_set", title: "Deep" } },
       text: '{"__kind":"quiz_set","title":"Held as text"}',
+      // H5 (round 5): prose before a kind fence is still kind-carrying — it
+      // used to land in the plain facts and print through formatPlain.
+      prose: 'Here is the draft:\n\n```json\n{"__kind":"quiz_set","title":"In prose"}\n```',
       who: "Dana",
     },
   },
@@ -76,7 +79,7 @@ afterEach(() => {
 
 test("every kind-carrying context value goes through the value door; nothing prints raw", () => {
   act(() => root.render(<InterruptQuestion runId="run-1" />));
-  expect(host.querySelectorAll("[data-interrupt-context-kind]")).toHaveLength(5);
+  expect(host.querySelectorAll("[data-interrupt-context-kind]")).toHaveLength(6);
   expect(host.textContent).not.toContain("__kind");
   expect(host.textContent).not.toContain("quiz_set");
   // The plain fact stays a plain fact.
