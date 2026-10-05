@@ -57,7 +57,22 @@ jest.mock("../composer/ComposerConnectorsPanel", () => ({ ComposerConnectorsPane
 // The account-wide strip lives in the app (`features/connectors/ChatConnectorStrip`); the package cannot
 // import it (the boundary check), so the rail has no account-wide source to fall back to.
 
+import { registerChatUi } from "../../../../../host/ui-slots";
 import { ChatConnectionsStrip } from "../ChatConnectionsStrip";
+
+// The attachments door is the host's (registered); this chat has nothing attached.
+registerChatUi({
+  useConversationAttachments: () => ({
+    items: [],
+    status: "succeeded",
+    error: null,
+    writeError: null,
+    busyKeys: [],
+    attach: async () => undefined,
+    remove: async () => undefined,
+    reload: () => undefined,
+  }),
+});
 
 const CONVERSATION_ID = "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee";
 
