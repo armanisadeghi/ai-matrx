@@ -438,8 +438,19 @@ export function selectUnsentRemarks(state: ChatRootState, conversationId: string
     });
 }
 
-/** Put stored remarks back as chips (ids preserved; one already present is left alone). */
-export function restageRemarks(conversationId: string, remarks: readonly StoredRemark[]) {
+/**
+ * Put stored remarks back as chips (ids preserved; one already present is left alone).
+ *
+ * `persist: true` is for remarks that are NEW to the server — "New chat about
+ * this" hands its passage over in memory, so no row holds it yet. Without it the
+ * chip lived only in this tab and was lost on reload. The default (`false`) is a
+ * restore of rows the server already holds.
+ */
+export function restageRemarks(
+  conversationId: string,
+  remarks: readonly StoredRemark[],
+  options: { persist?: boolean } = {},
+) {
   return (dispatch: ChatDispatch, getState: () => ChatRootState): number => {
     let restored = 0;
     for (const stored of remarks) {
@@ -449,7 +460,7 @@ export function restageRemarks(conversationId: string, remarks: readonly StoredR
         stageRemark(conversationId, stored.item, {
           coalesceKey: stored.coalesceKey,
           resourceId: stored.resourceId,
-          fromServer: true,
+          fromServer: !options.persist,
         }),
       );
       restored += 1;

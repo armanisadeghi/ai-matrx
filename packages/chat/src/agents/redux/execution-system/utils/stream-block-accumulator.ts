@@ -27,6 +27,7 @@ import {
   hasKindKey,
   isJsonFenceLanguage,
   jsonKindSignal,
+  kindGrammar,
   kindObjectProseBreak,
 } from "@ai-matrx/chat/utils/content-ir/surfaces/json-kind-signal";
 import {
@@ -393,6 +394,48 @@ function isFenceCloserLine(line: string, fence: { char: string; ticks: number })
 const BARE_JSON_OPEN_RE = /^\{\s*"[^"]*"\s*:/;
 
 /**
+ * Past this many characters an open bare-JSON region is not re-read for a
+ * prose break (a hot-path budget: the check is linear in the region, run per
+ * line / fragment). A fragment that breaks into prose does so within its first
+ * lines; a long region is real JSON streaming.
+ */
+const BARE_REGION_GRAMMAR_BUDGET = 16_384;
+
+/**
+ * Whether an open bare-JSON region's text has BROKEN INTO PROSE by its own JSON
+ * grammar (round 10, C1): `{"status": "ok", "items": [` then a line of words,
+ * `{\"__kind\":…} and the rest`, `{ some code`. Such a region was never JSON:
+ * it reads as text, exactly as a reload of the same text draws it. A region
+ * still validly open (or complete) is not broken.
+ */
+function regionBreaksIntoProse(text: string): boolean {
+  if (text.length > BARE_REGION_GRAMMAR_BUDGET) return false;
+  const start = text.search(/\S/);
+  if (start < 0) return false;
+  const verdict = kindGrammar(text, "json", start);
+  return verdict.status === "broken" && verdict.prose;
+}
+
+/** Where the first literal kind key in `text` starts (its quote), or -1. */
+const LITERAL_KIND_KEY_AT = /(?<!\\)"(?:__kind|\\u005[fF]_kind)"\s*:/;
+
+/**
+ * Whether the `{` at `at` OWNS the first kind key after it by its own JSON
+ * grammar (round 10, C1): still validly open, complete past the key, or broken
+ * only after the key. An unrelated earlier object (`{"a": 1}. … "__kind": …`)
+ * or a truncated fragment (`{"status": "ok", "items": [ (cut off)`) does not.
+ */
+function ownsKindKey(line: string, at: number): boolean {
+  const key = line.slice(at).search(LITERAL_KIND_KEY_AT);
+  if (key < 0) return true; // a spelling only the detector reads: unchanged behavior
+  const keyAt = at + key;
+  const verdict = kindGrammar(line, "json", at);
+  if (verdict.status === "prefix") return true;
+  if (verdict.status === "complete") return verdict.end > keyAt;
+  return verdict.at > keyAt;
+}
+
+/**
  * Where a kind object starts INSIDE a line of prose (`Here: {"__kind":…}`):
  * the first `{` past the line start, outside inline code, that opens a JSON
  * object (`{ "key":`) whose text carries a `__kind` key (the one detector,
@@ -407,7 +450,7 @@ function proseKindObjectStart(line: string): number {
     at = indexOutsideInlineCode(line, "{", at + 1)
   ) {
     const rest = line.slice(at);
-    if (BARE_JSON_OPEN_RE.test(rest) && hasKindKey(rest)) {
+    if (BARE_JSON_OPEN_RE.test(rest) && hasKindKey(rest) && ownsKindKey(line, at)) {
       return line.slice(0, at).trim() ? at : -1;
     }
   }
@@ -790,10 +833,14 @@ export class StreamBlockAccumulator {
     // (`{"__kind":"note","title":"Hi" and then…`) was never a region: it
     // becomes prose, which the prose leaf reads as label + the text after it
     // — what a reload of the same text draws (L-4, round 9).
+    // Round 10: ANY bare-JSON region (kind or kindless, opened on this line or
+    // earlier) whose grammar breaks into prose is demoted the same way.
     if (
       this.subState.kind === "bare_json" &&
-      !this.currentBlockContent &&
-      kindObjectProseBreak(this.pendingLineFragment.trimStart()) !== null
+      ((!this.currentBlockContent && kindObjectProseBreak(this.pendingLineFragment.trimStart()) !== null) ||
+        regionBreaksIntoProse(
+          this.currentBlockContent ? `${this.currentBlockContent}\n${this.pendingLineFragment}` : this.pendingLineFragment,
+        ))
     ) {
       this.demoteKindLineToProse();
     }
@@ -1464,9 +1511,11 @@ export class StreamBlockAccumulator {
       // becoming its own code block. Multi-line {…} stays speculative (we can't
       // look ahead while streaming).
       if (
-        openCount === closeCount &&
-        openCount > 0 &&
-        !isParseableJsonObject(trimmed)
+        (openCount === closeCount &&
+          openCount > 0 &&
+          !isParseableJsonObject(trimmed)) ||
+        // A line whose JSON grammar already broke into prose is prose (round 10).
+        regionBreaksIntoProse(trimmed)
       ) {
         this.appendToCurrentBlock(rawLine);
         return;
@@ -2154,8 +2203,12 @@ export class StreamBlockAccumulator {
       }
 
       case "bare_json": {
-        // Opened on this line and broken into prose before it ended (L-4).
-        if (!this.currentBlockContent && kindObjectProseBreak(rawLine.trimStart()) !== null) {
+        // Opened on this line and broken into prose before it ended (L-4), or
+        // any region whose grammar this line breaks into prose (round 10).
+        if (
+          (!this.currentBlockContent && kindObjectProseBreak(rawLine.trimStart()) !== null) ||
+          regionBreaksIntoProse(this.currentBlockContent ? `${this.currentBlockContent}\n${rawLine}` : rawLine)
+        ) {
           this.demoteKindLineToProse();
           this.kindLineIsProse = false;
           this.appendToCurrentBlock(rawLine);

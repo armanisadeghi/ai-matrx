@@ -125,9 +125,41 @@ export function describeSpec(template: Record<string, unknown>): TemplateSpec {
   for (const k of GALLERY_ONLY) delete s[k];
   s.specVersion = 1;
   if (typeof s.version !== "number") s.version = 1;
+  if (typeof s.audience !== "string") s.audience = "organization";
+  if (typeof s.cleanupTag !== "string" && typeof s.id === "string") s.cleanupTag = `describe:${s.id}`;
   for (const k of ["relationships", "sharedBlocks", "views", "forms", "dimensions", "extras"]) if (!Array.isArray(s[k])) s[k] = [];
-  if (Array.isArray(s.tables)) s.tables = (s.tables as Array<Record<string, unknown>>).map((t) => ({ ...t, rows: Array.isArray(t.rows) ? t.rows : [] }));
+  if (Array.isArray(s.tables)) s.tables = (s.tables as Array<Record<string, unknown>>).map(describeTable);
   return s as unknown as TemplateSpec;
+}
+
+/**
+ * SPEED (lane CHAIR-DESCRIBE-4): every token the mandate writes is ~8 ms the person waits, so the
+ * mandate leaves out what is always the same and this fills it — a table's shape keys, and a field's
+ * sensitivity and context policy when it is the ordinary internal/include (a phone or email is
+ * confidential/exclude, with its format). What the model DID write always wins.
+ */
+const TABLE_DEFAULTS = { type: "entity", display: "grid", weight: "light", ordered: false } as const;
+const CONTACT_KINDS = new Set(["phone", "email"]);
+
+function describeTable(t: Record<string, unknown>): Record<string, unknown> {
+  const fields = Array.isArray(t.fields) ? (t.fields as Array<Record<string, unknown>>).map(describeField) : t.fields;
+  return {
+    ...TABLE_DEFAULTS,
+    ...t,
+    ...(typeof t.labelPlural !== "string" && typeof t.name === "string" ? { labelPlural: t.name } : {}),
+    fields,
+    rows: Array.isArray(t.rows) ? t.rows : [],
+  };
+}
+
+function describeField(f: Record<string, unknown>): Record<string, unknown> {
+  const contact = CONTACT_KINDS.has(String(f.parityType ?? ""));
+  return {
+    ...(contact ? { format: f.parityType } : {}),
+    sensitivity: contact ? "confidential" : "internal",
+    contextPolicy: contact ? "exclude" : "include",
+    ...f,
+  };
 }
 
 export type DescribeCheck = { ok: true } | { ok: false; line: string; problems: Array<{ at: string; says: string }> };

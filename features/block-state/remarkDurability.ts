@@ -97,6 +97,7 @@ export function createRemarkDurability(
       return;
     }
     const alias = surfaceAliasOf?.(conversationId) ?? null;
+    console.info('[DBG-A] write', conversationId, key, 'alias=', alias);
     slot.inFlight += 1;
     slot.chain = slot.chain.then(async () => {
       try {
@@ -183,6 +184,7 @@ export function createRemarkDurability(
     },
 
     restore(conversationId, surfaceAlias) {
+      console.info('[DBG-A] restore', conversationId, 'alias=', surfaceAlias);
       void (async () => {
         let rows: BlockStateRow[];
         try {

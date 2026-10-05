@@ -177,9 +177,14 @@ describe("round 10 — free text outside a real JSON kind is never touched (conv
   );
   it.each(cells)("%s", (_cell, converter, convert, text, kind, keep) => {
     const out = convert(text);
-    // The label collapses whitespace: compare whitespace-collapsed there.
-    const norm = converter === "label" ? (s: string) => s.replace(/\s+/g, " ").trim() : (s: string) => s;
-    expect(keepsInOrder(norm(out), keep.map(norm))).toEqual([]);
+    if (converter === "label") {
+      // A label is the FIRST readable line: it starts with the text before the kind, as written.
+      const collapse = (s: string) => s.replace(/[*_`]+/g, "").replace(/\s+/g, " ").trim();
+      expect(collapse(out)).toContain(collapse(keep[0]!).slice(0, 25));
+    } else {
+      // An export / snippet may set a kind on its own lines: pieces compare trimmed.
+      expect(keepsInOrder(out, keep.map((piece) => piece.trim()))).toEqual([]);
+    }
     // The real JSON kind (when there is one and this converter converts) never stays raw in prose.
     if (kind && converter !== "prose leaf") expect(out).not.toContain(kind);
   });

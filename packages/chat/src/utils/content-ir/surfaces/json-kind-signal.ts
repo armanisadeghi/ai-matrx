@@ -114,6 +114,32 @@ export const ALL_KIND_SPELLINGS: Readonly<KindTextOptions> = Object.freeze({
 });
 
 /**
+ * THE CONVERSION BOUNDARY (owner ruling, round 10): only REAL JSON is ever
+ * converted — the literal key, its `\u005f` escapes, the markdown-escaped
+ * `"\_\_kind"` (markdown draws it as the literal key) and zero-width characters
+ * inside the key. Every other spelling in free text (backslash-escaped
+ * `\"__kind\"` in prose, Python repr, a JavaScript literal, typographic quotes,
+ * entities) is DETECTION ONLY: the leak sentinel reports it, every renderer,
+ * converter, label and export leaves it exactly as written. Real output emits
+ * JSON; guessing at free text dropped and reordered people's words (rounds 8–9).
+ * A kind held as a JSON STRING inside JSON is read by parsing (`textCarriesKind`).
+ */
+export const JSON_KIND_SPELLINGS: Readonly<KindTextOptions> = Object.freeze({ markdown: true });
+
+/** Whether text holds the key spelled as real JSON (`JSON_KIND_SPELLINGS`). */
+export function hasJsonKindKey(source: string): boolean {
+  return hasKindKey(source, JSON_KIND_SPELLINGS);
+}
+
+/**
+ * Whether text holds the key ONLY in a detection-only spelling (round 10):
+ * a spelling the sentinel reports and no renderer converts.
+ */
+export function hasDetectionOnlyKindKey(source: string): boolean {
+  return !hasJsonKindKey(source) && (hasKindKey(source, ALL_KIND_SPELLINGS) || hasExoticKindKey(source));
+}
+
+/**
  * Invisible characters a model, a copy-paste or a sanitizer can leave INSIDE
  * the key (`"__\u200Bkind"`): the screen still reads `"__kind"`, so the
  * detector reads through them (K4, round 7). Zero-width space / non-joiner /
@@ -681,7 +707,11 @@ function keyFamily(m: RegExpExecArray): { family: KindSpellingFamily; core: stri
  * are returned in order and never overlap; a region's inner keys belong to it.
  * A key whose `{` grammar fails BEFORE the key is not a region (prose braces).
  */
-export function scanKindSpellingRegions(text: string): KindSpellingRegion[] {
+export function scanKindSpellingRegions(
+  text: string,
+  options: { families?: "json" | "all" } = {},
+): KindSpellingRegion[] {
+  const jsonOnly = options.families !== "all";
   const regions: KindSpellingRegion[] = [];
   if (!mayHoldKindKey(text)) return regions;
   const zeroWidth = HAS_ZERO_WIDTH.test(text);
@@ -732,6 +762,11 @@ export function scanKindSpellingRegions(text: string): KindSpellingRegion[] {
       continue;
     }
     const { family, core, levels } = keyFamily(m);
+    // Round 10: a non-JSON spelling is detection only — never a converted region.
+    if (jsonOnly && family !== "lifted" && family !== "markdown") {
+      hit = next();
+      continue;
+    }
     const markdown = /\\_/.test(core) || (family === "escaped" && /\\{2}_/.test(core));
     const plan = decodePlan(family, levels, markdown);
     const region = boundRegion(text, brace, keyAt, plan);
@@ -885,14 +920,14 @@ function boundRegion(
       // A break at the window edge may be a cut escape: look further.
       if (!atEnd && decoded.map[verdict.at]! >= hi - brace - 16) continue;
       if (!verdict.prose) {
-        // Malformed JSON, not prose: its balanced close bounds it, as before.
+        // Malformed JSON, not prose: its balanced close bounds it ONLY when that
+        // span reads as JSON once trailing commas go (round 10 — a stray `}`
+        // later in the prose never extends it); otherwise it ends at its cut.
         const end = balancedEnd(decoded.text, plan.grammar !== "json");
-        if (end !== null) {
-          if (end <= keyDecoded) return null;
+        if (end === null && !atEnd) continue;
+        if (end !== null && end > keyDecoded && lenientlyParses(decoded.text.slice(0, end), plan.grammar)) {
           return { end: brace + decoded.map[end]!, status: "complete", decoded: decoded.text.slice(0, end) };
         }
-        if (!atEnd) continue;
-        return { end: text.length, status: "prefix", decoded: decoded.text };
       }
       // At the end of the text, a half-typed escape or entity (`\`, `&quo`)
       // is still arriving, not broken.
@@ -905,6 +940,18 @@ function boundRegion(
     }
     if (!atEnd) continue;
     return { end: text.length, status: "prefix", decoded: decoded.text };
+  }
+}
+
+/** Whether a balanced span reads as JSON (or as its dialect) once trailing commas are dropped. */
+function lenientlyParses(span: string, grammar: GrammarDialect): boolean {
+  const body = span.replace(/,(\s*[}\]])/g, "$1");
+  if (grammar !== "json") return true;
+  try {
+    JSON.parse(body);
+    return true;
+  } catch {
+    return false;
   }
 }
 
@@ -979,6 +1026,7 @@ export type KindGrammarVerdict =
 export function kindGrammar(
   s: string,
   dialect: GrammarDialect = "json",
+  from = 0,
 ): KindGrammarVerdict {
   const closers: number[] = [];
   const singleQuotes = dialect !== "json";
@@ -986,7 +1034,7 @@ export function kindGrammar(
   const trailingCommas = dialect !== "json";
   // 0 value, 1 value-or-close, 2 key-or-close, 3 colon, 4 after-value
   let expect = 0;
-  let lastGood = 0;
+  let lastGood = from;
   const n = s.length;
   // A break is PROSE when what stops the value is a word (or a newline inside
   // a string) — text after an unclosed object — not JSON punctuation, which is
@@ -997,7 +1045,7 @@ export function kindGrammar(
     cut: lastGood,
     prose: !/^[{}[\]:,"'0-9.+-]$/.test(s[at] ?? ""),
   });
-  let i = 0;
+  let i = from;
   while (i < n) {
     const c = s.charCodeAt(i);
     if (c === 32 || c === 9 || c === 10 || c === 13) {
@@ -1199,7 +1247,18 @@ function carriesKind(value: unknown, depth: number, seen: Set<object>): boolean 
  * `{answer: "Here are your cards: ```json {…kind…}```"}` carries its kind.
  */
 export function textCarriesKind(text: string): boolean {
-  return isKindJsonText(text) || markdownCarriesKind(text);
+  if (isKindJsonText(text) || markdownCarriesKind(text)) return true;
+  // A WHOLE JSON text whose kind is held in a string value at any depth
+  // (`{"result":"{\"__kind\":…}"}` — tool / workflow data): parse it and read
+  // the strings (round 10: real JSON, never a free-text guess).
+  if (!mayHoldKindKey(text) || !/^[{[]/.test(text.trimStart())) return false;
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    return false;
+  }
+  return typeof parsed === "object" && parsed !== null && valueCarriesKind(parsed);
 }
 
 /**
@@ -1303,7 +1362,7 @@ export function markdownCarriesKind(source: string): boolean {
   // Front matter is document properties, hidden on screen and never lifted
   // (X-minor, round 3): a kind there is not a region of the text.
   const text = source.slice(frontMatterEnd(source));
-  if (!hasKindKey(text, ALL_KIND_SPELLINGS)) return false;
+  if (!hasKindKey(text, JSON_KIND_SPELLINGS)) return false;
   if (isKindJsonText(text)) return true;
   const quoted = quotedSourceRanges(text);
   if (quoted.length === 0) return true;
@@ -1315,5 +1374,5 @@ export function markdownCarriesKind(source: string): boolean {
     cursor = end;
   }
   outside += text.slice(cursor);
-  return hasKindKey(outside, ALL_KIND_SPELLINGS);
+  return hasKindKey(outside, JSON_KIND_SPELLINGS);
 }

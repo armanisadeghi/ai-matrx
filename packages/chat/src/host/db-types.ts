@@ -24009,6 +24009,7 @@ export type ChatDatabase = {
         Args: { p_objids: unknown[]; p_tag: string }
         Returns: undefined
       }
+      comment_fork_copy: { Args: { p_msg_map: Json }; Returns: number }
       comment_trash_title: {
         Args: { c: Database["platform"]["Tables"]["comments"]["Row"] }
         Returns: string
@@ -30283,6 +30284,10 @@ export type ChatDatabase = {
       }
       block_state_list_conversation: {
         Args: { p_conversation_id: string }
+        Returns: Json
+      }
+      block_state_list_staged: {
+        Args: { p_conversation_id: string; p_surface?: string }
         Returns: Json
       }
       block_state_mark_sent: { Args: { p_refs: Json }; Returns: number }

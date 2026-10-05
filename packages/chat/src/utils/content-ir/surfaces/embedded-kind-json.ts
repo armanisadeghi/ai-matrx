@@ -14,7 +14,7 @@
 
 import { readXmlTag } from "@ai-matrx/chat/utils/xml/readXmlTag";
 import { fenceOpenerOf, findCodeRanges } from "@ai-matrx/content-ir/source";
-import { frontMatterEnd, isJsonFenceLanguage, kindObjectProseBreak, quotedSourceRanges } from "./json-kind-signal";
+import { frontMatterEnd, isJsonFenceLanguage, kindGrammar, quotedSourceRanges } from "./json-kind-signal";
 
 export interface EmbeddedKindJsonRegion {
   start: number;
@@ -383,7 +383,12 @@ export function findEmbeddedKindJsonRegions(
     if (source[start] !== "{") continue;
     const end = matchingJsonObjectEnd(source, start);
     if (end === null) {
-      const ownerEnd = malformedKindOwnerEnd(source, start);
+      // An unclosed object owns text only as far as its JSON grammar holds —
+      // to the end while still validly open, else to its cut (round 10, C1):
+      // a later kind in prose after it is still found.
+      const verdict = kindGrammar(source, "json", start);
+      const bound = verdict.status === "broken" ? verdict.cut : source.length;
+      const ownerEnd = bound > start ? malformedKindOwnerEnd(source, start, bound) : null;
       if (ownerEnd !== null) start = ownerEnd - 1;
       continue;
     }
@@ -692,14 +697,27 @@ export interface BrokenKindJsonRegion {
 }
 
 const KIND_KEY_TEXT = /(?<!\\)"__kind"\s*:/;
-const JSON_VALUE_OPENING = /^[{[]\s*["{[]/;
+const KIND_KEY_TEXT_G = /(?<!\\)"__kind"\s*:/g;
 
+/**
+ * Round 10 (C1): a broken region is bounded by its OWN JSON grammar. An opener
+ * owns a kind key only when its grammar reaches the key; it runs to the end of
+ * the text only while it is still validly open, else it ends at its cut. A
+ * stray `[[`, `{"`, `{{`, `["`, an unrelated earlier object or a pasted
+ * schema never extends a region over the prose after it. A balanced span that
+ * does not parse is a region only when it reads once trailing commas go.
+ * Linear: key positions once, each opener's grammar stops at its break.
+ */
 export function findBrokenKindJsonRegions(
   source: string,
   options: { excludeLiteralContexts?: boolean } = {},
 ): BrokenKindJsonRegion[] {
   const broken: BrokenKindJsonRegion[] = [];
   if (!KIND_KEY_TEXT.test(source)) return broken;
+  const keys: number[] = [];
+  KIND_KEY_TEXT_G.lastIndex = 0;
+  for (let m = KIND_KEY_TEXT_G.exec(source); m; m = KIND_KEY_TEXT_G.exec(source)) keys.push(m.index);
+  let keyIndex = 0;
   const excluded = options.excludeLiteralContexts ? literalRanges(source) : [];
   let excludedIndex = 0;
 
@@ -717,43 +735,46 @@ export function findBrokenKindJsonRegions(
     }
     const char = source[start];
     if (char !== "{" && char !== "[") continue;
+    while (keyIndex < keys.length && keys[keyIndex]! < start) keyIndex++;
+    if (keyIndex >= keys.length) break;
+    const key = keys[keyIndex]!;
 
+    const verdict = kindGrammar(source, "json", start);
+    if (verdict.status === "complete") {
+      try {
+        JSON.parse(source.slice(start, verdict.end));
+        start = verdict.end - 1; // complete: nothing broken inside it
+      } catch {
+        // A JSON-shaped span JSON.parse still refuses: leave it as written.
+      }
+      continue;
+    }
+    if (verdict.status === "prefix") {
+      // Still validly open to the end of the text and holding a key: arriving.
+      broken.push({ start, end: source.length, content: source.slice(start) });
+      break;
+    }
+    // Broken: the opener owns the key only when its grammar reached it.
+    if (verdict.at <= key) continue;
     const end = matchingJsonObjectEnd(source, start);
-    if (end === null) {
-      const key = JSON_VALUE_OPENING.test(source.slice(start, start + 64))
-        ? source.slice(start).search(KIND_KEY_TEXT)
-        : -1;
-      if (key >= 0) {
-        // Never past where its own grammar breaks (H-1, round 9): a settled,
-        // unclosed object in prose ends there and the text after it stays.
-        const cut = kindObjectProseBreak(source.slice(start));
-        if (cut !== null) {
-          const end = start + cut;
-          broken.push({ start, end, content: source.slice(start, end) });
-          start = end - 1;
-          continue;
-        }
-        broken.push({ start, end: source.length, content: source.slice(start) });
-        break;
-      }
+    if (end !== null && lenientJson(source.slice(start, end))) {
+      broken.push({ start, end, content: source.slice(start, end) });
+      start = end - 1;
       continue;
     }
-
-    const content = source.slice(start, end);
-    try {
-      JSON.parse(content);
-      start = end - 1; // complete: nothing broken inside it
-      continue;
-    } catch {
-      // fall through
-    }
-    if (char === "{") {
-      const ownerEnd = malformedKindOwnerEnd(source, start, end);
-      if (ownerEnd !== null) {
-        broken.push({ start, end: ownerEnd, content: source.slice(start, ownerEnd) });
-        start = ownerEnd - 1;
-      }
-    }
+    if (verdict.cut <= key) continue;
+    broken.push({ start, end: verdict.cut, content: source.slice(start, verdict.cut) });
+    start = verdict.cut - 1;
   }
   return broken;
+}
+
+/** Whether a balanced span reads as JSON once its trailing commas go. */
+function lenientJson(span: string): boolean {
+  try {
+    JSON.parse(span.replace(/,(\s*[}\]])/g, "$1"));
+    return true;
+  } catch {
+    return false;
+  }
 }

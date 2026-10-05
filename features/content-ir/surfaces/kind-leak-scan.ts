@@ -12,7 +12,15 @@
  * QUOTED, an admin/debug window). Pure DOM reads: never mutates, never throws.
  */
 
-import { ALL_KIND_SPELLINGS, firstKindSlug, hasExoticKindKey, hasKindKey, withoutZeroWidth } from "@/features/content-ir/surfaces/json-kind-signal";
+import {
+  ALL_KIND_SPELLINGS,
+  firstKindSlug,
+  hasExoticKindKey,
+  hasJsonKindKey,
+  hasKindKey,
+  scanKindSpellingRegions,
+  withoutZeroWidth,
+} from "@/features/content-ir/surfaces/json-kind-signal";
 
 /**
  * What counts as a kind key ON SCREEN: the key itself, or its backslash-escaped
@@ -25,6 +33,18 @@ export function screenTextHoldsKind(text: string): boolean {
   // Exotic spellings (double entities, `&#95;`, fullwidth quotes, bidi marks
   // in the key) are DETECTION ONLY: reported here, converted nowhere (round 9).
   return hasKindKey(text, ALL_KIND_SPELLINGS) || hasExoticKindKey(text);
+}
+
+/**
+ * THE RENDER-FAILURE answer (round 10): on-screen text that shows a REAL JSON
+ * kind — a `{` owning a JSON-spelled key (literal, `\u005f`, markdown-escaped,
+ * zero-width in the key), complete, still open, or cut where its grammar
+ * breaks. Every other spelling (`{\"__kind\":…}` in prose, repr, a JS literal,
+ * typographic quotes, entities, a bare prose mention) is DETECTION ONLY: the
+ * sentinel reports it (`screenTextHoldsKind`), the frame judge does not fail on it.
+ */
+export function screenTextShowsJsonKind(text: string): boolean {
+  return hasJsonKindKey(text) && scanKindSpellingRegions(text).length > 0;
 }
 
 /** The kind slug named in on-screen text (escaped form included), or null. */
@@ -219,15 +239,33 @@ export function findKindAttributeLeaks(root: Node, limit = 20): KindAttributeLea
 }
 
 /**
- * THE whole-subtree answer: does anything under `root` show a kind — as
- * visible text OR in a readable attribute (title / aria-label / alt)? The DOM
+ * THE whole-subtree answer: does anything under `root` show a REAL JSON kind
+ * (round 10, `screenTextShowsJsonKind`) — as visible text OR in a readable
+ * attribute (title / aria-label / alt)? The DOM
  * frame judge reads this; the runtime sentinel reads the same two pieces
  * (`textLeaksKind` via its incremental runs, `findKindAttributeLeaks` on what
  * changed), so the test judge and the live sentinel can never disagree (K3).
  */
 export function domLeaksKind(root: Node): boolean {
   if (isInsideKindSource(root)) return false;
+  if (screenTextShowsJsonKind(visibleKindText(root))) return true;
+  return findKindAttributeLeaks(root).some((leak) => screenTextShowsJsonKind(attributeScreenText(leak)));
+}
+
+/**
+ * Whether `root` shows a kind ONLY in a detection-only spelling (round 10):
+ * the sentinel reports it; it is not a render failure.
+ */
+export function domShowsDetectionOnlyKind(root: Node): boolean {
+  if (isInsideKindSource(root) || domLeaksKind(root)) return false;
   return textLeaksKind(root) || findKindAttributeLeaks(root, 1).length > 0;
+}
+
+/** What a person reads of an attribute leak (an iframe srcdoc: its body text). */
+function attributeScreenText(leak: KindAttributeLeak): string {
+  const value = leak.value.replace(/[“”„‟″]/g, '"');
+  if (leak.attribute !== "srcdoc" || typeof DOMParser === "undefined") return value;
+  return visibleKindText(new DOMParser().parseFromString(leak.value, "text/html").body);
 }
 
 const IDENTIFYING_ATTRS = ["id", "data-testid", "data-block-type", "data-mtx-ctx", "data-language", "data-slot", "data-surface", "role", "aria-label"];

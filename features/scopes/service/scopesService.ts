@@ -35,6 +35,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabase } from "@/utils/supabase/client";
 import { projectsDb } from "@/utils/supabase/projectsDb";
+import { readInChunks } from "@/features/scopes/service/inChunks";
 import {
   callContextDoor,
   contextDoorQuery,
@@ -84,6 +85,8 @@ import type {
   TemplateScopeTypeDetail,
 } from "@/features/scopes/types";
 import type { EntityTypeToken } from "@ai-matrx/associations";
+
+type PostgrestErrorLike = { message: string; code?: string; details?: string; hint?: string };
 
 
 
@@ -233,43 +236,46 @@ export const scopesService = {
       }
       const orgIds = [...roleByOrgId.keys()];
 
-      const orgsP =
-        orgIds.length > 0
-          ? supabase
-              .schema("iam")
-              .from("organizations")
-              // `settings` carries the `test_fixture` classification and
-              // `created_by` says whose organization it is — the org picker
-              // hides fixtures behind the archived-items disclosure and draws
-              // the person's own first (VERIFIER-8 MEDIUM-3). `archived_at`
-              // is read so an ARCHIVED organization never appears in a
-              // "which one am I working in" list; the organizations page's
-              // own archive disclosure is where those live.
-              .select(
-                "id, name, abbreviation, logo_url, slug, settings, created_by, archived_at",
-              )
-              .in("id", orgIds)
-          : Promise.resolve({
-              data: [] as Array<{
-                id: string;
-                name: string;
-                abbreviation: string;
-                logo_url: string | null;
-                slug: string;
-                settings: unknown;
-                created_by: string | null;
-                archived_at: string | null;
-              }>,
-              error: null,
-            });
+      // READ IN CHUNKS (lane FINISH-THE-SWITCH, 2026-10-05): a person in ~1000 organizations put every
+      // id in ONE GET url (~38 KB) and the gateway answered 400 — /scopes said "Couldn't load your
+      // scopes". Each read below sends at most IN_CHUNK ids (`inChunks.ts`).
+      type OrgRow = {
+        id: string;
+        name: string;
+        abbreviation: string;
+        logo_url: string | null;
+        slug: string;
+        settings: unknown;
+        created_by: string | null;
+        archived_at: string | null;
+      };
+      // `settings` carries the `test_fixture` classification and `created_by` says whose
+      // organization it is — the org picker hides fixtures behind the archived-items disclosure and
+      // draws the person's own first (VERIFIER-8 MEDIUM-3). `archived_at` is read so an ARCHIVED
+      // organization never appears in a "which one am I working in" list; the organizations page's
+      // own archive disclosure is where those live.
+      const orgsP = readInChunks(orgIds, (chunk) =>
+        supabase
+          .schema("iam")
+          .from("organizations")
+          .select("id, name, abbreviation, logo_url, slug, settings, created_by, archived_at")
+          .in("id", chunk) as unknown as PromiseLike<{ data: OrgRow[] | null; error: PostgrestErrorLike | null }>,
+      );
 
       // VIEW LAW: org-scoped — restricted to orgIds (see orgsP above).
-      const projectsP = projectsDb(supabase)
-        .from("projects")
-        .select("id, organization_id, name, slug")
-        .in("organization_id", orgIds)
-        .is("deleted_at", null)
-        .order("name", { ascending: true });
+      const projectsP = readInChunks(orgIds, (chunk) =>
+        projectsDb(supabase)
+          .from("projects")
+          .select("id, organization_id, name, slug")
+          .in("organization_id", chunk)
+          .is("deleted_at", null) as unknown as PromiseLike<{
+          data: Array<{ id: string; organization_id: string; name: string; slug: string }> | null;
+          error: PostgrestErrorLike | null;
+        }>,
+      ).then((res) => ({
+        ...res,
+        data: res.data ? [...res.data].sort((a, b) => a.name.localeCompare(b.name)) : res.data,
+      }));
 
       const [orgsRes, projectsRes] = await Promise.all([orgsP, projectsP]);
       if (orgsRes.error) return err(...mapPgErrorPair(orgsRes.error));

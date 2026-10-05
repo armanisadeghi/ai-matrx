@@ -23,6 +23,13 @@
  * that mentions the key, code spans, ZWJ emoji, soft hyphens) must come out
  * exactly as written; EXOTIC spellings are DETECTION ONLY (the sentinel and
  * the judge report them, nothing converts them).
+ *
+ * Round 10 (THE BOUNDARY, supersedes rounds 8–9 on spellings): only REAL JSON
+ * converts — literal, `\u005f`, markdown-escaped, zero-width inside the key
+ * (the CONVERSION tables). Every other spelling in free text (backslash-
+ * escaped quotes, repr, JS literal, smart quotes, entities, their
+ * combinations, the exotic forms) is DETECTION ONLY: the sentinel reports it,
+ * and every converter, label and render leaves it byte for byte as written.
  */
 // eslint-disable-next-line import/order -- the judge's mocks must register first
 import { domElementVerdict, domFrameVerdict } from "@/features/content-ir/render-paths/__tests__/dom-frame-judge";
@@ -34,6 +41,7 @@ import { RichContent } from "@/components/rich-content/RichContent";
 import { splitContentIntoBlocksV2 } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
 import {
   ALL_KIND_SPELLINGS,
+  JSON_KIND_SPELLINGS,
   firstKindSlug,
   hasKindKey,
   hasKindKeyAnySpelling,
@@ -46,8 +54,8 @@ import { catalogProseText, inlineKindText } from "@/features/content-ir/surfaces
 import { snippetKindText } from "@/features/content-ir/surfaces/kind-snippet-text";
 import { conversationTitleText, kindTextLabel } from "@/features/content-ir/surfaces/kind-text-label";
 import { kindTextPreview, kindTextToMarkdown } from "@/features/content-ir/surfaces/kind-text-to-markdown";
-import { domLeaksKind, screenTextHoldsKind } from "@/features/content-ir/surfaces/kind-leak-scan";
-import { normalizeKindSpellings } from "@/features/content-ir/surfaces/json-kind-signal";
+import { domLeaksKind, domShowsDetectionOnlyKind, screenTextHoldsKind } from "@/features/content-ir/surfaces/kind-leak-scan";
+import { normalizeKindSpellings, scanKindSpellingRegions } from "@/features/content-ir/surfaces/json-kind-signal";
 import { spelledKindsAsOneLine } from "@/features/content-ir/surfaces/kind-one-line";
 import { kindCell } from "@/features/data-tables/utils/kind-cell";
 import { plainTitleFromMarkdown } from "@/components/markdown-core/plain-title";
@@ -64,13 +72,17 @@ const JSON_TEXT = JSON.stringify(KIND);
 const REPR =
   "{'__kind': 'flashcard_set', 'title': 'Cell biology', 'cards': [{'front': 'What makes ATP?', 'back': 'Mitochondria'}]}";
 
-/** ONE LINE PER SPELLING: the whole kind, spelled that way. */
+/** ONE LINE PER REAL-JSON SPELLING (round 10: the CONVERSION table): the whole kind, spelled that way. */
 const SPELLINGS: ReadonlyArray<readonly [string, string]> = [
   ["literal", JSON_TEXT],
   ["unicode-escaped", JSON_TEXT.replace('"__kind"', '"\\u005f_kind"')],
   ["markdown-escaped", JSON_TEXT.replaceAll("_", "\\_")],
-  ["backslash-escaped", JSON_TEXT.replaceAll('"', '\\"')],
   ["zero-width", JSON_TEXT.replace('"__kind"', '"__​kind"')],
+];
+
+/** ONE LINE PER NON-JSON SPELLING (round 10: DETECTION ONLY, preserved as written). */
+const NON_JSON_SPELLINGS: ReadonlyArray<readonly [string, string]> = [
+  ["backslash-escaped", JSON_TEXT.replaceAll('"', '\\"')],
   ["python-repr", REPR],
   ["smart-quotes", JSON_TEXT.replace(/"([^"]*)"/g, "“$1”")],
   ["html-entities", JSON_TEXT.replaceAll('"', "&quot;")],
@@ -85,11 +97,15 @@ const smartQuoted = (text: string) => text.replace(/"([^"]*)"/g, "\u201C$1\u201D
  * spellings mixed in one key. Each runs through every table above.
  */
 const COMBINATIONS: ReadonlyArray<readonly [string, string]> = [
+  ["markdown-escaped + zero-width", JSON_TEXT.replaceAll("_", "\\_").replace("\\_\\_kind", "\\_\\_\u200Bkind")],
+  ["half markdown-escaped", JSON_TEXT.replace('"__kind"', '"\\__kind"')],
+];
+
+/** Non-JSON COMBINATIONS (round 10: detection only, preserved as written). */
+const NON_JSON_COMBINATIONS: ReadonlyArray<readonly [string, string]> = [
   ["escaped + zero-width", escapeLevel(JSON_TEXT).replace("__kind", "__\u200Bkind")],
   ["python-repr + zero-width", REPR.replace("__kind", "__\u200Bkind")],
   ["smart-quotes + zero-width", smartQuoted(JSON_TEXT).replace("__kind", "__\u200Dkind")],
-  ["markdown-escaped + zero-width", JSON_TEXT.replaceAll("_", "\\_").replace("\\_\\_kind", "\\_\\_\u200Bkind")],
-  ["half markdown-escaped", JSON_TEXT.replace('"__kind"', '"\\__kind"')],
   ["escaped + markdown-escaped", escapeLevel(JSON_TEXT.replaceAll("_", "\\_"))],
   ["escaped two levels", escapeLevel(escapeLevel(JSON_TEXT))],
   ["escaped three levels", escapeLevel(escapeLevel(escapeLevel(JSON_TEXT)))],
@@ -100,7 +116,7 @@ const COMBINATIONS: ReadonlyArray<readonly [string, string]> = [
   ["JavaScript literal (double quotes)", '{__kind: "flashcard_set", title: "Cell biology", cards: [{front: "What makes ATP?", back: "Mitochondria"}]}'],
 ];
 
-/** Every realistic spelling: the eight singles and their combinations. */
+/** Every REAL-JSON spelling (the conversion tables): singles and combinations. */
 const REALISTIC: ReadonlyArray<readonly [string, string]> = [...SPELLINGS, ...COMBINATIONS];
 
 const prose = (spelled: string) => `Here are your cards: ${spelled} Enjoy.`;
@@ -111,8 +127,8 @@ const DETECTORS: ReadonlyArray<readonly [string, (spelled: string) => boolean]> 
   ["markdownCarriesKind", (s) => markdownCarriesKind(prose(s))],
   ["textCarriesKind", (s) => textCarriesKind(prose(s))],
   ["valueCarriesKind", (s) => valueCarriesKind({ answer: prose(s) })],
-  ["jsonKindSignal", (s) => jsonKindSignal(s, ALL_KIND_SPELLINGS) === "kind"],
-  ["firstKindSlug", (s) => firstKindSlug(prose(s), ALL_KIND_SPELLINGS) === "flashcard_set"],
+  ["jsonKindSignal", (s) => jsonKindSignal(s, JSON_KIND_SPELLINGS) === "kind"],
+  ["firstKindSlug", (s) => firstKindSlug(prose(s), JSON_KIND_SPELLINGS) === "flashcard_set"],
   ["screenTextHoldsKind (sentinel)", (s) => screenTextHoldsKind(prose(s))],
   [
     "domLeaksKind (judge)",
@@ -206,15 +222,13 @@ describe("spelling matrix — self-test", () => {
     const red = SPELLINGS.filter(([, spelled]) => converterCellFails(skipsNormalizer, spelled) !== null).map(
       ([spelling]) => spelling,
     );
-    expect(red).toEqual(
-      expect.arrayContaining(["markdown-escaped", "backslash-escaped", "python-repr", "smart-quotes", "html-entities"]),
-    );
+    expect(red).toEqual(expect.arrayContaining(["markdown-escaped"]));
     expect(red).not.toContain("literal");
   });
 
   it("a detector that skips the normalizer turns the matrix red", () => {
     const red = SPELLINGS.filter(([, spelled]) => !hasKindKey(prose(spelled))).map(([spelling]) => spelling);
-    expect(red.length).toBeGreaterThanOrEqual(5);
+    expect(red).toEqual(["markdown-escaped"]);
   });
 });
 
@@ -373,11 +387,88 @@ const EXOTIC: ReadonlyArray<readonly [string, string]> = [
   ["combining grapheme joiner in the key", JSON_TEXT.replace("__kind", "__\u034Fkind")],
 ];
 
-describe("spelling matrix — exotic spellings are detected (sentinel + judge), never converted", () => {
-  it.each(EXOTIC)("%s: the sentinel and the judge report it", (_name, spelled) => {
+// ── Round 10: every non-JSON spelling is DETECTION ONLY + preserved as written ──
+
+/** Every detection-only spelling: the non-JSON singles, their combinations, the exotic forms. */
+const DETECTION_ONLY: ReadonlyArray<readonly [string, string]> = [...NON_JSON_SPELLINGS, ...NON_JSON_COMBINATIONS, ...EXOTIC];
+
+/** ONE LINE PER TEXT CONVERTER: prose in, the prose out byte for byte when its kind is not JSON. */
+const AS_WRITTEN_PROSE: ReadonlyArray<readonly [string, Converter]> = [
+  ["prose leaf (spelledKindsAsOneLine)", (t) => spelledKindsAsOneLine(t)],
+  ["normalizeKindSpellings", (t) => normalizeKindSpellings(t)],
+  ["snippetKindText (search preview)", (t) => snippetKindText(t)],
+  ["kindTextToMarkdown (export)", (t) => kindTextToMarkdown(t)],
+  ["kindTextPreview", (t) => kindTextPreview(t).text],
+  ["catalogProseText", (t) => catalogProseText(t)],
+  ["inlineKindText", (t) => inlineKindText(t)],
+];
+/** ONE LINE PER LABEL: the spelled text in, at most clipped (never rewritten). */
+const AS_WRITTEN_LABELS: ReadonlyArray<readonly [string, Converter]> = [
+  ["kindTextLabel", (t) => kindTextLabel(t, 10_000)],
+  ["conversationTitleText (title)", (t) => conversationTitleText(t) ?? ""],
+  ["publicResourceTitle", (t) => publicResourceTitle(t)],
+  ["publicResourceDescription", (t) => publicResourceDescription(t) ?? ""],
+];
+
+/** A converter cell fails when the spelled text is not in the output exactly as written. */
+function asWrittenCellFails(convert: Converter, text: string, label: boolean): string | null {
+  const out = convert(text);
+  if (label) {
+    const clipped = out.replace(/…$/, "");
+    return clipped.length > 0 && text.replace(/\s+/g, " ").startsWith(clipped) ? null : `rewritten: ${out.slice(0, 160)}`;
+  }
+  return out.includes(text) ? null : `rewritten: ${out.slice(0, 160)}`;
+}
+
+describe("spelling matrix — detection only: the sentinel reports it, the judge does not fail it", () => {
+  it.each(DETECTION_ONLY)("%s", (_name, spelled) => {
     expect(screenTextHoldsKind(prose(spelled))).toBe(true);
     const div = document.createElement("div");
     div.textContent = prose(spelled);
-    expect(domLeaksKind(div)).toBe(true);
+    expect(domLeaksKind(div)).toBe(false);
+    expect(domShowsDetectionOnlyKind(div)).toBe(true);
+  });
+});
+
+describe("spelling matrix — detection only: every converter and label leaves it as written", () => {
+  const cells = DETECTION_ONLY.flatMap(([spelling, spelled]) => [
+    ...AS_WRITTEN_PROSE.map(([name, convert]) => [`${spelling} × ${name}`, convert, prose(spelled), false] as const),
+    ...AS_WRITTEN_LABELS.map(([name, convert]) => [`${spelling} × ${name}`, convert, spelled, true] as const),
+  ]);
+  it.each(cells)("%s", (_cell, convert, text, label) => {
+    expect(asWrittenCellFails(convert, text, label)).toBeNull();
+  });
+
+  it("self-test: a converter that rewrites a non-JSON spelling turns the table red", () => {
+    // The round-8/9 shape: every spelling's region read as a label.
+    const rewrites: Converter = (t) => {
+      let out = t;
+      for (const region of scanKindSpellingRegions(t, { families: "all" }).reverse()) {
+        out = out.slice(0, region.start) + "Flashcard Set" + out.slice(region.end);
+      }
+      return out;
+    };
+    const red = NON_JSON_SPELLINGS.filter(([, spelled]) => asWrittenCellFails(rewrites, prose(spelled), false) !== null);
+    expect(red.map(([name]) => name)).toEqual(NON_JSON_SPELLINGS.map(([name]) => name));
+  });
+});
+
+describe("spelling matrix — detection only: rendered live (char by char) and reloaded byte for byte", () => {
+  it.each(DETECTION_ONLY)("%s", async (spelling, spelled) => {
+    const answer = prose(spelled);
+    const frames = streamFrames(answer, `req-as-written-${spelling}`);
+    const settled = new Map<string, RenderBlockPayload>();
+    for (const { block } of frames) settled.set(block.blockId, block);
+    const live: string[] = [];
+    for (const block of [...settled.values()].sort((a, b) => a.blockIndex - b.blockIndex)) {
+      const verdict = await domFrameVerdict(block, { isStreamActive: false });
+      expect(verdict.raw).toBe(false);
+      live.push(verdict.text);
+    }
+    const reload = squash(await reloadText(answer));
+    expect(squash(live.join(""))).toBe(reload);
+    // Byte for byte as written, and still visible to the sentinel.
+    expect(reload).toContain(squash(answer));
+    expect(screenTextHoldsKind(reload)).toBe(true);
   });
 });

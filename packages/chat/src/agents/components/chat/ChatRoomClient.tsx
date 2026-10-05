@@ -590,7 +590,7 @@ export function ChatRoomClient({
     );
     // "New chat about this": the passage arrives as a remark chip, never as text.
     const remarks = readStoredRemarks(transfer.remarks);
-    if (remarks.length) dispatch(restageRemarks(liveConversationId, remarks));
+    if (remarks.length) dispatch(restageRemarks(liveConversationId, remarks, { persist: true }));
     // "Continue in new chat": the thread is handed over and the agent answers at once.
     if (transfer.autoSend && remarks.length) {
       void dispatch(smartExecute({ conversationId: liveConversationId, surfaceKey }));

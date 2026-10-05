@@ -21,7 +21,7 @@ import {
   closedJson,
   firstKindSlug,
   hasKindKey,
-  kindObjectProseBreak,
+  kindGrammar,
   mayHoldKindKey,
   normalizeKindSpellings,
   quotedSourceRanges,
@@ -62,7 +62,8 @@ function inside(ranges: Array<[number, number]>, at: number): boolean {
  * fences) stays as written. Text with no kind key comes back unchanged.
  */
 export function inlineKindText(raw: string, options: { plain?: boolean } = {}): string {
-  // A Python-repr or zero-width-spelled kind converts like any other (K4).
+  // A zero-width or markdown-escaped key converts like the literal one; every
+  // non-JSON spelling stays exactly as written (round 10).
   const source = raw ? normalizeKindSpellings(raw) : raw;
   if (!source || !hasKindKey(source)) return source;
   type Span = { start: number; end: number; line: string };
@@ -90,17 +91,19 @@ export function inlineKindText(raw: string, options: { plain?: boolean } = {}): 
     cursor = span.end;
   }
   out += source.slice(cursor);
-  // Anything the finders could not bound (a cut-off object with no closing
-  // context): from the owning `{` of the first remaining key to where its
-  // grammar ends — the end of the text while it is still arriving, never past
-  // the point it breaks (H-1, round 9: the text after it stays).
+  // Anything the finders could not bound: the `{` right before the first
+  // remaining key, ONLY when its own JSON grammar reaches the key — to the end
+  // of the text while it is still validly open, else to where it breaks. A
+  // stray or unrelated earlier `{` (prose braces, a pasted schema) never owns
+  // it, and nothing past a grammar failure is ever touched (round 10, C1).
   if (hasKindKey(out)) {
     const key = out.search(/(?<!\\)"(?:__kind|\\u005[fF]_kind)"\s*:/);
     const brace = key >= 0 ? out.lastIndexOf("{", key) : -1;
     if (brace >= 0 && !inside(quotedSourceRanges(out), brace)) {
-      const cut = kindObjectProseBreak(out.slice(brace));
-      const end = cut !== null ? brace + cut : out.length;
-      out = out.slice(0, brace) + kindName(firstKindSlug(out.slice(key, end))) + out.slice(end);
+      const verdict = kindGrammar(out, "json", brace);
+      const end =
+        verdict.status === "prefix" ? out.length : verdict.status === "broken" && verdict.at > key ? verdict.cut : -1;
+      if (end > key) out = out.slice(0, brace) + kindName(firstKindSlug(out.slice(key, end))) + out.slice(end);
     }
   }
   return out;
@@ -119,13 +122,7 @@ export function catalogProseText(text: string | null | undefined): string {
   return inlineKindText(text, { plain: true });
 }
 
-/** A non-canonical key still arriving at the very end of the text (`{\\"__k`, `{'__kind': `, `{“__`). */
-const QUOTE_SPELLING = String.raw`(?:\\+"?|&(?:quot|#0*34|#[xX]0*22);|[\u201C\u201D\u201E\u2018\u2019'])`;
-const SPELLED_PARTIAL_KIND_TAIL = new RegExp(
-  String.raw`\{\s*${QUOTE_SPELLING}(?:_(?:_(?:k(?:i(?:n(?:d(?:${QUOTE_SPELLING}\s*(?::\s*)?)?)?)?)?)?)?)?$`,
-);
-
-/** The one-line form of one spelled region (complete, broken-and-settled, or still arriving). */
+/** The one-line form of one broken JSON region (settled, unclosed — cut where its grammar broke). */
 function regionOneLine(region: KindSpellingRegion): string {
   const json =
     region.status === "complete" ? regionJson(region) : region.status === "broken" ? closedJson(region) : null;
@@ -137,7 +134,7 @@ function regionOneLine(region: KindSpellingRegion): string {
       // The kind's name alone, below.
     }
   }
-  return kindName(firstKindSlug(json ?? region.decoded, { python: true, js: true }));
+  return kindName(firstKindSlug(json ?? region.decoded));
 }
 
 /** Frames repeat (two leaves read every frame): the last few answers, by text. */
@@ -145,26 +142,19 @@ const ONE_LINE_CACHE = new Map<string, string>();
 const ONE_LINE_CACHE_SIZE = 16;
 
 /**
- * PROSE holding a kind in a spelling no JSON reader opens — backslash-escaped
- * quotes `{\"__kind\":…}` at any depth, typographic quotes, HTML entities,
- * Python repr, a JavaScript object literal, and any combination with a
- * zero-width character or a markdown `\_` in the key — with each one read as
- * its ONE-LINE label (K4b round 7, widened rounds 8 and 9). Never lifted into
- * a kind block (the stream parser speaks JSON; a speculative rewrite
- * mid-stream would split live from reload), so the one prose leaf every text
- * block passes through, live and reloaded alike, calls this: live ≡ reload by
- * construction. A complete region → `**Title** · Kind Name`; one still
- * arriving at the end → the kind's name (or nothing while its key types).
- *
- * DO NO HARM (round 9): a region whose grammar BREAKS (a settled, unclosed
- * object in prose — the literal key too) ends where it broke: its label, then
- * every character after it as written. One linear pass, memoized per text.
- * Quoted source stays as written; text with no such kind comes back as the
- * same string.
+ * THE PROSE LEAF's kind reading (round 10 boundary): a REAL JSON kind region
+ * the pipeline cannot lift — a settled object whose grammar BROKE in prose
+ * (`{"__kind":"note","title":"Hi" and then…`), or a markdown-escaped key
+ * (`"\_\_kind"`) — reads as its one-line label, then every character after
+ * its cut as written. A complete literal kind is the pipeline's (lifted).
+ * Every NON-JSON spelling (`{\"__kind\":…}` in prose, repr, a JS literal,
+ * typographic quotes, entities) is left EXACTLY as written — detection only.
+ * Called by the one prose leaf live and reloaded text both pass through, so
+ * live ≡ reload. One linear pass, memoized per text; text with no such region
+ * comes back as the same string.
  */
 export function spelledKindsAsOneLine(text: string): string {
-  // A key still typing at the very end (`{'__ki`) has no `kind` yet: only the tail is read.
-  if (!text || (!mayHoldKindKey(text) && !mayEndInSpelledKey(text))) return text;
+  if (!text || !mayHoldKindKey(text)) return text;
   const cached = ONE_LINE_CACHE.get(text);
   if (cached !== undefined) return cached;
   const out = computeSpelledKindsAsOneLine(text);
@@ -173,27 +163,36 @@ export function spelledKindsAsOneLine(text: string): string {
   return out;
 }
 
-/** Whether the last characters could be a spelled key still arriving (`{\\"__k`, `{'__`, `{“_`). */
-function mayEndInSpelledKey(text: string): boolean {
-  const tail = text.slice(-40);
-  return tail.includes("{") && SPELLED_PARTIAL_KIND_TAIL.test(tail);
-}
-
 function computeSpelledKindsAsOneLine(text: string): string {
   let out = "";
   let cursor = 0;
   for (const region of scanKindSpellingRegions(text)) {
     // A literal key is lifted by the pipeline — unless it broke in prose.
-    if (region.family === "lifted" && region.status !== "broken") continue;
+    if (region.family === "lifted" && !region.markdown && region.status !== "broken") continue;
     out += text.slice(cursor, region.start) + regionOneLine(region);
     cursor = region.end;
   }
-  const rest = text.slice(cursor);
-  const tailFrom = Math.max(0, rest.length - 40);
-  const tailMatch = rest.includes("{", tailFrom) ? SPELLED_PARTIAL_KIND_TAIL.exec(rest.slice(tailFrom)) : null;
-  const partial = tailMatch ? { index: tailFrom + tailMatch.index } : null;
-  if (partial && !inside(quotedSourceRanges(text), cursor + partial.index)) {
-    return out + rest.slice(0, partial.index);
+  return cursor === 0 ? text : out + text.slice(cursor);
+}
+
+/** ASCII punctuation markdown would read as syntax (and eat as an escape). */
+const MARKDOWN_PUNCTUATION = /[!-/:-@[-`{-~]/g;
+
+/**
+ * Markdown source that DRAWS every detection-only kind spelling exactly as
+ * written (round 10): markdown eats `\"` and decodes `&quot;`, so
+ * `{\"__kind\":…}` in prose would draw as a literal key. Inside each such
+ * region every ASCII punctuation character is backslash-escaped — the screen
+ * shows the source byte for byte; nothing outside a region changes.
+ */
+export function detectionOnlyKindsAsWritten(text: string): string {
+  if (!text || !mayHoldKindKey(text)) return text;
+  let out = "";
+  let cursor = 0;
+  for (const region of scanKindSpellingRegions(text, { families: "all" })) {
+    if (region.family === "lifted" || region.family === "markdown") continue;
+    out += text.slice(cursor, region.start) + text.slice(region.start, region.end).replace(MARKDOWN_PUNCTUATION, "\\$&");
+    cursor = region.end;
   }
-  return cursor === 0 ? text : out + rest;
+  return cursor === 0 ? text : out + text.slice(cursor);
 }

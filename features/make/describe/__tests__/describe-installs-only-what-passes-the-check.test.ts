@@ -45,6 +45,37 @@ describe("the describe box installs only what passes the store's check", () => {
     expect(checked).toEqual({ ok: true });
   });
 
+  it("fills what the mandate leaves out for speed exactly as if it had written it", () => {
+    // SPEED (CHAIR-DESCRIBE-4): the mandate omits the keys that are always the same; the check and the
+    // install must see the very spec they would have seen had it written them out.
+    const t = JSON.parse(JSON.stringify(goldReduced)) as Record<string, unknown>;
+    delete t.dimensions;
+    delete t.sharedBlocks;
+    t.relationships = (t.relationships as Array<{ toTable: string }>).filter((r) => r.toTable !== "team_member");
+    for (const table of t.tables as Array<{ fields: Array<{ relationTarget?: string; key: string }>; childDates?: unknown; statusImplies?: unknown }>) {
+      table.fields = table.fields.filter((f) => f.relationTarget !== "team_member");
+      delete table.childDates;
+      delete table.statusImplies;
+    }
+    const full = describeSpec(t);
+    const lean = JSON.parse(JSON.stringify(t)) as Record<string, unknown>;
+    for (const k of ["specVersion", "version", "audience", "cleanupTag"]) if (k !== "cleanupTag" || lean.cleanupTag === `describe:${String(lean.id)}`) delete lean[k];
+    let dropped = 0;
+    for (const table of lean.tables as Array<Record<string, unknown>>) {
+      for (const [k, v] of Object.entries({ type: "entity", display: "grid", weight: "light", ordered: false })) if (table[k] === v) (delete table[k], dropped++);
+      if (table.labelPlural === table.name) (delete table.labelPlural, dropped++);
+      if (Array.isArray(table.rows) && !table.rows.length) delete table.rows;
+      for (const f of table.fields as Array<Record<string, unknown>>) {
+        const contact = f.parityType === "phone" || f.parityType === "email";
+        if (f.sensitivity === (contact ? "confidential" : "internal") && f.contextPolicy === (contact ? "exclude" : "include")) (delete f.sensitivity, delete f.contextPolicy, dropped++);
+        if (contact && f.format === f.parityType) delete f.format;
+      }
+    }
+    expect(dropped).toBeGreaterThan(5);
+    expect(describeSpec(lean)).toEqual(full);
+    expect(checkDescribeSpec(describeSpec(lean))).toEqual({ ok: true });
+  });
+
   it("declares a checked spec with its own catalogue id and an install plan the door can run", () => {
     const spec = describeSpec(goldReduced as unknown as Record<string, unknown>);
     const d = describeDeclaration(spec, "00000000-0000-4000-8000-000000000001", "K3X9");

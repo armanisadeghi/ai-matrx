@@ -60,7 +60,10 @@ function carriesBrokenKind(value: unknown, depth = 0): boolean {
   const record = value as Record<string, unknown>;
   if (Object.prototype.hasOwnProperty.call(record, "__kind")) {
     const kind = record.__kind;
-    if (typeof kind !== "string" || !KIND_SLUG_TEXT.test(kind)) return true;
+    // An object / array under `__kind` is a shape (a pasted JSON schema's
+    // `properties`), not a kind — left as written (round 10).
+    const shape = typeof kind === "object" && kind !== null;
+    if (!shape && (typeof kind !== "string" || !KIND_SLUG_TEXT.test(kind))) return true;
   }
   return Object.values(record).some((item) => carriesBrokenKind(item, depth + 1));
 }

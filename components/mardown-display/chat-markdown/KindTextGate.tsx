@@ -50,9 +50,8 @@ export function textNeedsKindPipeline(
   content: string,
   rerouted: readonly string[],
 ): boolean {
-  // A kind spelled so no JSON reader opens it (escaped, smart quotes, entities,
-  // Python repr) is not a region the pipeline lifts: the prose leaf reads it
-  // as its one-line label (K4b round 7, round 8), so it never reroutes.
+  // A real JSON kind that broke in prose is the prose leaf's (its one-line
+  // label), never a reroute; a non-JSON spelling is detection only (round 10).
   if (!content || !markdownCarriesKind(spelledKindsAsOneLine(content))) return false;
   const own = content.trim();
   return !rerouted.some((text) => text.includes(own));

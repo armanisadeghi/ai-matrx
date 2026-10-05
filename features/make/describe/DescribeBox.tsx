@@ -56,8 +56,11 @@ type Run =
   | { phase: "idle" }
   | { phase: "writing"; startedAt: number }
   | { phase: "installing"; startedAt: number; templateId: string; answer: TemplateDoorAnswer | null; notes: string[] }
-  | { phase: "installed"; ms: number; templateId: string; answer: TemplateDoorAnswer; notes: string[] }
+  | { phase: "installed"; ms: number; split: Split; templateId: string; answer: TemplateDoorAnswer; notes: string[] }
   | { phase: "failed"; why: string; templateId: string | null; answer: TemplateDoorAnswer | null };
+
+/** Where the wait went, in ms per stage — on the result as data-make-describe-split, for timing runs. */
+type Split = { provision: number; model: number; check: number; declare: number; install: number; install_calls: number };
 
 export function DescribeBox() {
   // org-filter: write-target what the sentence makes is installed in the organization new things go to; its tables are read only to reuse them
@@ -89,6 +92,13 @@ export function DescribeBox() {
     setNow(startedAt);
     setRun({ phase: "writing", startedAt });
     const client = createClient();
+    const split: Split = { provision: 0, model: 0, check: 0, declare: 0, install: 0, install_calls: 0 };
+    let mark = startedAt;
+    const lap = (k: Exclude<keyof Split, "install_calls">) => {
+      const t = Date.now();
+      split[k] = t - mark;
+      mark = t;
+    };
     try {
       // The provision: the organization's facts and its own tables (reuse beats duplicate).
       const source = supabaseDataSource(client);
@@ -97,6 +107,7 @@ export function DescribeBox() {
         ? listed.data.filter((t) => t.organization_id === organizationId && t.kind === "table" && !t.kept_by_the_app).map((t) => ({ id: t.table_id, name: t.table_name }))
         : [];
       const tables = await readExistingTables(client, organizationId, own);
+      lap("provision");
 
       const answer = await writer.run<DescribeAnswer>({
         mandateKey: DESCRIBE,
@@ -108,10 +119,12 @@ export function DescribeBox() {
         variables: describeVariables(said, facts, tables),
         coerce: (v) => coerceDescribeAnswer(v),
       });
+      lap("model");
 
       // The check before anything is built: one line, and a retry.
       const spec = describeSpec(answer.template);
       const checked = checkDescribeSpec(spec);
+      lap("check");
       if (!checked.ok) {
         console.warn("[make:describe] the store's check refused the spec", checked.problems);
         setRun({ phase: "failed", why: checked.line, templateId: null, answer: null });
@@ -119,16 +132,19 @@ export function DescribeBox() {
       }
       const stamp = `${startedAt.toString(36)}${Math.random().toString(36).slice(2, 6)}`.toUpperCase();
       const templateId = await declareDescribeSpec(client, organizationId, bindReuses(spec, answer.reuses, tables), stamp);
+      lap("declare");
       setRun({ phase: "installing", startedAt, templateId, answer: null, notes: answer.notes });
       const done = await runTemplateDoor(source, "template_install", organizationId, templateId, {
         onCall: (a) => setRun((r) => (r.phase === "installing" ? { ...r, answer: a } : r)),
       });
+      lap("install");
+      split.install_calls = done.calls;
       if (!done.ok || !done.answer) {
         const refusal = done.answer?.refusal as { message?: string } | null | undefined;
         setRun({ phase: "failed", why: refusal?.message ?? done.error?.message ?? "The install stopped before it finished.", templateId, answer: done.answer });
         return;
       }
-      setRun({ phase: "installed", ms: Date.now() - startedAt, templateId, answer: done.answer, notes: answer.notes });
+      setRun({ phase: "installed", ms: Date.now() - startedAt, split, templateId, answer: done.answer, notes: answer.notes });
     } catch (err: unknown) {
       const detail = (err as { detail?: string } | null)?.detail;
       setRun({ phase: "failed", why: [err instanceof Error ? err.message : String(err), detail].filter(Boolean).join(" — "), templateId: null, answer: null });
@@ -183,7 +199,7 @@ export function DescribeBox() {
       {run.phase === "installing" ? <Progress run={{ door: "template_install", answer: run.answer }} /> : null}
 
       {run.phase === "installed" ? (
-        <div className="flex flex-col gap-2" data-make-describe-result="" data-make-describe-ms={run.ms}>
+        <div className="flex flex-col gap-2" data-make-describe-result="" data-make-describe-ms={run.ms} data-make-describe-split={JSON.stringify(run.split)}>
           <p className="text-sm font-medium text-foreground">Made in {secondsWords(run.ms)}</p>
           <Landing made={(run.answer.made ?? []) as MadeObject[]} />
           <Notes notes={run.notes} />
