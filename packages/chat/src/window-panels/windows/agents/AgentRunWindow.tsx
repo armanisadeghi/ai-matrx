@@ -35,7 +35,7 @@ import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { AlertTriangle, Brain, Loader2, Plus, RotateCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { WindowPanel } from "@host/features/window-panels/WindowPanel";
+import { WindowPanel } from "../../../host/ui-slots";
 import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import type { ChatRootState } from "../../../store/root-state";
 import { toast } from "../../../host/notify";

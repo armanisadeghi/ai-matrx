@@ -29,7 +29,7 @@ import {
   selectAgentContextPolicies,
   selectAgentVariableDefinitions,
 } from "../../redux/agent-definition/selectors";
-import { AgentPickerFrame } from "@host/features/window-panels/windows/agents/AgentPickerWindow";
+import { AgentPickerFrame } from "../../../window-panels/windows/agents/AgentPickerFrame";
 import {
   IMPORTANT_CONTEXT_INLINE_CHARS,
   buildDestinationOptions,

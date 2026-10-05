@@ -35,8 +35,8 @@
 import { useEffect, useId, useRef } from "react";
 import {
   useOpenLiveRunWindow,
-  type LiveRunWindowHandle,
-} from "@host/features/overlays/openers/liveRunWindow";
+  type ChatLiveRunWindowHandle as LiveRunWindowHandle,
+} from "../../host/window-openers";
 import {
   useLiveAgentRun,
   type LiveAgentRunOptions,

@@ -42,10 +42,7 @@ import { InlineMediaRef } from "@ai-matrx/media/react";
 import { useFileDocument } from "@host/features/files/hooks/useFileDocument";
 import { useMediaResolution } from "@ai-matrx/media/core";
 import { useFileUpload } from "@host/features/files/handler/hooks/useFileUpload";
-import {
-  FilesResourcePicker,
-  type FilesResourcePickerFilter,
-} from "@host/features/resource-manager/resource-picker/FilesResourcePicker";
+import { FilesResourcePicker } from "../../../../host/ui-slots";
 import { cn } from "@ai-matrx/design-system";
 import type { VariableResourceContextConfig } from "../../../types/agent-definition.types";
 import { ResourceFamilyPolicyEditor } from "../resources/ResourceFamilyPolicyEditor";
@@ -72,7 +69,7 @@ const KIND_META: Record<
     /** True when an `<img>` preview makes sense for the picked URL. */
     canThumbnail: boolean;
     /** Initial Cloud Files type filter (user can still change it). */
-    libraryFilter: FilesResourcePickerFilter;
+    libraryFilter: string;
   }
 > = {
   image: {

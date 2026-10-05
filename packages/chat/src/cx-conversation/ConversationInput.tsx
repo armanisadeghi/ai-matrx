@@ -54,7 +54,7 @@ import { selectIsSuperAdminDebugger } from "../host/prefs";
 import { selectActiveChatAgent } from "./_legacy-stubs";
 import { selectIsDebugMode } from "../host/prefs";
 import { ResourceChips } from "../agents/resources/ResourceChips";
-import { ResourcePickerMenu } from "@host/features/resource-manager/resource-picker/ResourcePickerMenu";
+import { ResourcePickerMenu } from "../host/ui-slots";
 import { useFileUpload } from "@host/features/files/handler/hooks/useFileUpload";
 import { composeUploadFolderPath } from "@host/features/files/handler/utils/upload-folder-path";
 import { useRecordAndTranscribe } from "@host/features/audio/hooks/useRecordAndTranscribe";

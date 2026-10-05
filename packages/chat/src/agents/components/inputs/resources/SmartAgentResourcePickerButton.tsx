@@ -12,7 +12,7 @@
  */
 
 import { useState } from "react";
-import { ResourcePickerWindow } from "../../../../next/lazy/ResourcePickerWindow";
+import { ResourcePickerWindow } from "../../../../host/ui-slots";
 import { Plus } from "lucide-react";
 import { useDialogContainer } from "@ai-matrx/design-system";
 import { useAppSelector } from "../../../../store/hooks";

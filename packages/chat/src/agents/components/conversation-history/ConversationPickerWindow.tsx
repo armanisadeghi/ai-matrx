@@ -23,7 +23,7 @@
  */
 
 import { useCallback } from "react";
-import { WindowPanel } from "../../../next/lazy/WindowPanel";
+import { WindowPanel } from "../../../host/ui-slots";
 import { ConversationHistorySidebar } from "./ConversationHistorySidebar";
 import type { ConversationListItem } from "../../redux/conversation-list/conversation-list.types";
 

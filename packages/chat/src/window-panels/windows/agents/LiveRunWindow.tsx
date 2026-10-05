@@ -34,7 +34,7 @@ import {
   LiveRunProgress,
   type LiveRunProgressState,
 } from "../../../agents/components/live-run/LiveRunProgress";
-import { WindowPanel } from "@host/features/window-panels/WindowPanel";
+import { WindowPanel } from "../../../host/ui-slots";
 import { useAppSelector } from "../../../store/hooks";
 import { NonEditableContextMenu } from "@host/features/context-menu-v3/NonEditableContextMenu";
 import { CHAT_WINDOWS } from "../../../host/windows";

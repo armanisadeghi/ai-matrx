@@ -5,7 +5,7 @@ import { useAppSelector, useAppDispatch, useAppStore } from "../../store/hooks";
 import {
   disposeFullScreenEditorCallbackGroup,
   emitFullScreenEditorSave,
-} from "@host/features/overlays/callbacks/fullScreenEditor";
+} from "../../host/ui-slots";
 import { useHtmlPreviewState } from "@host/features/html-pages/hooks/useHtmlPreviewState";
 import HtmlPreviewFullScreenEditor from "@host/features/html-pages/components/HtmlPreviewFullScreenEditor";
 import { fetchArtifactsForMessageThunk } from "@host/lib/redux/thunks/artifactThunks";

@@ -503,23 +503,35 @@ export const ensureAgentIdentity = createAsyncThunk<void, string, ThunkApi>(
 );
 
 /**
- * Fetches the minimal execution payload for an agent: id, variableDefinitions, contextPolicies.
+ * TIER 2 — THE RUN TIER (PACKAGE-INDEPENDENCE §3, P24). Everything a run needs
+ * and nothing it does not: variables, context rules, the kill switch, the
+ * default model (override-diff base + display), input gates, tool ids
+ * (display), name and access level — from ONE read, `agx_get_run_tier`.
  *
- * Skips the network call if both fields are already loaded (isReady = true).
- * Call this before executing an agent from a context menu shortcut.
+ * A run NEVER fetches the definition (settings, messages, custom tool bodies,
+ * output schema). The server loads the agent itself and owns the merge of
+ * `config_overrides`, including cross-provider conversion (P23, verified live
+ * 2026-10-05). `pnpm check:agent-run-tier` keeps the definition fetches out of
+ * the run path.
+ *
+ * Skips the network call once the record reached `"execution"` status.
  */
-export const fetchAgentExecutionMinimal = createAsyncThunk<
-  void,
-  string,
-  ThunkApi
->(
-  "agentDefinition/fetchExecutionMinimal",
+export const fetchAgentRunTier = createAsyncThunk<void, string, ThunkApi>(
+  "agentDefinition/fetchRunTier",
   async (agentId, { dispatch, getState }) => {
     // Readiness is the FETCH STATUS the thunks set, never field presence: a
     // record from the list fetch can carry `contextPolicies: []` and
     // `autoContextDisabled: false` it never read, and skipping here left a
-    // kill-switch agent's context layer unknown on every send.
-    if (selectAgentReadyForExecution(getState(), agentId)) return;
+    // kill-switch agent's context layer unknown on every send. The run tier
+    // must ALSO have carried the model — a record marked "execution" by an
+    // older payload without it is refetched once.
+    const existing = getState().agentDefinition.agents?.[agentId];
+    if (
+      selectAgentReadyForExecution(getState(), agentId) &&
+      existing?._loadedFields?.has?.("modelId") !== false &&
+      existing?.modelId
+    )
+      return;
     // Signed out: the RPC refuses `anon` ("permission denied for function").
     // Not authenticated is a state the caller renders, never a fetch failure.
     if (await isSignedOutVisitor()) throw new NotAuthenticatedError();
@@ -529,23 +541,21 @@ export const fetchAgentExecutionMinimal = createAsyncThunk<
     const { data, error } = await withRetry(
       () =>
         new Promise<
-          Awaited<ReturnType<typeof supabase.rpc<"agx_get_execution_minimal">>>
+          Awaited<ReturnType<typeof supabase.rpc<"agx_get_run_tier">>>
         >((resolve, reject) => {
           const timer = setTimeout(() => {
             reject(new ConnectTimeoutError(15_000));
           }, 15_000);
-          supabase
-            .rpc("agx_get_execution_minimal", { p_agent_id: agentId })
-            .then(
-              (result) => {
-                clearTimeout(timer);
-                resolve(result);
-              },
-              (err) => {
-                clearTimeout(timer);
-                reject(err);
-              },
-            );
+          supabase.rpc("agx_get_run_tier", { p_agent_id: agentId }).then(
+            (result) => {
+              clearTimeout(timer);
+              resolve(result);
+            },
+            (err) => {
+              clearTimeout(timer);
+              reject(err);
+            },
+          );
         }),
       { attempts: 2, initialDelayMs: 400 },
     );
@@ -568,21 +578,38 @@ export const fetchAgentExecutionMinimal = createAsyncThunk<
       dispatch(setAgentError({ id: agentId, error: refusal.message }));
       throw refusal;
     }
-    const row = raw as unknown as AgentExecutionMinimal;
+    const row = raw as unknown as AgentRunTier;
 
     dispatch(
       mergePartialAgent({
         id: row.id,
         variableDefinitions: row.variable_definitions,
         contextPolicies: row.context_policies ?? [],
-        // Both RPCs return it; without it every execution-loaded record read
-        // "injection allowed" even for an agent that refuses ad-hoc context.
+        // Without it every run-tier record read "injection allowed" even for
+        // an agent that refuses ad-hoc context.
         autoContextDisabled: row.auto_context_disabled === true,
+        ...(row.model_id ? { modelId: row.model_id } : {}),
+        uiGates: row.ui_gates ?? {},
+        ...(row.tool_ids ? { tools: row.tool_ids } : {}),
+        ...(existing?.name ? {} : { name: row.name }),
+        ...(existing?.description != null
+          ? {}
+          : { description: row.description ?? "" }),
+        ...(existing?.accessLevel
+          ? {}
+          : { accessLevel: row.access_level as AccessLevel }),
       }),
     );
     dispatch(setAgentFetchStatus({ id: row.id, status: "execution" }));
   },
 );
+
+/**
+ * The run tier under its pre-P24 name, kept because ~30 app call sites
+ * (outside the package) still ask for "minimal execution". Same thunk, same
+ * read — `agx_get_execution_minimal` is no longer called by anyone here.
+ */
+export const fetchAgentExecutionMinimal = fetchAgentRunTier;
 
 /**
  * Fetches the full execution payload: adds settings, tools, customTools, modelId.

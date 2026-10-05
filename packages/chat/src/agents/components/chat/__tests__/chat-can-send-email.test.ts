@@ -14,7 +14,7 @@ describe("the chat entrance", () => {
       "utf8",
     );
     expect(source).toContain(
-      'from "@host/features/overlays/openers/gmailComposeWindow"',
+      'from "../../../host/window-openers"',
     );
     expect(source).toContain("openGmailCompose(");
     // No second compose surface: the panel is never mounted here.

@@ -36,7 +36,7 @@ import {
   clearRunSet,
   removeRunSetEntry,
 } from "../../redux/execution-system/run-sets/run-sets.thunks";
-import { useFloatingLiveRun } from "@host/features/overlays/openers/liveRunWindow";
+import { useFloatingLiveRun } from "../../../host/window-openers";
 
 export interface RunSetDisplayProps {
   /** Stable identity of this surface's set ("keyword-research:brain:org123"). */

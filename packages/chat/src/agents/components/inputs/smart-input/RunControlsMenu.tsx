@@ -41,7 +41,7 @@ import {
   PopoverContent,
 } from "@ai-matrx/design-system";
 import { useDialogContainer } from "@ai-matrx/design-system";
-import { usePopoutContainer } from "@host/features/window-panels/popout/usePopoutContainer";
+import { usePopoutContainer } from "../../../../host/ui-slots";
 import { cn } from "@ai-matrx/design-system";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { TabbedBottomSheet } from "@ai-matrx/design-system";
@@ -61,7 +61,7 @@ import {
   type RunControlsTab,
 } from "./RunControlsTabPanel";
 import type { Resource } from "../../../resources/types";
-import { SmartInputMessageTemplatePicker } from "@host/features/message-templates/components/SmartInputMessageTemplatePicker";
+import { SmartInputMessageTemplatePicker } from "../../../../host/ui-slots";
 import { useAppDispatch, useAppSelector } from "../../../../store/hooks";
 import { selectUserInputText } from "../../../redux/execution-system/instance-user-input/instance-user-input.selectors";
 import { setUserInputText } from "../../../redux/execution-system/instance-user-input/instance-user-input.slice";

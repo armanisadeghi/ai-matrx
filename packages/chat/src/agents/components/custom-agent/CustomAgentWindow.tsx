@@ -33,7 +33,7 @@ import { extractErrorMessage } from "@ai-matrx/data/net";
 import { useAgentLauncher } from "../../hooks/useAgentLauncher";
 import { fetchAgentExecutionMinimal } from "../../redux/agent-definition/thunks";
 import { selectAgentVariableDefinitions } from "../../redux/agent-definition/selectors";
-import { AgentPickerFrame } from "@host/features/window-panels/windows/agents/AgentPickerWindow";
+import { AgentPickerFrame } from "../../../window-panels/windows/agents/AgentPickerFrame";
 import { bindConversationToApplyTarget } from "@host/features/rich-document/review/applyTargets";
 import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 import {
@@ -46,7 +46,7 @@ import {
   putShortcutDraftSeed,
   shortcutSeedForMapping,
 } from "@host/features/agent-shortcuts/draft-seed";
-import { shortcutEditorWindowAction } from "@host/features/overlays/openers/shortcutEditorWindow";
+import { useOpenShortcutEditorWindow } from "../../../host/window-openers";
 import { patchConversation } from "../../redux/execution-system/conversations/conversations.slice";
 import { getSurfaceRuntime } from "../../../surfaces/runtime/SurfaceRuntimeContext";
 import { CHAT_WINDOWS } from "../../../host/windows";
@@ -71,6 +71,7 @@ export default function CustomAgentWindow({
   sessionId,
 }: CustomAgentWindowProps) {
   const dispatch = useAppDispatch();
+  const openShortcutEditor = useOpenShortcutEditorWindow();
   const { launchAgent } = useAgentLauncher();
   const session = getCustomAgentSession(sessionId);
   const [agentId, setAgentId] = useState<string | null>(null);
@@ -170,17 +171,15 @@ export default function CustomAgentWindow({
   const handleSaveAsShortcut = () => {
     if (!agentId) return;
     const runtime = buildMappedRuntime(mapping, sources, rows, session?.scope);
-    dispatch(
-      shortcutEditorWindowAction({
-        agentId,
-        seedId: putShortcutDraftSeed(
-          shortcutSeedForMapping(
-            runtime.valueMappings ?? {},
-            capturedSurfaceName(),
-          ),
+    openShortcutEditor({
+      agentId,
+      seedId: putShortcutDraftSeed(
+        shortcutSeedForMapping(
+          runtime.valueMappings ?? {},
+          capturedSurfaceName(),
         ),
-      }),
-    );
+      ),
+    });
     close();
   };
 

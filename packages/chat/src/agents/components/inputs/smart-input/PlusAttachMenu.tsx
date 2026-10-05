@@ -31,7 +31,7 @@ import {
 } from "@ai-matrx/design-system";
 import { Switch } from "@host/components/ui/switch";
 import { useAppDispatch, useAppSelector } from "../../../../store/hooks";
-import { ResourcePickerMenu } from "@host/features/resource-manager/resource-picker/ResourcePickerMenu";
+import { ResourcePickerMenu } from "../../../../host/ui-slots";
 import type { ResourcePickerViewId } from "@ai-matrx/chat/agents/resources/picker-view-id";
 import { ResourcePickerSubViewHeader } from "@ai-matrx/chat/utils/resource-picker/ResourcePickerSubViewHeader";
 import { QuickRunModelSelect } from "../../run-controls/RunModelPicker";
@@ -60,7 +60,7 @@ import { useConversationDocumentsBridge } from "../../../hooks/useWorkingDocumen
 import { selectIsManualExecutionMode } from "../../../redux/execution-system/selectors/aggregate.selectors";
 import { cn } from "@ai-matrx/design-system";
 import type { Resource } from "../../../resources/types";
-import { SmartInputMessageTemplatePicker } from "@host/features/message-templates/components/SmartInputMessageTemplatePicker";
+import { SmartInputMessageTemplatePicker } from "../../../../host/ui-slots";
 import { selectUserInputText } from "../../../redux/execution-system/instance-user-input/instance-user-input.selectors";
 import { setUserInputText } from "../../../redux/execution-system/instance-user-input/instance-user-input.slice";
 import { prependTemplateToDraft } from "@host/features/message-templates/utils/prepend-template-to-draft";

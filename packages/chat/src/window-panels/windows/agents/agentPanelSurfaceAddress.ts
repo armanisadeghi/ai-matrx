@@ -1,3 +1,5 @@
+import type { ResultDisplayMode } from "../../../agents/utils/run-ui-utils";
+
 /**
  * The page surface an agent panel is bound to, carried in its `?panels=` token.
  *
@@ -38,4 +40,23 @@ export function readAgentPanelSurfaceArg(
 ): string | null {
   const value = args[AGENT_PANEL_SURFACE_ARG];
   return value && SURFACE_NAME_PATTERN.test(value) ? value : null;
+}
+
+const RESTORABLE_AGENT_DISPLAY_MODES = new Set<ResultDisplayMode>([
+  "floating-chat",
+  "flexible-panel",
+  "modal-full",
+  "modal-compact",
+  "panel",
+  "sidebar",
+]);
+
+/** The display mode a restored `?panels=agent:` token names (`fc` and unknown: floating chat). */
+export function resolveAgentPanelDisplayMode(
+  mode: string | undefined,
+): ResultDisplayMode {
+  if (!mode || mode === "fc") return "floating-chat";
+  return RESTORABLE_AGENT_DISPLAY_MODES.has(mode as ResultDisplayMode)
+    ? (mode as ResultDisplayMode)
+    : "floating-chat";
 }

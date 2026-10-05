@@ -64,7 +64,7 @@ import { selectBuilderAdvancedSettings } from "../../../redux/execution-system/i
 import { selectPrimaryRequest } from "../../../redux/execution-system/active-requests/active-requests.selectors";
 import { useOpenRunControlsWindow } from "../../../../host/window-openers";
 import { attachActionLabel } from "@host/features/connectors/attachable-resources";
-import { useAttachResourcePicker } from "@host/features/connectors/useAttachResourcePicker";
+import { useAttachResourcePicker } from "../../../../host/ui-slots";
 import { useConversationAttachments } from "@host/features/connectors/useConversationAttachments";
 import { ComposerConnectorsPanel } from "./composer/ComposerConnectorsPanel";
 import { COMPOSER_CHIP_CLASS } from "./composer/composer-chip";

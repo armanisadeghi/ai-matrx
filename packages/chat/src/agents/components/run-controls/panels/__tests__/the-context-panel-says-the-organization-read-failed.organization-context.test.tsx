@@ -81,11 +81,6 @@ jest.mock("../../../../../host/server/context-api", () => ({
   fetchContextState: (args: unknown) => ({ type: "test/fetchContextState", args }),
 }));
 
-/** The picker inside the terminal refusal is its own surface, tested elsewhere. */
-jest.mock("@host/features/organizations/components/OrganizationPickerPanel", () => ({
-  OrganizationPickerPanel: () => <div data-organization-picker />,
-}));
-
 import { ModelContextPanel } from "../ModelContextPanel";
 
 function mount() {

@@ -35,8 +35,8 @@ import { NonEditableContextMenu } from "@host/features/context-menu-v3/NonEditab
 import { CHAT_CONTEXT_MENU_PROPS } from "../../chat/agent-context/buildChatContextData";
 import { buildRunControlsApplicationScope } from "../../chat/agent-context/buildChatRunConfiguration";
 
-import { ResourcePickerMenu } from "@host/features/resource-manager/resource-picker/ResourcePickerMenu";
-import { flattenResourcePickerItems } from "@host/features/resource-manager/resource-picker/resource-picker-menu-items";
+import { ResourcePickerMenu } from "../../../../host/ui-slots";
+import { flattenResourcePickerItems } from "../../../../host/ui-slots";
 import { ComposerConnectorsPanel } from "./composer/ComposerConnectorsPanel";
 import { RunToolPicker } from "./RunToolPicker";
 import { RunSkillPicker } from "./RunSkillPicker";

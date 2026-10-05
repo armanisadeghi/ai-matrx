@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useState, useEffect } from "react";
-import { WindowPanel } from "@host/features/window-panels/WindowPanel";
+import { WindowPanel } from "../../../host/ui-slots";
 import { RichContent } from "@ai-matrx/chat/host/ui-slots";
 import { Button } from "@/components/ui/button";
 import {

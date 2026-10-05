@@ -17,6 +17,7 @@
 import { createElement, type ComponentType, type ReactNode } from "react";
 import { announceOnce } from "./errors";
 import { reportUnregisteredHostSlot as reportUnregistered } from "./diagnostics";
+import { DefaultFullScreenOverlay, DefaultWindowPanel } from "./defaults/window-panel";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type AnyComponent = ComponentType<any>;
@@ -88,6 +89,22 @@ export interface ChatUiSlots {
   /** Opens a cloud-browser run in the host's canvas; a host without one gets a no-op opener. */
   useOpenCloudBrowserCanvas: AnyFn;
   cloudBrowserCanvasSourceId: AnyFn;
+  // Windows and pickers (P18). A bare host draws the package's floating-window default.
+  WindowPanel: AnyComponent;
+  FullScreenOverlay: AnyComponent;
+  ResourcePickerWindow: AnyComponent;
+  ResourcePickerMenu: AnyComponent;
+  FilesResourcePicker: AnyComponent;
+  NotePickerPopover: AnyComponent;
+  SmartInputMessageTemplatePicker: AnyComponent;
+  flattenResourcePickerItems: AnyFn;
+  useRunControlCounts: AnyFn;
+  useAttachResourcePicker: AnyFn;
+  usePopoutContainer: AnyFn;
+  useUrlSync: AnyFn;
+  useOverlaySurfaceRenderAck: AnyFn;
+  disposeFullScreenEditorCallbackGroup: AnyFn;
+  emitFullScreenEditorSave: AnyFn;
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
@@ -227,3 +244,30 @@ export const cloudBrowserCanvasSourceId = slotFn("cloudBrowserCanvasSourceId", (
 /** Builder doors: a host without the agent builder shows one labelled line where the editor would be. */
 export const SystemInstructionEditor = slotComponent("SystemInstructionEditor", unregisteredWidget("SystemInstructionEditor"));
 export const SystemInstructionModal = slotComponent("SystemInstructionModal", unregisteredWidget("SystemInstructionModal"));
+
+// ── Windows and pickers (P18) ────────────────────────────────────────────────
+/** A bare host draws the package's own floating window; the app registers its window manager's. */
+export const WindowPanel = slotComponent("WindowPanel", DefaultWindowPanel);
+/** A bare host draws a plain full-screen tabbed sheet. */
+export const FullScreenOverlay = slotComponent("FullScreenOverlay", DefaultFullScreenOverlay);
+export const ResourcePickerWindow = slotComponent("ResourcePickerWindow", unregisteredWidget("ResourcePickerWindow"));
+export const ResourcePickerMenu = slotComponent("ResourcePickerMenu", unregisteredWidget("ResourcePickerMenu"));
+export const FilesResourcePicker = slotComponent("FilesResourcePicker", unregisteredWidget("FilesResourcePicker"));
+export const NotePickerPopover = slotComponent("NotePickerPopover", unregisteredWidget("NotePickerPopover"));
+export const SmartInputMessageTemplatePicker = slotComponent(
+  "SmartInputMessageTemplatePicker",
+  unregisteredWidget("SmartInputMessageTemplatePicker"),
+);
+/** A host with no resource picker offers no items. */
+export const flattenResourcePickerItems = slotFn("flattenResourcePickerItems", () => []);
+export const useRunControlCounts = slotFn("useRunControlCounts", () => ({}));
+export const useAttachResourcePicker = slotFn("useAttachResourcePicker", () => ({ open: () => undefined }));
+/** A host with no popout windows portals into the page body (Radix default). */
+export const usePopoutContainer = slotFn("usePopoutContainer", () => undefined);
+/** A host with no window address (`panels=`) publishes nothing. */
+export const useUrlSync = slotFn("useUrlSync", () => undefined);
+export const useOverlaySurfaceRenderAck = slotFn("useOverlaySurfaceRenderAck", () => undefined);
+export const disposeFullScreenEditorCallbackGroup = slotFn("disposeFullScreenEditorCallbackGroup", () => undefined);
+export const emitFullScreenEditorSave = slotFn("emitFullScreenEditorSave", () =>
+  Promise.reject(new Error("This host has no full-screen editor save target")),
+);

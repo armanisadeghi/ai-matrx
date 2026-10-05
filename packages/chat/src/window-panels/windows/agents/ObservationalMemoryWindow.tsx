@@ -29,7 +29,7 @@ import {
   CircleDot,
   CircleOff,
 } from "lucide-react";
-import { WindowPanel } from "@host/features/window-panels/WindowPanel";
+import { WindowPanel } from "../../../host/ui-slots";
 import { EntityDoorControls } from "@host/components/official/entity-ref/EntityDoorControls";
 import { EntityRef } from "@host/components/official/entity-ref/EntityRef";
 import { useAppSelector } from "../../../store/hooks";

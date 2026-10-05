@@ -623,6 +623,28 @@ export interface AgentExecutionMinimal {
   auto_context_disabled: boolean;
 }
 
+/**
+ * TIER 2 — the RUN TIER. Returned by `agx_get_run_tier(agent_id, version_id?)`
+ * (PACKAGE-INDEPENDENCE §3, P24). Exactly what a run needs and never the
+ * definition: no settings, messages, custom tool bodies or output schema.
+ * `model_id` is the agent's default model (display + override diff base only —
+ * the server owns the merge of `config_overrides`). `tool_ids` is display only.
+ */
+export interface AgentRunTier {
+  id: string;
+  is_version: boolean;
+  version_id: string | null;
+  name: string;
+  description: string | null;
+  variable_definitions: VariableDefinition[] | null;
+  context_policies: ContextPolicy[] | null;
+  auto_context_disabled: boolean;
+  model_id: string | null;
+  ui_gates: UiGates | null;
+  tool_ids: string[] | null;
+  access_level: string;
+}
+
 /** Returned by `agx_get_execution_full(agent_id)`. */
 export interface AgentExecutionFull {
   id: string;
@@ -836,6 +858,22 @@ type _Check_AgentExecutionMinimal =
     : false;
 declare const _agentExecutionMinimal: _Check_AgentExecutionMinimal;
 true satisfies typeof _agentExecutionMinimal;
+
+/** RETURNS TABLE carries no nullability; the live columns are nullable. */
+type AgentRunTierDbProjection = Omit<
+  AgentRunTier,
+  "version_id" | "description" | "model_id" | "ui_gates" | "tool_ids"
+> & {
+  version_id: string;
+  description: string;
+  model_id: string;
+  ui_gates: UiGates;
+  tool_ids: string[];
+};
+type _Check_AgentRunTier =
+  AgentRunTierDbProjection extends DbRpcRow<"agx_get_run_tier"> ? true : false;
+declare const _agentRunTier: _Check_AgentRunTier;
+true satisfies typeof _agentRunTier;
 
 type _Check_AgentExecutionFull =
   AgentExecutionFull extends DbRpcRow<"agx_get_execution_full"> ? true : false;

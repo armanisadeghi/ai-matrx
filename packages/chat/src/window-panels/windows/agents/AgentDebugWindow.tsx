@@ -17,7 +17,7 @@ import {
   History,
   LayoutDashboard,
 } from "lucide-react";
-import { WindowPanel } from "@host/features/window-panels/WindowPanel";
+import { WindowPanel } from "../../../host/ui-slots";
 import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import { cn } from "@ai-matrx/design-system";
 import { JsonInspector } from "@host/components/official-candidate/json-inspector/JsonInspector";

@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { WindowPanel } from "@host/features/window-panels/WindowPanel";
+import { WindowPanel } from "../../../host/ui-slots";
 import { StreamDebugPanel } from "./StreamDebugPanel";
 
 export interface StreamDebugFloatingProps {

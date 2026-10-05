@@ -13,7 +13,7 @@
  */
 
 import { useAppSelector } from "../../../store/hooks";
-import { useUrlSync } from "@host/features/window-panels/url-sync/useUrlSync";
+import { useUrlSync } from "../../../host/ui-slots";
 import { agentPanelUrlArgs } from "../../../window-panels/windows/agents/agentPanelSurfaceAddress";
 import type { ResultDisplayMode } from "../../utils/run-ui-utils";
 

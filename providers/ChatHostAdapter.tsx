@@ -66,7 +66,7 @@ import type {
   ChatWindowsPort,
 } from "@ai-matrx/chat/host";
 import { supabase } from "@/utils/supabase/client";
-import { useAppStore } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import type { AppStore } from "@/lib/redux/store";
 import { selectAccessToken } from "@/lib/redux/selectors/userSelectors";
 import {
@@ -122,6 +122,11 @@ import { useOpenAuthGateDialog } from "@/features/overlays/openers/authGate";
 import { useOpenChatDebugWindow } from "@/features/overlays/openers/chatDebugWindow";
 import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";
 import { useOpenLiveIntegrationsWindow } from "@/features/overlays/openers/liveIntegrationsWindow";
+import { useOpenGmailComposeWindow } from "@/features/overlays/openers/gmailComposeWindow";
+import { useOpenLiveRunWindow } from "@/features/overlays/openers/liveRunWindow";
+import { useOpenFullScreenMarkdownEditorBridge } from "@/features/overlays/openers/fullScreenEditor";
+import { openImageViewer } from "@/features/overlays/openers/imageViewer";
+import { useOpenShortcutEditorWindow } from "@/features/overlays/openers/shortcutEditorWindow";
 import { useOpenMandateWindow } from "@/features/overlays/openers/mandateWindow";
 import { useOpenNotesWindow } from "@/features/overlays/openers/notesWindow";
 import { useOpenPromptPreviewWindow } from "@/features/overlays/openers/promptPreviewWindow";
@@ -386,7 +391,13 @@ const appNotify: ChatNotifyPort = {
 
 /** The app's opener for every host window the package opens (P18). */
 function useAppWindowOpeners(): ChatWindowOpeners {
+  const dispatch = useAppDispatch();
   return {
+    openGmailComposeWindow: useOpenGmailComposeWindow(),
+    openLiveRunWindow: useOpenLiveRunWindow(),
+    openFullScreenMarkdownEditor: useOpenFullScreenMarkdownEditorBridge(),
+    openImageViewer: (opts) => openImageViewer(dispatch, opts),
+    openShortcutEditorWindow: useOpenShortcutEditorWindow(),
     openAgentAdminFindUsagesWindow: useOpenAgentAdminFindUsagesWindow(),
     openAgentContentWindow: useOpenAgentContentWindow(),
     openAgentConvertSystemWindow: useOpenAgentConvertSystemWindow(),

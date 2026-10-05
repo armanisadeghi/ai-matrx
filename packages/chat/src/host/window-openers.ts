@@ -18,9 +18,11 @@
 import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 import type { DiffEngine, DiffView } from "@ai-matrx/diff/react";
 import type { Resource } from "../agents/resources/types";
+import type { LiveRunProgressState } from "../agents/components/live-run/LiveRunProgress";
 import type { RunControlsTab } from "../agents/components/inputs/smart-input/RunControlsTabPanel";
 import { announceOnce } from "./errors";
 import { useChatWindows } from "./windows-react";
+import { useEffect, useRef } from "react";
 
 // ── Handles ──────────────────────────────────────────────────────────────────
 
@@ -187,6 +189,93 @@ export interface OpenScratchpadPanelOptions {
   gateConversationId?: string;
 }
 
+
+// ── Component-bound openers (P18): hooks that carry callbacks or live handles ─
+
+export interface OpenGmailComposeWindowOptions {
+  partyId: string;
+  organizationId: string;
+  partyLabel: string;
+  dealId?: string | null;
+  dealLabel?: string | null;
+  projectId?: string | null;
+  initialTo?: string | null;
+  initialSubject?: string | null;
+  initialBody?: string | null;
+  draftedBy?: {
+    agentId: string | null;
+    runId: string | null;
+    label: string | null;
+    assistId: string | null;
+  } | null;
+  /** Fires after the message is sent AND recorded. */
+  onSent?: (event: { interactionId: string | null }) => void;
+}
+
+export interface OpenLiveRunWindowOptions {
+  conversationId?: string | null;
+  requestId?: string | null;
+  runSetKey?: string | null;
+  label?: string | null;
+  pending?: boolean;
+  /** Stable id to reuse one window per subject. Omit for a fresh window. */
+  instanceId?: string;
+  width?: number | string;
+  height?: number | string;
+  progress?: LiveRunProgressState | null;
+  initialMinimized?: boolean;
+  workingMessage?: string | null;
+  completeMessage?: string | null;
+}
+
+export interface ChatLiveRunWindowHandle {
+  instanceId: string;
+  /** Re-open with merged data: how a late `requestId` reaches the window. */
+  update: (patch: Partial<OpenLiveRunWindowOptions>) => void;
+  close: () => void;
+}
+
+export interface OpenFullScreenMarkdownEditorOptions {
+  instanceId?: string;
+  content?: string;
+  mode?: unknown;
+  conversationId?: string;
+  messageId?: string;
+  tabs?: unknown;
+  initialTab?: unknown;
+  analysisData?: Record<string, unknown>;
+  title?: string;
+  description?: string;
+  showSaveButton?: boolean;
+  showCopyButton?: boolean;
+  primaryActions?: Array<{ id: string; label: string; variant?: string; [extra: string]: unknown }>;
+  onSave?: (content: string) => void | Promise<void>;
+  onAction?: (action: string, content: string) => void | Promise<void>;
+  onEvent?: (event: { type: "save"; content: string; action?: string }) => void | Promise<void>;
+}
+
+export interface ChatFullScreenEditorHandle {
+  instanceId: string;
+  callbackGroupId: string | null;
+  close: () => void;
+}
+
+export interface OpenImageViewerOptions {
+  images: string[];
+  initialIndex?: number;
+  alts?: string[];
+  title?: string;
+  /** A stable id when several viewers may be open at once; default reuses one. */
+  instanceId?: string;
+}
+
+export interface OpenShortcutEditorWindowOptions {
+  agentId: string;
+  /** "new" (the default) or an existing shortcut id. */
+  shortcutId?: string;
+  seedId?: string | null;
+}
+
 // ── The registry a host fills ────────────────────────────────────────────────
 
 /** Plain functions (not hooks): the host builds them once and the package calls them on demand. */
@@ -210,6 +299,11 @@ export interface ChatWindowOpeners {
   openContextPreviewPanel: (opts?: OpenContextPreviewPanelOptions) => ChatWindowHandle;
   openDiffViewerWindow: (opts: OpenDiffViewerWindowOptions) => ChatInstanceWindowHandle;
   openLiveIntegrationsWindow: () => ChatWindowHandle;
+  openGmailComposeWindow: (opts: OpenGmailComposeWindowOptions) => ChatWindowHandle;
+  openLiveRunWindow: (opts?: OpenLiveRunWindowOptions) => ChatLiveRunWindowHandle;
+  openFullScreenMarkdownEditor: (opts?: OpenFullScreenMarkdownEditorOptions) => ChatFullScreenEditorHandle;
+  openImageViewer: (opts: OpenImageViewerOptions) => void;
+  openShortcutEditorWindow: (opts: OpenShortcutEditorWindowOptions) => void;
   openMandateWindow: (opts?: OpenMandateWindowOptions) => ChatWindowHandle;
   openNotesWindow: (opts?: OpenNotesWindowOptions) => ChatInstanceWindowHandle;
   openPromptPreviewWindow: (opts: OpenPromptPreviewWindowOptions) => ChatWindowHandle;
@@ -269,6 +363,11 @@ export const UNHOSTED_WINDOW_OPENERS: ChatWindowOpeners = {
   openContextPreviewPanel: unhosted("openContextPreviewPanel"),
   openDiffViewerWindow: unhosted("openDiffViewerWindow"),
   openLiveIntegrationsWindow: unhosted("openLiveIntegrationsWindow"),
+  openGmailComposeWindow: unhosted("openGmailComposeWindow"),
+  openLiveRunWindow: unhosted("openLiveRunWindow"),
+  openFullScreenMarkdownEditor: unhosted("openFullScreenMarkdownEditor"),
+  openImageViewer: unhosted("openImageViewer"),
+  openShortcutEditorWindow: unhosted("openShortcutEditorWindow"),
   openMandateWindow: unhosted("openMandateWindow"),
   openNotesWindow: unhosted("openNotesWindow"),
   openPromptPreviewWindow: unhosted("openPromptPreviewWindow"),
@@ -346,6 +445,56 @@ export function useOpenContextPreviewPanel() {
 }
 export function useOpenDiffViewerWindow() {
   return useOpener("openDiffViewerWindow");
+}
+export function useOpenGmailComposeWindow() {
+  return useOpener("openGmailComposeWindow");
+}
+export function useOpenLiveRunWindow() {
+  return useOpener("openLiveRunWindow");
+}
+export function useOpenFullScreenMarkdownEditorBridge() {
+  return useOpener("openFullScreenMarkdownEditor");
+}
+export function useOpenImageViewer() {
+  return useOpener("openImageViewer");
+}
+export function useOpenShortcutEditorWindow() {
+  return useOpener("openShortcutEditorWindow");
+}
+
+export interface FloatingLiveRunOptions extends Omit<OpenLiveRunWindowOptions, "pending" | "instanceId"> {
+  /** True while the run is in flight. The window opens on the false-to-true edge. */
+  active: boolean;
+  /** Stable per-subject id so re-running reuses ONE window instead of stacking. */
+  instanceId: string;
+}
+
+/**
+ * THE FLOATING LAW as one hook: opens the live-run window on the run's false-to-true edge,
+ * pushes the requestId / conversationId / label in as they land, and never auto-closes
+ * (the person dismisses it). A stable `instanceId` re-binds the SAME window on a remount.
+ */
+export function useFloatingLiveRun(opts: FloatingLiveRunOptions): void {
+  const open = useOpenLiveRunWindow();
+  const handleRef = useRef<ChatLiveRunWindowHandle | null>(null);
+  const {
+    active, instanceId, conversationId, requestId, runSetKey, label, width, height,
+    progress, initialMinimized, workingMessage, completeMessage,
+  } = opts;
+  useEffect(() => {
+    if (!active) return;
+    if (!handleRef.current) {
+      handleRef.current = open({ instanceId, pending: true, width, height });
+    }
+    handleRef.current.update({
+      conversationId, requestId, runSetKey, label, progress, initialMinimized,
+      workingMessage, completeMessage,
+      pending: !requestId && !conversationId,
+    });
+  }, [
+    active, open, instanceId, conversationId, requestId, runSetKey, label, width, height,
+    progress, initialMinimized, workingMessage, completeMessage,
+  ]);
 }
 export function useOpenLiveIntegrationsWindow() {
   return useOpener("openLiveIntegrationsWindow");

@@ -23,7 +23,7 @@ import {
 } from "@ai-matrx/design-system";
 import { Button } from "@ai-matrx/design-system";
 import { cn } from "@ai-matrx/design-system";
-import { NotePickerPopover } from "@host/features/notes/components/NotePickerPopover";
+import { NotePickerPopover } from "../../../host/ui-slots";
 import { useWorkingDocument } from "../../hooks/useWorkingDocument";
 import { DocumentLinkPicker } from "./DocumentLinkPicker";
 import { useAppDispatch, useAppSelector } from "../../../store/hooks";

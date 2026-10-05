@@ -19,84 +19,13 @@
  */
 
 import { useRef } from "react";
-import { AgentListPanel } from "@ai-matrx/agents/catalog/react";
-import { WindowPanel } from "@/features/window-panels/WindowPanel";
+import {
+  AGENT_PICKER_WINDOW_CONSUMER_ID,
+  AgentPickerFrame,
+} from "@ai-matrx/chat/window-panels/windows/agents/AgentPickerFrame";
 import { emitAgentPickerEvent } from "./agent-picker-callbacks";
 
-export const AGENT_PICKER_WINDOW_CONSUMER_ID = "agent-picker-window";
-
-type AgentPickerFrameOverlayId =
-  | "agentPickerWindow"
-  | "sendToAgentWindow"
-  | "customAgentWindow";
-
-export interface AgentPickerFrameProps {
-  /** Window-manager id — unique per open window. */
-  id: string;
-  overlayId: AgentPickerFrameOverlayId;
-  title: string;
-  onClose: () => void;
-  /** The chosen agent's id. */
-  onSelect: (agentId: string) => void;
-  /** Highlights + previews this agent when the picker opens. */
-  activeAgentId?: string | null;
-  /** Filter/tab state slot. Defaults to the shared picker-window slot. */
-  consumerId?: string;
-  /**
-   * A step shown INSTEAD of the picker, in the same window (for flows that
-   * continue after the pick). Omit to show the picker.
-   */
-  children?: React.ReactNode;
-  /** The window's own footer slots — for a step's actions. */
-  footerLeft?: React.ReactNode;
-  footerRight?: React.ReactNode;
-}
-
-/**
- * Opening size: the dropdown's 680 × 528 picker plus the window chrome
- * (33px header, the body's 6px gutter on each side, the 1px frame). The
- * window is an ordinary resizable WindowPanel from there.
- */
-const OPEN_WIDTH = 694;
-const OPEN_HEIGHT = 573;
-
-export function AgentPickerFrame({
-  id,
-  overlayId,
-  title,
-  onClose,
-  onSelect,
-  activeAgentId,
-  consumerId = AGENT_PICKER_WINDOW_CONSUMER_ID,
-  children,
-  footerLeft,
-  footerRight,
-}: AgentPickerFrameProps) {
-  return (
-    <WindowPanel
-      id={id}
-      overlayId={overlayId}
-      title={title}
-      onClose={onClose}
-      position="center"
-      width={OPEN_WIDTH}
-      height={OPEN_HEIGHT}
-      bodyClassName="p-0"
-      {...(footerLeft ? { footerLeft } : {})}
-      {...(footerRight ? { footerRight } : {})}
-    >
-      {children ?? (
-        <AgentListPanel
-          consumerId={consumerId}
-          onSelect={onSelect}
-          fill
-          {...(activeAgentId !== undefined ? { activeAgentId } : {})}
-          showPinnedAgent={Boolean(activeAgentId)}
-        />
-      )}
-    </WindowPanel>
-  );
-}
+export { AGENT_PICKER_WINDOW_CONSUMER_ID, AgentPickerFrame };
 
 export interface AgentPickerWindowProps {
   isOpen: boolean;

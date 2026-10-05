@@ -21,7 +21,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Flame, History } from "lucide-react";
 
-import { WindowPanel } from "@host/features/window-panels/WindowPanel";
+import { WindowPanel } from "../../../host/ui-slots";
 
 import { useAppDispatch, useAppSelector, useAppStore } from "../../../store/hooks";
 import type { ChatRootState } from "../../../store/root-state";

@@ -20,10 +20,9 @@
 "use client";
 
 import React, { useCallback, useEffect, useRef } from "react";
-import { useAppDispatch } from "../../../store/hooks";
 import { useImageArrivalPeeks } from "./useImageArrivalPeeks";
 import { ImageArrivalPeek } from "./ImageArrivalPeek";
-import { openImageViewer } from "@host/features/overlays/openers/imageViewer";
+import { useOpenImageViewer } from "../../../host/window-openers";
 
 // ─── Overlay contract props ────────────────────────────────────────────────────
 
@@ -40,7 +39,7 @@ export function ImageArrivalPeekHost({
   isOpen,
   onClose,
 }: ImageArrivalPeekHostProps) {
-  const dispatch = useAppDispatch();
+  const openImageViewer = useOpenImageViewer();
   const { peeks, dismiss } = useImageArrivalPeeks();
 
   // Track whether we've shown at least one peek. On first mount peeks=[],
@@ -60,12 +59,12 @@ export function ImageArrivalPeekHost({
   // Open the full-featured ImageViewerWindow when the user clicks a thumbnail.
   const handleImageClick = useCallback(
     (url: string) => {
-      openImageViewer(dispatch, {
+      openImageViewer({
         images: [url],
         title: "AI Generated Image",
       });
     },
-    [dispatch],
+    [openImageViewer],
   );
 
   if (!isOpen || peeks.length === 0) return null;

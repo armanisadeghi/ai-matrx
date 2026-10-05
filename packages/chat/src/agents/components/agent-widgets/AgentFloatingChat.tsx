@@ -2,7 +2,7 @@
 
 import { useAppSelector } from "../../../store/hooks";
 import { selectInstanceDisplayTitle } from "../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import { WindowPanel } from "@host/features/window-panels/WindowPanel";
+import { WindowPanel } from "../../../host/ui-slots";
 import { agentPanelUrlArgs } from "../../../window-panels/windows/agents/agentPanelSurfaceAddress";
 import { AgentRunner } from "../smart/AgentRunner";
 import { AgentChatHistorySidebar } from "./AgentChatHistorySidebar";

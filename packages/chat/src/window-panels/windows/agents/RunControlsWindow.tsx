@@ -21,8 +21,8 @@ import { useAppDispatch } from "../../../store/hooks";
 import { closeOverlay, CHAT_WINDOWS } from "../../../host/windows";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { TabbedBottomSheet } from "@ai-matrx/design-system";
-import { WindowPanel } from "@host/features/window-panels/WindowPanel";
-import { useOverlaySurfaceRenderAck } from "@host/features/window-panels/diagnostics/useOverlaySurfaceRenderAck";
+import { WindowPanel } from "../../../host/ui-slots";
+import { useOverlaySurfaceRenderAck } from "../../../host/ui-slots";
 import {
   RunControlsTabPanel,
   useRunControlsState,

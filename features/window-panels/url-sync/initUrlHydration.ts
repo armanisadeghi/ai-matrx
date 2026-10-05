@@ -10,7 +10,7 @@ import {
 } from "@ai-matrx/chat/window-panels/windows/agents/agentRunWindowAddress";
 import { readAgentPanelSurfaceArg } from "@ai-matrx/chat/window-panels/windows/agents/agentPanelSurfaceAddress";
 import { patchConversation } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.slice";
-import type { ResultDisplayMode } from "@ai-matrx/chat/agents/utils/run-ui-utils";
+import { resolveAgentPanelDisplayMode } from "@ai-matrx/chat/window-panels/windows/agents/agentPanelSurfaceAddress";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { OVERLAY_CATALOGUE } from "@/features/overlays/catalogue";
 import { ALL_WINDOW_STATIC_METADATA } from "../registry/windowRegistryMetadata";
@@ -829,20 +829,3 @@ export function initUrlHydration() {
   }
 }
 
-const RESTORABLE_AGENT_DISPLAY_MODES = new Set<ResultDisplayMode>([
-  "floating-chat",
-  "flexible-panel",
-  "modal-full",
-  "modal-compact",
-  "panel",
-  "sidebar",
-]);
-
-export function resolveAgentPanelDisplayMode(
-  mode: string | undefined,
-): ResultDisplayMode {
-  if (!mode || mode === "fc") return "floating-chat";
-  return RESTORABLE_AGENT_DISPLAY_MODES.has(mode as ResultDisplayMode)
-    ? (mode as ResultDisplayMode)
-    : "floating-chat";
-}

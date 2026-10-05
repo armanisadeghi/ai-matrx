@@ -38,7 +38,7 @@ import { RunSettingsEditor } from "./RunSettingsEditor";
 import { ContextPoliciesTab } from "./ContextPoliciesTab";
 import { PayloadTab } from "./PayloadTab";
 import { SystemInstructionEditor } from "@ai-matrx/chat/host/ui-slots";
-import { WindowPanel } from "@host/features/window-panels/WindowPanel";
+import { WindowPanel } from "../../../host/ui-slots";
 import { StreamDebugPanel } from "../debug/StreamDebugPanel";
 import { AgentWidgetInvokerTester } from "./AgentWidgetInvokerTester";
 import { RequestStatsPanel } from "./panels/RequestStatsPanel";

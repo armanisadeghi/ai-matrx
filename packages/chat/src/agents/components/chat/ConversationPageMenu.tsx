@@ -39,7 +39,7 @@ import { ItemMenu } from "@host/components/official/item/ItemMenu";
 import { buildConversationMenu } from "../conversation-actions/conversationActionRegistry";
 import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import { openConversationRename } from "../conversation-actions/conversation-verbs";
-import { useOpenGmailComposeWindow } from "@host/features/overlays/openers/gmailComposeWindow";
+import { useOpenGmailComposeWindow } from "../../../host/window-openers";
 import type { ItemMenuSection } from "@host/components/official/item/types";
 import { conversationEmailEntrances } from "./conversation-email-entrance";
 import type { ChatDispatch, ChatRootState } from "../../../store/root-state";

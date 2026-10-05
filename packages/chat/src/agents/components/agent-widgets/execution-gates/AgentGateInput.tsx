@@ -20,7 +20,7 @@ import { destroyInstanceIfAllowed } from "../../../redux/execution-system/conver
 import { closeOverlay, openOverlay, CHAT_WINDOWS, type ChatWindowId } from "../../../../host/windows";
 import { SmartAgentInput } from "../../inputs/smart-input/SmartAgentInput";
 import { useComposerMode } from "../../inputs/smart-input/composer/useComposerMode";
-import { WindowPanel } from "@host/features/window-panels/WindowPanel";
+import { WindowPanel } from "../../../../host/ui-slots";
 import { PaperPlaneIcon } from "@radix-ui/react-icons";
 import { Button } from "@ai-matrx/design-system";
 import { SurfaceRuntimeProvider } from "../../../../surfaces/runtime/SurfaceRuntimeContext";

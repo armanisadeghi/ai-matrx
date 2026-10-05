@@ -26,9 +26,14 @@
 
 import React, { useMemo, useState } from "react";
 
-import FullScreenOverlay, {
-  type TabDefinition,
-} from "@host/components/official/FullScreenOverlay";
+import { FullScreenOverlay } from "../../host/ui-slots";
+
+interface TabDefinition<TLabel extends React.ReactNode = string> {
+  id: string;
+  label: TLabel;
+  content: React.ReactNode;
+  className?: string;
+}
 import { cn } from "@ai-matrx/design-system";
 import { CopyButtons } from "@ai-matrx/chat/host/ui-slots";
 

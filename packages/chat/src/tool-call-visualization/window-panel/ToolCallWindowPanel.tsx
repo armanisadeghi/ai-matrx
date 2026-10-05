@@ -35,7 +35,7 @@ import {
 } from "lucide-react";
 
 import { cn } from "@ai-matrx/design-system";
-import { WindowPanel } from "@host/features/window-panels/WindowPanel";
+import { WindowPanel } from "../../host/ui-slots";
 import { CopyButtons } from "@ai-matrx/chat/host/ui-slots";
 import { ToggleGroup, ToggleGroupItem } from "@ai-matrx/design-system";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";

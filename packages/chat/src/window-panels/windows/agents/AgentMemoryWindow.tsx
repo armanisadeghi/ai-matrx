@@ -9,7 +9,7 @@
  * same state. Body renders content only; everything else is a slot.
  */
 
-import { WindowPanel } from "@host/features/window-panels/WindowPanel";
+import { WindowPanel } from "../../../host/ui-slots";
 import { Brain, Copy, RefreshCw } from "lucide-react";
 import { useAgentMemories } from "../../../agents/components/memory/hooks/useAgentMemories";
 import { AgentMemorySidebar } from "../../../agents/components/memory/components/AgentMemorySidebar";

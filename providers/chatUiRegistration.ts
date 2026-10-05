@@ -58,6 +58,16 @@ import { traceWarRoomRenderPath, isWarRoomThreadAgentSurface } from "@/features/
 import { useOpenCloudBrowserCanvas, cloudBrowserCanvasSourceId } from "@/features/cloud-browser/hooks/useOpenCloudBrowserCanvas";
 import { SystemInstructionEditor } from "@/features/agents/components/builder/message-builders/system-instructions/SystemInstructionEditor";
 import { SystemInstructionModal } from "@/features/agents/components/builder/message-builders/system-instructions/SystemInstructionModal";
+import { flattenResourcePickerItems } from "@/features/resource-manager/resource-picker/resource-picker-menu-items";
+import { useRunControlCounts } from "@/features/resource-manager/resource-picker/useRunControlCounts";
+import { useAttachResourcePicker } from "@/features/connectors/useAttachResourcePicker";
+import { usePopoutContainer } from "@/features/window-panels/popout/usePopoutContainer";
+import { useUrlSync } from "@/features/window-panels/url-sync/useUrlSync";
+import { useOverlaySurfaceRenderAck } from "@/features/window-panels/diagnostics/useOverlaySurfaceRenderAck";
+import {
+  disposeFullScreenEditorCallbackGroup,
+  emitFullScreenEditorSave,
+} from "@/features/overlays/callbacks/fullScreenEditor";
 import { kindValueToMarkdown } from "@/features/canvas/export/exportArtifactMarkdown";
 
 // Loaded on demand, client-only: the sharing modal is heavy and opens rarely.
@@ -66,7 +76,52 @@ const ShareModal = dynamic(
   { ssr: false },
 );
 
+// The app's window manager hosts every chat window (drag, resize, tray, popout, `panels=`
+// restore). Loaded on demand: WindowPanel and its pickers are heavy and client-only.
+const WindowPanel = dynamic(
+  () => import("@/features/window-panels/WindowPanel").then((m) => m.WindowPanel),
+  { ssr: false },
+);
+// The heavy pickers load on first draw (server-rendered where the page draws them).
+const FullScreenOverlay = dynamic(() => import("@/components/official/FullScreenOverlay"));
+const ResourcePickerMenu = dynamic(() =>
+  import("@/features/resource-manager/resource-picker/ResourcePickerMenu").then((m) => m.ResourcePickerMenu),
+);
+const FilesResourcePicker = dynamic(() =>
+  import("@/features/resource-manager/resource-picker/FilesResourcePicker").then((m) => m.FilesResourcePicker),
+);
+const NotePickerPopover = dynamic(() =>
+  import("@/features/notes/components/NotePickerPopover").then((m) => m.NotePickerPopover),
+);
+const SmartInputMessageTemplatePicker = dynamic(() =>
+  import("@/features/message-templates/components/SmartInputMessageTemplatePicker").then(
+    (m) => m.SmartInputMessageTemplatePicker,
+  ),
+);
+const ResourcePickerWindow = dynamic(
+  () =>
+    import("@/features/window-panels/windows/ResourcePickerWindow").then((m) => ({
+      default: m.ResourcePickerWindow,
+    })),
+  { ssr: false },
+);
+
 registerChatUi({
+  WindowPanel,
+  ResourcePickerWindow,
+  FullScreenOverlay,
+  ResourcePickerMenu,
+  FilesResourcePicker,
+  NotePickerPopover,
+  SmartInputMessageTemplatePicker,
+  flattenResourcePickerItems,
+  useRunControlCounts,
+  useAttachResourcePicker,
+  usePopoutContainer,
+  useUrlSync,
+  useOverlaySurfaceRenderAck,
+  disposeFullScreenEditorCallbackGroup,
+  emitFullScreenEditorSave,
   SystemInstructionEditor,
   SystemInstructionModal,
   RichDocument,

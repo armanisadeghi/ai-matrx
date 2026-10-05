@@ -56,13 +56,13 @@ import {
 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { useAppDispatch, useAppSelector } from "../../../../../store/hooks";
-import { ResourcePickerMenu } from "@host/features/resource-manager/resource-picker/ResourcePickerMenu";
+import { ResourcePickerMenu } from "../../../../../host/ui-slots";
 import {
   flattenResourcePickerItems,
   type ResourcePickerViewId,
-} from "@host/features/resource-manager/resource-picker/resource-picker-menu-items";
+} from "../../../../../host/ui-slots";
 import { useKnowledgeAttachSearch } from "@ai-matrx/chat/host/ui-slots";
-import { useRunControlCounts } from "@host/features/resource-manager/resource-picker/useRunControlCounts";
+import { useRunControlCounts } from "../../../../../host/ui-slots";
 import {
   useAttachResource,
   useDetachResource,
@@ -89,7 +89,7 @@ import {
 } from "../../../../redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { setUserInputText } from "../../../../redux/execution-system/instance-user-input/instance-user-input.slice";
 import { prependTemplateToDraft } from "@host/features/message-templates/utils/prepend-template-to-draft";
-import { SmartInputMessageTemplatePicker } from "@host/features/message-templates/components/SmartInputMessageTemplatePicker";
+import { SmartInputMessageTemplatePicker } from "../../../../../host/ui-slots";
 import { useOpenContextPreviewPanel } from "../../../../../host/window-openers";
 import { useOpenRunControlsWindow } from "../../../../../host/window-openers";
 import { useOpenCloudBrowserCanvas } from "@ai-matrx/chat/host/ui-slots";

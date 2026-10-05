@@ -14,7 +14,7 @@
  */
 
 import React, { useCallback, useState } from "react";
-import { WindowPanel } from "@host/features/window-panels/WindowPanel";
+import { WindowPanel } from "../../../host/ui-slots";
 import { RequestStatsPanel } from "../../../agents/components/run-controls/panels/RequestStatsPanel";
 import { SessionStatsPanel } from "../../../agents/components/run-controls/panels/SessionStatsPanel";
 import { ClientMetricsPanel } from "../../../agents/components/run-controls/panels/ClientMetricsPanel";

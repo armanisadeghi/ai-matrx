@@ -35,7 +35,7 @@ import { selectBuilderAdvancedSettings } from "../../../../redux/execution-syste
 import { setBuilderAdvancedSettings } from "../../../../redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { useConnectMcpServer } from "@host/features/connectors/useConnectMcpServer";
 import { attachActionLabel } from "@host/features/connectors/attachable-resources";
-import { useAttachResourcePicker } from "@host/features/connectors/useAttachResourcePicker";
+import { useAttachResourcePicker } from "../../../../../host/ui-slots";
 import { useConversationAttachments } from "@host/features/connectors/useConversationAttachments";
 import { useOpenLiveIntegrationsWindow } from "../../../../../host/window-openers";
 import { fetchAgentExecutionFull } from "../../../../redux/agent-definition/thunks";

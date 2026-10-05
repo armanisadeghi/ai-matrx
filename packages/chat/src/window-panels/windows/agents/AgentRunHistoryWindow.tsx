@@ -18,7 +18,7 @@ import {
   Workflow,
 } from "lucide-react";
 import { cn } from "@ai-matrx/design-system";
-import { WindowPanel } from "@host/features/window-panels/WindowPanel";
+import { WindowPanel } from "../../../host/ui-slots";
 import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import { selectAgentById } from "../../../agents/redux/agent-definition/selectors";
 import { fetchAgentConversations } from "../../../agents/redux/conversation-list/conversation-list.thunks";
