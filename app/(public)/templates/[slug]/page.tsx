@@ -38,8 +38,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!page) return { title: "Template", robots: { index: false, follow: true } };
   const { card, spec } = page;
   const path = publicTemplateHref(card);
-  return createRouteMetadata(path, {
-    title: card.name,
+  // Card names repeat across businesses ("Accounting firm"); the business makes each title unique.
+  const title = spec.business?.name ? `${card.name}: ${spec.business.name}` : card.name;
+  const image = { url: `${path}/social-image`, width: 1200, height: 630, alt: title };
+  const meta = createRouteMetadata(path, {
+    title,
     titlePrefix: "Template",
     description: templateDescription(card),
     canonicalPath: path,
@@ -47,6 +50,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       (k): k is string => Boolean(k),
     ),
   });
+  return {
+    ...meta,
+    openGraph: { ...meta.openGraph, images: [image] },
+    twitter: { ...meta.twitter, card: "summary_large_image", images: [image.url] },
+  };
 }
 
 function relatedTo(card: GalleryCard, all: readonly GalleryCard[]): GalleryCard[] {

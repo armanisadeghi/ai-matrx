@@ -4,6 +4,13 @@
 
 import { NextResponse, type NextRequest } from "next/server";
 
+/** The address the person asked on (the Host header), so a redirect keeps their host. */
+function originOf(request: NextRequest): string {
+  const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host");
+  const proto = request.headers.get("x-forwarded-proto") ?? request.nextUrl.protocol.replace(":", "");
+  return host ? `${proto}://${host}` : request.nextUrl.origin;
+}
+
 import { publicTemplateHref } from "@/features/make/gallery/publicGallery";
 import { readTemplatePage } from "@/features/make/gallery/publicCatalogue.server";
 
@@ -11,7 +18,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const { id } = await params;
   const page = await readTemplatePage(decodeURIComponent(id));
   const path = page ? publicTemplateHref(page.card) : `/templates/${encodeURIComponent(id)}`;
-  const to = new URL(path, request.nextUrl.origin);
+  const to = new URL(path, originOf(request));
   to.search = request.nextUrl.search;
   return NextResponse.redirect(to, 301);
 }

@@ -1,5 +1,6 @@
-// app/(public)/templates/[slug]/opengraph-image.tsx — a template's social card (lane CHAIR-GALLERY):
-// its name and business over a picture of its main table with the first sample rows.
+// app/(public)/templates/[slug]/social-image/route.tsx — a template's social card (lane CHAIR-GALLERY):
+// its name and business over a picture of its main table with the first sample rows. The page's
+// OpenGraph and Twitter image point here (generateMetadata in ../page.tsx).
 
 import { ImageResponse } from "next/og";
 
@@ -7,9 +8,8 @@ import { readTemplatePage } from "@/features/make/gallery/publicCatalogue.server
 import type { ShowField, ShowTable } from "@/features/make/gallery/TemplateShowcase";
 
 export const runtime = "nodejs";
-export const alt = "An AI Matrx template";
-export const size = { width: 1200, height: 630 };
-export const contentType = "image/png";
+export const revalidate = 86400;
+const size = { width: 1200, height: 630 };
 
 const SIMPLE = new Set(["text", "select", "currency", "number", "integer", "decimal", "percent", "email", "phone", "datetime", "checkbox"]);
 
@@ -25,7 +25,7 @@ function cell(field: ShowField, value: unknown): string {
   return s.length > 28 ? `${s.slice(0, 27)}…` : s;
 }
 
-export default async function Image({ params }: { params: Promise<{ slug: string }> }) {
+export async function GET(_request: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const page = await readTemplatePage(decodeURIComponent(slug));
   const name = page?.card.name ?? "Template";
