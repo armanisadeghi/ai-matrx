@@ -27920,6 +27920,10 @@ export type ChatDatabase = {
         Args: { p_resource: string; p_token: string; p_user: string }
         Returns: Json
       }
+      _edu_scope_member_reads_edges: {
+        Args: { p_id: string; p_type: string; p_user_id: string }
+        Returns: boolean
+      }
       _library_assert_admin: { Args: { p_actor: string }; Returns: undefined }
       _library_audit:
         | {
@@ -36536,6 +36540,14 @@ export type ChatDatabase = {
       }
       soft_delete_file: { Args: { p_file_id: string }; Returns: boolean }
       soft_delete_folder: { Args: { p_folder_id: string }; Returns: Json }
+      source_input_kinds: {
+        Args: never
+        Returns: {
+          label: string
+          source_input_order: number
+          token: string
+        }[]
+      }
       split_feedback_item: {
         Args: { p_descriptions: string[]; p_parent_id: string }
         Returns: Database["users"]["Tables"]["user_feedback"]["Row"][]

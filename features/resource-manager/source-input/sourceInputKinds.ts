@@ -105,16 +105,13 @@ let cached: Promise<SourceInputKindRow[]> | null = null;
 export function fetchSourceInputKinds(): Promise<SourceInputKindRow[]> {
   if (cached) return cached;
   const read = (async () => {
-    const { data, error } = await supabase
-      .schema("platform")
-      .from("entity_types")
-      .select("token, label, source_input_order")
-      .eq("source_input_pickable", true);
+    // `platform.entity_types` is not client-readable; this door returns only these three columns.
+    const { data, error } = await supabase.rpc("source_input_kinds");
     if (error) throw new Error(`Reading which kinds can be used failed: ${error.message}`);
     return (data ?? []).map((r) => ({
-      token: r.token as string,
-      label: (r.label as string | null) ?? r.token,
-      order: (r.source_input_order as number | null) ?? null,
+      token: r.token,
+      label: r.label ?? r.token,
+      order: r.source_input_order ?? null,
     }));
   })();
   cached = read;
