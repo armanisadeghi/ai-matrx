@@ -1,5 +1,5 @@
 "use client";
-import { Button, Chip } from "@ai-matrx/design-system/controls";
+import { Button as ControlButton, Chip } from "@ai-matrx/design-system/controls";
 import React, {
   useState,
   useEffect,
@@ -722,14 +722,14 @@ function TabErrorFallback({
                 label="Copy with content"
                 icon={FileCode}
               />
-              <Button
+              <ControlButton
                 variant="quiet"
                 className="ml-1"
                 onClick={onToggleDetails}
                 iconEnd={showDetails ? <ChevronDown /> : <ChevronRight />}
               >
                 {showDetails ? "Collapse" : "Expand"}
-              </Button>
+              </ControlButton>
             </div>
           </div>
 
@@ -1710,14 +1710,14 @@ function UnavailableDataNotice({
                 label="Copy with content"
                 icon={FileCode}
               />
-              <Button
+              <ControlButton
                 variant="quiet"
                 className="ml-1"
                 onClick={() => setShowDetails((v) => !v)}
                 iconEnd={showDetails ? <ChevronDown /> : <ChevronRight />}
               >
                 {showDetails ? "Collapse" : "Expand"}
-              </Button>
+              </ControlButton>
             </div>
           </div>
 
