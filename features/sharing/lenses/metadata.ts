@@ -8,6 +8,7 @@
  * the render side.
  */
 
+import { kindTextLabel } from "@/features/content-ir/surfaces/kind-text-label";
 import { readKeywordResearchArtifact } from "@/features/marketing/seo/keyword-research/data/artifact";
 import type { ResolvedShareToken } from "@/utils/permissions/shareLinks";
 import {
@@ -119,14 +120,11 @@ function conversationMeta(result: ResolvedShareToken): ShareLensMeta | null {
   const title = genericTitle(result.resource) ?? "Shared chat";
   const transcript = readSharedConversation(result);
   const opener = transcript ? firstUserText(transcript) : null;
-  const clean = opener?.replace(/\s+/g, " ").trim();
+  // A pasted kind reads as its one-line label, never `{"__kind":…` (KIND_NEVER_RAW).
+  const clean = kindTextLabel(opener, 180);
   return {
     title,
-    description: clean
-      ? clean.length > 180
-        ? `${clean.slice(0, 177)}…`
-        : clean
-      : "An AI chat shared with you on AI Matrx.",
+    description: clean || "An AI chat shared with you on AI Matrx.",
   };
 }
 
