@@ -17,7 +17,7 @@ import {
   applyServerUsageState,
   applyUsageRefusal,
   classifyUsageRefusal,
-} from "@host/features/entitlements/usage-gate/usageGate";
+} from "@ai-matrx/chat/host/usage-gate";
 import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import type { CompletionStats } from "../../../types/instance.types";
 import type { ClientMetrics } from "../../../types/request.types";

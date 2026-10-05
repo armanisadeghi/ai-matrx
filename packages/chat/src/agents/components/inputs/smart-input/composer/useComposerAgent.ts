@@ -28,7 +28,7 @@ import {
   selectModelLabelWithClass,
 } from "@host/features/ai-models/redux/modelRegistrySlice";
 import { useModelOptions } from "@host/features/ai-models/hooks/useModels";
-import { useModelClassLabels } from "@host/features/ai-models/hooks/useModelClassLabel";
+import { useModelClassLabels } from "../../../../../host/model-class";
 import { useEffectiveClassPin } from "../../../../redux/execution-system/instance-model-overrides/useEffectiveClassPin";
 import { initializeChatAgents } from "../../../../redux/agent-definition/thunks";
 

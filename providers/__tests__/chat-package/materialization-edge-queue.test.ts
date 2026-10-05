@@ -1,23 +1,23 @@
 import { configureStore } from "@reduxjs/toolkit";
 
-import { createSlimRootReducer } from "@host/lib/redux/rootReducer";
-import { setUserAuth } from "@host/lib/redux/slices/userAuthSlice";
+import { createSlimRootReducer } from "@/lib/redux/rootReducer";
+import { setUserAuth } from "@/lib/redux/slices/userAuthSlice";
 import {
   confirmServerSync,
   createInstance,
-} from "../../conversations/conversations.slice";
-import * as conversationPersistence from "../../conversations/conversation-persistence";
+} from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.slice";
+import * as conversationPersistence from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversation-persistence";
 import {
   setWorkingDocBinding,
   setWorkingDocContent,
   setWorkingDocEnabled,
-} from "../instance-working-document.slice";
-import * as workingDocumentService from "../cx-working-document.service";
+} from "@ai-matrx/chat/agents/redux/execution-system/instance-working-document/instance-working-document.slice";
+import * as workingDocumentService from "@ai-matrx/chat/agents/redux/execution-system/instance-working-document/cx-working-document.service";
 import {
   flushPendingDocumentEdgesThunk,
   materializeWorkingDocumentThunk,
   reflectAgentMaterializedThunk,
-} from "../instance-working-document.thunks";
+} from "@ai-matrx/chat/agents/redux/execution-system/instance-working-document/instance-working-document.thunks";
 
 const USER_ID = "4cf62e4e-2679-484f-b652-034e697418df";
 const AGENT_ID = "506a20fc-34a9-4038-b38b-6c71ab09b173";

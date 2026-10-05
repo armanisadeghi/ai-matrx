@@ -3,7 +3,7 @@
  * RunSkillPicker): group labels and the grouped, sorted "Add" list.
  */
 
-import type { DatabaseTool } from "@host/utils/supabase/tools-service";
+import type { DatabaseTool } from "../../../redux/tools/database-tool";
 import { getToolDisplayName } from "../../../../tool-call-visualization/registry/registry";
 
 /** Group label for a registry category slug: `web_search` → `Web search`. */

@@ -15,18 +15,18 @@
 
 import { configureStore } from "@reduxjs/toolkit";
 
-import { createSlimRootReducer } from "@host/lib/redux/rootReducer";
-import { setUserAuth } from "@host/lib/redux/slices/userAuthSlice";
-import { confirmServerSync, createInstance } from "../../conversations/conversations.slice";
-import * as workingDocumentService from "../cx-working-document.service";
-import { selectWorkingDocEnabled, selectWorkingDocError } from "../instance-working-document.selectors";
+import { createSlimRootReducer } from "@/lib/redux/rootReducer";
+import { setUserAuth } from "@/lib/redux/slices/userAuthSlice";
+import { confirmServerSync, createInstance } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.slice";
+import * as workingDocumentService from "@ai-matrx/chat/agents/redux/execution-system/instance-working-document/cx-working-document.service";
+import { selectWorkingDocEnabled, selectWorkingDocError } from "@ai-matrx/chat/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
 import {
   linkConversationDocumentThunk,
   openWorkspaceDocumentThunk,
-} from "../instance-working-document.thunks";
-import { _resetChatHostForTests, configureChat } from "../../../../../host/configure";
-import type { ChatHost } from "../../../../../host/contract";
-import { createFakeDb } from "../../../../../host/__tests__/fake-db";
+} from "@ai-matrx/chat/agents/redux/execution-system/instance-working-document/instance-working-document.thunks";
+import { _resetChatHostForTests, configureChat } from "@ai-matrx/chat/host/configure";
+import type { ChatHost } from "@ai-matrx/chat/host/contract";
+import { createFakeDb } from "@ai-matrx/chat/host/__tests__/fake-db";
 
 const USER_ID = "4cf62e4e-2679-484f-b652-034e697418df";
 const AGENT_ID = "506a20fc-34a9-4038-b38b-6c71ab09b173";

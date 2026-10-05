@@ -18,7 +18,7 @@
 import * as React from "react";
 import { Provider } from "react-redux";
 import { configureStore } from "@reduxjs/toolkit";
-import { renderHook, settle } from "@/test-utils/renderHook";
+import { renderHook, settle } from "@ai-matrx/chat/host/__tests__/render-hook";
 import voiceAgentReducer, {
   applyAgentConfig,
   initInstance,

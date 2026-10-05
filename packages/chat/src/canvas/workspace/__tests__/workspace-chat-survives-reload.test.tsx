@@ -17,6 +17,7 @@ const launchMandate = jest.fn();
 const launchAgent = jest.fn();
 const resumeConversation = jest.fn();
 let cacheOnly = true;
+let resumeFails = false;
 
 jest.mock("../../../agents/hooks/useAgentLauncher", () => ({
   useAgentLauncher: () => ({ launchMandate, launchAgent }),
@@ -28,7 +29,9 @@ jest.mock("../../../agents/redux/execution-system/thunks/resume-conversation.thu
   },
 }));
 jest.mock("../../../store/hooks", () => ({
-  useAppDispatch: () => () => ({ unwrap: () => Promise.resolve() }),
+  useAppDispatch: () => () => ({
+    unwrap: () => (resumeFails ? Promise.reject(new Error("not found")) : Promise.resolve()),
+  }),
   useAppSelector: (selector: (state: unknown) => unknown) =>
     selector({
       appContext: { organization_id: "org-1" },
@@ -72,9 +75,18 @@ import {
 const SAVED = "c1eccd75-aea8-4ba3-893b-ce71c42a6b41";
 const FRESH = "0b7a8d0e-1111-4222-8333-944455556666";
 
-function mount(): { current: CanvasWorkspaceConversationController; rerender: () => void } {
-  const out = {} as { current: CanvasWorkspaceConversationController; rerender: () => void };
+function mount(): {
+  current: CanvasWorkspaceConversationController;
+  rerender: () => void;
+  unmount: () => void;
+} {
+  const out = {} as {
+    current: CanvasWorkspaceConversationController;
+    rerender: () => void;
+    unmount: () => void;
+  };
   const root = createRoot(document.createElement("div"));
+  out.unmount = () => act(() => root.unmount());
   function Probe() {
     out.current = useCanvasWorkspaceConversation("canvas-workspace:board-x", {
       enabled: true,
@@ -99,6 +111,8 @@ beforeEach(() => {
   launchAgent.mockReset();
   resumeConversation.mockReset();
   cacheOnly = true;
+  resumeFails = false;
+  window.localStorage.clear();
   window.history.replaceState(null, "", "/board/b1#c=0,0,1");
 });
 
@@ -137,6 +151,62 @@ describe("the workspace chat lives at ?chat=<id>", () => {
     await settle();
     expect(hook.current.conversationId).toBe(FRESH);
     expect(window.location.search).toBe("?panels=chat_history%3Ax");
+  });
+});
+
+describe("the column reopens its conversation when the address names none (2026-10-05)", () => {
+  // Live: a board chat finished, the page was opened again at an address with
+  // no `?chat=` (`?panels=chat_history:quickChatHistory#cam=…`) and the column
+  // showed "New chat" — the conversation was only ever kept in the address.
+  async function chatThenLeave() {
+    const first = mount();
+    await settle();
+    cacheOnly = false; // the first turn reached the server
+    first.rerender();
+    await settle();
+    expect(window.location.search).toBe(`?chat=${FRESH}`);
+    first.unmount();
+    launchMandate.mockClear();
+    resumeConversation.mockClear();
+  }
+
+  it("an address without ?chat= reopens the conversation this chat last showed", async () => {
+    await chatThenLeave();
+    window.history.replaceState(null, "", "/board/b1?panels=chat_history%3AquickChatHistory#cam=1,2,0.5");
+    const hook = mount();
+    await settle();
+    expect(launchMandate).not.toHaveBeenCalled();
+    expect(resumeConversation).toHaveBeenCalledWith(expect.objectContaining({ conversationId: FRESH }));
+    expect(hook.current.conversationId).toBe(FRESH);
+    expect(window.location.search).toBe(`?panels=chat_history%3AquickChatHistory&chat=${FRESH}`);
+  });
+
+  it("New chat is what comes back after New chat", async () => {
+    await chatThenLeave();
+    window.history.replaceState(null, "", "/board/b1");
+    const hook = mount();
+    await settle();
+    cacheOnly = true; // the new chat has not been sent
+    launchMandate.mockResolvedValue({ conversationId: SAVED });
+    act(() => hook.current.startNew());
+    await settle();
+    hook.unmount();
+    resumeConversation.mockClear();
+    window.history.replaceState(null, "", "/board/b1");
+    mount();
+    await settle();
+    expect(resumeConversation).not.toHaveBeenCalled();
+  });
+
+  it("a remembered conversation that no longer opens gives a new chat, not an error", async () => {
+    await chatThenLeave();
+    resumeFails = true;
+    window.history.replaceState(null, "", "/board/b1");
+    const hook = mount();
+    await settle();
+    await settle();
+    expect(launchMandate).toHaveBeenCalledTimes(1);
+    expect(hook.current.conversation.state).not.toBe("failed");
   });
 });
 

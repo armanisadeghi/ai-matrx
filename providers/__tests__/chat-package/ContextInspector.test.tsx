@@ -1,3 +1,4 @@
+import "@/providers/chatUiRegistration";
 /**
  * The inspector (lanes CONTEXT-INSPECTOR-GUIDED, -2, -3): the four steps are
  * the platform's Miller Columns — Organizations → Scope types → Scopes →
@@ -64,22 +65,22 @@ const TREE = [
 
 // The page capture reads the store's request log and publishes to the admin
 // debug context; both are Redux-backed, so the test hands them a stand-in store.
-jest.mock("../../../../store/hooks", () => {
+jest.mock("@ai-matrx/chat/store/hooks", () => {
   const store = { getState: () => ({ apiConfig: { recentCalls: [] } }) };
-  return { ...jest.requireActual("../../../../store/hooks"), useAppStore: () => store };
+  return { ...jest.requireActual("@ai-matrx/chat/store/hooks"), useAppStore: () => store };
 });
 // The host code this test renders reads the app's own hooks (P3): one double covers both.
-jest.mock("@host/lib/redux/hooks", () => jest.requireMock("../../../../store/hooks"));
+jest.mock("@/lib/redux/hooks", () => jest.requireMock("@ai-matrx/chat/store/hooks"));
 // Host modules this screen pulls in still publish through the app's own hook.
-jest.mock("@host/hooks/useDebugContext", () => ({
+jest.mock("@/hooks/useDebugContext", () => ({
   useDebugContext: () => ({ publish: jest.fn(), publishKey: jest.fn(), isActive: false }),
 }));
-jest.mock("../../../../host/prefs-react", () => ({
-  ...jest.requireActual("../../../../host/prefs-react"),
+jest.mock("@ai-matrx/chat/host/prefs-react", () => ({
+  ...jest.requireActual("@ai-matrx/chat/host/prefs-react"),
   useDebugContext: () => ({ publish: jest.fn(), publishKey: jest.fn(), isActive: false }),
 }));
-jest.mock("@host/features/scopes/components/active-context/quick-pick/engine", () => {
-  const actual = jest.requireActual("@host/features/scopes/components/active-context/quick-pick/engine");
+jest.mock("@/features/scopes/components/active-context/quick-pick/engine", () => {
+  const actual = jest.requireActual("@/features/scopes/components/active-context/quick-pick/engine");
   return {
     ...actual,
     useUniverse: () => ({
@@ -95,7 +96,7 @@ jest.mock("@host/features/scopes/components/active-context/quick-pick/engine", (
     }),
   };
 });
-jest.mock("@host/features/scopes/components/context-assignment/data", () => ({
+jest.mock("@/features/scopes/components/context-assignment/data", () => ({
   fetchTypeItems: jest.fn(async (typeId: string) =>
     typeId === "0b6f1c1e-6a1f-4c55-9d7e-1f2a3b4c5d6e"
       ? [
@@ -107,7 +108,7 @@ jest.mock("@host/features/scopes/components/context-assignment/data", () => ({
   fetchAssignableProjects: jest.fn(async () => []),
   fetchAssignableTasks: jest.fn(async () => []),
 }));
-jest.mock("@host/features/scopes/service/scopesService", () => ({
+jest.mock("@/features/scopes/service/scopesService", () => ({
   scopesService: {
     getScopeHome: jest.fn(),
     listContextItems: jest.fn(),
@@ -115,18 +116,18 @@ jest.mock("@host/features/scopes/service/scopesService", () => ({
   },
 }));
 const compareProps: Array<Record<string, unknown>> = [];
-jest.mock("../ContextCompareView", () => ({
+jest.mock("@ai-matrx/chat/agents/components/context-preview/ContextCompareView", () => ({
   ContextCompareView: (props: Record<string, unknown>) => {
     compareProps.push(props);
     return <div data-compare-mock={JSON.stringify(props.selection)} />;
   },
 }));
 
-import { scopesService } from "@host/features/scopes/service/scopesService";
-import { ContextInspector } from "./ContextInspector";
-import { getActivePageCapture } from "@host/components/agent-copy/page-capture/usePageCapture";
-import { pageCaptureMarkdown, pageCapturePayload } from "@host/components/agent-copy/page-capture/pageCapture";
-import { EMPTY_SELECTION, type InspectorSelection } from "./selection";
+import { scopesService } from "@/features/scopes/service/scopesService";
+import { ContextInspector } from "@ai-matrx/chat/agents/components/context-preview/inspector/ContextInspector";
+import { getActivePageCapture } from "@/components/agent-copy/page-capture/usePageCapture";
+import { pageCaptureMarkdown, pageCapturePayload } from "@/components/agent-copy/page-capture/pageCapture";
+import { EMPTY_SELECTION, type InspectorSelection } from "@ai-matrx/chat/agents/components/context-preview/inspector/selection";
 
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 

@@ -854,7 +854,7 @@ describe("never raw ON SCREEN: every stream above, drawn through BlockRenderer (
       frames.forEach((frame, i) => {
         frame.live = i < liveCount;
       });
-      for (const frame of everyKindFrame(frames)) {
+      for (const frame of transitionKindFrames(frames, (f) => f.live)) {
         const verdict = await domFrameVerdict(frame.block, { isStreamActive: frame.live });
         if (verdict.failed) {
           leaks.push(

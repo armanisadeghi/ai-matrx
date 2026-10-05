@@ -308,9 +308,9 @@ export function WorkingDocumentEditor({
       {...menuProps}
       getTextarea={() => textareaRef.current}
       getApplicationScope={getApplicationScope}
-      onTextReplace={(t) => onChange(t)}
-      onTextInsertBefore={(t) => insertAtCursor(t, "before")}
-      onTextInsertAfter={(t) => insertAtCursor(t, "after")}
+      onTextReplace={(t: string) => onChange(t)}
+      onTextInsertBefore={(t: string) => insertAtCursor(t, "before")}
+      onTextInsertAfter={(t: string) => insertAtCursor(t, "after")}
       onContentInserted={() => {}}
     >
       <div className={className ?? "h-full min-h-0"}>

@@ -23,8 +23,8 @@
 let __uuidCounter = 0;
 // A signed-in person: the launch's sign-in gate (isSignedOutVisitor) reads the
 // browser session, which this suite has no host for. Everything else is real.
-jest.mock("../../../../../host/identity", () => ({
-  ...jest.requireActual("../../../../../host/identity"),
+jest.mock("@ai-matrx/chat/host/identity", () => ({
+  ...jest.requireActual("@ai-matrx/chat/host/identity"),
   isSignedOutVisitor: async () => false,
 }));
 
@@ -33,7 +33,7 @@ jest.mock("uuid", () => ({
 }));
 
 jest.mock(
-  "../../client-capabilities/desktop-presence",
+  "@ai-matrx/chat/agents/redux/execution-system/client-capabilities/desktop-presence",
   () => ({
     getLiveDesktopInstance: jest.fn().mockResolvedValue(null),
   }),
@@ -45,9 +45,9 @@ const AGENT_ID = "mandate-agent-1";
 const __requiredVariables: string[] = [];
 let __autoRun: boolean | null = null;
 let __presentation:
-  import("@host/features/bindings/treatment-shape").BindingPresentation | null =
+  import("@/features/bindings/treatment-shape").BindingPresentation | null =
   null;
-jest.mock("../../../../../mandates/service", () => ({
+jest.mock("@ai-matrx/chat/mandates/service", () => ({
   resolveMandate: jest.fn(async (mandateKey: string) => ({
     mandateKey,
     agentId: AGENT_ID,
@@ -84,15 +84,15 @@ jest.mock("../../../../../mandates/service", () => ({
   },
 }));
 
-import { defaultPresentation } from "@host/features/bindings/treatment-shape";
+import { defaultPresentation } from "@/features/bindings/treatment-shape";
 // HELD AND SET: with no organization selected, the launch asks through the one
 // gate (ensureOrgId) — mocked here so the answer is a fact of the test.
 const mockEnsureOrgId = jest.fn(async () => "org-picked-by-the-person");
-jest.mock("@host/lib/organizations/ensureOrgId", () => ({
+jest.mock("@/lib/organizations/ensureOrgId", () => ({
   ensureOrgId: () => mockEnsureOrgId(),
 }));
 // The org seam (P7) carries the names this test stood in for above; the rest stay real.
-jest.mock("../../../../../host/org", () => {
+jest.mock("@ai-matrx/chat/host/org", () => {
   const standIns: Record<string, unknown> = {
     ...(() => ({
   ensureOrgId: () => mockEnsureOrgId(),
@@ -100,33 +100,33 @@ jest.mock("../../../../../host/org", () => {
   };
   const moved = ["selectOrganizationId","selectOrganizationName","ensureOrgId","getActiveOrgId","isOrganizationSelectionCancelled","ensureOrganizationContext","ensureOrganizationForRequest"];
   return {
-    ...jest.requireActual("../../../../../host/org"),
+    ...jest.requireActual("@ai-matrx/chat/host/org"),
     ...Object.fromEntries(Object.entries(standIns).filter(([name]) => moved.includes(name))),
   };
 });
 
 import { configureStore, type UnknownAction } from "@reduxjs/toolkit";
-import { launchAgentExecution } from "../launch-agent-execution.thunk";
-import { assembleRequest } from "../execute-instance.thunk";
-import { resolveMandate } from "../../../../../mandates/service";
-import conversationsReducer from "../../conversations/conversations.slice";
-import conversationFocusReducer from "../../conversation-focus/conversation-focus.slice";
-import instanceModelOverridesReducer from "../../instance-model-overrides/instance-model-overrides.slice";
-import instanceVariableValuesReducer from "../../instance-variable-values/instance-variable-values.slice";
-import instanceResourcesReducer from "../../instance-resources/instance-resources.slice";
-import instanceContextReducer from "../../instance-context/instance-context.slice";
-import instanceUserInputReducer from "../../instance-user-input/instance-user-input.slice";
-import instanceClientToolsReducer from "../../instance-client-tools/instance-client-tools.slice";
-import instanceUIStateReducer from "../../instance-ui-state/instance-ui-state.slice";
-import messagesReducer from "../../messages/messages.slice";
-import creatorDebugReducer from "@host/lib/redux/preferences/creatorDebugSlice";
-import adminPreferencesReducer from "@host/lib/redux/preferences/adminPreferencesSlice";
-import userPreferencesReducer from "@host/lib/redux/preferences/userPreferencesSlice";
-import { editorStateReducer } from "@host/features/code-editor/redux/editor-state.slice";
-import appContextReducer from "@host/lib/redux/slices/appContextSlice";
-import { initialChatHostState, type ChatHostState } from "../../../../../store/chat-host.slice";
-import { configureRecordingWindows } from "../../../../../host/__tests__/recording-windows";
-import type { ChatDispatch, ChatRootState } from "../../../../../store/root-state";
+import { launchAgentExecution } from "@ai-matrx/chat/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
+import { assembleRequest } from "@ai-matrx/chat/agents/redux/execution-system/thunks/execute-instance.thunk";
+import { resolveMandate } from "@ai-matrx/chat/mandates/service";
+import conversationsReducer from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.slice";
+import conversationFocusReducer from "@ai-matrx/chat/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
+import instanceModelOverridesReducer from "@ai-matrx/chat/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
+import instanceVariableValuesReducer from "@ai-matrx/chat/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
+import instanceResourcesReducer from "@ai-matrx/chat/agents/redux/execution-system/instance-resources/instance-resources.slice";
+import instanceContextReducer from "@ai-matrx/chat/agents/redux/execution-system/instance-context/instance-context.slice";
+import instanceUserInputReducer from "@ai-matrx/chat/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
+import instanceClientToolsReducer from "@ai-matrx/chat/agents/redux/execution-system/instance-client-tools/instance-client-tools.slice";
+import instanceUIStateReducer from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
+import messagesReducer from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.slice";
+import creatorDebugReducer from "@/lib/redux/preferences/creatorDebugSlice";
+import adminPreferencesReducer from "@/lib/redux/preferences/adminPreferencesSlice";
+import userPreferencesReducer from "@/lib/redux/preferences/userPreferencesSlice";
+import { editorStateReducer } from "@/features/code-editor/redux/editor-state.slice";
+import appContextReducer from "@/lib/redux/slices/appContextSlice";
+import { initialChatHostState, type ChatHostState } from "@ai-matrx/chat/store/chat-host.slice";
+import { configureRecordingWindows } from "@ai-matrx/chat/host/__tests__/recording-windows";
+import type { ChatDispatch, ChatRootState } from "@ai-matrx/chat/store/root-state";
 import { storedMandateKey } from "@ai-matrx/agents/mandates";
 
 // Fully-loaded agent record: Step 0.5's readiness check passes so the thunk

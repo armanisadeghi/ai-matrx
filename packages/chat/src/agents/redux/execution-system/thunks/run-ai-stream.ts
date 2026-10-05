@@ -101,7 +101,7 @@ import {
   usageRefusalCode,
   noteAiCallEnded,
   USAGE_LIMIT_REACHED,
-} from "@host/features/entitlements/usage-gate/usageGate";
+} from "@ai-matrx/chat/host/usage-gate";
 
 /**
  * Thrown when the underlying fetch is aborted (user cancel, heartbeat-driven

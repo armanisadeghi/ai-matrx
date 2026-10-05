@@ -15,7 +15,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { BottomSheet, BottomSheetHeader } from "@ai-matrx/design-system";
 import { cn } from "@ai-matrx/design-system";
-import { PickerBackOverrideContext } from "@host/features/resource-manager/resource-picker/ResourcePickerSubViewHeader";
+import { PickerBackOverrideContext } from "@ai-matrx/chat/utils/resource-picker/ResourcePickerSubViewHeader";
 import {
   ComposerMenuCloseAllContext,
   ComposerMenuPresentationContext,

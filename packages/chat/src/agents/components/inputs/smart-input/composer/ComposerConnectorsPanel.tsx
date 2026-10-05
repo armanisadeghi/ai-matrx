@@ -23,7 +23,7 @@ import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 import { AttachedResourcesSection } from "@host/features/connectors/AttachedResourcesSection";
 import { useEffect, useState } from "react";
 import { Loader2, Paperclip } from "lucide-react";
-import { PickerSearchField } from "@host/features/resource-manager/resource-picker/ResourcePickerSubViewHeader";
+import { PickerSearchField } from "@ai-matrx/chat/utils/resource-picker/ResourcePickerSubViewHeader";
 import { Switch } from "@host/components/ui/switch";
 import { ConnectorMark } from "@ai-matrx/chat/host/ui-slots";
 import { connectorDefinitionFromMcp } from "@ai-matrx/chat/host/ui-slots";

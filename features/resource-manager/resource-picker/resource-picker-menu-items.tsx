@@ -23,26 +23,8 @@ import {
 } from "lucide-react";
 import { Google, Youtube } from "@/components/icons/brand-icons";
 
-export type ResourcePickerViewId =
-  | "cloud_browser"
-  | "files"
-  | "conversations"
-  | "notes"
-  | "tasks"
-  | "workbooks"
-  | "documents"
-  | "tables"
-  | "webpage"
-  | "youtube"
-  | "image_url"
-  | "file_url"
-  | "audio"
-  | "google"
-  | "context_values"
-  | "connections"
-  | "tools"
-  | "skills"
-  | null;
+import type { ResourcePickerViewId } from "@ai-matrx/chat/agents/resources/picker-view-id";
+export type { ResourcePickerViewId };
 
 export type ResourcePickerMenuItem = {
   id: Exclude<ResourcePickerViewId, null>;

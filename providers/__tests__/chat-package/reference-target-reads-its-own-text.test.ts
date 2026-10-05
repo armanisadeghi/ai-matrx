@@ -9,27 +9,27 @@
  */
 const mockGetManifest = jest.fn();
 
-jest.mock("../../../host/notify", () => ({
+jest.mock("@ai-matrx/chat/host/notify", () => ({
   toast: { error: jest.fn(), success: jest.fn() },
 }));
-jest.mock("../../../host/diagnostics", () => ({
-  ...jest.requireActual("../../../host/diagnostics"),
+jest.mock("@ai-matrx/chat/host/diagnostics", () => ({
+  ...jest.requireActual("@ai-matrx/chat/host/diagnostics"),
   captureError: jest.fn(),
 }));
-jest.mock("@host/lib/diagnostics/errorCaptureStore", () => ({
-  ...jest.requireActual("@host/lib/diagnostics/errorCaptureStore"),
+jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({
+  ...jest.requireActual("@/lib/diagnostics/errorCaptureStore"),
   captureError: jest.fn(),
 }));
-jest.mock("../registry", () => ({
+jest.mock("@ai-matrx/chat/surfaces/runtime/registry", () => ({
   getManifest: mockGetManifest,
 }));
-jest.mock("@host/features/content-ir/registry/schema-source-kind-tables", () => ({
+jest.mock("@/features/content-ir/registry/schema-source-kind-tables", () => ({
   getKindInputContractBySlug: jest.fn(),
 }));
 
-import { applySurfaceWrite, type SurfaceWriteApprovalProposal } from "../surface-writeback";
-import { registerSurfaceRuntime } from "../SurfaceRuntimeContext";
-import { canvasManifest } from "@host/features/surfaces/manifests/canvas.manifest";
+import { applySurfaceWrite, type SurfaceWriteApprovalProposal } from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
+import { registerSurfaceRuntime } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import { canvasManifest } from "@/features/surfaces/manifests/canvas.manifest";
 
 const PAGE = "<!doctype html><html><head><title>Lab</title></head><body><h1>Mix two liquids</h1></body></html>";
 

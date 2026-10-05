@@ -49,7 +49,7 @@ import {
   selectModelDetailError,
 } from "@host/features/ai-models/redux/modelRegistrySlice";
 import { useModelControls } from "../../hooks/useModelControls";
-import { useModelClassControls } from "@host/features/ai-models/hooks/useModelClassControls";
+import { useModelClassControls } from "../../../host/model-class";
 import {
   selectInstanceOverrideState,
   selectSettingsOverridesForApi,

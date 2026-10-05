@@ -22,7 +22,7 @@ import { useEffect } from "react";
 import { Lightbulb, CheckCircle2, ListOrdered, EyeOff } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "../../../../store/hooks";
 import { EntityRef } from "@host/components/official/entity-ref/EntityRef";
-import { PickerEmpty } from "@host/features/resource-manager/resource-picker/ResourcePickerSubViewHeader";
+import { PickerEmpty } from "@ai-matrx/chat/utils/resource-picker/ResourcePickerSubViewHeader";
 import { selectAgentIdFromInstance } from "../../../redux/execution-system/conversations/conversations.selectors";
 import {
   selectAgentError,

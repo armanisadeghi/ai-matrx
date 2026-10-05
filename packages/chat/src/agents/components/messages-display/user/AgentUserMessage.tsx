@@ -555,7 +555,7 @@ export function AgentUserMessage({
               canEdit={canEditText}
               editing={editingText}
               onEditingChange={setEditingText}
-              write={(text) => routeUserEditAction(dispatch, { actionId: "save", conversationId, messageId, newContent: text, surfaceKey })}
+              write={(text: string) => routeUserEditAction(dispatch, { actionId: "save", conversationId, messageId, newContent: text, surfaceKey })}
               actions={USER_EDIT_ACTIONS.filter((a) => a.id !== "save").map((a) => ({
                 id: a.id,
                 label: a.label,

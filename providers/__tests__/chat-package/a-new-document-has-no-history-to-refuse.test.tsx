@@ -16,7 +16,7 @@ import { createSlimRootReducer } from "@/lib/redux/rootReducer";
 import {
   markWorkingDocMaterialized,
   setWorkingDocBinding,
-} from "../../../redux/execution-system/instance-working-document/instance-working-document.slice";
+} from "@ai-matrx/chat/agents/redux/execution-system/instance-working-document/instance-working-document.slice";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -24,20 +24,20 @@ const listVersions = jest.fn(async (): Promise<never> => {
   throw new Error("[working-document] version_list failed: access denied");
 });
 jest.mock(
-  "../../../redux/execution-system/instance-working-document/cx-working-document.service",
+  "@ai-matrx/chat/agents/redux/execution-system/instance-working-document/cx-working-document.service",
   () => ({
     listWorkingDocumentVersions: () => listVersions(),
     getWorkingDocumentVersionContent: async () => null,
     restoreWorkingDocumentVersion: async () => 0,
   }),
 );
-jest.mock("../../../hooks/useWorkingDocument", () => ({
+jest.mock("@ai-matrx/chat/agents/hooks/useWorkingDocument", () => ({
   useWorkingDocument: () => ({ draft: "", onChange: () => undefined, flush: () => undefined, viewOnly: false }),
 }));
-jest.mock("@host/components/errors/ErrorAlchemyMenu", () => ({ ErrorAlchemyMenu: () => null }));
-jest.mock("../../../../next/lazy/NoteVersionHistoryPanel", () => ({ NoteVersionHistoryPanel: () => null }));
+jest.mock("@/components/errors/ErrorAlchemyMenu", () => ({ ErrorAlchemyMenu: () => null }));
+jest.mock("@ai-matrx/chat/next/lazy/NoteVersionHistoryPanel", () => ({ NoteVersionHistoryPanel: () => null }));
 
-import { WorkingDocumentVersionHistory } from "../WorkingDocumentVersionHistory";
+import { WorkingDocumentVersionHistory } from "@ai-matrx/chat/agents/components/working-document/WorkingDocumentVersionHistory";
 
 const flush = async () => {
   for (let i = 0; i < 5; i += 1) await act(async () => {});

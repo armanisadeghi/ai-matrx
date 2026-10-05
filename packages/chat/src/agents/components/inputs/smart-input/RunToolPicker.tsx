@@ -30,10 +30,10 @@ import { UntrustedCount } from "@host/components/official/stale-data/UntrustedCo
 import { readOf } from "@host/components/read-state/ReadGate";
 import { useEffect } from "react";
 import { AlertTriangle, Code2, Undo2, Wrench, X } from "lucide-react";
-import { PickerRow } from "@host/features/resource-manager/resource-picker/ResourcePickerSubViewHeader";
+import { PickerRow } from "@ai-matrx/chat/utils/resource-picker/ResourcePickerSubViewHeader";
 import type { DatabaseTool } from "@host/utils/supabase/tools-service";
 import { useAppDispatch, useAppSelector } from "../../../../store/hooks";
-import { PickerEmpty } from "@host/features/resource-manager/resource-picker/ResourcePickerSubViewHeader";
+import { PickerEmpty } from "@ai-matrx/chat/utils/resource-picker/ResourcePickerSubViewHeader";
 import {
   RunPicksSurface,
   PicksNote,
@@ -69,7 +69,7 @@ import {
 } from "../../../hooks/useModelControls";
 import { selectInstanceOverrideState } from "../../../redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
 import { effectiveOfferingPin } from "../../../redux/execution-system/instance-model-overrides/offering-pin";
-import { useModelClassControls } from "@host/features/ai-models/hooks/useModelClassControls";
+import { useModelClassControls } from "../../../../host/model-class";
 import { selectBuilderAdvancedSettings } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { setBuilderAdvancedSettings } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { DEFAULT_BUILDER_ADVANCED_SETTINGS } from "../../../types/instance.types";

@@ -40,7 +40,7 @@ jest.mock("../registry", () => ({
   getManifest: mockGetManifest,
 }));
 
-import { renderHook } from "@host/test-utils/renderHook";
+import { renderHook } from "@ai-matrx/chat/host/__tests__/render-hook";
 import {
   applySurfaceWrite,
   coerceDeclaredValueType,

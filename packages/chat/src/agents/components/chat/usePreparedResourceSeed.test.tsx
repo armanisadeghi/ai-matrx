@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { renderHook } from "@host/test-utils/renderHook";
+import { renderHook } from "@ai-matrx/chat/host/__tests__/render-hook";
 import { usePreparedResourceSeed, type PreparedResourceIdentity } from "./usePreparedResourceSeed";
 import type { Resource } from "../../resources/types";
 

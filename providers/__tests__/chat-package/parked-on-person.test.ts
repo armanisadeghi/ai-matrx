@@ -1,10 +1,10 @@
 /** The reconnect's durable fact for a parked turn: open asks on THIS conversation only. */
 const fetchPending = jest.fn();
-jest.mock("@host/features/action-requests/self-service", () => ({
+jest.mock("@/features/action-requests/self-service", () => ({
   fetchPendingActionRequests: () => fetchPending(),
 }));
 
-import { countOpenAsksForConversation } from "../parked-on-person";
+import { countOpenAsksForConversation } from "@ai-matrx/chat/agents/runtime-reconnect/parked-on-person";
 
 it("counts only this conversation's open asks", async () => {
   fetchPending.mockResolvedValue([

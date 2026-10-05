@@ -28,7 +28,19 @@ import { useClipboardPaste } from "@/components/ui/file-upload/useClipboardPaste
 import { useCenterControlFit } from "@/features/shell/components/header/useCenterControlFit";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { copyRichContent, copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
+import { selectAllSkills, selectSkillsStatus } from "@/features/skills/redux/skillsSelectors";
+import { registerChatModelClassHooks } from "@ai-matrx/chat/host/model-class";
+import { useModelClassControls } from "@/features/ai-models/hooks/useModelClassControls";
+import { useModelClassLabels } from "@/features/ai-models/hooks/useModelClassLabel";
+import { summarizeContextCell } from "@/features/scopes/utils/referenceCell";
+import { useEntityTitles } from "@/features/scopes/hooks/useEntityTitles";
+import { registerChatUsageGate } from "@ai-matrx/chat/host/usage-gate";
+import * as usageGate from "@/features/entitlements/usage-gate/usageGate";
 import { registerKindValueMarkdown } from "@ai-matrx/chat/utils/content-ir/kinds/kind-value-markdown";
+import { useKnowledgeAttachSearch } from "@/features/resource-manager/resource-picker/useKnowledgeAttachSearch";
+import { useConversationAttachments } from "@/features/connectors/useConversationAttachments";
+import { createClient as createAppClient } from "@/utils/supabase/client";
+import { projectsDb } from "@/utils/supabase/projectsDb";
 import { NotesAPI } from "@/features/notes/service/notesApi";
 import { kindValueToMarkdown } from "@/features/canvas/export/exportArtifactMarkdown";
 
@@ -58,7 +70,23 @@ registerChatUi({
   useCenterControlFit,
   useInPlaceTrigger,
   connectorDefinitionFromMcp,
+  useKnowledgeAttachSearch,
+  useConversationAttachments,
+  readProjectScopeOrganizationId: (tier: "project" | "task", id: string) => {
+    const db = projectsDb(createAppClient());
+    return tier === "project"
+      ? db.from("projects").select("organization_id").eq("id", id).maybeSingle()
+      : db.from("tasks").select("organization_id").eq("id", id).maybeSingle();
+  },
+  summarizeContextCell,
+  loadedSkills: (state: Parameters<typeof selectSkillsStatus>[0]) => ({
+    status: selectSkillsStatus(state),
+    skills: selectAllSkills(state),
+  }),
+  useEntityTitles,
   notesCreate: (input: Parameters<typeof NotesAPI.create>[0]) => NotesAPI.create(input),
 });
 
 registerKindValueMarkdown(kindValueToMarkdown);
+registerChatUsageGate(usageGate);
+registerChatModelClassHooks({ useModelClassControls, useModelClassLabels });

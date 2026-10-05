@@ -1,4 +1,4 @@
-import { renderHook } from "@host/test-utils/renderHook";
+import { renderHook } from "@ai-matrx/chat/host/__tests__/render-hook";
 
 const upload = jest.fn();
 const attachResource = jest.fn();

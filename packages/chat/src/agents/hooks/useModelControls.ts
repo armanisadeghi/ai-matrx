@@ -5,7 +5,7 @@
  * Keeps snake_case naming for compatibility with Python backend
  */
 
-import type { ModelClassControls } from "@host/features/ai-models/hooks/useModelClassControls";
+import type { ModelClassControls } from "../../host/model-class";
 import { LLM_PARAMS_KEYS } from "@ai-matrx/agents/generated/llm-enums";
 import { UI_GATE_KEYS } from "@host/lib/redux/slices/agent-settings/ui-gates";
 import type { AIModelRecord } from "@host/features/ai-models/redux/modelRegistrySlice";

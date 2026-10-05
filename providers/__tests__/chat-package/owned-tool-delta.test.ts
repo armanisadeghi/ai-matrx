@@ -1,23 +1,23 @@
 import { configureStore } from "@reduxjs/toolkit";
-import { seedAgentFromTemplate, setAgentField } from "../slice";
-import { createSlimRootReducer } from "@host/lib/redux/rootReducer";
-import { setUserAuth } from "@host/lib/redux/slices/userAuthSlice";
-import { setOrganization } from "@host/lib/redux/slices/appContextSlice";
-import { applyOwnedAgentToolDelta } from "../thunks";
-import { supabase } from "../../../../host/db";
-import { selectModelById } from "@host/features/ai-models/redux/modelRegistrySlice";
+import { seedAgentFromTemplate, setAgentField } from "@ai-matrx/chat/agents/redux/agent-definition/slice";
+import { createSlimRootReducer } from "@/lib/redux/rootReducer";
+import { setUserAuth } from "@/lib/redux/slices/userAuthSlice";
+import { setOrganization } from "@/lib/redux/slices/appContextSlice";
+import { applyOwnedAgentToolDelta } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import { supabase } from "@ai-matrx/chat/host/db";
+import { selectModelById } from "@/features/ai-models/redux/modelRegistrySlice";
 import {
   resolveModelControls,
   supportsTools,
-} from "../../../hooks/useModelControls";
+} from "@ai-matrx/chat/agents/hooks/useModelControls";
 
-jest.mock("../../../../host/db", () => ({
+jest.mock("@ai-matrx/chat/host/db", () => ({
   supabase: { schema: jest.fn() },
 }));
-jest.mock("@host/features/ai-models/redux/modelRegistrySlice", () => ({
+jest.mock("@/features/ai-models/redux/modelRegistrySlice", () => ({
   selectModelById: jest.fn(),
 }));
-jest.mock("../../../hooks/useModelControls", () => ({
+jest.mock("@ai-matrx/chat/agents/hooks/useModelControls", () => ({
   resolveModelControls: jest.fn(),
   supportsTools: jest.fn(),
 }));

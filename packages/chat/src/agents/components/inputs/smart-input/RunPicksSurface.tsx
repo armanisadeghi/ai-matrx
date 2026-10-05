@@ -26,7 +26,7 @@ import {
   PickerRow,
   PickerSearchField,
   PickerSectionLabel,
-} from "@host/features/resource-manager/resource-picker/ResourcePickerSubViewHeader";
+} from "@ai-matrx/chat/utils/resource-picker/ResourcePickerSubViewHeader";
 
 type IconType = ComponentType<{ className?: string }>;
 

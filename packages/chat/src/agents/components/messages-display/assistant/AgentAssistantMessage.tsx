@@ -278,7 +278,8 @@ export function AgentAssistantMessage({
   // caret where the person clicked (components/rich-editor/in-place).
   const { readProps: answerReadProps } = useInPlaceTrigger({
     canEdit: !isStreamActive && !!messageId && !!record && !record?._editingInPlace,
-    onOpen: ({ caret }) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- the host's caret shape (utils/rich-editor/in-place)
+    onOpen: ({ caret }: { caret: any }) => {
       if (!messageId) return;
       handInPlaceCaret(messageId, caret);
       dispatch(updateMessageRecord({ conversationId, messageId, patch: { _editingInPlace: true } }));

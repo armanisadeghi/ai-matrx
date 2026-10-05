@@ -31,9 +31,6 @@ jest.mock("@host/lib/diagnostics/errorCaptureStore", () => ({
 jest.mock("../registry", () => ({
   getManifest: mockGetManifest,
 }));
-jest.mock("@host/features/content-ir/registry/schema-source-kind-tables", () => ({
-  getKindInputContractBySlug: jest.fn(),
-}));
 
 import {
   applySurfaceWrite,

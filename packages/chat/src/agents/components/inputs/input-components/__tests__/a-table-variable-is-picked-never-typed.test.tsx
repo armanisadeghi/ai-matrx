@@ -5,6 +5,7 @@
  *
  * RED before the change: `table` was not a component type, so the variable drew a textarea.
  */
+import { registerChatUi } from "../../../../../host/ui-slots";
 import React, { act } from "react";
 import { createRoot } from "react-dom/client";
 
@@ -17,7 +18,7 @@ const ROWS = [
 
 // The picker itself is proven by the-table-picker-lists-every-organization; here it is a button per
 // offered table, so the test can pick like a person.
-jest.mock("@host/features/unified-data/hub/TableChooser", () => ({
+registerChatUi({
   TableChooser: ({
     tables,
     exclude,
@@ -37,10 +38,8 @@ jest.mock("@host/features/unified-data/hub/TableChooser", () => ({
         ))}
     </div>
   ),
-}));
-jest.mock("@host/features/unified-data/hub/useTablesEverywhere", () => ({
   useTablesEverywhere: () => ({ loading: false, error: null, rows: ROWS, reload: () => undefined }),
-}));
+});
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { TableVariableInput } = require("../TableVariableInput") as typeof import("../TableVariableInput");

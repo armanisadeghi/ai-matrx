@@ -9,7 +9,7 @@ import {
   selectModelLabelById,
   selectModelLabelWithClass,
 } from "@host/features/ai-models/redux/modelRegistrySlice";
-import { useModelClassLabels } from "@host/features/ai-models/hooks/useModelClassLabel";
+import { useModelClassLabels } from "../../host/model-class";
 
 /**
  * The model an agent uses, as every agent card / header / copy names it:

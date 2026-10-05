@@ -1,27 +1,27 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import type { McpCatalogEntry } from "../../../../types/mcp.types";
+import type { McpCatalogEntry } from "@ai-matrx/chat/agents/types/mcp.types";
 
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 let mockEntries: McpCatalogEntry[] = [];
 const mockDispatch = jest.fn();
-jest.mock("../../../../../store/hooks", () => ({ useAppDispatch: () => mockDispatch, useAppSelector: () => undefined }));
-jest.mock("../../../../hooks/useMcpTools", () => ({ useMcpCatalog: () => ({ catalog: mockEntries, serverStates: mockEntries.map(entry => ({ entry, truth: { state: "connected", reason: null }, toolCount: 1, attachable: [] })), status: "succeeded", availabilityStatus: "succeeded", refreshAvailability: jest.fn() }) }));
-jest.mock("../../../../redux/execution-system/active-requests/active-requests.selectors", () => ({ selectPrimaryRequest: jest.fn() }));
-jest.mock("../../../../redux/agent-definition/selectors", () => ({ selectAgentReadyForCustomExecution: jest.fn(), selectAgentMcpServers: jest.fn() }));
-jest.mock("../../../../redux/execution-system/conversations/conversations.selectors", () => ({ selectAgentIdFromInstance: jest.fn() }));
-jest.mock("../../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors", () => ({ selectBuilderAdvancedSettings: jest.fn() }));
-jest.mock("../../../../redux/execution-system/instance-ui-state/instance-ui-state.slice", () => ({ setBuilderAdvancedSettings: jest.fn() }));
-jest.mock("../../../../redux/agent-definition/thunks", () => ({ fetchAgentExecutionFull: jest.fn() }));
-jest.mock("../../../../redux/mcp/mcp.slice", () => ({ fetchCatalog: jest.fn() }));
-jest.mock("../../../../../host/window-openers", () => ({ useOpenLiveIntegrationsWindow: () => jest.fn() }));
-jest.mock("@host/features/connectors/useConnectMcpServer", () => ({ useConnectMcpServer: () => ({ connect: jest.fn(), connectingSlug: null }) }));
-jest.mock("@host/features/connectors/useAttachResourcePicker", () => ({ useAttachResourcePicker: () => jest.fn() }));
-jest.mock("@host/features/connectors/useConversationAttachments", () => ({ useConversationAttachments: () => ({ items: [], status: "succeeded" }) }));
-jest.mock("@host/features/connectors/AttachedResourcesSection", () => ({ AttachedResourcesSection: () => null }));
-jest.mock("@host/components/errors/ErrorAlchemyMenu", () => ({ ErrorAlchemyMenu: () => null }));
+jest.mock("@ai-matrx/chat/store/hooks", () => ({ useAppDispatch: () => mockDispatch, useAppSelector: () => undefined }));
+jest.mock("@ai-matrx/chat/agents/hooks/useMcpTools", () => ({ useMcpCatalog: () => ({ catalog: mockEntries, serverStates: mockEntries.map(entry => ({ entry, truth: { state: "connected", reason: null }, toolCount: 1, attachable: [] })), status: "succeeded", availabilityStatus: "succeeded", refreshAvailability: jest.fn() }) }));
+jest.mock("@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors", () => ({ selectPrimaryRequest: jest.fn() }));
+jest.mock("@ai-matrx/chat/agents/redux/agent-definition/selectors", () => ({ selectAgentReadyForCustomExecution: jest.fn(), selectAgentMcpServers: jest.fn() }));
+jest.mock("@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.selectors", () => ({ selectAgentIdFromInstance: jest.fn() }));
+jest.mock("@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors", () => ({ selectBuilderAdvancedSettings: jest.fn() }));
+jest.mock("@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice", () => ({ setBuilderAdvancedSettings: jest.fn() }));
+jest.mock("@ai-matrx/chat/agents/redux/agent-definition/thunks", () => ({ fetchAgentExecutionFull: jest.fn() }));
+jest.mock("@ai-matrx/chat/agents/redux/mcp/mcp.slice", () => ({ fetchCatalog: jest.fn() }));
+jest.mock("@ai-matrx/chat/host/window-openers", () => ({ useOpenLiveIntegrationsWindow: () => jest.fn() }));
+jest.mock("@/features/connectors/useConnectMcpServer", () => ({ useConnectMcpServer: () => ({ connect: jest.fn(), connectingSlug: null }) }));
+jest.mock("@/features/connectors/useAttachResourcePicker", () => ({ useAttachResourcePicker: () => jest.fn() }));
+jest.mock("@/features/connectors/useConversationAttachments", () => ({ useConversationAttachments: () => ({ items: [], status: "succeeded" }) }));
+jest.mock("@/features/connectors/AttachedResourcesSection", () => ({ AttachedResourcesSection: () => null }));
+jest.mock("@/components/errors/ErrorAlchemyMenu", () => ({ ErrorAlchemyMenu: () => null }));
 
-import { ComposerConnectorsPanel } from "./ComposerConnectorsPanel";
+import { ComposerConnectorsPanel } from "@ai-matrx/chat/agents/components/inputs/smart-input/composer/ComposerConnectorsPanel";
 function entry(extra: Partial<McpCatalogEntry> = {}): McpCatalogEntry {
   return { serverId: "server", slug: "example", name: "Example", vendor: "Example", description: null, category: "productivity", iconUrl: "/missing.svg", color: "#123456", websiteUrl: null, docsUrl: null, endpointUrl: null, transport: "http", authStrategy: "none", isOfficial: true, isFeatured: false, hasRemote: true, hasLocal: false, supportsMcpApps: false, serverStatus: "active", connectionReady: true, connectionId: "connection", connectionStatus: "connected", connectedAt: null, lastUsedAt: null, transportUsed: null, tokenExpiresAt: null, ...extra };
 }
@@ -52,3 +52,9 @@ test("first-party Google uses its local mark even with a broken catalog URL", as
   expect(row?.querySelector("svg")).not.toBeNull();
   expect(container.querySelector("img")).toBeNull();
 });
+
+// The panel draws the host's connector marks through the package's UI slots (host/ui-slots).
+import { registerChatUi as registerChatUiForPanel } from "@ai-matrx/chat/host/ui-slots";
+import { ConnectorMark as HostConnectorMark } from "@/features/connectors/ConnectorMark";
+import { connectorDefinitionFromMcp as hostConnectorDefinitionFromMcp } from "@/features/connectors/live-connectors";
+registerChatUiForPanel({ ConnectorMark: HostConnectorMark, connectorDefinitionFromMcp: hostConnectorDefinitionFromMcp });

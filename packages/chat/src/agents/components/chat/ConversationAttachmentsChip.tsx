@@ -28,7 +28,7 @@ import {
   PopoverTrigger,
 } from "@ai-matrx/design-system";
 import { attachmentKey } from "@host/features/connectors/attachable-resources";
-import { useConversationAttachments } from "@host/features/connectors/useConversationAttachments";
+import { useConversationAttachments } from "@ai-matrx/chat/host/ui-slots";
 import { useMcpCatalog } from "../../hooks/useMcpTools";
 import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
@@ -104,7 +104,8 @@ export function ConversationAttachmentsChip({
         )}
 
         <ul className="flex flex-col gap-1">
-          {items.map((item) => (
+          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any -- the host hook's attachment row */}
+          {items.map((item: any) => (
             <li key={attachmentKey(item)}>
               {item.link ? (
                 <a

@@ -23,25 +23,25 @@ jest.mock("uuid", () => ({
 }));
 
 jest.mock(
-  "../../client-capabilities/desktop-presence",
+  "@ai-matrx/chat/agents/redux/execution-system/client-capabilities/desktop-presence",
   () => ({
     getLiveDesktopInstance: jest.fn().mockResolvedValue(null),
   }),
 );
 
-import { assembleManualRequest } from "../execute-manual-instance.thunk";
-import { assembleRequest } from "../execute-instance.thunk";
-import creatorDebugReducer from "@host/lib/redux/preferences/creatorDebugSlice";
-import adminPreferencesReducer from "@host/lib/redux/preferences/adminPreferencesSlice";
-import userPreferencesReducer from "@host/lib/redux/preferences/userPreferencesSlice";
-import { editorStateReducer } from "@host/features/code-editor/redux/editor-state.slice";
-import appContextReducer from "@host/lib/redux/slices/appContextSlice";
-import { initialChatHostState } from "../../../../../store/chat-host.slice";
-import type { ChatRootState } from "../../../../../store/root-state";
+import { assembleManualRequest } from "@ai-matrx/chat/agents/redux/execution-system/thunks/execute-manual-instance.thunk";
+import { assembleRequest } from "@ai-matrx/chat/agents/redux/execution-system/thunks/execute-instance.thunk";
+import creatorDebugReducer from "@/lib/redux/preferences/creatorDebugSlice";
+import adminPreferencesReducer from "@/lib/redux/preferences/adminPreferencesSlice";
+import userPreferencesReducer from "@/lib/redux/preferences/userPreferencesSlice";
+import { editorStateReducer } from "@/features/code-editor/redux/editor-state.slice";
+import appContextReducer from "@/lib/redux/slices/appContextSlice";
+import { initialChatHostState } from "@ai-matrx/chat/store/chat-host.slice";
+import type { ChatRootState } from "@ai-matrx/chat/store/root-state";
 import {
   DEFAULT_BUILDER_ADVANCED_SETTINGS,
   type ManagedResource,
-} from "../../../../types/instance.types";
+} from "@ai-matrx/chat/agents/types/instance.types";
 
 // ---------------------------------------------------------------------------
 // State fixtures
@@ -653,8 +653,8 @@ describe("assembleManualRequest — live read contract", () => {
 // setting and never as a marker object.
 // ---------------------------------------------------------------------------
 
-import { buildSettingsDocument } from "@host/features/agents/components/settings-management/settings-document";
-import { configureServerForTest } from "../../../../../host/__tests__/server-test-host";
+import { buildSettingsDocument } from "@/features/agents/components/settings-management/settings-document";
+import { configureServerForTest } from "@ai-matrx/chat/host/__tests__/server-test-host";
 
 // Server calls reach the host's server client through the server port (P9).
 beforeAll(() => {

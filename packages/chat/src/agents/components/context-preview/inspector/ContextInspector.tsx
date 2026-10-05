@@ -38,7 +38,7 @@ import {
   useUniverse,
   type DrillPath,
 } from "@host/features/scopes/components/active-context/quick-pick/engine";
-import { summarizeContextCell } from "@host/features/scopes/utils/referenceCell";
+import { summarizeContextCell } from "../../../../host/ui-slots";
 import { scopesService } from "@host/features/scopes/service/scopesService";
 import { isScopesRpcErr } from "@host/features/scopes/types";
 import type { ContextItemRow, ContextItemValue, ScopesRpcResult } from "@host/features/scopes/types";

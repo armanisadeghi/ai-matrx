@@ -16,16 +16,16 @@ const CONVERSATION_ID = "11111111-1111-1111-1111-111111111111";
 
 const openPicker = jest.fn();
 
-jest.mock("../../../../../store/hooks", () => ({
+jest.mock("@ai-matrx/chat/store/hooks", () => ({
   useAppSelector: (selector: (state: unknown) => unknown) => selector({}),
   useAppDispatch: () => jest.fn(),
 }));
 // The host code this test renders reads the app's own hooks (P3): one double covers both.
-jest.mock("@host/lib/redux/hooks", () => jest.requireMock("../../../../../store/hooks"));
+jest.mock("@/lib/redux/hooks", () => jest.requireMock("@ai-matrx/chat/store/hooks"));
 
 jest.mock("@ai-matrx/kit/media-query", () => ({ ...jest.requireActual("@ai-matrx/kit/media-query"), useIsMobile: () => false }));
 
-jest.mock("../../../../../host/window-openers", () => ({ ...jest.requireActual("../../../../../host/window-openers"),
+jest.mock("@ai-matrx/chat/host/window-openers", () => ({ ...jest.requireActual("@ai-matrx/chat/host/window-openers"),
   useOpenRunControlsWindow: () => jest.fn(),
 }));
 
@@ -34,31 +34,31 @@ jest.mock("@ai-matrx/design-system", () => ({
   cn: jest.requireActual<typeof import("@ai-matrx/design-system")>("@ai-matrx/design-system").cn,
 }));
 
-jest.mock("../composer/ComposerConnectorsPanel", () => ({ ComposerConnectorsPanel: () => null }));
+jest.mock("@ai-matrx/chat/agents/components/inputs/smart-input/composer/ComposerConnectorsPanel", () => ({ ComposerConnectorsPanel: () => null }));
 
 jest.mock(
-  "../../../../redux/agent-definition/selectors",
+  "@ai-matrx/chat/agents/redux/agent-definition/selectors",
   () => ({ selectAgentMcpServers: () => ["github", "context7"] }),
 );
 
 jest.mock(
-  "../../../../redux/execution-system/conversations/conversations.selectors",
+  "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.selectors",
   () => ({ selectAgentIdFromInstance: () => () => "agent-1" }),
 );
 
 jest.mock(
-  "../../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors",
+  "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors",
   () => ({ selectBuilderAdvancedSettings: () => () => undefined }),
 );
 
 jest.mock(
-  "../../../../redux/execution-system/active-requests/active-requests.selectors",
+  "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors",
   () => ({ selectPrimaryRequest: () => () => undefined }),
 );
 
 // The payload under test. GitHub offers repositories from our synced
 // inventory; Context7 is a pure MCP server with nothing to choose.
-jest.mock("../../../../hooks/useMcpTools", () => ({
+jest.mock("@ai-matrx/chat/agents/hooks/useMcpTools", () => ({
   useMcpCatalog: () => ({
     serverStates: [
       {
@@ -83,14 +83,14 @@ jest.mock("../../../../hooks/useMcpTools", () => ({
   }),
 }));
 
-jest.mock("@host/features/connectors/useAttachResourcePicker", () => ({
+jest.mock("@/features/connectors/useAttachResourcePicker", () => ({
   useAttachResourcePicker: () => openPicker,
 }));
 
 let attached: Array<Record<string, unknown>> = [];
 let readStatus: "succeeded" | "failed" = "succeeded";
 
-jest.mock("@host/features/connectors/useConversationAttachments", () => ({
+jest.mock("@/features/connectors/useConversationAttachments", () => ({
   useConversationAttachments: () => ({
     items: attached,
     status: readStatus,
@@ -103,7 +103,7 @@ jest.mock("@host/features/connectors/useConversationAttachments", () => ({
   }),
 }));
 
-import { ChatConnectionsStrip } from "../ChatConnectionsStrip";
+import { ChatConnectionsStrip } from "@ai-matrx/chat/agents/components/inputs/smart-input/ChatConnectionsStrip";
 
 const REPO = {
   pending: false,
@@ -185,3 +185,9 @@ describe("composer chips: chosen resources are Advanced-only chips", () => {
     expect(context7.length).toBe(1);
   });
 });
+
+// The panel draws the host's connector marks through the package's UI slots (host/ui-slots).
+import { registerChatUi as registerChatUiForPanel } from "@ai-matrx/chat/host/ui-slots";
+import { ConnectorMark as HostConnectorMark } from "@/features/connectors/ConnectorMark";
+import { connectorDefinitionFromMcp as hostConnectorDefinitionFromMcp } from "@/features/connectors/live-connectors";
+registerChatUiForPanel({ ConnectorMark: HostConnectorMark, connectorDefinitionFromMcp: hostConnectorDefinitionFromMcp });

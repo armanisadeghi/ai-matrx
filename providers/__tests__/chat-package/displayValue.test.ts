@@ -1,13 +1,14 @@
+import "@/providers/chatUiRegistration";
 /**
  * The inspector prints what a value means: a reference cell reads as its
  * summary, never its stored fence bytes, and two fence spellings of the same
  * reference read identically.
  */
-import { buildReferenceCellValue } from "@host/features/scopes/utils/referenceCell";
-import type { ContextItemValue } from "@host/features/scopes/types";
-import { displayValue } from "./ContextInspector";
+import { buildReferenceCellValue } from "@/features/scopes/utils/referenceCell";
+import type { ContextItemValue } from "@/features/scopes/types";
+import { displayValue } from "@ai-matrx/chat/agents/components/context-preview/inspector/ContextInspector";
 
-jest.mock("@host/features/scopes/service/scopesService", () => ({ scopesService: {} }));
+jest.mock("@/features/scopes/service/scopesService", () => ({ scopesService: {} }));
 
 const cell = (patch: Partial<ContextItemValue>): ContextItemValue =>
   ({

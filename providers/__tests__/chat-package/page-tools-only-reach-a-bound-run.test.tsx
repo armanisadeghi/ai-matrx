@@ -19,21 +19,21 @@
 
 const mockGetManifest = jest.fn();
 
-jest.mock("../../../../../surfaces/runtime/registry", () => ({
+jest.mock("@ai-matrx/chat/surfaces/runtime/registry", () => ({
   getDeclaringSurface: () => null,
   getManifest: (name: string) => mockGetManifest(name),
   getSurfaceAncestry: (name: string) =>
     name === "matrx-user/page-child" ? ["matrx-user/page-a"] : [],
 }));
 
-jest.mock("../../client-capabilities/register-all", () => ({}));
+jest.mock("@ai-matrx/chat/agents/redux/execution-system/client-capabilities/register-all", () => ({}));
 
-jest.mock("@host/lib/supabase/hasBrowserSession", () => ({
+jest.mock("@/lib/supabase/hasBrowserSession", () => ({
   hasBrowserSession: async () => true,
 }));
 
 // No agent declares an output schema — the binding alone must decide.
-jest.mock("../../../../../host/db", () => ({
+jest.mock("@ai-matrx/chat/host/db", () => ({
   createClient: () => ({
     schema: () => ({
       from: () => ({
@@ -51,15 +51,15 @@ import {
   buildToolInjection,
   buildUserToolOverrides,
   resolveClientSurface,
-} from "../build-tool-injection";
-import type { ToolInjectionResult } from "../../../../types/tool-injection.types";
+} from "@ai-matrx/chat/agents/redux/execution-system/utils/build-tool-injection";
+import type { ToolInjectionResult } from "@ai-matrx/chat/agents/types/tool-injection.types";
 import {
   registerSurfaceRuntime,
   useSurfaceClientTools,
-} from "../../../../../surfaces/runtime/SurfaceRuntimeContext";
-import { invalidateOutputSchemaCache } from "../../../../../mandates/output-contract";
-import { resetMandateCatalogueCache } from "@host/features/mandates/catalogue";
-import type { ChatRootState } from "../../../../../store/root-state";
+} from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import { invalidateOutputSchemaCache } from "@ai-matrx/chat/mandates/output-contract";
+import { resetMandateCatalogueCache } from "@/features/mandates/catalogue";
+import type { ChatRootState } from "@ai-matrx/chat/store/root-state";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
   true;

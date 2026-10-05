@@ -51,9 +51,6 @@ jest.mock("@host/utils/auth/getUserId", () => ({
 jest.mock("@host/features/organizations/service", () => ({
   getUserOrganizations: () => new Promise(() => {}),
 }));
-jest.mock("@host/features/scopes/service/scopesService", () => ({
-  scopesService: { getScopeTree: jest.fn() },
-}));
 // The identity seam (P7) carries the names this test stood in for above; the rest stay real.
 jest.mock("../../../../../host/identity", () => {
   const standIns: Record<string, unknown> = {

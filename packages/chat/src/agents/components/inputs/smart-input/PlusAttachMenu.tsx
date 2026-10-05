@@ -32,8 +32,8 @@ import {
 import { Switch } from "@host/components/ui/switch";
 import { useAppDispatch, useAppSelector } from "../../../../store/hooks";
 import { ResourcePickerMenu } from "@host/features/resource-manager/resource-picker/ResourcePickerMenu";
-import type { ResourcePickerViewId } from "@host/features/resource-manager/resource-picker/resource-picker-menu-items";
-import { ResourcePickerSubViewHeader } from "@host/features/resource-manager/resource-picker/ResourcePickerSubViewHeader";
+import type { ResourcePickerViewId } from "@ai-matrx/chat/agents/resources/picker-view-id";
+import { ResourcePickerSubViewHeader } from "@ai-matrx/chat/utils/resource-picker/ResourcePickerSubViewHeader";
 import { QuickRunModelSelect } from "../../run-controls/RunModelPicker";
 import { RunConfigOverrides } from "../../run-controls/RunConfigOverrides";
 import { RunInputCapabilities } from "../../run-controls/RunInputCapabilities";

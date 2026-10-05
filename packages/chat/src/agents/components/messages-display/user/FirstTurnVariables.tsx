@@ -32,7 +32,7 @@ import {
 } from "../../../redux/execution-system/instance-variable-values/instance-variable-values.selectors";
 import { buildVariableDisplayLines } from "../../../utils/variable-display-lines";
 import { EntityRef } from "@host/components/official/entity-ref/EntityRef";
-import { useEntityTitles } from "@host/features/scopes/hooks/useEntityTitles";
+import { useEntityTitles } from "../../../../host/ui-slots";
 import { AnswerValueView } from "@host/components/official/structured-value/AnswerValueView";
 import { hasKindKey } from "@ai-matrx/chat/utils/content-ir/surfaces/json-kind-signal";
 

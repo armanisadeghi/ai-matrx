@@ -13,20 +13,20 @@ import { createRoot } from "react-dom/client";
 import { Provider } from "react-redux";
 import { TooltipProvider } from "@radix-ui/react-tooltip";
 import { configureStore } from "@reduxjs/toolkit";
-import { createSlimRootReducer } from "@host/lib/redux/rootReducer";
-import { stageAnswerEditRemark } from "../../../redux/execution-system/instance-resources/answer-edit-remark";
-import { selectInstanceResources } from "../../../redux/execution-system/instance-resources/instance-resources.selectors";
+import { createSlimRootReducer } from "@/lib/redux/rootReducer";
+import { stageAnswerEditRemark } from "@ai-matrx/chat/agents/redux/execution-system/instance-resources/answer-edit-remark";
+import { selectInstanceResources } from "@ai-matrx/chat/agents/redux/execution-system/instance-resources/instance-resources.selectors";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 const toggle = jest.fn();
 let selected: string | null = null;
-jest.mock("../../../../host/canvas", () => ({
+jest.mock("@ai-matrx/chat/host/canvas", () => ({
   useChatCanvasTab: () => ({ isAvailable: true, isVisible: selected !== null, selected, toggle }),
 }));
-jest.mock("@host/features/files/components/preview/FileResourceChip", () => ({ FileResourceChip: () => null }));
+jest.mock("@/features/files/components/preview/FileResourceChip", () => ({ FileResourceChip: () => null }));
 
-import { SmartAgentResourceChips } from "../../inputs/resources/SmartAgentResourceChips";
+import { SmartAgentResourceChips } from "@ai-matrx/chat/agents/components/inputs/resources/SmartAgentResourceChips";
 
 const CID = "5e1d2c3b-4a59-4687-9a1b-2c3d4e5f6a7b";
 const MID = "7f6e5d4c-3b2a-4190-8f7e-6d5c4b3a2f10";

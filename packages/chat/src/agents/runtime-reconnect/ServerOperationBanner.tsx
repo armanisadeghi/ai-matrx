@@ -8,8 +8,7 @@
  * Renders above the composer beside PendingAsksZone. Four evidence-backed faces:
  *   running / paused — the turn is executing server-side; the follower will
  *                      load the finished message automatically.
- *   waiting + ask    — the pending ask inbox proves user input is owed; Show
- *                      question focuses/reopens the actual answer surface.
+ *   waiting + ask    — says nothing: the ask's own card is on screen.
  *   waiting + no ask — reconnect checks the durable call ledger, auto-resumes
  *                      a resolved request, and retains Check/Continue actions.
  * Clears itself the moment the operation settles or a live stream takes over.
@@ -77,6 +76,10 @@ export function ServerOperationBanner({
   };
 
   const hasQuestion = pendingAsks.length > 0;
+  // A question whose card is drawn (PendingAsksZone: stacked on desktop, its
+  // own reopen pill on mobile) is never announced a second time here — the
+  // stale stamp used to keep "needs your answer" up after the person answered.
+  if (waiting && hasQuestion) return null;
   const continuing = operation.recoveryState === "continuing";
   // Parked on a person (an approve-spend ask): the call's own card holds the
   // form, and only the answer resumes the turn — no "Continue agent" here.

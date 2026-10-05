@@ -45,8 +45,7 @@ import { ensureOrgAvailability } from "@host/utils/permissions/service";
 // to store in a mapping, for every system that stores one.
 import { assertMappingsAreAnswerable } from "@host/features/mandates/provision-shapes";
 import { ensureOrgId } from "../../host/org";
-import { createClient as createHostClient } from "@host/utils/supabase/client";
-import { projectsDb } from "@host/utils/supabase/projectsDb";
+import { readProjectScopeOrganizationId } from "../../host/ui-slots";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -473,19 +472,10 @@ async function scopeRecordOrganizationId(
   if (tier !== "project" && tier !== "task") return null;
   const id = tier === "project" ? scope.projectId : scope.taskId;
   if (!id) return null;
-  const db = projectsDb(createHostClient());
-  const { data, error } =
-    tier === "project"
-      ? await db
-          .from("projects")
-          .select("organization_id")
-          .eq("id", id)
-          .maybeSingle()
-      : await db
-          .from("tasks")
-          .select("organization_id")
-          .eq("id", id)
-          .maybeSingle();
+  const { data, error } = (await readProjectScopeOrganizationId(tier, id)) as {
+    data: { organization_id: string | null } | null;
+    error: Error | null;
+  };
   if (error) throw error;
   if (!data?.organization_id) {
     throw recordUnavailable({

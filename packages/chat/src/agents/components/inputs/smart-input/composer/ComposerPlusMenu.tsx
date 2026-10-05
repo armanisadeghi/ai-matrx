@@ -61,7 +61,7 @@ import {
   flattenResourcePickerItems,
   type ResourcePickerViewId,
 } from "@host/features/resource-manager/resource-picker/resource-picker-menu-items";
-import { useKnowledgeAttachSearch } from "@host/features/resource-manager/resource-picker/useKnowledgeAttachSearch";
+import { useKnowledgeAttachSearch } from "@ai-matrx/chat/host/ui-slots";
 import { useRunControlCounts } from "@host/features/resource-manager/resource-picker/useRunControlCounts";
 import {
   useAttachResource,

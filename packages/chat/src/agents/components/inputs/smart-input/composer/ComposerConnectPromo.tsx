@@ -13,7 +13,7 @@ import {
   GoogleDocsMark,
   GoogleSheetsMark,
   MicrosoftMark,
-} from "@host/features/connectors/marks";
+} from "@ai-matrx/chat/utils/connectors/marks";
 import { useState } from "react";
 import { cn, Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { ComposerConnectorsPanel } from "./ComposerConnectorsPanel";

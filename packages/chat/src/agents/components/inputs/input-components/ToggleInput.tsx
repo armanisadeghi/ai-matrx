@@ -1,5 +1,5 @@
 import React from "react";
-import { Switch } from "@host/components/ui/switch";
+import { Switch } from "@ai-matrx/design-system";
 import LightSwitchToggle from "@host/components/matrx/LightSwitchToggle";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
@@ -57,6 +57,7 @@ export function ToggleInput({
       }
     >
       <Switch
+        size="sm"
         checked={isOn}
         onCheckedChange={handleToggle}
         aria-label={humanizeIdentifier(variableName)}

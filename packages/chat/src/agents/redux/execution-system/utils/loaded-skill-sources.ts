@@ -4,16 +4,17 @@
  * Lets a thunk move old kind skills into `outputKinds` without fetching.
  */
 
-import {
-  selectAllSkills,
-  selectSkillsStatus,
-} from "@host/features/skills/redux/skillsSelectors";
+import { loadedSkills } from "../../../../host/ui-slots";
 import type { ChatRootState } from "../../../../store/root-state";
 import type { ShapeChipSkillSource } from "../../../components/inputs/smart-input/shape-chips";
 
 export function selectLoadedSkillSources(state: ChatRootState): ShapeChipSkillSource[] {
-  if (selectSkillsStatus(state) !== "ready") return [];
-  return selectAllSkills(state).map((skill) => ({
+  const loaded = loadedSkills(state) as {
+    status: string;
+    skills: Array<{ id: string; skillId: string; isActive: boolean }>;
+  };
+  if (loaded.status !== "ready") return [];
+  return loaded.skills.map((skill) => ({
     id: skill.id,
     skillId: skill.skillId,
     isActive: skill.isActive,

@@ -40,7 +40,7 @@ export function TableVariableInput({
         <TableChooser
           tables={tables}
           value={ids[0] ?? null}
-          onSelect={(id) => onChange(tableReferenceValue("table", [id]))}
+          onSelect={(id: string) => onChange(tableReferenceValue("table", [id]))}
           readonly={readonly}
           label={null}
         />
@@ -49,7 +49,7 @@ export function TableVariableInput({
   }
 
   const nameOf = (id: string) =>
-    tables.rows.find((t) => t.table_id === id)?.table_name ??
+    tables.rows.find((t: { table_id: string; table_name?: string | null }) => t.table_id === id)?.table_name ??
     (tables.loading ? "…" : "Table unavailable");
 
   return (
@@ -82,7 +82,7 @@ export function TableVariableInput({
         tables={tables}
         value={null}
         exclude={ids}
-        onSelect={(id) => onChange(tableReferenceValue("tables", [...ids, id]))}
+        onSelect={(id: string) => onChange(tableReferenceValue("tables", [...ids, id]))}
         readonly={readonly}
         label={null}
         placeholder={ids.length > 0 ? "Add another table…" : "Choose tables…"}
@@ -98,7 +98,7 @@ export function TableReferenceNames({ value }: { value: unknown }) {
   if (ids.length === 0) return null;
   const names = ids.map(
     (id) =>
-      tables.rows.find((t) => t.table_id === id)?.table_name ??
+      tables.rows.find((t: { table_id: string; table_name?: string | null }) => t.table_id === id)?.table_name ??
       (tables.loading ? "…" : "Table unavailable"),
   );
   return <>{names.join(", ")}</>;

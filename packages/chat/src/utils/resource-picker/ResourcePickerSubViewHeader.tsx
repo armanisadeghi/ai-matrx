@@ -15,7 +15,7 @@
 
 import { createContext, forwardRef, useContext, useEffect, type ComponentType, type CSSProperties, type KeyboardEventHandler, type ReactNode } from "react";
 import { ChevronDown, ChevronLeft, ChevronRight, Link2, Loader2, Search, X } from "lucide-react";
-import { cn } from "@/utils/cn";
+import { cn } from "@ai-matrx/design-system";
 
 /**
  * Inside a phone sheet the sheet's own iOS nav bar owns Back (and the title),

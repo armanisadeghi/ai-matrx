@@ -9,7 +9,7 @@
 // it disappears in dark mode).
 
 import type { LucideIcon } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import type { ConnectorLogo, ConnectorLogoProps } from "./types";
 
 function MarkSvg({

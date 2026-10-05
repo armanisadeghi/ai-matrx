@@ -288,7 +288,7 @@ export function ConversationInput({
   // ── Clipboard paste ────────────────────────────────────────────────────────
   useClipboardPaste({
     textareaRef,
-    onPasteImage: async (file) => {
+    onPasteImage: async (file: File) => {
       await handleFilesSelected([file]);
     },
   });

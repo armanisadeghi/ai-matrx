@@ -12,9 +12,6 @@ jest.mock("../host/db", () => ({
   }),
 }));
 
-jest.mock("@host/lib/supabase/hasBrowserSession", () => ({
-  hasBrowserSession: () => Promise.resolve(true),
-}));
 // The identity seam (P7) carries the names this test stood in for above; the rest stay real.
 jest.mock("../host/identity", () => {
   const standIns: Record<string, unknown> = {

@@ -9,28 +9,28 @@
  */
 import { combineReducers, configureStore } from "@reduxjs/toolkit";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
-import input from "../../instance-user-input/instance-user-input.slice";
-import variables from "../../instance-variable-values/instance-variable-values.slice";
-import resources from "../../instance-resources/instance-resources.slice";
-import context from "../../instance-context/instance-context.slice";
-import clientTools from "../../instance-client-tools/instance-client-tools.slice";
-import ui from "../../instance-ui-state/instance-ui-state.slice";
+import input from "@ai-matrx/chat/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
+import variables from "@ai-matrx/chat/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
+import resources from "@ai-matrx/chat/agents/redux/execution-system/instance-resources/instance-resources.slice";
+import context from "@ai-matrx/chat/agents/redux/execution-system/instance-context/instance-context.slice";
+import clientTools from "@ai-matrx/chat/agents/redux/execution-system/instance-client-tools/instance-client-tools.slice";
+import ui from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import overrides, {
   initInstanceOverrides,
   setOverrides,
-} from "../../instance-model-overrides/instance-model-overrides.slice";
-import { setOfferingPin } from "../../instance-model-overrides/offering-pin";
-import conversations from "../../conversations/conversations.slice";
-import { applyLaunchModelOverrides } from "../../instance-model-overrides/launch-model-overrides";
-import { selectSettingsOverridesForApi } from "../../instance-model-overrides/instance-model-overrides.selectors";
-import { copyInstanceRequestDraft } from "../copy-instance-request-draft.thunk";
+} from "@ai-matrx/chat/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
+import { setOfferingPin } from "@ai-matrx/chat/agents/redux/execution-system/instance-model-overrides/offering-pin";
+import conversations from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.slice";
+import { applyLaunchModelOverrides } from "@ai-matrx/chat/agents/redux/execution-system/instance-model-overrides/launch-model-overrides";
+import { selectSettingsOverridesForApi } from "@ai-matrx/chat/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
+import { copyInstanceRequestDraft } from "@ai-matrx/chat/agents/redux/execution-system/thunks/copy-instance-request-draft.thunk";
 
 // The knob read is the external dependency (settings ladder over the network).
-jest.mock("@host/lib/scoped-config/sessionKnob", () => ({
+jest.mock("@/lib/scoped-config/sessionKnob", () => ({
   resolveSessionKnob: jest.fn(async () => GEMINI_FLASH),
 }));
-jest.mock("@host/features/ai-models/preferredChatModel", () => ({
-  ...jest.requireActual("@host/features/ai-models/preferredChatModel"),
+jest.mock("@/features/ai-models/preferredChatModel", () => ({
+  ...jest.requireActual("@/features/ai-models/preferredChatModel"),
   resolvePreferredChatModel: jest.fn(async () => ({
     modelId: GEMINI_FLASH,
     offeringId: GEMINI_FAST_CLASS,
