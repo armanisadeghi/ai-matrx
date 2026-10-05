@@ -61,6 +61,7 @@ import { RichDocument } from "@/features/rich-document/RichDocument";
 import type { SourceFeature } from "@ai-matrx/agents/generated/source-attribution";
 import type { ContentSource } from "@/features/rich-document/types";
 import { planSave, type IslandDelta, type SavePlan } from "./core/save-plan";
+import type { CaretContext } from "./core/caret-context";
 import { reconcileHostValue } from "./core/host-value";
 import { measureText } from "./core/text-metrics";
 import { outlineOf, type OutlineEntry } from "./core/outline";
@@ -115,6 +116,12 @@ export interface RichEditorController {
   openFind: (withReplace?: boolean) => void;
   /** Scroll to the heading that starts at (or nearest before) this source offset. */
   jumpToOffset: (offset: number) => void;
+  /**
+   * Edit in place: put the caret where the person double-clicked the rendered
+   * text (`core/caret-context.ts`). False until the view is ready or when the
+   * text is not found — the caller retries or leaves the caret at the start.
+   */
+  placeCaret: (context: CaretContext) => boolean;
 }
 
 export interface RichEditorProps {
@@ -514,6 +521,7 @@ export default function RichEditorImpl({
       flush,
       historyDepth: () => handle.current?.historyDepth() ?? { undo: 0, redo: 0 },
       openFind: (withReplace = false) => setFindMode(withReplace ? "replace" : "find"),
+      placeCaret: (context) => handle.current?.placeCaret(context) ?? false,
       jumpToOffset: (offset) => {
         const entries = outlineOf(flush());
         let entry: OutlineEntry | undefined;

@@ -28,6 +28,7 @@
 import { useTileNavigationGuard } from "../engine/tile-navigation";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
+import { type EditableCaret, subscribeEditableCaret } from "@/components/selection-toolbar/selection-zones";
 import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 import {
   type Camera,
@@ -314,21 +315,16 @@ export function BoardViewport({
       const el = e.target as Element | null;
       reveal(el, () => visible(el, el?.getBoundingClientRect() ?? null));
     };
-    const onSelection = () => {
-      const sel = document.getSelection();
-      if (!sel || sel.rangeCount === 0 || !sel.isCollapsed) return;
-      const node = sel.anchorNode;
-      const host = node instanceof Element ? node : node?.parentElement;
-      if (!host?.closest("[contenteditable='true'], [contenteditable='']")) return;
-      const range = sel.getRangeAt(0);
-      reveal(node, () => visible(host, range.getClientRects()[0] ?? range.getBoundingClientRect()));
+    // The caret comes from the ONE selection listener (the selection toolbar root).
+    const onCaret = ({ node, host, rect }: EditableCaret) => {
+      reveal(node, () => visible(host, rect()));
     };
     window.addEventListener("pointerdown", onDown, true);
     window.addEventListener("pointerup", onUp, true);
     window.addEventListener("pointercancel", onUp, true);
     window.addEventListener("keydown", onKey, true);
     root.addEventListener("focusin", onFocusIn);
-    document.addEventListener("selectionchange", onSelection);
+    const stopCaret = subscribeEditableCaret(onCaret);
     document.addEventListener("scroll", onContentScroll, true);
     return () => {
       document.removeEventListener("scroll", onContentScroll, true);
@@ -339,7 +335,7 @@ export function BoardViewport({
       window.removeEventListener("pointerup", onUp, true);
       window.removeEventListener("pointercancel", onUp, true);
       root.removeEventListener("focusin", onFocusIn);
-      document.removeEventListener("selectionchange", onSelection);
+      stopCaret();
     };
   }, [store]);
 

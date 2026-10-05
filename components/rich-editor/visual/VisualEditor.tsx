@@ -28,6 +28,7 @@ import {
   type VisualLoadStats,
 } from "../core/visual-document";
 import { findInDoc, replaceInDoc, type VisualMatch } from "../core/visual-find";
+import { locateCaret, type CaretContext } from "../core/caret-context";
 import type { FindOptions } from "../core/find-replace";
 import { createVisualExtensions, type RichShellActions } from "./visual-extensions";
 import { findHighlightKey } from "./decorations";
@@ -62,6 +63,8 @@ export interface EditorViewHandle {
    */
   historyDepth: () => { undo: number; redo: number };
   scrollToHeading: (slug: string, offset: number) => void;
+  /** Put the caret at the text the person double-clicked in the rendered view; false when not found. */
+  placeCaret: (context: CaretContext) => boolean;
   find: (query: string, options: FindOptions, step?: 1 | -1) => ViewFindState;
   replaceCurrent: (query: string, replacement: string, options: FindOptions) => string[];
   replaceAll: (query: string, replacement: string, options: FindOptions) => string[];
@@ -272,6 +275,33 @@ export function VisualEditor({
       if (editor && element) {
         const pos = editor.view.posAtDOM(element, 0);
         editor.chain().setTextSelection(pos).focus(undefined, { scrollIntoView: false }).run();
+      }
+    },
+    placeCaret: (context) => {
+      if (!editor) return false;
+      // The document's visible text, each character mapped to its position;
+      // a block boundary reads as a line break (the rendered view's too).
+      let flat = "";
+      const positions: number[] = [];
+      editor.state.doc.descendants((node, pos) => {
+        if (node.isText && node.text) {
+          for (let i = 0; i < node.text.length; i++) positions.push(pos + i);
+          flat += node.text;
+        } else if (node.isBlock && flat.length > 0 && !flat.endsWith("\n")) {
+          positions.push(pos);
+          flat += "\n";
+        }
+        return true;
+      });
+      const index = locateCaret(flat, context);
+      if (index === null) return false;
+      const pos = index < positions.length ? positions[index]! : editor.state.doc.content.size - 1;
+      try {
+        editor.view.dispatch(editor.state.tr.setSelection(TextSelection.near(editor.state.doc.resolve(pos))).scrollIntoView());
+        editor.view.focus();
+        return true;
+      } catch {
+        return false;
       }
     },
     find: (query, options, step) => {

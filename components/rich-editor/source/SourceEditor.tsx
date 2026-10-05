@@ -30,6 +30,7 @@ import { getSchema } from "@tiptap/core";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { createRichEditorExtensions } from "../core/extensions";
+import { locateCaret } from "../core/caret-context";
 import { htmlToMarkdown } from "../core/html-to-markdown";
 import { mergedCellsNotice, normalizePastedHtml } from "../core/paste-html";
 import { findMatches, replaceMatches, type FindOptions } from "../core/find-replace";
@@ -365,6 +366,15 @@ export function SourceEditor({
     historyDepth: () => {
       const v = view.current;
       return v ? { undo: undoDepth(v.state), redo: redoDepth(v.state) } : { undo: 0, redo: 0 };
+    },
+    placeCaret: (context) => {
+      const v = view.current;
+      if (!v) return false;
+      const index = locateCaret(v.state.doc.toString(), context);
+      if (index === null) return false;
+      v.dispatch({ selection: { anchor: index }, effects: EditorView.scrollIntoView(index, { y: "center" }) });
+      v.focus();
+      return true;
     },
     scrollToHeading: (_slug, offset) => {
       const v = view.current;

@@ -31,6 +31,11 @@ import { Button } from "@/components/ui/button";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { stageRemark } from "@ai-matrx/chat/agents/redux/execution-system/instance-resources/remarks";
 import { questionnaireAnswers } from "./questionnaire-answers";
+import {
+  questionnaireDraftKey,
+  readQuestionnaireDraft,
+  writeQuestionnaireDraft,
+} from "./questionnaire-draft-store";
 import { durableRecordId } from "@ai-matrx/kit/ids";
 
 export type QuestionOption = { name: string };
@@ -501,6 +506,21 @@ const RadioQuestion = ({
     typeof value === "string" ? value : "",
   );
   const [otherValue, setOtherValue] = useState("");
+
+  // Follow the stored answer: saved answers are put back AFTER first paint
+  // (rehydration), and a re-render must show them — not an empty group.
+  useEffect(() => {
+    if (typeof value !== "string" || !value) return;
+    if (value.toLowerCase().startsWith("other:")) {
+      const otherName = options.find((o) => isOtherOption(o))?.name;
+      if (otherName) {
+        setSelectedValue(otherName);
+        setOtherValue(value.slice(value.indexOf(":") + 1).trim());
+      }
+      return;
+    }
+    setSelectedValue(value);
+  }, [value, options]);
 
   const handleSelectionChange = (value: string) => {
     setSelectedValue(value);
@@ -993,21 +1013,28 @@ const QuestionnaireRendererBody = ({
   onStateChangeRef.current = onStateChange;
 
   const lastPersistedRef = useRef<string>("");
+  // Device-local copy of the answers: what a reload puts back when there is no
+  // artifact-state row to read (the questionnaire has not materialized).
+  const draftKey = questionnaireDraftKey(
+    conversationId,
+    durableRecordId(messageId) ?? messageId,
+    blockIndex,
+  );
 
   // Rehydrate saved answers ONCE from persisted artifact state, so a reopened
   // conversation shows what the user already filled in.
   const rehydratedRef = useRef(false);
   useEffect(() => {
     if (rehydratedRef.current) return;
-    const saved = (
-      initialState as { formState?: Record<string, unknown> } | undefined
-    )?.formState;
+    const saved =
+      (initialState as { formState?: Record<string, unknown> } | undefined)
+        ?.formState ?? readQuestionnaireDraft(draftKey);
     if (saved && Object.keys(saved).length > 0) {
       rehydratedRef.current = true;
       lastPersistedRef.current = JSON.stringify(saved); // don't echo it straight back
       setFormState(uniqueId, { ...saved });
     }
-  }, [initialState, setFormState, uniqueId]);
+  }, [initialState, setFormState, uniqueId, draftKey]);
 
   // Emit answers (debounced) to the artifact-state channel on every change.
   useEffect(() => {
@@ -1016,10 +1043,11 @@ const QuestionnaireRendererBody = ({
     if (stateString === lastPersistedRef.current) return undefined;
     const timeoutId = setTimeout(() => {
       lastPersistedRef.current = stateString;
+      writeQuestionnaireDraft(draftKey, formState);
       onStateChangeRef.current?.({ formState });
     }, 600);
     return () => clearTimeout(timeoutId);
-  }, [formState]);
+  }, [formState, draftKey]);
 
   useEffect(() => {
     const sections = data?.sections;

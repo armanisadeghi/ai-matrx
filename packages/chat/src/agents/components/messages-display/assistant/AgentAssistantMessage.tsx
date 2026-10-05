@@ -100,6 +100,9 @@ import { retryConversationTurn } from "../../../redux/execution-system/message-c
 import { commitInlineContentEdit } from "../../../redux/execution-system/message-crud/commit-inline-edit.thunk";
 import type { AnswerEditRemarkMeta } from "../../../redux/execution-system/instance-resources/remarks";
 import { InPlaceAnswerEditor } from "./InPlaceAnswerEditor";
+import { updateMessageRecord } from "../../../redux/execution-system/messages/messages.slice";
+import { useInPlaceTrigger } from "@host/components/rich-editor/in-place/EditInPlace";
+import { handInPlaceCaret } from "@host/components/rich-editor/in-place/caret-handoff";
 import { toast } from "../../../../host/notify";
 import { useDomCapturePrint } from "../../../../conversation/hooks/useDomCapturePrint";
 import { MessageFilesStrip } from "@host/features/code/views/history/MessageFilesStrip";
@@ -271,6 +274,16 @@ export function AgentAssistantMessage({
 
   // The pencil (registry `edit`) turned this answer's spot into the editor.
   const editingInPlace = !!record?._editingInPlace && !isStreamActive;
+  // EDIT IN PLACE: a double-click on the answer opens the same editor, the
+  // caret where the person clicked (components/rich-editor/in-place).
+  const { readProps: answerReadProps } = useInPlaceTrigger({
+    canEdit: !isStreamActive && !!messageId && !!record && !record?._editingInPlace,
+    onOpen: ({ caret }) => {
+      if (!messageId) return;
+      handInPlaceCaret(messageId, caret);
+      dispatch(updateMessageRecord({ conversationId, messageId, patch: { _editingInPlace: true } }));
+    },
+  });
 
   // Request-wide notices and source lists belong to its final segment. They
   // must not keep growing above a steering message after this segment closes.
@@ -693,7 +706,7 @@ export function AgentAssistantMessage({
           // THE READING SET on a saved chat answer (highlight, comment, suggest, link +
           // the Notes & comments dock) — the same mount every note and saved document uses.
           <RecordAnnotations record={annotationRecord}>
-          <div data-message-content>
+          <div data-message-content {...answerReadProps}>
             <MarkdownStream imagePolicy="ai"
               requestId={effectiveRequestId}
               recordMessageIds={recordMessageIds}

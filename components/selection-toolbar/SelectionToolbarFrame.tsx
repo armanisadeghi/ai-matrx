@@ -52,6 +52,31 @@ export function scrollBoundsOf(node: Node | null): { top: number; bottom: number
   return view;
 }
 
+type Box = { top: number; bottom: number; left: number; right: number };
+
+/**
+ * The scroll box minus whatever pins itself over its top edge (a sticky page
+ * header, a fixed bar): a scroll area that runs UNDER a header has a top edge
+ * the person cannot see, and a toolbar placed "above the selection" there is
+ * clipped by it. Sampled on demand at the box's top edge, never cached.
+ */
+export function visibleBoxOf(box: Box, anchor: Node | null, at: { left: number; width: number }): Box {
+  if (typeof document.elementFromPoint !== "function") return box;
+  const x = Math.max(box.left + 1, Math.min(box.right - 1, at.left + at.width / 2));
+  const y = Math.max(0, box.top) + 1;
+  let el: Element | null = document.elementFromPoint(x, y);
+  let inset = box.top;
+  while (el && el !== document.body && el !== document.documentElement) {
+    const position = getComputedStyle(el).position;
+    const owns = anchor ? el.contains(anchor) : false;
+    if ((position === "fixed" || position === "sticky") && !owns && !el.closest("[data-selection-toolbar]")) {
+      inset = Math.max(inset, el.getBoundingClientRect().bottom);
+    }
+    el = el.parentElement;
+  }
+  return { ...box, top: Math.min(inset, box.bottom) };
+}
+
 /** Where the frame goes for an anchor inside a box (pure; unit-tested). */
 export function placeFrame(
   at: Rect,
@@ -106,7 +131,7 @@ export default function SelectionToolbarFrame({
     const next = placeFrame(
       at,
       { w: frame.offsetWidth, h: frame.offsetHeight },
-      scrollBoundsOf(anchor),
+      visibleBoxOf(scrollBoundsOf(anchor), anchor, at),
       { w: window.innerWidth, h: window.innerHeight },
     );
     setPosition((p) => (p && p.left === next.left && p.top === next.top && p.hidden === next.hidden ? p : next));

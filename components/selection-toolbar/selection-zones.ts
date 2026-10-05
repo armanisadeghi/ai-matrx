@@ -154,3 +154,41 @@ export function useSelectionZone(
     };
   }, [id, element, enabled]);
 }
+
+// ── The caret in an editable surface ─────────────────────────────────────────
+// The ONE document `selectionchange` listener is the root's. A surface that
+// follows the CARET (a board panning a tile's caret into view) subscribes here
+// instead of adding a second listener; it draws nothing at the selection.
+
+/** A collapsed caret inside a contenteditable, measured on demand. */
+export interface EditableCaret {
+  /** The node the caret sits in. */
+  node: Node;
+  /** The contenteditable element (or its descendant) holding it. */
+  host: Element;
+  /** Where the caret is on screen now. */
+  rect: () => DOMRect | null;
+}
+
+const caretListeners = new Set<(caret: EditableCaret) => void>();
+
+/** Hear every caret move inside an editable surface. Returns the unsubscribe. */
+export function subscribeEditableCaret(listener: (caret: EditableCaret) => void): () => void {
+  caretListeners.add(listener);
+  return () => {
+    caretListeners.delete(listener);
+  };
+}
+
+/** The root calls this on every `selectionchange`. */
+export function publishEditableCaret(): void {
+  if (caretListeners.size === 0) return;
+  const sel = document.getSelection();
+  if (!sel || sel.rangeCount === 0 || !sel.isCollapsed) return;
+  const node = sel.anchorNode;
+  const host = node instanceof Element ? node : node?.parentElement;
+  if (!node || !host?.closest("[contenteditable='true'], [contenteditable='']")) return;
+  const range = sel.getRangeAt(0);
+  const caret: EditableCaret = { node, host, rect: () => range.getClientRects()[0] ?? range.getBoundingClientRect() };
+  for (const l of [...caretListeners]) l(caret);
+}

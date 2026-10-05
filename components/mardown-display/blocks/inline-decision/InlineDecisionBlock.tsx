@@ -1,13 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { Pencil, Loader2, Info } from "lucide-react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Pencil, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { InlineDecision, InlineDecisionOption } from "./types";
 
@@ -50,24 +44,43 @@ export default function InlineDecisionBlock({
     }
   }, [selectedId]);
 
+  const resolveWith = (option: InlineDecisionOption | undefined, text: string) => {
+    const trimmed = text.trim();
+    if (!trimmed || isStreamActive) return;
+    setFadeOut(true);
+    setTimeout(() => {
+      const kept =
+        option && option.id !== "custom" && option.text.trim() === trimmed;
+      onResolve(decision.id, rawXml, trimmed, kept ? option.label : null);
+    }, 280);
+  };
+
+  // One click IS the choice. Custom has no text yet, so it opens the free
+  // text path instead.
   const handleSelect = (option: InlineDecisionOption) => {
-    if (selectedId === option.id) {
-      setSelectedId(null);
+    if (option.id === "custom") {
+      if (selectedId === "custom") {
+        handleCancel();
+        return;
+      }
+      setSelectedId("custom");
       setEditText("");
       return;
     }
+    resolveWith(option, option.text);
+  };
+
+  // Pencil beside an option: customize its text before choosing.
+  const handleCustomize = (option: InlineDecisionOption) => {
     setSelectedId(option.id);
     setEditText(option.text);
   };
 
   const handleApply = () => {
-    if (!editText.trim() || isStreamActive) return;
-    setFadeOut(true);
-    setTimeout(() => {
-      const picked = allOptions.find((o) => o.id === selectedId);
-      const kept = picked && picked.id !== "custom" && picked.text.trim() === editText.trim();
-      onResolve(decision.id, rawXml, editText.trim(), kept ? picked.label : null);
-    }, 280);
+    resolveWith(
+      allOptions.find((o) => o.id === selectedId),
+      editText,
+    );
   };
 
   const handleCancel = () => {
@@ -124,17 +137,30 @@ export default function InlineDecisionBlock({
           {/* Option pills */}
           <div className="flex flex-wrap gap-1.5 mb-0.5">
             {allOptions.map((option) => (
-              <Button
-                key={option.id}
-                variant={selectedId === option.id ? "primary" : "outline"}
-                size="sm"
-                onClick={() => handleSelect(option)}
-              >
-                {option.id === "custom" ? (
-                  <Pencil className="w-3 h-3 mr-1 flex-shrink-0" />
+              <span key={option.id} className="inline-flex items-center gap-0.5">
+                <Button
+                  variant={selectedId === option.id ? "primary" : "outline"}
+                  size="sm"
+                  disabled={isStreamActive}
+                  onClick={() => handleSelect(option)}
+                >
+                  {option.id === "custom" ? (
+                    <Pencil className="w-3 h-3 mr-1 flex-shrink-0" />
+                  ) : null}
+                  {option.label}
+                </Button>
+                {option.id !== "custom" ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    aria-label={`Edit ${option.label}`}
+                    disabled={isStreamActive}
+                    onClick={() => handleCustomize(option)}
+                  >
+                    <Pencil className="w-3 h-3" />
+                  </Button>
                 ) : null}
-                {option.label}
-              </Button>
+              </span>
             ))}
           </div>
 
@@ -149,25 +175,12 @@ export default function InlineDecisionBlock({
                 placeholder={
                   selectedId === "custom"
                     ? "Write your own approach..."
-                    : "Edit before applying..."
+                    : "Edit the text"
                 }
                 rows={2}
               />
               <div className="flex items-center justify-between gap-2 mt-2">
-                <TooltipProvider delayDuration={200}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Info className="w-3.5 h-3.5 text-muted-foreground/40 flex-shrink-0 cursor-help" />
-                    </TooltipTrigger>
-                    <TooltipContent
-                      side="top"
-                      className="max-w-[260px] text-xs"
-                    >
-                      This section will be replaced with your text. To undo, use
-                      the reset option in Message Options below.
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                <span />
                 <div className="flex gap-2">
                   <Button
                     type="button"
@@ -190,7 +203,7 @@ export default function InlineDecisionBlock({
                       disabled={!editText.trim()}
                       variant="primary"
                     >
-                      Replace Section With Text
+                      Use this text
                     </Button>
                   )}
                 </div>

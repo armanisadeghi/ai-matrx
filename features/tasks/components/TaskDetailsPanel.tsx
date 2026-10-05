@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { RichContent } from "@/components/rich-content/RichContent";
+import { EditInPlace } from "@/components/rich-editor/in-place/EditInPlace";
 import { toastWriteFailure } from "@/lib/errors/toastWriteFailure";
 import Link from "next/link";
 import {
@@ -793,7 +794,21 @@ export default function TaskDetailsPanel({
           {showDescPreview ? (
             <div className="text-sm text-foreground max-w-none min-h-[100px] p-2 bg-muted/40 rounded-md border border-border overflow-auto">
               {description ? (
-                <RichContent source={description} level="standard" />
+                // EDIT IN PLACE (components/rich-editor/in-place): a double-click
+                // opens THE ONE editor here on the stored description; Save
+                // writes only the description. Offered while the form holds no
+                // unsaved edits (the form's Save owns those).
+                <EditInPlace
+                  value={task.description ?? ""}
+                  canEdit={!isDirty && description === (task.description ?? "")}
+                  write={async (text) => {
+                    await dispatch(updateTaskFieldThunk({ taskId: task.id, patch: { description: text } })).unwrap();
+                  }}
+                  discardDescription="The description stays exactly as it was saved."
+                  editor={{ surfaceName: "matrx-user/tasks", sourceFeature: "task-create", imagePolicy: "other" }}
+                >
+                  <RichContent source={description} level="standard" />
+                </EditInPlace>
               ) : (
                 <span className="text-muted-foreground italic">
                   No description

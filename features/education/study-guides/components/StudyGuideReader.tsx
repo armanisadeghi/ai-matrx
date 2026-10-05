@@ -41,6 +41,7 @@ import { noteIdentityContentSource } from "@/features/notes/richDocumentSource";
 import type { Note, NoteListItem } from "@/features/notes/types";
 import { parseNoteOutline, type NoteOutlineItem } from "@/features/notes/utils/noteOutline";
 import { RichDocument } from "@/features/rich-document/RichDocument";
+import { EditInPlace } from "@/components/rich-editor/in-place/EditInPlace";
 import { NotesView } from "@/features/notes/components/NotesView";
 import { deleteNote, saveNote } from "@/features/notes/redux/thunks";
 import { setNoteEditorMode, updateNoteLabel } from "@/features/notes/redux/slice";
@@ -231,8 +232,18 @@ function useStudyPassageActions(guide: Note): { actions: Action[]; tutor: React.
   return { actions, tutor };
 }
 
-function ReaderContent({ guide, onEdit, onDelete, canDelete, deleting, jumpRequest }: { guide: Note; onEdit: () => void; onDelete: () => void; canDelete: boolean; deleting: boolean; jumpRequest: { index: number; nonce: number } | null }) {
+function ReaderContent({ guide, onEdit, onDelete, canDelete, deleting, jumpRequest, canEdit, onBodySaved }: { guide: Note; onEdit: () => void; onDelete: () => void; canDelete: boolean; deleting: boolean; jumpRequest: { index: number; nonce: number } | null; canEdit: boolean; onBodySaved: () => void }) {
   const readerRef = useRef<HTMLDivElement>(null);
+  // EDIT IN PLACE (components/rich-editor/in-place): the guide's owner
+  // double-clicks the text (or presses the pencil) and THE ONE editor opens
+  // right here; Save writes through the splice-save every source uses (only
+  // the changed block, CAS on the note's version). A guide someone else owns
+  // never offers it.
+  const [editingBody, setEditingBody] = useState(false);
+  const saveBody = async (text: string) => {
+    await spliceSaveBody({ body: guide.content ?? "", version: guide.version ?? 1 }, text, noteBodyStore(guide.id));
+    onBodySaved();
+  };
   const [findOpen, setFindOpen] = useState(false);
   const [findFocusRequest, setFindFocusRequest] = useState(0);
   const openFind = () => { setFindOpen(true); setFindFocusRequest((value) => value + 1); };
@@ -257,7 +268,7 @@ function ReaderContent({ guide, onEdit, onDelete, canDelete, deleting, jumpReque
   return <main className="relative flex h-full min-h-0 flex-col bg-background">
     <div className="absolute right-3 top-2 z-20 flex gap-1">
       <Button size="icon" variant="outline" className="h-8 w-8 bg-background" aria-label="Search this guide" title="Search this guide" onClick={openFind}><Search className="h-4 w-4" aria-hidden /></Button>
-      <Button size="icon" variant="outline" className="h-8 w-8 bg-background" aria-label="Edit study guide" title="Edit study guide" onClick={onEdit}><Pencil className="h-4 w-4" aria-hidden /></Button>
+      <Button size="icon" variant="outline" className="h-8 w-8 bg-background" aria-label="Edit study guide" title="Edit study guide" onClick={canEdit ? () => setEditingBody(true) : onEdit}><Pencil className="h-4 w-4" aria-hidden /></Button>
       {canDelete && <Button size="icon" variant="outline" className="h-8 w-8 bg-background text-destructive hover:text-destructive" aria-label="Delete study guide" title="Delete study guide" onClick={onDelete} disabled={deleting}><Trash2 className="h-4 w-4" aria-hidden /></Button>}
     </div>
     {findOpen && <div className="absolute right-3 top-11 z-30 w-[min(96%,520px)]"><RenderedFindBar rootRef={readerRef} onClose={() => setFindOpen(false)} label="Find in this guide" focusRequest={findFocusRequest} /></div>}
@@ -265,7 +276,17 @@ function ReaderContent({ guide, onEdit, onDelete, canDelete, deleting, jumpReque
       <div ref={readerRef} className="w-full px-3 py-3">
         {!/^\s*#\s/.test(guide.content ?? "") && <div className="mb-7 border-b border-border pb-5"><p className="text-xs font-medium uppercase tracking-wide text-primary">Study guide</p><h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground">{guide.label || "Untitled guide"}</h1></div>}
         <AnnotatedContent className="study-guide-reader-content" passageActions={passage.actions}>
+          <EditInPlace
+            value={guide.content ?? ""}
+            canEdit={canEdit}
+            editing={editingBody}
+            onEditingChange={setEditingBody}
+            write={saveBody}
+            discardDescription="The guide stays exactly as it was saved; what you typed here is dropped."
+            editor={{ imagePolicy: "ai", surfaceName: "matrx-user/education-study-guides", sourceFeature: "notes", contentSource: noteIdentityContentSource(guide.id) }}
+          >
           <RichDocument imagePolicy="ai" content={guide.content ?? ""} source={noteIdentityContentSource(guide.id)} actionsVariant="icon-only" actionsPosition="top-right" actionsBehavior="hover-only" />
+          </EditInPlace>
         </AnnotatedContent>
       </div>
     </div>
@@ -602,7 +623,7 @@ function StudyGuideReaderInner({ initialGuideId, startInEdit = false, defaultLay
   );
 
   const canDeleteGuide = Boolean(guide && guides.some((item) => item.id === guide.id));
-  const readerState = loading ? <div className="flex h-full items-center justify-center text-sm text-muted-foreground"><Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />Loading study guide</div> : error || (initialGuideId && !guide) ? <AccessGate token="note" id={initialGuideId ?? ""} error={error} onRetry={retryGuide} fallbackHref="/education/study-guides" fallbackLabel="Study guides" /> : guide ? editingGuide ? <main className="relative h-full min-h-0 bg-background"><div className="absolute left-3 right-3 top-2 z-20 flex items-center gap-2"><Input aria-label="Study guide title" value={titleDraft} onChange={(event) => { const title = event.target.value; setTitleDraft(title); if (title.trim()) dispatch(updateNoteLabel({ id: guide.id, label: title })); }} onBlur={() => { const title = titleDraft.trim(); if (title) { setTitleDraft(title); dispatch(updateNoteLabel({ id: guide.id, label: title })); } else setTitleDraft(guide.label); }} placeholder="Study guide title" className="h-8 max-w-md bg-background" /><Button size="sm" variant="outline" className="ml-auto bg-background" onClick={() => { void finishEditing(); }}><BookOpen className="mr-1.5 h-4 w-4" aria-hidden />Back to reading</Button></div>{editError && <ErrorNotice size="inline" className="absolute right-3 top-12 z-20 max-w-xs rounded border border-destructive bg-background p-2 text-xs" message={editError} />}<NotesView config={{ singleNote: guide.id, showSidebar: false, showTabs: false, hidePageHeader: true, syncUrl: false }} className="h-full" /></main> : <ReaderContent guide={guide} onEdit={() => { setEditError(null); setTitleDraft(guide.label); dispatch(setNoteEditorMode({ id: guide.id, mode: "write" })); setEditingGuide(true); }} onDelete={() => setPendingDelete(guide)} canDelete={canDeleteGuide} deleting={deletingGuide} jumpRequest={outlineJump} /> : <div className="flex h-full items-center justify-center px-6 text-center"><div><BookOpen className="mx-auto h-8 w-8 text-primary" aria-hidden /><h1 className="mt-3 text-lg font-semibold">Choose a study guide</h1><p className="mt-1 text-sm text-muted-foreground">Select a guide from the left to start reviewing.</p></div></div>;
+  const readerState = loading ? <div className="flex h-full items-center justify-center text-sm text-muted-foreground"><Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />Loading study guide</div> : error || (initialGuideId && !guide) ? <AccessGate token="note" id={initialGuideId ?? ""} error={error} onRetry={retryGuide} fallbackHref="/education/study-guides" fallbackLabel="Study guides" /> : guide ? editingGuide ? <main className="relative h-full min-h-0 bg-background"><div className="absolute left-3 right-3 top-2 z-20 flex items-center gap-2"><Input aria-label="Study guide title" value={titleDraft} onChange={(event) => { const title = event.target.value; setTitleDraft(title); if (title.trim()) dispatch(updateNoteLabel({ id: guide.id, label: title })); }} onBlur={() => { const title = titleDraft.trim(); if (title) { setTitleDraft(title); dispatch(updateNoteLabel({ id: guide.id, label: title })); } else setTitleDraft(guide.label); }} placeholder="Study guide title" className="h-8 max-w-md bg-background" /><Button size="sm" variant="outline" className="ml-auto bg-background" onClick={() => { void finishEditing(); }}><BookOpen className="mr-1.5 h-4 w-4" aria-hidden />Back to reading</Button></div>{editError && <ErrorNotice size="inline" className="absolute right-3 top-12 z-20 max-w-xs rounded border border-destructive bg-background p-2 text-xs" message={editError} />}<NotesView config={{ singleNote: guide.id, showSidebar: false, showTabs: false, hidePageHeader: true, syncUrl: false }} className="h-full" /></main> : <ReaderContent guide={guide} onEdit={() => { setEditError(null); setTitleDraft(guide.label); dispatch(setNoteEditorMode({ id: guide.id, mode: "write" })); setEditingGuide(true); }} onDelete={() => setPendingDelete(guide)} canDelete={canDeleteGuide} deleting={deletingGuide} jumpRequest={outlineJump} canEdit={canDeleteGuide} onBodySaved={() => { void loadStudyGuide(guide.id).then((saved) => { if (saved) setGuide(saved); }); }} /> : <div className="flex h-full items-center justify-center px-6 text-center"><div><BookOpen className="mx-auto h-8 w-8 text-primary" aria-hidden /><h1 className="mt-3 text-lg font-semibold">Choose a study guide</h1><p className="mt-1 text-sm text-muted-foreground">Select a guide from the left to start reviewing.</p></div></div>;
 
   const reader = loading || error || !guide ? <div className="scroll-page-end-space h-full min-h-0 overflow-y-auto">{readerState}</div> : readerState;
 

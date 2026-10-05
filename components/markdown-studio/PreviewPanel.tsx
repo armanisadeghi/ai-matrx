@@ -42,6 +42,7 @@ import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { runV2Parser } from "@/components/admin/markdown-tester/utils/run-v2-parser";
 import { RichDocument } from "@/features/rich-document/RichDocument";
+import { EditInPlace } from "@/components/rich-editor/in-place/EditInPlace";
 import { RichDocumentActionSurface } from "@/features/rich-document/RichDocumentActionSurface";
 import type {
   ContentSource,
@@ -329,6 +330,16 @@ export const PreviewPanel = forwardRef<HTMLDivElement, PreviewPanelProps>(
           (hasContent ? (
             <div ref={ref} onScroll={onPreviewScroll} className="flex-1 overflow-auto p-4" data-matrx-doc-root="">
               <DocumentPropertiesPanel source={renderedText} className="mb-3" />
+              {/* EDIT IN PLACE (components/rich-editor/in-place): a double-click
+                  opens THE ONE editor here on the studio's text; Save writes
+                  the studio buffer. */}
+              <EditInPlace
+                value={content}
+                canEdit={!!onContentChange && !isReplaying}
+                write={(text) => onContentChange?.(text)}
+                discardDescription="The document stays exactly as it was."
+                editor={{ imagePolicy: "self", surfaceName: "matrx-user/markdown-studio", sourceFeature: "documents", contentSource }}
+              >
               <MaybeSourceEdit source={content} save={isReplaying ? undefined : onContentChange}>
                 <RichDocument imagePolicy="self"
                   content={renderedText}
@@ -343,6 +354,7 @@ export const PreviewPanel = forwardRef<HTMLDivElement, PreviewPanelProps>(
                   allowFullScreenEditor={false}
                 />
               </MaybeSourceEdit>
+              </EditInPlace>
             </div>
           ) : (
             <PreviewEmptyState />

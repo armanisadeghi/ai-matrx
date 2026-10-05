@@ -16,6 +16,7 @@ import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextM
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { CONTEXT_MENU_HEADING_KEY } from "@/features/context-menu-v3/types";
 import { RichDocument } from "@/features/rich-document/RichDocument";
+import { EditInPlace } from "@/components/rich-editor/in-place/EditInPlace";
 import { NOTE_EXCLUDED_ACTIONS } from "../../constants/noteExcludedActions";
 import { noteIdentityContentSource } from "../../richDocumentSource";
 import { usePreparedNoteContentSource } from "../../usePreparedNoteContentSource";
@@ -496,6 +497,21 @@ export default function MobileNoteEditor({
             data-entity-resource="note"
           >
             {localContent.trim() ? (
+              // EDIT IN PLACE: a double-tap on the text opens the one editor
+              // here, autosaving through the note's working copy.
+              <EditInPlace
+                value={localContent}
+                canEdit={!readOnly}
+                mode="autosave"
+                write={(text) => handleChange(text)}
+                discardDescription="The note goes back to how it was when you opened the editor."
+                editor={{
+                  imagePolicy: authoredBy(note.created_by, editingActorId),
+                  surfaceName: "matrx-user/notes",
+                  sourceFeature: "notes",
+                  contentSource: editableContentSource ?? noteIdentityContentSource(noteId, `mobile-preview:${noteId}`),
+                }}
+              >
               <RichDocument imagePolicy={authoredBy(note.created_by, editingActorId)}
                 content={localContent}
                 source={editableContentSource ?? noteIdentityContentSource(noteId, `mobile-preview:${noteId}`)}
@@ -504,6 +520,7 @@ export default function MobileNoteEditor({
                 allowFullScreenEditor={false}
                 actions={{ exclude: NOTE_EXCLUDED_ACTIONS }}
               />
+              </EditInPlace>
             ) : (
               <p className="text-muted-foreground text-sm">
                 Nothing to preview yet.

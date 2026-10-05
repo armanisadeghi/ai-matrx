@@ -41,7 +41,7 @@ import {
   type ViewPolicy,
 } from "./policy";
 import { useGroupChat } from "./useGroupChat";
-import { fetchLatestTurn, type LatestTurn } from "./latestTurn";
+import { fetchLatestTurn, hitOutputLimit, type LatestTurn } from "./latestTurn";
 
 type TurnState = { status: "loading" } | { status: "error"; message: string } | { status: "ready"; turn: LatestTurn | null };
 
@@ -368,6 +368,11 @@ function TurnDetail({
         withheldText={t.withheldText}
       />
       <h3 className="px-2 pt-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Said</h3>
+      {t.reply && hitOutputLimit(t.finishReason) ? (
+        <p className="px-2 pt-1 text-[11px] font-medium text-destructive" data-finish-reason={t.finishReason}>
+          Cut off at the output limit
+        </p>
+      ) : null}
       {t.reply ? (
         <div className="px-2 py-1">
           <RichDocument imagePolicy="ai" content={stripControlLines(t.reply)} source={{ type: "raw" }} hideCopyButton contentClassName="text-xs" />

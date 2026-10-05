@@ -15,15 +15,18 @@
  * Expand is the SAME editor instance going full screen (only its container's
  * classes change — no remount, so the draft, cursor, view and undo survive);
  * it is never a second editor. On phones the editor opens expanded.
+ *
+ * The editing shell (Escape ownership, discard confirm, caret, bytes) is THE
+ * edit-in-place primitive (`components/rich-editor/in-place`) every editable
+ * rich-content host shares; this file is only the answer's load + write.
  */
 
-import { useEffect, useRef, useState, type KeyboardEvent } from "react";
-import { Loader2, Maximize2, Minimize2 } from "lucide-react";
-import { useIsMobile } from "@ai-matrx/design-system";
-import RichEditor from "@host/components/rich-editor/RichEditor";
-import { ConfirmDialog } from "@host/components/ui/confirm-dialog";
+import { useEffect, useState } from "react";
+import { Loader2 } from "lucide-react";
+import { InPlaceEditor } from "@host/components/rich-editor/in-place/InPlaceEditor";
+import { takeInPlaceCaret } from "@host/components/rich-editor/in-place/caret-handoff";
+import type { CaretContext } from "@host/components/rich-editor/core/caret-context";
 import { useAppDispatch } from "../../../../store/hooks";
-import { cn } from "@ai-matrx/design-system";
 import { updateMessageRecord } from "../../../redux/execution-system/messages/messages.slice";
 import {
   fetchStoredAnswer,
@@ -48,6 +51,8 @@ interface InPlaceAnswerEditorProps {
 export function InPlaceAnswerEditor({ conversationId, messageId, startExpanded = false }: InPlaceAnswerEditorProps) {
   const dispatch = useAppDispatch();
   const [openedOn, setOpenedOn] = useState<string | null>(null);
+  // A double-click on the answer left where it landed (the caret goes there).
+  const [caret] = useState(() => takeInPlaceCaret(messageId));
 
   const close = () => {
     dispatch(updateMessageRecord({ conversationId, messageId, patch: { _editingInPlace: false } }));
@@ -84,6 +89,7 @@ export function InPlaceAnswerEditor({ conversationId, messageId, startExpanded =
       openedOn={openedOn}
       close={close}
       startExpanded={startExpanded}
+      caret={caret}
     />
   );
 }
@@ -94,44 +100,20 @@ function LoadedAnswerEditor({
   openedOn,
   close,
   startExpanded,
+  caret,
 }: {
   conversationId: string;
   messageId: string;
   openedOn: string;
   close: () => void;
   startExpanded: boolean;
+  caret?: CaretContext | null;
 }) {
   const dispatch = useAppDispatch();
-  const isMobile = useIsMobile();
-  const [draft, setDraft] = useState(openedOn);
-  const [expandedChoice, setExpandedChoice] = useState<boolean | null>(startExpanded ? true : null);
-  const expanded = expandedChoice ?? isMobile;
-  const [confirmDiscard, setConfirmDiscard] = useState(false);
-  const shellRef = useRef<HTMLDivElement>(null);
-  const dirty = draft !== openedOn;
-  // The editor reports text changes ~120 ms after a keystroke (its debounce),
-  // so `draft` can lag a fast Escape / Cancel. Any input event since the last
-  // report counts as unsaved text until the report lands — a fast Escape asks
-  // instead of dropping what was just typed.
-  const inputSinceReport = useRef(false);
-  const onDraft = (text: string) => {
-    inputSinceReport.current = false;
-    setDraft(text);
-  };
 
-  // Only typing into the document itself (not the find field) is a draft.
-  const markDocumentInput = (event: { target: EventTarget }) => {
-    if (event.target instanceof Element && event.target.closest(".ProseMirror, .cm-content")) {
-      inputSinceReport.current = true;
-    }
-  };
-
-  const cancel = () => {
-    if (dirty || inputSinceReport.current) setConfirmDiscard(true);
-    else close();
-  };
-
-  const onSave = async (text: string): Promise<string | void> => {
+  // THE edit-in-place shell writes only changed text (in-place-session); this
+  // is the answer's write: the chat save adapter.
+  const write = async (text: string): Promise<string | void> => {
     const result = await dispatch(saveAnswerEdit({ conversationId, messageId, newText: text, openedText: openedOn }));
     if (saveAnswerEdit.rejected.match(result) && result.payload?.code === "stale" && result.payload.storedText !== undefined) {
       // ANOTHER TAB SAVED FIRST (verify-RC-B5 r4 N3). Retrying the same save
@@ -145,11 +127,9 @@ function LoadedAnswerEditor({
         const rebased = await dispatch(saveAnswerEdit({ conversationId, messageId, newText: merged, openedText: theirs }));
         if (!saveAnswerEdit.rejected.match(rebased)) {
           toast.info("Another tab saved this answer first — your edit was added on top of it.");
-          window.setTimeout(close, 0);
           return;
         }
       }
-      window.setTimeout(close, 0);
       toast.error("Another tab changed the same words first, so your edit was not saved. The answer shows what is saved.", {
         action: {
           label: "Copy my edit",
@@ -166,92 +146,25 @@ function LoadedAnswerEditor({
       const reason = result.payload?.message ?? result.error.message ?? "the answer was not saved";
       throw new Error(reason.replace(/[.!\s]+$/, ""));
     }
-    // Back to the preview once the editor has proven the write.
-    window.setTimeout(close, 0);
     return result.payload.storedText;
   };
 
-
-  // Escape belongs to the innermost thing that is open: the slash / variable
-  // menu, an island's own code editor, the find field. Only an Escape none of
-  // them owns leaves the editor. ProseMirror's base keymap marks EVERY Escape
-  // handled (selectParentNode), so `defaultPrevented` cannot tell them apart —
-  // ownership is read in the capture phase, before any child reacts.
-  const escapeOwnedByChild = useRef(false);
-  const onKeyDownCapture = (event: KeyboardEvent<HTMLDivElement>) => {
-    if (event.key !== "Escape") return;
-    const target = event.target instanceof Element ? event.target : null;
-    escapeOwnedByChild.current =
-      // The editor's slash / {{ menus mount as Tiptap ReactRenderers on <body>.
-      !!document.querySelector('.react-renderer > [role="listbox"]') ||
-      !!target?.closest(".ProseMirror .cm-editor") ||
-      // Focus mode hides the toolbar; the editor's own Escape leaves it.
-      !shellRef.current?.querySelector('[role="tablist"][aria-label="View"]') ||
-      target instanceof HTMLInputElement ||
-      target instanceof HTMLTextAreaElement;
-  };
-  const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    if (event.key !== "Escape" || escapeOwnedByChild.current) return;
-    // Portaled dialogs (link, consent) bubble through React but are not inside
-    // this DOM node — their Escape closes them, not the editor.
-    if (!(event.target instanceof Node) || !shellRef.current?.contains(event.target)) return;
-    event.preventDefault();
-    cancel();
-  };
-
   return (
-    <div
-      ref={shellRef}
-      onKeyDownCapture={onKeyDownCapture}
-      onInputCapture={markDocumentInput}
-      onBeforeInputCapture={markDocumentInput}
-      onKeyDown={onKeyDown}
-      data-in-place-editor={messageId}
-      className={cn(
-        "flex flex-col overflow-hidden",
-        expanded
-          ? "fixed inset-0 z-50 h-dvh bg-background pt-safe"
-          : "max-h-[min(80dvh,56rem)] min-h-56 rounded-lg border border-border",
-      )}
-    >
-      <RichEditor imagePolicy="ai"
-        value={openedOn}
-        onChange={onDraft}
-        onSave={onSave}
-        defaultView="visual"
-        surfaceName="matrx-user/assistant-message"
-        sourceFeature="chat"
-        contentSource={{ type: "chat-message", conversationId, messageId }}
-        className={expanded ? "h-full" : "h-auto min-h-0"}
-        onCancel={cancel}
-        cancelLabel={dirty ? "Cancel" : "Close"}
-        // A chat column is narrow: the outline stays one click away.
-        defaultOutlineOpen={false}
-        // Save with nothing changed simply returns to the answer.
-        onNothingToSave={close}
-        toolbarExtras={
-          <>
-            <button
-              type="button"
-              onClick={() => setExpandedChoice(!expanded)}
-              className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
-              title={expanded ? "Back into the conversation" : "Expand to full screen"}
-              aria-label={expanded ? "Back into the conversation" : "Expand to full screen"}
-            >
-              {expanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-            </button>
-          </>
-        }
-      />
-      <ConfirmDialog
-        open={confirmDiscard}
-        onOpenChange={setConfirmDiscard}
-        title="Discard your edit?"
-        description="The answer stays exactly as it was saved; what you typed here is dropped."
-        confirmLabel="Discard edit"
-        cancelLabel="Keep editing"
-        onConfirm={close}
-      />
-    </div>
+    <InPlaceEditor
+      id={messageId}
+      value={openedOn}
+      write={write}
+      close={close}
+      caret={caret}
+      expandable
+      startExpanded={startExpanded}
+      discardDescription="The answer stays exactly as it was saved; what you typed here is dropped."
+      editor={{
+        imagePolicy: "ai",
+        surfaceName: "matrx-user/assistant-message",
+        sourceFeature: "chat",
+        contentSource: { type: "chat-message", conversationId, messageId },
+      }}
+    />
   );
 }

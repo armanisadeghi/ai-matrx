@@ -19,6 +19,8 @@ export interface LatestTurn {
   roomView: RoomViewManifest | null;
   /** What the participant said back (text parts, oldest first); null while it has not answered. */
   reply: string | null;
+  /** The provider's finish reason for the reply (`metadata.finish_reason`), when stored. */
+  finishReason: string | null;
   /** message id → its text, for every withheld message the person can read. */
   withheldText: Record<string, string>;
 }
@@ -47,6 +49,18 @@ export function receiptOf(modelContext: unknown): ContextReceiptData | null {
     : null;
 }
 
+/** The finish reason a reply's metadata carries, or null. */
+export function finishReasonOf(metadata: unknown): string | null {
+  if (!isRecord(metadata)) return null;
+  const reason = metadata.finish_reason ?? metadata.finishReason;
+  return typeof reason === "string" && reason ? reason : null;
+}
+
+/** True when the provider stopped the reply at its output ceiling — the words end where the limit fell. */
+export function hitOutputLimit(finishReason: string | null): boolean {
+  return finishReason !== null && /^(length|max_tokens|max_output_tokens|max_tokens_exceeded)$/i.test(finishReason);
+}
+
 export async function fetchLatestTurn(conversationId: string): Promise<LatestTurn | null> {
   const supabase = createClient();
   const turn = await supabase
@@ -70,7 +84,7 @@ export async function fetchLatestTurn(conversationId: string): Promise<LatestTur
     supabase
       .schema("chat")
       .from("message")
-      .select("content")
+      .select("content, metadata, status, error")
       .eq("conversation_id", conversationId)
       .eq("role", "assistant")
       .is("deleted_at", null)
@@ -93,6 +107,7 @@ export async function fetchLatestTurn(conversationId: string): Promise<LatestTur
     receipt,
     roomView,
     reply: reply.data ? messageText(reply.data.content) || null : null,
+    finishReason: finishReasonOf(reply.data?.metadata),
     withheldText,
   };
 }

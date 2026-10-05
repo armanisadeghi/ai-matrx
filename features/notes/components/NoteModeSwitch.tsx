@@ -52,7 +52,7 @@ export function NoteModeSwitch({
     <SegmentedControl
       aria-label="Note view"
       value={editorMode}
-      onValueChange={(mode) => selectNoteMode(noteId, mode)}
+      onValueChange={(mode) => selectNoteMode(noteId, mode as NoteViewMode)}
       data={data}
       className={className}
     />

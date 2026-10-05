@@ -50,6 +50,7 @@ import {
 } from "../utils/writeErrors";
 import { cn } from "@/lib/utils";
 import RichEditor, {
+import { EditInPlace } from "@/components/rich-editor/in-place/EditInPlace";
   type RichEditorController,
   type RichEditorView,
 } from "@/components/rich-editor/RichEditor";
@@ -366,7 +367,7 @@ export function NoteEditorCore({
   // editor's OWN width, Split shows one pane with an Edit / Preview toggle.
   // Width 0 = not measured yet: the side-by-side layout is kept until it is.
   const [rootRef, { width: rootWidth }] = useMeasure<HTMLDivElement>();
-  const splitSinglePane = rootWidth > 0 && rootWidth < SPLIT_MIN_WIDTH_PX;
+  const splitSinglePane = rootWidth !== null && rootWidth > 0 && rootWidth < SPLIT_MIN_WIDTH_PX;
 
   const showVoiceOverlay =
     showVoiceButton &&
@@ -504,6 +505,25 @@ export function NoteEditorCore({
             previewClassName,
           )}
         >
+          {/* EDIT IN PLACE (components/rich-editor/in-place): a double-click on
+              the text opens THE ONE editor right here and autosaves through the
+              note's own onChange; Escape / ⌘Enter returns to Read. The note's
+              mode never changes — Read stays the note's view. */}
+          <EditInPlace
+            key={resetKey}
+            value={content}
+            canEdit={!readOnly}
+            mode="autosave"
+            write={(text) => onChange(text)}
+            discardDescription="The note goes back to how it was when you opened the editor."
+            editor={{
+              imagePolicy,
+              surfaceName: surfaceName ?? "matrx-user/notes",
+              sourceFeature: "notes",
+              contentSource: richSource,
+              placeholder,
+            }}
+          >
           <RichDocument imagePolicy={imagePolicy}
             key={resetKey}
             content={content}
@@ -530,6 +550,7 @@ export function NoteEditorCore({
                 : onChange
             }
           />
+          </EditInPlace>
         </div>
       )}
 

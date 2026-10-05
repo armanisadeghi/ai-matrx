@@ -15,7 +15,9 @@ import { useEffect, useMemo, useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@ai-matrx/design-system";
 import { cn } from "@ai-matrx/design-system";
-import { useAppSelector } from "../../../../store/hooks";
+import { useAppDispatch, useAppSelector } from "../../../../store/hooks";
+import { EditInPlace } from "@host/components/rich-editor/in-place/EditInPlace";
+import { USER_EDIT_ACTIONS, routeUserEditAction } from "../message-options/userEditActions";
 import {
   selectMessageById,
   selectFirstMessageId,
@@ -200,6 +202,8 @@ export function AgentUserMessage({
   const isFirstTurnMessage = !hasMoreOlder && firstMessageId === messageId;
 
   const [isHovered, setIsHovered] = useState(false);
+  const dispatch = useAppDispatch();
+  const [editingText, setEditingText] = useState(false);
 
   const content = extractFlatText(record);
   // Raw-faithful view for the action bar (copy / edit / menu). For a message
@@ -225,6 +229,9 @@ export function AgentUserMessage({
   );
 
   const trimmedText = content.trim();
+  // The person's own typed text is editable in place; a structured payload
+  // keeps its read-only raw view (the bar's Edit opens that).
+  const canEditText = !inspectable.isStructuredRaw && trimmedText.length > 0;
   const metadata =
     record?.metadata && typeof record.metadata === "object"
       ? (record.metadata as Record<string, unknown>)
@@ -478,7 +485,7 @@ export function AgentUserMessage({
               // Clamp leaves room below the fade: the first lines (what was
               // sent, the context strip) read at full contrast, and the
               // expand chevron never sits on top of text.
-              shouldBeCollapsible && isCollapsed && "max-h-24 pb-7",
+              shouldBeCollapsible && isCollapsed && !editingText && "max-h-24 pb-7",
             )}
           >
             {/* First-turn variables — the values this conversation was launched
@@ -539,12 +546,36 @@ export function AgentUserMessage({
               />
             )}
 
-            <AgentUserMessageContent
-              conversationId={conversationId}
-              text={trimmedText}
-              attachmentParts={attachmentParts}
-              bodyBlocks={bodyBlocks}
-            />
+            {/* EDIT IN PLACE (components/rich-editor/in-place): a double-click
+                on the text, or Edit in the bar, opens THE ONE editor right
+                here. Save keeps the turn; Save & resubmit and Fork & resubmit
+                are the other two outcomes (userEditActions). */}
+            <EditInPlace
+              value={content}
+              canEdit={canEditText}
+              editing={editingText}
+              onEditingChange={setEditingText}
+              write={(text) => routeUserEditAction(dispatch, { actionId: "save", conversationId, messageId, newContent: text, surfaceKey })}
+              actions={USER_EDIT_ACTIONS.filter((a) => a.id !== "save").map((a) => ({
+                id: a.id,
+                label: a.label,
+                run: (text: string) => routeUserEditAction(dispatch, { actionId: a.id, conversationId, messageId, newContent: text, surfaceKey }),
+              }))}
+              discardDescription="Your message stays exactly as it was sent; what you typed here is dropped."
+              editor={{
+                imagePolicy: "other",
+                surfaceName: "matrx-user/chat",
+                sourceFeature: "chat",
+                contentSource: { type: "chat-message", conversationId, messageId },
+              }}
+            >
+              <AgentUserMessageContent
+                conversationId={conversationId}
+                text={trimmedText}
+                attachmentParts={attachmentParts}
+                bodyBlocks={bodyBlocks}
+              />
+            </EditInPlace>
           </div>
 
           {/* Fade + expand affordance — overlays the whole collapsed body. */}
@@ -591,6 +622,7 @@ export function AgentUserMessage({
           conversationId={conversationId}
           metadata={metadata}
           surfaceKey={surfaceKey}
+          onEditInPlace={canEditText ? () => setEditingText(true) : undefined}
         />
       </div>
     </div>

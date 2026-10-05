@@ -37,6 +37,7 @@ import { toast } from "@/lib/toast";
 import { openNewChatAbout } from "@ai-matrx/chat/agents/components/chat/new-chat-about";
 import {
   zonesContaining,
+  publishEditableCaret,
   useSelectionZonesVersion,
   type ResolvedZone,
   type SelectionMode,
@@ -265,6 +266,7 @@ export function SelectionToolbarRoot(): React.ReactElement | null {
       }, ms);
     };
     const onSelectionChange = () => {
+      publishEditableCaret();
       const sel = window.getSelection();
       const collapsed = !sel || sel.rangeCount === 0 || sel.isCollapsed;
       if (collapsed && !isTextField(document.activeElement)) {

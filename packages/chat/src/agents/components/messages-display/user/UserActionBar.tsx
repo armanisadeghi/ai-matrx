@@ -128,6 +128,11 @@ export interface UserActionBarProps {
    * when omitted (e.g. when embedded outside a registered surface).
    */
   surfaceKey?: string;
+  /**
+   * EDIT IN PLACE: the bubble opens THE ONE editor where the text sits. When
+   * set, Edit and Edit & resubmit open it there instead of a separate editor.
+   */
+  onEditInPlace?: () => void;
 }
 
 export function UserActionBar({
@@ -137,6 +142,7 @@ export function UserActionBar({
   conversationId,
   metadata = null,
   surfaceKey,
+  onEditInPlace,
 }: UserActionBarProps) {
   const dispatch = useAppDispatch();
   const store = useAppStore();
@@ -208,6 +214,10 @@ export function UserActionBar({
         messageId,
         metadata,
       });
+      return;
+    }
+    if (onEditInPlace) {
+      onEditInPlace();
       return;
     }
     openEditor({

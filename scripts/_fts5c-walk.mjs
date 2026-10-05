@@ -34,14 +34,21 @@ const who = await page.evaluate(async () => (await (await fetch("/api/whoami")).
 if (who !== "admin@admin.com") { await page.screenshot({ path: `${OUT}/0-signin-fail.png` }); throw new Error(`signed in as ${who} at ${page.url()}`); }
 console.log("signed in as", who?.v ?? who);
 
-const R=async(f)=>{ for(let i=0;i<6;i++){ try{ return await f(); }catch(e){ console.log("retry",String(e.message).split("\n")[0].slice(0,80)); await sleep(5000);} } };
 const T="/data/5b5d2f87-ced4-43ac-8c36-d426dcb96c47";
-await go(T); await sleep(15000);
-console.log(await R(()=>page.evaluate(()=>(document.body.innerText.match(/\d+ rows?/)||["?"])[0]+" | "+[...document.querySelectorAll('[role=columnheader]')].map(e=>e.textContent.trim().slice(0,20)).join(","))));
-await R(()=>page.screenshot({path:OUT+"/t2.png"}));
-// sort: click first sortable header
-const hdr=page.locator('[role=columnheader]').nth(1);
-await R(()=>hdr.click());
-await sleep(3000);
-console.log("after sort url", page.url());
+let lastPath=T;
+const heal=async()=>{ if(page.url().includes("__dev-walk")){ await page.getByRole("button",{name:"Resume this preview"}).click({timeout:5000}).catch(()=>{}); await page.waitForURL(u=>!u.href.includes("__dev-walk"),{timeout:120000}).catch(()=>{}); await sleep(5000); if(page.url().includes("__dev-walk")) await page.goto(ORIGIN+lastPath,{waitUntil:"domcontentloaded"}); await sleep(8000);} };
+const R=async(f,t=8)=>{ for(let i=0;i<t;i++){ try{ await heal(); return await f(); }catch(e){ console.log("retry",String(e.message).split("\n")[0].slice(0,80)); await sleep(3000);} } };
+const shot=(n)=>R(()=>page.screenshot({path:OUT+"/"+n+".png"}));
+const hdrs=()=>R(()=>page.evaluate(()=>[...document.querySelectorAll('[role=columnheader]')].map(e=>e.textContent.trim().slice(0,20)).join(",")));
+const step=process.argv[2]||"1";
+await go(T); await sleep(12000); await heal();
+console.log("hdrs",await hdrs());
+if(step==="1"){
+  await R(()=>page.mouse.click(676,178,{button:"right"})); await sleep(1500); await shot("s2a");
+  console.log("menu:", await R(()=>page.evaluate(()=>[...document.querySelectorAll('[role=menu],[role=menuitem]')].map(e=>e.textContent.trim().slice(0,30)).join(" | "))));
+  await page.keyboard.press("Escape");
+  await R(()=>page.mouse.click(1087,63)); await sleep(1500); await shot("s2b");
+  await page.keyboard.press("Escape");
+  await R(()=>page.mouse.click(678,111)); await sleep(1500); await shot("s2c");
+}
 await browser.close();
