@@ -136,6 +136,11 @@ export interface BoxIdentity {
    * defined, an agent doing the job, or a job that no longer runs. Null otherwise.
    */
   seat: SeatStage | null;
+  /**
+   * For a person: of the positions they fill in this organization, how many have
+   * an agent doing the job (VISION.md rule 6). Null when they fill none.
+   */
+  coverage: { covered: number; seats: number } | null;
 }
 
 export type SeatStage = "noted" | "defined" | "staffed" | "retired";
@@ -164,7 +169,7 @@ export function useBoxIdentity(type: OrgBoxType, id: string): BoxIdentity {
 
   switch (type) {
     case "agent":
-      return { name: agent?.name ?? null, avatarUrl: null, detail: agent?.description ?? null, missing: !agent && agentsStatus === "succeeded", userId: null, seat: null };
+      return { name: agent?.name ?? null, avatarUrl: null, detail: agent?.description ?? null, missing: !agent && agentsStatus === "succeeded", userId: null, seat: null, coverage: null };
     case "membership": {
       const m = dir?.members.get(id);
       return {
@@ -174,6 +179,13 @@ export function useBoxIdentity(type: OrgBoxType, id: string): BoxIdentity {
         missing: Boolean(dir && !dir.failed.length) && !m,
         userId: m?.userId ?? null,
         seat: null,
+        coverage: (() => {
+          if (!m) return null;
+          const held = positions.filter((p) => p.filledByUserId === m.userId && p.organizationId === m.organizationId);
+          if (!held.length) return null;
+          const covered = held.filter((p) => p.mandateId && seatJobs[p.mandateId]?.holderAgentId && !seatJobs[p.mandateId]?.retired).length;
+          return { covered, seats: held.length };
+        })(),
       };
     }
     case "team": {
@@ -185,6 +197,7 @@ export function useBoxIdentity(type: OrgBoxType, id: string): BoxIdentity {
         missing: Boolean(dir && !dir.failed.length) && !t,
         userId: null,
         seat: null,
+        coverage: null,
       };
     }
     case "position": {
@@ -221,6 +234,7 @@ export function useBoxIdentity(type: OrgBoxType, id: string): BoxIdentity {
         missing: !position && positionsStatus === "ready",
         userId: null,
         seat,
+        coverage: null,
       };
     }
   }

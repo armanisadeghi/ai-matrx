@@ -201,7 +201,18 @@ export function AgentOrgCard({
           </span>
         )}
         {activity && <ActivityBadge activity={activity} />}
-        {who.seat && !who.detail?.startsWith("Filled") && <SeatBadge stage={who.seat} />}
+        {who.seat && <SeatBadge stage={who.seat} />}
+        {who.coverage && (
+          <span
+            className={cn(
+              "inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium",
+              who.coverage.covered === who.coverage.seats ? "bg-success/15 text-success" : "bg-muted text-muted-foreground",
+            )}
+            title="Of the positions this person fills, how many have an agent doing the job"
+          >
+            {who.coverage.covered} of {who.coverage.seats} {who.coverage.seats === 1 ? "seat" : "seats"} covered
+          </span>
+        )}
         {d.otherPlacements > 0 && (
           <span
             className={cn(
