@@ -22,7 +22,7 @@
 import Link from "next/link";
 import { Users } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
+import { Button } from "@ai-matrx/design-system/controls";
 import { hrTasksHref } from "@/features/hr/routes";
 import { useHrInbox } from "@/features/hr/tasks/hooks/useHrInbox";
 import { useHrContext } from "@/features/hr/shared/useHrContext";
@@ -41,16 +41,11 @@ export function HrTasksDoor() {
 
   if (waiting === 0) return null;
 
+  // THE ONE CONTROL: the 28px button skin on the link, the waiting count as its corner badge
+  // (a hand-built 44px pill stood taller than every header control beside it at 375).
   return (
-    <Link
-      href={hrTasksHref(orgRef)}
-      className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-border px-2.5 text-xs font-medium text-foreground hover:bg-muted sm:min-h-8"
-    >
-      <Users className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-      <span>HR</span>
-      <Badge variant="secondary" className="h-5 px-1.5 text-[0.6875rem]">
-        {waiting}
-      </Badge>
-    </Link>
+    <Button asChild icon={<Users />} badge={waiting} aria-label={`HR, ${waiting} waiting`}>
+      <Link href={hrTasksHref(orgRef)}>HR</Link>
+    </Button>
   );
 }

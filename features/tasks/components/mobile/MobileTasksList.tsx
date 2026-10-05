@@ -5,7 +5,6 @@ import {
   ChevronRight,
   Plus,
   MoreVertical,
-  Search,
   X,
   Loader2,
 } from "lucide-react";
@@ -40,7 +39,7 @@ import {
   selectScopeSelectionsContext,
 } from "@/lib/redux/slices/appContextSlice";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system/controls";
+import { Input, SearchField } from "@ai-matrx/design-system/controls";
 import { Checkbox } from "@/components/ui/checkbox";
 import MobileFilterMenu from "./MobileFilterMenu";
 import MobileProjectSelector from "./MobileProjectSelector";
@@ -191,27 +190,20 @@ export default function MobileTasksList({
 
           {/* Search Bar */}
           <div className="px-4 pb-2">
-            <div className="relative" data-surface-value="search_query">
-              <Search
-                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"
-                size={16}
-              />
-              <Input adornment="both"
-                type="text"
+            <div data-surface-value="search_query">
+              <SearchField
+                className="w-full"
                 value={searchQuery}
                 onChange={(e) => dispatch(setSearchQuery(e.target.value))}
                 placeholder="Search tasks..."
+                end={
+                  searchQuery ? (
+                    <button type="button" onClick={() => dispatch(setSearchQuery(""))} aria-label="Clear task search">
+                      <X size={16} />
+                    </button>
+                  ) : undefined
+                }
               />
-              {searchQuery && (
-                <button
-                  type="button"
-                  onClick={() => dispatch(setSearchQuery(""))}
-                  className="absolute right-1 top-1/2 flex min-h-11 min-w-11 -translate-y-1/2 items-center justify-center text-muted-foreground hover:text-foreground"
-                  aria-label="Clear task search"
-                >
-                  <X size={16} />
-                </button>
-              )}
             </div>
           </div>
 
