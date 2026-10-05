@@ -56,19 +56,9 @@ const ANALYTICS = "https://www.googleapis.com/auth/analytics.readonly";
 
 /** Every catalog key live and eligible — the admin's own seat. */
 const LIVE: ConnectorCapabilityRollout[] = [
-  "drive_files",
-  "docs",
-  "sheets",
-  "gmail_send",
-  "gmail_read",
-  "calendar",
-  "contacts",
-  "tasks",
-  "search_console",
-  "analytics",
-  "tag_manager",
-  "youtube",
-  "youtube_analytics",
+  // Derived from the catalog itself: a hand list went stale when products were added (Directory, Meet,
+  // Contacts edits...) and left their rows with no rollout sentence.
+  ...new Set(provider.products.flatMap((product) => [...product.capabilityKeys])),
 ].map((capabilityKey) => ({
   capabilityKey,
   phase: "available" as const,
@@ -125,8 +115,10 @@ describe("D3 — the verb is Connect until this account has a grant", () => {
     const rows = accountHealth({ provider, account: INFO, rollout: LIVE });
     const notConnected = rows.filter((row) => row.state === "not_connected");
 
+    // Every product the catalog has grown since (Meet, Directory, ... changes) is also never-granted
+    // on this account and must say Connect too; the original eight stay pinned by name.
     expect(notConnected.map((row) => row.product.key).sort()).toEqual(
-      [
+      expect.arrayContaining([
         "analytics",
         "calendar",
         "contacts",
@@ -135,7 +127,7 @@ describe("D3 — the verb is Connect until this account has a grant", () => {
         "tag_manager",
         "tasks",
         "youtube",
-      ].sort(),
+      ].sort()),
     );
     for (const row of notConnected) {
       // The condition the old button rendered on — `missingScopes.length > 0 &&

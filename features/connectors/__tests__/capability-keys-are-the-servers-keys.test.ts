@@ -107,7 +107,17 @@ const clientResourceTypes = new Set(
  * else may. Pending capabilities stay here until their consent and account UI
  * are ready; every other catalog key needs a product row.
  */
-const NOT_SURFACED: Record<string, { reason: string }> = {};
+const NOT_SURFACED: Record<string, { reason: string }> = {
+  // Both landed server-side in 0f0050f953 as internal reviewer HTTP previews: consent_requestable=False.
+  chat_messages: {
+    reason:
+      "Internal reviewer HTTP preview of Google Chat messages; the server offers no consent request for it, so no product row can ask for it.",
+  },
+  business_profile: {
+    reason:
+      "Internal reviewer HTTP preview of Google Business Profile; the server offers no consent request for it, so no product row can ask for it.",
+  },
+};
 
 function serverDescriptor(key: string): string {
   const source = readFileSync(CAPABILITIES, "utf8");
