@@ -6,8 +6,15 @@ let customers: Array<Record<string, unknown>> = [];
 let owned: Array<Record<string, unknown>> = [];
 let members = 0;
 let coowners = 0;
+let leaseConflict = false;
+let failClosedWrite = false;
 const rpc = jest.fn((name: string, args: Record<string, unknown>) => {
-  if (name === "account_closure_claim") journal ??= args.p_initial_journal as Record<string, unknown>;
+  if (name === "account_closure_claim") {
+    if (leaseConflict) return Promise.resolve({ data: null, error: null });
+    const initial = args.p_initial_journal as Record<string, unknown>;
+    if (!journal || (journal.state === "restored" && initial.state === "closing")) journal = initial;
+  }
+  if (name === "account_closure_write" && failClosedWrite && (args.p_journal as Record<string, unknown>).state === "closed") return Promise.resolve({ data: false, error: null });
   if (name === "account_closure_write") journal = args.p_journal as Record<string, unknown>;
   return Promise.resolve({ data: name === "account_closure_claim" ? journal : true, error: null });
 });
@@ -37,7 +44,7 @@ const userId = "11111111-1111-4111-8111-111111111111";
 const input = { userId, email: "person@example.com", metadata: {}, origin: "http://localhost", accessToken: "verified-jwt" };
 const personal = (id: string, state = "active") => ({ id, status: state, metadata: { beneficiary_user_id: userId }, items: { data: [{ price: { metadata: { purpose: "platform_subscription" } } }] } });
 
-beforeEach(() => { jest.clearAllMocks(); journal = null; customers = []; owned = []; members = 0; coowners = 0;
+beforeEach(() => { jest.clearAllMocks(); journal = null; customers = []; owned = []; members = 0; coowners = 0; leaseConflict = false; failClosedWrite = false;
   sendEmail.mockResolvedValue({ success: true }); signOut.mockResolvedValue({ error: null }); updateUserById.mockResolvedValue({ error: null }); generateLink.mockResolvedValue({ data: { properties: { action_link: "http://signin" } }, error: null }); });
 
 describe("account lifecycle orchestration", () => {
@@ -75,5 +82,26 @@ describe("account lifecycle orchestration", () => {
     expect(journal!.recoveryTokenHash).toBe(token.hash);
     await expect(restoreAccount({ userId, requestId: "r", token: token.token })).resolves.toEqual({ actionLink: "http://signin" });
     expect(journal!.state).toBe("restored"); expect(journal!.recoveryTokenHash).toBeUndefined();
+  });
+
+  it("keeps recovery possible when final closure persistence and unban compensation both fail", async () => {
+    failClosedWrite = true;
+    let recoveryLink = "";
+    sendEmail.mockImplementation(async ({ html }: { html: string }) => { recoveryLink = html.match(/href="([^"]+)/)?.[1] ?? ""; return { success: true }; });
+    updateUserById.mockImplementation(async (_id: string, patch: { ban_duration: string }) => ({ error: patch.ban_duration === "none" ? new Error("unban unavailable") : null }));
+    await expect(closeAccount(input)).rejects.toMatchObject({ status: 409 });
+    const url = new URL(recoveryLink); const token = url.searchParams.get("token")!; const requestId = url.searchParams.get("request")!;
+    expect(journal!.state).toBe("failed"); expect((journal!.checkpoints as Record<string, string>).access_disable_started).toBeDefined();
+    failClosedWrite = false; updateUserById.mockResolvedValue({ error: null });
+    await expect(restoreAccount({ userId, requestId, token })).resolves.toEqual({ actionLink: "http://signin" });
+  });
+
+  it("starts a fresh reclosure after restore and refuses a conflicting live lease", async () => {
+    const previous = { requestId: "old", state: "restored", requestedAt: "then", email: input.email, checkpoints: { restored: "then" }, receipts: { old: ["sub"] }, errors: [] };
+    sendEmail.mockResolvedValue({ success: false });
+    await expect(closeAccount({ ...input, metadata: { account_closure: previous } })).rejects.toMatchObject({ status: 502 });
+    expect(journal!.requestId).not.toBe("old"); expect(journal!.checkpoints).not.toHaveProperty("restored");
+    journal = null; leaseConflict = true;
+    await expect(closeAccount(input)).rejects.toMatchObject({ status: 409 }); expect(sendEmail).not.toHaveBeenCalled();
   });
 });
