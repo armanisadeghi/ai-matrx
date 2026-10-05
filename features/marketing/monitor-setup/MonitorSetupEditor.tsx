@@ -111,6 +111,7 @@ import {
   type OfferTarget,
   type PeopleIndex,
   type PersonOffer,
+  blankedFieldsSentence,
 } from "./model";
 
 const NO_PROOF_SENTENCE =
@@ -687,6 +688,8 @@ function MonitorSetupEditorBody({
         ),
         brandRow.organization_id,
       );
+      const blanked = blankedFieldsSentence(saved);
+      if (blanked) toast.warning(blanked);
       setDraft({ ...draft, briefSourceId });
       setTrackerId(saved.id);
       void invalidate();

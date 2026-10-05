@@ -904,3 +904,36 @@ export function scheduleCostAdvice(
     .sort((a, b) => b.runsPerMonth - a.runsPerMonth);
   return { chosen, cheaper: fits[0] ?? null };
 }
+
+// ── a save that emptied populated fields (2026-10-05) ───────────────────────
+
+const BLANKED_LABELS: Record<string, string> = {
+  topics: "topics",
+  standing: "what you can speak to",
+  competitors: "competitors",
+  feed_ids: "feeds",
+  feed_urls: "feed addresses",
+  x_trends_woeids: "X trend locations",
+  brief_source_id: "the brief",
+  search_terms: "search terms",
+  brand_terms: "brand keywords",
+  exclude_terms: "ignore words",
+  alert_recipient_user_ids: "alert recipients",
+  term_meanings: "keyword meanings",
+};
+
+/**
+ * One plain sentence naming every populated field a save emptied (the server's
+ * `blanked_fields`, field → entries it held), or null when it emptied nothing.
+ * A save never empties a field silently.
+ */
+export function blankedFieldsSentence(saved: unknown): string | null {
+  const raw =
+    saved && typeof saved === "object" ? (saved as { blanked_fields?: unknown }).blanked_fields : null;
+  if (!raw || typeof raw !== "object") return null;
+  const parts = Object.entries(raw as Record<string, unknown>)
+    .filter(([, n]) => typeof n === "number" && n > 0)
+    .map(([k, n]) => `${BLANKED_LABELS[k] ?? k.replace(/_/g, " ")} (had ${n})`);
+  if (!parts.length) return null;
+  return `This save emptied ${parts.join(", ")}. If that was not meant, add them back and save again.`;
+}
