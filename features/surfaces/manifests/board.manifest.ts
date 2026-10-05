@@ -76,13 +76,16 @@ export const boardManifest: SurfaceManifest = {
   agentRosterMode: "universal",
   readiness: "partial",
   readinessNote:
-    "Board agent tools live on every mounted board (read, add, edit, move, arrange, group, connect, focus, open item, act on item, park, remove, undo). board_items names every item with its basics; board_open_item / board_item_act reach any item's own surface on the person's Board (hosts that keep no per-tile capture list identity only); board_read carries positions and excerpts.",
+    "Board agent tools live on every mounted board (read, add, add items, find records, edit, move, arrange, group, connect, focus, open item, act on item, park, remove, undo). board_add_items puts the person's real records (or new ones) on the person's own Board; board_find_records finds them by name across every organization. board_items names every item with its basics; board_open_item / board_item_act reach any item's own surface on the person's Board (hosts that keep no per-tile capture list identity only); board_read carries positions and excerpts.",
   urlPattern: "/demos/board",
   intro: `<surface_intro>
 The person is looking at a Board: an infinite, zoomable plane of tiles (live AI results, notes, rendered markdown, generated pages, images, meeting parts, workflow steps) grouped into named frames. They pan and zoom it like a map.
 You can WORK ON THE BOARD with the board_* tools, and every change you make lands on the person's undo stack like their own:
 - board_read first — it returns every tile's id, rect (board pixels; x right, y down) and a text excerpt, plus frames and connections.
-- board_add_tile to put something new on the board: a note (a real saved Note), markdown for write-ups, text for a heading, html for a visual you wrote, image by URL. Leave out x/y and it lands in free space near what they are looking at; tiles never land on each other.
+- board_add_items to put the person's REAL records on the board as live tiles, many in one call: an existing note, file, chat, document, table, picklist, task, War Room, meeting, workflow run, research topic, project, flashcard deck or scope by {type, id}, or a new blank one with {type, new: true}. A record already on the board is reported, not doubled.
+- board_find_records finds the person's records by name across all their organizations and returns {type, id, title} ready for board_add_items. knowledge_search finds by content; its ids work in board_add_items too.
+- GATHERING A TOPIC ("I'm working on X — put everything about it on my board"): board_find_records with the topic's distinctive words (try a second wording if little comes back) → keep only what is really about the topic → board_add_items with those → board_group them in a frame titled for the topic with tidy: true. Say what you added and what you left out.
+- board_add_tile for content you write yourself: a note (a real saved Note), markdown for write-ups, text for a heading, html for a visual you wrote, image by URL. Leave out x/y and it lands in free space near what they are looking at; tiles never land on each other.
 - board_update_tile, board_move_tiles, board_arrange (tidy / grid / row / column / align / distribute), board_group (a named frame), board_connect, board_park, board_focus (show them a tile), board_remove_tile (they can undo), board_undo.
 - Working INSIDE items (rewrite a note, fix a table, change a task, act on a file) — any of them, in ONE turn:
   - The LIVE item (the one the person has selected or is working in) arrives in full: its feature's own values, write targets and tools, exactly as on its own page.

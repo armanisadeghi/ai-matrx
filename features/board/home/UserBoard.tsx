@@ -39,7 +39,7 @@ import { useBoardKeys } from "../board/useBoardKeys";
 import { BoardNavigationContext } from "../engine/tile-navigation";
 import { appPagePath, pageSource, pageTitleFor } from "../items/page-items";
 import { useWheelModePreference } from "../board/useWheelModePreference";
-import { type BoardDocument, type NodeSource, recordKeyOf } from "../board/document";
+import { type BoardDocument, type NodeSource } from "../board/document";
 import { BoardMenu } from "../components/BoardMenu";
 import { BoardSurface } from "../components/BoardSurface";
 import { BoardViewport } from "../components/BoardViewport";
@@ -61,6 +61,7 @@ import { filesToBoardItems } from "../items/file-drop";
 import { noteSeedEdit } from "../items/work-sources";
 import { intakeText } from "./board-intake";
 import { type PlacementRun, placeTiles } from "./place-run";
+import { planPlacement } from "../board/plan-placement";
 import { AddMenu, StartPanel } from "./AddMenu";
 import { UnavailableItemBody } from "./UnavailableItemBody";
 
@@ -213,30 +214,26 @@ export function UserBoard({
   // Successive adds fill the view in reading order while the view stays where
   // the last add left it (`home/place-run.ts`).
   const placementRun = useRef<PlacementRun | null>(null);
-  /** `at`: a drop point — the nearest free spot there. Otherwise the run. */
-  const place = (wanted: PlacedItem[], at?: { x: number; y: number }) => {
-    // A record already on this board is shown, never opened a second time
-    // (two editors of one record in one tab overwrite each other).
-    const onBoard = new Map<string, string>();
-    for (const t of [...board.read().tiles, ...board.read().parked]) {
-      const key = recordKeyOf(t.source);
-      if (key) onBoard.set(key, t.id);
-    }
-    const already: string[] = [];
-    const seen = new Set<string>();
-    const items = wanted.filter((item) => {
-      const key = recordKeyOf(item.source);
-      if (key && seen.has(key)) return false; // the same record twice in one add
-      const existing = key ? onBoard.get(key) : undefined;
-      if (existing) already.push(existing);
-      if (key) seen.add(key);
-      return !existing;
-    });
+  /** `at`: a drop point — the nearest free spot there. Otherwise the run. Returns, per wanted
+   * item, the tile that now shows it (`already`: it was on this board before) — or null for the
+   * same record twice in one add. `agent`: an agent's add never takes the view or the selection
+   * from a tile the person is working in. */
+  const place = (
+    wanted: PlacedItem[],
+    at?: { x: number; y: number },
+    opts: { agent?: boolean } = {},
+  ): ({ id: string; already: boolean } | null)[] => {
+    const busy = opts.agent && store ? (store.getEditing() ?? store.getFocused()) : null;
+    const { tiles, results, already } = planPlacement(
+      wanted,
+      [...board.read().tiles, ...board.read().parked],
+      itemTypeFor,
+    );
     if (already.length > 0) {
       const target = already[already.length - 1];
       if (board.getLayout().parkedIds.includes(target)) board.unparkTile(target);
       toast(already.length === 1 ? "Already on this board" : `${already.length} were already on this board`);
-      if (items.length === 0 && store) {
+      if (tiles.length === 0 && store && !busy) {
         requestAnimationFrame(() =>
           requestAnimationFrame(() => {
             store.select(target);
@@ -245,16 +242,10 @@ export function UserBoard({
         );
       }
     }
-    const tiles: UserBoardTile[] = items.map((item) => {
-      const type = itemTypeFor(item.source);
-      const size = item.size ?? type?.defaultSize ?? { w: 480, h: 360 };
-      const id = `${type?.key ?? "item"}:${crypto.randomUUID().slice(0, 8)}`;
-      return { id, title: item.title, source: item.source, rect: { x: 0, y: 0, ...size } };
-    });
-    if (tiles.length === 0) return;
+    if (tiles.length === 0) return results;
     if (!store) {
       for (const tile of tiles) board.addTile(tile, at ?? { x: 0, y: 0 });
-      return;
+      return results;
     }
     const view = { camera: store.getCamera(), size: store.getSize(), insets: store.getInsets() };
     const placed = placeTiles(board, tiles, view, placementRun.current, at);
@@ -262,12 +253,15 @@ export function UserBoard({
     const target = tiles[tiles.length - 1].id;
     // The tile registers on its next render: then select it so the person can
     // start on it at once, and pan just enough to show it if it is off screen.
-    requestAnimationFrame(() =>
-      requestAnimationFrame(() => {
-        store.select(target);
-        if (placed.reveal) store.flyTo(placed.reveal, 320);
-      }),
-    );
+    if (!busy) {
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => {
+          store.select(target);
+          if (placed.reveal) store.flyTo(placed.reveal, 320);
+        }),
+      );
+    }
+    return results;
   };
 
   const startNew = (_type: BoardItemType, entry: StartNewEntry) => {
@@ -459,6 +453,17 @@ export function UserBoard({
     boardTitle: title,
     itemSurfaces,
     createTile: (id, input, size) => agentTile(id, input, size),
+    // board_add_items / board_find_records: the catalog, and the ONE placement path every way in uses.
+    itemTypes: BOARD_ITEM_TYPES,
+    placeItems: (batch) => {
+      const out: ({ id: string; already: boolean } | null)[] = new Array(batch.length).fill(null);
+      const flowing = batch.flatMap((b, i) => (b.at ? [] : [i]));
+      place(flowing.map((i) => batch[i].item), undefined, { agent: true }).forEach((r, k) => (out[flowing[k]] = r));
+      batch.forEach((b, i) => {
+        if (b.at) out[i] = place([b.item], b.at, { agent: true })[0] ?? null;
+      });
+      return out;
+    },
     editTile: (tile, input) => agentEdit(tile, input),
     describe: (tile) => {
       const type = itemTypeFor(tile.source);

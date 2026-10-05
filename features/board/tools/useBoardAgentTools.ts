@@ -53,6 +53,10 @@ import {
   type ItemSurfaceIndex,
 } from "./item-surfaces";
 import { settleFrames } from "./settle-frames";
+import type { BoardItemType, PlacedItem } from "../items/types";
+import { findBoardRecords, resolveAddEntry } from "./board-records";
+import { BOARD_ADD_ITEMS_MAX } from "./board-tools";
+import { searchItemsAsPerson } from "./search-items";
 
 export interface AddTileInput {
   kind: BoardTileKindInput;
@@ -111,6 +115,8 @@ export interface BoardToolTarget<T extends BoardTileBase> {
   connect?: (connection: BoardConnection) => void;
   /** Run changes as an actor, so the agent's are told apart from the person's. */
   runAs?: <R>(actor: BoardActor, fn: () => R) => R;
+  /** Run several changes as ONE undoable step. */
+  batch?: <R>(fn: () => R) => R;
   /** Take back only the agent's own latest change (absent = board_undo refused). */
   undoActor?: (actor: BoardActor) => ActorUndoResult;
   canUndoActor?: (actor: BoardActor) => boolean;
@@ -137,6 +143,20 @@ export interface BoardToolHost<T extends BoardTileBase & { title: string }> {
    * Absent on a board whose tiles carry no feature surface.
    */
   itemSurfaces?: ItemSurfaceIndex;
+  /**
+   * The item catalog this board places from (`items/catalog.ts`), for
+   * `board_add_items` / `board_find_records`. Absent = those tools are refused.
+   */
+  itemTypes?: readonly BoardItemType[];
+  /**
+   * Places records through the host's ONE placement path (UserBoard `place()`):
+   * `at` is a world point to land nearest to, else the items fill the view.
+   * Returns per item the tile that shows it (`already`: it was on the board
+   * before), or null for a record named twice in one call.
+   */
+  placeItems?: (
+    batch: { item: PlacedItem; at?: { x: number; y: number } }[],
+  ) => ({ id: string; already: boolean } | null)[];
 }
 
 const DEFAULT_SIZE: Record<BoardTileKindInput, { w: number; h: number }> = {
@@ -318,6 +338,72 @@ export function useBoardAgentTools<T extends BoardTileBase & { title: string }>(
       if (!personBusyIn()) agentSelect(id);
     });
     return { ok: true, id, rect };
+  };
+
+  /** board_add_items — the person's real records (or new ones) as tiles, one undoable step. */
+  const addItems = (input: unknown) => {
+    const types = host.itemTypes;
+    const placeItems = host.placeItems;
+    if (!types || !placeItems) {
+      return fail("This board shows its own feature's parts only; records cannot be added to it. board_add_tile adds notes and write-ups.");
+    }
+    const entries = Array.isArray(record(input).items) ? (record(input).items as unknown[]).map(record) : [];
+    if (entries.length === 0) return fail("Pass `items`: [{type, id} or {type, new: true}, …].");
+    if (entries.length > BOARD_ADD_ITEMS_MAX) return fail(`At most ${BOARD_ADD_ITEMS_MAX} items per call; send the rest in another call.`);
+    const results: Record<string, unknown>[] = entries.map((e) => ({ type: e.type, ...(str(e.id) ? { id: e.id } : {}) }));
+    const batch: { item: PlacedItem; at?: { x: number; y: number }; index: number }[] = [];
+    entries.forEach((e, index) => {
+      const resolved = resolveAddEntry(e, types);
+      if (!resolved.ok) {
+        Object.assign(results[index], { status: resolved.status, error: resolved.error });
+        return;
+      }
+      const { w, h } = resolved.item.size;
+      const x = num(e.x);
+      const y = num(e.y);
+      const beside = str(e.near_tile_id) ? find(e.near_tile_id) : undefined;
+      if (str(e.near_tile_id) && !beside) {
+        Object.assign(results[index], { status: "refused", error: `No tile with id "${String(e.near_tile_id)}" is on this board.` });
+        return;
+      }
+      const at =
+        x !== undefined && y !== undefined
+          ? { x: x + w / 2, y: y + h / 2 }
+          : beside
+            ? { x: beside.rect.x + beside.rect.w + 48 + w / 2, y: beside.rect.y + h / 2 }
+            : undefined;
+      batch.push({ item: resolved.item, ...(at ? { at } : {}), index });
+    });
+    if (batch.length > 0) {
+      const run = () => asAgent(() => placeItems(batch.map(({ item, at }) => (at ? { item, at } : { item }))));
+      const placed = board.batch ? board.batch(run) : run();
+      batch.forEach(({ item, index }, k) => {
+        const p = placed[k];
+        if (!p) Object.assign(results[index], { status: "duplicate", error: "Named twice in this call; placed once." });
+        else {
+          const tile = find(p.id);
+          Object.assign(results[index], {
+            status: p.already ? "already_on_board" : "added",
+            tile_id: p.id,
+            title: tile?.title ?? item.title,
+            ...(tile ? { rect: tile.rect } : {}),
+          });
+        }
+      });
+    }
+    const added = results.filter((r) => r.status === "added").length;
+    return {
+      ok: added > 0 || results.some((r) => r.status === "already_on_board"),
+      added,
+      results,
+      ...(added > 0 ? { next: "Group them with board_group (title = the topic, tidy: true), or arrange with board_arrange." } : {}),
+    };
+  };
+
+  /** board_find_records — candidates for board_add_items across the person's records. */
+  const findRecords = async (input: unknown) => {
+    if (!host.itemTypes) return fail("This board cannot take records, so there is nothing to find for it.");
+    return findBoardRecords(record(input), host.itemTypes, searchItemsAsPerson);
   };
 
   const update = (input: unknown) => {
@@ -680,6 +766,8 @@ export function useBoardAgentTools<T extends BoardTileBase & { title: string }>(
   useSurfaceClientTools(surfaceName, {
     board_read: read,
     board_add_tile: add,
+    board_add_items: addItems,
+    board_find_records: findRecords,
     board_update_tile: update,
     board_remove_tile: remove,
     board_move_tiles: moveTiles,
