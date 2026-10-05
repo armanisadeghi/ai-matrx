@@ -30,7 +30,7 @@ import {
   googleFaultBlocksEverything,
 } from "@/features/marketing/google/health";
 import { readAllRows } from "@ai-matrx/data/db";
-import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
+import { resolveBaseUrl } from "@/lib/python-client";
 import { buildMatrxRequestUrl, sendMatrxRequest } from "@ai-matrx/agents/matrx";
 import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
 import { ensureOrganizationForRequest } from "@/lib/organization/organization-gate";
@@ -394,7 +394,7 @@ export async function listGoogleConnectionInventory(
 // no client-side secret handling.
 
 function backendBase(): string {
-  return AIDREAM_PRODUCTION_URL;
+  return resolveBaseUrl();
 }
 
 /**
