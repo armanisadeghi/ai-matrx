@@ -28,7 +28,7 @@ import { useEffect, useState } from "react";
 import { shallowEqual } from "react-redux";
 import {
   UserRoundCog,
-  BrainCircuit,
+  Lightbulb,
   ClipboardPen,
   Code2,
   FileText,
@@ -117,7 +117,7 @@ const RUN_THROWS: Record<ThrowDirection, ThrowAction> = { ...DEFAULT_THROW_ACTIO
 const FAMILY_TILE_ICON: Record<NodeFamily, LucideIcon> = {
   input: ClipboardPen,
   prepare: Layers,
-  think: BrainCircuit,
+  think: Lightbulb,
   agent: UserRoundCog,
   deliver: PackageCheck,
 };
