@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import { AutoResizeTextarea } from "@/features/message-templates/components/AutoResizeTextarea";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { ADMIN_UTILITIES_SURFACE_NAME, createAdminUtilitiesScope } from "@/features/surfaces/manifests/admin-utilities.manifest";
 import { PUBLISHED_TO_WEB_LABEL } from "@/lib/row-access";
@@ -92,66 +93,6 @@ import { ReadFailure } from "@/components/read-state/ReadFailure";
 interface MessageTemplateManagerProps {
   className?: string;
 }
-
-// Auto-resizing textarea component
-const AutoResizeTextarea = React.forwardRef<
-  HTMLTextAreaElement,
-  React.TextareaHTMLAttributes<HTMLTextAreaElement> & {
-    value?: string;
-    onChange?: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
-    minHeight?: number;
-  }
->(({ className, value, onChange, minHeight = 100, ...props }, ref) => {
-  const textareaRef = React.useRef<HTMLTextAreaElement>(null);
-
-  React.useImperativeHandle(ref, () => {
-    if (!textareaRef.current) {
-      throw new Error("Message template textarea is not mounted.");
-    }
-    return textareaRef.current;
-  });
-
-  const adjustHeight = React.useCallback(() => {
-    const textarea = textareaRef.current;
-    if (textarea) {
-      textarea.style.height = "auto";
-      const scrollHeight = textarea.scrollHeight;
-      textarea.style.height = Math.max(minHeight, scrollHeight) + "px";
-    }
-  }, [minHeight]);
-
-  React.useEffect(() => {
-    adjustHeight();
-  }, [value, adjustHeight]);
-
-  React.useEffect(() => {
-    const textarea = textareaRef.current;
-    if (textarea) {
-      adjustHeight();
-      window.addEventListener("resize", adjustHeight);
-      return () => window.removeEventListener("resize", adjustHeight);
-    }
-    return undefined;
-  }, [adjustHeight]);
-
-  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    onChange?.(e);
-    setTimeout(adjustHeight, 0);
-  };
-
-  return (
-    <textarea
-      ref={textareaRef}
-      className={`flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none overflow-hidden ${className}`}
-      value={value}
-      onChange={handleChange}
-      style={{ minHeight: minHeight + "px" }}
-      {...props}
-    />
-  );
-});
-
-AutoResizeTextarea.displayName = "AutoResizeTextarea";
 
 const MESSAGE_ROLES: { value: MessageRole; label: string }[] = [
   { value: "system", label: "System" },

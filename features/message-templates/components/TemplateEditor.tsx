@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback } from "react";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -58,38 +59,6 @@ function readSubjectTemplate(metadata: unknown): string {
 interface TemplateEditorProps {
   template?: MessageTemplateEditorSource | null;
   mode: "create" | "edit";
-}
-
-/** Auto-growing textarea — expands with content, page scrolls, no inner scroll */
-function AutoTextarea({
-  value,
-  onChange,
-  placeholder,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  placeholder?: string;
-}) {
-  const ref = useRef<HTMLTextAreaElement>(null);
-
-  useEffect(() => {
-    if (ref.current) {
-      ref.current.style.height = "auto";
-      ref.current.style.height = `${ref.current.scrollHeight}px`;
-    }
-  }, [value]);
-
-  return (
-    <textarea
-      ref={ref}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      rows={6}
-      style={{ fontSize: "16px" }}
-      className="w-full rounded-md border border-input bg-background px-3 py-2 font-mono leading-relaxed text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring resize-none overflow-hidden"
-    />
-  );
 }
 
 function EditorHeader({
@@ -355,10 +324,17 @@ export function TemplateEditor({ template, mode }: TemplateEditorProps) {
             style={{ fontSize: "16px" }}
             className="h-9 w-full rounded-md border border-input bg-background px-3 font-mono text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
           />
-          <AutoTextarea
+          {/* Raw text with {{variables}}: ProTextarea brings the formatting
+              layer and the "…" menu (copy); it never rewrites the text. */}
+          <ProTextarea
             value={content}
-            onChange={setContent}
+            onChange={(event) => setContent(event.target.value)}
             placeholder="Write the message..."
+            sourceFeature="messages"
+            autoGrow
+            rows={6}
+            style={{ fontSize: "16px" }}
+            className="font-mono leading-relaxed"
           />
           <p className="text-xs text-muted-foreground">
             Merge fields are filled from a real record at preview time. Missing

@@ -27,6 +27,7 @@ import SectionViewerV2 from "./analyzer/analyzer-options/section-viewer-V2";
 import MarkdownStream from "@/components/MarkdownStream";
 import RichEditor, { type RichEditorController } from "@/components/rich-editor/RichEditor";
 import { MatrxSplit } from "@/components/matrx/MatrxSplit";
+import { useTextareaFormatting } from "@/components/rich-editor/format/useTextareaFormatting";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
@@ -1027,6 +1028,28 @@ function AdminTabOpener({
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
+/** The Plain tab: raw markdown text, with the ONE formatting layer (chords + the selection toolbar's buttons). */
+function PlainWriteTextarea({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+}) {
+  const [element, setElement] = useState<HTMLTextAreaElement | null>(null);
+  useTextareaFormatting(element);
+  return (
+    <textarea
+      ref={setElement}
+      className="min-h-0 flex-1 w-full resize-none border-none bg-textured p-4 font-mono text-base text-foreground outline-none"
+      value={value}
+      onChange={onChange}
+      placeholder="Start writing markdown..."
+      aria-label="Markdown Editor"
+    />
+  );
+}
+
 const FullScreenMarkdownEditor: React.FC<FullScreenMarkdownEditorProps> = ({
   isOpen,
   initialContent,
@@ -1168,12 +1191,9 @@ const FullScreenMarkdownEditor: React.FC<FullScreenMarkdownEditorProps> = ({
       content: wrapInBoundary(
         "write",
         <div className="flex h-full min-h-0 flex-col">
-          <textarea
-            className="min-h-0 flex-1 w-full resize-none border-none bg-textured p-4 font-mono text-base text-foreground outline-none"
+          <PlainWriteTextarea
             value={editedContent}
             onChange={handleTextareaChange}
-            placeholder="Start writing markdown..."
-            aria-label="Markdown Editor"
           />
           <PlainTextMetricsBar text={editedContent} compact={isMobile} />
         </div>,

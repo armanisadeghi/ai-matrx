@@ -25,6 +25,14 @@ const REQUIRED: Record<string, RegExp> = {
   "components/rich-editor/source/SourceEditor.tsx": /markdownFormatHost\(/,
   "components/rich-editor/visual/VisualEditor.tsx": /RICH_EDITOR_HOST_KEY/,
   "packages/chat/src/agents/components/inputs/smart-input/AgentTextarea.tsx": /useTextareaFormatting\(/,
+  // The editors that used to change capability by tab / were bare textareas.
+  "components/mardown-display/chat-markdown/FullScreenMarkdownEditor.tsx": /useTextareaFormatting\(/,
+  "components/official/content-editor/ContentEditor.tsx": /useTextareaFormatting\(/,
+  "features/html-pages/components/tabs/MarkdownPlainTextTab.tsx": /useTextareaFormatting\(/,
+  "features/agents/components/builder/message-builders/MessageItem.tsx": /useTextareaFormatting\(/,
+  "features/agents/components/builder/message-builders/system-instructions/SystemMessage.tsx": /useTextareaFormatting\(/,
+  "features/message-templates/components/AutoResizeTextarea.tsx": /useTextareaFormatting\(/,
+  "features/message-templates/components/TemplateEditor.tsx": /ProTextarea/,
 };
 
 /** Directories where text is long-form markdown a person writes. */
@@ -51,16 +59,6 @@ const EXEMPT: Record<string, string> = {
   "features/html-pages/components/tabs/WordPressCSSTab.tsx": "CSS source",
   "features/html-pages/components/tabs/SavePageTab.tsx": "page metadata fields",
   "packages/chat/src/agents/components/inputs/smart-input/UninitializedShell.tsx": "the composer's loading shell (disabled)",
-  // FOLLOW-UP LANE (chair, 2026-10-04: consistency census items 7–9 — bare
-  // textareas in the full-screen editor, HTML-page tabs and prompt / template /
-  // skill editors move onto the canonical editor there). Shrink-only.
-  "components/mardown-display/chat-markdown/FullScreenMarkdownEditor.tsx": "follow-up lane: Plain tab bare textarea",
-  "features/html-pages/components/tabs/MarkdownPlainTextTab.tsx": "follow-up lane: Plain tab bare textarea",
-  "features/agents/components/builder/message-builders/MessageItem.tsx": "follow-up lane: prompt message editor",
-  "features/agents/components/builder/message-builders/system-instructions/SystemMessage.tsx": "follow-up lane: system instructions editor",
-  "features/message-templates/admin/MessageTemplateManager.tsx": "follow-up lane: template editor",
-  "features/message-templates/components/SaveTemplateModal.tsx": "follow-up lane: template editor",
-  "features/message-templates/components/TemplateEditor.tsx": "follow-up lane: template editor",
 };
 
 const WIRED = /useTextareaFormatting\(|markdownFormatHost\(|RICH_EDITOR_HOST_KEY/;

@@ -60,6 +60,8 @@ import type {
 import { useAgentUndoRedo } from "@ai-matrx/chat/agents/hooks/useAgentUndoRedo";
 import { useAgentBuilderSurfaceScope } from "@ai-matrx/chat/agents/hooks/useAgentBuilderSurfaceScope";
 import MarkdownStream from "@/components/MarkdownStream";
+import { MatrxSplit } from "@/components/matrx/MatrxSplit";
+import { useTextareaFormatting } from "@/components/rich-editor/format/useTextareaFormatting";
 import { MessageFlagToggles } from "@ai-matrx/chat/agents/message-flags/MessageFlagToggles";
 import { useMessageFlags } from "@ai-matrx/chat/agents/message-flags/useMessageFlags";
 
@@ -138,6 +140,11 @@ export function MessageItem({
     Record<number, number>
   >({});
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  // Prompts are raw text: the ONE formatting layer (chords + the selection
+  // toolbar's buttons) inserts markdown on request; nothing ever auto-formats.
+  const [formatElement, setFormatElement] =
+    useState<HTMLTextAreaElement | null>(null);
+  useTextareaFormatting(formatElement);
   const contextMenuOpenRef = useRef(false);
   const textareaInitializedRef = useRef(false);
   const scrollLockRef = useRef<{ scrollTop: number; overflow: string } | null>(
@@ -513,6 +520,7 @@ export function MessageItem({
   // Textarea handlers
   const handleTextareaRef = useCallback((el: HTMLTextAreaElement | null) => {
     textareaRef.current = el;
+    setFormatElement(el);
     if (el && !textareaInitializedRef.current) {
       textareaInitializedRef.current = true;
       el.style.height = "auto";
@@ -520,6 +528,15 @@ export function MessageItem({
       el.focus({ preventScroll: true });
     }
   }, []);
+
+  // Split's own text box (MatrxSplit carries the formatting layer itself):
+  // only the cursor-insert helpers need to see it.
+  const handleSplitTextareaRef = useCallback(
+    (el: HTMLTextAreaElement | null) => {
+      textareaRef.current = el;
+    },
+    [],
+  );
 
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -776,7 +793,23 @@ export function MessageItem({
 
       {/* Content */}
       <div className="p-4">
-        {viewMode === "preview" ? (
+        {viewMode === "split" ? (
+          <div style={{ height: "320px" }}>
+            <MatrxSplit
+              imagePolicy="other"
+              value={currentText}
+              onChange={handleTextChange}
+              textareaRef={handleSplitTextareaRef}
+              placeholder={
+                message.role === "assistant"
+                  ? "Assistant response / example output..."
+                  : "User message / example input..."
+              }
+              textareaClassName="text-xs"
+              allowFullScreenEditor={false}
+            />
+          </div>
+        ) : viewMode === "preview" ? (
           <div
             className="cursor-text"
             style={{ minHeight: "80px" }}
@@ -790,7 +823,7 @@ export function MessageItem({
                 className="text-sm"
                 // Persist in-block edits (JSON reformat, code edits, etc.)
                 // back to the agent definition so they survive the
-                // preview ↔ edit toggle and reach the DB.
+                // mode toggle and reach the DB.
                 onContentChange={handleTextChange}
               />
             ) : (

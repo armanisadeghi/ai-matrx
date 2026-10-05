@@ -24,7 +24,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import MarkdownStream from "@/components/MarkdownStream";
+import { RichContent } from "@/components/rich-content/RichContent";
+import { useTextareaFormatting } from "@/components/rich-editor/format/useTextareaFormatting";
 import type { ContentEditorProps, EditorMode, EditorModeConfig } from "./types";
 import RichEditor, { type RichEditorController } from "@/components/rich-editor/RichEditor";
 import { CopyDropdownButton } from "./CopyDropdownButton.lazy";
@@ -111,6 +112,14 @@ export function ContentEditor({
   // Source ("markdown"); Toast UI is gone from the app.
   const richEditorRef = useRef<RichEditorController | null>(null);
   const plainTextareaRef = useRef<HTMLTextAreaElement>(null);
+  // Plain is raw text, but the ONE formatting layer (chords + the selection
+  // toolbar's buttons) still inserts markdown on request.
+  const [plainElement, setPlainElement] = useState<HTMLTextAreaElement | null>(null);
+  useTextareaFormatting(plainElement);
+  const setPlainTextarea = useCallback((node: HTMLTextAreaElement | null) => {
+    plainTextareaRef.current = node;
+    setPlainElement(node);
+  }, []);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const localContentRef = useRef(localContent);
   const modeRef = useRef(internalMode);
@@ -436,7 +445,7 @@ export function ContentEditor({
               }
             >
               <Textarea
-                ref={plainTextareaRef}
+                ref={setPlainTextarea}
                 value={localContent}
                 onChange={(e) => handleContentChange(e.target.value)}
                 placeholder={placeholder}
@@ -504,7 +513,7 @@ export function ContentEditor({
               <div className="w-full p-6 bg-textured overflow-visible">
                 {localContent.trim() ? (
                   <div className="overflow-visible">
-                    <MarkdownStream imagePolicy={imagePolicy} content={localContent} />
+                    <RichContent level="full" imagePolicy={imagePolicy} source={localContent} />
                   </div>
                 ) : (
                   <div className="text-center py-12 text-zinc-400 dark:text-zinc-500">

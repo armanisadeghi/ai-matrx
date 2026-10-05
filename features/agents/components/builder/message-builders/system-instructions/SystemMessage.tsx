@@ -29,6 +29,8 @@ import {
   type MessageViewMode,
 } from "@/features/agents/components/builder/message-builders/MessageViewModeMenu";
 import MarkdownStream from "@/components/MarkdownStream";
+import { MatrxSplit } from "@/components/matrx/MatrxSplit";
+import { useTextareaFormatting } from "@/components/rich-editor/format/useTextareaFormatting";
 import {
   BlockList,
   BlockType,
@@ -90,6 +92,11 @@ export function SystemMessage({
     Record<number, number>
   >({});
   const textareaRefs = useRef<Record<number, HTMLTextAreaElement | null>>({});
+  // System instructions are raw text: the ONE formatting layer inserts
+  // markdown on request; nothing ever auto-formats.
+  const [formatElement, setFormatElement] =
+    useState<HTMLTextAreaElement | null>(null);
+  useTextareaFormatting(formatElement);
   const dispatch = useAppDispatch();
 
   // Full messages array — needed for write-back
@@ -432,8 +439,18 @@ export function SystemMessage({
     contextMenuOpenRef.current = false;
   }, []);
 
+  // Split's own text box (MatrxSplit carries the formatting layer itself):
+  // only the cursor-insert helpers need to see it.
+  const handleSplitTextareaRef = useCallback(
+    (el: HTMLTextAreaElement | null) => {
+      textareaRefs.current[systemMessageIndex] = el;
+    },
+    [systemMessageIndex],
+  );
+
   const handleTextareaRef = useCallback((el: HTMLTextAreaElement | null) => {
     textareaRefs.current[systemMessageIndex] = el;
+    setFormatElement(el);
     if (el && !textareaInitializedRef.current) {
       textareaInitializedRef.current = true;
       el.style.height = "auto";
@@ -692,7 +709,19 @@ export function SystemMessage({
 
         {/* Content */}
         <div className="p-4">
-          {viewMode === "preview" ? (
+          {viewMode === "split" ? (
+            <div style={{ height: "360px" }}>
+              <MatrxSplit
+                imagePolicy="other"
+                value={developerMessage}
+                onChange={handleTextChange}
+                textareaRef={handleSplitTextareaRef}
+                placeholder="You're a very helpful assistant"
+                textareaClassName="text-xs"
+                allowFullScreenEditor={false}
+              />
+            </div>
+          ) : viewMode === "preview" ? (
             <div
               className="min-h-[240px] cursor-text"
               onClick={() => setViewMode("edit")}
