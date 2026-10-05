@@ -36,6 +36,7 @@
 
 import type { ContextValueType } from "@/features/scopes/redux/contextItemCatalog";
 import { valueTypeFromJsonSchema } from "../served-form/kind-source";
+import { valueCarriesKind } from "@/features/content-ir/surfaces/json-kind-signal";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 import { displayLabel } from "@ai-matrx/kit/text-case";
 
@@ -150,6 +151,36 @@ export function kindContextValue(
     if (kind) return { name, kind, value };
   }
   return null;
+}
+
+/** One context entry as a person sees it. */
+export interface ContextEntryForPeople {
+  /** The slot name; null when the whole context map IS the value. */
+  name: string | null;
+  value: unknown;
+  /** True when the value carries a `__kind` anywhere — it goes through `AnswerValueView`. */
+  carriesKind: boolean;
+}
+
+/**
+ * EVERY context value, each marked by whether it carries a kind at ANY depth
+ * (a second top-level kind, an array of kinds, a nested kind, a string holding
+ * kind JSON). The card draws a kind-carrying entry through the one value door
+ * and the rest as plain facts — nothing here picks "the first" kind. Values
+ * travel whole, `__kind` included.
+ */
+export function contextEntriesForPeople(
+  context: Record<string, unknown> | null,
+): ContextEntryForPeople[] {
+  if (!context) return [];
+  if (str(context.__kind).trim()) {
+    return [{ name: null, value: context, carriesKind: true }];
+  }
+  return Object.entries(context).map(([name, value]) => ({
+    name,
+    value,
+    carriesKind: valueCarriesKind(value),
+  }));
 }
 
 /** Context entries that are NOT the kind-carrying value — shown as plain facts. */

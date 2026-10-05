@@ -19,6 +19,7 @@ import {
   decisionLine,
   escalationLine,
   isApprovalQuestion,
+  contextEntriesForPeople,
   kindContextValue,
   parseInterruptPayload,
   plainContextEntries,
@@ -343,5 +344,47 @@ describe("§4.2 — provenance is surfaced, ALWAYS", () => {
       matrx_decision: { authority: "the vibes" },
     })!;
     expect(decision.provenance).toBeNull();
+  });
+});
+
+
+describe("contextEntriesForPeople — every value carrying a kind goes to the kind door (Y2)", () => {
+  const KIND_JSON = JSON.stringify({ __kind: "quiz_set", title: "Cells" });
+
+  it("a second top-level kind is a kind entry, not a plain fact", () => {
+    const entries = contextEntriesForPeople({
+      draft: { __kind: "study_pack", title: "Cells" },
+      review: { __kind: "quiz_set", title: "Quiz" },
+    });
+    expect(entries.filter((e) => e.carriesKind).map((e) => e.name)).toEqual([
+      "draft",
+      "review",
+    ]);
+  });
+
+  it("an array of kinds, a nested kind and a string holding kind JSON all carry a kind", () => {
+    const entries = contextEntriesForPeople({
+      many: [{ __kind: "a_kind" }, { __kind: "b_kind" }],
+      wrapper: { inner: { deeper: { __kind: "quiz_set" } } },
+      text: KIND_JSON,
+      who: "Dana",
+    });
+    const byName = Object.fromEntries(entries.map((e) => [e.name, e.carriesKind]));
+    expect(byName).toEqual({ many: true, wrapper: true, text: true, who: false });
+  });
+
+  it("a map that IS the kind instance is one whole entry, unstripped", () => {
+    const ctx = { __kind: "quiz_set", title: "Cells" };
+    expect(contextEntriesForPeople(ctx)).toEqual([
+      { name: null, value: ctx, carriesKind: true },
+    ]);
+  });
+
+  it("a kindless context stays plain, in order", () => {
+    expect(contextEntriesForPeople({ who: "Dana", count: 3 })).toEqual([
+      { name: "who", value: "Dana", carriesKind: false },
+      { name: "count", value: 3, carriesKind: false },
+    ]);
+    expect(contextEntriesForPeople(null)).toEqual([]);
   });
 });

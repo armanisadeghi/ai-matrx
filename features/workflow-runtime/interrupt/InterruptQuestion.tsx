@@ -34,7 +34,7 @@ import { AlertTriangle, Check, Clock, Loader2, X } from "lucide-react";
 
 import { useAppSelector } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
-import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
+import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
 import { VariableInputComponent } from "@ai-matrx/chat/agents/components/inputs/input-components/VariableInputComponent";
 import {
   componentForInputOptions,
@@ -51,9 +51,8 @@ import {
   approvalResumeValue,
   escalationLine,
   isApprovalQuestion,
-  kindContextValue,
+  contextEntriesForPeople,
   parseInterruptPayload,
-  plainContextEntries,
   unansweredFields,
   type InterruptAnswerField,
   type InterruptQuestionView,
@@ -171,8 +170,9 @@ function InterruptBody({
   };
 
   const approval = isApprovalQuestion(view);
-  const context = kindContextValue(view.context);
-  const plain = plainContextEntries(view.context, context?.name ?? null);
+  const entries = contextEntriesForPeople(view.context);
+  const kindEntries = entries.filter((entry) => entry.carriesKind);
+  const plain = entries.filter((entry) => !entry.carriesKind);
 
   return (
     <div
@@ -197,25 +197,22 @@ function InterruptBody({
 
       <Deadline view={view} />
 
-      {/* §4.1 — the kind-carrying context renders through its kind component,
-          ABOVE the answer control. `component_ref` is the kindless escape and
-          is deliberately NOT consulted here: a registered kind outranks it
-          (§3 rule 1), and routing a kindless ref is the emission renderer's
-          job, not this card's. */}
-      {context ? (
-        <div className="mt-2 overflow-hidden rounded-lg border border-border bg-card">
-          <KindInstanceRender
-            kind={context.kind}
-            value={context.value}
-            showRoutingNote={false}
-            variant="bare"
-          />
+      {/* §4.1 — every context value carrying a `__kind` (at any depth, as an
+          array, or as a string of kind JSON) renders through the one value
+          door ABOVE the answer control. Nothing is stripped from it. */}
+      {kindEntries.map((entry, index) => (
+        <div
+          key={entry.name ?? `kind-${index}`}
+          data-interrupt-context-kind
+          className="mt-2 overflow-hidden rounded-lg border border-border bg-card"
+        >
+          <AnswerValueView value={entry.value} />
         </div>
-      ) : null}
+      ))}
       {plain.length > 0 ? (
         <dl className="mt-2 space-y-0.5">
           {plain.map((entry) => (
-            <div key={entry.name} className="flex gap-1.5 text-[11px]">
+            <div key={entry.name ?? "context"} className="flex gap-1.5 text-[11px]">
               <dt className="shrink-0 text-muted-foreground">{entry.name}</dt>
               <dd className="min-w-0 break-words text-foreground/90">
                 {formatPlain(entry.value)}
