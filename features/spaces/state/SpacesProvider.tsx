@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
+import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
 
@@ -192,7 +193,7 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
       }
       return doc;
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "We couldn't create the page.");
+      if (!isOrganizationSelectionCancelled(err)) toast.error(err instanceof Error ? err.message : "We couldn't create the page.");
       throw err;
     }
   };
@@ -211,7 +212,7 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
       const root = await addTravelingSmmSample(store, (done, total) => setSampleProgress(`${done}/${total}`));
       open(root.id);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "We couldn't add the sample.");
+      if (!isOrganizationSelectionCancelled(err)) toast.error(err instanceof Error ? err.message : "We couldn't add the sample.");
     } finally {
       setSampleProgress(null);
     }

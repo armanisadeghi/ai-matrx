@@ -555,6 +555,16 @@
 .spaces-content.spaces-font-mono {
   font-family: var(--spaces-font-mono);
 }
+/* The page style reaches the title and every block (global h1 and BlockNote set their own family). */
+.spaces-content.spaces-font-serif :is(.spaces-title, .bn-editor, .bn-default-styles, .bn-inline-content) {
+  font-family: var(--spaces-font-serif);
+}
+.spaces-content.spaces-font-mono :is(.spaces-title, .bn-editor, .bn-default-styles, .bn-inline-content) {
+  font-family: var(--spaces-font-mono);
+}
+.spaces-row-error {
+  color: hsl(var(--destructive));
+}
 .spaces-header {
   position: relative;
   padding-top: 80px;

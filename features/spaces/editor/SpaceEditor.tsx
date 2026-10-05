@@ -192,7 +192,15 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
   }, [editor]);
 
   return (
-    <div className="contents" onKeyDownCapture={(e) => turnIntoKey(editor, e)}>
+    <div
+      className="contents"
+      onKeyDownCapture={(e) => turnIntoKey(editor, e)}
+      onKeyDown={(e) => {
+        // Tab / Shift+Tab the editor could not apply (top level, first child): stay in the editor, as
+        // Notion does — never hand focus to the title or the next control.
+        if (e.key === "Tab" && !e.defaultPrevented) e.preventDefault();
+      }}
+    >
     <style>{widths}</style>
     <BlockNoteView
       editor={editor}
@@ -209,6 +217,7 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
       className="spaces-editor"
     >
       <SuggestionMenuController triggerCharacter="/" getItems={async (query) => filterSuggestionItems(slashItems(editor, slash), query)} />
+      {editable ? (
       <SideMenuController
         sideMenu={(props) => (
           <SideMenu {...props}>
@@ -217,6 +226,8 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
           </SideMenu>
         )}
       />
+      ) : null}
+      {editable ? (
       <FormattingToolbarController
         formattingToolbar={() => (
           <FormattingToolbar>
@@ -232,6 +243,7 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
           </FormattingToolbar>
         )}
       />
+      ) : null}
     </BlockNoteView>
     </div>
   );

@@ -47,7 +47,7 @@ const CalloutBlock = createReactBlockSpec(
 );
 
 function PageRow({ spaceId, linked }: { spaceId: string; linked: boolean }) {
-  const { byId } = useSpaces();
+  const { byId, open } = useSpaces();
   const page = byId.get(spaceId);
   const title = page ? page.title || "Untitled" : "Page in Trash";
   return (
@@ -57,6 +57,14 @@ function PageRow({ spaceId, linked }: { spaceId: string; linked: boolean }) {
       data-missing={page ? undefined : "true"}
       contentEditable={false}
       draggable={false}
+      // The editor must not turn a press on the link into a text selection (read-only pages too).
+      onMouseDown={(e) => e.stopPropagation()}
+      onClick={(e) => {
+        if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+        e.preventDefault();
+        e.stopPropagation();
+        open(spaceId);
+      }}
     >
       <span className="spaces-page-link-icon">
         {page?.icon ? <SpaceIcon media={page.icon} size={18} /> : <FileText size={18} strokeWidth={1.6} />}

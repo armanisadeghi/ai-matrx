@@ -9,6 +9,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system
 import { Button, Field, SearchField, Tabs } from "@ai-matrx/design-system/controls";
 import { useState, type ReactNode } from "react";
 
+import { uploadSpaceImage } from "./media";
 import type { SpaceMedia } from "../contract";
 import { SPACE_ICONS, SPACE_ICON_NAMES } from "../icons-registry";
 
@@ -113,7 +114,7 @@ export function IconPicker({
                 className="sr-only"
                 onChange={(e) => {
                   const file = e.target.files?.[0];
-                  if (file) pick({ url: URL.createObjectURL(file) });
+                  if (file) void uploadSpaceImage(file).then((media) => media && pick(media));
                 }}
               />
             </label>

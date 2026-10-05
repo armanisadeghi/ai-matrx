@@ -4,7 +4,7 @@
 // Private sections, the page tree (expand, hover + and •••, drag to reorder / nest), Trash.
 
 import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
-import { Badge, Button, Input, SearchField } from "@ai-matrx/design-system/controls";
+import { Button, Input, SearchField } from "@ai-matrx/design-system/controls";
 import {
   ChevronRight,
   ChevronsLeft,
@@ -20,6 +20,8 @@ import {
   Star,
   StarOff,
   Trash2,
+  LayoutTemplate,
+  TreePalm,
   Undo2,
 } from "lucide-react";
 import { useParams } from "next/navigation";
@@ -32,6 +34,16 @@ import { SpaceIcon } from "../page/SpaceIcon";
 import { useSpaces, type DropPlacement } from "../state/SpacesProvider";
 
 const EXPANDED_KEY = "spaces:expanded";
+
+/** The current page's row scrolls into view when it appears (D9), without moving the page itself. */
+function scrollIntoViewOnce(el: HTMLDivElement | null) {
+  if (!el) return;
+  const box = el.closest(".spaces-sidebar-scroll");
+  if (!box) return;
+  const r = el.getBoundingClientRect();
+  const b = box.getBoundingClientRect();
+  if (r.top < b.top || r.bottom > b.bottom) box.scrollTop += r.top - b.top - b.height / 2 + r.height / 2;
+}
 
 function RowMenu({ space, onRename }: { space: SpaceSummary; onRename: () => void }) {
   const spaces = useSpaces();
@@ -116,7 +128,9 @@ function RenamePopover({ space, open, onOpenChange, children }: { space: SpaceSu
   const commit = async () => {
     onOpenChange(false);
     const doc = await store.get(space.id);
-    if (doc && doc.title !== title) await store.save({ ...doc, title }, doc.version);
+    if (doc && doc.title !== title) {
+      await store.save({ ...doc, title }, doc.version).catch((e: unknown) => toast.error(e instanceof Error ? e.message : "We couldn't rename this page."));
+    }
   };
   return (
     <Popover
@@ -193,6 +207,7 @@ function TreeRow({
           data-clickable=""
           className="spaces-row group/row"
           data-current={currentId === space.id ? "true" : undefined}
+          ref={currentId === space.id ? scrollIntoViewOnce : undefined}
           data-drop={dropHere ?? undefined}
           style={{ paddingLeft: 8 + depth * 12 }}
           draggable
@@ -283,6 +298,39 @@ function Section({ title, children, onAdd }: { title: string; children: React.Re
       </div>
       {open ? <div role="tree">{children}</div> : null}
     </div>
+  );
+}
+
+/** Notion's sidebar "Templates": for now the one sample, added as real saved pages. */
+function TemplatesPopover() {
+  const { sample } = useSpaces();
+  const [open, setOpen] = useState(false);
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button type="button" className="spaces-nav-row">
+          <LayoutTemplate size={17} />
+          Templates
+          {sample.adding ? <span className="ml-auto text-xs text-muted-foreground">{sample.progress}</span> : null}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent side="right" align="end" className="w-[300px] p-1">
+        <button
+          type="button"
+          className="spaces-menu-row"
+          disabled={sample.adding}
+          onClick={() => {
+            setOpen(false);
+            void sample.add();
+          }}
+        >
+          <span className="spaces-menu-row-icon">
+            <TreePalm size={16} />
+          </span>
+          <span className="flex-1 truncate text-left">{sample.adding ? `Adding… ${sample.progress ?? ""}` : "Add the Traveling SMM™ OS sample"}</span>
+        </button>
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -382,13 +430,6 @@ export function SpacesSidebarContent({ onCollapse }: { onCollapse?: () => void }
           <SquarePen size={16} />
         </button>
       </div>
-      {spaces.store.kind === "memory" ? (
-        <div className="spaces-sample-marker">
-          <Badge tone="warning" title="Changes last until you reload">
-            Sample data — not saved
-          </Badge>
-        </div>
-      ) : null}
       <button type="button" className="spaces-nav-row" onClick={() => spaces.openQuickFind("jump")}>
         <Search size={17} />
         Search
@@ -407,6 +448,7 @@ export function SpacesSidebarContent({ onCollapse }: { onCollapse?: () => void }
           {roots.map((s) => (
             <TreeRow key={s.id} space={s} depth={0} {...rowProps} />
           ))}
+          {spaces.loadError ? <div className="spaces-row-empty spaces-row-error">{spaces.loadError}</div> : null}
           <div
             className="spaces-root-drop"
             data-drop={drag.id && drag.over === "__root" ? "after" : undefined}
@@ -425,6 +467,7 @@ export function SpacesSidebarContent({ onCollapse }: { onCollapse?: () => void }
       </div>
 
       <div className="spaces-sidebar-foot">
+        <TemplatesPopover />
         <TrashPopover />
       </div>
     </div>

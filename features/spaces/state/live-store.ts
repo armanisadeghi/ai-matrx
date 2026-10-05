@@ -7,6 +7,8 @@
 //     breadcrumb agree without polling: a save hands over the saved doc, anything else asks for a
 //     fresh list.
 
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
+
 import type { SpaceBlock, SpaceDoc, SpaceId, SpaceSummary, SpacesStore } from "../contract";
 import { createDatabaseSpacesStore } from "../store-db/create-store";
 
@@ -38,9 +40,8 @@ export function createLiveSpacesStore(getOrganizationId: () => string | null): L
     async create(input: { parentId: SpaceId | null; title?: string; blocks?: SpaceBlock[]; afterId?: SpaceId }) {
       let target = base;
       if (!input.parentId) {
-        const org = getOrganizationId();
-        if (!org) throw new Error("Choose an organization first — a new page is filed in the active organization.");
-        target = createDatabaseSpacesStore(org);
+        // The one write funnel: with no active organization it asks the person, then continues.
+        target = createDatabaseSpacesStore(await ensureOrgId(getOrganizationId()));
       }
       return tree(target.create(input));
     },

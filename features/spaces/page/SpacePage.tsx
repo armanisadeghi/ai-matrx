@@ -24,12 +24,28 @@ import { editedAgo } from "./time";
 
 type Editable = Pick<SpaceDoc, "title" | "icon" | "cover" | "settings" | "blocks">;
 
-function Title({ value, editable, onChange, onEnter }: { value: string; editable: boolean; onChange: (title: string) => void; onEnter: () => void }) {
+function Title({
+  value,
+  editable,
+  autoFocus,
+  onChange,
+  onEnter,
+}: {
+  value: string;
+  editable: boolean;
+  autoFocus: boolean;
+  onChange: (title: string) => void;
+  onEnter: () => void;
+}) {
   const ref = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
     const el = ref.current;
     if (el && el.textContent !== value) el.textContent = value;
   }, [value]);
+  useEffect(() => {
+    // A page the person just made opens with its title ready to type in (Notion).
+    if (autoFocus && editable) ref.current?.focus();
+  }, [autoFocus, editable]);
   return (
     <h1
       ref={ref}
@@ -56,28 +72,56 @@ function Title({ value, editable, onChange, onEnter }: { value: string; editable
   );
 }
 
+type SaveState = "saved" | "saving" | "failed";
+
+const sameBlocks = (a: SpaceDoc["blocks"], b: SpaceDoc["blocks"]) => JSON.stringify(a) === JSON.stringify(b);
+
 export function SpacePage({ spaceId }: { spaceId: string }) {
   const spaces = useSpaces();
-  const { store, pathTo, favorites, toggleFavorite, markVisited, openQuickFind, sidebarCollapsed, setSidebarCollapsed, setMobileSidebarOpen } = spaces;
+  const { store, pathTo, favorites, toggleFavorite, markVisited, openQuickFind, sidebarCollapsed, setSidebarCollapsed, setMobileSidebarOpen, patchSummary } = spaces;
   const isMobile = useIsMobile();
   const [doc, setDoc] = useState<SpaceDoc | null | undefined>(undefined);
   const [now, setNow] = useState(() => Date.now());
+  const [saveState, setSaveState] = useState<SaveState>("saved");
+  /** Bumped when the page is replaced by a newer stored copy: the editor remounts on it. */
+  const [editorRound, setEditorRound] = useState(0);
+  const [focusTitle, setFocusTitle] = useState(false);
   const editorRef = useRef<SpacesEditor | null>(null);
-  const pending = useRef<Partial<Editable>>({});
+  /** The page as the person sees it, edits included — what the next save writes. */
+  const docRef = useRef<SpaceDoc | null>(null);
+  /** The stored version the local copy is based on: every save is a compare-and-swap against it. */
+  const baseVersion = useRef(0);
+  const pending = useRef(false);
+  const inFlight = useRef(false);
   const timer = useRef<number | null>(null);
+  const [origin] = useState(() => crypto.randomUUID());
+
+  const adopt = (d: SpaceDoc) => {
+    docRef.current = d;
+    baseVersion.current = d.version;
+    setDoc(d);
+  };
 
   useEffect(() => {
     let live = true;
     setDoc(undefined);
-    void store.get(spaceId).then((d) => {
-      if (!live) return;
-      setDoc(d);
-      if (d && !d.isArchived) markVisited(spaceId);
-    });
+    docRef.current = null;
+    pending.current = false;
+    setSaveState("saved");
+    void store.get(spaceId).then(
+      (d) => {
+        if (!live) return;
+        if (d) adopt(d);
+        else setDoc(null);
+        setFocusTitle(Boolean(d) && spaces.takeFocusTitle(spaceId));
+        if (d && !d.isArchived) markVisited(spaceId);
+      },
+      () => live && setDoc(null),
+    );
     return () => {
       live = false;
     };
-    // markVisited is a fresh function each render; visiting is keyed on the id alone.
+    // markVisited / takeFocusTitle are fresh functions each render; loading is keyed on the id alone.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [store, spaceId]);
 
@@ -86,38 +130,87 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
     return () => window.clearInterval(t);
   }, []);
 
-  const flush = async () => {
+  const flush = async (): Promise<void> => {
     timer.current = null;
-    const patch = pending.current;
-    pending.current = {};
-    if (!Object.keys(patch).length) return;
-    // Read the latest stored copy so a move or rename from the sidebar is never overwritten.
-    const latest = await store.get(spaceId);
-    if (!latest) return;
+    if (inFlight.current || !pending.current || !docRef.current) return;
+    pending.current = false;
+    inFlight.current = true;
+    setSaveState("saving");
+    const sent = docRef.current;
     try {
-      const saved = await store.save({ ...latest, ...patch }, latest.version);
-      setDoc((d) => (d ? { ...d, updatedAt: saved.updatedAt, version: saved.version } : d));
+      const saved = await store.saveFrom(origin, sent, baseVersion.current);
+      baseVersion.current = saved.version;
+      if (docRef.current) docRef.current = { ...docRef.current, version: saved.version, updatedAt: saved.updatedAt };
+      setDoc((d) => (d ? { ...d, version: saved.version, updatedAt: saved.updatedAt } : d));
+      setNow(Date.now());
+      setSaveState(pending.current ? "saving" : "saved");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Could not save this page");
+      const latest = await store.get(spaceId).catch(() => null);
+      if (latest && latest.version !== baseVersion.current) {
+        // Someone else saved first: never write over them. Show their copy and say so.
+        pending.current = false;
+        adopt(latest);
+        setEditorRound((r) => r + 1);
+        setSaveState("saved");
+        toast.warning("This page was changed somewhere else. Showing the latest version; your last edit was not saved.");
+      } else {
+        pending.current = true;
+        setSaveState("failed");
+        toast.error(err instanceof Error ? err.message : "We couldn't save this page.");
+      }
+    } finally {
+      inFlight.current = false;
+      if (pending.current && !timer.current) timer.current = window.setTimeout(() => void flush(), 1000);
     }
   };
   const update = (patch: Partial<Editable>, delay = 300) => {
-    pending.current = { ...pending.current, ...patch };
+    if (!docRef.current) return;
+    docRef.current = { ...docRef.current, ...patch };
+    pending.current = true;
+    setSaveState("saving");
     setDoc((d) => (d ? { ...d, ...patch } : d));
+    if ("title" in patch || "icon" in patch) patchSummary(spaceId, { ...("title" in patch ? { title: patch.title } : {}), ...("icon" in patch ? { icon: patch.icon } : {}) });
     if (timer.current) window.clearTimeout(timer.current);
     timer.current = window.setTimeout(() => void flush(), delay);
   };
-  useEffect(
-    () => () => {
-      if (timer.current) {
-        window.clearTimeout(timer.current);
-        void flush();
-      }
-    },
+
+  // A save of this page from elsewhere (sidebar rename, another tab): take it when nothing local is pending.
+  useEffect(() => {
+    const take = (incoming: SpaceDoc) => {
+      if (incoming.id !== spaceId || incoming.version <= baseVersion.current) return;
+      if (pending.current || inFlight.current) return; // the next save will meet it as a conflict
+      const before = docRef.current;
+      adopt(incoming);
+      if (!before || !sameBlocks(before.blocks, incoming.blocks)) setEditorRound((r) => r + 1);
+    };
+    const off = store.onChange((change) => {
+      if (change.kind === "saved" && change.origin !== origin) take(change.doc);
+    });
+    const unsubscribe = store.subscribe(spaceId, take);
+    return () => {
+      off();
+      unsubscribe();
+    };
+    // adopt only touches refs and setters.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [store, spaceId, origin]);
+
+  useEffect(() => {
+    const warn = (e: BeforeUnloadEvent) => {
+      if (!pending.current && !inFlight.current) return;
+      void flush();
+      e.preventDefault();
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => {
+      window.removeEventListener("beforeunload", warn);
+      // Leaving this Space: write what is pending now.
+      if (timer.current) window.clearTimeout(timer.current);
+      void flush();
+    };
     // Flush on leaving this Space only.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [spaceId],
-  );
+  }, [spaceId]);
 
   if (doc === undefined) return <div className="spaces-page" aria-busy="true" />;
   if (doc === null) {
@@ -136,15 +229,16 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
 
   const focusFirstBlock = () => {
     const editor = editorRef.current;
-    if (!editor) return;
-    const first = editor.document[0];
-    if (first && first.type === "paragraph" && Array.isArray(first.content) && first.content.length === 0) {
-      editor.setTextCursorPosition(first.id, "start");
-    } else if (first) {
-      const [inserted] = editor.insertBlocks([{ type: "paragraph" }], first.id, "before");
-      editor.setTextCursorPosition(inserted.id, "start");
-    }
+    const first = editor?.document[0];
+    if (!editor || !first) return;
     editor.focus();
+    try {
+      editor.setTextCursorPosition(first.id, "start");
+    } catch {
+      // A block with no text (a divider, a page link): the caret goes to the next block that has text.
+      const firstText = editor.document.find((b) => Array.isArray(b.content));
+      if (firstText) editor.setTextCursorPosition(firstText.id, "start");
+    }
   };
 
   const moveBlocksTo = (ids: string[]) => {
@@ -202,7 +296,9 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
             Locked
           </button>
         ) : null}
-        <span className="spaces-edited hidden sm:inline">{editedAgo(doc.updatedAt, now)}</span>
+        <span className="spaces-edited hidden sm:inline" data-state={saveState} aria-live="polite">
+          {saveState === "saving" ? "Saving…" : saveState === "failed" ? "Not saved — retrying" : editedAgo(doc.updatedAt, now)}
+        </span>
         <Popover>
           <PopoverTrigger asChild>
             <button type="button" className="spaces-topbar-text-button">
@@ -235,12 +331,14 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
             })
           }
           onDelete={() => {
-            const parent = doc.parentId;
-            void spaces.archiveSpace(doc.id).then(() => {
-              toast.success("Moved to Trash");
-              if (parent) spaces.open(parent);
-              else window.location.assign("/spaces");
-            });
+            // Notion stays on the page and shows the Trash banner; the page turns read-only.
+            void (async () => {
+              await flush();
+              await spaces.archiveSpace(doc.id);
+              const latest = await store.get(doc.id);
+              if (latest) adopt(latest);
+              else setDoc((d) => (d ? { ...d, isArchived: true } : d));
+            })().catch((e: unknown) => toast.error(e instanceof Error ? e.message : "We couldn't move this page to Trash."));
           }}
           onUndo={() => editorRef.current?.undo()}
           updatedLabel={editedAgo(doc.updatedAt, now)}
@@ -255,10 +353,13 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
               type="button"
               className="spaces-trash-banner-button"
               onClick={() =>
-                void spaces.restoreSpace(doc.id).then(async () => {
-                  setDoc(await store.get(doc.id));
-                  toast.success("Page restored");
-                })
+                void spaces
+                  .restoreSpace(doc.id)
+                  .then(async () => {
+                    const latest = await store.get(doc.id);
+                    if (latest) adopt(latest);
+                  })
+                  .catch((e: unknown) => toast.error(e instanceof Error ? e.message : "We couldn't restore this page."))
               }
             >
               Restore page
@@ -293,10 +394,10 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
                 ) : null}
               </div>
             ) : null}
-            <Title value={doc.title} editable={editable} onChange={(title) => update({ title })} onEnter={focusFirstBlock} />
+            <Title value={doc.title} editable={editable} autoFocus={focusTitle} onChange={(title) => update({ title })} onEnter={focusFirstBlock} />
           </div>
           <SpaceEditor
-            key={doc.id}
+            key={`${doc.id}:${editorRound}`}
             spaceId={doc.id}
             initialBlocks={doc.blocks}
             editable={editable}

@@ -4,13 +4,14 @@
 // Reposition (drag, Save position / Cancel), Remove.
 //
 // The gallery is Notion's "Color & gradient" row drawn with CSS (`gallery:<key>`), so no photos ship.
-// Uploads are object URLs for this tab, like every memory-store write.
+// Uploads go through our file handler and are stored as `{ fileId }`.
 
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { Button, Field, Tabs } from "@ai-matrx/design-system/controls";
 import { useRef, useState } from "react";
 
 import type { SpaceDoc } from "../contract";
+import { uploadSpaceImage, useSpaceMediaUrl } from "./media";
 
 type CoverValue = NonNullable<SpaceDoc["cover"]>;
 
@@ -35,14 +36,14 @@ export function randomCover(): CoverValue {
   return { url: `gallery:${GALLERY_KEYS[Math.floor(Math.random() * GALLERY_KEYS.length)]}`, offsetY: 50 };
 }
 
-function coverStyle(cover: CoverValue, offsetY: number): React.CSSProperties {
+function coverStyle(cover: CoverValue, url: string | null, offsetY: number): React.CSSProperties {
   if ("url" in cover && cover.url.startsWith("gallery:")) {
     return { background: COVER_GALLERY[cover.url.slice("gallery:".length)] ?? COVER_GALLERY["solid-gray"] };
   }
-  if ("url" in cover) {
-    return { backgroundImage: `url("${cover.url.replace(/"/g, "%22")}")`, backgroundSize: "cover", backgroundPosition: `center ${offsetY}%` };
+  if (url) {
+    return { backgroundImage: `url("${url.replace(/"/g, "%22")}")`, backgroundSize: "cover", backgroundPosition: `center ${offsetY}%` };
   }
-  return { background: COVER_GALLERY["solid-gray"] };
+  return { background: "var(--muted)" };
 }
 
 function CoverPicker({ onPick, children }: { onPick: (cover: CoverValue | null) => void; children: React.ReactNode }) {
@@ -101,7 +102,7 @@ function CoverPicker({ onPick, children }: { onPick: (cover: CoverValue | null) 
                 className="sr-only"
                 onChange={(e) => {
                   const file = e.target.files?.[0];
-                  if (file) pick({ url: URL.createObjectURL(file), offsetY: 50 });
+                  if (file) void uploadSpaceImage(file).then((media) => media && pick({ ...media, offsetY: 50 }));
                 }}
               />
             </label>
@@ -133,14 +134,15 @@ export function Cover({ cover, editable, onChange }: { cover: CoverValue; editab
   const [repositioning, setRepositioning] = useState(false);
   const [offset, setOffset] = useState(cover.offsetY ?? 50);
   const drag = useRef<{ y: number; start: number; height: number } | null>(null);
-  const isImage = "url" in cover && !cover.url.startsWith("gallery:");
+  const url = useSpaceMediaUrl(cover);
+  const isImage = "fileId" in cover || ("url" in cover && !cover.url.startsWith("gallery:"));
   const shown = repositioning ? offset : (cover.offsetY ?? 50);
 
   return (
     <div
       className="spaces-cover group/cover"
       data-repositioning={repositioning ? "true" : undefined}
-      style={coverStyle(cover, shown)}
+      style={coverStyle(cover, url, shown)}
       onPointerDown={(e) => {
         if (!repositioning) return;
         e.currentTarget.setPointerCapture(e.pointerId);
