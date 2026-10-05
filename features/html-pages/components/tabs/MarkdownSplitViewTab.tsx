@@ -10,6 +10,7 @@ import RichEditor from "@/components/rich-editor/RichEditor";
 export function MarkdownSplitViewTab({ state, actions, controllerRef }: MarkdownTabProps) {
     return (
         <RichEditor
+            imagePolicy="other"
             value={state.currentMarkdown}
             onChange={(newContent) => actions.setCurrentMarkdown(newContent)}
             defaultView="source"

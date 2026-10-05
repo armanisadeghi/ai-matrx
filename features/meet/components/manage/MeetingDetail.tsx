@@ -725,7 +725,7 @@ function BriefBlock({
       ) : null}
       {text ? (
         <div className="mt-1">
-          <BasicMarkdownContent content={text} showCopyButton={false} />
+          <BasicMarkdownContent content={text} showCopyButton={false} imagePolicy="ai" />
         </div>
       ) : !error ? (
         <p className="mt-1 text-muted-foreground">

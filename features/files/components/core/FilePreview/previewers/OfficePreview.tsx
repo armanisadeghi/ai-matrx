@@ -587,7 +587,7 @@ export function OfficePreview({
             </div>
           ) : (
             <article className="max-w-none">
-              <RichContent source={extraction.markdown ?? ""} level="full" />
+              <RichContent source={extraction.markdown ?? ""} level="full" imagePolicy="other" />
             </article>
           )}
           {(extraction.markdown ?? "").trim() === "" && (

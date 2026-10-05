@@ -334,14 +334,14 @@ function AgentFromChatResult({
         <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 md:grid-cols-2">
           <ComparePane heading="First try, same inputs">
             {result.proof_output ? (
-              <MarkdownStream content={result.proof_output} />
+              <MarkdownStream imagePolicy="ai" content={result.proof_output} />
             ) : (
               <p className="text-sm text-muted-foreground">{result.proof_error ?? "No answer."}</p>
             )}
           </ComparePane>
           <ComparePane heading="What you accepted">
             {result.accepted_result ? (
-              <MarkdownStream content={result.accepted_result} />
+              <MarkdownStream imagePolicy="ai" content={result.accepted_result} />
             ) : (
               <p className="text-sm text-muted-foreground">The accepted result is not text in this chat.</p>
             )}

@@ -14,6 +14,7 @@ export function RecordBodyEditor({ value, onChange, readOnly, placeholder }: Ric
   return (
     <div className="min-h-[12rem] rounded-md text-sm" data-record-body-editor="">
       <RichEditor
+        imagePolicy="self"
         value={value}
         onChange={onChange}
         readOnly={readOnly}

@@ -10,6 +10,7 @@ import RichEditor from "@/components/rich-editor/RichEditor";
 export function MarkdownWysiwygTab({ state, actions, controllerRef }: MarkdownTabProps) {
     return (
         <RichEditor
+            imagePolicy="other"
             value={state.currentMarkdown}
             onChange={(newContent) => actions.setCurrentMarkdown(newContent)}
             defaultView="visual"
