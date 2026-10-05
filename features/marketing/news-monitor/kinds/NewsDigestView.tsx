@@ -68,7 +68,7 @@ function CountPill({
   runView: string;
 }) {
   const className = cn(
-    "inline-flex items-center rounded-full border px-1.5 py-px text-[11px] leading-4 underline-offset-2 hover:underline",
+    "inline-block max-w-[18rem] truncate rounded-full border px-1.5 py-px text-left text-[11px] leading-4 underline-offset-2 hover:underline",
     PILL_TONE[tone],
   );
   const label = `${title ? `${title} — ` : ""}open this list`;
@@ -206,8 +206,14 @@ export function NewsDigestView({ value, storyActions, onOpen }: NewsDigestViewPr
               const target: OpenTarget =
                 group === "set_aside" ? { kind: "set_aside", list: "all" } : { kind: "watch", group };
               return (
-                <CountPill key={group} target={target} onOpen={onOpen} runView={runView}>
-                  {str(g.label) || humanizeIdentifier(group)}: {num(g.count)}
+                <CountPill
+                  key={group}
+                  target={target}
+                  onOpen={onOpen}
+                  runView={runView}
+                  title={str(g.label) || humanizeIdentifier(group)}
+                >
+                  {group === "set_aside" ? "Set aside" : str(g.label) || humanizeIdentifier(group)}: {num(g.count)}
                 </CountPill>
               );
             })}

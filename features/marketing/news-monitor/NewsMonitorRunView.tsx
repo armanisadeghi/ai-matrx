@@ -225,7 +225,6 @@ export function NewsMonitorRunView({ trackerId }: { trackerId: string }) {
     if (!target || !parts.data || openedFromLink.current === openParam) return;
     openedFromLink.current = openParam;
     openList(target);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openParam, parts.data]);
 
   // A deep link to one story scrolls to it once the lists have rendered.
@@ -462,11 +461,15 @@ export function NewsMonitorRunView({ trackerId }: { trackerId: string }) {
                 {(runs.data ?? []).map((r) => (
                   <SelectItem key={r.id} value={r.id}>
                     {formatWhen(r.created_at)} · {humanizeIdentifier(r.trigger ?? "run")} ·{" "}
-                    {r.outcome === "completed_with_failures" ? "completed with failures" : r.status}
+                    {/* A run's honest ending lives in its summary, read only for the open run (each run's
+                        output is megabytes; the list never reads it). */}
+                    {r.id === run?.runId && outcome === "completed_with_failures" ? "completed with failures" : r.status}
                   </SelectItem>
                 ))}
                 {selectedRunId && !(runs.data ?? []).some((r) => r.id === selectedRunId) ? (
-                  <SelectItem value={selectedRunId}>This run</SelectItem>
+                  <SelectItem value={selectedRunId}>
+                    This run{outcome === "completed_with_failures" ? " · completed with failures" : ""}
+                  </SelectItem>
                 ) : null}
               </SelectContent>
             </Select>
