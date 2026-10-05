@@ -126,7 +126,7 @@ export function GenerateConductorDialog({ open, onOpenChange }: GenerateConducto
             </div>
           </div>
 
-          {error && <p className="text-xs text-destructive">{error} <ErrorAlchemyMenu /></p>}
+          {error && <p className="type-secondary text-destructive">{error} <ErrorAlchemyMenu /></p>}
         </div>
 
         <DialogFooter>

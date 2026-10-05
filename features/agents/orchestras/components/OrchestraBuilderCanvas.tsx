@@ -30,7 +30,7 @@ const OrchestraBuilderCanvas = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex h-full w-full items-center justify-center bg-textured text-sm text-muted-foreground">
+      <div className="flex h-full w-full items-center justify-center bg-textured type-body text-muted-foreground">
         <SuspenseLoader
           size="md"
           centered={false}

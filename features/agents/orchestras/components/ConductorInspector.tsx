@@ -55,7 +55,7 @@ export function ConductorInspector({
         <div className="group/entity-ref min-w-0 flex-1">
           {/* THE DOOR LAW: the conductor is an agent with a route — name it
               and open it. An unloaded row shows its id, never a made-up label. */}
-          <div className="truncate text-sm font-semibold text-foreground">
+          <div className="truncate type-title text-foreground">
             <EntityRef
               token="agent"
               id={conductorId}
@@ -64,7 +64,7 @@ export function ConductorInspector({
               disablePeek
             />
           </div>
-          <div className="text-[11px] text-muted-foreground">Conductor</div>
+          <div className="type-meta text-muted-foreground">Conductor</div>
         </div>
         <AgentPeekButton agentId={conductorId} />
         <ControlButton variant="quiet" icon={<X />} aria-label="Close" title="Close" onClick={onClose} />
@@ -73,14 +73,14 @@ export function ConductorInspector({
       <div className="flex-1 space-y-4 overflow-y-auto p-3">
         {agent?.description && (
           <div className="space-y-1.5">
-            <div className="text-xs font-medium text-muted-foreground">About</div>
-            <p className="text-xs leading-snug text-foreground">{agent.description}</p>
+            <div className="type-secondary font-medium text-muted-foreground">About</div>
+            <p className="type-secondary leading-snug text-foreground">{agent.description}</p>
           </div>
         )}
 
         {/* Unique to the conductor: view/edit the system prompt (auto-generatable). */}
         <div className="space-y-1.5">
-          <div className="text-xs font-medium text-muted-foreground">System prompt</div>
+          <div className="type-secondary font-medium text-muted-foreground">System prompt</div>
           <Button
             icon={<FileText />}
             variant="outline"

@@ -405,7 +405,7 @@ export function OrchestraBuilder({
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
               <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-border bg-card/70 px-6 py-5 text-center backdrop-blur">
                 <MousePointerClick className="h-5 w-5 text-muted-foreground" />
-                <p className="max-w-[15rem] text-xs text-muted-foreground">
+                <p className="max-w-[15rem] type-secondary text-muted-foreground">
                   Drag or click agents in the library to add them.
                 </p>
               </div>

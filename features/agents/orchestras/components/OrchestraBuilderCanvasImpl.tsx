@@ -134,18 +134,18 @@ function ConductorNode({ data }: NodeProps) {
           <Network className="h-5 w-5" />
         </div>
         <div className="min-w-0 flex-1">
-          <div className={cn("text-[10px] font-bold uppercase tracking-wide", a.text)}>
+          <div className={cn("type-meta font-bold uppercase tracking-wide", a.text)}>
             Conductor
           </div>
-          <div className="truncate text-sm font-semibold text-foreground" title={agent?.name}>
+          <div className="truncate type-title text-foreground" title={agent?.name}>
             {agent?.name ?? "Conductor"}
           </div>
         </div>
       </div>
-      <p className="mt-2 line-clamp-2 text-xs leading-snug text-muted-foreground">
+      <p className="mt-2 line-clamp-2 type-secondary leading-snug text-muted-foreground">
         {agent?.description ?? "Presides over this Orchestra."}
       </p>
-      <div className="mt-2.5 flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
+      <div className="mt-2.5 flex items-center gap-1.5 type-meta font-medium text-muted-foreground">
         <Webhook className="h-3 w-3" />
         Coordinates {d.memberCount} {d.memberCount === 1 ? "agent" : "agents"}
       </div>
@@ -673,7 +673,7 @@ function CanvasInner({ conductorId, accent, members, config, onEditMember, onOpe
         <Controls showInteractive={false} className="!shadow-md" />
         <Panel position="top-right">
           <div className="flex items-center gap-0.5 rounded-lg border border-border bg-card/90 p-0.5 shadow-md backdrop-blur">
-            <span className="px-1.5 text-[11px] font-medium text-muted-foreground">Arrange</span>
+            <span className="px-1.5 type-meta font-medium text-muted-foreground">Arrange</span>
             <LayoutButton icon={GitFork} label="Hierarchy" onClick={() => applyLayout("hierarchy")} />
             <LayoutButton icon={CircleDot} label="Radial" onClick={() => applyLayout("radial")} />
             <LayoutButton icon={LayoutGrid} label="Grid" onClick={() => applyLayout("grid")} />
@@ -681,7 +681,7 @@ function CanvasInner({ conductorId, accent, members, config, onEditMember, onOpe
         </Panel>
         {Object.keys(nested.teamSize).length > 0 && (
           <Panel position="bottom-left" className="!ml-14">
-            <div className="flex flex-col gap-1 rounded-lg border border-border bg-card/90 px-3 py-2 text-[11px] shadow-md backdrop-blur">
+            <div className="flex flex-col gap-1 rounded-lg border border-border bg-card/90 px-3 py-2 type-meta shadow-md backdrop-blur">
               <div className="flex items-center gap-2">
                 <svg width="26" height="8" aria-hidden>
                   <line x1="1" y1="4" x2="25" y2="4" stroke={a.stroke} strokeWidth={2.5} strokeLinecap="round" />

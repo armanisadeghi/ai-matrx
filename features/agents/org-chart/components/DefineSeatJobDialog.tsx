@@ -179,7 +179,7 @@ function Body({
           </Button>
         </div>
         <label className="flex flex-col gap-1.5">
-          <span className="text-xs font-medium text-foreground">Goal</span>
+          <span className="type-secondary font-medium text-foreground">Goal</span>
           <Textarea
             value={goal}
             onChange={(e) => setGoal(e.target.value)}
@@ -189,7 +189,7 @@ function Body({
         </label>
 
         <div className="flex flex-col gap-1.5">
-          <span className="text-xs font-medium text-foreground">What it&apos;s given</span>
+          <span className="type-secondary font-medium text-foreground">What it&apos;s given</span>
           {inputs.map((value, i) => (
             <div key={i} className="flex items-center gap-1.5">
               <Field
@@ -217,7 +217,7 @@ function Body({
         </div>
 
         <label className="flex flex-col gap-1.5">
-          <span className="text-xs font-medium text-foreground">What it hands back</span>
+          <span className="type-secondary font-medium text-foreground">What it hands back</span>
           <Field
             value={output}
             onChange={(e) => setOutput(e.target.value)}
@@ -227,8 +227,8 @@ function Body({
 
         {questions.length > 0 && (
           <div className="flex flex-col gap-1">
-            <span className="text-xs font-medium text-foreground">Worth deciding</span>
-            <ul className="list-disc pl-5 text-xs text-muted-foreground">
+            <span className="type-secondary font-medium text-foreground">Worth deciding</span>
+            <ul className="list-disc pl-5 type-secondary text-muted-foreground">
               {questions.map((q, i) => (
                 <li key={i}>{q}</li>
               ))}
@@ -236,9 +236,9 @@ function Body({
           </div>
         )}
         {missing.length > 0 && goal.trim() && (
-          <p className="text-xs text-muted-foreground">You can add {missing.join(" and ")} later.</p>
+          <p className="type-secondary text-muted-foreground">You can add {missing.join(" and ")} later.</p>
         )}
-        {error && <p className="text-xs text-destructive">{error}</p>}
+        {error && <p className="type-secondary text-destructive">{error}</p>}
 
         <div className="flex justify-end gap-2">
           <Button variant="outline" onClick={onClose}>

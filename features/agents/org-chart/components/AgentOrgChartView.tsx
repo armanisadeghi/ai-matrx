@@ -888,10 +888,10 @@ export function AgentOrgChartView({
                   )}
                 />
                 <span className="min-w-0 flex-1">
-                  <span className="block text-sm">{h.label}</span>
-                  <span className="block truncate text-xs text-muted-foreground">{h.hint}</span>
+                  <span className="block type-body">{h.label}</span>
+                  <span className="block truncate type-secondary text-muted-foreground">{h.hint}</span>
                 </span>
-                <span className="text-xs tabular-nums text-muted-foreground">{h.keys.length}</span>
+                <span className="type-secondary tabular-nums text-muted-foreground">{h.keys.length}</span>
               </DropdownMenuItem>
             ))
           )}
@@ -909,7 +909,7 @@ export function AgentOrgChartView({
         Points
       </Button>
       {branchRoot && (
-        <div className="flex h-9 items-center gap-1 rounded-lg border border-border bg-card/95 pl-2.5 pr-1 text-xs shadow-sm">
+        <div className="flex h-9 items-center gap-1 rounded-lg border border-border bg-card/95 pl-2.5 pr-1 type-secondary shadow-sm">
           <Focus className="h-3.5 w-3.5 text-muted-foreground" />
           <span className="max-w-40 truncate">{nameOf(branchRoot)}&apos;s branch</span>
           <Button variant="quiet" onClick={() => setBranchRoot(null)}>
@@ -956,23 +956,23 @@ export function AgentOrgChartView({
     <OrgChartPointsProvider value={pointTotals}>
     <div className="relative h-full w-full">
       {!error && points.error && (
-        <div className="absolute inset-x-3 top-14 z-30 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+        <div className="absolute inset-x-3 top-14 z-30 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 type-secondary text-destructive">
           Points could not load: {points.error}
         </div>
       )}
       {!error && !directoryError && activity.error && (
-        <div className="absolute inset-x-3 top-14 z-30 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+        <div className="absolute inset-x-3 top-14 z-30 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 type-secondary text-destructive">
           Live activity is unavailable: {activity.error}
         </div>
       )}
       {error && (
-        <div className="absolute inset-x-3 top-14 z-30 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+        <div className="absolute inset-x-3 top-14 z-30 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 type-secondary text-destructive">
           Part of the chart could not load: {error}
           <ErrorAlchemyMenu error={error} operation="Load the org chart" />
         </div>
       )}
       {!error && directoryError && (
-        <div className="absolute inset-x-3 top-14 z-30 flex items-center gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+        <div className="absolute inset-x-3 top-14 z-30 flex items-center gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 type-secondary text-destructive">
           <span className="min-w-0 flex-1 truncate" title={directoryError}>
             {directoryError}
           </span>
@@ -1018,8 +1018,8 @@ export function AgentOrgChartView({
         emptyState={
           <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-textured p-6 text-center">
             <Network className="h-8 w-8 text-muted-foreground" />
-            <div className="text-sm font-semibold text-foreground">{emptyTitle}</div>
-            <p className="max-w-sm text-sm text-muted-foreground">{emptyBody}</p>
+            <div className="type-title text-foreground">{emptyTitle}</div>
+            <p className="max-w-sm type-body text-muted-foreground">{emptyBody}</p>
             <div className="flex gap-2">
               <Button variant="primary" icon={<Plus />} onClick={() => setPick({ kind: "new-root" })}>
                 Add to chart
@@ -1088,7 +1088,7 @@ export function AgentOrgChartView({
               }}
             >
               <span>{a.label}</span>
-              {a.hint && <span className="text-xs text-muted-foreground">{a.hint}</span>}
+              {a.hint && <span className="type-secondary text-muted-foreground">{a.hint}</span>}
             </DropdownMenuItem>
           ))}
         </DropdownMenuContent>

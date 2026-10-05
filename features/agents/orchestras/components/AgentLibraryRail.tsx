@@ -82,8 +82,8 @@ export function AgentLibraryRail({ conductorId, memberIds, onAdd }: AgentLibrary
     <div className="flex h-full w-64 shrink-0 flex-col border-r border-border bg-card/40">
       <div className="shrink-0 space-y-2 border-b border-border p-2.5">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-semibold text-foreground">Agent library</span>
-          <span className="text-[11px] text-muted-foreground">{available.length}</span>
+          <span className="type-secondary font-semibold text-foreground">Agent library</span>
+          <span className="type-meta text-muted-foreground">{available.length}</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="relative flex-1">
@@ -128,7 +128,7 @@ export function AgentLibraryRail({ conductorId, memberIds, onAdd }: AgentLibrary
       <ScrollArea className="flex-1">
         <div className="space-y-1 p-2">
           {available.length === 0 && (
-            <div className="px-2 py-8 text-center text-xs text-muted-foreground">
+            <div className="px-2 py-8 text-center type-secondary text-muted-foreground">
               No agents match. Adjust filters or search.
             </div>
           )}
@@ -153,11 +153,11 @@ export function AgentLibraryRail({ conductorId, memberIds, onAdd }: AgentLibrary
               title="Drag onto the canvas or click to add"
             >
               <div className="min-w-0 flex-1">
-                <div className="truncate text-sm font-medium text-foreground">
+                <div className="truncate type-title text-foreground">
                   {a.name || "Untitled Agent"}
                 </div>
                 {a.category && (
-                  <div className="truncate text-[11px] text-muted-foreground">{a.category}</div>
+                  <div className="truncate type-meta text-muted-foreground">{a.category}</div>
                 )}
               </div>
               <div className="flex shrink-0 items-center opacity-0 transition-opacity group-hover:opacity-100">

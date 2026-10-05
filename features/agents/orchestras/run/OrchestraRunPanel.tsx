@@ -70,10 +70,10 @@ export function OrchestraRunPanel({
           <Play className="h-4 w-4" />
         </div>
         <div className="min-w-0 flex-1">
-          <div className="truncate text-sm font-semibold text-foreground">
+          <div className="truncate type-title text-foreground">
             Run Orchestra
           </div>
-          <div className="text-[11px] text-muted-foreground">
+          <div className="type-meta text-muted-foreground">
             Members light up on the canvas as they run
           </div>
         </div>

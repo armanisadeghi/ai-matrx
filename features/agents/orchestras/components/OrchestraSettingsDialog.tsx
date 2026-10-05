@@ -160,10 +160,10 @@ function SettingsForm({
                       : "border-border hover:bg-muted/50",
                   )}
                 >
-                  <span className="block text-xs font-medium text-foreground">
+                  <span className="block type-secondary font-medium text-foreground">
                     {meta.label}
                   </span>
-                  <span className="block text-[11px] leading-snug text-muted-foreground">
+                  <span className="block type-meta leading-snug text-muted-foreground">
                     {meta.description}
                   </span>
                 </button>
@@ -203,7 +203,7 @@ function SettingsForm({
               );
             })}
           </div>
-          <p className="text-[11px] leading-snug text-muted-foreground">
+          <p className="type-meta leading-snug text-muted-foreground">
             How many levels deep members may call helpers (standard{" "}
             {DEFAULT_ORCHESTRA_DEPTH_BUDGET})
           </p>

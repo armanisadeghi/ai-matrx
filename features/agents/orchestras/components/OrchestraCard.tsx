@@ -74,7 +74,7 @@ export function OrchestraCard({ summary }: { summary: OrchestraSummary }) {
           href={setHref}
           title={`${count} member${count === 1 ? "" : "s"} — open the Orchestra to see them`}
           className={cn(
-            "absolute right-3 top-3 z-20 flex items-center gap-1 rounded-full bg-background/70 px-2 py-0.5 text-xs font-medium backdrop-blur transition-colors hover:bg-background",
+            "absolute right-3 top-3 z-20 flex items-center gap-1 rounded-full bg-background/70 px-2 py-0.5 type-secondary font-medium backdrop-blur transition-colors hover:bg-background",
             a.text,
           )}
         >
@@ -86,7 +86,7 @@ export function OrchestraCard({ summary }: { summary: OrchestraSummary }) {
       <div className="group/entity-ref flex flex-1 flex-col gap-2 p-4">
         {/* z-20 keeps the name + its peek/new-tab controls above the overlay. */}
         <h3
-          className="relative z-20 self-start max-w-full text-sm font-semibold text-foreground"
+          className="relative z-20 self-start max-w-full type-title text-foreground"
           title={title}
         >
           <EntityRef
@@ -97,7 +97,7 @@ export function OrchestraCard({ summary }: { summary: OrchestraSummary }) {
             showIcon={false}
           />
         </h3>
-        <p className="line-clamp-2 flex-1 text-xs leading-snug text-muted-foreground">
+        <p className="line-clamp-2 flex-1 type-secondary leading-snug text-muted-foreground">
           {subtitle}
         </p>
 
@@ -105,7 +105,7 @@ export function OrchestraCard({ summary }: { summary: OrchestraSummary }) {
         <div className="flex items-center justify-between pt-1">
           <div className="flex items-center -space-x-1.5">
             {count === 0 ? (
-              <span className="text-[11px] text-muted-foreground/70">
+              <span className="type-meta text-muted-foreground/70">
                 No members yet
               </span>
             ) : (
@@ -122,7 +122,7 @@ export function OrchestraCard({ summary }: { summary: OrchestraSummary }) {
                   </div>
                 ))}
                 {count > strip && (
-                  <span className="pl-2.5 text-[11px] font-medium text-muted-foreground">
+                  <span className="pl-2.5 type-meta font-medium text-muted-foreground">
                     +{count - strip}
                   </span>
                 )}
@@ -133,7 +133,7 @@ export function OrchestraCard({ summary }: { summary: OrchestraSummary }) {
             <Link
               href={runHref}
               className={cn(
-                "flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs font-medium hover:bg-muted",
+                "flex items-center gap-1 rounded-md px-1.5 py-0.5 type-secondary font-medium hover:bg-muted",
                 a.text,
               )}
               title="Run this conductor — it delegates to its members"
@@ -146,7 +146,7 @@ export function OrchestraCard({ summary }: { summary: OrchestraSummary }) {
               href={setHref}
               title={`Open ${title}`}
               className={cn(
-                "flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs font-medium hover:bg-muted",
+                "flex items-center gap-1 rounded-md px-1.5 py-0.5 type-secondary font-medium hover:bg-muted",
                 a.text,
               )}
             >

@@ -123,7 +123,7 @@ export function TermListsWorkspace() {
                 onClick={() => replaceAddressOrNavigate(router, "/resources/term-lists")}
               />
             ) : null}
-            <span className="text-sm font-medium">Term lists</span>
+            <span className="type-title">Term lists</span>
           </div>
         }
         right={
@@ -171,11 +171,11 @@ export function TermListsWorkspace() {
                 <BookA className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                 <span className="min-w-0 flex-1 truncate">{list.name}</span>
                 {orgNames.size > 1 && orgNames.get(list.organization_id) ? (
-                  <span className="max-w-[6rem] shrink-0 truncate rounded bg-muted px-1 text-[10px] text-muted-foreground">
+                  <span className="max-w-[6rem] shrink-0 truncate rounded bg-muted px-1 type-meta text-muted-foreground">
                     {orgNames.get(list.organization_id)}
                   </span>
                 ) : null}
-                <span className="text-xs text-muted-foreground">{list.entries.length}</span>
+                <span className="type-secondary text-muted-foreground">{list.entries.length}</span>
               </button>
             ))
           )}
@@ -198,7 +198,7 @@ export function TermListsWorkspace() {
             }}
           />
         ) : (
-          <p className="p-6 text-sm text-muted-foreground">
+          <p className="p-6 type-body text-muted-foreground">
             Pick a term list, or create one. A term list is shared by the whole
             organization and attaches to any agent from its builder.
           </p>
@@ -246,7 +246,7 @@ export function TermListEditor({
   }, [id, loadAttempt]);
 
   if (missing) {
-    return <p className="p-6 text-sm text-muted-foreground">This term list was archived or does not exist.</p>;
+    return <p className="p-6 type-body text-muted-foreground">This term list was archived or does not exist.</p>;
   }
   if (loadError != null && (!base || !draft)) {
     return <ReadFailure error={loadError} what="this term list" onRetry={() => setLoadAttempt((n) => n + 1)} />;
@@ -347,7 +347,7 @@ export function TermListEditor({
       </div>
 
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <span className="text-xs text-muted-foreground">Used for</span>
+        <span className="type-secondary text-muted-foreground">Used for</span>
         <ToggleGroup
           type="multiple"
           aria-label="Used for"
@@ -395,7 +395,7 @@ export function TermListEditor({
         problemRows={new Set(problems.map((p) => p.row))}
       />
       {problems.length ? (
-        <ul className="px-1 text-xs text-destructive" data-testid="term-list-problems">
+        <ul className="px-1 type-secondary text-destructive" data-testid="term-list-problems">
           {problems.slice(0, 5).map((p, __i, __all) => (
             <li key={`${p.row}-${p.message}`}>
               Row {p.row}: {p.message}

@@ -162,19 +162,19 @@ export function AgentOrgCard({
             {d.pending ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : d.boxType === "membership" ? (
-              <span className="text-xs font-semibold">{initials(who.name)}</span>
+              <span className="type-secondary font-semibold">{initials(who.name)}</span>
             ) : (
               <Icon className="h-4 w-4" />
             )}
           </div>
         )}
         <div className="min-w-0 flex-1">
-          <div className="line-clamp-2 text-sm font-semibold leading-tight text-foreground" title={name}>
+          <div className="line-clamp-2 type-title leading-tight text-foreground" title={name}>
             {name}
           </div>
           <div
             className={cn(
-              "mt-0.5 truncate text-[11px] leading-tight",
+              "mt-0.5 truncate type-meta leading-tight",
               d.isConductor ? cn("font-medium", a.text) : "text-muted-foreground",
             )}
             title={subtitle}
@@ -187,7 +187,7 @@ export function AgentOrgCard({
       <div className="mt-auto flex min-w-0 flex-wrap items-center gap-1 pt-1.5">
         {points && (
           <span
-            className="inline-flex items-center gap-1 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-foreground/80"
+            className="inline-flex items-center gap-1 rounded-full bg-muted px-1.5 py-0.5 type-meta font-medium text-foreground/80"
             title={node.node.children.length ? "This box · its whole branch" : "Spent by this box"}
           >
             {points.own !== null && <Cost usd={points.own} short />}
@@ -238,7 +238,7 @@ export function AgentOrgCard({
           />
         )}
         {!activity && !d.loop && !d.unavailable && d.otherPlacements === 0 && footnote && (
-          <span className="line-clamp-1 text-[10px] text-muted-foreground/80">{footnote}</span>
+          <span className="line-clamp-1 type-meta text-muted-foreground/80">{footnote}</span>
         )}
       </div>
 

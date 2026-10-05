@@ -103,7 +103,7 @@ function SourceFollowState({ agentId, follows }: { agentId: string; follows: boo
   const [resetting, setResetting] = useState(false);
   if (follows) {
     return (
-      <div className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+      <div className="inline-flex items-center gap-1.5 type-secondary text-muted-foreground">
         <RefreshCw className="w-3 h-3 shrink-0" />
         <span>Updates with the template</span>
       </div>
@@ -129,7 +129,7 @@ function SourceFollowState({ agentId, follows }: { agentId: string; follows: boo
     }
   };
   return (
-    <div className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+    <div className="inline-flex items-center gap-1.5 type-secondary text-muted-foreground">
       <span>Customized — no longer updates</span>
       <ControlButton variant="quiet" onClick={reset} disabled={resetting}>
         Reset to latest
@@ -149,7 +149,7 @@ function RoleBadge({ role }: { role: string }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center px-2 py-0.5 rounded-md text-[0.6875rem] font-semibold border capitalize",
+        "inline-flex items-center px-2 py-0.5 rounded-md type-meta font-semibold border capitalize",
         colors[role] ?? "bg-muted text-muted-foreground border-border",
       )}
     >
@@ -172,7 +172,7 @@ function CopyableIdRow({
   onCopy: (key: string, text: string, message: string) => void;
 }) {
   return (
-    <div className="inline-flex items-center gap-1.5 text-xs min-w-0">
+    <div className="inline-flex items-center gap-1.5 type-secondary min-w-0">
       <span className="text-muted-foreground shrink-0">{label}:</span>
       <button
         type="button"
@@ -205,7 +205,7 @@ function StatChip({
   return (
     <div
       className={cn(
-        "flex items-center gap-1.5 text-xs",
+        "flex items-center gap-1.5 type-secondary",
         count === 0 && "opacity-40",
       )}
     >
@@ -260,7 +260,7 @@ function MessageCard({ role, content }: { role?: string; content: string }) {
           actions={{ exclude: ["announcements", "preferences"] }}
         />
       ) : (
-        <pre className="text-sm font-mono whitespace-pre-wrap break-words p-3 rounded-md bg-muted/30 border border-border/40 leading-relaxed">
+        <pre className="type-body font-mono whitespace-pre-wrap break-words p-3 rounded-md bg-muted/30 border border-border/40 leading-relaxed">
           {content || "—"}
         </pre>
       )}
@@ -426,7 +426,7 @@ export function AgentViewContent({ agentId, recordSections }: { agentId: string;
 
   if (!mounted || !agent) {
     return (
-      <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+      <div className="flex items-center justify-center h-full text-muted-foreground type-body">
         Loading agent data...
       </div>
     );
@@ -467,7 +467,7 @@ export function AgentViewContent({ agentId, recordSections }: { agentId: string;
       <div className="max-w-5xl mx-auto px-4 pb-6 space-y-5">
         {/* Sticky toolbar */}
         <div className="sticky top-0 -mx-4 px-4 py-2 bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/70 border-b border-border/50 z-10 flex items-center justify-between gap-2">
-          <div className="text-xs text-muted-foreground truncate">
+          <div className="type-secondary text-muted-foreground truncate">
             {effectiveView === "pretty" ? "Overview" : "Raw definition (JSON)"}
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
@@ -568,11 +568,11 @@ export function AgentViewContent({ agentId, recordSections }: { agentId: string;
               {dataIssues.length === 1 ? "issue" : "issues"}
             </AlertTitle>
             <AlertDescription>
-              <p className="mb-2 text-xs">
+              <p className="mb-2 type-secondary">
                 The agent remains available. Correct and re-save the named
                 fields to normalize the stored definition.
               </p>
-              <ul className="space-y-1 text-xs">
+              <ul className="space-y-1 type-secondary">
                 {dataIssues.map((issue, index) => (
                   <li key={`${issue.field}-${index}`}>
                     <span className="font-mono font-semibold">
@@ -617,7 +617,7 @@ export function AgentViewContent({ agentId, recordSections }: { agentId: string;
               <h1 className="text-2xl font-bold tracking-tight leading-tight">
                 {agent.name}
               </h1>
-              <div className="inline-flex items-center gap-1.5 text-xs min-w-0">
+              <div className="inline-flex items-center gap-1.5 type-secondary min-w-0">
                 <span className="text-muted-foreground shrink-0">
                   Agent ID:
                 </span>
@@ -661,11 +661,11 @@ export function AgentViewContent({ agentId, recordSections }: { agentId: string;
                 <RichContent level="full" imagePolicy="other"
                   source={agent.description}
                   hideCopyButton
-                  className="text-sm text-muted-foreground leading-relaxed"
+                  className="type-body text-muted-foreground leading-relaxed"
                 />
               )}
               {agent.isVersion && changeNote && (
-                <p className="text-xs italic text-muted-foreground/80 border-l-2 border-muted-foreground/30 pl-2">
+                <p className="type-secondary italic text-muted-foreground/80 border-l-2 border-muted-foreground/30 pl-2">
                   {changeNote}
                 </p>
               )}
@@ -690,7 +690,7 @@ export function AgentViewContent({ agentId, recordSections }: { agentId: string;
                   />
                 )}
                 {(categoryLabel || category) && (
-                  <div className="inline-flex items-center gap-1.5 text-xs flex-wrap">
+                  <div className="inline-flex items-center gap-1.5 type-secondary flex-wrap">
                     <Folder className="w-3 h-3 text-muted-foreground shrink-0" />
                     <span className="text-muted-foreground">Category:</span>
                     <span className="font-medium text-foreground">
@@ -703,7 +703,7 @@ export function AgentViewContent({ agentId, recordSections }: { agentId: string;
               {/* Status pills */}
               <div className="flex flex-wrap items-center gap-1.5 pt-1">
                 {modelId && (
-                  <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-muted/50 border border-border/60 text-xs">
+                  <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-muted/50 border border-border/60 type-secondary">
                     <span className="text-muted-foreground">Model:</span>
                     <AiModelRef
                       modelId={modelId}
@@ -787,7 +787,7 @@ export function AgentViewContent({ agentId, recordSections }: { agentId: string;
             {settingsCount > 0 && (
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center gap-2 text-sm">
+                  <CardTitle className="flex items-center gap-2 type-body">
                     <Settings className="w-4 h-4 text-muted-foreground" />
                     Model Settings
                   </CardTitle>
@@ -796,10 +796,10 @@ export function AgentViewContent({ agentId, recordSections }: { agentId: string;
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                     {settingsEntries.map(([key, value]) => (
                       <div key={key} className="space-y-0.5">
-                        <div className="text-[0.625rem] uppercase tracking-wider text-muted-foreground font-medium">
+                        <div className="type-meta uppercase tracking-wider text-muted-foreground font-medium">
                           {key.replace(/([A-Z])/g, " $1").trim()}
                         </div>
-                        <div className="text-sm font-mono break-all">
+                        <div className="type-body font-mono break-all">
                           {String(value)}
                         </div>
                       </div>
@@ -813,7 +813,7 @@ export function AgentViewContent({ agentId, recordSections }: { agentId: string;
             {variables && variableCount > 0 && (
               <Card>
                 <CardHeader className="pb-2 flex-row items-center justify-between space-y-0">
-                  <CardTitle className="flex items-center gap-2 text-sm">
+                  <CardTitle className="flex items-center gap-2 type-body">
                     <Variable className="w-4 h-4 text-purple-500" />
                     Variables ({variableCount})
                   </CardTitle>
@@ -854,7 +854,7 @@ export function AgentViewContent({ agentId, recordSections }: { agentId: string;
                         className="flex items-start gap-3 p-2.5 rounded-lg bg-muted/30"
                       >
                         <Chip className="shrink-0" tone="primary" label={`{{${v.name}}}`} />
-                        <div className="flex-1 min-w-0 text-sm space-y-0.5">
+                        <div className="flex-1 min-w-0 type-body space-y-0.5">
                           <div className="font-medium text-foreground">
                             {variableRunLabel(v)}
                           </div>
@@ -865,7 +865,7 @@ export function AgentViewContent({ agentId, recordSections }: { agentId: string;
                           )}
                           {v.defaultValue != null &&
                             String(v.defaultValue) !== "" && (
-                              <div className="text-muted-foreground text-xs">
+                              <div className="text-muted-foreground type-secondary">
                                 Default:{" "}
                                 <span className="font-mono">
                                   {String(v.defaultValue)}
@@ -892,7 +892,7 @@ export function AgentViewContent({ agentId, recordSections }: { agentId: string;
             {contextPolicies && contextPolicyCount > 0 && (
               <Card>
                 <CardHeader className="pb-2 flex-row items-center justify-between space-y-0">
-                  <CardTitle className="flex items-center gap-2 text-sm">
+                  <CardTitle className="flex items-center gap-2 type-body">
                     <Layers className="w-4 h-4 text-cyan-500" />
                     Context Policies ({contextPolicyCount})
                   </CardTitle>
@@ -932,17 +932,17 @@ export function AgentViewContent({ agentId, recordSections }: { agentId: string;
                         key={i}
                         className="flex items-start gap-3 p-2.5 rounded-lg bg-muted/30"
                       >
-                        <code className="text-xs font-semibold text-cyan-600 dark:text-cyan-400 shrink-0">
+                        <code className="type-secondary font-semibold text-cyan-600 dark:text-cyan-400 shrink-0">
                           {slot.key}
                         </code>
-                        <div className="flex-1 min-w-0 text-sm space-y-0.5">
+                        <div className="flex-1 min-w-0 type-body space-y-0.5">
                           {slot.label && (
                             <div className="text-foreground/90">
                               {slot.label}
                             </div>
                           )}
                           {slot.description && (
-                            <div className="text-muted-foreground/80 text-xs">
+                            <div className="text-muted-foreground/80 type-secondary">
                               {slot.description}
                             </div>
                           )}
@@ -964,7 +964,7 @@ export function AgentViewContent({ agentId, recordSections }: { agentId: string;
             {totalTools > 0 && (
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center gap-2 text-sm">
+                  <CardTitle className="flex items-center gap-2 type-body">
                     <Wrench className="w-4 h-4 text-orange-500" />
                     Tools ({totalTools})
                   </CardTitle>
@@ -976,7 +976,7 @@ export function AgentViewContent({ agentId, recordSections }: { agentId: string;
                         key={t}
                         toolId={t}
                         showIcon={false}
-                        className="rounded-md bg-secondary px-2 py-1 text-xs text-secondary-foreground"
+                        className="rounded-md bg-secondary px-2 py-1 type-secondary text-secondary-foreground"
                       />
                     ))}
                     {customTools?.map((t) => (
@@ -998,7 +998,7 @@ export function AgentViewContent({ agentId, recordSections }: { agentId: string;
             {mcpServers && mcpCount > 0 && (
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center gap-2 text-sm">
+                  <CardTitle className="flex items-center gap-2 type-body">
                     <Server className="w-4 h-4 text-blue-500" />
                     MCP Servers ({mcpCount})
                   </CardTitle>
@@ -1023,7 +1023,7 @@ export function AgentViewContent({ agentId, recordSections }: { agentId: string;
             {outputSchema && (
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center gap-2 text-sm">
+                  <CardTitle className="flex items-center gap-2 type-body">
                     <FileJson className="w-4 h-4 text-pink-500" />
                     Output Schema
                   </CardTitle>
@@ -1045,7 +1045,7 @@ export function AgentViewContent({ agentId, recordSections }: { agentId: string;
             {systemMessage && (
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center gap-2 text-sm">
+                  <CardTitle className="flex items-center gap-2 type-body">
                     <MessageSquare className="w-4 h-4 text-amber-500" />
                     System Instructions
                   </CardTitle>
@@ -1060,7 +1060,7 @@ export function AgentViewContent({ agentId, recordSections }: { agentId: string;
             {conversationMessages.length > 0 && (
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center gap-2 text-sm">
+                  <CardTitle className="flex items-center gap-2 type-body">
                     <MessageSquare className="w-4 h-4 text-primary" />
                     Messages ({conversationMessages.length})
                   </CardTitle>

@@ -104,18 +104,18 @@ function ConductorTile({
           <Network className="h-5 w-5" />
         </div>
         <div className="min-w-0 flex-1">
-          <div className={cn("text-[10px] font-bold uppercase tracking-wide", a.text)}>
+          <div className={cn("type-meta font-bold uppercase tracking-wide", a.text)}>
             Conductor
           </div>
-          <div className="truncate text-sm font-semibold text-foreground" title={agent?.name}>
+          <div className="truncate type-title text-foreground" title={agent?.name}>
             {agent?.name ?? "Conductor"}
           </div>
         </div>
       </div>
-      <p className="mt-2 line-clamp-2 text-xs leading-snug text-muted-foreground">
+      <p className="mt-2 line-clamp-2 type-secondary leading-snug text-muted-foreground">
         {agent?.description ?? "Presides over this Orchestra."}
       </p>
-      <div className="mt-2.5 flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
+      <div className="mt-2.5 flex items-center gap-1.5 type-meta font-medium text-muted-foreground">
         <Webhook className="h-3 w-3" />
         Coordinates {memberCount} {memberCount === 1 ? "agent" : "agents"}
       </div>

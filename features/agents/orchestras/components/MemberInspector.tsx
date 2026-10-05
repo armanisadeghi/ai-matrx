@@ -94,7 +94,7 @@ export function MemberInspector({ conductorId, member, accent, onClose }: Member
           {/* THE DOOR LAW: the inspector names the member agent, so it opens
               it. No invented label — an unloaded agent shows its id, not the
               word "Member". */}
-          <div className="truncate text-sm font-semibold text-foreground">
+          <div className="truncate type-title text-foreground">
             <EntityRef
               token="agent"
               id={member.agentId}
@@ -103,7 +103,7 @@ export function MemberInspector({ conductorId, member, accent, onClose }: Member
               disablePeek
             />
           </div>
-          <div className="text-[11px] text-muted-foreground">Member role</div>
+          <div className="type-meta text-muted-foreground">Member role</div>
         </div>
         <AgentPeekButton agentId={member.agentId} />
         <ControlButton variant="quiet" icon={<X />} aria-label="Close" title="Close" onClick={onClose} />
@@ -154,7 +154,7 @@ export function MemberInspector({ conductorId, member, accent, onClose }: Member
                 label="About Must be consulted"
               />
             </div>
-            <p className="text-[11px] leading-snug text-muted-foreground">
+            <p className="type-meta leading-snug text-muted-foreground">
               The conductor must consult this member before finishing.
             </p>
           </div>
@@ -187,13 +187,13 @@ export function MemberInspector({ conductorId, member, accent, onClose }: Member
                 >
                   <div
                     className={cn(
-                      "text-[11px] font-medium",
+                      "type-meta font-medium",
                       selected ? a.text : "text-foreground",
                     )}
                   >
                     {meta.label}
                   </div>
-                  <p className="text-[11px] leading-snug text-muted-foreground">
+                  <p className="type-meta leading-snug text-muted-foreground">
                     {meta.description}
                   </p>
                 </button>

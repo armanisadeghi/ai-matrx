@@ -50,8 +50,8 @@ function Row({
         {icon}
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-sm text-foreground">{title}</span>
-        {detail && <span className="block truncate text-xs text-muted-foreground">{detail}</span>}
+        <span className="block truncate type-body text-foreground">{title}</span>
+        {detail && <span className="block truncate type-secondary text-muted-foreground">{detail}</span>}
       </span>
     </button>
   );
@@ -156,7 +156,7 @@ export function OrgBoxPicker({
             aria-label={`Find ${TAB_LABEL[tab].toLowerCase()}`}
           />
           {loadError && (
-            <div className="flex items-center gap-2 text-xs text-destructive">
+            <div className="flex items-center gap-2 type-secondary text-destructive">
               <span className="min-w-0 flex-1 truncate" title={loadError}>{loadError}</span>
               <button
                 type="button"
@@ -176,7 +176,7 @@ export function OrgBoxPicker({
           <div className="min-h-0 flex-1 overflow-y-auto rounded-md border border-border bg-card p-1">
             {tab === "membership" &&
               (members === null ? (
-                <p className="p-3 text-sm text-muted-foreground">Loading people…</p>
+                <p className="p-3 type-body text-muted-foreground">Loading people…</p>
               ) : (
                 members
                   .filter((m) => !excluded.has(boxId("membership", m.membershipId)) && hit(m.name, m.email, m.organizationName))
@@ -188,7 +188,7 @@ export function OrgBoxPicker({
                           // eslint-disable-next-line @next/next/no-img-element -- a 28px roster avatar
                           <img src={m.avatarUrl} alt="" className="h-7 w-7 object-cover" />
                         ) : (
-                          <span className="text-[10px] font-semibold">{m.name.slice(0, 2).toUpperCase()}</span>
+                          <span className="type-meta font-semibold">{m.name.slice(0, 2).toUpperCase()}</span>
                         )
                       }
                       title={m.name}
@@ -199,9 +199,9 @@ export function OrgBoxPicker({
               ))}
             {tab === "team" &&
               (teams === null ? (
-                <p className="p-3 text-sm text-muted-foreground">Loading teams…</p>
+                <p className="p-3 type-body text-muted-foreground">Loading teams…</p>
               ) : teams.length === 0 ? (
-                <p className="p-3 text-sm text-muted-foreground">No teams yet. Create one in organization settings.</p>
+                <p className="p-3 type-body text-muted-foreground">No teams yet. Create one in organization settings.</p>
               ) : (
                 teams
                   .filter((t) => !excluded.has(boxId("team", t.id)) && hit(t.name, t.description))
@@ -229,14 +229,14 @@ export function OrgBoxPicker({
                     />
                   ))}
                 {positions.length === 0 && (
-                  <p className="p-3 text-sm text-muted-foreground">No positions yet. Name the first one below.</p>
+                  <p className="p-3 type-body text-muted-foreground">No positions yet. Name the first one below.</p>
                 )}
               </>
             )}
           </div>
           {tab === "position" && (
             <>
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <div className="flex items-center gap-1.5 type-secondary text-muted-foreground">
               <span>{writeOrgId ? `Creates in ${writeOrgName ?? "your organization"}` : "Choose where new positions go"}</span>
               <OrganizationPickerPopover
                 trigger={

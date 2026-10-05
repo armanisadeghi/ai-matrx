@@ -117,7 +117,7 @@ function Body({
           <DialogTitle>Made, with {made.warnings.length === 1 ? "a problem" : "problems"}</DialogTitle>
           <DialogDescription>The leader exists. These steps did not finish:</DialogDescription>
         </DialogHeader>
-        <ul className="flex list-disc flex-col gap-1 pl-5 text-xs text-destructive">
+        <ul className="flex list-disc flex-col gap-1 pl-5 type-secondary text-destructive">
           {made.warnings.map((w, i) => (
             <li key={i}>{w}</li>
           ))}
@@ -146,12 +146,12 @@ function Body({
       </DialogHeader>
       <div className="flex flex-col gap-4">
         <label className="flex flex-col gap-1.5">
-          <span className="text-xs font-medium text-foreground">Leader&apos;s name</span>
+          <span className="type-secondary font-medium text-foreground">Leader&apos;s name</span>
           <Field value={name} onChange={(e) => setName(e.target.value)} disabled={step !== null} />
         </label>
-        {step && <p className="text-xs text-muted-foreground">{step}</p>}
+        {step && <p className="type-secondary text-muted-foreground">{step}</p>}
         {error && (
-          <p className="text-xs text-destructive">
+          <p className="type-secondary text-destructive">
             {error}
             {createError ? ` ${createError}` : ""}
           </p>

@@ -44,7 +44,7 @@ export function TermEntriesTable({
 
   return (
     <div className="flex min-h-0 flex-col">
-      <div className="hidden md:grid-cols-[minmax(0,1.2fr)_minmax(0,1.2fr)_9.5rem_5.5rem_2rem] items-center gap-1.5 border-b border-border px-1 pb-1 text-xs font-medium text-muted-foreground md:grid">
+      <div className="hidden md:grid-cols-[minmax(0,1.2fr)_minmax(0,1.2fr)_9.5rem_5.5rem_2rem] items-center gap-1.5 border-b border-border px-1 pb-1 type-secondary font-medium text-muted-foreground md:grid">
         <span>Term</span>
         <span>Value</span>
         <span>Kind</span>
@@ -174,7 +174,7 @@ function PasteCsvDialog({
           <DialogTitle>Paste CSV</DialogTitle>
         </DialogHeader>
         {/* Accepts rows copied from a spreadsheet (tab-separated) or comma-separated lines. */}
-        <p className="text-xs text-muted-foreground">
+        <p className="type-secondary text-muted-foreground">
           Columns: term, value, kind, language; blank kind uses {KIND_LABELS[defaultKind]}
         </p>
         <Textarea
@@ -186,7 +186,7 @@ function PasteCsvDialog({
           placeholder={"AI Matrx,A-I May-tricks,pronounce\nAll Green Recycling,,do not translate"}
         />
         {preview ? (
-          <p className="text-xs text-muted-foreground" data-testid="csv-preview">
+          <p className="type-secondary text-muted-foreground" data-testid="csv-preview">
             {preview.entries.length} rows ready
             {preview.skipped.length ? `, ${preview.skipped.length} will be skipped` : ""}
           </p>

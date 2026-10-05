@@ -71,7 +71,7 @@ export function OrchestrasBrowser() {
             ariaLabel="Back"
           />
           <Network className="ml-1 h-4 w-4 shrink-0 text-muted-foreground" />
-          <span className="ml-2 truncate text-sm font-semibold text-foreground">
+          <span className="ml-2 truncate type-title text-foreground">
             Orchestras
           </span>
           <div className="ml-auto flex items-center">
@@ -112,7 +112,7 @@ export function OrchestrasBrowser() {
               <h2 className="text-base font-semibold text-foreground">
                 Build your first Orchestra
               </h2>
-              <p className="mt-1.5 text-sm text-muted-foreground">
+              <p className="mt-1.5 type-body text-muted-foreground">
                 Pick specialists and we&apos;ll build a conductor for you
               </p>
               <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
@@ -142,7 +142,7 @@ export function OrchestrasBrowser() {
               {filtered.length === 0 && (
                 <div
                   className={cn(
-                    "col-span-full py-16 text-center text-sm text-muted-foreground",
+                    "col-span-full py-16 text-center type-body text-muted-foreground",
                   )}
                 >
                   No Orchestras match “{search}”.

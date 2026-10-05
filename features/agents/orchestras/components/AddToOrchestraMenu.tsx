@@ -100,7 +100,7 @@ export function AddToOrchestraMenu({
                 <span className="truncate">
                   {orchestra.label || orchestra.name}
                 </span>
-                <span className="ml-auto text-[11px] text-muted-foreground">
+                <span className="ml-auto type-meta text-muted-foreground">
                   {orchestra.memberCount}
                 </span>
               </DropdownMenuItem>

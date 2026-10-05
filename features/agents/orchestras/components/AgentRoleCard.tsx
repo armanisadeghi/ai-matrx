@@ -124,7 +124,7 @@ export function AgentRoleCard({
           {typeof index === "number" && (
             <span
               className={cn(
-                "mt-0.5 shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold tabular-nums",
+                "mt-0.5 shrink-0 rounded px-1.5 py-0.5 type-meta font-semibold tabular-nums",
                 a.soft,
                 a.text,
               )}
@@ -132,17 +132,17 @@ export function AgentRoleCard({
               {index}
             </span>
           )}
-          <h4 className="min-w-0 flex-1 line-clamp-2 text-sm font-semibold leading-snug text-foreground" title={name}>
+          <h4 className="min-w-0 flex-1 line-clamp-2 type-title leading-snug text-foreground" title={name}>
             {name}
           </h4>
         </div>
 
-        {role && <div className={cn("truncate text-[11px] font-medium", a.text)}>{role}</div>}
+        {role && <div className={cn("truncate type-meta font-medium", a.text)}>{role}</div>}
 
         {/* description — expandable in place */}
         <p
           className={cn(
-            "text-xs leading-snug text-muted-foreground",
+            "type-secondary leading-snug text-muted-foreground",
             !expanded && (isNode ? "line-clamp-2" : "line-clamp-3"),
           )}
         >
@@ -162,7 +162,7 @@ export function AgentRoleCard({
         {!isNode && tags.length > 0 && (
           <div className="flex flex-wrap gap-1 pt-0.5">
             {tags.map((t) => (
-              <span key={t} className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
+              <span key={t} className="rounded bg-muted px-1.5 py-0.5 type-meta text-muted-foreground">
                 {t}
               </span>
             ))}

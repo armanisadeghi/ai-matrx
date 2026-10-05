@@ -73,11 +73,11 @@ export function AgentIODetails({
   return (
     <>
       <div className="space-y-1.5">
-        <div className="text-xs font-medium text-muted-foreground">Inputs</div>
+        <div className="type-secondary font-medium text-muted-foreground">Inputs</div>
         {!ready && agentReadError ? (
           <ReadFailure error={agentReadError} what="this agent's inputs" onRetry={retryAgentRead} className="m-0" />
         ) : !ready ? (
-          <div className="text-xs text-muted-foreground">
+          <div className="type-secondary text-muted-foreground">
             <SuspenseLoader
               centered={false}
               size="xs"
@@ -85,7 +85,7 @@ export function AgentIODetails({
             />
           </div>
         ) : !variableDefs || variableDefs.length === 0 ? (
-          <div className="text-xs text-muted-foreground/70">
+          <div className="type-secondary text-muted-foreground/70">
             No declared inputs.
           </div>
         ) : (
@@ -96,7 +96,7 @@ export function AgentIODetails({
                 className="rounded-md border border-border bg-muted/30 px-2 py-1.5"
               >
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[11px] font-semibold text-foreground">
+                  <span className="type-meta font-semibold text-foreground">
                     {variableRunLabel(v)}
                   </span>
                   {v.required && (
@@ -112,7 +112,7 @@ export function AgentIODetails({
                   )}
                 </div>
                 {v.helpText && (
-                  <p className="mt-0.5 line-clamp-2 text-[11px] leading-snug text-muted-foreground">
+                  <p className="mt-0.5 line-clamp-2 type-meta leading-snug text-muted-foreground">
                     {v.helpText}
                   </p>
                 )}
@@ -123,11 +123,11 @@ export function AgentIODetails({
       </div>
 
       <div className="space-y-1.5">
-        <div className="text-xs font-medium text-muted-foreground">Output</div>
+        <div className="type-secondary font-medium text-muted-foreground">Output</div>
         {!ready && agentReadError ? (
           <ReadFailure error={agentReadError} what="this agent's output shape" onRetry={retryAgentRead} className="m-0" />
         ) : !ready ? (
-          <div className="text-xs text-muted-foreground">
+          <div className="type-secondary text-muted-foreground">
             <SuspenseLoader
               centered={false}
               size="xs"
@@ -135,7 +135,7 @@ export function AgentIODetails({
             />
           </div>
         ) : outputProps.length === 0 ? (
-          <div className="rounded-md border border-border bg-muted/30 px-2 py-1.5 text-[11px] text-muted-foreground">
+          <div className="rounded-md border border-border bg-muted/30 px-2 py-1.5 type-meta text-muted-foreground">
             Text
           </div>
         ) : (
@@ -143,7 +143,7 @@ export function AgentIODetails({
             {outputProps.map(([field, def]) => (
               <div
                 key={field}
-                className="flex items-center justify-between gap-2 text-[11px]"
+                className="flex items-center justify-between gap-2 type-meta"
               >
                 <span className="flex items-center gap-1 truncate">
                   <code className="font-semibold text-foreground">{field}</code>
