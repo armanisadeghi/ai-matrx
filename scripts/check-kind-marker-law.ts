@@ -78,6 +78,9 @@ const BLESSED: Record<string, string> = {
   "features/content-ir/kinds/kind-markdown-utils.ts":
     "not a door — DISPLAY ONLY: stripKindForDisplay formats a nested value into an inline " +
     "code span a human reads. It never feeds storage or a re-render.",
+  "packages/chat/src/utils/content-ir/kinds/kind-markdown-utils.ts":
+    "not a door — DISPLAY ONLY: stripKindForDisplay formats a nested value into an inline " +
+    "code span a human reads. It never feeds storage or a re-render.",
   "components/official/structured-value/StructuredValueView.tsx":
     "not a door — DISPLAY ONLY: the universal document view hides the discriminator from " +
     "the reader; the underlying value is untouched and 'Show the raw data' shows it.",
