@@ -9,9 +9,9 @@ import { createRoot } from "react-dom/client";
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-const copyToClipboard = jest.fn(async () => {});
+const copyToClipboard = jest.fn(async (..._a: unknown[]) => {});
 jest.mock("@host/components/matrx/buttons/markdown-copy-utils", () => ({
-  copyToClipboard: (...a: unknown[]) => copyToClipboard(...(a as [])),
+  copyToClipboard: (...a: unknown[]) => copyToClipboard(...a),
 }));
 jest.mock("@ai-matrx/print/markdown", () => ({ getMarkdownStylesheet: () => "" }));
 jest.mock("@host/components/official/AdvancedMenu", () => ({
@@ -28,9 +28,9 @@ jest.mock("@host/components/official/AdvancedMenu", () => ({
 }));
 jest.mock("@host/components/dialogs/EmailInputDialog", () => ({ EmailInputDialog: () => null }));
 jest.mock("@host/components/dialogs/AuthGateDialog", () => ({ AuthGateDialog: () => null }));
-const notesCreate = jest.fn(async () => {});
+const notesCreate = jest.fn(async (..._a: unknown[]) => {});
 jest.mock("@host/features/notes/service/notesApi", () => ({
-  NotesAPI: { create: (...a: unknown[]) => notesCreate(...(a as [])) },
+  NotesAPI: { create: (...a: unknown[]) => notesCreate(...a) },
 }));
 jest.mock("../../../host/notify", () => ({
   toast: { error: jest.fn(), success: jest.fn(), info: jest.fn() },
