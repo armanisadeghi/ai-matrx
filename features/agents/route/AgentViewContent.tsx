@@ -803,39 +803,41 @@ export function AgentViewContent({ agentId, recordSections }: { agentId: string;
             {/* Variables */}
             {variables && variableCount > 0 && (
               <Card>
-                <CardHeader className="flex-row items-center justify-between">
-                  <CardTitle className="flex items-center type-body"><span className="flex items-center gap-2">
-                    <Variable className="w-4 h-4 text-primary" />
-                    Variables ({variableCount})
-                  </span></CardTitle>
-                  <CopyButtons
-                    size="xs"
-                    label="Variables"
-                    human={() =>
-                      variables
-                        .map((v) =>
-                          [
-                            `{{${v.name}}}`,
-                            v.required ? "(required)" : null,
-                            v.helpText ?? null,
-                          ]
-                            .filter(Boolean)
-                            .join(" — "),
-                        )
-                        .join("\n")
-                    }
-                    json={() => variables}
-                    agent={() => ({
-                      kind: "agent-variables",
-                      location: "AI Matrx — Agent view",
-                      description: "Variable definitions for this agent.",
-                      data: variables,
-                      attributes: {
-                        agentId: liveAgentId,
-                        count: variableCount,
-                      },
-                    })}
-                  />
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center type-body"><span className="flex items-center gap-2">
+                      <Variable className="w-4 h-4 text-primary" />
+                      Variables ({variableCount})
+                    </span></CardTitle>
+                    <CopyButtons
+                      size="xs"
+                      label="Variables"
+                      human={() =>
+                        variables
+                          .map((v) =>
+                            [
+                              `{{${v.name}}}`,
+                              v.required ? "(required)" : null,
+                              v.helpText ?? null,
+                            ]
+                              .filter(Boolean)
+                              .join(" — "),
+                          )
+                          .join("\n")
+                      }
+                      json={() => variables}
+                      agent={() => ({
+                        kind: "agent-variables",
+                        location: "AI Matrx — Agent view",
+                        description: "Variable definitions for this agent.",
+                        data: variables,
+                        attributes: {
+                          agentId: liveAgentId,
+                          count: variableCount,
+                        },
+                      })}
+                    />
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="grid gap-2">
@@ -882,39 +884,41 @@ export function AgentViewContent({ agentId, recordSections }: { agentId: string;
             {/* Context Policies */}
             {contextPolicies && contextPolicyCount > 0 && (
               <Card>
-                <CardHeader className="flex-row items-center justify-between">
-                  <CardTitle className="flex items-center type-body"><span className="flex items-center gap-2">
-                    <Layers className="w-4 h-4 text-info" />
-                    Context Policies ({contextPolicyCount})
-                  </span></CardTitle>
-                  <CopyButtons
-                    size="xs"
-                    label="Context policies"
-                    human={() =>
-                      contextPolicies
-                        .map((slot) =>
-                          [
-                            slot.key,
-                            slot.type,
-                            slot.label ?? slot.description ?? null,
-                          ]
-                            .filter(Boolean)
-                            .join(" — "),
-                        )
-                        .join("\n")
-                    }
-                    json={() => contextPolicies}
-                    agent={() => ({
-                      kind: "agent-context-policies",
-                      location: "AI Matrx — Agent view",
-                      description: "Context policy definitions for this agent.",
-                      data: contextPolicies,
-                      attributes: {
-                        agentId: liveAgentId,
-                        count: contextPolicyCount,
-                      },
-                    })}
-                  />
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center type-body"><span className="flex items-center gap-2">
+                      <Layers className="w-4 h-4 text-info" />
+                      Context Policies ({contextPolicyCount})
+                    </span></CardTitle>
+                    <CopyButtons
+                      size="xs"
+                      label="Context policies"
+                      human={() =>
+                        contextPolicies
+                          .map((slot) =>
+                            [
+                              slot.key,
+                              slot.type,
+                              slot.label ?? slot.description ?? null,
+                            ]
+                              .filter(Boolean)
+                              .join(" — "),
+                          )
+                          .join("\n")
+                      }
+                      json={() => contextPolicies}
+                      agent={() => ({
+                        kind: "agent-context-policies",
+                        location: "AI Matrx — Agent view",
+                        description: "Context policy definitions for this agent.",
+                        data: contextPolicies,
+                        attributes: {
+                          agentId: liveAgentId,
+                          count: contextPolicyCount,
+                        },
+                      })}
+                    />
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="grid gap-2">
