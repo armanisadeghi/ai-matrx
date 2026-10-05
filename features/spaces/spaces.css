@@ -630,37 +630,37 @@
 }
 
 /* ---------- floating table of contents (A11) ---------- */
-.spaces-toc {
+.spaces-tocrail {
   position: sticky;
   top: 0;
   z-index: 4;
   height: 0;
   pointer-events: none;
 }
-.spaces-toc-sticky {
+.spaces-tocrail-sticky {
   position: absolute;
   right: 0;
   pointer-events: auto;
 }
-.spaces-toc-rail {
+.spaces-tocrail-rail {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
   gap: 13px;
   padding: 0 22px 0 14px;
 }
-.spaces-toc-dash {
+.spaces-tocrail-dash {
   display: block;
   width: 14px;
   height: 2px;
   border-radius: 2px;
   background: hsl(var(--foreground) / 0.13);
 }
-.spaces-toc-dash[data-active="true"] {
+.spaces-tocrail-dash[data-active="true"] {
   width: 18px;
   background: hsl(var(--foreground) / 0.75);
 }
-.spaces-toc-panel {
+.spaces-tocrail-panel {
   position: absolute;
   top: -12px;
   right: 10px;
@@ -674,10 +674,10 @@
   background: hsl(var(--popover));
   box-shadow: 0 0 0 1px hsl(var(--foreground) / 0.08), 0 8px 24px hsl(var(--foreground) / 0.12);
 }
-.spaces-toc-sticky:hover .spaces-toc-panel {
+.spaces-tocrail-sticky:hover .spaces-tocrail-panel {
   display: flex;
 }
-.spaces-toc-item {
+.spaces-tocrail-item {
   display: block;
   width: 100%;
   padding: 4px 8px;
@@ -690,12 +690,16 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.spaces-toc-item[data-level="2"] { padding-left: 18px; }
-.spaces-toc-item[data-level="3"] { padding-left: 28px; }
-.spaces-toc-item[data-active="true"] { color: #2383e2; }
-.spaces-toc-item:hover { background: var(--spaces-hover); color: var(--spaces-ink); }
+.spaces-tocrail-item[data-level="2"] { padding-left: 18px; }
+.spaces-tocrail-item[data-level="3"] { padding-left: 28px; }
+.spaces-tocrail-item[data-active="true"] { color: #2383e2; }
+.spaces-tocrail-item:hover { background: var(--spaces-hover); color: var(--spaces-ink); }
 @media (max-width: 1023px) {
-  .spaces-toc { display: none; }
+  .spaces-tocrail { display: none; }
+}
+@media (max-width: 767px) {
+  .spaces-page-icon[data-image="true"] { width: 96px; height: 96px; }
+  .spaces-header[data-has-cover="true"] .spaces-page-icon[data-image="true"] { margin-top: -56px; margin-left: 0; }
 }
 .spaces-header-controls {
   display: flex;

@@ -365,11 +365,25 @@ function ViewTab({
 
 function MenuRow({ icon, label, onClick, end, active }: { icon?: ReactNode; label: string; onClick: () => void; end?: ReactNode; active?: boolean }) {
   return (
-    <button type="button" className="spaces-db-menurow" data-active={active ? "true" : undefined} onClick={onClick}>
+    // A row may end in a Switch (itself a button), so the row is a focusable div, never a <button>.
+    <div
+      role="button"
+      tabIndex={0}
+      className="spaces-db-menurow"
+      data-active={active ? "true" : undefined}
+      data-clickable=""
+      onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onClick();
+        }
+      }}
+    >
       {icon ? <span className="spaces-db-menuicon">{icon}</span> : null}
       <span className="flex-1 truncate text-left">{label}</span>
       {end}
-    </button>
+    </div>
   );
 }
 
