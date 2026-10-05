@@ -2,8 +2,8 @@
 
 // features/spaces/editor/slash-items.tsx — the "/" menu, in Notion's order and groups (B4).
 //
-// Only blocks that work today are listed (a phase-2 block appears when it is built). Notion's Media,
-// Database, Inline and Embed groups arrive with phase 2/3.
+// Only blocks that work today are listed. Media from a file or link (image, video, audio, file, PDF,
+// bookmark, embed) render when stored (imports) but have no insert flow yet.
 
 import { insertOrUpdateBlockForSlashMenu } from "@blocknote/core";
 import type { DefaultReactSuggestionItem } from "@blocknote/react";
@@ -26,8 +26,15 @@ import {
   Minus,
   Quote,
   Type,
+  Table2,
+  Kanban,
+  Database,
+  PieChart,
+  Sigma,
 } from "lucide-react";
 
+import type { PickedSource } from "../data/SourcePicker";
+import { newViewId, type SpaceDbView } from "../data/sources";
 import type { SpacesEditor } from "./schema";
 
 const ICON = 18;
@@ -37,6 +44,24 @@ type SpacesPartialBlock = Parameters<SpacesEditor["insertBlocks"]>[0][number];
 export interface SlashContext {
   createSubpage: () => Promise<string | null>;
   pickPage: () => Promise<string | null>;
+  /** "Linked view of database" / "Chart": the records the block shows (data/SourcePicker). */
+  pickSource: () => Promise<PickedSource | null>;
+}
+
+function stored(type: string, props: Record<string, unknown>): SpacesPartialBlock {
+  return { type, props: { data: JSON.stringify({ props }) } } as unknown as SpacesPartialBlock;
+}
+
+function databaseBlock(src: PickedSource, view: SpaceDbView, linked: boolean): SpacesPartialBlock {
+  return stored("database", {
+    source: { kind: "table", tableId: src.tableId },
+    inline: true,
+    title: src.name,
+    ...(src.sample ? { sample: src.sample } : {}),
+    linked,
+    views: [view],
+    activeViewId: view.id,
+  });
 }
 
 function columns(count: number): SpacesPartialBlock {
@@ -57,6 +82,12 @@ export function slashItems(editor: SpacesEditor, ctx: SlashContext): DefaultReac
   const basic = "Basic blocks";
   const advanced = "Advanced blocks";
   const media = "Media";
+  const database = "Database";
+  const withSource = (make: (src: PickedSource) => SpacesPartialBlock) => () => {
+    void ctx.pickSource().then((src) => {
+      if (src) insertOrUpdateBlockForSlashMenu(editor, make(src));
+    });
+  };
   return [
     { title: "Text", subtext: "Just start writing with plain text.", aliases: ["text", "paragraph", "p"], group: basic, icon: <Type size={ICON} />, onItemClick: set({ type: "paragraph" }) },
     { title: "Heading 1", subtext: "Big section heading.", aliases: ["h1", "#", "heading1"], group: basic, icon: <Heading1 size={ICON} />, onItemClick: set({ type: "heading", props: { level: 1 } }) },
@@ -100,7 +131,15 @@ export function slashItems(editor: SpacesEditor, ctx: SlashContext): DefaultReac
         });
       },
     },
+    { title: "Table", subtext: "Add a simple table to this page.", aliases: ["table", "simple table"], group: basic, icon: <Table2 size={ICON} />, onItemClick: set({ type: "table", content: { type: "tableContent", rows: [{ cells: ["", "", ""] }, { cells: ["", "", ""] }, { cells: ["", "", ""] }] } } as unknown as SpacesPartialBlock) },
+    { title: "Table view", subtext: "Show records from a table as a table.", aliases: ["database", "inline", "table view"], group: database, icon: <Table2 size={ICON} />, onItemClick: withSource((s) => databaseBlock(s, { id: newViewId(), name: "Table", layout: "grid" }, false)) },
+    { title: "Board view", subtext: "Show records as a board.", aliases: ["board", "kanban"], group: database, icon: <Kanban size={ICON} />, onItemClick: withSource((s) => databaseBlock(s, { id: newViewId(), name: "Board", layout: "kanban" }, false)) },
+    { title: "Linked view of database", subtext: "Show a view of an existing database.", aliases: ["linked", "database", "view"], group: database, icon: <Database size={ICON} />, onItemClick: withSource((s) => databaseBlock(s, { id: newViewId(), name: "All", layout: "grid" }, true)) },
+    { title: "Chart", subtext: "Chart the records of a database.", aliases: ["chart", "donut", "graph"], group: database, icon: <PieChart size={ICON} />, onItemClick: withSource((s) => databaseBlock(s, { id: newViewId(), name: s.name, layout: "chart", chart: { type: "donut", groupBy: null, op: "count", centerValue: true } }, true)) },
     { title: "Code", subtext: "Capture a code snippet.", aliases: ["code", "```", "snippet"], group: media, icon: <Code size={ICON} />, onItemClick: set({ type: "codeBlock" }) },
+    { title: "Table of contents", subtext: "Show an outline of this page.", aliases: ["toc", "contents", "outline"], group: advanced, icon: <ListTree size={ICON} />, onItemClick: set(stored("tableOfContents", {})) },
+    { title: "Block equation", subtext: "Display a standalone math equation.", aliases: ["math", "equation", "tex", "latex"], group: advanced, icon: <Sigma size={ICON} />, onItemClick: set(stored("equation", { expression: "E = mc^2" })) },
+    { title: "Breadcrumb", subtext: "Show where this page sits.", aliases: ["breadcrumb", "path"], group: advanced, icon: <ChevronRight size={ICON} />, onItemClick: set(stored("breadcrumb", {})) },
     { title: "Toggle heading 1", subtext: "Hide content inside a large heading.", aliases: ["toggleh1", "th1"], group: advanced, icon: <ChevronRight size={ICON} />, onItemClick: set({ type: "heading", props: { level: 1, isToggleable: true } }) },
     { title: "Toggle heading 2", subtext: "Hide content inside a medium heading.", aliases: ["toggleh2", "th2"], group: advanced, icon: <ChevronRight size={ICON} />, onItemClick: set({ type: "heading", props: { level: 2, isToggleable: true } }) },
     { title: "Toggle heading 3", subtext: "Hide content inside a small heading.", aliases: ["toggleh3", "th3"], group: advanced, icon: <ChevronRight size={ICON} />, onItemClick: set({ type: "heading", props: { level: 3, isToggleable: true } }) },

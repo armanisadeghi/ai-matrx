@@ -1,11 +1,12 @@
 // features/spaces/store/seed.ts — "The Traveling SMM™ OS" sample, added on request by store/sample.ts.
 //
 // The acceptance Space ("The Traveling SMM™ OS", rebuilt from Arman's three reference screenshots) and
-// one sub-Space for every page link in it, each with a little realistic working content. Phase-2 pieces
-// (the four chart rings, the client database) are `slot` blocks that say what will sit there.
+// one sub-Space for every page link in it, each with a little realistic working content. The four chart
+// rings and the client database are `database` blocks over the agency sample (data/agency-spec.ts).
 
 import type { RichSpan, SpaceBlock, SpaceColor, SpaceDoc, SpaceMedia } from "../contract";
 import { spread } from "./position";
+import { AGENCY_SAMPLE_ID, sampleTable, type ChartSettings, type SpaceDbView } from "../data/sources";
 
 const bid = () => crypto.randomUUID();
 
@@ -45,6 +46,17 @@ export const b = {
     children: cols.map((c) => ({ id: bid(), type: "column", props: { width: c.width }, children: c.blocks })),
   }),
   slot: (label: string, height: number): SpaceBlock => ({ id: bid(), type: "slot", props: { label, height } }),
+  /** A linked view of one agency-sample table (Notion's inline database / chart tile). */
+  database: (token: string, views: SpaceDbView[], extra: Record<string, unknown> = {}): SpaceBlock => {
+    const table = sampleTable(token);
+    return {
+      id: bid(),
+      type: "database",
+      props: { source: { kind: "table", tableId: table.id }, inline: true, title: table.name, sample: AGENCY_SAMPLE_ID, linked: true, showTitle: false, views, activeViewId: views[0].id, ...extra },
+    };
+  },
+  ring: (token: string, name: string, icon: string, chart: ChartSettings): SpaceBlock =>
+    b.database(token, [{ id: "view-ring", name, icon, layout: "chart", chart: { centerValue: true, ...chart } }]),
 };
 
 interface PageSeed {
@@ -277,8 +289,13 @@ export function seedSpaces(): SpaceDoc[] {
   ];
 
   const right: SpaceBlock[] = [
-    b.slot("Charts: Active clients · Client wins · Avg NPS score · YTD tasks completed", 400),
-    b.slot("Clients database: Client name · Offer bought · Date started · End date · Status", 300),
+    b.columns(
+      { width: 0.25, blocks: [b.ring("client", "Active clients", "Users", { type: "donut", groupBy: "status", op: "count" })] },
+      { width: 0.25, blocks: [b.ring("client_win", "Client wins", "Trophy", { type: "donut", groupBy: "kind", op: "count" })] },
+      { width: 0.25, blocks: [b.ring("nps_survey", "Avg NPS score", "Gauge", { type: "donut", groupBy: "score", op: "avg", field: "score" })] },
+      { width: 0.25, blocks: [b.ring("task", "YTD tasks completed", "ListChecks", { type: "donut", groupBy: "task", op: "count" })] },
+    ),
+    b.database("client", [{ id: "view-all", name: "All", icon: "Users", layout: "grid" }]),
     b.text(""),
     b.h1([t("90 Day Plan", { link: `/spaces/${idOf(PLAN.key)}`, color: "gray" })]),
     ...PLAN_PAGES.map((p) => b.page(idOf(p.key))),

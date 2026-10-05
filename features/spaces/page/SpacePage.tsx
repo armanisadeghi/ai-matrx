@@ -11,6 +11,8 @@ import { useEffect, useRef, useState } from "react";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { toast } from "@/lib/toast";
 
+import { useSourcePicker } from "../data/SourcePicker";
+
 import type { SpaceBlock, SpaceDoc } from "../contract";
 import { fromEngine, type EngineBlock } from "../editor/convert";
 import type { SpacesEditor } from "../editor/schema";
@@ -137,8 +139,11 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
     return () => window.clearInterval(t);
   }, []);
 
+  const refused = useRef<string | null>(null);
+  const [sourcePicker, pickSource] = useSourcePicker();
   const flush = async (): Promise<void> => {
     timer.current = null;
+    refused.current = null;
     if (inFlight.current || !pending.current || !docRef.current) return;
     pending.current = false;
     inFlight.current = true;
@@ -163,11 +168,14 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
       } else {
         pending.current = true;
         setSaveState("failed");
-        toast.error(err instanceof Error ? err.message : "We couldn't save this page.");
+        const message = err instanceof Error ? err.message : "We couldn't save this page.";
+        // A snapshot the database refuses (22023) will be refused again: say it once, retry on the next edit.
+        refused.current = /not a valid snapshot/i.test(message) ? message : null;
+        toast.error(message);
       }
     } finally {
       inFlight.current = false;
-      if (pending.current && !timer.current) timer.current = window.setTimeout(() => void flush(), 1000);
+      if (pending.current && !refused.current && !timer.current) timer.current = window.setTimeout(() => void flush(), 1000);
     }
   };
   const update = (patch: Partial<Editable>, delay = 300) => {
@@ -420,9 +428,11 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
                 return sub.id;
               },
               pickPage: () => new Promise((resolve) => openQuickFind("pick", (id) => resolve(id))),
+              pickSource,
             }}
             menu={{ moveBlocksTo, askAi: () => toast.info("AI is not connected yet") }}
           />
+          {sourcePicker}
         </div>
       </div>
     </div>

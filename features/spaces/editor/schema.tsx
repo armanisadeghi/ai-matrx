@@ -6,7 +6,7 @@
 // (a marked place where a phase-2 block will sit). Callout bodies and columns hold their content as
 // ordinary block children; spaces.css draws the callout box around them and lays columns side by side.
 
-import { BlockNoteSchema, defaultBlockSpecs, defaultProps } from "@blocknote/core";
+import { BlockNoteSchema, defaultBlockSpecs, defaultInlineContentSpecs, defaultProps } from "@blocknote/core";
 import { createReactBlockSpec } from "@blocknote/react";
 import { ArrowUpRight, FileText } from "lucide-react";
 import Link from "next/link";
@@ -15,6 +15,8 @@ import { useRef } from "react";
 import { useSpaces } from "../state/SpacesProvider";
 import { SpaceIcon } from "../page/SpaceIcon";
 import { IconPicker } from "../page/IconPicker";
+import { equationInline, mentionInline } from "./inline";
+import { storedBlockSpecs } from "./stored-blocks";
 
 const CalloutBlock = createReactBlockSpec(
   {
@@ -205,6 +207,25 @@ export const spacesSchema = BlockNoteSchema.create({
     columnList: ColumnListBlock(),
     column: ColumnBlock(),
     slot: SlotBlock(),
+    table: defaultBlockSpecs.table,
+    image: storedBlockSpecs.image(),
+    video: storedBlockSpecs.video(),
+    audio: storedBlockSpecs.audio(),
+    file: storedBlockSpecs.file(),
+    pdf: storedBlockSpecs.pdf(),
+    bookmark: storedBlockSpecs.bookmark(),
+    embed: storedBlockSpecs.embed(),
+    equation: storedBlockSpecs.equation(),
+    tableOfContents: storedBlockSpecs.tableOfContents(),
+    breadcrumb: storedBlockSpecs.breadcrumb(),
+    database: storedBlockSpecs.database(),
+    unknownBlock: storedBlockSpecs.unknownBlock(),
+    unsupportedText: storedBlockSpecs.unsupportedText(),
+  },
+  inlineContentSpecs: {
+    ...defaultInlineContentSpecs,
+    inlineMention: mentionInline,
+    inlineEquation: equationInline,
   },
 });
 
