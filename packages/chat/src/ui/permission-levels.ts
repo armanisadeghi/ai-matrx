@@ -83,6 +83,16 @@ export const PERMISSION_LEVEL_SHORT_LABELS: Record<PermissionLevel, string> = {
  */
 export type DbPermissionLevel = Database["public"]["Enums"]["permission_level"];
 
+/**
+ * The database enum's values at runtime. The package's generated `ChatDatabase` carries types
+ * only (no `Constants`), so the list is declared here and PINNED to the enum by the type check
+ * below: when `public.permission_level` gains a value and `pnpm db-types` regenerates, this
+ * line stops compiling until the new value is added — never a silent gap.
+ */
+export const DB_PERMISSION_LEVELS = ["viewer", "commenter", "editor", "admin"] as const satisfies readonly DbPermissionLevel[];
+const _everyDbLevelIsListed: Exclude<DbPermissionLevel, (typeof DB_PERMISSION_LEVELS)[number]> extends never ? true : never = true;
+void _everyDbLevelIsListed;
+
 /** Type guard for an arbitrary value being a known code-ladder level. */
 export function isPermissionLevel(raw: unknown): raw is PermissionLevel {
   return (

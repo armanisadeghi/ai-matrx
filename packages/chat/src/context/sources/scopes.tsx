@@ -65,7 +65,9 @@ export interface ScopeTypeNode {
 export interface ScopeTreeOrganization {
   id: string;
   name: string;
+  slug?: string | null;
   scope_types: ScopeTypeNode[];
+  projects?: Array<{ id: string; name: string; [field: string]: unknown }>;
 }
 
 export interface ContextItemValue {
@@ -182,6 +184,39 @@ export function isScopesRpcErr<T>(r: ScopesRpcResult<T>): r is { ok: false; erro
   return r.ok === false;
 }
 
+/** One association edge (`platform.associations`) as the host's service returns it. */
+export interface AssociationEdgeRow {
+  sourceType: string;
+  sourceId: string;
+  targetType: string;
+  targetId: string;
+  metadata?: unknown;
+  [field: string]: any;
+}
+export interface ChatAssociationsService {
+  listForTargets(targetType: string, targetIds: string[], ...rest: any[]): Promise<ScopesRpcResult<{ edges: AssociationEdgeRow[] }>>;
+  listForSources(sourceType: string, sourceIds: string[], ...rest: any[]): Promise<ScopesRpcResult<{ edges: AssociationEdgeRow[] }>>;
+  add(input: any): Promise<ScopesRpcResult<any>>;
+  remove(input: any): Promise<ScopesRpcResult<any>>;
+  [method: string]: any;
+}
+export interface ChatFavoritesService {
+  getBulk(entityType: string, entityIds: string[]): Promise<ScopesRpcResult<{ items: Array<{ entityId: string; isFavorite: boolean; isPinned: boolean; [field: string]: any }> }>>;
+  setFavorite(...args: any[]): Promise<ScopesRpcResult<any>>;
+  setPinned(...args: any[]): Promise<ScopesRpcResult<any>>;
+  [method: string]: any;
+}
+
+/** The scope reads the context screens call (the host's scopes service answers them). */
+export interface ChatScopesService {
+  listContextItems(scopeTypeId: string): Promise<ScopesRpcResult<{ items: ContextItemRow[] }>>;
+  listContextValues(scopeId: string): Promise<ScopesRpcResult<{ values: ContextItemValue[] }>>;
+  getScopeHome(scopeId: string): Promise<
+    ScopesRpcResult<{ scope: { id: string; name: string; organization_id: string; scope_type_id: string } | null }>
+  >;
+  [method: string]: any;
+}
+
 type Selector<R> = (state: any, ...args: any[]) => R;
 
 /** The registration: every export chat reads from scopes, by its future package name. */
@@ -234,13 +269,19 @@ export interface ChatScopesSource {
     error: string | null;
     refresh: () => Promise<void>;
   };
-  useUniverse: AnyFn;
+  useUniverse: () => { orgs: ScopeTreeOrganization[]; treeStatus: string; treeError: string | null; [field: string]: any };
   useDrillPathEngine: AnyFn;
   // Services
-  scopesService: any;
-  associationsService: any;
-  favoritesService: any;
-  getAssociationsStore: AnyFn;
+  scopesService: ChatScopesService;
+  associationsService: ChatAssociationsService;
+  favoritesService: ChatFavoritesService;
+  getAssociationsStore: () => {
+    getEdges(entityType: string, entityId: string): {
+      edges: Array<{ direction: string; otherType: string; otherId: string; [field: string]: any }>;
+      [field: string]: any;
+    };
+    [method: string]: any;
+  };
   readFavoriteIds: AnyFn;
   writeFavorite: AnyFn;
   // Entities
@@ -253,7 +294,7 @@ export interface ChatScopesSource {
   referenceConfigFromItem: (item: any) => ReferenceItemConfig;
   buildScopeValuePayload: AnyFn;
   slugifyKey: (name: string) => string;
-  drillPathForScope: AnyFn;
+  drillPathForScope: (orgs: ScopeTreeOrganization[], scopeId: string) => DrillPath | null;
   // Components
   ActiveContextLensChip: AnyComponent;
   ActiveContextTree: AnyComponent;
@@ -392,14 +433,14 @@ export const useUniverse = source.fn("useUniverse");
 export const useDrillPathEngine = source.fn("useDrillPathEngine");
 
 /** Service objects resolve per property read, so a late registration still lands. */
-function serviceProxy<K extends "scopesService" | "associationsService" | "favoritesService">(key: K): any {
+function serviceProxy<K extends "scopesService" | "associationsService" | "favoritesService">(key: K): ChatScopesSource[K] {
   return new Proxy(
-    {},
+    {} as ChatScopesSource[K],
     {
       get: (_t, prop) => {
-        const service = source.get(key);
+        const service = source.get(key) as Record<string, unknown> | undefined;
         const member = service?.[prop as string];
-        return typeof member === "function" ? member.bind(service) : member;
+        return typeof member === "function" ? (member as AnyFn).bind(service) : member;
       },
     },
   );

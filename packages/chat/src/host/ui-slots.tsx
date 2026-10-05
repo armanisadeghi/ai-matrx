@@ -14,7 +14,7 @@
  * exactly what they passed when they imported the component directly.
  */
 
-import { createElement, Fragment, useRef, type ComponentType, type InputHTMLAttributes, type ReactNode, type TextareaHTMLAttributes } from "react";
+import { createElement, Fragment, useRef, type ComponentType, type ChangeEvent, type ReactNode } from "react";
 import { formatCost, usdToPoints } from "@ai-matrx/kit/format";
 import { announceOnce } from "./errors";
 import { reportUnregisteredHostSlot as reportUnregistered } from "./diagnostics";
@@ -26,6 +26,11 @@ import type { EditableContextMenuProps, NonEditableContextMenuProps } from "../c
 export type { EditableContextMenuProps, NonEditableContextMenuProps };
 
 import type { SkillRow } from "../ui/skills-types";
+import type { AgentUsagesState, UsageScope } from "../ui/usages/usages.slice";
+import type { AgentDriftReportAdminRow, AgentDriftReportRow, AgentUsageAggregate, AgentUsageRow, DriftAlertRow, DriftSeverity, ReportSortKey } from "../ui/usages/usages.types";
+import type { AgentCatalog } from "@ai-matrx/agents/catalog";
+import type { DecodedDirective } from "@ai-matrx/content-ir";
+import type { ItemRowProps } from "../ui/item-types";
 import type { ResourcePickerViewId } from "../agents/resources/picker-view-id";
 import type { CxContentBlock } from "../public-chat/types/cx-tables";
 
@@ -54,15 +59,14 @@ interface PicklistItem {
  * component accepts passable without the package restating the host's whole prop surface.
  */
 interface OpenChangeProps { open?: boolean; onOpenChange?: (open: boolean) => void; [extra: string]: any }
-interface TextareaSlotProps extends TextareaHTMLAttributes<HTMLTextAreaElement> { [extra: string]: any }
-interface InputSlotProps extends InputHTMLAttributes<HTMLInputElement> { [extra: string]: any }
+interface TextareaSlotProps { onChange?: (event: ChangeEvent<HTMLTextAreaElement>) => void; onTranscriptionComplete?: (text: string) => void; onTranscriptionError?: (error: string) => void; [extra: string]: any }
+interface InputSlotProps { onChange?: (event: ChangeEvent<HTMLInputElement>) => void; [extra: string]: any }
 interface TextInputDialogProps extends OpenChangeProps { onConfirm?: (value: string) => void | Promise<void> }
 interface ModelListDropdownProps {
   onValueChange?: (modelId: string) => void;
-  onOfferingPinChange?: (offeringId: string | null) => void;
+  onOfferingPinChange?: (offeringId: string | undefined) => void;
   [extra: string]: any;
 }
-interface ItemRowProps { rename?: { value: string; emptyFallback?: string; onCommit: (next: string) => void; [extra: string]: any }; [extra: string]: any }
 interface ItemMenuProps { onCloseAutoFocus?: (event: Event) => void; [extra: string]: any }
 interface TemplatePickerProps { onSelect?: (templateText: string) => void; [extra: string]: any }
 interface FilesPickerProps { onSelect?: (selection: { fileId?: string | null; [extra: string]: any }) => void; [extra: string]: any }
@@ -70,7 +74,16 @@ interface ResourcePickerMenuProps { onReopenAt?: (pickerView: ResourcePickerView
 interface NotePickerProps { onSelectNote?: (noteId: string) => void; [extra: string]: any }
 interface AgentsListProps { onRunAgent?: (agentId: string) => void; [extra: string]: any }
 interface ValueChangeProps<T> { onChange?: (value: T) => void; [extra: string]: any }
+/** A selector the host's usages store answers; `state` is the host's root state. */
+type UsageSelector<R> = (state: any) => R;
+interface RedFlagSummary { bySeverity: Record<DriftSeverity, number>; stalePins: number; totalUsages: number; updatableKeys: Array<{ usageType: string; usageId: string }>; hasRedFlags: boolean }
 type AnyComponent = ComponentType<any>;
+/**
+ * A component slot typed by the props the PACKAGE passes. Bivariant on purpose: the host
+ * component has its own (usually richer) prop type, and a slot must accept it as long as the
+ * two agree where they overlap, without the package restating the host's whole prop surface.
+ */
+type SlotComponent<P> = ComponentType<P> | { bivarianceHack(props: P): ReactNode }["bivarianceHack"];
 type AnyFn = (...args: any[]) => any;
 
 export interface ChatUiSlots {
@@ -164,11 +177,11 @@ export interface ChatUiSlots {
   WindowPanel: AnyComponent;
   FullScreenOverlay: AnyComponent;
   ResourcePickerWindow: AnyComponent;
-  ResourcePickerMenu: ComponentType<ResourcePickerMenuProps>;
-  FilesResourcePicker: ComponentType<FilesPickerProps>;
-  NotePickerPopover: ComponentType<NotePickerProps>;
-  SmartInputMessageTemplatePicker: ComponentType<TemplatePickerProps>;
-  flattenResourcePickerItems: AnyFn;
+  ResourcePickerMenu: SlotComponent<ResourcePickerMenuProps>;
+  FilesResourcePicker: SlotComponent<FilesPickerProps>;
+  NotePickerPopover: SlotComponent<NotePickerProps>;
+  SmartInputMessageTemplatePicker: SlotComponent<TemplatePickerProps>;
+  flattenResourcePickerItems: () => Array<{ id: string; label: string; icon: any; [field: string]: any }>;
   useRunControlCounts: AnyFn;
   useAttachResourcePicker: AnyFn;
   usePopoutContainer: AnyFn;
@@ -284,8 +297,8 @@ export interface ChatUiSlots {
   OrganizationContextNotice: AnyComponent;
   JsonInspector: AnyComponent;
   InlineCopyButton: AnyComponent;
-  ConfirmDialog: ComponentType<OpenChangeProps>;
-  ModelListDropdown: ComponentType<ModelListDropdownProps>;
+  ConfirmDialog: SlotComponent<OpenChangeProps>;
+  ModelListDropdown: SlotComponent<ModelListDropdownProps>;
   TextWithDoors: AnyComponent;
   EntityDoorControls: AnyComponent;
   StructuredValueView: AnyComponent;
@@ -293,25 +306,25 @@ export interface ChatUiSlots {
   KindDataGate: AnyComponent;
   ServerNotes: AnyComponent;
   OptionCombobox: AnyComponent;
-  NumberStepper: ComponentType<ValueChangeProps<number>>;
+  NumberStepper: SlotComponent<ValueChangeProps<number>>;
   MatrxFloatingFrame: AnyComponent;
-  ItemMenu: ComponentType<ItemMenuProps>;
-  ClampedNumberInput: ComponentType<ValueChangeProps<number>>;
+  ItemMenu: SlotComponent<ItemMenuProps>;
+  ClampedNumberInput: SlotComponent<ValueChangeProps<number>>;
   AspectRatioSelect: AnyComponent;
   AnswerTextPreview: AnyComponent;
   AccessGate: AnyComponent;
   ReferenceCopyMenuItem: AnyComponent;
   ReferenceCopyButton: AnyComponent;
   MandateNotesPanel: AnyComponent;
-  SurfaceBoundAgentsList: ComponentType<AgentsListProps>;
+  SurfaceBoundAgentsList: SlotComponent<AgentsListProps>;
   ProposedDirectivesZone: AnyComponent;
   EntityCommentPopover: AnyComponent;
-  ProTextarea: ComponentType<TextareaSlotProps>;
-  VoiceTextarea: ComponentType<TextareaSlotProps>;
+  ProTextarea: SlotComponent<TextareaSlotProps>;
+  VoiceTextarea: SlotComponent<TextareaSlotProps>;
   FloatingSheet: AnyComponent;
   AppLink: AnyComponent;
   IconButton: AnyComponent;
-  LightSwitchToggle: ComponentType<ValueChangeProps<boolean>>;
+  LightSwitchToggle: SlotComponent<ValueChangeProps<boolean>>;
   CitationChip: AnyComponent;
   MatrxEnvelopeBlock: AnyComponent;
   ErrorBoundaryWithCapture: AnyComponent;
@@ -339,14 +352,14 @@ export interface ChatUiSlots {
   selectShouldPromptForOrganization: AnyFn;
   resolveEntityToken: AnyFn;
   entityTitleFallback: AnyFn;
-  fetchEntityTitles: AnyFn;
+  fetchEntityTitles: (token: string, ids: string[]) => Promise<Map<string, string>>;
   getCachedEntityTitle: AnyFn;
-  bookmarksToReferenceDirectives: AnyFn;
+  bookmarksToReferenceDirectives: (bookmarks: unknown) => DecodedDirective[];
   ensureOrgAvailability: AnyFn;
   requireAuthenticatedSupabaseSession: AnyFn;
   notifyPrintOutcome: AnyFn;
   awaitEffectiveOrganizationId: AnyFn;
-  getAgentCatalog: AnyFn;
+  getAgentCatalog: () => AgentCatalog;
   resolvePreferredChatModel: AnyFn;
   publishedToWebPatch: AnyFn;
   isUuidValue: AnyFn;
@@ -355,15 +368,15 @@ export interface ChatUiSlots {
   markDriftAlertViewed: AnyFn;
   fetchAgentUsages: AnyFn;
   fetchAgentUsageReport: AnyFn;
-  selectActiveBannerAlerts: AnyFn;
-  selectDriftAlertsStatus: AnyFn;
-  makeSelectUsageCache: AnyFn;
-  makeSelectUsageGroups: AnyFn;
-  makeSelectUsageAggregates: AnyFn;
-  makeSelectRedFlagSummary: AnyFn;
-  makeSelectReport: AnyFn;
-  makeSelectReportSorted: AnyFn;
-  makeSelectReportTotals: AnyFn;
+  selectActiveBannerAlerts: UsageSelector<DriftAlertRow[]>;
+  selectDriftAlertsStatus: UsageSelector<AgentUsagesState["alerts"]["status"]>;
+  makeSelectUsageCache: (scope: UsageScope, agentId: string) => UsageSelector<AgentUsagesState["usageCaches"][string] | null>;
+  makeSelectUsageGroups: (scope: UsageScope, agentId: string) => UsageSelector<Array<{ usageType: string; items: AgentUsageRow[] }>>;
+  makeSelectUsageAggregates: (scope: UsageScope, agentId: string) => UsageSelector<AgentUsageAggregate[]>;
+  makeSelectRedFlagSummary: (scope: UsageScope, agentId: string) => UsageSelector<RedFlagSummary>;
+  makeSelectReport: (scope: UsageScope) => UsageSelector<AgentUsagesState["report"][UsageScope]>;
+  makeSelectReportSorted: (scope: UsageScope, sortKey: ReportSortKey, desc: boolean) => UsageSelector<{ rows: AgentDriftReportRow[]; adminRows: AgentDriftReportAdminRow[] }>;
+  makeSelectReportTotals: (scope: UsageScope) => UsageSelector<{ totals: Record<DriftSeverity, number>; agents: number; order: DriftSeverity[] }>;
   AgentSettingsModal: AnyComponent;
   AgentSettingsCore: AnyComponent;
   SettingControlInput: AnyComponent;
@@ -372,8 +385,8 @@ export interface ChatUiSlots {
   CustomDataBindingPreview: AnyComponent;
   AiModelRef: AnyComponent;
   AiToolRef: AnyComponent;
-  TextInputDialog: ComponentType<TextInputDialogProps>;
-  ProInput: ComponentType<InputSlotProps>;
+  TextInputDialog: SlotComponent<TextInputDialogProps>;
+  ProInput: SlotComponent<InputSlotProps>;
   MatrxDynamicPanelHost: AnyComponent;
   useClippedContentGuard: AnyFn;
   answerPreviewText: AnyFn;

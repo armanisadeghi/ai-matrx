@@ -153,6 +153,14 @@ import { renameFile } from "@/features/files/redux/thunks";
 import { requestScribeAudioSeek } from "@/features/transcript-studio/state/scribeAudioBus";
 import { readListRpc } from "@/lib/entity-list/readListRpc";
 
+/**
+ * Slots typed by the props the PACKAGE passes (callbacks and the fields it sets). A host
+ * component with required props of its own (a picker's `value`, a dialog's `title`) is not
+ * assignable in either direction, so it crosses the boundary here, named. The package side
+ * is the typed one: its call sites are checked against the slot's props.
+ */
+const asSlot = <T,>(impl: T) => impl as unknown as never;
+
 registerChatUi({
   FileRagBadge,
   MediaAttachmentThumbnail,
@@ -178,10 +186,10 @@ registerChatUi({
   WindowPanel,
   ResourcePickerWindow,
   FullScreenOverlay,
-  ResourcePickerMenu,
-  FilesResourcePicker,
-  NotePickerPopover,
-  SmartInputMessageTemplatePicker,
+  ResourcePickerMenu: asSlot(ResourcePickerMenu),
+  FilesResourcePicker: asSlot(FilesResourcePicker),
+  NotePickerPopover: asSlot(NotePickerPopover),
+  SmartInputMessageTemplatePicker: asSlot(SmartInputMessageTemplatePicker),
   flattenResourcePickerItems,
   useRunControlCounts,
   useAttachResourcePicker,
@@ -444,7 +452,7 @@ registerChatUi({
 
 import { ModelListDropdown as Host_ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
 registerChatUi({
-  ModelListDropdown: Host_ModelListDropdown,
+  ModelListDropdown: asSlot(Host_ModelListDropdown),
 });
 
 import { TextWithDoors as Host_TextWithDoors } from "@/components/official/entity-ref/TextWithDoors";

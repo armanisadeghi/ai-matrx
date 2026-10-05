@@ -117,7 +117,22 @@ export interface ChatComputeTargetsSource {
     error: string | null;
     refetch: () => Promise<void>;
   };
-  useSandboxInstances: AnyFn;
+  useSandboxInstances: () => {
+    instances: SandboxInstance[];
+    loading: boolean;
+    error: string | null;
+    fetchInstances: (opts?: { limit?: number; [option: string]: unknown }) => Promise<unknown>;
+    createInstance: (request: {
+      organization_id: string;
+      template?: string;
+      tier?: string;
+      ttl_seconds?: number;
+      labels?: Record<string, string>;
+      [field: string]: unknown;
+    }) => Promise<{ instance: SandboxInstance | null; error: string | null }>;
+    renameInstance: (id: string, name: string) => Promise<SandboxInstance | null>;
+    [extra: string]: unknown;
+  };
   useVerifiedSandboxBinding: (conversationId: string | null) => {
     ref: { rowId: string; kind?: ComputeTargetKind; name?: string } | null;
     source: "override" | "surface" | null;

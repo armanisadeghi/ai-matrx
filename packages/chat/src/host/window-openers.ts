@@ -258,7 +258,7 @@ export interface OpenFullScreenMarkdownEditorOptions {
   description?: string;
   showSaveButton?: boolean;
   showCopyButton?: boolean;
-  primaryActions?: Array<{ id: string; label: string; variant?: string; [extra: string]: unknown }>;
+  primaryActions?: EditorPrimaryAction[];
   onSave?: (content: string) => void | Promise<void>;
   onAction?: (action: string, content: string) => void | Promise<void>;
   onEvent?: (event: { type: "save"; content: string; action?: string }) => void | Promise<void>;
@@ -336,13 +336,15 @@ export type ChatWindowOpenerName = keyof ChatWindowOpeners;
 
 // ── The stand-in (no opener registered) ──────────────────────────────────────
 
-const NOTHING_OPENED: ChatInstanceWindowHandle = {
+const NOTHING_OPENED: ChatInstanceWindowHandle & ChatLiveRunWindowHandle & ChatFullScreenEditorHandle = {
   instanceId: "",
+  callbackGroupId: null,
+  update: () => {},
   close: () => {},
 };
 
 function unhosted(name: ChatWindowOpenerName) {
-  return (..._args: unknown[]): ChatInstanceWindowHandle => {
+  return (..._args: unknown[]): ChatInstanceWindowHandle & ChatLiveRunWindowHandle & ChatFullScreenEditorHandle => {
     announceOnce(
       `window-opener-unhosted:${name}`,
       `Chat could not open a window: this host registers no "${name}" opener. ` +

@@ -96,7 +96,7 @@ export function ProjectLayerBody({ item, setTitle }: ContextItemBodyProps) {
     : null;
   const project =
     projectId && org
-      ? (org.projects.find((p) => p.id === projectId) ?? null)
+      ? ((org.projects ?? []).find((p) => p.id === projectId) ?? null)
       : null;
   const name = project?.name ?? item.title;
 
