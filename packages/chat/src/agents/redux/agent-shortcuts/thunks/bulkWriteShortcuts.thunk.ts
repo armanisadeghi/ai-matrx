@@ -5,7 +5,7 @@ import { supabase } from "../../../../host/db";
 import { pgErrorToError } from "@ai-matrx/data";
 import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import type { AgentShortcut } from "../types";
-import type { ShortcutFormData } from "@host/features/agent-shortcuts/types";
+import type { ShortcutFormData } from "../types";
 import { agentShortcutToInsert, dbRowToAgentShortcut } from "../converters";
 import {
   fromGlobalOwnershipRecord,
@@ -13,8 +13,8 @@ import {
 } from "@host/lib/organizations/globalOwnership";
 import { upsertShortcuts } from "../slice";
 import { selectCategoryById } from "../../agent-shortcut-categories/selectors";
-import { resolveShortcutWriteScope } from "@host/features/agent-shortcuts/resolveShortcutWriteScope";
-import { resolveSystemOrgId } from "@host/lib/organizations/systemOrg";
+import { resolveShortcutWriteScope } from "../../../shortcuts/resolveShortcutWriteScope";
+import { resolveSystemOrgId } from "../../../../host/ui-slots";
 import {
   SHORTCUT_STORAGE_CUTOVER,
   shortcutTable,

@@ -1,12 +1,12 @@
 const ensureOrgId = jest.fn<Promise<string>, [string | null | undefined]>();
 const resolveSystemOrgId = jest.fn<Promise<string>, []>();
 
-jest.mock("@/lib/organizations/ensureOrgId", () => ({
+jest.mock("../../host/org", () => ({
   ensureOrgId: (organizationId: string | null | undefined) =>
     ensureOrgId(organizationId),
 }));
 
-jest.mock("@/lib/organizations/systemOrg", () => ({
+jest.mock("../../host/ui-slots", () => ({
   resolveSystemOrgId: () => resolveSystemOrgId(),
 }));
 

@@ -570,3 +570,6 @@ export interface AgentShortcutSliceState {
   status: "idle" | "loading" | "succeeded" | "failed";
   error: string | null;
 }
+
+/** The editor's form for one shortcut (everything the store assigns is left out). */
+export type ShortcutFormData = Omit<AgentShortcut, "id" | "createdAt" | "updatedAt">;

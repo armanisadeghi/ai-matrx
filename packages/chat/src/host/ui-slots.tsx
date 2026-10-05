@@ -81,6 +81,8 @@ export interface ChatUiSlots {
   notesCreate: AnyFn;
   useKnowledgeAttachSearch: AnyFn;
   useConversationAttachments: AnyFn;
+  /** The platform-owned organization's id (`iam.system_orgs`); only a global-scope write needs it. */
+  resolveSystemOrgId: AnyFn;
   /** The organization a project or task belongs to, as `{ data, error }` (the projects schema is the host's). */
   readProjectScopeOrganizationId: AnyFn;
   summarizeContextCell: AnyFn;
@@ -264,6 +266,7 @@ export const connectorDefinitionFromMcp = slotFn("connectorDefinitionFromMcp");
 export const notesCreate = slotFn("notesCreate");
 export const useKnowledgeAttachSearch = slotFn("useKnowledgeAttachSearch");
 export const useConversationAttachments = slotFn("useConversationAttachments");
+export const resolveSystemOrgId = slotFn("resolveSystemOrgId");
 export const readProjectScopeOrganizationId = slotFn("readProjectScopeOrganizationId");
 export const summarizeContextCell = slotFn("summarizeContextCell", (cell: unknown) =>
   typeof cell === "string" ? cell : JSON.stringify(cell ?? null),

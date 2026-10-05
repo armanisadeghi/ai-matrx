@@ -42,6 +42,7 @@ import * as usageGate from "@/features/entitlements/usage-gate/usageGate";
 import { registerKindValueMarkdown } from "@ai-matrx/chat/utils/content-ir/kinds/kind-value-markdown";
 import { useKnowledgeAttachSearch } from "@/features/resource-manager/resource-picker/useKnowledgeAttachSearch";
 import { useConversationAttachments } from "@/features/connectors/useConversationAttachments";
+import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import { createClient as createAppClient } from "@/utils/supabase/client";
 import { projectsDb } from "@/utils/supabase/projectsDb";
 import { NotesAPI } from "@/features/notes/service/notesApi";
@@ -167,6 +168,7 @@ registerChatUi({
   connectorDefinitionFromMcp,
   useKnowledgeAttachSearch,
   useConversationAttachments,
+  resolveSystemOrgId,
   readProjectScopeOrganizationId: (tier: "project" | "task", id: string) => {
     const db = projectsDb(createAppClient());
     return tier === "project"

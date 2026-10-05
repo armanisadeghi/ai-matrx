@@ -11,7 +11,7 @@
  * `NOTES_EDITOR_CONTEXT_MENU_PROPS`) — NOT the deleted bespoke NoteContextMenu.
  */
 
-import { PLACEMENT_TYPES } from "@host/features/agent-shortcuts/constants";
+import { PLACEMENT_TYPES } from "../../shortcuts/constants";
 import {
   countWords,
   findCurrentHeading,

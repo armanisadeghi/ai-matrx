@@ -64,7 +64,7 @@ import { applyLaunchModelOverrides } from "../instance-model-overrides/launch-mo
 import { selectAgentRunTier } from "../../agent-definition/selectors";
 import { getShortcutRecordFromState } from "../../agent-shortcuts/selectors";
 import { ensureShortcutLoaded } from "../../agent-shortcuts/thunks";
-import { resolveShortcutMappings } from "@host/features/agent-shortcuts/utils/resolveShortcutMappings";
+import { resolveShortcutMappings } from "../../../shortcuts/resolveShortcutMappings";
 import {
   createManualInstance,
   createInstanceFromShortcut,

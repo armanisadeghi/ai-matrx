@@ -45,7 +45,7 @@ import { getCustomAgentSession, releaseCustomAgentSession } from "./session";
 import {
   putShortcutDraftSeed,
   shortcutSeedForMapping,
-} from "@host/features/agent-shortcuts/draft-seed";
+} from "../../shortcuts/draft-seed";
 import { useOpenShortcutEditorWindow } from "../../../host/window-openers";
 import { patchConversation } from "../../redux/execution-system/conversations/conversations.slice";
 import { getSurfaceRuntime } from "../../../surfaces/runtime/SurfaceRuntimeContext";

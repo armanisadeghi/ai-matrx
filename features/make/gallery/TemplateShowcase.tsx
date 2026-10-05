@@ -6,6 +6,10 @@
 // gallery views it declares, each form as a respondent sees it, the booking page and the dashboards.
 // No install, no store read, no store write.
 //
+// Round 2 (lane CHAIR-GALLERY-2): the main view and the tables are now the SERVER SKELETON of
+// TemplateLivePreview, which swaps in the real records-ui screens on the in-memory store once loaded;
+// the forms, booking page and dashboards below are still drawn here.
+//
 // Server-safe on purpose (no hooks, no "use client"): /templates/<slug> renders it on the server, so a
 // crawler reads the table names and the sample rows as HTML. TemplateThumb is the gallery card's live
 // thumbnail, drawn from the main table's first rows the public door hands each card.
@@ -15,6 +19,7 @@ import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 import type { GalleryThumb } from "./catalogue";
+import { TemplateLivePreview } from "./TemplateLivePreview";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // The spec as this file reads it (a structural subset of TemplateSpec in @ai-matrx/records/templates).
@@ -650,7 +655,6 @@ export function TemplateShowcase({ spec, today }: { spec: ShowSpec; today: strin
   const names = namesOf(spec);
   const byToken = new Map(spec.tables.map((t) => [t.token, t]));
   const main = mainViewOf(spec);
-  const otherViews = (spec.views ?? []).filter((v) => v.kind !== "grid" && v !== main?.view && byToken.has(v.table));
   const extras = spec.extras ?? [];
   const dashboards = extras.filter((e) => e.kind === "dashboard" && e.table && byToken.has(e.table));
   const bookings = extras.filter((e) => e.kind === "booking");
@@ -658,39 +662,27 @@ export function TemplateShowcase({ spec, today }: { spec: ShowSpec; today: strin
 
   return (
     <div className="flex flex-col gap-8" data-template-showcase={spec.id}>
-      {main ? (
-        <Frame title={main.view?.name ?? main.table.name} meta={main.table.name} attr="data-template-main-view">
-          {main.view ? <ViewShow table={main.table} view={main.view} names={names} today={today} /> : <GridShow table={main.table} view={null} names={names} />}
-        </Frame>
-      ) : null}
-
-      <section className="flex flex-col gap-4" aria-labelledby="template-tables">
-        <h2 id="template-tables" className="text-lg font-semibold tracking-tight">
-          Tables
-        </h2>
-        {spec.tables.map((t) => (
-          <Frame key={t.token} title={t.name} meta={`${t.rows?.length ?? 0} sample rows · ${t.fields.length} columns`} attr="data-template-table">
-            {t.describes ? <p className="border-b border-border px-3 py-2 text-xs text-muted-foreground">{t.describes}</p> : null}
-            <GridShow table={t} view={(spec.views ?? []).find((v) => v.table === t.token && v.kind === "grid") ?? null} names={names} />
+      <TemplateLivePreview spec={spec as unknown as Parameters<typeof TemplateLivePreview>[0]["spec"]} today={today}>
+        <div className="flex flex-col gap-8">
+        {main ? (
+          <Frame title={main.view?.name ?? main.table.name} meta={main.table.name} attr="data-template-main-view">
+            {main.view ? <ViewShow table={main.table} view={main.view} names={names} today={today} /> : <GridShow table={main.table} view={null} names={names} />}
           </Frame>
-        ))}
-      </section>
+        ) : null}
 
-      {otherViews.length ? (
-        <section className="flex flex-col gap-4" aria-labelledby="template-views">
-          <h2 id="template-views" className="text-lg font-semibold tracking-tight">
-            Views
+        <section className="flex flex-col gap-4" aria-labelledby="template-tables">
+          <h2 id="template-tables" className="text-lg font-semibold tracking-tight">
+            Tables
           </h2>
-          {otherViews.map((v) => {
-            const t = byToken.get(v.table) as ShowTable;
-            return (
-              <Frame key={v.token} title={v.name} meta={t.name}>
-                <ViewShow table={t} view={v} names={names} today={today} />
-              </Frame>
-            );
-          })}
+          {spec.tables.map((t) => (
+            <Frame key={t.token} title={t.name} meta={`${t.rows?.length ?? 0} sample rows · ${t.fields.length} columns`} attr="data-template-table">
+              {t.describes ? <p className="border-b border-border px-3 py-2 text-xs text-muted-foreground">{t.describes}</p> : null}
+              <GridShow table={t} view={(spec.views ?? []).find((v) => v.table === t.token && v.kind === "grid") ?? null} names={names} />
+            </Frame>
+          ))}
         </section>
-      ) : null}
+        </div>
+      </TemplateLivePreview>
 
       {spec.forms?.length || bookings.length ? (
         <section className="flex flex-col gap-4" aria-labelledby="template-forms">

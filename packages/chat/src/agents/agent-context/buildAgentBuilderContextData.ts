@@ -1,4 +1,4 @@
-import { PLACEMENT_TYPES } from "@host/features/agent-shortcuts/constants";
+import { PLACEMENT_TYPES } from "../shortcuts/constants";
 import { createAgentBuilderScope } from "../../surfaces/manifests/agent-builder.manifest";
 import type { SurfaceScopePayload } from "../../surfaces/types";
 

@@ -30,7 +30,7 @@ import type {
   UpdateCategoryPatch,
 } from "./types";
 import { selectCategoryById } from "./selectors";
-import { resolveShortcutWriteScope } from "@host/features/agent-shortcuts/resolveShortcutWriteScope";
+import { resolveShortcutWriteScope } from "../../shortcuts/resolveShortcutWriteScope";
 import { applyOrganizationContextHeader } from "../../../host/server/organization-context";
 import { requireSelectedOrgId, withOrganizationRefusalShown } from "../../../host/org";
 import { selectUserId } from "../../../host/identity";

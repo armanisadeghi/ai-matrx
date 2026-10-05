@@ -43,10 +43,7 @@ export interface CategoryFormData {
   metadata: Record<string, unknown>;
 }
 
-export type ShortcutFormData = Omit<
-  AgentShortcut,
-  "id" | "createdAt" | "updatedAt"
->;
+export type { ShortcutFormData } from "@ai-matrx/chat/agents/redux/agent-shortcuts/types";
 
 export interface ScopeValidationResult {
   isValid: boolean;

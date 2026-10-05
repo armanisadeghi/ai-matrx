@@ -1,4 +1,4 @@
-import { PLACEMENT_TYPES } from "@host/features/agent-shortcuts/constants";
+import { PLACEMENT_TYPES } from "../../../shortcuts/constants";
 import {
   createChatScope,
   type ChatAttachedResourceEntry,

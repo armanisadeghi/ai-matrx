@@ -33,7 +33,7 @@ import type { VariableDefinition } from "../../../types/agent-definition.types";
 import type { InstanceContextEntry } from "../../../types/instance.types";
 import type { ApplicationScope } from "../../../types/scope.types";
 import type { ContextObjectType } from "../../../types/agent-api-types";
-import { resolveShortcutMappings } from "@host/features/agent-shortcuts/utils/resolveShortcutMappings";
+import { resolveShortcutMappings } from "../../../shortcuts/resolveShortcutMappings";
 import { registerSurfaceWritePolicies } from "../../../../surfaces/runtime/surface-writeback";
 import { fetchSurfaceBindingLayers } from "../../../../surfaces/services/bind-agent-to-surface.service";
 import type {
