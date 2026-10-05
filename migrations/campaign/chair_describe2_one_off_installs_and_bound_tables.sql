@@ -1,3 +1,4 @@
+-- chair-step: adds one column (custom.template.ephemeral, default false — every existing row keeps its meaning), replaces three template-family functions in place (install seeds ids from the plan, declare stores ephemeral, the catalogue hides one-offs) and adds one client door custom.template_keep; it carries no REVOKE (the door register sets the new function's grants). No existing grant, policy or data row is changed.
 -- chair_describe2_one_off_installs_and_bound_tables.sql — lane CHAIR-DESCRIBE-2 (Unified Data System v7).
 --
 -- 1. A template table can BIND to a table the organization already has (@ai-matrx/records `bindsTo`):
@@ -355,5 +356,14 @@ begin
 end;
 $function$;
 
-revoke all on function custom.template_keep(uuid) from public, anon;
 grant execute on function custom.template_keep(uuid) to authenticated;
+
+insert into platform.client_callable_door (schema_name, function_name, identity_args, identity_argtypes, reason, declared_by, signed_in_callers, anonymous_callers, argument_rules)
+values ('custom', 'template_keep', 'p_template_id uuid',
+  array['uuid'::regtype]::oid[],
+  'Puts an organization''s one-off template (a describe run) on its template shelf: ephemeral = false. custom.assert_client_may_reach on the template''s organization and iam.has_org_access; platform templates refuse as not found.',
+  'chair_describe2_one_off_installs_and_bound_tables.sql', true, false,
+  jsonb_build_object('version', 1, 'declared_by', 'chair_describe2_one_off_installs_and_bound_tables.sql', 'declared_at', '2026-10-05 lane CHAIR-DESCRIBE-2',
+    'arguments', jsonb_build_object(
+      'p_template_id', jsonb_build_object('type','uuid','check','read for its scope and organization; then custom.assert_client_may_reach(organization) and iam.has_org_access before the write.','entity','template','foreign',jsonb_build_object('sqlstate','42501','note','a template of an organization the caller cannot reach refuses at the reach check; a platform or invented id answers P0002.'),'position',1,'verified','2026-10-05 lane CHAIR-DESCRIBE-2 — written with this body'))))
+on conflict do nothing;
