@@ -34,7 +34,7 @@ import {
   Gem,
   Variable,
 } from "lucide-react";
-import MarkdownStream from "@/components/MarkdownStream";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { cn } from "@/styles/themes/utils";
 import {
   extractAgentJsonBlock,
@@ -132,9 +132,9 @@ export function AgentStreamingResponse({
   // the raw markdown so the user sees something instead of a void.
   if (!span && !extracted) {
     return (
-      <MarkdownStream imagePolicy="ai"
-        content={content}
-        isStreamActive={isStreamActive}
+      <RichContent level="full" imagePolicy="ai"
+        source={content}
+        isStreaming={isStreamActive}
         hideCopyButton
       />
     );
@@ -149,9 +149,9 @@ export function AgentStreamingResponse({
   return (
     <div className="space-y-3">
       {before && (
-        <MarkdownStream imagePolicy="ai"
-          content={before}
-          isStreamActive={false}
+        <RichContent level="full" imagePolicy="ai"
+          source={before}
+          isStreaming={false}
           hideCopyButton
         />
       )}
@@ -161,7 +161,7 @@ export function AgentStreamingResponse({
         extracted={extracted}
       />
       {after && (
-        <MarkdownStream imagePolicy="ai" content={after} isStreamActive={false} hideCopyButton />
+        <RichContent level="full" imagePolicy="ai" source={after} isStreaming={false} hideCopyButton />
       )}
     </div>
   );
@@ -494,9 +494,9 @@ function MessageCard({
       </div>
       <div className="px-2 py-1.5 bg-background">
         <div className="prose prose-xs dark:prose-invert max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
-          <MarkdownStream imagePolicy="ai"
-            content={content}
-            isStreamActive={isStreamActive}
+          <RichContent level="full" imagePolicy="ai"
+            source={content}
+            isStreaming={isStreamActive}
             hideCopyButton
           />
         </div>

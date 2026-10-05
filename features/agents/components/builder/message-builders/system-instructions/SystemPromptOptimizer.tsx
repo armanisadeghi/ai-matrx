@@ -49,7 +49,7 @@ import { usePathname } from "next/navigation";
 // TODO(prompt-to-agent-sweep): createUserPrompt writes to public.prompts which is deprecated.
 // Replace with agent.definition upsert once the prompt-to-agent migration completes.
 import { FullPromptOptimizer } from "./FullPromptOptimizer";
-import MarkdownStream from "@/components/MarkdownStream";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface SystemPromptOptimizerProps {
@@ -341,9 +341,9 @@ export function SystemPromptOptimizer({
                         <span className="text-sm">Processing...</span>
                       </div>
                     ) : (
-                      <MarkdownStream imagePolicy="ai"
-                        content={streamingText}
-                        isStreamActive={isOptimizing}
+                      <RichContent level="full" imagePolicy="ai"
+                        source={streamingText}
+                        isStreaming={isOptimizing}
                         hideCopyButton={false}
                         className="text-sm"
                       />

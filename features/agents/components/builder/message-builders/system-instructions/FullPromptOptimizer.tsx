@@ -33,7 +33,7 @@ import {
   Info,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
-import MarkdownStream from "@/components/MarkdownStream";
+import { RichContent } from "@/components/rich-content/RichContent";
 import CodeBlock from "@/features/code-editor/components/code-block/CodeBlock";
 import { extractJsonFromText } from "@ai-matrx/chat/agents/utils/json-extraction";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -284,9 +284,9 @@ export function FullPromptOptimizer({
                         </p>
                       </div>
                       <div className="flex-1 overflow-y-auto p-4">
-                        <MarkdownStream imagePolicy="ai"
-                          content={streamingText}
-                          isStreamActive={true}
+                        <RichContent level="full" imagePolicy="ai"
+                          source={streamingText}
+                          isStreaming={true}
                           hideCopyButton={true}
                         />
                       </div>
@@ -340,9 +340,9 @@ export function FullPromptOptimizer({
 
                   {/* Always show the full raw response */}
                   <div className="flex-1 overflow-y-auto p-4 bg-white/50 dark:bg-gray-900/50">
-                    <MarkdownStream imagePolicy="ai"
-                      content={streamingText}
-                      isStreamActive={false}
+                    <RichContent level="full" imagePolicy="ai"
+                      source={streamingText}
+                      isStreaming={false}
                       hideCopyButton={false}
                     />
                   </div>

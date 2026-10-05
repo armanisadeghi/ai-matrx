@@ -68,7 +68,7 @@ import {
   Bug
 } from "lucide-react";
 import { toast } from "@/lib/toast";
-import MarkdownStream from "@/components/MarkdownStream";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { AgentStreamingResponse } from "./AgentJsonDisplay";
 import { VoiceTextarea } from "@/components/official/VoiceTextarea";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -123,9 +123,9 @@ class GeneratorErrorBoundary extends Component<
             <ErrorAlchemyMenu error={this.state.error?.message} />
           </div>
           <div className="flex-1 overflow-y-auto p-3">
-            <MarkdownStream imagePolicy="ai"
-              content={this.props.fallbackContent}
-              isStreamActive={this.props.isStreamActive}
+            <RichContent level="full" imagePolicy="ai"
+              source={this.props.fallbackContent}
+              isStreaming={this.props.isStreamActive}
               hideCopyButton={false}
             />
           </div>
