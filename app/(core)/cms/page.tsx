@@ -44,6 +44,7 @@ import {
 } from "lucide-react";
 import { CmsHubHeader } from "@/features/cms/components/CmsHubHeader";
 import { PlusTapButton } from "@ai-matrx/tap-target/buttons";
+import { TapTargetButtonGroup } from "@ai-matrx/tap-target";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { CMS_HUB_CONTEXT_MENU_PROPS } from "@/features/cms/agent-context/cmsHubContextMenuProps";
 import { createCmsHubExtraSections } from "@/features/cms/agent-context/cmsHubExtraSections";
@@ -402,9 +403,9 @@ export default function SitesListPage() {
             {/* ── Sites grid ──────────────────────────────────────────── */}
             <div className="flex-1 overflow-auto px-4 sm:px-6 pb-6 pt-[calc(var(--shell-header-h)+0.75rem)]">
               {sites.length > 0 && (
-                <div className="flex items-center justify-end gap-1 pb-2">
+                <div className="flex items-center justify-end pb-2">
+                  <TapTargetButtonGroup surface="solid">
                   <CopyButtons
-                    size="sm"
                     label="CMS sites"
                     human={() => sitesListSummary(sites)}
                     agent={() => ({
@@ -435,6 +436,7 @@ export default function SitesListPage() {
                       ),
                     ]}
                   />
+                  </TapTargetButtonGroup>
                 </div>
               )}
               {sites.length === 0 ? (

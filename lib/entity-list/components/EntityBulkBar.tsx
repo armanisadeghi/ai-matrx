@@ -25,6 +25,7 @@
 import { useState, type ReactNode } from "react";
 import { Loader2, X } from "lucide-react";
 import { Button } from "@ai-matrx/design-system";
+import { Checkbox } from "@/components/ui/checkbox";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
 import { bulkCountLabel, type EntityBulkAction } from "../selection";
@@ -177,21 +178,16 @@ export function EntityCardsSelectAll<TRow>({
         the whole row is the target, not just the box.
       */}
       <label className="matrx-tap-area flex min-h-11 flex-1 cursor-pointer items-center gap-2 text-xs text-foreground">
-        <input
-          type="checkbox"
-          className="h-4 w-4 cursor-pointer accent-primary"
-          checked={allLoadedSelected}
-          ref={(el) => {
-            // Indeterminate is a PROPERTY, not an attribute: a half-ticked page
-            // that renders as empty tells the person nothing is selected.
-            if (el) el.indeterminate = some;
-          }}
+        <Checkbox
+          // Indeterminate is a state, not an attribute: a half-ticked page
+          // that renders as empty tells the person nothing is selected.
+          checked={allLoadedSelected ? true : some ? "indeterminate" : false}
           aria-label={
             allLoadedSelected
               ? `Clear the ${bulkCountLabel(loadedSelectableCount, noun)} selected on this page`
               : `Select all ${bulkCountLabel(loadedSelectableCount, noun)} on this page`
           }
-          onChange={selection.toggleLoaded}
+          onCheckedChange={() => selection.toggleLoaded()}
         />
         {/*
           The label is a VERB, never a restatement. A fully-ticked page is

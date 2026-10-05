@@ -45,33 +45,33 @@ const STEPS = [
 
 export default function ResearchLanding() {
     return (
-        <div className="min-h-dvh">
+        <div className="@container min-h-dvh">
             {/* Hero */}
             <section className="relative overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
-                <div className="relative mx-auto max-w-5xl px-4 sm:px-6 pt-16 sm:pt-24 pb-12 sm:pb-20 text-center">
+                <div className="relative mx-auto max-w-5xl px-4 @2xl:px-6 pt-16 @2xl:pt-24 pb-12 @2xl:pb-20 text-center">
                     <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 type-title text-primary mb-6">
                         <Zap className="h-3.5 w-3.5" />
                         AI-Powered Research
                     </div>
-                    <h1 className="text-[clamp(2rem,1.5rem+2.5vw,3.75rem)] font-bold tracking-tight text-foreground leading-[1.1]">
+                    <h1 className="text-[clamp(2rem,1.5rem+2.5cqw,3.75rem)] font-bold tracking-tight text-foreground leading-[1.1]">
                         Research Any Topic,{' '}
                         <span className="bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
                             Intelligently
                         </span>
                     </h1>
-                    <p className="mt-6 mx-auto max-w-2xl text-[clamp(1rem,0.95rem+0.25vw,1.25rem)] text-muted-foreground leading-relaxed">
+                    <p className="mt-6 mx-auto max-w-2xl text-[clamp(1rem,0.95rem+0.25cqw,1.25rem)] text-muted-foreground leading-relaxed">
                         Enter a topic, and our AI pipeline searches the web, reads content, analyzes sources,
                         and generates a comprehensive research report — with you in control at every step.
                     </p>
-                    <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-                        <Button variant="primary" className="w-full sm:w-auto" asChild>
+                    <div className="mt-10 flex flex-col @2xl:flex-row items-center justify-center gap-4">
+                        <Button variant="primary" className="w-full @2xl:w-auto" asChild>
                             <Link href="/research/topics">
                                 Start Researching
                                 <ArrowRight className="h-4 w-4" />
                             </Link>
                         </Button>
-                        <Button variant="outline" className="w-full sm:w-auto" asChild>
+                        <Button variant="outline" className="w-full @2xl:w-auto" asChild>
                             <Link href="#how-it-works">
                                 See How It Works
                             </Link>
@@ -81,16 +81,16 @@ export default function ResearchLanding() {
             </section>
 
             {/* Features Grid */}
-            <section className="mx-auto max-w-6xl px-4 sm:px-6 py-16 sm:py-24">
-                <div className="text-center mb-12 sm:mb-16">
-                    <h2 className="text-[clamp(1.5rem,1.25rem+1.5vw,2.5rem)] font-bold tracking-tight">
+            <section className="mx-auto max-w-6xl px-4 @2xl:px-6 py-16 @2xl:py-24">
+                <div className="text-center mb-12 @2xl:mb-16">
+                    <h2 className="text-[clamp(1.5rem,1.25rem+1.5cqw,2.5rem)] font-bold tracking-tight">
                         Everything You Need for Deep Research
                     </h2>
                     <p className="mt-4 text-muted-foreground text-lg max-w-2xl mx-auto">
                         A complete pipeline from search to report, with AI agents at every stage.
                     </p>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                <div className="grid grid-cols-1 @2xl:grid-cols-2 @4xl:grid-cols-3 gap-4 @2xl:gap-6">
                     {FEATURES.map((feature) => (
                         <div
                             key={feature.title}
@@ -114,16 +114,16 @@ export default function ResearchLanding() {
 
             {/* How It Works */}
             <section id="how-it-works" className="bg-card/50 border-y border-border">
-                <div className="mx-auto max-w-5xl px-4 sm:px-6 py-16 sm:py-24">
-                    <div className="text-center mb-12 sm:mb-16">
-                        <h2 className="text-[clamp(1.5rem,1.25rem+1.5vw,2.5rem)] font-bold tracking-tight">
+                <div className="mx-auto max-w-5xl px-4 @2xl:px-6 py-16 @2xl:py-24">
+                    <div className="text-center mb-12 @2xl:mb-16">
+                        <h2 className="text-[clamp(1.5rem,1.25rem+1.5cqw,2.5rem)] font-bold tracking-tight">
                             How It Works
                         </h2>
                         <p className="mt-4 text-muted-foreground text-lg">
                             From topic to report in four simple steps.
                         </p>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
+                    <div className="grid grid-cols-1 @2xl:grid-cols-2 gap-6 @2xl:gap-8">
                         {STEPS.map((step) => (
                             <div key={step.number} className="flex gap-4">
                                 <div className="flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-2xl bg-primary/10 text-primary font-bold text-lg">
@@ -140,16 +140,16 @@ export default function ResearchLanding() {
             </section>
 
             {/* Use Cases */}
-            <section className="mx-auto max-w-5xl px-4 sm:px-6 py-16 sm:py-24">
+            <section className="mx-auto max-w-5xl px-4 @2xl:px-6 py-16 @2xl:py-24">
                 <div className="text-center mb-12">
-                    <h2 className="text-[clamp(1.5rem,1.25rem+1.5vw,2.5rem)] font-bold tracking-tight">
+                    <h2 className="text-[clamp(1.5rem,1.25rem+1.5cqw,2.5rem)] font-bold tracking-tight">
                         Research Anything
                     </h2>
                     <p className="mt-4 text-muted-foreground text-lg max-w-2xl mx-auto">
                         Pre-built templates for common research types, fully customizable for anything else.
                     </p>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 @2xl:grid-cols-2 @4xl:grid-cols-3 gap-4">
                     {[
                         { title: 'Company Research', items: ['Financial profile', 'Key personnel', 'Market position', 'Recent news'] },
                         { title: 'Scientific Research', items: ['Latest publications', 'Key findings', 'Expert opinions', 'Methodology review'] },
@@ -175,8 +175,8 @@ export default function ResearchLanding() {
 
             {/* CTA */}
             <section className="border-t border-border bg-card/50">
-                <div className="mx-auto max-w-3xl px-4 sm:px-6 py-16 sm:py-24 text-center">
-                    <h2 className="text-[clamp(1.5rem,1.25rem+1.5vw,2.5rem)] font-bold tracking-tight">
+                <div className="mx-auto max-w-3xl px-4 @2xl:px-6 py-16 @2xl:py-24 text-center">
+                    <h2 className="text-[clamp(1.5rem,1.25rem+1.5cqw,2.5rem)] font-bold tracking-tight">
                         Ready to Start Researching?
                     </h2>
                     <p className="mt-4 text-muted-foreground text-lg mb-8">

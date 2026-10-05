@@ -43,7 +43,12 @@ export function VoiceTestButton({
   return (
     <>
       {iconOnly ? (
-        <MicTapButton ariaLabel={label} tooltip={label} onClick={handleOpen} />
+        <MicTapButton
+          variant="transparent"
+          ariaLabel={label}
+          tooltip={label}
+          onClick={handleOpen}
+        />
       ) : (
         <Button
           type="button"

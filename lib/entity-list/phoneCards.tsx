@@ -32,6 +32,7 @@ import { useId, useState, type ReactNode } from "react";
 import { ChevronDown } from "lucide-react";
 import type { MatrxDataTableMobileCardControls } from "@ai-matrx/design-system/data-table/types";
 import { cn } from "@/lib/utils";
+import { Checkbox } from "@/components/ui/checkbox";
 import { DATE_FILTER_OPTIONS, type EntityColumnSpec } from "./columns";
 import { cellIsEmpty } from "./columnWidths";
 
@@ -259,12 +260,10 @@ export function EntityPhoneCard<TRow>({
             data-entity-phone-card-select
             onClick={(event) => event.stopPropagation()}
           >
-            <input
-              type="checkbox"
-              className="h-4 w-4 cursor-pointer accent-primary"
+            <Checkbox
               checked={controls.selected}
               aria-label={`Select ${rowName}`}
-              onChange={(event) => controls.onSelectedChange(event.target.checked)}
+              onCheckedChange={(next) => controls.onSelectedChange(next === true)}
             />
           </label>
         ) : null}
@@ -407,12 +406,10 @@ function EntityPhoneLine<TRow>({
             data-entity-phone-card-select
             onClick={(event) => event.stopPropagation()}
           >
-            <input
-              type="checkbox"
-              className="h-4 w-4 cursor-pointer accent-primary"
+            <Checkbox
               checked={controls.selected}
               aria-label={`Select ${rowName}`}
-              onChange={(event) => controls.onSelectedChange(event.target.checked)}
+              onCheckedChange={(next) => controls.onSelectedChange(next === true)}
             />
           </label>
         ) : null}

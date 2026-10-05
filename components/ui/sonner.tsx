@@ -224,7 +224,19 @@ const Toaster = ({ ...props }: ToasterProps) => {
       className="toaster group"
       // Right-anchored: the stack stays left of an open canvas column
       // (--app-right-inset, styles/shell.css). 24px is sonner's own gap.
-      offset={{ right: "calc(24px + var(--app-right-inset, 0px))" }}
+      // Bottom: a toast rests ABOVE whatever floats over the viewport's foot
+      // (the mobile dock, the composer dock, the dev error pills) — the shell's
+      // `--matrx-floating-clearance` (lib/layout/floating-chrome.ts), never a
+      // literal that lands on top of them. Sonner's own 24px is the floor.
+      offset={{
+        right: "calc(24px + var(--app-right-inset, 0px))",
+        bottom: "max(24px, var(--matrx-floating-clearance))",
+      }}
+      mobileOffset={{
+        left: "16px",
+        right: "16px",
+        bottom: "max(16px, var(--matrx-floating-clearance))",
+      }}
       toastOptions={{
         classNames: {
           toast:

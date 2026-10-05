@@ -293,13 +293,13 @@ function PlanMatrix({
   const groups = groupPlansByAudience(plans);
   return (
     <div className="overflow-x-auto rounded-md border border-border">
-      <table className="w-full border-collapse text-sm">
+      <table className="w-full min-w-max border-collapse text-sm">
         <thead className="bg-muted/40">
           <tr className="border-b border-border">
-            <th className="sticky left-0 z-10 bg-muted/40 px-3 py-2 text-left text-xs font-medium text-muted-foreground">
+            <th className="sticky left-0 z-10 min-w-36 bg-muted/40 px-3 py-2 text-left text-xs font-medium text-muted-foreground">
               Plan
             </th>
-            <th className="px-2 py-2 text-right text-xs font-medium text-muted-foreground">
+            <th className="min-w-24 whitespace-nowrap px-2 py-2 text-right text-xs font-medium text-muted-foreground">
               Price
             </th>
             {columns.map((column) => {
@@ -373,7 +373,7 @@ function GroupRows({
       </tr>
       {plans.map((plan) => (
         <tr key={plan.plan_key} className="border-b border-border last:border-b-0">
-          <td className="sticky left-0 z-10 bg-card px-3 py-1.5 align-top">
+          <td className="sticky left-0 z-10 min-w-36 bg-card px-3 py-1.5 align-top">
             <div className="flex items-center gap-1.5">
               <span className="font-medium">{plan.name}</span>
               {plan.is_default && (
@@ -387,7 +387,7 @@ function GroupRows({
             </span>
           </td>
           <td
-            className="px-2 py-1.5 text-right align-top text-xs tabular-nums text-muted-foreground"
+            className="min-w-24 whitespace-nowrap px-2 py-1.5 text-right align-top text-xs tabular-nums text-muted-foreground"
             title={
               plan.annual_cents !== null && plan.annual_cents !== plan.monthly_cents
                 ? `Billed yearly: ${planPriceLabel({ monthly_cents: plan.annual_cents, per_seat: plan.per_seat })}`

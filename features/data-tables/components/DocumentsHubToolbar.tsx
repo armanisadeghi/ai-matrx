@@ -33,7 +33,7 @@ export function DocumentsHubToolbar({
   const inputRef = useRef<HTMLInputElement>(null);
 
   return (
-    <div className="flex items-center w-full">
+    <div className="flex w-full items-center gap-[3px]">
       <div className="relative inline-flex h-9 min-w-0 flex-1 items-center">
         <div className="pointer-events-none absolute inset-x-0 top-1/2 h-7 -translate-y-1/2 rounded-full matrx-glass-thin-border" />
         <div className="relative flex min-w-0 flex-1 items-center">
@@ -71,35 +71,35 @@ export function DocumentsHubToolbar({
               />
             ) : null}
           </div>
-          <TapTargetButtonGroup>
-            <LayoutGridTapButton
-              variant="group"
-              className={
-                view === "cards" ? "text-primary" : "text-muted-foreground"
-              }
-              ariaLabel="Card view"
-              tooltip="Card view"
-              onClick={() => onViewChange("cards")}
-            />
-            <ListTapButton
-              variant="group"
-              className={
-                view === "table" ? "text-primary" : "text-muted-foreground"
-              }
-              ariaLabel="Table view"
-              tooltip="Table view"
-              onClick={() => onViewChange("table")}
-            />
-            {view === "cards" ? (
-              <DocumentsSortMenu
-                variant="group"
-                sortKey={sortKey}
-                onSortChange={onSortChange}
-              />
-            ) : null}
-          </TapTargetButtonGroup>
         </div>
       </div>
+      <TapTargetButtonGroup surface="solid">
+        <LayoutGridTapButton
+          variant="group"
+          className={
+            view === "cards" ? "text-primary" : "text-muted-foreground"
+          }
+          ariaLabel="Card view"
+          tooltip="Card view"
+          onClick={() => onViewChange("cards")}
+        />
+        <ListTapButton
+          variant="group"
+          className={
+            view === "table" ? "text-primary" : "text-muted-foreground"
+          }
+          ariaLabel="Table view"
+          tooltip="Table view"
+          onClick={() => onViewChange("table")}
+        />
+        {view === "cards" ? (
+          <DocumentsSortMenu
+            variant="group"
+            sortKey={sortKey}
+            onSortChange={onSortChange}
+          />
+        ) : null}
+      </TapTargetButtonGroup>
     </div>
   );
 }

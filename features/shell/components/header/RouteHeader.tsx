@@ -481,7 +481,11 @@ export default function RouteHeader({
           data-route-header-left
           // The title yields on ONE line: clipped and ellipsised, never wrapped
           // a letter per line under the actions (375px sample, 2026-09-25).
-          className="relative z-10 flex min-w-0 items-center overflow-hidden whitespace-nowrap [&_h1]:truncate [&_h2]:truncate [&_svg]:shrink-0 [&>span]:min-w-0 [&>span]:truncate"
+          // Anything directly after a tap button (a title, a pill, a field)
+          // adds its own 3px — the box only carries 3px (THE 3px HALF-GAP);
+          // the trail templates carry theirs on the <nav> (`ps-[3px]`), so
+          // `nav` is excluded to keep it one 6px gap.
+          className="relative z-10 flex min-w-0 items-center overflow-hidden whitespace-nowrap [&_h1]:truncate [&_h2]:truncate [&_svg]:shrink-0 [&>span]:min-w-0 [&>span]:truncate [&_.matrx-tap-target+*:not(.matrx-tap-target,.matrx-tap-group,nav)]:ms-[3px]"
         >
           {leftNode}
         </div>
