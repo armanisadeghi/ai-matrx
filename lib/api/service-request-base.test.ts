@@ -13,10 +13,17 @@ import { ENDPOINTS } from "@/lib/api/endpoints";
 const SCRAPER = "https://scraper.app.matrxserver.com";
 const AIDREAM = "https://server.app.matrxserver.com";
 
+/** The base for a configured origin — never undefined here. */
+function baseFor(service: "scraper" | "aidream", origin: string): string {
+  const base = serviceRequestBase(service, origin);
+  if (base === undefined) throw new Error("a configured origin must yield a base");
+  return base;
+}
+
 describe("serviceRequestBase", () => {
   it("keeps the scraper's /api mount through the shared URL builder", () => {
     const url = buildMatrxRequestUrl(
-      serviceRequestBase("scraper", SCRAPER),
+      baseFor("scraper", SCRAPER),
       scraperServiceEndpoint(ENDPOINTS.scraper.quickScrape),
     );
     expect(url).toBe(`${SCRAPER}/api/scraper/quick-scrape`);
@@ -25,7 +32,7 @@ describe("serviceRequestBase", () => {
   it("leaves services without a route prefix untouched", () => {
     expect(serviceRequestBase("aidream", AIDREAM)).toBe(AIDREAM);
     expect(
-      buildMatrxRequestUrl(serviceRequestBase("aidream", AIDREAM), "/api/ai/agents/x"),
+      buildMatrxRequestUrl(baseFor("aidream", AIDREAM), "/api/ai/agents/x"),
     ).toBe(`${AIDREAM}/ai/agents/x`);
   });
 
