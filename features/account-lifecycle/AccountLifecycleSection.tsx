@@ -9,7 +9,23 @@ import { SettingsSection } from "@/components/official/settings/layout/SettingsS
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { performLocalSignOut } from "@/features/shell/auth/useSignOut";
 
-type ClosureRead = { closure: { state: "closing" | "closed" | "failed" | "restored" } | null };
+type ClosureState = "closing" | "closed" | "failed" | "restored";
+type ClosureRead = { closure: { state: ClosureState } | null };
+const closureStates = new Set<ClosureState>(["closing", "closed", "failed", "restored"]);
+
+function closureRead(value: unknown): ClosureRead {
+  if (!value || typeof value !== "object") return { closure: null };
+  const closure = (value as { closure?: unknown }).closure;
+  const state = closure && typeof closure === "object" ? (closure as { state?: unknown }).state : undefined;
+  if (typeof state !== "string" || !closureStates.has(state as ClosureState)) return { closure: null };
+  return { closure: { state: state as ClosureState } };
+}
+
+function failureRead(value: unknown) {
+  if (!value || typeof value !== "object") return { error: undefined, blockers: [] as string[] };
+  const body = value as { error?: unknown; blockers?: unknown };
+  return { error: typeof body.error === "string" ? body.error : undefined, blockers: Array.isArray(body.blockers) ? body.blockers.filter((blocker): blocker is string => typeof blocker === "string") : [] };
+}
 
 export function AccountLifecycleSection() {
   const [state, setState] = useState<ClosureRead["closure"]>(null);
@@ -19,7 +35,7 @@ export function AccountLifecycleSection() {
   useEffect(() => {
     void fetch("/api/account/closure").then(async (response) => {
       if (!response.ok) throw new Error("Account closure status could not be loaded.");
-      const read = await response.json() as ClosureRead;
+      const read = closureRead(await response.json());
       setState(read.closure);
     }).catch((reason) => setError(reason instanceof Error ? reason.message : "Account closure status could not be loaded."));
   }, []);
@@ -36,9 +52,9 @@ export function AccountLifecycleSection() {
     setError(null);
     try {
       const response = await fetch("/api/account/closure", { method: "POST" });
-      const body = await response.json() as { error?: string; blockers?: string[] };
+      const body = failureRead(await response.json());
       if (!response.ok) {
-        const suffix = body.blockers?.length ? " Transfer ownership in organization settings, then try again." : "";
+        const suffix = body.blockers.length ? " Transfer ownership in organization settings, then try again." : "";
         throw new Error(`${body.error ?? "Account closure failed."}${suffix}`);
       }
       await performLocalSignOut("/login");
