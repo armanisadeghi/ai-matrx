@@ -19,6 +19,7 @@
 
 import { useState } from "react";
 import { AppWindow, ChevronDown, Gauge, Layers, Star, Webhook } from "lucide-react";
+import { Button } from "@ai-matrx/design-system/controls";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
@@ -90,23 +91,18 @@ export function ComposerAgentPill({ conversationId, mode, size, agentControl, me
   const showOverride = info.modelOverridden && !info.isCustom && composerShows(mode, "agent.presets");
   const overrideTitle = info.agentModelLabel ? `Agent's own model: ${info.agentModelLabel}` : "Not the agent's own model";
   const pill = (
-    <button
-      type="button"
-      className={composerPillClass(size, open)}
+    <Button
+      variant="quiet"
+      iconEnd={<ChevronDown />}
       aria-label={`Agent: ${label}${showOverride ? " (model changed)" : ""}`}
       title={showOverride ? `${label} — ${overrideTitle}` : label}
+      className="min-w-0"
     >
-      <span className="truncate font-medium text-foreground">{label}</span>
+      {label}
       {showOverride ? (
-        <span
-          className="shrink-0 rounded border border-border bg-muted px-1 text-[10px] leading-4 text-muted-foreground"
-          data-testid="composer-model-override-chip"
-        >
-          Changed
-        </span>
+        <span data-testid="composer-model-override-chip"> · changed</span>
       ) : null}
-      <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground" />
-    </button>
+    </Button>
   );
 
   // Narrow: ONE menu — the agent choice, then Output and Effort.

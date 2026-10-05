@@ -51,6 +51,7 @@ import {
 import { MicDeviceMenu } from "@ai-matrx/chat/host/ui-slots";
 import type { ComposerMode, ComposerSize } from "./composer/composer-types";
 import { Button } from "@ai-matrx/design-system/controls";
+import { cn } from "@ai-matrx/design-system";
 
 // ── Inline button primitive ──────────────────────────────────────────────────
 
@@ -78,19 +79,18 @@ export function InputButton({
   className?: string;
 }) {
   return (
-    <button
-      type="button"
+    <Button
+      variant="quiet"
+      tone={active ? "primary" : undefined}
+      aria-pressed={active || undefined}
+      icon={<Icon />}
       onClick={onClick}
       title={tooltip}
       // The tooltip is the control's whole identity — an icon-only button with
       // no aria-label reads as "button" and nothing else.
       aria-label={tooltip}
-      className={`h-8 w-8 shrink-0 flex items-center justify-center rounded-full transition-colors
-        ${active ? "text-primary ring-1 ring-inset ring-primary/50 hover:bg-muted/40" : INPUT_BUTTON_IDLE_TINT}
-        ${className}`}
-    >
-      <Icon className="w-4 h-4" />
-    </button>
+      className={cn("shrink-0", className)}
+    />
   );
 }
 
@@ -242,7 +242,7 @@ export function InputActionButtons({
   // mic half records, the chevron half picks the device. The halves carry
   // no background of their own, so it never reads as two buttons.
   const micGroup = showMicrophone ? (
-    <span className="inline-flex h-8 shrink-0 items-center rounded-full text-muted-foreground/60 transition-colors hover:bg-muted/60">
+    <span className="inline-flex h-7 shrink-0 items-center rounded-full text-muted-foreground/60 transition-colors hover:bg-muted/60">
       <AgentMicrophoneButton
         conversationId={conversationId}
         size="md"
@@ -251,7 +251,7 @@ export function InputActionButtons({
         iconClassName=""
         onRecordingStateChange={handleVoiceBusyChange}
       />
-      <MicDeviceMenu className="h-8 w-5 justify-start rounded-l-none rounded-r-full pl-0.5 text-muted-foreground/60 hover:bg-transparent hover:text-foreground" />
+      <MicDeviceMenu className="h-7 w-5 justify-start rounded-l-none rounded-r-full pl-0.5 text-muted-foreground/60 hover:bg-transparent hover:text-foreground" />
     </span>
   ) : null;
   const sendControls = showSendButton ? (
@@ -423,15 +423,18 @@ function ComposerSendButton({
  */
 export function ComposerStopButton({ onStop }: { onStop: () => void }) {
   return (
-    <button
-      type="button"
+    <Button
+      variant="quiet"
+      icon={
+        <>
+          <Loader2 className="animate-spin group-hover:hidden" />
+          <Square className="hidden fill-current group-hover:block" />
+        </>
+      }
       onClick={onStop}
       title="Stop the run (everything streamed so far is kept)"
       aria-label="Stop the run"
-      className="group relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
-    >
-      <Loader2 className="h-4 w-4 animate-spin group-hover:hidden" />
-      <Square className="hidden h-3 w-3 fill-current group-hover:block" />
-    </button>
+      className="group shrink-0"
+    />
   );
 }

@@ -33,6 +33,7 @@ import {
   ComposerMenuRow,
 } from "./ComposerMenu";
 import { composerPillClass } from "./composer-chip";
+import { Button } from "@ai-matrx/design-system/controls";
 import type { ComposerSize } from "./composer-types";
 import { REASONING_EFFORT_OPTIONS } from "@ai-matrx/agents/generated/llm-enums";
 
@@ -127,14 +128,15 @@ export function ComposerEffortPill({
   return (
     <Popover open={open} onOpenChange={setOpen} modal={false}>
       <PopoverTrigger asChild>
-        <button
-          type="button"
-          className={composerPillClass(size, open)}
+        <Button
+          variant="quiet"
+          tone={effort.overridden ? "primary" : undefined}
           aria-label="Effort"
           title="How hard the model thinks"
+          className="min-w-0"
         >
-          <span className={effort.overridden ? "truncate font-medium text-foreground" : "truncate"}>{effort.word}</span>
-        </button>
+          {effort.word}
+        </Button>
       </PopoverTrigger>
       <PopoverContent
         /* sizing: fixed — a short list of the model's own effort words */

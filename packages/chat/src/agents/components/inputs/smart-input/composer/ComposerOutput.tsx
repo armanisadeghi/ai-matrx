@@ -50,7 +50,7 @@ import {
 import { fetchAgentOutputSchemas } from "../../../../../mandates/output-contract";
 import { Popover, PopoverContent, PopoverTrigger, Skeleton } from "@ai-matrx/design-system";
 import { cn } from "@ai-matrx/design-system";
-import { SegmentedControl, Button } from "@ai-matrx/design-system/controls";
+import { SegmentedControl, Button, SplitButton } from "@ai-matrx/design-system/controls";
 import { ErrorNotice } from "@ai-matrx/chat/host/ui-slots";
 import { useAppDispatch, useAppSelector } from "../../../../../store/hooks";
 import { selectBuilderAdvancedSettings } from "../../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
@@ -436,30 +436,27 @@ export function ComposerOutputPill({
 
   return (
     <Popover open={open} onOpenChange={setOpen} modal={false}>
-      <div className={cn(composerPillClass(size, open), "gap-0 p-0")}>
+      <SplitButton className="min-w-0">
         <PopoverTrigger asChild>
-          <button
-            type="button"
-            className="inline-flex h-full min-w-0 items-center gap-1 px-2"
+          <Button
+            variant="quiet"
+            tone={output.locked || !output.isDefault ? "primary" : undefined}
+            iconEnd={
+              output.lockWarning && output.conflicts.length > 0 ? (
+                <AlertTriangle aria-label={output.lockWarning} />
+              ) : undefined
+            }
             aria-label={`Output: ${output.label}`}
+            title={output.lockWarning ?? undefined}
+            className="min-w-0"
           >
-            <span className={cn("truncate", (output.locked || !output.isDefault) && "font-medium text-foreground")}>
-              {output.label}
-            </span>
-            {output.lockWarning && output.conflicts.length > 0 ? (
-              <span title={output.lockWarning} className="inline-flex shrink-0">
-                <AlertTriangle
-                  aria-label={output.lockWarning}
-                  className="h-3 w-3 text-amber-600 dark:text-amber-400"
-                />
-              </span>
-            ) : null}
-          </button>
+            {output.label}
+          </Button>
         </PopoverTrigger>
         {!output.isDefault ? (
-          <Button variant="quiet" icon={<X />} onClick={output.clear} aria-label="Reset output to Text only" title="Reset to Text only" className="mr-1 shrink-0" />
+          <Button variant="quiet" icon={<X />} onClick={output.clear} aria-label="Reset output to Text only" title="Reset to Text only" className="shrink-0" />
         ) : null}
-      </div>
+      </SplitButton>
       <PopoverContent
         /* sizing: fixed — the Output panel is a fixed 340px column (type grid + searchable shape list), capped to the viewport on phones */
         side={menuSide}

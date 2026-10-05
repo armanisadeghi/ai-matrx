@@ -165,11 +165,17 @@ export function RunControlsMenu({
   const TriggerIcon = variant === "plus" ? Plus : SlidersHorizontal;
 
   const triggerButton = (
-    <button
-      type="button"
+    <Button
+      variant="quiet"
+      // Something added or customized shows on the control itself: the count
+      // as its label, or the primary tint when only settings changed.
+      tone={rc.addedCount > 0 || rc.isCustomized ? "primary" : undefined}
+      icon={<TriggerIcon />}
       tabIndex={variant === "plus" ? -1 : undefined}
       title="Chat Options"
-      aria-label="Chat Options"
+      aria-label={
+        rc.addedCount > 0 ? `Chat Options (${rc.addedCount} added)` : "Chat Options"
+      }
       onClick={
         useWindowPresentation && variant === "gear"
           ? () =>
@@ -181,27 +187,10 @@ export function RunControlsMenu({
             ? () => handleOpenChange(true)
             : undefined
       }
-      className={cn(
-        "relative flex items-center justify-center rounded-full transition-colors",
-        variant !== "plus"
-          ? "h-8 w-8"
-          : composer
-            ? // THE COMPOSER ROW (Arman, 2026-10-03): one 32px row height for
-              // every text line and for the buttons.
-              "h-11 w-11 shrink-0 lg:h-8 lg:w-8"
-            : "h-11 w-11 lg:h-9 lg:w-9",
-        "text-muted-foreground/70 hover:text-foreground hover:bg-muted/60",
-      )}
+      className="shrink-0"
     >
-      <TriggerIcon className={variant === "plus" ? "h-5 w-5" : "h-4 w-4"} />
-      {rc.addedCount > 0 ? (
-        <span className="absolute -right-0.5 -top-0.5 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-primary px-0.5 text-[9px] font-semibold leading-none text-primary-foreground ring-2 ring-background">
-          {rc.addedCount}
-        </span>
-      ) : rc.isCustomized ? (
-        <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-primary ring-2 ring-background" />
-      ) : null}
-    </button>
+      {rc.addedCount > 0 ? String(rc.addedCount) : undefined}
+    </Button>
   );
 
   if (useWindowPresentation) {

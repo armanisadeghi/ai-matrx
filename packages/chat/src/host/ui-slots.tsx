@@ -14,7 +14,7 @@
  * exactly what they passed when they imported the component directly.
  */
 
-import { createElement, Fragment, useRef, type ComponentType, type ReactNode } from "react";
+import { createElement, Fragment, useRef, type ComponentType, type InputHTMLAttributes, type ReactNode, type TextareaHTMLAttributes } from "react";
 import { formatCost, usdToPoints } from "@ai-matrx/kit/format";
 import { announceOnce } from "./errors";
 import { reportUnregisteredHostSlot as reportUnregistered } from "./diagnostics";
@@ -26,6 +26,7 @@ import type { EditableContextMenuProps, NonEditableContextMenuProps } from "../c
 export type { EditableContextMenuProps, NonEditableContextMenuProps };
 
 import type { SkillRow } from "../ui/skills-types";
+import type { ResourcePickerViewId } from "../agents/resources/picker-view-id";
 import type { CxContentBlock } from "../public-chat/types/cx-tables";
 
 /** The fields of a canvas item row chat reads (the host's canvas store owns the row). */
@@ -46,6 +47,29 @@ interface PicklistItem {
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
+/**
+ * Prop shapes for the slots whose call sites pass callbacks. A slot typed `ComponentType<any>`
+ * gives its callbacks no contextual type (every `(e) =>` is an implicit any), so these declare
+ * the callbacks the package passes. The index signature keeps every other prop the host
+ * component accepts passable without the package restating the host's whole prop surface.
+ */
+interface OpenChangeProps { open?: boolean; onOpenChange?: (open: boolean) => void; [extra: string]: any }
+interface TextareaSlotProps extends TextareaHTMLAttributes<HTMLTextAreaElement> { [extra: string]: any }
+interface InputSlotProps extends InputHTMLAttributes<HTMLInputElement> { [extra: string]: any }
+interface TextInputDialogProps extends OpenChangeProps { onConfirm?: (value: string) => void | Promise<void> }
+interface ModelListDropdownProps {
+  onValueChange?: (modelId: string) => void;
+  onOfferingPinChange?: (offeringId: string | null) => void;
+  [extra: string]: any;
+}
+interface ItemRowProps { rename?: { value: string; emptyFallback?: string; onCommit: (next: string) => void; [extra: string]: any }; [extra: string]: any }
+interface ItemMenuProps { onCloseAutoFocus?: (event: Event) => void; [extra: string]: any }
+interface TemplatePickerProps { onSelect?: (templateText: string) => void; [extra: string]: any }
+interface FilesPickerProps { onSelect?: (selection: { fileId?: string | null; [extra: string]: any }) => void; [extra: string]: any }
+interface ResourcePickerMenuProps { onReopenAt?: (pickerView: ResourcePickerViewId) => void; [extra: string]: any }
+interface NotePickerProps { onSelectNote?: (noteId: string) => void; [extra: string]: any }
+interface AgentsListProps { onRunAgent?: (agentId: string) => void; [extra: string]: any }
+interface ValueChangeProps<T> { onChange?: (value: T) => void; [extra: string]: any }
 type AnyComponent = ComponentType<any>;
 type AnyFn = (...args: any[]) => any;
 
@@ -140,10 +164,10 @@ export interface ChatUiSlots {
   WindowPanel: AnyComponent;
   FullScreenOverlay: AnyComponent;
   ResourcePickerWindow: AnyComponent;
-  ResourcePickerMenu: AnyComponent;
-  FilesResourcePicker: AnyComponent;
-  NotePickerPopover: AnyComponent;
-  SmartInputMessageTemplatePicker: AnyComponent;
+  ResourcePickerMenu: ComponentType<ResourcePickerMenuProps>;
+  FilesResourcePicker: ComponentType<FilesPickerProps>;
+  NotePickerPopover: ComponentType<NotePickerProps>;
+  SmartInputMessageTemplatePicker: ComponentType<TemplatePickerProps>;
   flattenResourcePickerItems: AnyFn;
   useRunControlCounts: AnyFn;
   useAttachResourcePicker: AnyFn;
@@ -253,15 +277,15 @@ export interface ChatUiSlots {
   selectActiveContentBlocks: AnyFn;
   LibraryPreviewPage: AnyComponent;
   NoteVersionHistoryPanel: AnyComponent;
-  ItemRow: AnyComponent;
+  ItemRow: ComponentType<ItemRowProps>;
   UntrustedCount: AnyComponent;
   StaleDataNotice: AnyComponent;
   WorkspaceGate: AnyComponent;
   OrganizationContextNotice: AnyComponent;
   JsonInspector: AnyComponent;
   InlineCopyButton: AnyComponent;
-  ConfirmDialog: AnyComponent;
-  ModelListDropdown: AnyComponent;
+  ConfirmDialog: ComponentType<OpenChangeProps>;
+  ModelListDropdown: ComponentType<ModelListDropdownProps>;
   TextWithDoors: AnyComponent;
   EntityDoorControls: AnyComponent;
   StructuredValueView: AnyComponent;
@@ -269,25 +293,25 @@ export interface ChatUiSlots {
   KindDataGate: AnyComponent;
   ServerNotes: AnyComponent;
   OptionCombobox: AnyComponent;
-  NumberStepper: AnyComponent;
+  NumberStepper: ComponentType<ValueChangeProps<number>>;
   MatrxFloatingFrame: AnyComponent;
-  ItemMenu: AnyComponent;
-  ClampedNumberInput: AnyComponent;
+  ItemMenu: ComponentType<ItemMenuProps>;
+  ClampedNumberInput: ComponentType<ValueChangeProps<number>>;
   AspectRatioSelect: AnyComponent;
   AnswerTextPreview: AnyComponent;
   AccessGate: AnyComponent;
   ReferenceCopyMenuItem: AnyComponent;
   ReferenceCopyButton: AnyComponent;
   MandateNotesPanel: AnyComponent;
-  SurfaceBoundAgentsList: AnyComponent;
+  SurfaceBoundAgentsList: ComponentType<AgentsListProps>;
   ProposedDirectivesZone: AnyComponent;
   EntityCommentPopover: AnyComponent;
-  ProTextarea: AnyComponent;
-  VoiceTextarea: AnyComponent;
+  ProTextarea: ComponentType<TextareaSlotProps>;
+  VoiceTextarea: ComponentType<TextareaSlotProps>;
   FloatingSheet: AnyComponent;
   AppLink: AnyComponent;
   IconButton: AnyComponent;
-  LightSwitchToggle: AnyComponent;
+  LightSwitchToggle: ComponentType<ValueChangeProps<boolean>>;
   CitationChip: AnyComponent;
   MatrxEnvelopeBlock: AnyComponent;
   ErrorBoundaryWithCapture: AnyComponent;
@@ -348,8 +372,8 @@ export interface ChatUiSlots {
   CustomDataBindingPreview: AnyComponent;
   AiModelRef: AnyComponent;
   AiToolRef: AnyComponent;
-  TextInputDialog: AnyComponent;
-  ProInput: AnyComponent;
+  TextInputDialog: ComponentType<TextInputDialogProps>;
+  ProInput: ComponentType<InputSlotProps>;
   MatrxDynamicPanelHost: AnyComponent;
   useClippedContentGuard: AnyFn;
   answerPreviewText: AnyFn;
