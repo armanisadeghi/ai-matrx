@@ -1,7 +1,7 @@
 "use client";
 
 import { AlertCircle } from "lucide-react";
-import MarkdownStream from "@/components/MarkdownStream";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { cn } from "@/lib/utils";
 
 export interface ScrapedContentPrettyProps {
@@ -38,7 +38,7 @@ export function ScrapedContentPretty({
 
   return (
     <div className={cn("min-w-0 bg-background p-4 text-foreground", className)}>
-      <MarkdownStream imagePolicy="other" content={trimmed} />
+      <RichContent level="full" imagePolicy="other" source={trimmed} />
     </div>
   );
 }

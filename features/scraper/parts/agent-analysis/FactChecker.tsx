@@ -36,7 +36,7 @@ import {
   type FactCheckVerdict,
 } from "./fact-check-parsing-util";
 import { PageTemplate, Card } from "@/components/official/PageTemplate";
-import MarkdownStream from "@/components/MarkdownStream";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { Badge, type BadgeProps } from "@/components/ui/badge";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectFirstExtractedObject } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
@@ -209,7 +209,7 @@ const FactCheckerPage: React.FC<FactCheckerPageProps> = ({
 
   /** Settled markdown through THE ONE PIPELINE (kind blocks route to their component). */
   const markdown = (content: string) => (
-    <MarkdownStream imagePolicy="ai" content={content} isStreamActive={false} />
+    <RichContent level="full" imagePolicy="ai" source={content} isStreaming={false} />
   );
 
   const empty = (message: string) => (
