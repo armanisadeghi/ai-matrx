@@ -56,7 +56,7 @@ export const GUIDED_TUTORIALS: readonly GuidedTutorial[] = [
       {
         target: "byw-connect",
         title: "Connect AI Matrx",
-        text: "One click, then sign in to AI Matrx",
+        text: "Open it, fill in the two boxes, click Add",
         action: "click",
       },
       {
