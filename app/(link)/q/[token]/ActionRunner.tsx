@@ -26,13 +26,13 @@
 import { useCallback, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import type { ActionRequestReady } from "@/features/action-requests/service";
+import type { ActionRequestReady } from "@ai-matrx/chat/action-requests/render-types";
 import {
   ACTION_REQUEST_UNREACHED,
   ActionRequestAnswerForm,
   useActionRequestAnswer,
   type ActionRequestAnswer,
-} from "@/features/action-requests/components/ActionRequestAnswerForm";
+} from "@ai-matrx/chat/action-requests/components/ActionRequestAnswerForm";
 
 // THE FORMS ARE THE SHARED PRIMITIVE. The chat card draws the same
 // `ActionRequestAnswerForm`; this page only owns its door (the bearer

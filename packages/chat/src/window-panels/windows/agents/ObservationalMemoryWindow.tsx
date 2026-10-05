@@ -47,7 +47,7 @@ import { selectAgentById } from "../../../agents/redux/agent-definition/selector
 import type { ChatRootState } from "../../../store/root-state";
 import { SurfaceRuntimeProvider } from "../../../surfaces/runtime/SurfaceRuntimeContext";
 import { NonEditableContextMenu } from "@host/features/context-menu-v3/NonEditableContextMenu";
-import { useCostDisplay } from "@host/components/cost/useCostDisplay";
+import { useCostDisplay } from "../../../agents/cost";
 import {
   OBSERVATIONAL_MEMORY_SURFACE_NAME,
   createObservationalMemoryScope,

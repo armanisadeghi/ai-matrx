@@ -7,7 +7,7 @@
 
 import { parseTimestamp } from "@ai-matrx/kit/format";
 import { formatCost, type CostUnit } from "@ai-matrx/kit/format";
-import { currentPointsRate } from "@host/components/cost/pointsRate";
+import { currentPointsRate } from "../../../cost";
 import { currentCostUnit } from "@host/components/cost/costUnit";
 // `formatDurationMs` used to be re-implemented here, under the package's own
 // name (census H1). It is now imported straight from `@ai-matrx/kit/format` by

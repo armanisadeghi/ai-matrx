@@ -52,7 +52,6 @@ import { GmailReviewCard } from "@/features/google-workspace/agent/GmailReviewCa
 import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { ReviewAnswersLink } from "@/features/agents/decision-review/components/ReviewAnswersLink";
 import { RecordChangeApprovalCard } from "@/features/record-change-approvals/RecordChangeApprovalCard";
-import { ParkedOnPersonCard } from "@/features/action-requests/components/ParkedOnPersonCard";
 import { RichDocument } from "@/features/rich-document/RichDocument";
 import { traceWarRoomRenderPath, isWarRoomThreadAgentSurface } from "@/features/war-room/utils/renderPathTrace";
 import { useOpenCloudBrowserCanvas, cloudBrowserCanvasSourceId } from "@/features/cloud-browser/hooks/useOpenCloudBrowserCanvas";
@@ -138,7 +137,6 @@ registerChatUi({
   ShareModal,
   ReviewAnswersLink,
   RecordChangeApprovalCard,
-  ParkedOnPersonCard,
   RichContent,
   CopyButtons,
   InfoHint,

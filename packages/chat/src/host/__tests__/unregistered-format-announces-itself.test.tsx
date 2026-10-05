@@ -13,7 +13,6 @@ import {
   RulebookNudge,
   SpeakerButton,
   GmailReviewCard,
-  ParkedOnPersonCard,
   RecordChangeApprovalCard,
   ShareButton,
   registerChatUi,
@@ -45,7 +44,6 @@ describe("an unregistered widget announces itself", () => {
     ["RulebookNudge", RulebookNudge],
     ["SpeakerButton", SpeakerButton],
     ["GmailReviewCard", GmailReviewCard],
-    ["ParkedOnPersonCard", ParkedOnPersonCard],
     ["RecordChangeApprovalCard", RecordChangeApprovalCard],
     ["ShareButton", ShareButton],
   ] as const)("%s draws a labelled line, never a blank", (name, Widget) => {

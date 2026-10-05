@@ -13,7 +13,7 @@
  */
 
 import { pointsToUsd, usdToPoints, type CostUnit } from "@ai-matrx/kit/format";
-import { currentPointsRate } from "@/components/cost/pointsRate";
+import { currentPointsRate } from "../../agents/cost";
 
 /** aidream's own ceiling on one approval (`ApproveSpendResult.approved_amount_usd`). */
 export const MAX_APPROVAL_USD = 100_000;

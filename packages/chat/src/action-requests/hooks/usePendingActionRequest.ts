@@ -1,6 +1,6 @@
 "use client";
 
-// features/action-requests/hooks/usePendingActionRequest.ts — FIND ONE OPEN ASK.
+// packages/chat/src/action-requests/hooks/usePendingActionRequest.ts — FIND ONE OPEN ASK.
 //
 // A chat tool card knows an ask by one of two things: the `action_request_id`
 // in the parked tool output (once it exists), or — while the call is still
@@ -19,7 +19,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   fetchPendingActionRequests,
   type PendingActionRequest,
-} from "@/features/action-requests/self-service";
+} from "../self-service";
 
 export type PendingActionRequestState =
   | { phase: "loading" }

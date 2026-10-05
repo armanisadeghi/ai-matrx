@@ -61,7 +61,7 @@ import { guardRoutingOf } from "../result-fields/guard-routing";
 import { resultAsObject } from "../renderers/_shared";
 import { RecordChangeApprovalCard } from "../../host/ui-slots";
 import { SHOW_PARKED_ASK_EVENT } from "../../agents/runtime-reconnect/show-parked-ask";
-import { ParkedOnPersonCard } from "../../host/ui-slots";
+import { ParkedOnPersonCard } from "../../action-requests/components/ParkedOnPersonCard";
 import {
   heldWriteHeadline,
   readRecordChangeWait,

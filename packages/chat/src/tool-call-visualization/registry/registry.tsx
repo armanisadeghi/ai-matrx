@@ -915,7 +915,7 @@ export const toolRendererRegistry: ToolRegistry = {
 
   // The agent asks the person it works for for ONE thing (a yes, a choice, a
   // sign-in, a code, a vault item). By text that is a `/q/<token>` link; in the
-  // chat it is this card, drawing the SAME form (features/action-requests).
+  // chat it is this card, drawing the SAME form (packages/chat/src/action-requests).
   ask_person: {
     toolName: "ask_person",
     chrome: "card",

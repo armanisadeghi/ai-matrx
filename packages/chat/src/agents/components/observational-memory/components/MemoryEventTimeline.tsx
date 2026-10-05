@@ -39,7 +39,7 @@ import type {
   MemoryEventKind,
 } from "../../../redux/execution-system/observational-memory/observational-memory.slice";
 import { formatDurationMs } from "@ai-matrx/kit/format";
-import { useCostDisplay } from "@host/components/cost/useCostDisplay";
+import { useCostDisplay } from "../../../cost";
 import {
   formatCostUsd,
   formatRelativeTime,

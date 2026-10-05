@@ -78,14 +78,14 @@ describe("every answer door goes through the one door", () => {
   it("finds the doors (the census is not vacuous)", () => {
     expect(doors).toEqual(
       expect.arrayContaining([
-        "features/action-requests/components/ParkedOnPersonCard.tsx",
+        "packages/chat/src/action-requests/components/ParkedOnPersonCard.tsx",
         "packages/chat/src/tool-call-visualization/renderers/ask-person/AskPersonInline.tsx",
       ]),
     );
   });
 
   it.each([
-    "features/action-requests/components/ParkedOnPersonCard.tsx",
+    "packages/chat/src/action-requests/components/ParkedOnPersonCard.tsx",
     "packages/chat/src/tool-call-visualization/renderers/ask-person/AskPersonInline.tsx",
   ])("%s re-reads only through rereadAndFollow", (file) => {
     const source = readFileSync(path.join(root, file), "utf8");

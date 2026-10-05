@@ -1,6 +1,6 @@
 "use client";
 
-// features/action-requests/components/ParkedOnPersonCard.tsx — A TOOL CALL
+// packages/chat/src/action-requests/components/ParkedOnPersonCard.tsx — A TOOL CALL
 // WAITING ON YOU, ANSWERED WHERE YOU ARE.
 //
 // Any tool may park its own call on a person: `seo_keywords.research` asks for
@@ -25,13 +25,13 @@
 import { useEffect, useRef } from "react";
 import { HandHelping } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { useAppDispatch } from "@/lib/redux/hooks";
-import { rereadAndFollow } from "@ai-matrx/chat/agents/runtime-reconnect/reread-and-follow";
-import { ActionRequestInlineAnswer } from "@/features/action-requests/components/ActionRequestInlineAnswer";
-import { usePendingActionRequest } from "@/features/action-requests/hooks/usePendingActionRequest";
-import { fetchPendingActionRequests } from "@/features/action-requests/self-service";
+import { Button } from "@ai-matrx/design-system/controls";
+import { ErrorAlchemyMenu } from "../../host/ui-slots";
+import { useAppDispatch } from "../../store/hooks";
+import { rereadAndFollow } from "../../agents/runtime-reconnect/reread-and-follow";
+import { ActionRequestInlineAnswer } from "./ActionRequestInlineAnswer";
+import { usePendingActionRequest } from "../hooks/usePendingActionRequest";
+import { fetchPendingActionRequests } from "../self-service";
 
 export function ParkedOnPersonCard({
   actionRequestId,

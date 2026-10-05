@@ -1,6 +1,6 @@
 "use client";
 
-// features/action-requests/components/ActionRequestAnswerForm.tsx — THE ONE ASK FORM.
+// packages/chat/src/action-requests/components/ActionRequestAnswerForm.tsx — THE ONE ASK FORM.
 //
 // An agent that needs a person — a yes, a choice, a password, a code — asks
 // through ONE primitive (`ask_person`), and the person answers on whichever
@@ -25,14 +25,14 @@
 
 import { useId, useRef, useState } from "react";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system/controls";
 import { Eye, EyeOff } from "lucide-react";
 
 import { Input, Button as SurfaceButton } from "@ai-matrx/design-system";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { cn } from "@/lib/utils";
-import { QuestionsAskForm } from "@ai-matrx/chat/agents/ui-first-tools/ui/QuestionsAskForm";
-import { useCostDisplay } from "@/components/cost/useCostDisplay";
+import { ErrorAlchemyMenu } from "../../host/ui-slots";
+import { cn } from "@ai-matrx/design-system";
+import { QuestionsAskForm } from "../../agents/ui-first-tools/ui/QuestionsAskForm";
+import { useCostDisplay } from "../../agents/cost";
 import {
   MAX_APPROVAL_USD,
   centsUp,
@@ -49,7 +49,7 @@ import type {
   OneTimeCodeRender,
   PickTimeRender,
   VaultItemRender,
-} from "@/features/action-requests/service";
+} from "../render-types";
 
 /** The answer body — the same shape on both doors. `origin` is the ECHO of the
  *  site this form displayed; aidream compares it to the origin on the row. */

@@ -1,6 +1,6 @@
 "use client";
 
-// features/action-requests/components/ActionRequestInlineAnswer.tsx — ANSWER AN
+// packages/chat/src/action-requests/components/ActionRequestInlineAnswer.tsx — ANSWER AN
 // ASK WHERE YOU ARE.
 //
 // The signed-in twin of the `/q/<token>` page: the SAME form
@@ -14,11 +14,11 @@ import { CheckCircle2 } from "lucide-react";
 import {
   ActionRequestAnswerForm,
   useActionRequestAnswer,
-} from "@/features/action-requests/components/ActionRequestAnswerForm";
+} from "./ActionRequestAnswerForm";
 import {
   completeActionRequestAsSelf,
   type PendingActionRequest,
-} from "@/features/action-requests/self-service";
+} from "../self-service";
 
 export function ActionRequestInlineAnswer({
   request,

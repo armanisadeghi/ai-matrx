@@ -1,6 +1,6 @@
 {
   "$note": "SHRINK-ONLY budget of host ties per specifier in packages/chat/src. Never raise a number or add a key by hand — route the need through the chat host adapter or a registration (common-docs/projects/chat-package-move/PACKAGE-INDEPENDENCE.md). Lower it with: node scripts/check-chat-package-boundary.mjs --write",
-  "total": 1026,
+  "total": 1017,
   "budget": {
     "@/features/content-ir/registry/schema-source-kind-tables": 1,
     "@/features/surfaces/manifests/registry": 1,
@@ -19,7 +19,7 @@
     "@host/components/cost/Cost": 2,
     "@host/components/cost/costUnit": 3,
     "@host/components/cost/pointsRate": 5,
-    "@host/components/cost/useCostDisplay": 6,
+    "@host/components/cost/useCostDisplay": 2,
     "@host/components/dialogs/confirm/after-current-layer-closes": 4,
     "@host/components/dialogs/confirm/ConfirmDialogHost": 5,
     "@host/components/dialogs/text-input/TextInputDialog": 3,
@@ -114,9 +114,6 @@
     "@host/components/ui/tabs": 3,
     "@host/features/access-gate/components/AccessGate": 1,
     "@host/features/access-gate/service/canActOn": 1,
-    "@host/features/action-requests/components/ActionRequestInlineAnswer": 1,
-    "@host/features/action-requests/hooks/usePendingActionRequest": 1,
-    "@host/features/action-requests/self-service": 3,
     "@host/features/agent-apps/utils/compile-slot": 3,
     "@host/features/agent-comparison/decisions/readColumnAnswers": 1,
     "@host/features/agent-comparison/shared/BoundColumn": 1,

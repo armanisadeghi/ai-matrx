@@ -8,7 +8,7 @@
  * durations, tool-call summary, and finish reason.
  */
 
-import { useCostDisplay } from "@host/components/cost/useCostDisplay";
+import { useCostDisplay } from "../../../cost";
 import { useMemo } from "react";
 import { useAppSelector } from "../../../../store/hooks";
 import {

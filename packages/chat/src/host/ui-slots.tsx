@@ -52,7 +52,6 @@ export interface ChatUiSlots {
   ShareModal: AnyComponent;
   ReviewAnswersLink: AnyComponent;
   RecordChangeApprovalCard: AnyComponent;
-  ParkedOnPersonCard: AnyComponent;
   /** The inline error card (title, sentence, actions); the host's carries the Alchemy menu. */
   ErrorNotice: AnyComponent;
   // Context-item drawer bodies the app owns (notes and tasks are app features).
@@ -237,7 +236,6 @@ export const ShareButton = slotComponent("ShareButton", unregisteredWidget("Shar
 export const ShareModal = slotComponent("ShareModal", unregisteredWidget("ShareModal"));
 export const ReviewAnswersLink = slotComponent("ReviewAnswersLink", unregisteredWidget("ReviewAnswersLink"));
 export const RecordChangeApprovalCard = slotComponent("RecordChangeApprovalCard", unregisteredWidget("RecordChangeApprovalCard"));
-export const ParkedOnPersonCard = slotComponent("ParkedOnPersonCard", unregisteredWidget("ParkedOnPersonCard"));
 
 export const confirm = slotFn("confirm");
 export const copyRichContent = slotFn("copyRichContent");

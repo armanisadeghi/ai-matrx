@@ -413,6 +413,19 @@ export function createDefaultServerApi(host: () => ServerHostView) {
       json<T>("PATCH", path, body, opts?.signal ? { signal: opts.signal } : {}),
     postJson: <T = unknown>(path: string, body: unknown, opts?: { signal?: AbortSignal }) =>
       json<T>("POST", path, body, opts?.signal ? { signal: opts.signal } : {}),
+    requestRaw: async (
+      path: string,
+      init: RequestInit = {},
+      opts: { allowHttpError?: boolean; expectedErrorStatuses?: readonly number[]; organizationId?: string; signal?: AbortSignal } = {},
+    ): Promise<Response> => {
+      const response = await sendMatrxRequest(
+        buildMatrxRequestUrl(baseUrl(), path),
+        { ...init, headers: { ...(await policyHeaders()), ...(init.headers as Record<string, string> | undefined) } },
+        opts.signal ? { signal: opts.signal } : {},
+      );
+      if (!response.ok && !opts.allowHttpError) throw await errorFromResponse(response, path);
+      return response;
+    },
     getAccessTokenOrNull: (): Promise<string | null> => host().identity.getAccessToken(),
     resolveBaseUrl: (override?: string): string => (override ? trimSlash(override) : baseUrl()),
     productionUrl,

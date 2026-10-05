@@ -9,3 +9,4 @@ import { forwardServer } from "../server";
 export const postJson = forwardServer("postJson");
 export const getAccessTokenOrNull = forwardServer("getAccessTokenOrNull");
 export const resolveBaseUrl = forwardServer("resolveBaseUrl");
+export const requestRaw = forwardServer("requestRaw");

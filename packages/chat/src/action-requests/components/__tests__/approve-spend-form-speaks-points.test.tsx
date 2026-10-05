@@ -10,20 +10,37 @@ import { createRoot, type Root } from "react-dom/client";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-jest.mock("next/navigation", () => ({ usePathname: () => "/chat" }));
-jest.mock("@/components/errors/ErrorAlchemyMenu", () => ({ ErrorAlchemyMenu: () => null }));
+jest.mock("../../../host/ui-slots", () => ({
+  ...jest.requireActual("../../../host/ui-slots"),
+  ErrorAlchemyMenu: () => null,
+}));
 
 import { ActionRequestAnswerForm } from "../ActionRequestAnswerForm";
-import type { ApproveSpendRender } from "../../service";
+import type { ApproveSpendRender } from "../../render-types";
 
 
 // The points rate is the billing.points_per_usd knob; this suite runs with no
 // knob snapshot, so it pins the rate to a fixture (the platform default).
-jest.mock("@/components/cost/pointsRate", () => ({
-  ...jest.requireActual("@/components/cost/pointsRate"),
+jest.mock("@host/components/cost/pointsRate", () => ({
+  ...jest.requireActual("@host/components/cost/pointsRate"),
   currentPointsRate: () => 20_000,
   usePointsRate: () => 20_000,
 }));
+// The host's cost display (`components/cost/useCostDisplay`) at that same rate, for a member
+// (points, no toggle): what the app hands the form once the knob has landed.
+jest.mock("@host/components/cost/useCostDisplay", () => {
+  const { formatCost, usdToPoints } = jest.requireActual("@ai-matrx/kit/format");
+  const rate = 20_000;
+  return {
+    useCostDisplay: () => ({
+      unit: "points",
+      canToggle: false,
+      rate,
+      format: (usd: number | null | undefined, options?: object) => formatCost(usd, { ...options, unit: "points", rate }),
+      toPoints: (usd: number | null | undefined) => usdToPoints(usd, { rate }),
+    }),
+  };
+});
 
 const RENDER: ApproveSpendRender = {
   __kind: "action_request.render",

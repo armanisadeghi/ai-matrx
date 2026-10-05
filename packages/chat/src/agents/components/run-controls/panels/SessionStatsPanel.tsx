@@ -5,7 +5,7 @@
  * conversation. Mirrors the "Session" tab in the Creator Run Panel.
  */
 
-import { useCostDisplay } from "@host/components/cost/useCostDisplay";
+import { useCostDisplay } from "../../../cost";
 import { useMemo } from "react";
 import { useAppSelector } from "../../../../store/hooks";
 import {

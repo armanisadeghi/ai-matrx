@@ -26,8 +26,8 @@ import { HandHelping } from "lucide-react";
 import { Button } from "@ai-matrx/design-system";
 import { useAppDispatch } from "../../../store/hooks";
 import { rereadAndFollow } from "../../../agents/runtime-reconnect/reread-and-follow";
-import { ActionRequestInlineAnswer } from "@host/features/action-requests/components/ActionRequestInlineAnswer";
-import { usePendingActionRequest } from "@host/features/action-requests/hooks/usePendingActionRequest";
+import { ActionRequestInlineAnswer } from "../../../action-requests/components/ActionRequestInlineAnswer";
+import { usePendingActionRequest } from "../../../action-requests/hooks/usePendingActionRequest";
 
 import type { ToolRendererProps } from "../../types";
 import { getArg, isTerminal, resultAsObject } from "../_shared";

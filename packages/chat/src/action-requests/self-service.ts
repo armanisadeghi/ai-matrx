@@ -1,4 +1,4 @@
-// features/action-requests/self-service.ts — THE SIGNED-IN DOORS.
+// packages/chat/src/action-requests/self-service.ts — THE SIGNED-IN DOORS.
 //
 // `service.ts` is the LINK's half: three token doors reached only from the
 // server lane, because a bearer capability in a URL is the whole identity there.
@@ -13,14 +13,14 @@
 // does not exist. Both calls go through the canonical Python client, which
 // attaches that token.
 
-import { apiGet, buildPath } from "@/lib/api/typed-client";
-import { requestRaw } from "@/lib/python-client";
+import { apiGet, buildPath } from "../host/server/typed-client";
+import { requestRaw } from "../host/server/python-client";
 
-import type { ActionRequestRender } from "@/features/action-requests/service";
+import type { ActionRequestRender } from "./render-types";
 import type {
   ActionRequestAnswer,
   ActionRequestTransportResult,
-} from "@/features/action-requests/components/ActionRequestAnswerForm";
+} from "./components/ActionRequestAnswerForm";
 
 /** One open ask, as the pending list carries it. NEVER a token. */
 export interface PendingActionRequest {

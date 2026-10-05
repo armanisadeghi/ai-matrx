@@ -1,7 +1,7 @@
 "use client";
 
 import { formatCost, formatDurationMs, type CostUnit } from "@ai-matrx/kit/format";
-import { currentPointsRate } from "@host/components/cost/pointsRate";
+import { currentPointsRate } from "../../../cost";
 
 /**
  * Shared primitives for request/session stat panels.

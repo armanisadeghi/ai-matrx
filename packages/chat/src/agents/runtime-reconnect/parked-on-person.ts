@@ -7,7 +7,7 @@
 // place that says whether an ask is still OPEN; an open ask on this
 // conversation means its turn is waiting on them.
 
-import { fetchPendingActionRequests } from "@host/features/action-requests/self-service";
+import { fetchPendingActionRequests } from "../../action-requests/self-service";
 
 /** Open action requests on this conversation. Throws when the list cannot be read. */
 export async function countOpenAsksForConversation(conversationId: string): Promise<number> {

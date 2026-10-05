@@ -40,8 +40,8 @@ import {
 import { selectRunModelId } from "../../runtime/generation-job";
 import { useVideoSecondPoints } from "./useVideoSecondPoints";
 import { formatCost, pointsToUsd, type CostUnit, formatDurationMs } from "@ai-matrx/kit/format";
-import { currentPointsRate } from "@host/components/cost/pointsRate";
-import { useCostDisplay } from "@host/components/cost/useCostDisplay";
+import { currentPointsRate } from "../../cost";
+import { useCostDisplay } from "../../cost";
 import { currentCostUnit } from "@host/components/cost/costUnit";
 
 /** The value a control resolves to for this run: a variable bound to the

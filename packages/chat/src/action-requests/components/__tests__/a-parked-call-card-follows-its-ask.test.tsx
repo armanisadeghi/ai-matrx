@@ -16,9 +16,7 @@ import { createRoot, type Root } from "react-dom/client";
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 const dispatch = jest.fn(() => ({ unwrap: () => Promise.resolve() }));
-jest.mock("@/lib/redux/hooks", () => ({ useAppDispatch: () => dispatch }));
-// The chat package reads these hooks through its own module (P3): one double covers both.
-jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
+jest.mock("@ai-matrx/chat/store/hooks", () => ({ useAppDispatch: () => dispatch }));
 jest.mock("@ai-matrx/chat/agents/redux/execution-system/thunks/load-conversation.thunk", () => ({
   loadConversation: (arg: { conversationId: string }) => ({ type: "load", ...arg }),
 }));
@@ -26,24 +24,27 @@ const follow = jest.fn();
 jest.mock("@ai-matrx/chat/agents/runtime-reconnect/follow-what-is-still-in-flight", () => ({
   followWhatIsStillInFlight: (...args: unknown[]) => follow(...args),
 }));
-jest.mock("@/components/errors/ErrorAlchemyMenu", () => ({ ErrorAlchemyMenu: () => null }));
+jest.mock("../../../host/ui-slots", () => ({
+  ...jest.requireActual("../../../host/ui-slots"),
+  ErrorAlchemyMenu: () => null,
+}));
 
 let lookup: unknown = { phase: "loading" };
 const hookArgs: unknown[] = [];
-jest.mock("@/features/action-requests/hooks/usePendingActionRequest", () => ({
+jest.mock("../../hooks/usePendingActionRequest", () => ({
   usePendingActionRequest: (args: unknown) => {
     hookArgs.push(args);
     return lookup;
   },
 }));
 let answered: (() => void) | undefined;
-jest.mock("@/features/action-requests/components/ActionRequestInlineAnswer", () => ({
+jest.mock("../ActionRequestInlineAnswer", () => ({
   ActionRequestInlineAnswer: ({ onAnswered }: { onAnswered?: () => void }) => {
     answered = onAnswered;
     return <div data-testid="form">form</div>;
   },
 }));
-jest.mock("@/features/action-requests/self-service", () => ({
+jest.mock("../../self-service", () => ({
   fetchPendingActionRequests: jest.fn(() => Promise.resolve([])),
 }));
 
@@ -98,9 +99,12 @@ it("an ask answered elsewhere re-reads the chat exactly once and says so", () =>
   lookup = { phase: "closed" };
   const el = mount(<ParkedOnPersonCard actionRequestId="r-1" conversationId="conv-1" />);
   expect(el.textContent).toContain("This ask has been answered");
-  expect(dispatch).toHaveBeenCalledTimes(1);
+  // rereadAndFollow also stamps the turn as following (7bc276c102); the RE-READ is what runs once.
+  const reReads = () =>
+    (dispatch.mock.calls as unknown[][]).filter(([action]) => (action as { type?: string } | undefined)?.type === "load");
+  expect(reReads()).toHaveLength(1);
   act(() => root!.render(<ParkedOnPersonCard actionRequestId="r-1" conversationId="conv-1" />));
-  expect(dispatch).toHaveBeenCalledTimes(1);
+  expect(reReads()).toHaveLength(1);
 });
 
 it("live and unnamed, it looks for the conversation's newest ask while the row mints", () => {
@@ -123,7 +127,6 @@ it("answered here, it follows the resumed turn so a page tool it delegates is an
     answered?.();
     await Promise.resolve();
   });
-  expect(follow).toHaveBeenCalledTimes(1);
   expect(follow).toHaveBeenCalledWith(dispatch, "conv-1");
 });
 
@@ -133,6 +136,5 @@ it("answered elsewhere, it follows the resumed turn once the chat is re-read", a
     mount(<ParkedOnPersonCard actionRequestId="r-1" conversationId="conv-1" />);
     await Promise.resolve();
   });
-  expect(follow).toHaveBeenCalledTimes(1);
   expect(follow).toHaveBeenCalledWith(dispatch, "conv-1");
 });

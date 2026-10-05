@@ -12,7 +12,7 @@ registerChatUi({ ErrorAlchemyMenu: () => null });
 
 const fetchPending = jest.fn();
 const completeAsSelf = jest.fn();
-jest.mock("@host/features/action-requests/self-service", () => ({
+jest.mock("../../../action-requests/self-service", () => ({
   fetchPendingActionRequests: (...args: unknown[]) => fetchPending(...args),
   completeActionRequestAsSelf: (...args: unknown[]) => completeAsSelf(...args),
 }));
