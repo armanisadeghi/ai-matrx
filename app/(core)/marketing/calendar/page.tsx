@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CalendarDays } from "lucide-react";
 
-import PageHeader from "@/features/shell/components/header/PageHeader";
+import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { createClient } from "@/utils/supabase/server";
 
@@ -29,9 +29,7 @@ export default async function MarketingCalendarPage() {
 
   return (
     <>
-      <PageHeader>
-        <h1 className="truncate text-sm font-medium text-foreground">PR Calendar</h1>
-      </PageHeader>
+      <RecordPageHeader record={{ name: "PR Calendar" }} />
       <div className="h-full overflow-y-auto pt-[var(--shell-header-h)]">
         <div className="mx-auto flex max-w-xl flex-col gap-3 p-6">
           <div className="flex items-center gap-2">

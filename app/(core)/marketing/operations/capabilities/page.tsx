@@ -11,7 +11,7 @@ import { Suspense } from "react";
 
 import { LoadingSurface } from "@/features/marketing/components/shared/MarketingUi";
 import { SeoCapabilitiesWorkspace } from "@/features/marketing/seo/capabilities/SeoCapabilitiesWorkspace";
-import PageHeader from "@/features/shell/components/header/PageHeader";
+import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 
 export const metadata: Metadata = {
   title: "SEO Capabilities",
@@ -22,11 +22,7 @@ export const metadata: Metadata = {
 export default function OperationsCapabilitiesPage() {
   return (
     <>
-      <PageHeader>
-        <h1 className="truncate text-sm font-medium text-foreground">
-          SEO Capabilities
-        </h1>
-      </PageHeader>
+      <RecordPageHeader record={{ name: "SEO Capabilities" }} />
       <div className="h-full overflow-y-auto pt-[var(--shell-header-h)]">
         <Suspense fallback={<LoadingSurface label="Loading SEO capabilities…" />}>
           <SeoCapabilitiesWorkspace />

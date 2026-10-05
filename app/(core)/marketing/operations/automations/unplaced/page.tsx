@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import PageHeader from "@/features/shell/components/header/PageHeader";
+import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { OrganizationRunConsoleMount } from "@/features/marketing/seo/run-console/OrganizationRunConsoleMount";
 
 /**
@@ -18,13 +18,7 @@ export const metadata: Metadata = {
 export default function MarketingAutomationUnplacedPage() {
   return (
     <>
-      <PageHeader>
-        <div className="flex w-full min-w-0 items-center">
-          <h1 className="truncate text-sm font-medium text-foreground">
-            Automations
-          </h1>
-        </div>
-      </PageHeader>
+      <RecordPageHeader record={{ name: "Automations" }} />
       <div className="h-full overflow-hidden pt-[var(--shell-header-h)]">
         <OrganizationRunConsoleMount view="unplaced" />
       </div>

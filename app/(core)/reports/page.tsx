@@ -5,7 +5,7 @@
 // registry (features/reports/registry.ts).
 
 import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
-import PageHeader from "@/features/shell/components/header/PageHeader";
+import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { ReportsLanding } from "@/features/reports/components/ReportsLanding";
 import { ModuleSignInGate } from "@/features/auth/components/module-landing/ModuleSignInGate";
 
@@ -28,11 +28,7 @@ export default async function ReportsPage() {
 
   return (
     <>
-      <PageHeader>
-        <div className="flex items-center gap-2 px-1">
-          <h1 className="text-sm font-semibold text-foreground">Reports</h1>
-        </div>
-      </PageHeader>
+      <RecordPageHeader record={{ name: "Reports" }} />
       <div className="w-full">
         <div className="container mx-auto max-w-[1400px] px-4 pb-6 pt-[calc(var(--shell-header-h)+1.5rem)] sm:px-6 md:px-8">
           <ReportsLanding mode="user" />

@@ -6,7 +6,7 @@
 // header's height.
 
 import { Suspense } from "react";
-import PageHeader from "@/features/shell/components/header/PageHeader";
+import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { InboxPage } from "@/features/notifications/components/InboxPage";
 import { createRouteMetadata } from "@/utils/route-metadata";
 
@@ -19,9 +19,7 @@ export const metadata = createRouteMetadata("/notifications", {
 export default function NotificationsPage() {
   return (
     <>
-      <PageHeader>
-        <h1 className="ml-2 text-sm font-medium text-foreground">Inbox</h1>
-      </PageHeader>
+      <RecordPageHeader record={{ name: "Inbox" }} />
       <div className="h-full overflow-hidden bg-textured pt-[var(--shell-header-h)]">
         <Suspense fallback={null}>
           <InboxPage />

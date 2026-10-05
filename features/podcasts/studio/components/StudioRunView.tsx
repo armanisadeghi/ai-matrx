@@ -16,7 +16,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import PageHeader from "@/features/shell/components/header/PageHeader";
+import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { podcastMediaRef } from "@/features/podcasts/generator/media";
@@ -131,11 +131,7 @@ export function StudioRunView({ runId }: { runId: string }) {
   if (loading) {
     return (
       <>
-        <PageHeader>
-          <span className="ml-2 text-sm font-medium text-foreground truncate">
-            Studio run
-          </span>
-        </PageHeader>
+        <RecordPageHeader record={{ name: "Studio run" }} />
         <div className="mx-auto max-w-5xl px-4 py-10">
           <Skeleton className="mb-4 h-8 w-64" />
           <div className="grid gap-6 lg:grid-cols-[1fr_360px]">

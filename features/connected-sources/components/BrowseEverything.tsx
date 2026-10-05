@@ -23,7 +23,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { Info, Plug } from "lucide-react";
 import { Skeleton } from "@ai-matrx/design-system";
-import PageHeader from "@/features/shell/components/header/PageHeader";
+import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -242,9 +242,7 @@ export function BrowseEverything() {
   ];
 
   const header = (
-    <PageHeader>
-      <h1 className="truncate text-sm font-medium">Connected sources</h1>
-    </PageHeader>
+    <RecordPageHeader record={{ name: "Connected sources" }} />
   );
 
   const connectLinks = missingProviders.map((provider) => (

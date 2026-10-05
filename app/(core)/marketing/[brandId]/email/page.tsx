@@ -14,7 +14,7 @@
 
 import type { Metadata } from "next";
 
-import PageHeader from "@/features/shell/components/header/PageHeader";
+import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { BrandScopedEmail } from "@/features/marketing/front-doors/BrandScopedEmail";
 
 export const metadata: Metadata = {
@@ -26,13 +26,7 @@ export const metadata: Metadata = {
 export default function BrandEmailPage() {
   return (
     <>
-      <PageHeader>
-        <div className="flex w-full min-w-0 items-center">
-          <h1 className="truncate text-sm font-medium text-foreground">
-            Email
-          </h1>
-        </div>
-      </PageHeader>
+      <RecordPageHeader record={{ name: "Email" }} />
       <BrandScopedEmail />
     </>
   );

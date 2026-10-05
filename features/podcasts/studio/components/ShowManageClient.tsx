@@ -50,7 +50,7 @@ import {
 } from "@/components/ui/select";
 import { ComingSoonBadge } from "@/components/coming-soon/ComingSoonBadge";
 import { InlineMediaRef } from "@ai-matrx/media/react";
-import PageHeader from "@/features/shell/components/header/PageHeader";
+import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { AssetUploader, type AssetUrls } from "@/features/podcasts/components/admin/AssetUploader";
@@ -280,9 +280,7 @@ export function ShowManageClient({ showId }: { showId: string }) {
   if (loading) {
     return (
       <>
-        <PageHeader>
-          <span className="ml-2 text-sm font-medium text-foreground truncate">Manage podcast</span>
-        </PageHeader>
+        <RecordPageHeader record={{ name: "Manage podcast" }} />
         <div className="mx-auto max-w-4xl px-4 py-8">
           <Skeleton className="mb-6 h-10 w-48" />
           <div className="space-y-4">

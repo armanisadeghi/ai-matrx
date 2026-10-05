@@ -5,7 +5,7 @@
 
 import { redirect } from "next/navigation";
 import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
-import PageHeader from "@/features/shell/components/header/PageHeader";
+import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { EncoreHomePage } from "@/features/masterwork/encore/EncoreHomePage";
 import { loginHref } from "@/utils/auth/auth-destination";
 
@@ -14,13 +14,7 @@ export default async function EncoreRoute() {
   if (!isAuthenticated) redirect(loginHref("/masterwork/encore"));
   return (
     <>
-      <PageHeader>
-        <div className="flex w-full min-w-0 items-center gap-0 p-0">
-          <h1 className="ml-2 truncate text-sm font-medium text-foreground">
-            Encore
-          </h1>
-        </div>
-      </PageHeader>
+      <RecordPageHeader record={{ name: "Encore" }} />
       <EncoreHomePage />
     </>
   );

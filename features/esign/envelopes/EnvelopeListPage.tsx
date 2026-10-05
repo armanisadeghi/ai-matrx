@@ -6,7 +6,7 @@
 import Link from "next/link";
 import { Send } from "lucide-react";
 import { Button as ControlButton } from "@ai-matrx/design-system/controls";
-import PageHeader from "@/features/shell/components/header/PageHeader";
+import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectAccessToken, selectAuthReady, selectUserId } from "@/lib/redux/selectors/userSelectors";
@@ -28,11 +28,7 @@ export function EnvelopeListPage() {
 
   return (
     <>
-      <PageHeader>
-        <div className="flex min-w-0 items-center gap-2">
-          <h1 className="truncate text-sm font-semibold text-foreground">E-Signatures</h1>
-        </div>
-      </PageHeader>
+      <RecordPageHeader record={{ name: "E-Signatures" }} />
       {mayLoad ? (
         <EntityListPage config={envelopeListConfig} headerActions={sendButton} emptyAction={sendButton} />
       ) : (

@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import PageHeader from "@/features/shell/components/header/PageHeader";
+import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { IntelligenceIndex } from "@/features/mandates/feature-intelligence/IntelligenceIndex";
 import { createRouteMetadata } from "@/utils/route-metadata";
 import { loginHref } from "@/utils/auth/auth-destination";
@@ -30,9 +30,7 @@ export default async function IntelligenceIndexRoute({
   }
   return (
     <>
-      <PageHeader>
-        <span className="truncate text-sm font-medium text-foreground">Intelligence</span>
-      </PageHeader>
+      <RecordPageHeader record={{ name: "Intelligence" }} />
       <div className="h-full overflow-y-auto overflow-x-hidden pt-[var(--shell-header-h)]">
         <IntelligenceIndex focusDomain={domain} />
       </div>

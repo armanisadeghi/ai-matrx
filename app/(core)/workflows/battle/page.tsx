@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
-import { Swords } from "lucide-react";
-import PageHeader from "@/features/shell/components/header/PageHeader";
+import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { WorkflowBattlePage } from "@/features/workflow-comparison/components/WorkflowBattlePage";
 
 /**
@@ -15,14 +14,7 @@ export default async function WorkflowBattleRoute() {
 
   return (
     <>
-      <PageHeader>
-        <div className="flex w-full items-center gap-2 px-1">
-          <Swords className="h-4 w-4 shrink-0 text-muted-foreground" />
-          <h1 className="text-sm font-semibold text-foreground">
-            Workflow Battle
-          </h1>
-        </div>
-      </PageHeader>
+      <RecordPageHeader record={{ name: "Workflow Battle" }} />
       <WorkflowBattlePage />
     </>
   );

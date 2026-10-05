@@ -5,7 +5,7 @@
 
 import type { Metadata } from "next";
 
-import PageHeader from "@/features/shell/components/header/PageHeader";
+import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { BrandReputationSites } from "@/features/marketing/components/reputation/BrandReputationSites";
 
 export const metadata: Metadata = {
@@ -17,13 +17,7 @@ export const metadata: Metadata = {
 export default function BrandReputationPage() {
   return (
     <>
-      <PageHeader>
-        <div className="flex w-full min-w-0 items-center">
-          <h1 className="truncate text-sm font-medium text-foreground">
-            Reputation
-          </h1>
-        </div>
-      </PageHeader>
+      <RecordPageHeader record={{ name: "Reputation" }} />
       <BrandReputationSites />
     </>
   );

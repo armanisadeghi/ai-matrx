@@ -31,8 +31,8 @@ export type { EntityHeaderAction as RecordPageAction } from "@/features/shell/co
 export type { Crumb as RecordPageParent } from "@/features/shell/components/header/templates/CrumbTrailHeader";
 
 export interface RecordPageHeaderProps {
-  /** Back fallback when nothing is behind this tab (opened from a link). Usually the module home. */
-  backHref: string;
+  /** Omit on a top-level page (module home, queue, inbox): no back button, just the name. Back fallback when nothing is behind this tab (opened from a link). Usually the module home. */
+  backHref?: string;
   /** Levels above the record, outermost first. Each is a link; `options` gives it a sibling menu. */
   parents?: Crumb[];
   /** The record — the LAST crumb. `siblings` turns it into a switcher. */

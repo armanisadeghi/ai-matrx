@@ -8,7 +8,7 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 
-import PageHeader from "@/features/shell/components/header/PageHeader";
+import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { LoadingSurface } from "@/features/marketing/components/shared/MarketingUi";
 import { MonitorSetupEditor } from "@/features/marketing/monitor-setup/MonitorSetupEditor";
 
@@ -21,13 +21,7 @@ export const metadata: Metadata = {
 export default function MonitorSetupPage() {
   return (
     <>
-      <PageHeader>
-        <div className="flex w-full min-w-0 items-center">
-          <h1 className="truncate text-sm font-medium text-foreground">
-            News monitor
-          </h1>
-        </div>
-      </PageHeader>
+      <RecordPageHeader record={{ name: "News monitor" }} />
       <Suspense fallback={<LoadingSurface label="Loading the monitor…" />}>
         <MonitorSetupEditor />
       </Suspense>

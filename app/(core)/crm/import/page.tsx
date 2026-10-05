@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { FileUp } from "lucide-react";
 import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { ModuleSignInGate } from "@/features/auth/components/module-landing/ModuleSignInGate";
-import PageHeader from "@/features/shell/components/header/PageHeader";
+import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { ImportWizard } from "@/features/crm/components/import/ImportWizard";
 
 export const metadata: Metadata = {
@@ -30,14 +30,7 @@ export default async function CrmImportRoute() {
 
   return (
     <>
-      <PageHeader>
-        <div className="flex w-full min-w-0 items-center gap-2 px-1">
-          <FileUp className="h-4 w-4 shrink-0 text-muted-foreground" />
-          <h1 className="truncate text-sm font-semibold text-foreground">
-            Import contacts
-          </h1>
-        </div>
-      </PageHeader>
+      <RecordPageHeader record={{ name: "Import contacts" }} />
       <div className="h-full overflow-hidden">
         <ImportWizard />
       </div>

@@ -7,7 +7,7 @@
 // (core) route rules — a page that skips it draws its first row inside the
 // header band, where every click is swallowed.
 
-import PageHeader from "@/features/shell/components/header/PageHeader";
+import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { ApprovalsWorkspace } from "@/features/approvals/ApprovalsWorkspace";
 
 export default async function ApprovalsPage({
@@ -22,9 +22,7 @@ export default async function ApprovalsPage({
   const focusItemId = Array.isArray(item) ? (item[0] ?? null) : (item ?? null);
   return (
     <>
-      <PageHeader>
-        <h1 className="text-sm font-medium text-foreground">Waiting on you</h1>
-      </PageHeader>
+      <RecordPageHeader record={{ name: "Waiting on you" }} />
       <div className="h-full overflow-y-auto bg-textured pt-[var(--shell-header-h)]">
         <div className="mx-auto w-full max-w-4xl p-4 md:p-6">
           <ApprovalsWorkspace focusItemId={focusItemId} />

@@ -99,8 +99,8 @@ export interface EntityHeaderAction {
 }
 
 export interface EntityModeHeaderProps {
-  /** Back fallback (the family's list page): Back returns where this tab came from, and uses this only when nothing is behind it (opened from a link). */
-  backHref: string;
+  /** Omit on a top-level page (no parent): no back button, the name stands first. Back fallback (the family's list page): Back returns where this tab came from, and uses this only when nothing is behind it (opened from a link). */
+  backHref?: string;
   /** Current entity's name — small, in the top row, never an h1. */
   entityLabel: string;
   /**
@@ -299,7 +299,7 @@ export function EntityModeHeader({
   const inShellSheet = isPhone && phoneSheetHost != null;
   // Back returns where this tab came from (filters included); `backHref` is
   // the fallback for a page opened straight from a link.
-  const resolvedBackHref = useBackHref(backHref);
+  const resolvedBackHref = useBackHref(backHref ?? "/");
   const router = useRouter();
   const pathname = usePathname();
   const activeMode = activeModeHref
@@ -329,7 +329,9 @@ export function EntityModeHeader({
             {/* THE HEADER IS NOT GLASS (owner, 2026-10-03): the shell paints
                 the band solid, so every control in it is transparent. The name
                 beside the back button carries its own inset (rule 3). */}
-            <ChevronLeftTapButton variant="transparent" href={resolvedBackHref} ariaLabel="Back" />
+            {backHref ? (
+              <ChevronLeftTapButton variant="transparent" href={resolvedBackHref} ariaLabel="Back" />
+            ) : null}
             {trail && trail.length > 0 ? (
               <nav
                 aria-label="Breadcrumb"

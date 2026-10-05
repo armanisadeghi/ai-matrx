@@ -14,7 +14,7 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 
-import PageHeader from "@/features/shell/components/header/PageHeader";
+import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { LoadingSurface } from "@/features/marketing/components/shared/MarketingUi";
 import { BrandScopedMonitoring } from "@/features/marketing/front-doors/BrandScopedMonitoring";
 
@@ -27,13 +27,7 @@ export const metadata: Metadata = {
 export default function BrandMonitoringPage() {
   return (
     <>
-      <PageHeader>
-        <div className="flex w-full min-w-0 items-center">
-          <h1 className="truncate text-sm font-medium text-foreground">
-            Monitoring
-          </h1>
-        </div>
-      </PageHeader>
+      <RecordPageHeader record={{ name: "Monitoring" }} />
       {/* The site selector reads `?site=` on the client. */}
       <Suspense fallback={<LoadingSurface label="Loading monitoring…" />}>
         <BrandScopedMonitoring />
