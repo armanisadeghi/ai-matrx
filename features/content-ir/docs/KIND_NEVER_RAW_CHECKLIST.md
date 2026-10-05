@@ -387,3 +387,18 @@ accumulator), read through `isQuotedSourceXmlBlock` (`json-kind-signal.ts`) by X
 - [x] P9. `![{kind}](url)`: `surfaces/kind-image-alt.ts` drops the image wrapper of a kind (kindless alt untouched), both
       hosts — no stray `!` / `(url)`. A truncated kind settled at message end decides as the broken state (gate null,
       never text, never the raw card), live-finalized and reload. Guards midstream P9 + chunk-invariance.
+- [x] S1. Search snippets (Knowledge Hub). A snippet is a FRAGMENT. `cleanSnippet` (hub row + card, `HubResults` copy
+      "Preview"), `HubPeek` and the knowledge command bar read it through `surfaces/kind-snippet-text.ts`
+      (`snippetKindText`: the shared `inlineKindText` for a kind that opens in the fragment, whole or cut at the end, plus
+      the case it cannot see — a fragment that STARTS inside a kind object, cut from its start to the object's close).
+      Plain text out; kindless JSON untouched. Guard `knowledge/hub/__tests__/snippetKindNeverRaw.test.tsx` (5 failed
+      before, 6 pass). KNOWN GAP: a fragment cut so that it holds no `__kind` key at all (only cards' inner fields) is
+      undetectable on the client — closed only at the source (S2).
+- [ ] S2. SOURCE (aidream, NOT run — needs a reindex). `chat.message_search_text(jsonb)` (1373) joins the raw `text`
+      parts, so a kind's JSON is both INDEXED (`cx_message_search_tsv_idx`, a GIN over
+      `chat.message_search_tsv(content)`) and headlined (`platform.search_messages` 1401 takes `substr(txt, at, 1600)`,
+      which cuts mid-JSON). Needed: (1) a SQL kind-to-readable-text step inside `message_search_text` (a `__kind`
+      object's string values / title, not keys or braces); (2) because the function is IMMUTABLE and backs a functional
+      index, changing its body does NOT update existing index entries — ship as `message_search_text_v2` + `_tsv_v2`, build
+      `CREATE INDEX CONCURRENTLY` on the v2 tsv over all `chat.message` rows (large; bodies up to 6 MB; autocommit lane,
+      off-hours), repoint `search_messages` to v2, then drop the old index. Nothing was applied.

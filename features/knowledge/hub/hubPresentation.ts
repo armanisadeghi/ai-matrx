@@ -23,6 +23,7 @@ import { getFileTypeDetails } from "@/features/files/utils/file-types";
 import { getContentRoleMeta, tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import type { KnowledgeHit } from "@/features/knowledge/api/knowledgeSearch";
 import { RELATIVE_DATE_LABEL } from "@/features/knowledge/api/knowledgeQueryText";
+import { snippetKindText } from "@/features/content-ir/surfaces/kind-snippet-text";
 
 export const SOURCE_KIND_WORDS: Record<string, string> = {
   web_page: "Web page",
@@ -188,7 +189,8 @@ export function plainText(value: string | null | undefined): string {
 
 /** A snippet without transcript scaffolding: "[Music]", "[Applause]", "Speaker 1:", "Unknown:". */
 export function cleanSnippet(value: string | null | undefined): string {
-  return plainText(value)
+  // A snippet is a fragment of a message: a kind in it (whole or cut) reads as its one-line form, never JSON.
+  return snippetKindText(plainText(value))
     .replace(/\[(?:music|applause|laughter|laughs|inaudible|silence|noise|crosstalk|foreign)\]/gi, " ")
     .replace(/(?:^|\s)(?:speaker[ _]?\d+|unknown|SPEAKER_\d+)\s*:\s*/gi, " ")
     .replace(/\s+/g, " ")

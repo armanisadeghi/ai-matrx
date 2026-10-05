@@ -21,6 +21,7 @@
  * shell hotkey (`CommandBarHotkey`) or a resource picker's search step.
  */
 
+import { snippetKindText } from "@/features/content-ir/surfaces/kind-snippet-text";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -457,7 +458,7 @@ export default function KnowledgeCommandBar({
         <div className="min-w-0 flex-1">
           <div className="truncate text-sm text-foreground">{hit.title}</div>
           {hit.entity === "segment" && hit.snippet ? (
-            <div className="line-clamp-2 text-xs text-muted-foreground">{hit.snippet}</div>
+            <div className="line-clamp-2 text-xs text-muted-foreground">{snippetKindText(hit.snippet)}</div>
           ) : null}
           <div className="truncate text-xs text-muted-foreground">
             {sub}

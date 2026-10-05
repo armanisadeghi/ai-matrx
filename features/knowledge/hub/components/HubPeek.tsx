@@ -14,6 +14,7 @@
  * nothing, rather than disappearing.
  */
 
+import { snippetKindText } from "@/features/content-ir/surfaces/kind-snippet-text";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useEffect, useState } from "react";
 import { ExternalLink, Lightbulb, Star, X } from "lucide-react";
@@ -166,7 +167,7 @@ export function HubPeek({
   const href = openFullHref(hit);
   const segments =
     hit.entity === "segment" && hit.snippet
-      ? [{ id: hit.id, text: hit.snippet, locator: hit.segment?.locator ?? null }]
+      ? [{ id: hit.id, text: snippetKindText(hit.snippet), locator: hit.segment?.locator ?? null }]
       : (hit.top_segments ?? []);
   const when = hit.updated_at ?? hit.created_at;
   // Sample data has no real records behind it: its items keep the light peek.
@@ -174,7 +175,7 @@ export function HubPeek({
   const lightBody = (
       <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overflow-x-hidden px-4 py-4">
         {hit.snippet && hit.entity !== "segment" ? (
-          <p className="text-sm leading-relaxed text-foreground/90">{hit.snippet}</p>
+          <p className="text-sm leading-relaxed text-foreground/90">{snippetKindText(hit.snippet)}</p>
         ) : null}
 
         {tagsSection}

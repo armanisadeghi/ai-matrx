@@ -29,6 +29,7 @@ import type { HubLayout } from "@/features/knowledge/hub/hubState";
 import type { SectionState } from "@/features/knowledge/hub/hooks/useKnowledgeResults";
 import {
   capturedByLabel,
+  cleanSnippet,
   hitKey,
   kindLabel,
   originLabel,
@@ -615,7 +616,10 @@ function TableLayout({
     retrySource: more.load,
   };
   const shownTitle = (hit: KnowledgeHit) => handlers.rowContent?.(hit)?.title ?? hit.title;
-  const shownSnippet = (hit: KnowledgeHit) => handlers.rowContent?.(hit)?.snippet ?? hit.snippet ?? null;
+  const shownSnippet = (hit: KnowledgeHit) => {
+    const raw = handlers.rowContent?.(hit)?.snippet ?? hit.snippet ?? null;
+    return raw ? cleanSnippet(raw) : null;
+  };
   const genericRowSummary = (hit: KnowledgeHit) =>
     [
       `Title: ${shownTitle(hit)}`,
