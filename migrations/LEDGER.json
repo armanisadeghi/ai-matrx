@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-05T03:50:58.977Z",
+  "generated_at": "2026-10-05T03:53:44.358Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -3878,6 +3878,12 @@
       "checksum": "a6f3a74481c7f78246dbd3f6cf08263c6510a24cb41a04cd2d07977154d4ad65",
       "applied_at": "2026-10-03 18:59:06.261169+00"
     },
+    "migrations/campaign/lane7w3b_a_an_agents_change_to_a_standard_row_waits_for_a_person.sql": {
+      "source": "matrx-frontend",
+      "filename": "lane7w3b_a_an_agents_change_to_a_standard_row_waits_for_a_person.sql",
+      "checksum": "a02fd954a8a38f0a85114b08ea41d628fea430ef16ff36db52a700375fe82bb0",
+      "applied_at": "2026-10-05 03:53:31.71724+00"
+    },
     "migrations/campaign/lane7w4a_a_a_protected_value_has_its_own_place.sql": {
       "source": "matrx-frontend",
       "filename": "lane7w4a_a_a_protected_value_has_its_own_place.sql",
@@ -5329,6 +5335,12 @@
       "filename": "scopesreadsweb_the_scope_screens_read_the_store_through_its_doors.sql",
       "checksum": "0a3593e4967e425187141c9a7a47c6599f35b1cead1d3627527b5408106ad431",
       "applied_at": "2026-09-29 21:16:26.417234+00"
+    },
+    "migrations/campaign/scopesrefusals_a_scope_type_is_found_by_its_label.sql": {
+      "source": "matrx-frontend",
+      "filename": "scopesrefusals_a_scope_type_is_found_by_its_label.sql",
+      "checksum": "bc321cbecf43676d7fa3008f242c0da9e090712f9e6641364f9a7d027fde449f",
+      "applied_at": "2026-10-05 03:53:32.955462+00"
     },
     "migrations/campaign/scopesrowscopied_the_scopes_switch_counts_every_row_by_id.sql": {
       "source": "matrx-frontend",
@@ -7051,6 +7063,12 @@
       "filename": "talkrec_the_last_door_keeps_its_grant.sql",
       "checksum": "bb00d4d27a26983f593c8f64c0ea0f4f15e2fd530ade1b86db602ad670d47156",
       "applied_at": "2026-09-20 15:15:12.811674+00"
+    },
+    "migrations/campaign/templates7_a_anyone_can_browse_the_platform_templates.sql": {
+      "source": "matrx-frontend",
+      "filename": "templates7_a_anyone_can_browse_the_platform_templates.sql",
+      "checksum": "ea4834ddf95d63df003c139794c2b1884a55dc7801ac7dc48d14686423007272",
+      "applied_at": "2026-10-05 03:51:20.974867+00"
     },
     "migrations/campaign/tidy_one_freshness_ceiling.sql": {
       "source": "matrx-frontend",

@@ -188,3 +188,15 @@ describe("one gallery drawing, two hosts", () => {
     }
   });
 });
+
+// v7 TEMPLATES (2026-10-04): live /templates said "No public templates yet" for every visitor with 107
+// templates published, because the signed-out read asked `custom.templates`, which an anonymous caller can
+// never reach (no schema access, and the door refuses a caller with no session). The signed-out read goes
+// through the one door built for it, `public.templates_public` (platform cards only).
+describe("the signed-out read asks the door an anonymous visitor can reach", () => {
+  it("reads public.templates_public, never a custom-schema door", () => {
+    const src = readFileSync(join(__dirname, "..", "gallery", "publicCatalogue.server.ts"), "utf8");
+    expect(src).toMatch(/\.schema\("public"\)\.rpc\("templates_public"/);
+    expect(src).not.toMatch(/\.schema\("custom"\)/);
+  });
+});
