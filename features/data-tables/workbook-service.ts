@@ -266,10 +266,19 @@ export async function saveSnapshot(
   args: SaveSnapshotArgs,
 ): Promise<ServiceResult<WorkbookSnapshot>> {
   const { data: userData } = await getClaimsUser(supabase);
+  // A snapshot is a component of its workbook and carries the workbook's organization.
+  const { data: workbook, error: workbookError } = await supabase
+    .schema("workbench")
+    .from("udt_workbooks")
+    .select("organization_id")
+    .eq("id", args.workbookId)
+    .single();
+  if (workbookError) return { success: false, error: workbookError.message };
   const { data, error } = await supabase
     .schema("workbench")
     .from("udt_workbook_snapshots")
     .insert({
+      organization_id: workbook.organization_id,
       workbook_id: args.workbookId,
       snapshot: args.snapshot as never,
       label: args.label ?? null,

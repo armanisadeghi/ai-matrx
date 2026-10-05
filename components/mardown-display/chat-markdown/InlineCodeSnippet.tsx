@@ -1,6 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { Suspense, lazy, useState } from "react";
+import { useKindSourceView } from "@/components/mardown-display/chat-markdown/kind-source-view";
+import {
+  isJsonFenceLanguage,
+  isKindJsonText,
+  valueCarriesKind,
+  withoutLeadingJsonComments,
+} from "@/features/content-ir/surfaces/json-kind-signal";
 import { cn } from "@/styles/themes/utils";
 import { Copy, Check } from "lucide-react";
 import { useThemeMode } from "@/styles/themes/useThemeMode";
@@ -18,6 +25,25 @@ interface InlineCodeSnippetProps {
    * Defaults to false to preserve existing behaviour everywhere else.
    */
   renderVariables?: boolean;
+  /** The text is still streaming — never decided as a kind here (the stream's gates own it). */
+  isStreamActive?: boolean;
+  /** A deliberate source view: kind JSON shows as code (as `CodeBlock`'s `showSource`). */
+  showSource?: boolean;
+}
+
+const KindGate = lazy(() => import("./InlineCodeSnippetKindGate"));
+
+/** The parsed value when this snippet is settled kind JSON (json-family or unlabelled), else undefined. */
+function settledKindValue(code: string, language: string | undefined): unknown {
+  if (!isJsonFenceLanguage(language)) return undefined;
+  const body = withoutLeadingJsonComments(code).trim();
+  if (!isKindJsonText(body)) return undefined;
+  try {
+    const value: unknown = JSON.parse(body);
+    return valueCarriesKind(value) ? value : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 const VARIABLE_RE = /\{\{([a-zA-Z_][a-zA-Z0-9_.]*)\}\}/g;
@@ -73,8 +99,14 @@ export const InlineCodeSnippet: React.FC<InlineCodeSnippetProps> = ({
   language,
   className,
   renderVariables = false,
+  isStreamActive = false,
+  showSource = false,
 }) => {
   const [copied, setCopied] = useState(false);
+  const sourceView = useKindSourceView();
+  // The never-raw law at the compact path (X1): settled kind JSON is its kind.
+  const kindValue =
+    showSource || sourceView || isStreamActive ? undefined : settledKindValue(code, language);
   const themeMode = useThemeMode();
   const mode = themeMode === "dark" ? "dark" : "light";
   VARIABLE_RE.lastIndex = 0;
@@ -87,6 +119,13 @@ export const InlineCodeSnippet: React.FC<InlineCodeSnippetProps> = ({
   // spaces). Previously we trimmed here for copy + display; that altered
   // what the user saw and copied relative to what the model produced.
   if (code.length === 0) return null;
+  if (kindValue !== undefined) {
+    return (
+      <Suspense fallback={<div role="status" aria-label="Loading" className="my-2 h-12 animate-pulse rounded-md bg-muted/40" />}>
+        <KindGate value={kindValue} />
+      </Suspense>
+    );
+  }
 
   const langColor = language ? LANGUAGE_COLORS[language] : undefined;
 

@@ -11,6 +11,7 @@ jest.mock("@/lib/redux/hooks", () => ({
 jest.mock("@/features/notes/redux/selectors", () => ({ selectNoteById: () => () => undefined }));
 jest.mock("@/features/agent-context/redux/tasksSlice", () => ({ selectTaskById: () => undefined }));
 jest.mock("@/features/files/redux/selectors", () => ({ selectFileById: () => undefined }));
+jest.mock("@/features/workflow-runtime/run-status", () => ({ RUN_STATUS_LABEL: { running: "Running", failed: "Failed" } }));
 jest.mock("@/features/meet/redux/meetingsSlice", () => ({ selectMeetingEntry: () => undefined }));
 
 import { useMeetingStatus, useTaskStatus, useWorkflowRunStatus } from "../items/item-status";

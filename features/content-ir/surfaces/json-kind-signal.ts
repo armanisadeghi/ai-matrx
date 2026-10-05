@@ -124,8 +124,32 @@ function isObjectKeyPosition(text: string, quoteAt: number): boolean {
   return !inString && expectKey;
 }
 
+/**
+ * The text after any LEADING JSONC comments and whitespace (`// note`,
+ * `/* … *\/`) — a ```jsonc / ```json / unlabelled fence that opens with a
+ * comment still decides on its first key (X3). An unterminated leading
+ * comment (still arriving) leaves nothing: undecided, never raw.
+ */
+export function withoutLeadingJsonComments(text: string): string {
+  let i = 0;
+  for (;;) {
+    i = skipWs(text, i);
+    if (text.startsWith("//", i)) {
+      const end = text.indexOf("\n", i);
+      if (end === -1) return "";
+      i = end + 1;
+    } else if (text.startsWith("/*", i)) {
+      const end = text.indexOf("*/", i + 2);
+      if (end === -1) return "";
+      i = end + 2;
+    } else {
+      return i === 0 ? text : text.slice(i);
+    }
+  }
+}
+
 export function jsonKindSignal(text: string | null | undefined): JsonKindSignal {
-  const source = text ?? "";
+  const source = withoutLeadingJsonComments(text ?? "");
   if (hasKindKey(source)) return "kind";
 
   let i = skipWs(source, 0);

@@ -20,30 +20,16 @@ import {
   isKindJsonText,
   markdownCarriesKind,
 } from "@/features/content-ir/surfaces/json-kind-signal";
+import { useKindSourceView } from "./kind-source-view";
 import { useReportKindAtRawRenderer } from "@/features/content-ir/surfaces/report-kind-at-raw-renderer";
 import type { ImagePolicyDeclaration } from "@/components/rich-content/prose/remote-image-policy";
 
 /** Texts an ancestor gate already handed to the pipeline. */
 const ReroutedTextsContext = createContext<readonly string[]>([]);
 
-/** True inside a card that SHOWS source (an XML card's prose): text there stays as written. */
-const KindSourceViewContext = createContext(false);
-
-/**
- * Declares a subtree a source view: an XML card draws what the author wrote
- * between its tags, so a kind-looking line there is code being shown. (A kind
- * inside an XML tag in a live answer is lifted upstream, at tag close — A8.)
- */
-export function KindSourceView({ children }: { children: React.ReactNode }) {
-  return (
-    <KindSourceViewContext.Provider value>{children}</KindSourceViewContext.Provider>
-  );
-}
-
-/** Whether this subtree is a source view (see `KindSourceView`) — kind regions stay as written. */
-export function useKindSourceView(): boolean {
-  return useContext(KindSourceViewContext);
-}
+// The source-view context lives in its own module (read by leaves that must
+// not import the pipeline); re-exported here for existing callers.
+export { KindSourceView, useKindSourceView } from "./kind-source-view";
 
 export interface KindTextGateProps {
   /** The leaf's own name, for the report. */
@@ -78,7 +64,7 @@ export function KindTextGate({
   children,
 }: KindTextGateProps) {
   const rerouted = useContext(ReroutedTextsContext);
-  const sourceView = useContext(KindSourceViewContext);
+  const sourceView = useKindSourceView();
   const reroute =
     !showSource && !sourceView && textNeedsKindPipeline(content, rerouted);
   useReportKindAtRawRenderer(

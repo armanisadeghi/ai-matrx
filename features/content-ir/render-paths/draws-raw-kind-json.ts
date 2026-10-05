@@ -14,7 +14,12 @@
  *    the owner's ruling, 2026-09-30) — never a raw kind;
  *  - `text` → prose: raw when it still holds a kind region the pipeline should
  *    have lifted (`markdownCarriesKind`, the rule the leaf gate and the
- *    splitter share).
+ *    splitter share);
+ *  - `code` xml/svg → the XML card (XmlBlock), followed as it draws (X1): a
+ *    ```xml FENCE is quoted source (ruling (a)) and keeps the kind as
+ *    written; an XML TAG (`isQuotedSourceXmlBlock` false, ruling (b)) draws
+ *    its prose at the standard level, so a JSON piece there is raw exactly
+ *    when the standard decision (`standardKindRegionState`) would not take it.
  */
 
 import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
@@ -23,8 +28,36 @@ import { decideBlockRender } from "@/components/mardown-display/chat-markdown/bl
 import {
   hasKindKey,
   isJsonFenceLanguage,
+  isQuotedSourceXmlBlock,
   markdownCarriesKind,
 } from "@/features/content-ir/surfaces/json-kind-signal";
+import { tokenizeXml } from "@/components/mardown-display/blocks/xml/xml-tokenize";
+import { splitContentIntoBlocksV2 } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
+import { standardKindRegionState } from "@/components/rich-content/standard/standard-kind-region";
+
+const XML_CARD_LANGUAGES = new Set(["xml", "svg"]);
+
+/**
+ * Whether the XML card draws a kind raw (X1). Its prose tokens render through
+ * the standard level (NestedRichContent → StandardBlock): prose goes through
+ * the leaf gate (never raw), JSON-family code through the standard decision.
+ */
+function xmlCardDrawsKindRaw(
+  block: { content?: string | null; metadata?: Record<string, unknown> },
+  isStreaming: boolean,
+): boolean {
+  if (isQuotedSourceXmlBlock(block)) return false;
+  for (const token of tokenizeXml(block.content ?? "")) {
+    if (token.type !== "markdown" || !hasKindKey(token.text ?? "")) continue;
+    for (const piece of splitContentIntoBlocksV2(token.text ?? "")) {
+      if (!hasKindKey(piece.content)) continue;
+      const jsonPiece =
+        piece.type === "code" ? isJsonFenceLanguage(piece.language) : piece.type !== "text";
+      if (jsonPiece && !standardKindRegionState(piece.content, isStreaming)) return true;
+    }
+  }
+  return false;
+}
 
 export interface FrameJudgeOptions {
   /**
@@ -65,5 +98,8 @@ export function drawsKindAsRawJson(
   const { block: routed, gate } = decide(block, options);
   if (gate) return false;
   if (routed.type === "text") return markdownCarriesKind(routed.content ?? "");
+  if (routed.type === "code" && XML_CARD_LANGUAGES.has((routed.language ?? "").toLowerCase())) {
+    return xmlCardDrawsKindRaw(routed, options.isStreamActive ?? block.status === "streaming");
+  }
   return routed.type === "code" && isJsonFenceLanguage(routed.language);
 }

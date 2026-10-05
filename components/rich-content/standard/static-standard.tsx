@@ -25,6 +25,7 @@ import { fenceNestsInnerFences } from "@ai-matrx/content-ir/source";
 import MarkdownPreviewBlock from "@/components/mardown-display/blocks/markdown-preview/MarkdownPreviewBlock";
 import { StandardBlock } from "./StandardBlocks";
 import XmlBlock from "@/components/mardown-display/blocks/xml/XmlBlock";
+import { isQuotedSourceXmlBlock } from "@/features/content-ir/surfaces/json-kind-signal";
 import { tokenizeXml } from "@/components/mardown-display/blocks/xml/xml-tokenize";
 import {
   computeDocumentNumbering,
@@ -169,7 +170,12 @@ function StaticBlock({
     });
     return (
       <RichContentDepthProvider depth={depth} cap={cap}>
-        <XmlBlock content={content} language={xmlLanguage} renderedProse={renderedProse} />
+        <XmlBlock
+          content={content}
+          language={xmlLanguage}
+          renderedProse={renderedProse}
+          quotedSource={isQuotedSourceXmlBlock(block)}
+        />
       </RichContentDepthProvider>
     );
   }

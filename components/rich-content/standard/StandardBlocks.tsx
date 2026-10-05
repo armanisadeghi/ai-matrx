@@ -48,10 +48,8 @@ import {
 } from "@/components/markdown-core/streaming-context";
 import { RemoteImageGate } from "@/components/rich-content/prose/remote-image-policy";
 import { useKindSourceView } from "@/components/mardown-display/chat-markdown/KindTextGate";
-import {
-  firstKindSlug,
-  jsonKindSignal,
-} from "@/features/content-ir/surfaces/json-kind-signal";
+import { isQuotedSourceXmlBlock } from "@/features/content-ir/surfaces/json-kind-signal";
+import { standardKindRegionState } from "./standard-kind-region";
 
 // Heavy engines stay behind React.lazy (an async edge inside the parent's
 // existing chunk graph — no new loadable; code-splitting rule 3), exactly as
@@ -134,7 +132,12 @@ function CodeFence({
   // code block — the compact snippet has nowhere to draw either.
   if (!meta && probe.split("\n").length <= 2 && probe.length < 120) {
     return (
-      <InlineCodeSnippet code={code} language={language} className="my-3" />
+      <InlineCodeSnippet
+        code={code}
+        language={language}
+        isStreamActive={isStreaming}
+        className="my-3"
+      />
     );
   }
   return (
@@ -172,25 +175,19 @@ function KindLoader() {
  * null (the caller draws it as JSON, which is correct).
  */
 function kindRegion(content: string, isStreaming?: boolean) {
-  const trimmed = content.trim();
-  if (!trimmed.startsWith("{") && !trimmed.startsWith("[")) return null;
-  const signal = jsonKindSignal(trimmed);
-  if (signal === "not_kind") return null;
-  if (signal === "undecided") return isStreaming ? <KindLoader /> : null;
-  let value: unknown;
-  try {
-    value = JSON.parse(trimmed);
-  } catch {
-    if (isStreaming) return <KindLoader />;
+  const decision = standardKindRegionState(content, isStreaming);
+  if (!decision) return null;
+  if (decision.state === "loader") return <KindLoader />;
+  if (decision.state === "broken") {
     return (
       <Suspense fallback={<KindLoader />}>
-        <StandardBrokenKind slug={firstKindSlug(trimmed)} source={content} />
+        <StandardBrokenKind slug={decision.slug} source={content} />
       </Suspense>
     );
   }
   return (
     <Suspense fallback={<KindLoader />}>
-      <StandardKindValue value={value} />
+      <StandardKindValue value={decision.value} />
     </Suspense>
   );
 }
@@ -247,7 +244,13 @@ export function StandardBlock({
       );
     }
     if (language && XML_LANGUAGES.has(language)) {
-      return <XmlBlock content={content} language={language} />;
+      return (
+        <XmlBlock
+          content={content}
+          language={language}
+          quotedSource={isQuotedSourceXmlBlock(block)}
+        />
+      );
     }
     // ```csv / ```tsv — the same sortable table the full engine renders.
     if (language === "csv" || language === "tsv") {

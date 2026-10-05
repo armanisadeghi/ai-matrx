@@ -19,6 +19,14 @@ interface XmlBlockProps {
    * render client-side through NestedRichContent, as before.
    */
   renderedProse?: Record<number, React.ReactNode>;
+  /**
+   * Whether this card SHOWS SOURCE — a ```xml fence, the model quoting source
+   * (ruling (a)): a kind in its prose stays as written. False for an XML TAG
+   * the model wrapped content in (`isQuotedSourceXmlBlock`, ruling (b)): its
+   * prose is data and a kind there renders as the kind. Default true — a
+   * caller that cannot tell keeps the source view.
+   */
+  quotedSource?: boolean;
 }
 
 function renderAttributes(
@@ -41,6 +49,7 @@ const XmlBlock: React.FC<XmlBlockProps> = ({
   language = "xml",
   className,
   renderedProse,
+  quotedSource = true,
 }) => {
   const [copied, setCopied] = useState(false);
   const [collapsed, setCollapsed] = useState<Set<number>>(new Set());
@@ -216,9 +225,13 @@ const XmlBlock: React.FC<XmlBlockProps> = ({
                   {renderedProse && idx in renderedProse && !isStreaming ? (
                     renderedProse[idx]
                   ) : (
-                    <KindSourceView>
-                      <NestedRichContent source={token.text ?? ""} />
-                    </KindSourceView>
+                    quotedSource ? (
+                      <KindSourceView>
+                        <NestedRichContent source={token.text ?? ""} />
+                      </KindSourceView>
+                    ) : (
+                      <NestedRichContent source={token.text ?? ""} isStreaming={isStreaming} />
+                    )
                   )}
                 </div>
               );

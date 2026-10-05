@@ -1347,6 +1347,10 @@ export type ChatDatabase = {
           metadata: Json
           name: string
           organization_id: string
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           updated_at: string
           updated_by: string | null
           version: number
@@ -1364,6 +1368,10 @@ export type ChatDatabase = {
           metadata?: Json
           name: string
           organization_id: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -1381,6 +1389,10 @@ export type ChatDatabase = {
           metadata?: Json
           name?: string
           organization_id?: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -3165,6 +3177,10 @@ export type ChatDatabase = {
           modality: string
           name: string
           organization_id: string
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           updated_at: string
           updated_by: string | null
           version: number
@@ -3181,6 +3197,10 @@ export type ChatDatabase = {
           modality: string
           name: string
           organization_id: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -3197,6 +3217,10 @@ export type ChatDatabase = {
           modality?: string
           name?: string
           organization_id?: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -3227,10 +3251,14 @@ export type ChatDatabase = {
           layer_owner_id: string
           metadata: Json
           organization_id: string
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
           rationale: string | null
           rejection_fingerprint: string | null
           rule: Json
           setting_key: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           source: string
           state: string
           updated_at: string
@@ -3252,10 +3280,14 @@ export type ChatDatabase = {
           layer_owner_id: string
           metadata?: Json
           organization_id: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
           rationale?: string | null
           rejection_fingerprint?: string | null
           rule: Json
           setting_key: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           source: string
           state: string
           updated_at?: string
@@ -3277,10 +3309,14 @@ export type ChatDatabase = {
           layer_owner_id?: string
           metadata?: Json
           organization_id?: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
           rationale?: string | null
           rejection_fingerprint?: string | null
           rule?: Json
           setting_key?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           source?: string
           state?: string
           updated_at?: string
@@ -7939,6 +7975,7 @@ export type ChatDatabase = {
           has_nested_objects: boolean
           id: string
           is_current: boolean
+          organization_id: string | null
           scope_id: string
           source_type: Database["public"]["Enums"]["context_source_type"]
           value_boolean: boolean | null
@@ -7965,6 +8002,7 @@ export type ChatDatabase = {
           has_nested_objects?: boolean
           id?: string
           is_current?: boolean
+          organization_id?: string | null
           scope_id: string
           source_type?: Database["public"]["Enums"]["context_source_type"]
           value_boolean?: boolean | null
@@ -7991,6 +8029,7 @@ export type ChatDatabase = {
           has_nested_objects?: boolean
           id?: string
           is_current?: boolean
+          organization_id?: string | null
           scope_id?: string
           source_type?: Database["public"]["Enums"]["context_source_type"]
           value_boolean?: boolean | null
@@ -22461,6 +22500,10 @@ export type ChatDatabase = {
           metadata: Json
           name: string
           organization_id: string
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
           slug: string
           updated_at: string
           updated_by: string | null
@@ -22476,6 +22519,10 @@ export type ChatDatabase = {
           metadata?: Json
           name: string
           organization_id: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           slug: string
           updated_at?: string
           updated_by?: string | null
@@ -22491,6 +22538,10 @@ export type ChatDatabase = {
           metadata?: Json
           name?: string
           organization_id?: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           slug?: string
           updated_at?: string
           updated_by?: string | null
@@ -23284,7 +23335,6 @@ export type ChatDatabase = {
         Args: { p_actor: string; p_org: string; p_press: string }
         Returns: Json
       }
-      _cutover_scope_own_words_back: { Args: { p_org: string }; Returns: Json }
       _cutover_seam_apply: {
         Args: {
           p_actor: string
@@ -23725,6 +23775,10 @@ export type ChatDatabase = {
         Returns: number
       }
       _t13_transitional_expand: { Args: { p_table: unknown }; Returns: string }
+      _t13_transitional_expand_at_birth: {
+        Args: { p_table: unknown }
+        Returns: string
+      }
       _t13_transitional_mark_defaults: {
         Args: { p_table: unknown }
         Returns: string
@@ -24326,8 +24380,6 @@ export type ChatDatabase = {
           seam_key: string
         }[]
       }
-      cutover_scope_own_words: { Args: { p_org: string }; Returns: Json }
-      cutover_scope_rows_copied: { Args: { p_org: string }; Returns: Json }
       cutover_scopes_census_record: { Args: { p_census: Json }; Returns: Json }
       cutover_seam_measure_record: {
         Args: {
@@ -43713,6 +43765,7 @@ export type ChatDatabase = {
           field_order: number
           id: string
           is_required: boolean
+          organization_id: string | null
           template_id: string
           updated_at: string
           validation_rules: Json | null
@@ -43727,6 +43780,7 @@ export type ChatDatabase = {
           field_order?: number
           id?: string
           is_required?: boolean
+          organization_id?: string | null
           template_id: string
           updated_at?: string
           validation_rules?: Json | null
@@ -43741,6 +43795,7 @@ export type ChatDatabase = {
           field_order?: number
           id?: string
           is_required?: boolean
+          organization_id?: string | null
           template_id?: string
           updated_at?: string
           validation_rules?: Json | null
@@ -43929,6 +43984,7 @@ export type ChatDatabase = {
           custom_fields: Json
           id: string
           label: string | null
+          organization_id: string | null
           origin: string
           snapshot: Json
           workbook_id: string
@@ -43939,6 +43995,7 @@ export type ChatDatabase = {
           custom_fields?: Json
           id?: string
           label?: string | null
+          organization_id?: string | null
           origin?: string
           snapshot: Json
           workbook_id: string
@@ -43949,6 +44006,7 @@ export type ChatDatabase = {
           custom_fields?: Json
           id?: string
           label?: string | null
+          organization_id?: string | null
           origin?: string
           snapshot?: Json
           workbook_id?: string

@@ -117,6 +117,24 @@ function detailToStore(d: ApiDataStoreDetail): DataStore {
 // useDataStores — list + create
 // ---------------------------------------------------------------------------
 
+
+/** A membership is a component of its data store and carries the store's organization. */
+async function dataStoreOrganizationId(
+  supabase: ReturnType<typeof createClient>,
+  dataStoreId: string,
+): Promise<string> {
+  const { data, error } = await ragDb(supabase)
+    .from("data_stores")
+    .select("organization_id")
+    .eq("id", dataStoreId)
+    .single();
+  if (error) throw error;
+  if (!data?.organization_id) {
+    throw new Error("This data store has no organization.");
+  }
+  return data.organization_id as string;
+}
+
 export function useDataStores(): {
   stores: DataStoreWithMemberCount[];
   loading: boolean;
@@ -318,6 +336,7 @@ export function useDataStoreDetail(storeId: string | null) {
           .from("data_store_members")
           .upsert(
             {
+              organization_id: await dataStoreOrganizationId(supabase, storeId),
               data_store_id: storeId,
               source_kind: input.sourceKind,
               source_id: input.sourceId,
@@ -611,6 +630,10 @@ export function useDocumentDataStores(processedDocumentId: string | null) {
           .from("data_store_members")
           .upsert(
             {
+              organization_id: await dataStoreOrganizationId(
+                supabase,
+                dataStoreId,
+              ),
               data_store_id: dataStoreId,
               source_kind: "processed_document",
               source_id: processedDocumentId,

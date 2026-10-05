@@ -54,6 +54,7 @@ import { InlineStatusIndicator } from "../internal-handlers/InlineStatusIndicato
 import { EXPERT_WORKING_LABEL } from "@ai-matrx/chat/agents/components/shared/transcript-audience";
 import { looksLikeDiff } from "../diff-blocks/diff-style-registry";
 import { InlineCodeSnippet } from "../InlineCodeSnippet";
+import { isQuotedSourceXmlBlock } from "@/features/content-ir/surfaces/json-kind-signal";
 import type {
   TypedRenderBlock,
   ServerOnlyBlockType,
@@ -1047,6 +1048,7 @@ function renderXmlCode({ block, index }: BlockDispatchContext) {
       key={index}
       content={block.content}
       language={block.language?.toLowerCase()}
+      quotedSource={isQuotedSourceXmlBlock(block)}
       className="my-3"
     />
   );
