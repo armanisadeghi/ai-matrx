@@ -163,7 +163,11 @@ describeLive("the approval card, against the live record store", () => {
     const shown = container.textContent ?? "";
     expect(shown).toContain("Rate card");
     expect(shown).toContain("That table already existed in this organization");
-    expect(shown).toContain("custom/agent_schema_changes");
+    // The settings sentence (the remedy) sits behind the card's Details since AGENTS-ON-DATA 2.
+    await act(async () => {
+      button("Details").click();
+    });
+    expect(container.textContent ?? "").toContain("custom/agent_schema_changes");
 
     await act(async () => {
       button("Approve").click();

@@ -158,6 +158,18 @@ export async function signInAsAdmin(): Promise<{
   }
   const userId = signedIn.data.user.id;
   rememberSupabase(supabase);
+  // The agent's own door. The store believes `origin = 'agent'` only from a connection that declares
+  // the agent tier (`x-matrx-actor-tier: agent`, the way the server and an agent client do), so the
+  // harness files the wait through a second client that declares it, then a PERSON decides on `supabase`.
+  const agentClient = createSupabaseClient(SUPABASE_URL as string, SUPABASE_KEY as string, {
+    global: { headers: { "x-matrx-actor-tier": "agent" } },
+  });
+  const agentSignedIn = await agentClient.auth.signInWithPassword({
+    email: ADMIN_EMAIL as string,
+    password: ADMIN_PASSWORD as string,
+  });
+  if (agentSignedIn.error) throw new Error(`the agent-tier client could not sign in: ${agentSignedIn.error.message}`);
+  rememberAgentSupabase(agentClient);
   setStoreSingleton({
     getState: () => ({
       appContext: { organization_id: ORGANIZATION },
@@ -256,7 +268,7 @@ export async function onAFreshTable(
   // captured declaration through `custom.work_approval_request` with
   // `origin = 'agent'`, which is the same door, the same shape and the same
   // origin the store uses, and hands the card the id that comes back.
-  const filed = (await recordsDataSource(supabaseFor(store)).rpc(
+  const filed = (await recordsDataSource(agentSupabaseFor()).rpc(
     "work_approval_request",
     {
       p_organization_id: ORGANIZATION,
@@ -300,4 +312,15 @@ function supabaseFor(_store: RecordsClient): object {
     throw new Error("rememberSupabase was never called — sign in through signInAsAdmin first");
   }
   return _supabase as object;
+}
+
+let _agentSupabase: unknown = null;
+export function rememberAgentSupabase(client: unknown): void {
+  _agentSupabase = client;
+}
+function agentSupabaseFor(): object {
+  if (!_agentSupabase) {
+    throw new Error("rememberAgentSupabase was never called — sign in through signInAsAdmin first");
+  }
+  return _agentSupabase as object;
 }
