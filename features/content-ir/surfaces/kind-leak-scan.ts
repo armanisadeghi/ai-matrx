@@ -89,7 +89,7 @@ export function findKindLeak(root: Node, cap?: number): Element | null {
   if (!current) return null;
   for (;;) {
     let deeper: Element | null = null;
-    for (let child = current.firstElementChild; child; child = child.nextElementSibling) {
+    for (let child: Element | null = current.firstElementChild; child; child = child.nextElementSibling) {
       if (isSkipped(child)) continue;
       if (hasKindKey(visibleKindText(child, cap))) {
         deeper = child;
