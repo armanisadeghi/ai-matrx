@@ -277,7 +277,7 @@ export function TemplatePreview({ templateId }: { templateId: string }) {
     const supabase = createClient();
     const result = await addInstalledAgent(answer, orgId, {
       copier: templateAgentCopier(dispatch),
-      // Extra agents (Kits → Template merge) are copied as the kit copied them: no records tool added.
+      // Extra agents are copied without the records tool (their own tools are kept).
       extraCopier: templateAgentCopier(dispatch, { attachRecordsTool: false }),
       createWorkflow: templateWorkflowCreator(dispatch),
       archiveAgent: templateAgentArchiver(dispatch),

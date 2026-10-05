@@ -73,10 +73,10 @@ describe("no nav row is gated", () => {
     expect(src).not.toMatch(/^\s*gate\??:/m);
   });
 
-  it("Make, Records and Kits are always in the Data menu", () => {
+  it("Make and Records are always in the Data menu (templates live on /make; /kits is retired)", () => {
     const hrefs = DATA_NAV_CHILDREN.map((child) => child.href);
     expect(hrefs).toEqual(expect.arrayContaining(["/make", "/data"]));
-    expect(DATA_NAV_CHILDREN.some((child) => /kit/i.test(child.href ?? ""))).toBe(true);
+    expect(DATA_NAV_CHILDREN.some((child) => /\/kits/i.test(child.href ?? ""))).toBe(false);
   });
 
   it("no source file names the deleted store-switch gate", () => {
