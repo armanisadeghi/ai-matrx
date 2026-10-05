@@ -28,6 +28,8 @@ jest.mock("../../db-renderer/useDbToolMeta", () => ({
 jest.mock("../../db-renderer/toolRendererCache", () => ({
   prefetchToolRenderer: jest.fn(),
   getCachedToolRenderer: () => null,
+  getCachedToolMeta: () => null,
+  isKnownNoToolRenderer: () => true,
 }));
 
 import { ToolErrorCard, toolErrorLabel } from "../ToolErrorCard";

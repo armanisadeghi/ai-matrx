@@ -127,8 +127,8 @@ import {
 } from "../../../ui-first-tools/redux/agent-lists.thunks";
 import { useConversationListsTab } from "../../../ui-first-tools/ui/lists/TaskPanel";
 import { selectAgentContextPolicies } from "../../../redux/agent-definition/selectors";
-import { ActiveContextButton } from "@host/features/scopes/components/active-context/ActiveContextButton";
-import { selectActiveScopeIdsByType } from "@host/features/scopes/redux/selectors/active-context";
+import { ActiveContextButton } from "../../../../context/sources/scopes";
+import { selectActiveScopeIdsByType } from "../../../../context/sources/scopes";
 import { contextEntryLabel } from "../../context-policies-display/contextEntryLabel";
 
 interface ConversationContextRailProps {

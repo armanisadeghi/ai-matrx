@@ -2,7 +2,7 @@ import type { ChatRootState } from "../../../../store/root-state";
 import type { ApplicationScope } from "../../../utils/scope-mapping";
 import { buildApplicationScopeFromMenuContext } from "@host/features/context-menu-v3/utils/build-application-scope";
 import { buildChatContextData } from "./buildChatContextData";
-import { getEffectiveSandboxRef } from "@host/lib/sandbox/active-binding";
+import { getEffectiveSandboxRef } from "../../../../compute/targets";
 import { selectBuilderAdvancedSettings } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { selectInstanceOverrideState } from "../../../redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
 import type {

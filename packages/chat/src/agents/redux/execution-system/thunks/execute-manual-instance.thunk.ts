@@ -133,7 +133,7 @@ import {
   resolveBackendForConversation,
   warmLocalEngineForConversation,
 } from "./resolve-base-url";
-import { resolveAgentSandboxRef } from "@host/lib/sandbox/active-binding";
+import { resolveAgentSandboxRef } from "../../../../compute/targets";
 import {
   selectActiveServer,
   selectEndpointOverrideConfig,
@@ -144,7 +144,7 @@ import {
   selectActiveScopeTypeIds,
   selectScopeSelectionsContext,
   selectTaskId,
-} from "@host/lib/redux/slices/appContextSlice";
+} from "../../../../context/sources/scopes";
 import { requireExecutionOrganizationId } from "../utils/required-organization";
 import { resolveEndpointPath } from "@ai-matrx/agents/matrx";
 import {

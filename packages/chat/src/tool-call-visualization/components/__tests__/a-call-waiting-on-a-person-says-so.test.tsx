@@ -14,6 +14,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
 import type { ToolLifecycleEntry } from "../../../agents/types/request.types";
+import { registerChatUi } from "../../../host/ui-slots";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -75,11 +76,12 @@ jest.mock("../../result-fields/ToolErrorCard", () => ({ ToolErrorCard: () => <di
 jest.mock("../ToolUpdatesOverlay", () => ({ ToolUpdatesOverlay: () => null }));
 jest.mock("../../registry/toolArtifact", () => ({ getToolArtifact: () => null }));
 jest.mock("../ArtifactResultBar", () => ({ ArtifactResultBar: () => null }));
-jest.mock("@host/features/action-requests/components/ParkedOnPersonCard", () => ({
+// The host registers the card (host/ui-slots); the test registers its stand-in the same way.
+registerChatUi({
   ParkedOnPersonCard: ({ actionRequestId }: { actionRequestId: string | null }) => (
     <div data-testid="parked-ask">{actionRequestId ?? "newest-open-ask"}</div>
   ),
-}));
+});
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { ToolCallVisualization } = require(

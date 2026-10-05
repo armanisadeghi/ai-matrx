@@ -40,8 +40,8 @@ import {
 import {
   resolveEntityToken,
   tryGetEntityInfo,
-} from "@host/features/scopes/registry/entityRegistry";
-import { getCachedEntityTitle } from "@host/features/scopes/service/entityTitles";
+} from "../../context/sources/scopes";
+import { getCachedEntityTitle } from "../../context/sources/scopes";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 

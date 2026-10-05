@@ -20,12 +20,12 @@ import {
   selectActiveProjectId,
   selectActiveScopeIds,
   selectActiveTaskId,
-} from "@host/features/scopes/redux/selectors/active-context";
+} from "../../../context/sources/scopes";
 import {
   selectProjectName,
   selectTaskName,
-} from "@host/lib/redux/slices/appContextSlice";
-import { useScopeTree } from "@host/features/scopes/hooks/useScopeTree";
+} from "../../../context/sources/scopes";
+import { useScopeTree } from "../../../context/sources/scopes";
 import type { ContextDrawerItem } from "./types";
 
 export interface ActiveContextLayerSummary {

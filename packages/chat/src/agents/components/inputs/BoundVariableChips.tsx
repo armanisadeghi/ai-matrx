@@ -43,8 +43,8 @@ import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import {
   addActiveScope,
   removeActiveScope,
-} from "@host/lib/redux/slices/appContextSlice";
-import { selectActiveOrganizationId } from "@host/features/scopes/redux/selectors/active-context";
+} from "../../../context/sources/scopes";
+import { selectActiveOrganizationId } from "../../../context/sources/scopes";
 import {
   useBoundVariableScope,
   type BoundVarInfo,
@@ -59,19 +59,19 @@ import {
   clearUserVariableValue,
   setUserVariableValue,
 } from "../../redux/execution-system/instance-variable-values/instance-variable-values.slice";
-import { ContextValueInput } from "@host/features/scopes/components/reference/ContextValueInput";
+import { ContextValueInput } from "../../../context/sources/scopes";
 import { variableValueToDisplay } from "../../utils/variable-utils";
-import { setScopeContextValue } from "@host/features/scopes/redux/scopeContextView";
-import { ensureContextValues } from "@host/features/scopes/redux/thunks/ensureContextValues";
-import { buildScopeValuePayload } from "@host/features/scopes/utils/scopeValuePayload";
+import { setScopeContextValue } from "../../../context/sources/scopes";
+import { ensureContextValues } from "../../../context/sources/scopes";
+import { buildScopeValuePayload } from "../../../context/sources/scopes";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
-import type { ContextValueType } from "@host/features/scopes/redux/contextItemCatalog";
+import type { ContextValueType } from "../../../context/sources/scopes";
 import {
   selectScopeById,
   selectScopesByType,
   selectScopesLoadedForType,
-} from "@host/features/scopes/redux/selectors/admin";
-import { ensureScopeTree } from "@host/features/scopes/redux/thunks/ensureScopeTree";
+} from "../../../context/sources/scopes";
+import { ensureScopeTree } from "../../../context/sources/scopes";
 
 interface BoundVariableChipsProps {
   conversationId: string;

@@ -14,7 +14,7 @@
  */
 
 import { supabase } from "../../../../host/db";
-import { slugifyKey } from "@host/features/scopes/utils/slugify";
+import { slugifyKey } from "../../../../context/sources/scopes";
 import type { Database } from "../../../../host/db-types";
 import type {
   AgentMemoryRow,

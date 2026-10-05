@@ -41,7 +41,7 @@ import { loadConversation } from "../redux/execution-system/thunks/load-conversa
 import { followWhatIsStillInFlight } from "../runtime-reconnect/follow-what-is-still-in-flight";
 import { setFocus } from "../redux/execution-system/conversation-focus/conversation-focus.slice";
 import { patchConversation } from "../redux/execution-system/conversations/conversations.slice";
-import type { ConversationSandboxBinding } from "@host/lib/sandbox/conversation-binding-row";
+import type { ConversationSandboxBinding } from "../../compute/targets";
 
 export interface UseConversationResumeOptions {
   /** The conversation to reopen. `null` disables the hook entirely. */

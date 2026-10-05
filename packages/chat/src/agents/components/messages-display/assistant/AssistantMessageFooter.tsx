@@ -30,8 +30,8 @@ import {
   useDocumentDialogsHost,
 } from "@host/features/rich-document/hosts/DocumentDialogsHost";
 import { useOutputFeedback } from "@host/lib/output-feedback/useOutputFeedback";
-import { NegativeVerdictFollowUp } from "@host/features/review-walk/components/NegativeVerdictFollowUp";
-import { RulebookNudge } from "@host/features/masterwork/oracle/RulebookNudge";
+import { NegativeVerdictFollowUp } from "../../../../host/ui-slots";
+import { RulebookNudge } from "../../../../host/ui-slots";
 import { precedingQuestion } from "@host/features/masterwork/oracle/service";
 import {
   selectMessageById,

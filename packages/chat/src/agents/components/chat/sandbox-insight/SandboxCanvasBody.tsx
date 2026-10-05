@@ -39,14 +39,14 @@ import { cn } from "@ai-matrx/design-system";
 import { useAppSelector } from "../../../../store/hooks";
 import { SimpleTerminal } from "@host/features/code/terminal/SimpleTerminal";
 import { SandboxFileViewer } from "../../debug/SandboxFileViewer";
-import { sandboxDisplayName } from "@host/lib/sandbox/format";
+import { sandboxDisplayName } from "../../../../compute/targets";
 import {
   ACTIVE_EFFECTIVE_STATUSES,
   getEffectiveStatus,
   statusPillClasses,
   STATUS_LABELS,
-} from "@host/lib/sandbox/status";
-import type { SandboxInstance } from "@host/types/sandbox";
+} from "../../../../compute/targets";
+import type { SandboxInstance } from "../../../../compute/targets";
 import { selectLiveToolLifecycleByConversation } from "../../../redux/execution-system/active-requests/active-requests.selectors";
 import { SandboxActivityFeed } from "./SandboxActivityFeed";
 import { isSandboxTool } from "./sandbox-activity";

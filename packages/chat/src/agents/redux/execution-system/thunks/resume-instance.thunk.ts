@@ -84,7 +84,7 @@ import {
   selectProjectId,
   selectScopeSelectionsContext,
   selectTaskId,
-} from "@host/lib/redux/slices/appContextSlice";
+} from "../../../../context/sources/scopes";
 import { requireExecutionOrganizationId } from "../utils/required-organization";
 import {
   createRequest,

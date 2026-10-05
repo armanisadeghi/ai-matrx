@@ -50,7 +50,7 @@ import { selectAutoClearConversation } from "../../../redux/execution-system/ins
 import { selectShouldShowAutoClearToggle } from "../../../redux/execution-system/selectors/aggregate.selectors";
 import { setAutoClearMode } from "../../../redux/execution-system/thunks/create-instance.thunk";
 import { selectAgentIdFromInstance } from "../../../redux/execution-system/conversations/conversations.selectors";
-import { ContextLensBar } from "@host/features/scopes/components/active-context/ContextLensBar";
+import { ContextLensBar } from "../../../../context/sources/scopes";
 import { ComputeLensBar } from "./ComputeLensBar";
 import { useSandboxBindingBlocked } from "./use-compute-target-actions";
 import { useOpenContextPreviewPanel } from "../../../../host/window-openers";

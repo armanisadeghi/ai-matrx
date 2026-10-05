@@ -9,8 +9,8 @@
  */
 
 import type { ToolLifecycleEntry } from "@ai-matrx/chat/agents/types/request.types";
-import { KnowledgeBrowseInline } from "@ai-matrx/chat/tool-call-visualization/renderers/knowledge-browse/KnowledgeBrowseInline";
-import { DocumentContentInline } from "@ai-matrx/chat/tool-call-visualization/renderers/document-content/DocumentContentInline";
+import { KnowledgeBrowseInline } from "@/features/chat-tool-renderers/renderers/knowledge-browse/KnowledgeBrowseInline";
+import { DocumentContentInline } from "@/features/chat-tool-renderers/renderers/document-content/DocumentContentInline";
 
 function entry(
   toolName: string,

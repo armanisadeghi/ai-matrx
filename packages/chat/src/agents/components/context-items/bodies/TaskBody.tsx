@@ -12,7 +12,7 @@ import { useAppSelector } from "../../../../store/hooks";
 import {
   selectTaskById,
   type TaskRecord,
-} from "@host/features/agent-context/redux/tasksSlice";
+} from "../../../../context/sources/scopes";
 import type { ContextItemBodyProps } from "../types";
 import { TaskPreviewContent } from "@host/features/agents/components/previews/TaskHoverPreview";
 import { ResourceSnapshotView } from "./ResourceSnapshotView";

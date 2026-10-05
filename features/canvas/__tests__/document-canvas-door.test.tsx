@@ -80,7 +80,7 @@ import {
 import { buildDocumentCanvasContent } from "@/features/data-tables/hooks/useOpenDocumentCanvas";
 import { univerDocToMarkdown } from "@/features/data-tables/univer-doc-to-markdown";
 import type { ToolLifecycleEntry } from "@ai-matrx/chat/agents/types/request.types";
-import { DocumentInline } from "@ai-matrx/chat/tool-call-visualization/renderers/document/DocumentInline";
+import { DocumentInline } from "@/features/chat-tool-renderers/renderers/document/DocumentInline";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
   true;

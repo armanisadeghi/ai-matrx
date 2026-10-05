@@ -9,11 +9,11 @@ import { selectConversationIsEphemeral } from "../../../redux/execution-system/c
 import {
   useComputeTargets,
   type ComputeTarget,
-} from "@host/hooks/sandbox/use-compute-targets";
-import { useVerifiedSandboxBinding } from "@host/hooks/sandbox/use-verified-binding";
-import { clearSandboxBindingCache } from "@host/lib/sandbox/active-binding";
-import { resolveBoundTargetView } from "@host/lib/sandbox/bound-target-view";
-import { resolveBindingScope } from "@host/lib/sandbox/binding-scope";
+} from "../../../../compute/targets";
+import { useVerifiedSandboxBinding } from "../../../../compute/targets";
+import { clearSandboxBindingCache } from "../../../../compute/targets";
+import { resolveBoundTargetView } from "../../../../compute/targets";
+import { resolveBindingScope } from "../../../../compute/targets";
 
 const MAX_LENS_TARGETS = 2;
 

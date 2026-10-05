@@ -70,7 +70,6 @@ export const metadata: Metadata = {
         title: "AI Matrx",
         description: "A revolutionary no-code AI platform that empowers businesses to build sophisticated AI applications without writing a single line of code.",
         images: [defaultSocialCard],
-        creator: "@your_twitter_handle",
     },
     icons: {
         icon: [

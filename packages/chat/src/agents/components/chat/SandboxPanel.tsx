@@ -24,7 +24,7 @@ import {
   CheckTapButton,
   XTapButton,
 } from "@ai-matrx/tap-target/buttons";
-import { sandboxDisplayName } from "@host/lib/sandbox/format";
+import { sandboxDisplayName } from "../../../compute/targets";
 import {
   Plus,
   Loader2,
@@ -45,25 +45,25 @@ import {
 } from "../../redux/execution-system/conversations/conversations.selectors";
 import { setConversationSandbox } from "../../redux/conversation-list/conversation-row-actions.thunks";
 import { selectChatIncognitoActive } from "../../redux/chat/chat-incognito.slice";
-import { useSandboxInstances } from "@host/hooks/sandbox/use-sandbox";
-import { useComputeTargets } from "@host/hooks/sandbox/use-compute-targets";
-import { useVerifiedSandboxBinding } from "@host/hooks/sandbox/use-verified-binding";
+import { useSandboxInstances } from "../../../compute/targets";
+import { useComputeTargets } from "../../../compute/targets";
+import { useVerifiedSandboxBinding } from "../../../compute/targets";
 import {
   describeBoundTargetState,
   resolveBoundTargetView,
-} from "@host/lib/sandbox/bound-target-view";
-import type { ComputeTarget } from "@host/hooks/sandbox/use-compute-targets";
-import { resolveSandboxCreateDefaults, type SandboxCreateDefaults } from "@host/lib/sandbox/sandbox-defaults";
-import { CloneRepoDialog } from "@host/features/code/views/sandboxes/CloneRepoDialog";
+} from "../../../compute/targets";
+import type { ComputeTarget } from "../../../compute/targets";
+import { resolveSandboxCreateDefaults, type SandboxCreateDefaults } from "../../../compute/targets";
+import { CloneRepoDialog } from "../../../compute/targets";
 import {
   getEffectiveStatus,
   statusPillClasses,
   STATUS_LABELS,
   ACTIVE_EFFECTIVE_STATUSES,
-} from "@host/lib/sandbox/status";
-import { clearSandboxBindingCache } from "@host/lib/sandbox/active-binding";
-import { resolveBindingScope } from "@host/lib/sandbox/binding-scope";
-import type { SandboxInstance } from "@host/types/sandbox";
+} from "../../../compute/targets";
+import { clearSandboxBindingCache } from "../../../compute/targets";
+import { resolveBindingScope } from "../../../compute/targets";
+import type { SandboxInstance } from "../../../compute/targets";
 import { ErrorNotice } from "@host/components/errors/ErrorNotice";
 import { selectUserId } from "../../../host/identity";
 import { selectOrganizationId } from "../../../host/org";

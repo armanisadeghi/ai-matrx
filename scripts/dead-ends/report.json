@@ -214,7 +214,7 @@
       "high": 0
     },
     {
-      "key": "packages/chat/src/tool-call-visualization/renderers/knowledge-browse/KnowledgeEntityInline.tsx",
+      "key": "features/chat-tool-renderers/renderers/knowledge-browse/KnowledgeEntityInline.tsx",
       "count": 1,
       "high": 0
     },
@@ -980,7 +980,7 @@
       "route": null
     },
     {
-      "file": "packages/chat/src/tool-call-visualization/renderers/knowledge-browse/KnowledgeEntityInline.tsx",
+      "file": "features/chat-tool-renderers/renderers/knowledge-browse/KnowledgeEntityInline.tsx",
       "line": 178,
       "column": 24,
       "rule": "bare-id-text",

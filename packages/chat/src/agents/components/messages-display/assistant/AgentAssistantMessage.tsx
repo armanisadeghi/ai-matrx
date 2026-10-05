@@ -105,7 +105,7 @@ import { useInPlaceTrigger } from "@ai-matrx/chat/host/ui-slots";
 import { handInPlaceCaret } from "@ai-matrx/chat/utils/rich-editor/in-place/caret-handoff";
 import { toast } from "../../../../host/notify";
 import { useDomCapturePrint } from "../../../../conversation/hooks/useDomCapturePrint";
-import { MessageFilesStrip } from "@host/features/code/views/history/MessageFilesStrip";
+import { MessageFilesStrip } from "../../../../host/ui-slots";
 import { ProviderRetryCard, shouldShowProviderRetry } from "./ProviderRetryCard";
 import {
   sendProviderRetryControl,

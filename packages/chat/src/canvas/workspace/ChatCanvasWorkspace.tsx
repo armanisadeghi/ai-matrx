@@ -64,7 +64,7 @@ import {
   DropdownMenuTrigger,
 } from "@ai-matrx/design-system";
 import { EntityCommentPopover } from "@host/components/comments/EntityCommentPopover";
-import { ShareButton } from "@host/features/sharing/components/ShareButton";
+import { ShareButton } from "../../host/ui-slots";
 import type { ResourceType } from "@host/utils/permissions/types";
 import {
   HeaderControlSet,

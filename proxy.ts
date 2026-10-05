@@ -27,6 +27,7 @@ import {
   applyRecordRobotsHeader,
   startRecordRobotsLookup,
 } from "@/lib/seo/record-robots-header";
+import { legacyBrandRedirectUrl } from "@/lib/seo/legacy-brand-host";
 
 // ---------------------------------------------------------------------------
 // Edu host gate — learn.aimatrx.com (Arman's decision, 2026-07)
@@ -208,6 +209,15 @@ function isEduAllowedPath(pathname: string): boolean {
 
 async function routeRequest(request: NextRequest) {
   const requestHost = request.headers.get("host");
+
+  // appmatrx.com pages belong on the main host (lib/seo/legacy-brand-host.ts).
+  const legacyTarget = legacyBrandRedirectUrl(
+    requestHost,
+    request.nextUrl.pathname,
+    request.nextUrl.search,
+    MAIN_HOST,
+  );
+  if (legacyTarget) return NextResponse.redirect(legacyTarget, 308);
 
   // Satellite hosts serve ONLY their surface; everything else bounces to the
   // main origin. Never gate if a satellite host resolves to the main host

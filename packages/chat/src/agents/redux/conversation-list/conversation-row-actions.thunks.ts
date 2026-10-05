@@ -24,8 +24,8 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import { supabase } from "../../../host/db";
 import { assertWriteLanded, describeWriteFailure, tryWriteOne } from "@ai-matrx/data/db";
 import type { ChatDispatch, ChatRootState } from "../../../store/root-state";
-import { favoritesService } from "@host/features/scopes/service/favoritesService";
-import { isScopesRpcErr } from "@host/features/scopes/types";
+import { favoritesService } from "../../../context/sources/scopes";
+import { isScopesRpcErr } from "../../../context/sources/scopes";
 import {
   patchConversation,
   renameConversation as renameConversationListItem,

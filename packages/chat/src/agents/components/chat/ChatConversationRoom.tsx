@@ -4,7 +4,7 @@ import { ChatRoomClient } from "./ChatRoomClient";
 import { ChatMandateUnavailable, ChatNewLandingSkeleton } from "./ChatNewClient";
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "./chat-quick-actions.config";
 import { useMandate } from "../../../mandates/useMandate";
-import type { ConversationSandboxBinding } from "@host/lib/sandbox/conversation-binding-row";
+import type { ConversationSandboxBinding } from "../../../compute/targets";
 import { WorkspaceGate } from "@host/features/organizations/components/WorkspaceGate";
 import type { ComposerMode } from "../inputs/smart-input/composer/composer-types";
 

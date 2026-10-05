@@ -26,6 +26,8 @@ import type { AgentOrgNodeData } from "../buildAgentOrgForest";
 import { ORG_BOX_LABEL } from "../constants";
 import { useBoxIdentity } from "../useBoxIdentity";
 import { useAgentActivity, type AgentActivity } from "../useOrgChartActivity";
+import { usePlacementPoints } from "../useOrgChartPoints";
+import { Cost } from "@/components/cost/Cost";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 
 /** Where a box opens. A position has no page of its own: its menu edits it in place. */
@@ -87,6 +89,7 @@ export function AgentOrgCard({
   const who = useBoxIdentity(d.boxType, d.entityId);
   const a = accentClasses(d.accent);
   const activity = useAgentActivity(d.boxType === "agent" ? d.entityId : null);
+  const points = usePlacementPoints(node.key);
   const isAgent = d.boxType === "agent";
   const Icon = d.isConductor
     ? Network
@@ -182,6 +185,21 @@ export function AgentOrgCard({
       </div>
 
       <div className="mt-auto flex min-w-0 flex-wrap items-center gap-1 pt-1.5">
+        {points && (
+          <span
+            className="inline-flex items-center gap-1 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-foreground/80"
+            title={node.node.children.length ? "This box · its whole branch" : "Spent by this box"}
+          >
+            {points.own !== null && <Cost usd={points.own} short />}
+            {node.node.children.length > 0 && (
+              <>
+                {points.own !== null && <span className="text-muted-foreground">·</span>}
+                <span className="text-muted-foreground">Team</span>
+                <Cost usd={points.branch} short />
+              </>
+            )}
+          </span>
+        )}
         {activity && <ActivityBadge activity={activity} />}
         {who.seat && !who.detail?.startsWith("Filled") && <SeatBadge stage={who.seat} />}
         {d.otherPlacements > 0 && (

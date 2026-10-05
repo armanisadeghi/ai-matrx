@@ -35,8 +35,8 @@
 
 import { supabase } from "../../../../host/db";
 import { guardedUpdate } from "@ai-matrx/data/db";
-import { associationsService } from "@host/features/scopes/service/associationsService";
-import { isScopesRpcErr } from "@host/features/scopes/types";
+import { associationsService } from "../../../../context/sources/scopes";
+import { isScopesRpcErr } from "../../../../context/sources/scopes";
 import {
   resolveResourceAccess,
   type ResourceAccess,

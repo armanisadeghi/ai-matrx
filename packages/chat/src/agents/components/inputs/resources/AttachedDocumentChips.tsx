@@ -25,7 +25,7 @@ import { useConversationMaterialized } from "../../../hooks/useConversationMater
 import {
   useContainerLinks,
   type ContainerLink,
-} from "@host/features/scopes/hooks/useContainerLinks";
+} from "@ai-matrx/associations/react";
 import { useContextItemsTab } from "../../context-items/contextItemsTab";
 import type { ContextDrawerItem } from "../../context-items/types";
 import {

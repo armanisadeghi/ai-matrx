@@ -12,7 +12,7 @@
 
 import { useState } from "react";
 import { Share2, Blocks, Camera } from "lucide-react";
-import { ShareModal } from "../../next/lazy/ShareModal";
+import { ShareModal } from "../../host/ui-slots";
 import { IconButton, PageHeaderPortal } from "../../host/chrome";
 import { useAppSelector, useAppDispatch } from "../../store/hooks";
 import { selectIsSuperAdminDebugger } from "../../host/prefs";

@@ -20,7 +20,7 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import { supabase } from "../../../host/db";
 import { operationFailed } from "@ai-matrx/kit/errors";
 import { ensureEffectiveKnob } from "../../../host/prefs";
-import { selectActiveOrganizationId } from "@host/features/scopes/redux/selectors/active-context";
+import { selectActiveOrganizationId } from "../../../context/sources/scopes";
 import type { ChatDispatch, ChatRootState } from "../../../store/root-state";
 import type { ConversationListItem } from "./conversation-list.types";
 import {

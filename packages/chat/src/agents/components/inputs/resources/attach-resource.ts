@@ -38,7 +38,7 @@ import {
 import { isEditableCapableBlockType } from "../../../redux/execution-system/instance-resources/editable-resource-types";
 // W5 swap: durable association edges ride the @ai-matrx/associations store
 // (the Redux association thunks/cache fragments are deleted).
-import { getAssociationsStore } from "@host/features/scopes/host/associationsStore";
+import { getAssociationsStore } from "../../../../context/sources/scopes";
 import type { AssociationWriteResult } from "@ai-matrx/associations/core";
 import {
   cleanDocumentLabel,

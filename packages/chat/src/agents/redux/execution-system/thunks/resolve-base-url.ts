@@ -8,7 +8,7 @@ import { selectAccessToken, selectFingerprintId } from "../../../../host/identit
 import {
   resolveAgentSandboxRef,
   getEffectiveSandboxRef,
-} from "@host/lib/sandbox/active-binding";
+} from "../../../../compute/targets";
 import {
   discoverLocalEngine,
   getCachedLocalEngine,

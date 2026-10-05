@@ -34,8 +34,8 @@ import {
   BottomSheetBody,
 } from "@ai-matrx/design-system";
 import { INPUT_BUTTON_IDLE_TINT } from "./InputActionButtons";
-import { ActiveContextTree } from "@host/features/scopes/components/active-context/ActiveContextTree";
-import { selectHasActiveContext } from "@host/features/scopes/redux/selectors/active-context";
+import { ActiveContextTree } from "../../../../context/sources/scopes";
+import { selectHasActiveContext } from "../../../../context/sources/scopes";
 import {
   selectActiveScratchpadId,
   selectWorkingDocContent,

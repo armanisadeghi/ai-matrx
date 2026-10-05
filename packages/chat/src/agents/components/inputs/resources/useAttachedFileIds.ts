@@ -15,7 +15,7 @@
 
 import { useAppSelector } from "../../../../store/hooks";
 import { useConversationMaterialized } from "../../../hooks/useConversationMaterialized";
-import { useContainerLinks } from "@host/features/scopes/hooks/useContainerLinks";
+import { useContainerLinks } from "@ai-matrx/associations/react";
 import { selectInstanceResources } from "../../../redux/execution-system/instance-resources/instance-resources.selectors";
 import { parseAttachedDocumentMetadata } from "./attached-documents";
 import type { ManagedResource } from "../../../types/instance.types";

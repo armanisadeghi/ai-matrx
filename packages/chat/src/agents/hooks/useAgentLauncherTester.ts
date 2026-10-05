@@ -4,7 +4,7 @@ import { useAgentLauncher } from "./useAgentLauncher";
 import { selectInstance } from "../redux/execution-system/conversations/conversations.selectors";
 import { selectResolvedVariables } from "../redux/execution-system/instance-variable-values/instance-variable-values.selectors";
 import { selectUserInputText } from "../redux/execution-system/instance-user-input/instance-user-input.selectors";
-import { selectAppContext } from "@host/lib/redux/slices/appContextSlice";
+import { selectAppContext } from "../../context/sources/scopes";
 import type {
   ApiEndpointMode,
   JsonExtractionConfig,

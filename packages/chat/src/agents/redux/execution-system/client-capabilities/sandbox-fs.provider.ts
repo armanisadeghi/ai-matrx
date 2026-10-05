@@ -9,7 +9,7 @@
  * tells them where to execute.
  */
 
-import { getActiveSandboxBinding } from "@host/lib/sandbox/active-binding";
+import { getActiveSandboxBinding } from "../../../../compute/targets";
 import { registerClientCapability } from "./registry";
 
 registerClientCapability({

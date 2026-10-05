@@ -29,7 +29,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@ai-matrx/design-system";
-import { ShareModal } from "@host/features/sharing/components/ShareModal";
+import { ShareModal } from "../../host/ui-slots";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import { ReadFailure } from "@host/components/read-state/ReadFailure";

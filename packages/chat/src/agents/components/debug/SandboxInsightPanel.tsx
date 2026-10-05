@@ -16,8 +16,8 @@
 import { useState } from "react";
 import { Box, FolderTree, TerminalSquare, FileText } from "lucide-react";
 import { useAppSelector } from "../../../store/hooks";
-import { resolveAgentSandboxRef } from "@host/lib/sandbox/active-binding";
-import { SandboxDiagnosticsPanel } from "@host/features/code/views/sandboxes/SandboxDiagnosticsPanel";
+import { resolveAgentSandboxRef } from "../../../compute/targets";
+import { SandboxDiagnosticsPanel } from "../../../compute/targets";
 import { SimpleTerminal } from "@host/features/code/terminal/SimpleTerminal";
 import { SandboxFileViewer } from "./SandboxFileViewer";
 

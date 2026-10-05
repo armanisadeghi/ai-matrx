@@ -11,7 +11,7 @@
  * is no separate run-approval pill.
  */
 
-import { ActiveContextLensChip } from "@host/features/scopes/components/active-context/ActiveContextLensChip";
+import { ActiveContextLensChip } from "../../../../../context/sources/scopes";
 import { ComposerAgentPill } from "./ComposerAgentPill";
 import { ComposerEffortPill } from "./ComposerEffortPill";
 import { ComposerOutputPill } from "./ComposerOutput";

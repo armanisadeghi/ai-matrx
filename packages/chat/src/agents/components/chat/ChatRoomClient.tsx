@@ -61,7 +61,7 @@ import { AccessGate } from "@host/features/access-gate/components/AccessGate";
 import { SandboxCanvasOpener } from "./sandbox-insight/SandboxCanvasOpener";
 import { ToolResultCanvasOpener } from "@host/features/canvas/tool-results/ToolResultCanvasOpener";
 import { useConversationSandboxBindingSync } from "../../hooks/useConversationSandboxBindingSync";
-import type { ConversationSandboxBinding } from "@host/lib/sandbox/conversation-binding-row";
+import type { ConversationSandboxBinding } from "../../../compute/targets";
 import { ChatConversationSurface } from "./ChatConversationSurface";
 import { selectUserInputEntryExists } from "../../redux/execution-system/instance-user-input/instance-user-input.selectors";
 import { useAttachResource } from "../inputs/resources/attach-resource";

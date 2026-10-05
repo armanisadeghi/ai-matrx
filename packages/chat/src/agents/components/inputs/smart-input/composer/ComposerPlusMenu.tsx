@@ -93,9 +93,9 @@ import { SmartInputMessageTemplatePicker } from "@host/features/message-template
 import { useOpenContextPreviewPanel } from "../../../../../host/window-openers";
 import { useOpenRunControlsWindow } from "../../../../../host/window-openers";
 import { useOpenCloudBrowserCanvas } from "@host/features/cloud-browser/hooks/useOpenCloudBrowserCanvas";
-import { ActiveContextTree } from "@host/features/scopes/components/active-context/ActiveContextTree";
+import { ActiveContextTree } from "../../../../../context/sources/scopes";
 import { useComputeTargetActions } from "../use-compute-target-actions";
-import type { ComputeTarget } from "@host/hooks/sandbox/use-compute-targets";
+import type { ComputeTarget } from "../../../../../compute/targets";
 import { useSandboxBindingBlocked } from "../use-compute-target-actions";
 import type { Resource } from "../../../../resources/types";
 import {

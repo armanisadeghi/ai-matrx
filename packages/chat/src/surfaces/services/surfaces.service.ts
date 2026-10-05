@@ -11,7 +11,7 @@ import type {
 } from "../types";
 import type { ApplyManifestSyncResult } from "@host/features/surfaces/services/manifest-sync.service";
 import { getManifest } from "../runtime/registry";
-import { associationsService } from "@host/features/scopes/service/associationsService";
+import { associationsService } from "../../context/sources/scopes";
 import { resolveSystemOrgId } from "@host/lib/organizations/systemOrg";
 import {
   TOOL_BUNDLE,

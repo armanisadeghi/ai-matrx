@@ -37,7 +37,7 @@ import {
   selectWorkingDocEnabled,
   selectWorkingDocMaterialized,
 } from "../../redux/execution-system/instance-working-document/instance-working-document.selectors";
-import { ShareButton } from "@host/features/sharing/components/ShareButton";
+import { ShareButton } from "../../../host/ui-slots";
 import {
   attachScratchpadToConversationThunk,
   detachScratchpadFromConversationThunk,

@@ -15,17 +15,17 @@ import { useEffect, useState } from "react";
 import { Link } from "../../../../host/navigation";
 import { Building2, Briefcase, ExternalLink } from "lucide-react";
 import { useAppSelector } from "../../../../store/hooks";
-import { selectActiveOrganizationName } from "@host/features/scopes/redux/selectors/active-context";
-import { useScopeTree } from "@host/features/scopes/hooks/useScopeTree";
-import { useContextValues } from "@host/features/scopes/hooks/useContextValues";
+import { selectActiveOrganizationName } from "../../../../context/sources/scopes";
+import { useScopeTree } from "../../../../context/sources/scopes";
+import { useContextValues } from "../../../../context/sources/scopes";
 import { ReadFailure } from "@host/components/read-state/ReadFailure";
-import { scopesService } from "@host/features/scopes/service/scopesService";
-import { isScopesRpcErr } from "@host/features/scopes/types";
-import type { ContextValueType } from "@host/features/agent-context/types";
-import type { ScopeNode, ScopeTypeNode } from "@host/features/scopes/types";
+import { scopesService } from "../../../../context/sources/scopes";
+import { isScopesRpcErr } from "../../../../context/sources/scopes";
+import type { ContextValueType } from "../../../../context/sources/scopes";
+import type { ScopeNode, ScopeTypeNode } from "../../../../context/sources/scopes";
 import { DynamicIcon } from "@ai-matrx/icons";
 import { Badge } from "@ai-matrx/design-system";
-import { ContextValueRow } from "@host/features/scopes/components/reference/ContextValueRow";
+import { ContextValueRow } from "../../../../context/sources/scopes";
 import type { ContextItemBodyProps } from "../types";
 
 // ── Organization ─────────────────────────────────────────────────────────────

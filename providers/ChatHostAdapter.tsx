@@ -185,6 +185,8 @@ import {
 import { useOpenConversationDocuments } from "@/features/canvas/host/conversation/documentsKind";
 import { useOpenScratchpadPanel } from "@/features/quick-actions/canvas/scratchpadKind";
 import "@/providers/chatUiRegistration";
+// Scopes (context sources) and compute targets (P21).
+import "@/providers/chatContextSources";
 
 const DEFAULT_SERVER_URL = "https://server.app.matrxserver.com";
 

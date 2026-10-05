@@ -50,11 +50,11 @@ import {
   resolveSandboxRefDetails,
   clearSandboxBindingCache,
   type ResolvedSandboxRef,
-} from "@host/lib/sandbox/active-binding";
+} from "../../../../compute/targets";
 import { setConversationSandbox } from "../../conversation-list/conversation-row-actions.thunks";
 import { selectConversationSandboxPersisted } from "../conversations/conversations.selectors";
 import { setPreference, selectSandboxBySurface } from "../../../../host/prefs";
-import { openSandboxGate } from "@host/components/dialogs/sandbox-gate/SandboxGateHost";
+import { openSandboxGate } from "../../../../compute/targets";
 
 const LOG = "[sandbox-gate]";
 

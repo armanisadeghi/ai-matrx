@@ -13,7 +13,7 @@ import { selectHtmlPageArtifactForMessage } from "@host/lib/redux/selectors/arti
 import { setActivePageId } from "../utils/html-pages-actions";
 import { updateArtifactThunk } from "@host/lib/redux/thunks/artifactThunks";
 import { registerArtifactThunk } from "@host/lib/redux/thunks/artifactThunks";
-import { selectTaskId } from "@host/lib/redux/slices/appContextSlice";
+import { selectTaskId } from "../../context/sources/scopes";
 import { toast } from "../../host/notify";
 import { presentOrganizationRefusal, selectOrganizationId } from "../../host/org";
 import { selectUserId } from "../../host/identity";

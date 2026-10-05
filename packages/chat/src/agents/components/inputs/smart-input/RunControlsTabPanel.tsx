@@ -47,8 +47,8 @@ import { RunConfigOverrides } from "../../run-controls/RunConfigOverrides";
 import { RunInputCapabilities } from "../../run-controls/RunInputCapabilities";
 import { DocumentsWorkspace } from "../../working-document/documents-workspace/DocumentsWorkspace";
 import { selectWorkingDocEnabled } from "../../../redux/execution-system/instance-working-document/instance-working-document.selectors";
-import { ActiveContextTree } from "@host/features/scopes/components/active-context/ActiveContextTree";
-import { selectHasActiveContext } from "@host/features/scopes/redux/selectors/active-context";
+import { ActiveContextTree } from "../../../../context/sources/scopes";
+import { selectHasActiveContext } from "../../../../context/sources/scopes";
 import { selectInstanceOverrideState } from "../../../redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
 import { selectAttachmentCapabilities } from "../../../redux/execution-system/instance-input-capabilities/instance-input-capabilities.selectors";
 import {
@@ -56,7 +56,7 @@ import {
   selectIsCreator,
 } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { selectChatIncognitoActive } from "../../../redux/chat/chat-incognito.slice";
-import { useVerifiedSandboxBinding } from "@host/hooks/sandbox/use-verified-binding";
+import { useVerifiedSandboxBinding } from "../../../../compute/targets";
 import { selectShowCreatorPanel, toggleShowCreatorPanel } from "../../../../host/prefs";
 import { selectIsSuperAdminDebugger } from "../../../../host/prefs";
 import { selectIsDebugMode } from "../../../../host/prefs";

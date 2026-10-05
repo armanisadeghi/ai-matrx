@@ -22,7 +22,7 @@ import {
   TooltipTrigger,
 } from "@ai-matrx/design-system";
 import { cn } from "@ai-matrx/design-system";
-import type { ComputeTarget } from "@host/hooks/sandbox/use-compute-targets";
+import type { ComputeTarget } from "../../../../compute/targets";
 import {
   computeTargetIconColor,
   computeTargetKindLabel,
@@ -31,8 +31,8 @@ import {
 import {
   describeBoundTargetState,
   type BoundTargetView,
-} from "@host/lib/sandbox/bound-target-view";
-import { splitIdentifyingName } from "@host/lib/sandbox/format";
+} from "../../../../compute/targets";
+import { splitIdentifyingName } from "../../../../compute/targets";
 
 export interface ComputeLensBarProps {
   conversationId: string;

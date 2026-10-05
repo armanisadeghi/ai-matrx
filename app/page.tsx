@@ -7,6 +7,8 @@ import { LandingCTAs } from "@/features/landing/components/LandingCTAs";
 import { AuthAwareButton } from "@/features/landing/components/AuthAwareButton";
 import { PublicFooter } from "@/components/matrx/PublicFooter";
 import { GoogleOAuthRedirectCallback } from "@/providers/google-provider/GoogleOAuthRedirectCallback";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { siteConfig } from "@/config/extras/site";
 
 // Enhanced metadata for SEO
 export const metadata: Metadata = {
@@ -29,11 +31,38 @@ export const metadata: Metadata = {
       "Join the future of enterprise AI. Exclusive, invitation-only access to the most advanced no-code AI platform.",
     type: "website",
   },
+  // Without a self-canonical the same page answering on appmatrx.com let
+  // Google pick that host for a brand search; this names the one address.
+  alternates: { canonical: "/" },
   robots: {
     index: true,
     follow: true,
   },
 };
+
+// Tells search engines what "AI Matrx" is and which site is its home, so a
+// search for the name resolves to this page.
+const brandJsonLd = [
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "@id": `${siteConfig.url}/#organization`,
+    name: siteConfig.name,
+    alternateName: ["AI Matrix", "AIMatrx"],
+    url: siteConfig.url,
+    logo: `${siteConfig.url}/matrx/apple-touch-icon.png`,
+    description: siteConfig.description,
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "@id": `${siteConfig.url}/#website`,
+    name: siteConfig.name,
+    alternateName: ["AI Matrix", "AIMatrx"],
+    url: siteConfig.url,
+    publisher: { "@id": `${siteConfig.url}/#organization` },
+  },
+];
 
 // Server-side rendered landing page
 interface LandingPageProps {
@@ -61,6 +90,7 @@ export default async function LandingPage({ searchParams }: LandingPageProps) {
   }
   return (
     <div className="min-h-dvh bg-background text-foreground flex flex-col">
+      <JsonLd data={brandJsonLd} />
       <main className="flex-1 relative overflow-hidden">
         {/* Gradient Background */}
         <div className="absolute inset-0 bg-gradient-to-br from-zinc-50 via-white to-zinc-50 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950">

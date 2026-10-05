@@ -50,7 +50,7 @@ import {
   AgentWorkTurnProvider,
   AgentWorkMemberScope,
 } from "../../../../tool-call-visualization/components/agentWorkTurn";
-import { MessageFilesStrip } from "@host/features/code/views/history/MessageFilesStrip";
+import { MessageFilesStrip } from "../../../../host/ui-slots";
 import {
   isWarRoomThreadAgentSurface,
   traceWarRoomRenderPath,

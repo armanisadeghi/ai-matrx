@@ -16,13 +16,13 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@ai-matrx/design-system";
-import type { ComputeTarget } from "@host/hooks/sandbox/use-compute-targets";
+import type { ComputeTarget } from "../../../../compute/targets";
 import {
   computeTargetIconColor,
   computeTargetKindLabel,
   useComputeTargetActions,
 } from "./use-compute-target-actions";
-import { describeBoundTargetState } from "@host/lib/sandbox/bound-target-view";
+import { describeBoundTargetState } from "../../../../compute/targets";
 
 interface DesktopPresenceIndicatorProps {
   conversationId: string;

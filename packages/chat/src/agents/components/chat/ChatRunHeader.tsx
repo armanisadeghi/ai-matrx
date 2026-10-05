@@ -9,7 +9,7 @@ import { useRouter } from "../../../host/navigation";
 import { useAppSelector, useAppStore } from "../../../store/hooks";
 import { selectAgentName } from "../../redux/agent-definition/selectors";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
-import { ActiveContextLensChip } from "@host/features/scopes/components/active-context/ActiveContextLensChip";
+import { ActiveContextLensChip } from "../../../context/sources/scopes";
 import { ComposerModeSwitch } from "../inputs/smart-input/composer/ComposerModeSwitch";
 import type { ComposerMode } from "../inputs/smart-input/composer/composer-types";
 import { ConversationRecordsChip } from "./ConversationRecordsChip";

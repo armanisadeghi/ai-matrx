@@ -40,7 +40,7 @@ import {
   TapTargetButtonGroup,
 } from "@ai-matrx/tap-target";
 import { copyRichContent } from "@ai-matrx/chat/host/ui-slots";
-import { SpeakerButton } from "@host/features/tts/components/SpeakerButton";
+import { SpeakerButton } from "../../../../host/ui-slots";
 import { useAppDispatch, useAppSelector, useAppStore } from "../../../../store/hooks";
 import { useOpenFullScreenMarkdownEditorBridge } from "@host/features/overlays/openers/fullScreenEditor";
 import { selectMessagePosition } from "../../../redux/execution-system/messages/messages.selectors";

@@ -20,7 +20,7 @@
  */
 
 import { SurfaceRegistrationError } from "./surface-registration-error";
-import { associationsService } from "@host/features/scopes/service/associationsService";
+import { associationsService } from "../../context/sources/scopes";
 import { getSurfaceByName } from "./surfaces.service";
 import { invalidateSurfaceBoundAgents } from "./surface-bound-agents.service";
 import {

@@ -40,7 +40,7 @@ import {
   parsePersistedSurfaceOwnsOutput,
 } from "../conversations/surface-owns-output.persistence";
 import { selectConversationSurfaceOwnsOutput } from "../conversations/conversations.selectors";
-import { conversationSandboxBindingFromRow } from "@host/lib/sandbox/conversation-binding-row";
+import { conversationSandboxBindingFromRow } from "../../../../compute/targets";
 import { hydrateObservability } from "../observability/observability.slice";
 import { hydrateRequestsFromObservability } from "../active-requests/active-requests.slice";
 import { hydrateInbox } from "../inbox/inbox.thunks";

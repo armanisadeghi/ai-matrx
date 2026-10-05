@@ -346,3 +346,96 @@ if (typeof globalThis.CSS === "undefined" || typeof globalThis.CSS?.escape !== "
     targetForKey: (mandateKey) => placement().targetForKey(mandateKey),
   });
 }
+
+/**
+ * THE APP'S CONTEXT SOURCES (scopes) AND COMPUTE TARGETS, REGISTERED WITH
+ * `@ai-matrx/chat` AS THE APP DOES AT STARTUP (P21, `providers/chatContextSources.ts`).
+ * Every export resolves lazily, per read, through the test's own module registry — so a
+ * test that `jest.mock`s an app scopes/sandbox module still hands the package its mock,
+ * and a test that never reads a scope never loads the scopes feature.
+ */
+{
+  /* eslint-disable @typescript-eslint/no-require-imports */
+  const lazy = (map: Record<string, string[]>): Record<string, unknown> => {
+    const out: Record<string, unknown> = {};
+    for (const [modulePath, names] of Object.entries(map)) {
+      for (const name of names) {
+        const [exportName, registeredAs] = name.split(":");
+        Object.defineProperty(out, registeredAs ?? exportName, {
+          enumerable: true,
+          get: () => (require(modulePath) as Record<string, unknown>)[exportName],
+        });
+      }
+    }
+    return out;
+  };
+  const scopesSeam = require("@ai-matrx/chat/context/sources/scopes") as typeof import("@ai-matrx/chat/context/sources/scopes");
+  const computeSeam = require("@ai-matrx/chat/compute/targets") as typeof import("@ai-matrx/chat/compute/targets");
+  const syncConversationScopes = (conversationId: string) => async (dispatch: (a: unknown) => unknown) => {
+    const mod = require("@/features/scopes/redux/thunks/syncConversationScopes") as typeof import("@/features/scopes/redux/thunks/syncConversationScopes");
+    await dispatch(mod.syncConversationScopes(conversationId));
+  };
+  /* eslint-enable @typescript-eslint/no-require-imports */
+  const scopes = lazy({
+      "@/features/scopes/redux/selectors/active-context": [
+        "selectActiveOrganizationId", "selectActiveOrganizationName", "selectActiveProjectId",
+        "selectActiveTaskId", "selectActiveScopeIds", "selectActiveScopeIdsByType", "selectHasActiveContext",
+      ],
+      "@/lib/redux/slices/appContextSlice": [
+        "selectScopeSelectionsContext", "selectActiveScopeTypeIds", "selectProjectId", "selectTaskId",
+        "selectProjectName", "selectTaskName", "selectAppContext", "addActiveScope", "removeActiveScope",
+      ],
+      "@/features/scopes/redux/selectors/admin": ["selectScopeById", "selectScopesByType", "selectScopesLoadedForType"],
+      "@/features/scopes/redux/selectors/resolved-context": ["makeSelectResolvedContext"],
+      "@/features/scopes/redux/selectors/tree": ["makeSelectScopeTypeLabelMapForOrg"],
+      "@/features/scopes/redux/contextItemCatalog": ["listScopeTypeItems", "selectAllContextItems", "selectLoadedCatalogTypeIds"],
+      "@/features/agent-context/redux/tasksSlice": ["selectTaskById"],
+      "@/features/scopes/redux/scopeContextView": ["setScopeContextValue"],
+      "@/features/scopes/redux/thunks/ensureContextValues": ["ensureContextValues"],
+      "@/features/scopes/redux/thunks/ensureScopeTree": ["ensureScopeTree"],
+      "@/features/scopes/redux/thunks/conversationScopeGate": ["ensureConversationScopesOrAsk"],
+      "@/features/scopes/hooks/useScopeTree": ["useScopeTree"],
+      "@/features/scopes/hooks/useContextValues": ["useContextValues"],
+      "@/features/scopes/components/active-context/quick-pick/engine": ["drillPathForScope", "useDrillPathEngine", "useUniverse"],
+      "@/features/scopes/service/scopesService": ["scopesService"],
+      "@/features/scopes/service/associationsService": ["associationsService"],
+      "@/features/scopes/service/favoritesService": ["favoritesService"],
+      "@/features/scopes/host/associationsStore": ["getAssociationsStore"],
+      "@/features/scopes/service/favoriteOverlay": ["readFavoriteIds", "writeFavorite"],
+      "@/features/scopes/registry/entityRegistry": ["resolveEntityToken", "tryGetEntityInfo"],
+      "@/features/scopes/service/entityTitles": ["entityTitleFallback", "fetchEntityTitles", "getCachedEntityTitle"],
+      "@/features/scopes/utils/referenceCell": ["referenceConfigFromItem"],
+      "@/features/scopes/utils/scopeValuePayload": ["buildScopeValuePayload"],
+      "@/features/scopes/utils/slugify": ["slugifyKey"],
+      "@/features/scopes/components/active-context/ActiveContextButton": ["ActiveContextButton"],
+      "@/features/scopes/components/active-context/ActiveContextLensChip": ["ActiveContextLensChip"],
+      "@/features/scopes/components/active-context/ActiveContextTree": ["ActiveContextTree"],
+      "@/features/scopes/components/active-context/ContextLensBar": ["ContextLensBar"],
+      "@/features/scopes/components/active-context/miller-columns/MillerColumns": ["MillerColumnsCore"],
+      "@/features/scopes/components/reference/ContextValueInput": ["ContextValueInput"],
+      "@/features/scopes/components/reference/ContextValueRow": ["ContextValueRow"],
+  });
+  // Never spread `scopes`: a spread reads every getter now, before a test's mocks exist.
+  scopes.syncConversationScopes = syncConversationScopes;
+  scopesSeam.registerChatScopes(scopes as Parameters<typeof scopesSeam.registerChatScopes>[0]);
+  computeSeam.registerChatComputeTargets(
+    lazy({
+      "@/lib/sandbox/active-binding": [
+        "getEffectiveSandboxRef", "resolveAgentSandboxRef", "getConversationSandboxBinding", "getSurfaceSeedRef",
+        "getActiveSandboxBinding", "resolveSandboxRefDetails", "clearSandboxBindingCache",
+      ],
+      "@/lib/sandbox/binding-scope": ["resolveBindingScope"],
+      "@/lib/sandbox/bound-target-view": ["describeBoundTargetState", "resolveBoundTargetView"],
+      "@/lib/sandbox/conversation-binding-row": ["conversationSandboxBindingFromRow"],
+      "@/lib/sandbox/format": ["sandboxDisplayName", "splitIdentifyingName"],
+      "@/lib/sandbox/sandbox-defaults": ["resolveSandboxCreateDefaults"],
+      "@/lib/sandbox/status": ["ACTIVE_EFFECTIVE_STATUSES", "getEffectiveStatus", "STATUS_LABELS", "statusPillClasses"],
+      "@/hooks/sandbox/use-compute-targets": ["useComputeTargets"],
+      "@/hooks/sandbox/use-sandbox": ["useSandboxInstances"],
+      "@/hooks/sandbox/use-verified-binding": ["useVerifiedSandboxBinding"],
+      "@/components/dialogs/sandbox-gate/SandboxGateHost": ["openSandboxGate"],
+      "@/features/code/views/sandboxes/CloneRepoDialog": ["CloneRepoDialog"],
+      "@/features/code/views/sandboxes/SandboxDiagnosticsPanel": ["SandboxDiagnosticsPanel"],
+    }) as Parameters<typeof computeSeam.registerChatComputeTargets>[0],
+  );
+}

@@ -20,7 +20,7 @@ import {
 } from "../instance-user-input/instance-user-input.slice";
 import { resolvePendingAsksWithInput } from "../../../ui-first-tools/redux/resolve-asks-with-input.thunk";
 import { ensureSandboxOrDecide } from "./sandbox-gate.thunk";
-import { ensureConversationScopesOrAsk } from "@host/features/scopes/redux/thunks/conversationScopeGate";
+import { ensureConversationScopesOrAsk } from "../../../../context/sources/scopes";
 import {
   selectAllResourcesResolved,
   selectInstanceResources,

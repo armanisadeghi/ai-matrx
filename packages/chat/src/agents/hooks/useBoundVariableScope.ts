@@ -26,25 +26,25 @@ import {
   selectActiveOrganizationId,
   selectActiveScopeIds,
   selectActiveScopeIdsByType,
-} from "@host/features/scopes/redux/selectors/active-context";
-import { ensureContextValues } from "@host/features/scopes/redux/thunks/ensureContextValues";
-import { makeSelectResolvedContext } from "@host/features/scopes/redux/selectors/resolved-context";
-import { makeSelectScopeTypeLabelMapForOrg } from "@host/features/scopes/redux/selectors/tree";
+} from "../../context/sources/scopes";
+import { ensureContextValues } from "../../context/sources/scopes";
+import { makeSelectResolvedContext } from "../../context/sources/scopes";
+import { makeSelectScopeTypeLabelMapForOrg } from "../../context/sources/scopes";
 import {
   listScopeTypeItems,
   selectAllContextItems,
   selectLoadedCatalogTypeIds,
-} from "@host/features/scopes/redux/contextItemCatalog";
+} from "../../context/sources/scopes";
 import type {
   ContextItemBinding,
   VariableCustomComponent,
 } from "../types/agent-definition.types";
-import type { ResolvedValue } from "@host/features/scopes/types";
+import type { ResolvedValue } from "../../context/sources/scopes";
 import { contextItemBindingOf } from "../utils/variable-binding";
 import {
   referenceConfigFromItem,
   type ReferenceItemConfig,
-} from "@host/features/scopes/utils/referenceCell";
+} from "../../context/sources/scopes";
 
 export interface BoundVarInfo {
   name: string;

@@ -17,8 +17,8 @@
 import { createSelector } from "@reduxjs/toolkit";
 import type { ChatRootState } from "../../../../store/root-state";
 import type { VariableDefinition } from "../../../types/agent-definition.types";
-import { selectAllContextItems } from "@host/features/scopes/redux/contextItemCatalog";
-import type { ContextItem } from "@host/features/scopes/redux/contextItemCatalog";
+import { selectAllContextItems } from "../../../../context/sources/scopes";
+import type { ContextItem } from "../../../../context/sources/scopes";
 import { orderVariablesForForm } from "@ai-matrx/agents";
 import {
   contextItemBindingOf,

@@ -6289,7 +6289,7 @@
       "name": "LIST_REFETCH_THROTTLE_MS"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/tool-call-visualization/renderers/dataset/DatasetInline.tsx",
+      "file": "matrx-frontend/features/chat-tool-renderers/renderers/dataset/DatasetInline.tsx",
       "name": "MAX_FIELD_CHIPS"
     },
     {
@@ -6297,11 +6297,11 @@
       "name": "MAX_INLINE"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/tool-call-visualization/renderers/document-search/DocumentSearchInline.tsx",
+      "file": "matrx-frontend/features/chat-tool-renderers/renderers/document-search/DocumentSearchInline.tsx",
       "name": "MAX_INLINE"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/tool-call-visualization/renderers/knowledge-search/KnowledgeSearchInline.tsx",
+      "file": "matrx-frontend/features/chat-tool-renderers/renderers/knowledge-search/KnowledgeSearchInline.tsx",
       "name": "MAX_INLINE"
     },
     {
@@ -6321,11 +6321,11 @@
       "name": "SEQ_REVEAL_INTERVAL_MS"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/tool-call-visualization/renderers/seo-shared/SerpToolInline.tsx",
+      "file": "matrx-frontend/features/chat-tool-renderers/renderers/seo-shared/SerpToolInline.tsx",
       "name": "MAX_INLINE"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/tool-call-visualization/renderers/seo/KeywordDataBody.tsx",
+      "file": "matrx-frontend/features/chat-tool-renderers/renderers/seo/KeywordDataBody.tsx",
       "name": "INLINE_LIMIT"
     },
     {

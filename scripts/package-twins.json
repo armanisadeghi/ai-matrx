@@ -1570,31 +1570,31 @@
           "why": "IS the count capability and has not been collapsed yet. Eight abbreviators (including the two \"B = billion\" bodies) were collapsed onto kit 0.14.0's compact voice in this session, along with the Spend/Usage/console counts; the rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
         {
-          "file": "packages/chat/src/tool-call-visualization/renderers/dataset/DatasetInline.tsx",
+          "file": "features/chat-tool-renderers/renderers/dataset/DatasetInline.tsx",
           "why": "IS the count capability and has not been collapsed yet. Eight abbreviators (including the two \"B = billion\" bodies) were collapsed onto kit 0.14.0's compact voice in this session, along with the Spend/Usage/console counts; the rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
         {
-          "file": "packages/chat/src/tool-call-visualization/renderers/document-content/DocumentContentInline.tsx",
+          "file": "features/chat-tool-renderers/renderers/document-content/DocumentContentInline.tsx",
           "why": "IS the count capability and has not been collapsed yet. Eight abbreviators (including the two \"B = billion\" bodies) were collapsed onto kit 0.14.0's compact voice in this session, along with the Spend/Usage/console counts; the rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
         {
-          "file": "packages/chat/src/tool-call-visualization/renderers/document/DocumentInline.tsx",
+          "file": "features/chat-tool-renderers/renderers/document/DocumentInline.tsx",
           "why": "IS the count capability and has not been collapsed yet. Eight abbreviators (including the two \"B = billion\" bodies) were collapsed onto kit 0.14.0's compact voice in this session, along with the Spend/Usage/console counts; the rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
         {
-          "file": "packages/chat/src/tool-call-visualization/renderers/knowledge-browse/KnowledgeChunkInline.tsx",
+          "file": "features/chat-tool-renderers/renderers/knowledge-browse/KnowledgeChunkInline.tsx",
           "why": "IS the count capability and has not been collapsed yet. Eight abbreviators (including the two \"B = billion\" bodies) were collapsed onto kit 0.14.0's compact voice in this session, along with the Spend/Usage/console counts; the rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
         {
-          "file": "packages/chat/src/tool-call-visualization/renderers/knowledge-browse/KnowledgeSourcesInline.tsx",
+          "file": "features/chat-tool-renderers/renderers/knowledge-browse/KnowledgeSourcesInline.tsx",
           "why": "IS the count capability and has not been collapsed yet. Eight abbreviators (including the two \"B = billion\" bodies) were collapsed onto kit 0.14.0's compact voice in this session, along with the Spend/Usage/console counts; the rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
         {
-          "file": "packages/chat/src/tool-call-visualization/renderers/note/NoteToolInline.tsx",
+          "file": "features/chat-tool-renderers/renderers/note/NoteToolInline.tsx",
           "why": "IS the count capability and has not been collapsed yet. Eight abbreviators (including the two \"B = billion\" bodies) were collapsed onto kit 0.14.0's compact voice in this session, along with the Spend/Usage/console counts; the rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
         {
-          "file": "packages/chat/src/tool-call-visualization/renderers/note/NoteToolOverlay.tsx",
+          "file": "features/chat-tool-renderers/renderers/note/NoteToolOverlay.tsx",
           "why": "IS the count capability and has not been collapsed yet. Eight abbreviators (including the two \"B = billion\" bodies) were collapsed onto kit 0.14.0's compact voice in this session, along with the Spend/Usage/console counts; the rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
         {
@@ -1761,7 +1761,7 @@
           "why": "IS the relative-time capability and has not been collapsed yet. The five bodies the tenth review named \u2014 the spend ledger's `staleness`, the dead-ends and lint-debt consoles' split `ageInDays` + \"scanned today\", the provider sync dashboard's `hoursSince` + \"verified today\", and the masterwork panel's `whenDate` \u2014 were collapsed in this session. The rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
         {
-          "file": "packages/chat/src/tool-call-visualization/renderers/knowledge-browse/KnowledgeSourcesInline.tsx",
+          "file": "features/chat-tool-renderers/renderers/knowledge-browse/KnowledgeSourcesInline.tsx",
           "why": "IS the relative-time capability and has not been collapsed yet. The five bodies the tenth review named \u2014 the spend ledger's `staleness`, the dead-ends and lint-debt consoles' split `ageInDays` + \"scanned today\", the provider sync dashboard's `hoursSince` + \"verified today\", and the masterwork panel's `whenDate` \u2014 were collapsed in this session. The rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
         {

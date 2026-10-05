@@ -6,7 +6,7 @@
  * delegates to the same Redux actions/components as its full tab counterpart.
  */
 
-import { useComputeTargets } from "@host/hooks/sandbox/use-compute-targets";
+import { useComputeTargets } from "../../../../compute/targets";
 import { useEffect, type ReactNode } from "react";
 import { ChevronRight } from "lucide-react";
 import { Switch } from "@host/components/ui/switch";
@@ -23,7 +23,7 @@ import { RunToolPicker } from "./RunToolPicker";
 import { RunSkillPicker } from "./RunSkillPicker";
 import { ShapeChipsRow } from "./ShapeChipsRow";
 import { SandboxPanel } from "../../chat/SandboxPanel";
-import { ActiveContextLensChip } from "@host/features/scopes/components/active-context/ActiveContextLensChip";
+import { ActiveContextLensChip } from "../../../../context/sources/scopes";
 import {
   selectBuilderAdvancedSettings,
   selectShowVariablePanel,

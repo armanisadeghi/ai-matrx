@@ -17,7 +17,7 @@
  */
 
 import type { ChatRootState } from "../../../store/root-state";
-import { selectProjectId, selectProjectName, selectTaskId, selectTaskName, selectScopeSelectionsContext } from "@host/lib/redux/slices/appContextSlice";
+import { selectProjectId, selectProjectName, selectTaskId, selectTaskName, selectScopeSelectionsContext } from "../../../context/sources/scopes";
 import { selectOrganizationId, selectOrganizationName } from "../../../host/org";
 
 interface AmbientContextSnapshot {

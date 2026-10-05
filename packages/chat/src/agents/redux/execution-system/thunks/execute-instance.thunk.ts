@@ -76,7 +76,8 @@ import {
   selectActiveScopeTypeIds,
   selectScopeSelectionsContext,
   selectTaskId,
-} from "@host/lib/redux/slices/appContextSlice";
+  syncConversationScopes,
+} from "../../../../context/sources/scopes";
 import {
   ensureExecutionOrganization,
   executionOrganizationForRequest,
@@ -1182,8 +1183,6 @@ export const executeInstance = createAsyncThunk<
       // already wrote the tags with REPLACE semantics; a union here would
       // re-add scopes the user just chose to drop.
       if (!isEphemeral && !scopeIdsOverride && payload.scope_ids?.length) {
-        const { syncConversationScopes } =
-          await import("@host/features/scopes/redux/thunks/syncConversationScopes");
         void dispatch(syncConversationScopes(conversationId));
       }
 

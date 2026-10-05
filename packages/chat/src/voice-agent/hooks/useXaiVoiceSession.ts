@@ -65,7 +65,7 @@ import {
   selectActiveProjectId,
   selectActiveTaskId,
   selectActiveScopeIds,
-} from "@host/features/scopes/redux/selectors/active-context";
+} from "../../context/sources/scopes";
 import type { RealtimeToolContextEnvelope } from "../services/realtimeToolService";
 import {
   buildResolvedToolMap,

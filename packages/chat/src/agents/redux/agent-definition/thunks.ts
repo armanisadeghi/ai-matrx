@@ -86,7 +86,7 @@ import { isSyntheticAgentId } from "./synthetic-id";
 import {
   readFavoriteIds,
   writeFavorite,
-} from "@host/features/scopes/service/favoriteOverlay";
+} from "../../../context/sources/scopes";
 import { parseAgentVersionSnapshot } from "./parse-output-snapshot";
 import { assignField } from "@ai-matrx/agents/field-flags";
 import {

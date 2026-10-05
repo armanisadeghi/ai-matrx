@@ -38,7 +38,7 @@ import type {
 } from "@ai-matrx/agents/generated/stream-events";
 import type { components } from "@ai-matrx/agents/generated/api-types";
 import type { BackendChannel } from "../redux/execution-system/thunks/resolve-base-url";
-import type { ResolvedSandboxRef } from "@host/lib/sandbox/active-binding";
+import type { ResolvedSandboxRef } from "../../compute/targets";
 import type { LiveCitationEntry } from "../redux/execution-system/messages/message-citations";
 import type { VariableResourceContextConfig } from "./agent-definition.types";
 

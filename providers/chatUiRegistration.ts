@@ -4,6 +4,7 @@
 // The package draws these but must not import app code (PACKAGE-INDEPENDENCE.md), so the
 // app hands them over once, here. Imported for its side effect by ChatHostAdapter.
 
+import dynamic from "next/dynamic";
 import { registerChatUi } from "@ai-matrx/chat/host/ui-slots";
 import { RichContent } from "@/components/rich-content/RichContent";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
@@ -42,9 +43,34 @@ import { useConversationAttachments } from "@/features/connectors/useConversatio
 import { createClient as createAppClient } from "@/utils/supabase/client";
 import { projectsDb } from "@/utils/supabase/projectsDb";
 import { NotesAPI } from "@/features/notes/service/notesApi";
+import { MessageFilesStrip } from "@/features/code/views/history/MessageFilesStrip";
+import { RulebookNudge } from "@/features/masterwork/oracle/RulebookNudge";
+import { NegativeVerdictFollowUp } from "@/features/review-walk/components/NegativeVerdictFollowUp";
+import { SpeakerButton } from "@/features/tts/components/SpeakerButton";
+import { GmailReviewCard } from "@/features/google-workspace/agent/GmailReviewCard";
+import { ShareButton } from "@/features/sharing/components/ShareButton";
+import { ReviewAnswersLink } from "@/features/agents/decision-review/components/ReviewAnswersLink";
+import { RecordChangeApprovalCard } from "@/features/record-change-approvals/RecordChangeApprovalCard";
+import { ParkedOnPersonCard } from "@/features/action-requests/components/ParkedOnPersonCard";
 import { kindValueToMarkdown } from "@/features/canvas/export/exportArtifactMarkdown";
 
+// Loaded on demand, client-only: the sharing modal is heavy and opens rarely.
+const ShareModal = dynamic(
+  () => import("@/features/sharing/components/ShareModal").then((m) => ({ default: m.ShareModal })),
+  { ssr: false },
+);
+
 registerChatUi({
+  MessageFilesStrip,
+  RulebookNudge,
+  NegativeVerdictFollowUp,
+  SpeakerButton,
+  GmailReviewCard,
+  ShareButton,
+  ShareModal,
+  ReviewAnswersLink,
+  RecordChangeApprovalCard,
+  ParkedOnPersonCard,
   RichContent,
   CopyButtons,
   InfoHint,

@@ -1,7 +1,7 @@
 import { StreamBlockAccumulator } from "@ai-matrx/chat/agents/redux/execution-system/utils/stream-block-accumulator";
 import { renderBlockToContentBlock } from "@/components/mardown-display/chat-markdown/render-block-to-content-block";
 import { decideBlockRender } from "@/components/mardown-display/chat-markdown/block-registry/BlockRenderer";
-const TEXT = "Here are 6 flashcards covering common polyatomic ions.\n\n<artifact type=\"flashcards\" id=\"fd4a56a0-360a-47f2-a101-f1e7c8978a0d\" version=\"1\" title=\"Polyatomic Ions\">\n{\"__kind\":\"flashcard_set\",\"cards\":[{\"__kind\":\"flashcard\",\"front\":\"What is nitrate?\",\"back\":\"NO3-\"},{\"__kind\":\"flashcard\",\"back\":\"OH-\",\"front\":\"What is hydroxide?\"}],\"title\":\"Polyatomic Ions\"}\n</artifact>";
+const TEXT = process.env.DBG_FENCE ? "Here are 6 flashcards covering common polyatomic ions.\n\n```json\n{\"__kind\":\"flashcard_set\",\"cards\":[{\"__kind\":\"flashcard\",\"front\":\"What is nitrate?\",\"back\":\"NO3-\"}],\"title\":\"Polyatomic Ions\"}\n```" : "Here are 6 flashcards covering common polyatomic ions.\n\n<artifact type=\"flashcards\" id=\"fd4a56a0-360a-47f2-a101-f1e7c8978a0d\" version=\"1\" title=\"Polyatomic Ions\">\n{\"__kind\":\"flashcard_set\",\"cards\":[{\"__kind\":\"flashcard\",\"front\":\"What is nitrate?\",\"back\":\"NO3-\"},{\"__kind\":\"flashcard\",\"back\":\"OH-\",\"front\":\"What is hydroxide?\"}],\"title\":\"Polyatomic Ions\"}\n</artifact>";
 it("dbg", () => {
   const ups: any[] = [];
   const acc = new StreamBlockAccumulator("r", (p: any) => { ups.push(p); return { type: "x", payload: p }; });

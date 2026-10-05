@@ -18,7 +18,7 @@ import type { RefObject } from "react";
 import { useAppSelector } from "../../../store/hooks";
 import type { SurfaceScopePayload } from "../../../surfaces/types";
 import { selectInstanceContextEntries } from "../../redux/execution-system/instance-context/instance-context.selectors";
-import { selectScopeSelectionsContext } from "@host/lib/redux/slices/appContextSlice";
+import { selectScopeSelectionsContext } from "../../../context/sources/scopes";
 import {
   selectWorkingDocBinding,
   selectWorkingDocConflict,

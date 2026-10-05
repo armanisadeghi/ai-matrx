@@ -36,7 +36,7 @@ import {
 import { AskCard } from "./AskCard";
 import { ApprovalCard } from "./ApprovalCard";
 import { BatchAskCard } from "./BatchAskCard";
-import { GmailReviewCard } from "@host/features/google-workspace/agent/GmailReviewCard";
+import { GmailReviewCard } from "../../../host/ui-slots";
 
 interface PendingAsksZoneProps {
   conversationId: string;

@@ -40,6 +40,18 @@ export interface ChatUiSlots {
   ConnectorMark: AnyComponent;
   InPlaceEditor: AnyComponent;
   EditInPlace: AnyComponent;
+  // Message widgets and tool-call cards the app owns (P20): a bare host shows a one-line
+  // labelled stand-in naming the widget (PACKAGE-INDEPENDENCE.md section 5.1), never a blank.
+  MessageFilesStrip: AnyComponent;
+  RulebookNudge: AnyComponent;
+  NegativeVerdictFollowUp: AnyComponent;
+  SpeakerButton: AnyComponent;
+  GmailReviewCard: AnyComponent;
+  ShareButton: AnyComponent;
+  ShareModal: AnyComponent;
+  ReviewAnswersLink: AnyComponent;
+  RecordChangeApprovalCard: AnyComponent;
+  ParkedOnPersonCard: AnyComponent;
   // Functions and hooks
   confirm: AnyFn;
   copyRichContent: AnyFn;
@@ -87,6 +99,18 @@ function slotComponent<K extends keyof ChatUiSlots>(name: K, Fallback?: AnyCompo
   return Wrapper as ChatUiSlots[K];
 }
 
+/** The generic default for an app widget nobody registered: one labelled line naming it. */
+function unregisteredWidget(name: string): AnyComponent {
+  const UnregisteredWidget = () =>
+    createElement(
+      "span",
+      { className: "text-[11px] text-muted-foreground", "data-chat-slot-fallback": name },
+      `${name} is not set up here`,
+    );
+  UnregisteredWidget.displayName = `UnregisteredWidget(${name})`;
+  return UnregisteredWidget;
+}
+
 function slotFn<K extends keyof ChatUiSlots>(name: K, fallback?: AnyFn): ChatUiSlots[K] {
   const fn = (...args: unknown[]) => {
     const registered = slots[name] as AnyFn | undefined;
@@ -118,6 +142,17 @@ export const ConnectorMark = slotComponent("ConnectorMark");
 export const InPlaceEditor = slotComponent("InPlaceEditor");
 /** A host with no in-place editor shows the text and offers no edit. */
 export const EditInPlace = slotComponent("EditInPlace", ({ children }: { children?: ReactNode }) => children ?? null);
+
+export const MessageFilesStrip = slotComponent("MessageFilesStrip", unregisteredWidget("MessageFilesStrip"));
+export const RulebookNudge = slotComponent("RulebookNudge", unregisteredWidget("RulebookNudge"));
+export const NegativeVerdictFollowUp = slotComponent("NegativeVerdictFollowUp", unregisteredWidget("NegativeVerdictFollowUp"));
+export const SpeakerButton = slotComponent("SpeakerButton", unregisteredWidget("SpeakerButton"));
+export const GmailReviewCard = slotComponent("GmailReviewCard", unregisteredWidget("GmailReviewCard"));
+export const ShareButton = slotComponent("ShareButton", unregisteredWidget("ShareButton"));
+export const ShareModal = slotComponent("ShareModal", unregisteredWidget("ShareModal"));
+export const ReviewAnswersLink = slotComponent("ReviewAnswersLink", unregisteredWidget("ReviewAnswersLink"));
+export const RecordChangeApprovalCard = slotComponent("RecordChangeApprovalCard", unregisteredWidget("RecordChangeApprovalCard"));
+export const ParkedOnPersonCard = slotComponent("ParkedOnPersonCard", unregisteredWidget("ParkedOnPersonCard"));
 
 export const confirm = slotFn("confirm");
 export const copyRichContent = slotFn("copyRichContent");

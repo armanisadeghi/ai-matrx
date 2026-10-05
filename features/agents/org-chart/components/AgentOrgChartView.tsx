@@ -25,6 +25,7 @@ import {
   Archive,
   ArrowUpToLine,
   ClipboardList,
+  Coins,
   Eraser,
   Stethoscope,
   Focus,
@@ -88,6 +89,7 @@ import {
 import { crossLinksOf, type AgentOrgNodeData } from "../buildAgentOrgForest";
 import { useAgentOrgChart } from "../useAgentOrgChart";
 import { OrgChartActivityProvider, useOrgChartActivity } from "../useOrgChartActivity";
+import { OrgChartPointsProvider, branchTotals, useOrgChartPoints } from "../useOrgChartPoints";
 import { orgChartHealth, type HealthIssueId } from "../orgChartHealth";
 import { knobInt } from "@/lib/knobs/featureKnobs";
 import { loadOrgDirectory } from "../useBoxIdentity";
@@ -202,6 +204,10 @@ export function AgentOrgChartView({
   const { byKey, firstKeyOf } = indexForest(forest);
   const chartAgentIds = [...firstKeyOf.keys()].map(parseBoxId).filter((b) => b.type === "agent").map((b) => b.id);
   const activity = useOrgChartActivity(chartAgentIds);
+  // Points per branch: an optional view, off until asked for.
+  const [showPoints, setShowPoints] = useState(false);
+  const points = useOrgChartPoints(chartAgentIds, showPoints);
+  const pointTotals = points.byAgent ? branchTotals(forest, points.byAgent) : null;
   const [spreadWarnAt, setSpreadWarnAt] = useState<number | null>(null);
   useEffect(() => {
     let live = true;
@@ -891,6 +897,17 @@ export function AgentOrgChartView({
           )}
         </DropdownMenuContent>
       </DropdownMenu>
+      <Button
+        variant={showPoints ? "primary" : "outline"}
+        icon={<Coins />}
+        aria-pressed={showPoints}
+        title={
+          showPoints && points.days ? `Points spent in the last ${points.days} days, per box and per branch` : "Show points per box and branch"
+        }
+        onClick={() => setShowPoints((v) => !v)}
+      >
+        Points
+      </Button>
       {branchRoot && (
         <div className="flex h-9 items-center gap-1 rounded-lg border border-border bg-card/95 pl-2.5 pr-1 text-xs shadow-sm">
           <Focus className="h-3.5 w-3.5 text-muted-foreground" />
@@ -936,7 +953,13 @@ export function AgentOrgChartView({
 
   return (
     <OrgChartActivityProvider value={activity.byAgentId}>
+    <OrgChartPointsProvider value={pointTotals}>
     <div className="relative h-full w-full">
+      {!error && points.error && (
+        <div className="absolute inset-x-3 top-14 z-30 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+          Points could not load: {points.error}
+        </div>
+      )}
       {!error && !directoryError && activity.error && (
         <div className="absolute inset-x-3 top-14 z-30 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
           Live activity is unavailable: {activity.error}
@@ -1141,6 +1164,7 @@ export function AgentOrgChartView({
         }}
       />
     </div>
+    </OrgChartPointsProvider>
     </OrgChartActivityProvider>
   );
 }

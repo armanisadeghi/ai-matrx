@@ -14,7 +14,7 @@
 import type { ResolvedContextRow } from "@ai-matrx/agents/context";
 import { useAppSelector, useAppStore } from "../../../../store/hooks";
 import { useConversationMaterialized } from "../../../hooks/useConversationMaterialized";
-import { useContainerLinks } from "@host/features/scopes/hooks/useContainerLinks";
+import { useContainerLinks } from "@ai-matrx/associations/react";
 import { attachmentContextKey } from "@ai-matrx/agents/context";
 import {
   DOCUMENT_ATTACHMENT_PREFIXES,

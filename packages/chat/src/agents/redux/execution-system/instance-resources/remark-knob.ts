@@ -7,7 +7,7 @@
 
 import { ensureEffectiveKnob } from "../../../../host/prefs";
 import { getUserId } from "../../../../host/identity";
-import { selectActiveOrganizationId } from "@host/features/scopes/redux/selectors/active-context";
+import { selectActiveOrganizationId } from "../../../../context/sources/scopes";
 import type { ChatRootState } from "../../../../store/root-state";
 
 export const REMARKS_AUTO_INCLUDE_KNOB = {

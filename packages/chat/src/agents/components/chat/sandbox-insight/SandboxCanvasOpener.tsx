@@ -23,7 +23,7 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 
 import { useAppSelector } from "../../../../store/hooks";
-import { getEffectiveSandboxRef } from "@host/lib/sandbox/active-binding";
+import { getEffectiveSandboxRef } from "../../../../compute/targets";
 import { useChatCanvasView } from "../../../../host/canvas";
 import { selectToolCallsForConversation } from "../../../redux/execution-system/observability/observability.selectors";
 import { selectLiveToolLifecycleByConversation } from "../../../redux/execution-system/active-requests/active-requests.selectors";

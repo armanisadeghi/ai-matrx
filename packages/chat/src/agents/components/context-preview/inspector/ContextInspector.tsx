@@ -31,17 +31,17 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { Alert, AlertDescription } from "@ai-matrx/design-system";
-import { MillerColumnsCore } from "@host/features/scopes/components/active-context/miller-columns/MillerColumns";
+import { MillerColumnsCore } from "../../../../context/sources/scopes";
 import {
   drillPathForScope,
   useDrillPathEngine,
   useUniverse,
   type DrillPath,
-} from "@host/features/scopes/components/active-context/quick-pick/engine";
+} from "../../../../context/sources/scopes";
 import { summarizeContextCell } from "../../../../host/ui-slots";
-import { scopesService } from "@host/features/scopes/service/scopesService";
-import { isScopesRpcErr } from "@host/features/scopes/types";
-import type { ContextItemRow, ContextItemValue, ScopesRpcResult } from "@host/features/scopes/types";
+import { scopesService } from "../../../../context/sources/scopes";
+import { isScopesRpcErr } from "../../../../context/sources/scopes";
+import type { ContextItemRow, ContextItemValue, ScopesRpcResult } from "../../../../context/sources/scopes";
 import { usePageCapture } from "@host/components/agent-copy/page-capture/usePageCapture";
 import { adminPageCapture } from "@host/components/agent-copy/page-capture/pageCapture";
 import { ContextCompareView, type CompareTab } from "../ContextCompareView";
