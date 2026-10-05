@@ -25,6 +25,7 @@ import {
   selectOrchestrasListError,
   selectOrchestrasListStatus,
   selectOrgPositions,
+  selectOrgPositionsStatus,
 } from "@/features/agents/redux/orchestras/selectors";
 import { useEnsureAgentsLoaded } from "@/features/agents/orchestras/hooks/useEnsureAgentsLoaded";
 import { buildAgentOrgForest, type OrchestraShape } from "./buildAgentOrgForest";
@@ -37,10 +38,24 @@ export function useAgentOrgChart(opts: { rootIds?: string[] } = {}) {
   const listStatus = useAppSelector(selectOrchestrasListStatus);
   const listError = useAppSelector(selectOrchestrasListError);
   const entries = useAppSelector(selectOrchestraEntries);
-  const manualEdges = useAppSelector(selectManualOrgEdges);
+  const storedEdges = useAppSelector(selectManualOrgEdges);
+  const positionsStatus = useAppSelector(selectOrgPositionsStatus);
   const manualError = useAppSelector(selectManualOrgError);
   const positions = useAppSelector(selectOrgPositions);
   const agents = useAppSelector(selectAllAgents);
+
+  // A position in Trash keeps its links (so a restore puts it back in place);
+  // once positions are known, those links are not drawn.
+  const livePositions = new Set(positions.map((p) => p.id));
+  const manualEdges =
+    positionsStatus === "ready"
+      ? storedEdges.filter((e) =>
+          [e.managerId, e.reportId].every((b) => {
+            const { type, id } = parseBoxId(b);
+            return type !== "position" || livePositions.has(id);
+          }),
+        )
+      : storedEdges;
 
   useEffect(() => {
     dispatch(fetchOrchestras());

@@ -13,12 +13,11 @@ import { Button, Field, SearchField, Tabs } from "@ai-matrx/design-system/contro
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectOrgPositions } from "@/features/agents/redux/orchestras/selectors";
 import { createOrgPosition, loadOrgPositions } from "@/features/agents/redux/orchestras/orgChartThunks";
-import type { Team } from "@/features/organizations/service/teamsService";
 import { selectOrganizationId, selectOrganizationName } from "@/lib/redux/slices/appContextSlice";
 import { OrganizationPickerPopover } from "@/features/organizations/components/OrganizationPickerPopover";
 import { toast } from "@/lib/toast";
 import { boxId, parseBoxId, type OrgBoxType } from "../constants";
-import { loadOrgDirectory, type OrgMember } from "../useBoxIdentity";
+import { loadOrgDirectory, type OrgMember, type OrgTeam } from "../useBoxIdentity";
 
 const TAB_LABEL: Record<OrgBoxType, string> = {
   agent: "Agents",
@@ -60,6 +59,7 @@ export function OrgBoxPicker({
   exclude = [],
   types = ["agent", "membership", "team", "position"],
   initialType = "agent",
+  organizationId,
 }: {
   onPick: (boxId: string) => void;
   /** Box ids that can't be chosen here (the box itself, its current place). */
@@ -67,12 +67,15 @@ export function OrgBoxPicker({
   /** Which tabs to offer. */
   types?: readonly OrgBoxType[];
   initialType?: OrgBoxType;
+  /** Only people and teams of this organization (a position is filled from its own). */
+  organizationId?: string;
 }) {
   const dispatch = useAppDispatch();
   const [tab, setTab] = useState<OrgBoxType>(types.includes(initialType) ? initialType : types[0]);
   const [query, setQuery] = useState("");
-  const [teams, setTeams] = useState<Team[] | null>(null);
+  const [teams, setTeams] = useState<OrgTeam[] | null>(null);
   const [members, setMembers] = useState<OrgMember[] | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [newName, setNewName] = useState("");
   const [creating, setCreating] = useState(false);
   const positions = useAppSelector(selectOrgPositions);
@@ -91,14 +94,19 @@ export function OrgBoxPicker({
   useEffect(() => {
     if (tab === "agent" || tab === "position" || (teams && members)) return;
     void loadOrgDirectory().then((d) => {
-      setTeams([...d.teams.values()].sort((a, b) => a.name.localeCompare(b.name)));
+      setLoadError(d.failed.length ? `Some people and teams could not load (${d.failed.join(", ")}).` : null);
+      setTeams(
+        [...d.teams.values()]
+          .filter((t) => !organizationId || t.organizationId === organizationId)
+          .sort((a, b) => a.name.localeCompare(b.name)),
+      );
       setMembers(
-        [...d.members.values()].sort(
-          (a, b) => a.name.localeCompare(b.name) || a.organizationName.localeCompare(b.organizationName),
-        ),
+        [...d.members.values()]
+          .filter((m) => !organizationId || m.organizationId === organizationId)
+          .sort((a, b) => a.name.localeCompare(b.name) || a.organizationName.localeCompare(b.organizationName)),
       );
     });
-  }, [tab, teams, members]);
+  }, [tab, teams, members, organizationId]);
 
   const createPosition = async () => {
     const name = newName.trim();
@@ -144,6 +152,24 @@ export function OrgBoxPicker({
             placeholder={`Find ${TAB_LABEL[tab].toLowerCase()}`}
             aria-label={`Find ${TAB_LABEL[tab].toLowerCase()}`}
           />
+          {loadError && (
+            <div className="flex items-center gap-2 text-xs text-destructive">
+              <span className="min-w-0 flex-1 truncate" title={loadError}>{loadError}</span>
+              <button
+                type="button"
+                className="font-medium text-primary hover:underline"
+                onClick={() => {
+                  setLoadError(null);
+                  void loadOrgDirectory(true).then(() => {
+                    setTeams(null);
+                    setMembers(null);
+                  });
+                }}
+              >
+                Retry
+              </button>
+            </div>
+          )}
           <div className="min-h-0 flex-1 overflow-y-auto rounded-md border border-border bg-card p-1">
             {tab === "membership" &&
               (members === null ? (

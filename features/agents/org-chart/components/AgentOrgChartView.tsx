@@ -48,7 +48,7 @@ import {
 import { addAgentToOrchestra, removeAgentFromOrchestra } from "@/features/agents/redux/orchestras/thunks";
 import { OrgChart, type OrgChartCrossLink } from "@/components/official/org-chart/OrgChart";
 import type { OrgChartTreeNode } from "@/components/official/org-chart/layout";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system/controls";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   DropdownMenu,
@@ -90,7 +90,7 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 type CrossKind = Exclude<RecordedLinkKind, "reports_to">;
 
 type PickMode =
-  | { kind: "manager-for"; reportIds: string[] } // choose who these sit under
+  | { kind: "manager-for"; reportIds: string[]; adding?: boolean } // choose who these sit under ("adding": step 2 of Add to chart)
   | { kind: "report-of"; managerId: string } // choose a box to put under this one
   | { kind: "cross-link"; fromId: string; link: CrossKind } // where this hands off / has a dotted line
   | { kind: "fill"; positionId: string } // who fills this position
@@ -151,6 +151,8 @@ export function AgentOrgChartView({
 
   // Names of people and teams for menus and messages (cards resolve their own).
   const [names, setNames] = useState<Record<string, string>>({});
+  const [directoryError, setDirectoryError] = useState<string | null>(null);
+  const [directoryTry, setDirectoryTry] = useState(0);
   const unnamed = [...firstKeyOf.keys()]
     .filter((b) => {
       const t = parseBoxId(b).type;
@@ -164,17 +166,19 @@ export function AgentOrgChartView({
     void (async () => {
       const found: Record<string, string> = {};
       const dir = await loadOrgDirectory();
+      if (live) setDirectoryError(dir.failed.length ? `Could not load ${dir.failed.join(", ")}.` : null);
       for (const b of unnamed.split(",")) {
         const { type, id } = parseBoxId(b);
-        if (type === "membership") found[b] = dir.members.get(id)?.name ?? "this person";
-        if (type === "team") found[b] = dir.teams.get(id)?.name ?? "this team";
+        // Unresolved while the read failed: left unnamed so a retry fills it.
+        const name = type === "membership" ? dir.members.get(id)?.name : dir.teams.get(id)?.name;
+        if (name || !dir.failed.length) found[b] = name ?? (type === "membership" ? "this person" : "this team");
       }
       if (live) setNames((cur) => ({ ...cur, ...found }));
     })();
     return () => {
       live = false;
     };
-  }, [unnamed]);
+  }, [unnamed, directoryTry]);
 
   const nameOf = (b: string) => {
     const { type, id } = parseBoxId(b);
@@ -220,15 +224,24 @@ export function AgentOrgChartView({
       } else fail(res.error);
       return false;
     }
+    if (res.unchanged) return true;
+    const replaced = res.replaced;
     announceReversible({
       verb: "move",
       noun: nounOf(reportId),
       subject: `${await nameNow(reportId)} under ${await nameNow(managerId)}`,
       undo: async () => {
+        // A hand-off or dotted line this pair held comes back as it was.
         const back = before
           ? await dispatch(setManualManager(before.managerId, reportId))
-          : await dispatch(removeManualManager(managerId, reportId));
+          : replaced
+            ? { ok: true }
+            : await dispatch(removeManualManager(managerId, reportId));
         if (!back.ok) throw new Error(back.error ?? "Could not put it back.");
+        if (replaced) {
+          const link = await dispatch(addCrossLink(managerId, reportId, replaced.kind as CrossKind));
+          if (!link.ok) throw new Error(link.error ?? "Could not put the earlier link back.");
+        }
       },
     });
     return true;
@@ -368,7 +381,7 @@ export function AgentOrgChartView({
     }
     actions.push({
       label: `Place under ${nameOf(t.boxId)}`,
-      hint: fromOrchestra ? `Recorded only. It stays in the ${agents[fromOrchestra]?.name ?? ""} Orchestra.` : "Recorded only.",
+      hint: fromOrchestra ? `Recorded only — stays in the ${agents[fromOrchestra]?.name ?? ""} Orchestra` : "Recorded only.",
       run: () => void placeUnder(t.boxId, d.boxId),
     });
     if (fromOrchestra && draggedAgent) {
@@ -600,7 +613,7 @@ export function AgentOrgChartView({
       // A new or unplaced position is already on the chart on its own; placing it is optional.
       setSelection([firstKeyOf.get(picked) ?? picked]);
       setPick({ kind: "manager-for", reportIds: [picked] });
-    } else setPick({ kind: "manager-for", reportIds: [picked] }); // step 2 of "Add to chart"
+    } else setPick({ kind: "manager-for", reportIds: [picked], adding: true }); // step 2 of "Add to chart"
   };
 
   if (forest.length === 0 && loading) {
@@ -613,22 +626,14 @@ export function AgentOrgChartView({
 
   const toolbar = (
     <>
-      <Button
-        size="sm"
-        variant="outline"
-        className="h-9 bg-card/95 px-2.5 shadow-sm"
-        aria-label="Add to chart"
-        title="Add to chart"
-        onClick={() => setPick({ kind: "new-root" })}
-      >
-        <Plus className="h-3.5 w-3.5 sm:mr-1" />
-        <span className="hidden sm:inline">Add to chart</span>
+      <Button variant="outline" icon={<Plus />} onClick={() => setPick({ kind: "new-root" })}>
+        Add to chart
       </Button>
       {branchRoot && (
         <div className="flex h-9 items-center gap-1 rounded-lg border border-border bg-card/95 pl-2.5 pr-1 text-xs shadow-sm">
           <Focus className="h-3.5 w-3.5 text-muted-foreground" />
           <span className="max-w-40 truncate">{nameOf(branchRoot)}&apos;s branch</span>
-          <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setBranchRoot(null)}>
+          <Button variant="quiet" onClick={() => setBranchRoot(null)}>
             Show all
           </Button>
         </div>
@@ -675,6 +680,22 @@ export function AgentOrgChartView({
           <ErrorAlchemyMenu error={error} operation="Load the org chart" />
         </div>
       )}
+      {!error && directoryError && (
+        <div className="absolute inset-x-3 top-14 z-30 flex items-center gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+          <span className="min-w-0 flex-1 truncate" title={directoryError}>
+            {directoryError}
+          </span>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setDirectoryError(null);
+              void loadOrgDirectory(true).then(() => setDirectoryTry((n) => n + 1));
+            }}
+          >
+            Retry
+          </Button>
+        </div>
+      )}
       <OrgChart
         roots={forest}
         edgeKinds={ORG_LINK_KIND_META}
@@ -705,11 +726,10 @@ export function AgentOrgChartView({
             <div className="text-sm font-semibold text-foreground">{emptyTitle}</div>
             <p className="max-w-sm text-sm text-muted-foreground">{emptyBody}</p>
             <div className="flex gap-2">
-              <Button size="sm" onClick={() => setPick({ kind: "new-root" })}>
-                <Plus className="mr-1 h-3.5 w-3.5" />
+              <Button variant="primary" icon={<Plus />} onClick={() => setPick({ kind: "new-root" })}>
                 Add to chart
               </Button>
-              <Button size="sm" variant="outline" asChild>
+              <Button variant="outline" asChild>
                 <Link href="/agents/orchestras">Open Orchestras</Link>
               </Button>
             </div>
@@ -728,15 +748,13 @@ export function AgentOrgChartView({
                   menu={
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <button
-                          type="button"
+                        <Button
+                          variant="quiet"
+                          icon={<MoreHorizontal />}
                           aria-label="More actions"
                           title="More actions"
                           onClick={(e) => e.stopPropagation()}
-                          className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                        >
-                          <MoreHorizontal className="h-3.5 w-3.5" />
-                        </button>
+                        />
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-72" onClick={(e) => e.stopPropagation()}>
                         {cardMenu(n.node, { Item: DropdownMenuItem, Label: DropdownMenuLabel, Sep: DropdownMenuSeparator })}
@@ -780,7 +798,19 @@ export function AgentOrgChartView({
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <Dialog open={pick !== null} onOpenChange={(open) => !open && setPick(null)}>
+      <Dialog
+        open={pick !== null}
+        onOpenChange={(open) => {
+          if (open) return;
+          // A person or team shows on the chart only once it sits somewhere:
+          // closing step 2 leaves it off, and says so.
+          const t = pick?.kind === "manager-for" && pick.adding ? parseBoxId(pick.reportIds[0]).type : null;
+          if (pick?.kind === "manager-for" && (t === "membership" || t === "team")) {
+            toast.info(`${nameOf(pick.reportIds[0])} wasn't added — it needs a place.`);
+          }
+          setPick(null);
+        }}
+      >
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>{pickerTitle}</DialogTitle>
@@ -793,6 +823,7 @@ export function AgentOrgChartView({
               exclude={pickerExclude}
               types={pickerTypes}
               initialType={pick.kind === "fill" ? "membership" : "agent"}
+              organizationId={pick.kind === "fill" ? positionById.get(pick.positionId)?.organizationId : undefined}
             />
           )}
         </DialogContent>
