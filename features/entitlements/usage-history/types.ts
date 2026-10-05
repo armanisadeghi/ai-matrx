@@ -1,4 +1,5 @@
 import type { Database, Json } from "@/types/database.types";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 type UsageLedgerRow = Database["billing"]["Tables"]["usage_ledger"]["Row"];
 
@@ -10,7 +11,17 @@ export type UsageHistoryActivity = "all" | "executions";
 export interface UsageHistoryQuery {
   range: UsageHistoryRange;
   activity: UsageHistoryActivity;
+  /** UI position only; data pagination is strictly cursor-based. */
   page: number;
+  /** A fixed upper bound prevents rows created during pagination entering later pages. */
+  snapshotAt: string | null;
+  /** The final row from the preceding page, used for descending keyset pagination. */
+  cursor: UsageHistoryCursor | null;
+}
+
+export interface UsageHistoryCursor {
+  createdAt: string;
+  id: string;
 }
 
 export interface UsageHistoryEntry {
@@ -23,8 +34,8 @@ export interface UsageHistoryEntry {
 
 export interface UsageHistoryPage {
   entries: UsageHistoryEntry[];
-  page: number;
-  hasNextPage: boolean;
+  snapshotAt: string;
+  nextCursor: UsageHistoryCursor | null;
 }
 
 type UsageMetadata = {
@@ -38,14 +49,9 @@ function metadataRecord(value: Json): UsageMetadata {
     : {};
 }
 
-function readableValue(value: unknown): string | null {
+function displayMetadataValue(value: unknown): string | null {
   if (typeof value !== "string" || value.trim() === "") return null;
-  return value
-    .trim()
-    .split(/[_\s-]+/)
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
+  return humanizeIdentifier(value.trim()) || null;
 }
 
 /**
@@ -61,7 +67,7 @@ export function toUsageHistoryEntry(row: Pick<UsageLedgerRow, "id" | "created_at
     quantity: typeof row.quantity === "number" && Number.isFinite(row.quantity)
       ? row.quantity
       : null,
-    activity: readableValue(metadata.execution_type),
-    outcome: readableValue(metadata.status),
+    activity: displayMetadataValue(metadata.execution_type),
+    outcome: displayMetadataValue(metadata.status),
   };
 }
