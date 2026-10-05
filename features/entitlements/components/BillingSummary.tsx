@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { SubscriptionControls } from "@/features/pricing/components/SubscriptionControls";
 import {
   billingStatusLabel,
+  periodEndLabel,
   priceLabel,
   readBillingSummary,
   type BillingScope,
@@ -85,7 +86,7 @@ export function BillingSummary({ scope }: { scope: BillingScope }) {
         </div>
         <span className="rounded bg-muted px-2 py-1 text-xs font-medium text-foreground">{billingStatusLabel(read.subscription.status)}</span>
       </div>
-      {periodEnd ? <p className="mt-3 text-sm text-muted-foreground">{read.subscription.cancel_at_period_end ? "Paid through" : "Renews"} {periodEnd}</p> : null}
+      {periodEnd ? <p className="mt-3 text-sm text-muted-foreground">{periodEndLabel(read.subscription.cancel_at_period_end)} {periodEnd}</p> : null}
       {recovering ? <p className="mt-2 text-sm text-destructive">Payment needs attention.</p> : null}
       <div className="mt-4 flex flex-wrap gap-2">
         {invoice?.url ? <Button size="sm" onClick={() => window.location.assign(invoice.url!)}>{invoice.requiresAction ? "Complete payment" : "Pay invoice"}</Button> : null}

@@ -1,9 +1,14 @@
-import { billingStatusLabel, priceLabel } from "../billing-summary";
+import { billingStatusLabel, periodEndLabel, priceLabel } from "../billing-summary";
 
 describe("billing summary presentation contract", () => {
   it("names payment-recovery states without calling them active", () => {
     expect(billingStatusLabel("past_due")).toBe("Payment due");
     expect(billingStatusLabel("incomplete")).toBe("Payment pending");
+  });
+
+  it("does not call a scheduled cancellation a renewal", () => {
+    expect(periodEndLabel(true)).toBe("Ends");
+    expect(periodEndLabel(false)).toBe("Renews");
   });
 
   it("prints the Stripe-mirrored billed interval rather than a catalog guess", () => {

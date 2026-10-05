@@ -49,7 +49,11 @@ export async function POST(request: NextRequest) {
       if (!membership || !["owner", "admin"].includes(membership.role ?? "")) return NextResponse.json({ error: "An organization owner or admin must manage its subscription." }, { status: 403 });
       subscriptionQuery = ownerEq(subscriptionQuery, owner).is("beneficiary_user_id", null);
     }
-    const { data: subscription, error } = await subscriptionQuery.maybeSingle();
+    const { data: subscription, error } = await subscriptionQuery
+      .order("current_period_end", { ascending: false, nullsFirst: false })
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
     if (error) throw error;
     if (!subscription?.stripe_subscription_id) return NextResponse.json({ invoice: null });
     const stripeSubscription = await getStripe().subscriptions.retrieve(subscription.stripe_subscription_id, { expand: ["latest_invoice.payment_intent"] });

@@ -48,7 +48,14 @@ export async function readBillingSummary(
       ? query.eq("beneficiary_user_id", scope.userId)
       : query.eq("organization_id", scope.organizationId).is("beneficiary_user_id", null);
 
-    const { data: subscription, error } = await query.maybeSingle();
+    // A person can have a historical canceled row beside the current one. The
+    // furthest paid-through period is the current financial account; newest
+    // mirror event breaks a tie without pretending historical rows do not exist.
+    const { data: subscription, error } = await query
+      .order("current_period_end", { ascending: false, nullsFirst: false })
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
     if (error) return { ok: false, reason: error.message || "Billing could not be read." };
     if (!subscription?.price_id) return { ok: true, subscription, price: null };
 
@@ -76,6 +83,11 @@ export function billingStatusLabel(status: string): string {
     paused: "Paused",
   };
   return labels[status] ?? status;
+}
+
+/** A scheduled cancellation is not a renewal; the date means a different thing. */
+export function periodEndLabel(cancelAtPeriodEnd: boolean): "Ends" | "Renews" {
+  return cancelAtPeriodEnd ? "Ends" : "Renews";
 }
 
 export function priceLabel(price: BillingPrice | null): string | null {
