@@ -60,7 +60,9 @@ function RowMenu({ space, onRename }: { space: SpaceSummary; onRename: () => voi
           <MoreHorizontal size={15} />
         </button>
       </PopoverTrigger>
-      <PopoverContent surface="solid" align="start" side="right" className="w-[240px] p-1" onClick={(e) => e.stopPropagation()}>
+      {/* Closes instantly (Notion): a row that leaves the tree (Move to Trash) must not take an open menu
+          with it — an anchorless menu would be drawn at the top-left corner during its exit. */}
+      <PopoverContent surface="solid" align="start" side="right" className="w-[240px] p-1 data-[state=closed]:hidden" onClick={(e) => e.stopPropagation()}>
         <button type="button" className="spaces-menu-row" onClick={act(() => spaces.toggleFavorite(space.id))}>
           <span className="spaces-menu-row-icon">{fav ? <StarOff size={16} /> : <Star size={16} />}</span>
           {fav ? "Remove from Favorites" : "Add to Favorites"}
@@ -104,7 +106,12 @@ function RowMenu({ space, onRename }: { space: SpaceSummary; onRename: () => voi
           </span>
           Move to
         </button>
-        <button type="button" className="spaces-menu-row" data-danger="true" onClick={act(() => void spaces.archiveSpace(space.id).then(() => toast.success("Moved to Trash")))}>
+        <button type="button" className="spaces-menu-row" data-danger="true" onClick={act(() =>
+            void spaces
+              .archiveSpace(space.id)
+              .then(() => toast.success("Moved to Trash"))
+              .catch((e: unknown) => toast.error(e instanceof Error ? e.message : "We couldn't move this page to Trash.")),
+          )}>
           <span className="spaces-menu-row-icon">
             <Trash2 size={16} />
           </span>
@@ -311,7 +318,7 @@ function TemplatesPopover() {
         <button type="button" className="spaces-nav-row">
           <LayoutTemplate size={17} />
           Templates
-          {sample.adding ? <span className="ml-auto text-xs text-muted-foreground">{sample.progress}</span> : null}
+          {sample.adding ? <span className="ml-auto type-secondary text-muted-foreground">{sample.progress}</span> : null}
         </button>
       </PopoverTrigger>
       <PopoverContent surface="solid" side="right" align="end" className="w-[300px] p-1">
@@ -352,7 +359,7 @@ function TrashPopover() {
           {list.map((s) => (
             <div key={s.id} className="spaces-trash-row" data-clickable="" onClick={() => open(s.id)}>
               <SpaceIcon media={s.icon} size={17} />
-              <span className="min-w-0 flex-1 truncate text-sm">{s.title || "Untitled"}</span>
+              <span className="min-w-0 flex-1 truncate type-body">{s.title || "Untitled"}</span>
               <Button
                 variant="quiet"
                 aria-label="Restore"
@@ -364,7 +371,7 @@ function TrashPopover() {
               />
             </div>
           ))}
-          {list.length === 0 ? <p className="py-6 text-center text-sm text-muted-foreground">No pages in Trash</p> : null}
+          {list.length === 0 ? <p className="py-6 text-center type-body text-muted-foreground">No pages in Trash</p> : null}
         </div>
       </PopoverContent>
     </Popover>
@@ -420,7 +427,7 @@ export function SpacesSidebarContent({ onCollapse }: { onCollapse?: () => void }
     <div className="spaces-sidebar-inner">
       <div className="spaces-sidebar-head">
         <span className="spaces-workspace-mark">S</span>
-        <span className="min-w-0 flex-1 truncate text-sm font-medium">Spaces</span>
+        <span className="min-w-0 flex-1 truncate type-title">Spaces</span>
         {onCollapse ? (
           <button type="button" className="spaces-row-action spaces-collapse" aria-label="Close sidebar" title="Close sidebar (Cmd+\)" onClick={onCollapse}>
             <ChevronsLeft size={17} />
@@ -433,7 +440,7 @@ export function SpacesSidebarContent({ onCollapse }: { onCollapse?: () => void }
       <button type="button" className="spaces-nav-row" onClick={() => spaces.openQuickFind("jump")}>
         <Search size={17} />
         Search
-        <span className="ml-auto text-xs text-muted-foreground">⌘K</span>
+        <span className="ml-auto type-secondary text-muted-foreground">⌘K</span>
       </button>
 
       <div className="spaces-sidebar-scroll">

@@ -59,6 +59,21 @@ export const b = {
     b.database(token, [{ id: "view-ring", name, icon, layout: "chart", chart: { centerValue: true, ...chart } }]),
 };
 
+/** The four chart rings of the acceptance page (Active clients, Client wins, Avg NPS score, YTD tasks). */
+export function sampleRings(): SpaceBlock {
+  return b.columns(
+      { width: 0.25, blocks: [b.ring("client", "Active clients", "Users", { type: "donut", groupBy: "status", op: "count" })] },
+      { width: 0.25, blocks: [b.ring("client_win", "Client wins", "Trophy", { type: "donut", groupBy: "kind", op: "count" })] },
+      { width: 0.25, blocks: [b.ring("nps_survey", "Avg NPS score", "Gauge", { type: "donut", groupBy: "score", op: "avg", field: "score" })] },
+      { width: 0.25, blocks: [b.ring("task", "YTD tasks completed", "ListChecks", { type: "donut", groupBy: "task", op: "count" })] },
+    );
+}
+
+/** The linked client database of the acceptance page. */
+export function sampleClientsDatabase(): SpaceBlock {
+  return b.database("client", [{ id: "view-all", name: "All", icon: "Users", layout: "grid", hiddenFields: ["surveys", "wins", "tasks"] }]);
+}
+
 interface PageSeed {
   key: string;
   title: string;
@@ -289,13 +304,8 @@ export function seedSpaces(): SpaceDoc[] {
   ];
 
   const right: SpaceBlock[] = [
-    b.columns(
-      { width: 0.25, blocks: [b.ring("client", "Active clients", "Users", { type: "donut", groupBy: "status", op: "count" })] },
-      { width: 0.25, blocks: [b.ring("client_win", "Client wins", "Trophy", { type: "donut", groupBy: "kind", op: "count" })] },
-      { width: 0.25, blocks: [b.ring("nps_survey", "Avg NPS score", "Gauge", { type: "donut", groupBy: "score", op: "avg", field: "score" })] },
-      { width: 0.25, blocks: [b.ring("task", "YTD tasks completed", "ListChecks", { type: "donut", groupBy: "task", op: "count" })] },
-    ),
-    b.database("client", [{ id: "view-all", name: "All", icon: "Users", layout: "grid" }]),
+    sampleRings(),
+    sampleClientsDatabase(),
     b.text(""),
     b.h1([t("90 Day Plan", { link: `/spaces/${idOf(PLAN.key)}`, color: "gray" })]),
     ...PLAN_PAGES.map((p) => b.page(idOf(p.key))),

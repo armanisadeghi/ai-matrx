@@ -60,6 +60,8 @@ export interface SpaceDbView {
   dateField?: string | null;
   sorts?: Array<{ field: string; direction: "asc" | "desc" }>;
   filters?: Record<string, string | number | boolean | null>;
+  /** Property keys this view hides (F4 show/hide). */
+  hiddenFields?: string[];
   chart?: ChartSettings;
 }
 

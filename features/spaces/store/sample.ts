@@ -2,7 +2,7 @@
 // every sub-page through the store, so the sample is a real saved Space like any other.
 
 import type { RichSpan, SpaceBlock, SpaceDoc, SpaceId, SpacesStore } from "../contract";
-import { SEED_ROOT_ID, seedSpaces } from "./seed";
+import { SEED_ROOT_ID, sampleClientsDatabase, sampleRings, seedSpaces } from "./seed";
 
 export const SAMPLE_TITLE = "The Traveling SMM™ OS";
 
@@ -22,8 +22,30 @@ function remap(blocks: SpaceBlock[], ids: Map<string, SpaceId>): SpaceBlock[] {
   });
 }
 
-/** Creates the sample; returns the new root Space. `onProgress(done, total)` after each page. */
+/** The phase-1 sample held `slot` placeholders where the data blocks now sit; swap them in place. */
+function upgradeSlots(blocks: SpaceBlock[]): { blocks: SpaceBlock[]; changed: boolean } {
+  let changed = false;
+  const walk = (list: SpaceBlock[]): SpaceBlock[] =>
+    list.map((blk) => {
+      const label = typeof blk.props?.label === "string" ? blk.props.label : "";
+      if (blk.type === "slot" && label.startsWith("Charts:")) return ((changed = true), sampleRings());
+      if (blk.type === "slot" && label.startsWith("Clients database:")) return ((changed = true), sampleClientsDatabase());
+      return blk.children ? { ...blk, children: walk(blk.children) } : blk;
+    });
+  return { blocks: walk(blocks), changed };
+}
+
+/** Adds the sample once: when it is already in the tree, that copy is brought up to date and returned
+ *  (no second "The Traveling SMM™ OS"). Otherwise creates it; `onProgress(done, total)` after each page. */
 export async function addTravelingSmmSample(store: SpacesStore, onProgress?: (done: number, total: number) => void): Promise<SpaceDoc> {
+  const existing = (await store.list()).find((s) => s.parentId === null && s.title === SAMPLE_TITLE && !s.isArchived);
+  if (existing) {
+    const doc = await store.get(existing.id);
+    if (doc) {
+      const up = upgradeSlots(doc.blocks);
+      return up.changed ? store.save({ ...doc, blocks: up.blocks }, doc.version) : doc;
+    }
+  }
   const docs = seedSpaces();
   const rootSeed = docs.find((d) => d.id === SEED_ROOT_ID)!;
   const kids = docs.filter((d) => d.parentId === SEED_ROOT_ID);

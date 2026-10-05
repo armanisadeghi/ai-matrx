@@ -247,6 +247,7 @@ function viewSpec(tableId: string, view: SpaceDbView): SavedViewSpec {
     startField: view.dateField ?? null,
     sorts: view.sorts ?? [],
     filters: view.filters ?? {},
+    ...(view.hiddenFields?.length ? { presentation: { hiddenFields: view.hiddenFields } } : {}),
   };
 }
 
@@ -399,7 +400,7 @@ function FilterButton({ view, fields, onView, editable }: { view: SpaceDbView; f
         {editable ? (
           field ? (
             <div className="flex flex-col gap-2 p-1">
-              <span className="text-xs text-muted-foreground">{fields.find((f) => f.key === field)?.label} is</span>
+              <span className="type-secondary text-muted-foreground">{fields.find((f) => f.key === field)?.label} is</span>
               <Input
                 autoFocus
                 value={value}
@@ -434,7 +435,7 @@ function SortButton({ view, fields, onView, editable }: { view: SpaceDbView; fie
       </PopoverTrigger>
       <PopoverContent surface="solid" align="end" className="w-[260px] p-1">
         {sort ? (
-          <div className="flex items-center gap-1 p-1 text-sm">
+          <div className="flex items-center gap-1 p-1 type-body">
             <span className="flex-1 truncate">{fields.find((f) => f.key === sort.field)?.label ?? sort.field}</span>
             <Button variant="outline" disabled={!editable} onClick={() => onView({ sorts: [{ field: sort.field, direction: sort.direction === "asc" ? "desc" : "asc" }] })}>
               {sort.direction === "asc" ? "Ascending" : "Descending"}
@@ -448,7 +449,7 @@ function SortButton({ view, fields, onView, editable }: { view: SpaceDbView; fie
         ) : editable ? (
           <FieldList fields={fields} onPick={(key) => onView({ sorts: [{ field: key, direction: "asc" }] })} />
         ) : (
-          <p className="p-2 text-sm text-muted-foreground">No sorts</p>
+          <p className="p-2 type-body text-muted-foreground">No sorts</p>
         )}
       </PopoverContent>
     </Popover>
@@ -468,7 +469,7 @@ function NewButton({ onNew }: { onNew: () => void }) {
           </button>
         </PopoverTrigger>
         <PopoverContent surface="solid" align="end" className="w-[240px] p-1">
-          <div className="px-2 py-1 text-xs text-muted-foreground">Templates</div>
+          <div className="px-2 py-1 type-secondary text-muted-foreground">Templates</div>
           <MenuRow icon={<FileText size={15} />} label="Empty page" onClick={onNew} />
         </PopoverContent>
       </Popover>
@@ -507,7 +508,7 @@ function ViewSettings({
   editable: boolean;
   compact?: boolean;
 }) {
-  const [page, setPage] = useState<"main" | "layout" | "group" | "x" | "yfield">("main");
+  const [page, setPage] = useState<"main" | "layout" | "group" | "x" | "yfield" | "props">("main");
   const chart = { ...DEFAULT_CHART, ...view.chart };
   const setChart = (p: Partial<ChartSettings>) => onView({ chart: { ...chart, ...p } });
   const label = (key?: string | null) => (key ? (fields.find((f) => f.key === key)?.label ?? key) : "None");
@@ -521,12 +522,13 @@ function ViewSettings({
       <PopoverContent surface="solid" align="end" className="w-[280px] p-1">
         {page === "main" ? (
           <>
-            <div className="px-2 py-1 text-xs text-muted-foreground">View options</div>
-            <MenuRow icon={<Table2 size={15} />} label="Layout" end={<span className="text-xs text-muted-foreground">{LAYOUTS.find((l) => l.id === view.layout)?.label}</span>} onClick={() => editable && setPage("layout")} />
-            {view.layout === "kanban" ? <MenuRow icon={<Kanban size={15} />} label="Group" end={<span className="text-xs text-muted-foreground">{label(view.groupField)}</span>} onClick={() => editable && setPage("group")} /> : null}
+            <div className="px-2 py-1 type-secondary text-muted-foreground">View options</div>
+            <MenuRow icon={<Table2 size={15} />} label="Layout" end={<span className="type-secondary text-muted-foreground">{LAYOUTS.find((l) => l.id === view.layout)?.label}</span>} onClick={() => editable && setPage("layout")} />
+            {view.layout !== "chart" ? <MenuRow icon={<List size={15} />} label="Properties" end={<span className="text-xs text-muted-foreground">{fields.length - (view.hiddenFields ?? []).filter((k) => fields.some((f) => f.key === k)).length} shown</span>} onClick={() => setPage("props")} /> : null}
+            {view.layout === "kanban" ? <MenuRow icon={<Kanban size={15} />} label="Group" end={<span className="type-secondary text-muted-foreground">{label(view.groupField)}</span>} onClick={() => editable && setPage("group")} /> : null}
             {view.layout === "chart" ? (
               <>
-                <div className="px-2 pt-2 pb-1 text-xs text-muted-foreground">Chart type</div>
+                <div className="px-2 pt-2 pb-1 type-secondary text-muted-foreground">Chart type</div>
                 <div className="grid grid-cols-4 gap-1 px-1">
                   {CHART_TYPES.map((t) => (
                     <button key={t.id} type="button" className="spaces-db-charttype" data-active={chart.type === t.id ? "true" : undefined} title={t.label} aria-label={t.label} disabled={!editable} onClick={() => setChart({ type: t.id })}>
@@ -534,8 +536,8 @@ function ViewSettings({
                     </button>
                   ))}
                 </div>
-                <MenuRow label={chart.type === "donut" ? "Show each" : "X axis"} end={<span className="text-xs text-muted-foreground">{label(chart.groupBy)}</span>} onClick={() => editable && setPage("x")} />
-                <div className="px-2 pt-2 pb-1 text-xs text-muted-foreground">{chart.type === "donut" ? "Value" : "Y axis"}</div>
+                <MenuRow label={chart.type === "donut" ? "Show each" : "X axis"} end={<span className="type-secondary text-muted-foreground">{label(chart.groupBy)}</span>} onClick={() => editable && setPage("x")} />
+                <div className="px-2 pt-2 pb-1 type-secondary text-muted-foreground">{chart.type === "donut" ? "Value" : "Y axis"}</div>
                 <div className="flex flex-wrap gap-1 px-1 pb-1">
                   {OPS.map((o) => (
                     <button key={o.id} type="button" className="spaces-db-pill" data-active={chart.op === o.id ? "true" : undefined} disabled={!editable} onClick={() => (o.id === "count" ? setChart({ op: "count", field: null }) : (setChart({ op: o.id }), setPage("yfield")))}>
@@ -543,8 +545,8 @@ function ViewSettings({
                     </button>
                   ))}
                 </div>
-                {chart.op !== "count" ? <MenuRow label="Of" end={<span className="text-xs text-muted-foreground">{label(chart.field)}</span>} onClick={() => editable && setPage("yfield")} /> : null}
-                <MenuRow label="Sort" end={<span className="text-xs text-muted-foreground">{chart.sort === "asc" ? "Ascending" : chart.sort === "desc" ? "Descending" : "Manual"}</span>} onClick={() => editable && setChart({ sort: chart.sort === "asc" ? "desc" : chart.sort === "desc" ? "manual" : "asc" })} />
+                {chart.op !== "count" ? <MenuRow label="Of" end={<span className="type-secondary text-muted-foreground">{label(chart.field)}</span>} onClick={() => editable && setPage("yfield")} /> : null}
+                <MenuRow label="Sort" end={<span className="type-secondary text-muted-foreground">{chart.sort === "asc" ? "Ascending" : chart.sort === "desc" ? "Descending" : "Manual"}</span>} onClick={() => editable && setChart({ sort: chart.sort === "asc" ? "desc" : chart.sort === "desc" ? "manual" : "asc" })} />
                 {chart.type === "donut" ? <MenuRow label="Value in center" end={<Switch checked={chart.centerValue !== false} tabIndex={-1} aria-hidden />} onClick={() => editable && setChart({ centerValue: chart.centerValue === false })} /> : null}
                 <MenuRow label="Legend" end={<Switch checked={Boolean(chart.legend)} tabIndex={-1} aria-hidden />} onClick={() => editable && setChart({ legend: !chart.legend })} />
                 <MenuRow label="Data labels" end={<Switch checked={Boolean(chart.dataLabels)} tabIndex={-1} aria-hidden />} onClick={() => editable && setChart({ dataLabels: !chart.dataLabels })} />
@@ -552,7 +554,7 @@ function ViewSettings({
             ) : null}
             {view.layout !== "chart" ? (
               <>
-                <div className="px-2 pt-2 pb-1 text-xs text-muted-foreground">Open pages in</div>
+                <div className="px-2 pt-2 pb-1 type-secondary text-muted-foreground">Open pages in</div>
                 {([
                   ["side", "Side peek", PanelRight],
                   ["center", "Center peek", Square],
@@ -578,6 +580,19 @@ function ViewSettings({
                 }}
               />
             ))
+          : null}
+        {page === "props"
+          ? fields.map((f) => {
+              const hidden = (view.hiddenFields ?? []).includes(f.key);
+              return (
+                <MenuRow
+                  key={f.key}
+                  label={f.label}
+                  end={<Switch checked={!hidden} tabIndex={-1} aria-hidden />}
+                  onClick={() => editable && onView({ hiddenFields: hidden ? (view.hiddenFields ?? []).filter((k) => k !== f.key) : [...(view.hiddenFields ?? []), f.key] })}
+                />
+              );
+            })
           : null}
         {page === "group" ? <FieldList fields={fields} value={view.groupField} onPick={(k) => (onView({ groupField: k }), setPage("main"))} /> : null}
         {page === "x" ? <FieldList fields={fields} value={chart.groupBy} onPick={(k) => (setChart({ groupBy: k }), setPage("main"))} /> : null}
