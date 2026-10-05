@@ -25,6 +25,7 @@ import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { useAppDispatch, useAppSelector } from "../../../../../store/hooks";
 import { cn } from "@ai-matrx/design-system";
 import { toast } from "../../../../../host/notify";
+import { announceAlreadyAnswering } from "./already-answering";
 import { QuickRunModelSelect } from "../../../run-controls/RunModelPicker";
 import { ModelListDropdown } from "@host/features/ai-models/components/lab/ModelListDropdown";
 import { seedOverrides } from "../../../../redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
@@ -72,20 +73,6 @@ export function composerPillClass(size: ComposerSize, open: boolean): string {
     "inline-flex h-6 min-w-0 shrink items-center gap-1 rounded-md text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground",
     size === "compact" ? "px-1.5" : "px-2",
     open && "bg-accent text-foreground",
-  );
-}
-
-/**
- * Choosing the agent that is already answering is never silent: the pill says
- * "Custom" when that agent holds the default-chat job, while the agent list
- * names it by its own name — so the press answers who is in the seat.
- */
-export function announceAlreadyAnswering(info: ComposerAgentInfo): void {
-  const name = info.agentName ?? "This agent";
-  toast.info(
-    info.isCustom
-      ? `${name} is your Custom chat, and it is already answering this conversation.`
-      : `${name} is already answering this conversation.`,
   );
 }
 

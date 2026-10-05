@@ -299,14 +299,17 @@ describe("AskPersonInline — the in-chat ask", () => {
 
   it("marks the open form so the banner's Show can scroll to it", async () => {
     fetchPending.mockResolvedValue([
-      pendingRow("questions", {
-        form: "questions",
-        title: "4 questions",
-        questions: [{ id: "a", prompt: "Who is it for?", component_type: "text" }],
+      pendingRow("credential_capture", {
+        form: "credential",
+        title: "Save your example.com sign-in",
+        origin: "https://example.com",
+        site_name: "example.com",
+        fields: [{ key: "username", label: "Username", secret: false }],
+        submit_label: "Save sign-in",
       }),
     ]);
     await act(async () => {
-      root.render(<AskPersonInline entry={parkedEntry("questions")} conversationId="conv-1" />);
+      root.render(<AskPersonInline entry={parkedEntry("credential_capture")} conversationId="conv-1" />);
     });
     await flush();
     expect(container.querySelector("[data-parked-ask]")).not.toBeNull();
