@@ -43,7 +43,7 @@ type ScheduleGateway = {
 
 export type SchedulableSubscriptionItem = {
   id: string;
-  quantity: number | null;
+  quantity?: number | null;
   current_period_end: number;
   price: { id: string };
 };

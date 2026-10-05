@@ -190,6 +190,7 @@ async function previewFor(input: ChangeRequest) {
   if (
     !currentPlan ||
     !targetPlan ||
+    !targetPlan.plan_key ||
     currentPlan.audience !== "personal" ||
     targetPlan.audience !== "personal"
   )
@@ -223,7 +224,11 @@ async function previewFor(input: ChangeRequest) {
       : targetPlan.annual_cents == null
         ? null
         : targetPlan.annual_cents * 12;
-  if (!Number.isSafeInteger(amount) || amount <= 0)
+  if (
+    typeof amount !== "number" ||
+    !Number.isSafeInteger(amount) ||
+    amount <= 0
+  )
     throw new ScheduledChangeError(
       "That plan does not have a current paid price for this billing cycle.",
     );
@@ -363,10 +368,8 @@ export async function GET() {
         ["active", "trialing"].includes(candidate.status) && candidate.schedule,
     );
     if (!subscription) return NextResponse.json({ scheduled: null });
-    const scheduleId =
-      typeof subscription.schedule === "string"
-        ? subscription.schedule
-        : subscription.schedule.id;
+    const scheduleId = stripeId(subscription.schedule);
+    if (!scheduleId) return NextResponse.json({ scheduled: null });
     const schedule = await stripe.subscriptionSchedules.retrieve(scheduleId);
     if (schedule.metadata?.purpose !== "matrx_personal_plan_change")
       return NextResponse.json({ scheduled: null, managedElsewhere: true });

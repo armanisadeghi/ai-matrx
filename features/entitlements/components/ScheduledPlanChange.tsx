@@ -302,20 +302,23 @@ export function ScheduledPlanChange({
         aria-label="Choose your next plan"
         value={choice}
         onValueChange={setChoice}
-        options={candidates.flatMap((plan) => [
-          {
-            value: `${plan.planKey}:monthly`,
-            label: `${plan.name} · ${formatCents(plan.monthlyCents!)} monthly`,
-          },
-          ...(plan.annualCents
-            ? [
-                {
-                  value: `${plan.planKey}:annual`,
-                  label: `${plan.name} · ${formatCents(plan.annualCents!)} per month, billed annually`,
-                },
-              ]
-            : []),
-        ])}
+        options={[
+          { value: "", label: "Choose next plan" },
+          ...candidates.flatMap((plan) => [
+            {
+              value: `${plan.planKey}:monthly`,
+              label: `${plan.name} · ${formatCents(plan.monthlyCents!)} monthly`,
+            },
+            ...(plan.annualCents
+              ? [
+                  {
+                    value: `${plan.planKey}:annual`,
+                    label: `${plan.name} · ${formatCents(plan.annualCents!)} per month, billed annually`,
+                  },
+                ]
+              : []),
+          ]),
+        ]}
       />
       <Button
         variant="outline"
