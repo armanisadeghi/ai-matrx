@@ -30,8 +30,12 @@ jest.mock("@/components/ui/tooltip", () => ({
 }));
 jest.mock("@/features/canvas/materialization/CodeBlockWithContextAttach", () => ({
   __esModule: true,
-  CodeBlockWithContextAttach: ({ code }: { code: string }) =>
-    React.createElement("pre", { "data-code-card": "1" }, code),
+  CodeBlockWithContextAttach: ({ code, showSource }: { code: string; showSource?: boolean }) =>
+    React.createElement(
+      "pre",
+      { "data-code-card": "1", "data-show-source": showSource ? "yes" : "no" },
+      code,
+    ),
 }));
 jest.mock("@/features/content-ir/studio/components/KindInstanceRender", () => ({
   __esModule: true,
@@ -94,5 +98,29 @@ describe("JsonBlock settled kind route", () => {
     const out = await html(<JsonBlock content={KIND} allowConvertToShape={false} />);
     expect(out).toContain("data-code-card");
     expect(out).not.toContain("data-kind-route");
+  });
+
+  // H4 (round 5): the card is whitelisted as a source view (`showSource`)
+  // only when its content is genuinely kindless — so a regression that routes
+  // a kind into the card is reported by the leak sentinel and the frame judge.
+  it("whitelists kindless JSON as source", async () => {
+    const out = await html(<JsonBlock content={KINDLESS} />);
+    expect(out).toContain('data-show-source="yes"');
+  });
+
+  it("never whitelists a card holding a kind: settled broken kind JSON", async () => {
+    const out = await html(<JsonBlock content={'{"__kind":"flashcard_set","cards":[{"front":'} />);
+    expect(out).toContain("data-code-card");
+    expect(out).toContain('data-show-source="no"');
+  });
+
+  it("never whitelists a card holding a kind: a streaming kind buffer", async () => {
+    const out = await html(<JsonBlock content={KIND} isStreamActive />);
+    expect(out).toContain('data-show-source="no"');
+  });
+
+  it("whitelists kind JSON on a deliberate kind-JSON surface", async () => {
+    const out = await html(<JsonBlock content={KIND} allowConvertToShape={false} />);
+    expect(out).toContain('data-show-source="yes"');
   });
 });

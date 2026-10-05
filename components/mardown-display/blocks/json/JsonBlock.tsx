@@ -54,7 +54,7 @@ import type { CanonicalBlockIR } from "@ai-matrx/content-ir";
 import { findEscapedKindMarkers } from "@/features/content-ir/react/kind-problems";
 import KindEscapedNotice from "@/features/content-ir/react/KindEscapedNotice";
 import { KindValueFrontDoor } from "@/components/official/structured-value/KindValueFrontDoor";
-import { valueCarriesKind } from "@/features/content-ir/surfaces/json-kind-signal";
+import { textCarriesKind, valueCarriesKind } from "@/features/content-ir/surfaces/json-kind-signal";
 
 // Lazy-loaded — these views/dialogs only open on user action, and JsonBlock
 // itself lives inside the MarkdownStream ssr:false gate, so the boundaries
@@ -172,6 +172,16 @@ export const JsonBlock: React.FC<JsonBlockProps> = ({
   const parsed = useMemo(() => {
     return parseJsonSafe(effectiveContent);
   }, [effectiveContent]);
+
+  // H4 (round 5): the card is a deliberate SOURCE view (`showSource`, which
+  // the leak sentinel and the DOM frame judge skip) only when its content is
+  // genuinely kindless by the one detector — or the surface shows kind JSON on
+  // purpose (`allowConvertToShape === false`). A kind that reaches this card
+  // any other way (mid-stream, broken JSON, a routing regression) is drawn
+  // unmarked, so it is REPORTED instead of whitelisted.
+  const cardShowsSource =
+    !allowConvertToShape ||
+    (!textCarriesKind(effectiveContent) && !(parsed.ok && valueCarriesKind(parsed.value)));
 
   // THE KIND TRIPWIRE (Arman, 2026-08-29): a `__kind` anywhere in this JSON
   // means a Shape instance is being shown as anonymous code — either an
@@ -416,7 +426,8 @@ export const JsonBlock: React.FC<JsonBlockProps> = ({
         onMouseDown={(e) => e.stopPropagation()}
       >
         <Suspense fallback={<PaneFallback label="Loading code…" />}>
-          <CodeBlockWithContextAttach showSource
+          <CodeBlockWithContextAttach
+            showSource={cardShowsSource}
             code={content}
             language="json"
             meta={meta}
@@ -492,7 +503,8 @@ export const JsonBlock: React.FC<JsonBlockProps> = ({
       ) : null}
       {mode === "code" ? (
         <Suspense fallback={<PaneFallback label="Loading code…" />}>
-          <CodeBlockWithContextAttach showSource
+          <CodeBlockWithContextAttach
+            showSource={cardShowsSource}
             code={effectiveContent}
             language="json"
             meta={meta}
