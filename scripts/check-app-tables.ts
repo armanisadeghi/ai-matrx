@@ -24,6 +24,10 @@
  *   [WARN] APP TABLE SIZE      — rows across every live copy ≥ 50,000, and every further 10,000
  *                                above the last step Arman acknowledged
  *   [WARN] APP TABLE DEFINITION UNREADABLE — a `*.app-table.ts` this check could not import
+ *   [WARN] <slug> graduated to <token> but <org> still has a live copy — a definition declaring
+ *                                `graduatedTo` (v7 APPS-ON-DATA item 5) expects every organization's
+ *                                copy archived by `pnpm tables:graduate`; archived copies are then
+ *                                expected, never an ARCHIVED finding
  *
  * Each finding is also written once to the error monitor (`ops.record_system_error`, kind
  * `app_table`, error_type = the stable signature `app_table.<state>.<slug>`); a finding whose
@@ -78,6 +82,8 @@ export interface DeclaredTable {
   scope: "person" | "organization" | "global";
   kept_for: string;
   specs: readonly DeclaredField[];
+  /** Where the rows went (`defineAppTable({ graduatedTo })`); absent or null while not graduated. */
+  graduatedTo?: { token: string; map: Readonly<Record<string, string>> } | null;
 }
 export interface Declaration {
   def: DeclaredTable;
@@ -349,7 +355,7 @@ export function nextSizeStep(ackRows: number | null): number {
   return Math.floor(ackRows / SIZE_STEP) * SIZE_STEP + SIZE_STEP;
 }
 
-export type FindingState = "missing" | "archived" | "unmarked" | "drifted" | "size" | "unreadable";
+export type FindingState = "missing" | "archived" | "unmarked" | "drifted" | "size" | "unreadable" | "graduated";
 export interface Finding {
   state: FindingState;
   slug: string;
@@ -380,6 +386,21 @@ export function judge(declarations: readonly Declaration[], copies: readonly Cop
     const live = mine.filter((c) => !c.archived);
     const liveOrgs = new Set(live.map((c) => c.organizationId));
     const where = `declared in ${declaredIn}`;
+
+    // GRADUATED: the rows live in the entity table now; every copy is expected archived, and only
+    // a live one is said — one line per organization. Nothing else is judged for a graduated table.
+    if (def.graduatedTo) {
+      for (const org of [...liveOrgs]) {
+        findings.push({
+          state: "graduated",
+          slug: def.slug,
+          signature: `app_table.graduated.${def.slug}.${org}`,
+          line: `[WARN] ${def.slug} graduated to ${def.graduatedTo.token} but ${org} still has a live copy — run pnpm tables:graduate (records package) — ${where}`,
+          detail: { declared_in: declaredIn, graduated_to: def.graduatedTo.token, organization_id: org },
+        });
+      }
+      continue;
+    }
 
     if (def.scope === "global" && systemOrgId !== null && !mine.some((c) => c.organizationId === systemOrgId)) {
       findings.push({
@@ -555,6 +576,12 @@ const LIBRARY: DeclaredTable & { specHash: string } = {
 };
 const CALLBACKS_DECL: Declaration = { def: CALLBACKS, declaredIn: "features/front-desk/patient-callbacks.app-table.ts" };
 const LIBRARY_DECL: Declaration = { def: LIBRARY, declaredIn: "features/exercises/exercise-library.app-table.ts" };
+/** The callbacks feature caught on and graduated to a standard entity table. */
+const GRADUATED: DeclaredTable & { specHash: string } = {
+  ...CALLBACKS,
+  graduatedTo: { token: "frontdesk.patient_callback", map: { patient_name: "patient_name", callback_at: "callback_at", reason: "reason", visits_left: "custom_fields" } },
+};
+const GRADUATED_DECL: Declaration = { def: GRADUATED, declaredIn: CALLBACKS_DECL.declaredIn };
 
 /** What custom.table_ensure stores for CALLBACKS (measured on the clone 2026-10-02). */
 const CALLBACK_COLUMNS: StoredField[] = [
@@ -579,13 +606,15 @@ function copy(def: DeclaredTable, org: string, over: Partial<Copy> = {}): Copy {
     marked: true,
     rows: 12,
     sizeAck: null,
-    fields: def === CALLBACKS ? CALLBACK_COLUMNS : LIBRARY_COLUMNS,
+    fields: def === LIBRARY ? LIBRARY_COLUMNS : CALLBACK_COLUMNS,
     ...over,
   };
 }
 
 interface Case {
   name: string;
+  /** Default: the callbacks and library declarations. */
+  declarations?: Declaration[];
   copies: Copy[];
   /** The exact states expected, in order. */
   states: FindingState[];
@@ -692,6 +721,27 @@ function offlineCases(): Case[] {
       lines: [/60,000 rows across 2 organizations — passed 60,000; last acknowledged: 50,000 by Arman on 2026-10-02/],
     },
     {
+      name: "GRADUATED: every organization's copy archived stays silent (archived is expected, never ARCHIVED)",
+      declarations: [GRADUATED_DECL, LIBRARY_DECL],
+      copies: [
+        copy(GRADUATED, ORG.cedarRidge, { archived: true, rows: null, fields: [] }),
+        copy(GRADUATED, ORG.harborDental, { archived: true, rows: null, fields: [] }),
+        healthyLibrary,
+      ],
+      states: [],
+    },
+    {
+      name: "GRADUATED: a live copy left behind is said by organization, and only that",
+      declarations: [GRADUATED_DECL, LIBRARY_DECL],
+      copies: [
+        copy(GRADUATED, ORG.cedarRidge, { archived: true, rows: null, fields: [] }),
+        copy(GRADUATED, ORG.harborDental, { rows: 60_000, marked: false }),
+        healthyLibrary,
+      ],
+      states: ["graduated"],
+      lines: [new RegExp(`^\\[WARN\\] patient_callbacks graduated to frontdesk\\.patient_callback but ${ORG.harborDental} still has a live copy`)],
+    },
+    {
       name: "ACK at 60,000: 60,500 rows stays silent",
       copies: [copy(CALLBACKS, ORG.cedarRidge, { rows: 60_500, sizeAck: { rows: 60_000, by: "Arman", on: "2026-10-09" } }), healthyLibrary],
       states: [],
@@ -719,7 +769,7 @@ async function offlineSelfTest(): Promise<number> {
   let failed = 0;
   const declarations = [CALLBACKS_DECL, LIBRARY_DECL];
   for (const c of offlineCases()) {
-    const findings = judge(declarations, c.copies, ORG.platform);
+    const findings = judge(c.declarations ?? declarations, c.copies, ORG.platform);
     const states = findings.map((f) => f.state);
     const lines = findings.map((f) => f.line);
     const statesOk = JSON.stringify(states) === JSON.stringify(c.states);
