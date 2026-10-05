@@ -44,6 +44,7 @@ import {
   Printer,
   Images,
   Loader2,
+  Archive,
   Ellipsis,
   MessagesSquare,
 } from "lucide-react";
@@ -66,6 +67,7 @@ import {
 } from "./DeckCardViews";
 import { MergeCardsDialog } from "./MergeCardsDialog";
 import { toast } from "@/lib/toast";
+import { archiveRecord, restoreFromTrash } from "@/features/trash/service";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { Button } from "@/components/ui/button";
 import { Skeleton, Button as SurfaceButton } from "@ai-matrx/design-system";
@@ -764,6 +766,29 @@ export function SetDetailView({
   // "Make a copy" offer instead of Edit / row controls that would fail.
   const access = useAccess("fc_set", setId);
   const canEdit = access.isOwner || canEditAccess(access.level);
+  // Archive = soft-delete through Trash's one archive; Undo restores it. The
+  // person lands back on the list, where the toast's Undo stays reachable.
+  const archiveDeck = async () => {
+    const name = data?.set.name ? `"${data.set.name}"` : "this deck";
+    try {
+      await archiveRecord("fc_set", setId, "deck");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : `${name} was not archived.`);
+      return;
+    }
+    toast.success(`Archived ${name}.`, {
+      action: {
+        label: "Undo",
+        onClick: () =>
+          void restoreFromTrash("fc_set", setId).then(
+            () => toast.success(`Put back ${name}.`),
+            (err: unknown) =>
+              toast.error(err instanceof Error ? err.message : "It could not be put back."),
+          ),
+      },
+    });
+    router.push(EDU_BASE);
+  };
   const viewOnly = !access.loading && !canEdit;
 
   // ── Illustrate this set (per-SET image lane) ──────────────────────────────
@@ -1373,6 +1398,18 @@ export function SetDetailView({
                         <OfflineDeckMenuItems setId={setId} />
                       </>
                     )}
+                    {access.isOwner && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="gap-2 text-destructive focus:text-destructive"
+                          onClick={() => void archiveDeck()}
+                        >
+                          <Archive className="h-4 w-4" />
+                          Archive
+                        </DropdownMenuItem>
+                      </>
+                    )}
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild className="gap-2">
                       <Link href="/print">
@@ -1920,6 +1957,18 @@ export function SetDetailView({
                           showStatus={false}
                           className="h-11 justify-start"
                         />
+                      )}
+                      {access.isOwner && (
+                        <Button
+                          icon={<Archive />}
+                          variant="outline"
+                          className="justify-start"
+                          onClick={() => {
+                            setDeckToolsOpen(false);
+                            void archiveDeck();
+                          }}
+                        > Archive
+                        </Button>
                       )}
                       {chatHref && (
                         <Button
