@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-05T03:42:18.850Z",
+  "generated_at": "2026-10-05T03:50:58.977Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -5378,6 +5378,18 @@
       "checksum": "b4830319a970fe2a2bf6607c4807dbf1dc539ab483a5fb4a269c4dbce51a79f8",
       "applied_at": "2026-10-03 04:01:05.834204+00"
     },
+    "migrations/campaign/scopesw2w_the_archive_and_restore_doors_write_the_store_first.sql": {
+      "source": "matrx-frontend",
+      "filename": "scopesw2w_the_archive_and_restore_doors_write_the_store_first.sql",
+      "checksum": "b78a14e48ff84a24aa3b5165286a14a09cd74522cf7d147b73f9b0cd3b58d8df",
+      "applied_at": "2026-10-05 03:50:37.13122+00"
+    },
+    "migrations/campaign/scopesw2w_the_context_field_doors_write_the_store_first.sql": {
+      "source": "matrx-frontend",
+      "filename": "scopesw2w_the_context_field_doors_write_the_store_first.sql",
+      "checksum": "3a075e71c29584bb82de7acee3b6a385a8a79f9182cbe47d1035fe4da0bb0c34",
+      "applied_at": "2026-10-05 03:50:57.412605+00"
+    },
     "migrations/campaign/scopesw2w_the_scope_door_writes_the_store_first.sql": {
       "source": "matrx-frontend",
       "filename": "scopesw2w_the_scope_door_writes_the_store_first.sql",
@@ -5389,6 +5401,12 @@
       "filename": "scopesw2w_the_scope_type_door_writes_the_store_first.sql",
       "checksum": "f6098f9f51b3429d52b4200c6a2227c366e02c73caeabeb92aa41e41615d4491",
       "applied_at": "2026-10-03 08:13:34.320304+00"
+    },
+    "migrations/campaign/scopesw2w_the_value_door_decides_on_the_store.sql": {
+      "source": "matrx-frontend",
+      "filename": "scopesw2w_the_value_door_decides_on_the_store.sql",
+      "checksum": "85f014db1a1ae07e581de8e51f6b6bf534588bd78fa2bcf4ba8806591540524f",
+      "applied_at": "2026-10-05 03:50:09.430583+00"
     },
     "migrations/campaign/scopeswt_a_template_applies_and_a_value_brings_its_field.sql": {
       "source": "matrx-frontend",
