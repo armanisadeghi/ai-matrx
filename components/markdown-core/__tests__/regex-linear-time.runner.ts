@@ -10,12 +10,28 @@ import { normalizeMathDelimiters } from "@/components/markdown-core/math-normali
 import { computeDocumentNumbering } from "@/components/markdown-core/syntax/document-numbering";
 import { scanKindSpellingRegions, normalizeKindSpellings } from "@/features/content-ir/surfaces/json-kind-signal";
 import { nonJsonKindsAsCode, spelledKindsAsOneLine } from "@/features/content-ir/surfaces/kind-one-line";
+// stream-heal itself imports ESM-only `remend` (not loadable here): its three
+// fixed regexes are exercised through their linear stand-ins directly.
+import {
+  replaceReferenceUses,
+  trailingBracketedTail,
+  trailingHeadingId,
+  trimTrailingSpaceTab,
+  unfinishedHeadingIdHead,
+} from "@/components/markdown-core/syntax/linear-scan";
 import { REGEX_LINEAR_TIME_CASES } from "./regex-linear-time.cases";
 
 const FUNCTIONS: Record<string, (text: string) => unknown> = {
   math: normalizeMathDelimiters,
   numbering: computeDocumentNumbering,
   kindScan: (text) => scanKindSpellingRegions(text, { families: "all" }),
+  heal: (text) => {
+    replaceReferenceUses(text, (whole) => whole);
+    trailingBracketedTail(text);
+    unfinishedHeadingIdHead(text.slice(text.lastIndexOf("\n") + 1));
+    return trimTrailingSpaceTab(text);
+  },
+  headingId: trailingHeadingId,
   kindProseLeaf: (text) => nonJsonKindsAsCode(spelledKindsAsOneLine(normalizeKindSpellings(text))),
 };
 

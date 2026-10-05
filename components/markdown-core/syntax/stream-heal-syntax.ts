@@ -15,6 +15,7 @@
 
 import { isWithinCodeBlock, type RemendHandler } from "remend";
 import { hasUnclosedFrontmatter } from "./frontmatter";
+import { unfinishedHeadingIdHead } from "./linear-scan";
 
 function lastLineStart(text: string): number {
   return text.lastIndexOf("\n") + 1;
@@ -93,9 +94,10 @@ const pendingHeadingId: RemendHandler = {
   priority: -2,
   handle: (text) => {
     const start = lastLineStart(text);
-    const m = /^(#{1,6}[ \t].*?)[ \t]*\{#[^}\n]*$/.exec(text.slice(start));
-    if (!m || isWithinCodeBlock(text, start)) return text;
-    return text.slice(0, start) + (m[1] ?? "");
+    // Linear stand-in for /^(#{1,6}[ \t].*?)[ \t]*\{#[^}\n]*$/ (round 11: cubic on spaces).
+    const head = unfinishedHeadingIdHead(text.slice(start));
+    if (head === null || isWithinCodeBlock(text, start)) return text;
+    return text.slice(0, start) + head;
   },
 };
 

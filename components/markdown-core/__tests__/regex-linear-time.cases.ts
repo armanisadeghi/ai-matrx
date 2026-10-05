@@ -5,7 +5,7 @@
  */
 export interface RegexLinearTimeCase {
   name: string;
-  fn: "math" | "numbering" | "kindScan" | "kindProseLeaf";
+  fn: "math" | "numbering" | "kindScan" | "kindProseLeaf" | "heal" | "headingId";
   input: string;
   suffix?: string;
   /** Default true: a fresh string per run so no memo answers it. */
@@ -34,3 +34,13 @@ export const REGEX_LINEAR_TIME_CASES: RegexLinearTimeCase[] = [
   { name: "kind-prose-leaf-broken-nested", fn: "kindProseLeaf", input: fill('{"a":[1,{"__kind":"x" 1 [ ') },
   { name: "kind-prose-leaf-open-objects", fn: "kindProseLeaf", input: fill('{ "__kind": "x", ') },
 ];
+
+// Round 11 sweep — every super-linear regex found on the markdown hot path.
+REGEX_LINEAR_TIME_CASES.push(
+  { name: "heal-reference-uses-unclosed", fn: "heal", input: fill("[a") },
+  { name: "heal-bracketed-tail-many-unclosed", fn: "heal", input: fill("[a ") },
+  { name: "heal-heading-id-tail-spaces", fn: "heal", input: `# ${" ".repeat(SIZE)}x` },
+  { name: "numbering-section-heading-spaces-unclosed-id", fn: "numbering", input: `# ${" ".repeat(SIZE)}{#sec:a` },
+  { name: "numbering-section-heading-spaces-then-text", fn: "numbering", input: `#${" ".repeat(SIZE)}{#sec:a}x` },
+  { name: "syntax-heading-id-spaces", fn: "headingId", input: `Title${" ".repeat(SIZE)}{#a}b` },
+);

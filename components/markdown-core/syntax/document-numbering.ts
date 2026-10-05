@@ -28,6 +28,7 @@
 import { DirectiveContainerTracker } from "@ai-matrx/content-ir/source";
 import { TITLED_IMAGE_LINE } from "@ai-matrx/content-ir/source";
 import { collectLinkDefinitions, fenceLineKinds } from "@ai-matrx/content-ir/source";
+import { sectionHeading } from "./linear-scan";
 
 export interface NumberedTarget {
   kind: "fig" | "tbl" | "eq" | "sec";
@@ -64,7 +65,6 @@ export interface DocumentNumbering {
 }
 
 const FIGURE_OPEN = /^[ \t]{0,3}:{3,}(figure|table)(?:\[((?:[^\]\\]|\\.)*)\])?(?:\{([^}]*)\})?/i;
-const SECTION = /^#{1,6}[ \t]+(.*?)[ \t]*\{#(sec:[\w:.-]+)\}[ \t]*$/;
 const LABEL = /\\label\{([^{}]+)\}/g;
 const TAG = /\\tag\*?\{([^{}]*)\}/;
 
@@ -158,8 +158,9 @@ export function computeDocumentNumbering(source: string): DocumentNumbering {
       else addCaption(captionKey(kind, fig[2] ?? ""), display);
       continue;
     }
-    const sec = SECTION.exec(line);
-    if (sec) byLabel.set(sec[2] as string, { kind: "sec", display: (sec[1] ?? "").trim() });
+    // Linear stand-in for /^#{1,6}[ \t]+(.*?)[ \t]*\{#(sec:[\w:.-]+)\}[ \t]*$/ (round 11: cubic).
+    const sec = sectionHeading(line);
+    if (sec) byLabel.set(sec[1], { kind: "sec", display: sec[0].trim() });
   }
 
   let equations = 0;
@@ -244,7 +245,7 @@ function numberFootnotes(prose: readonly string[], footnotes: Map<string, number
   // a Map iterates entries added while iterating, so a chain is followed.
   for (const id of footnotes.keys()) for (const line of notes.get(id) ?? []) footnoteRefs(line).forEach(cite);
   // Blank-line separated, so a lazy last line can never run into the next note.
-  return [...footnotes.keys()].map((id) => (written.get(id) ?? []).join("\n").replace(/\s+$/, "")).join("\n\n");
+  return [...footnotes.keys()].map((id) => (written.get(id) ?? []).join("\n").trimEnd()).join("\n\n");
 }
 
 /**

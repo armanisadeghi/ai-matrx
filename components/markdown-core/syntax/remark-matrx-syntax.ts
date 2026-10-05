@@ -26,6 +26,7 @@ import { isTocLine } from "@ai-matrx/print/directives";
 import { extractFrontmatter } from "./frontmatter";
 import { captionKey, DOCUMENT_FOOTNOTES_MARKER, type DocumentNumbering } from "./document-numbering";
 import { transformContainers } from "./containers";
+import { trailingHeadingId } from "./linear-scan";
 import { transformMentions } from "./mentions";
 import { transformInline, type InlineContext, type XrefTarget } from "./inline-syntax";
 import { el, rawOf, text, toText, walkParents, type MNode, type SyntaxFile } from "./mdast-helpers";
@@ -125,7 +126,6 @@ function applyAbbreviations(tree: MNode, abbrs: Map<string, string>): void {
 
 // ── 5. heading ids ──────────────────────────────────────────────────────
 
-const HEADING_ID = /[ \t]*\{#([\w:.-]+)\}[ \t]*$/;
 
 function applyHeadingIds(tree: MNode): void {
   walkParents(tree, (parent) => {
@@ -133,12 +133,13 @@ function applyHeadingIds(tree: MNode): void {
       if (child.type !== "heading") continue;
       const last = child.children?.[child.children.length - 1];
       if (!last || last.type !== "text") continue;
-      const m = HEADING_ID.exec(last.value ?? "");
+      // Linear stand-in for /[ \t]*\{#([\w:.-]+)\}[ \t]*$/ (round 11).
+      const m = trailingHeadingId(last.value ?? "");
       if (!m) continue;
       last.value = (last.value ?? "").slice(0, m.index);
       child.data = {
         ...(child.data ?? {}),
-        hProperties: { ...((child.data?.hProperties as Record<string, unknown>) ?? {}), id: m[1] },
+        hProperties: { ...((child.data?.hProperties as Record<string, unknown>) ?? {}), id: m.id },
       };
     }
   });

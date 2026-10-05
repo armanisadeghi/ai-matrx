@@ -27,6 +27,7 @@ import remend, {
 } from "remend";
 import { looksLikeOpenInlineMath, singleDollarMathEnd } from "@ai-matrx/content-ir/source";
 import { SYNTAX_STREAM_HANDLERS } from "./syntax/stream-heal-syntax";
+import { replaceReferenceUses, trailingBracketedTail, trimTrailingSpaceTab } from "./syntax/linear-scan";
 import {
   isGfmDelimiterRow,
   rowCells,
@@ -54,7 +55,6 @@ const pendingReferenceDefinition: RemendHandler = {
   },
 };
 
-const REFERENCE_USE = /(!?)\[([^\]\n]*)\]\[([^\]\n]+)\]/g;
 const DEFINITION_LABEL = /^ {0,3}\[([^\]\n]+)\]:/gm;
 
 /**
@@ -71,8 +71,9 @@ const pendingReferenceUses: RemendHandler = {
     for (const m of text.matchAll(DEFINITION_LABEL)) {
       if (!isWithinCodeBlock(text, m.index)) defined.add(normalizeLabel(m[1]));
     }
-    return text.replace(
-      REFERENCE_USE,
+    // Linear stand-in for /(!?)\[([^\]\n]*)\]\[([^\]\n]+)\]/g (round 11).
+    return replaceReferenceUses(
+      text,
       (whole, bang: string, label: string, id: string, offset: number) => {
         if (defined.has(normalizeLabel(id))) return whole;
         if (
@@ -98,7 +99,6 @@ function isInsideInlineCode(text: string, offset: number): boolean {
   return (before.match(/`/g)?.length ?? 0) % 2 === 1;
 }
 
-const TRAILING_BRACKETED_TAIL = /(?<!\])(!?)\[([^\]\n]*)\](\[[^\]\n]*)?$/;
 
 /**
  * The tail is a closed `![alt]` / `[text]` whose `(url)` or `[id]` has not
@@ -112,9 +112,10 @@ const pendingBracketedTail: RemendHandler = {
   name: "matrx-pending-bracketed-tail",
   priority: 1,
   handle: (text) => {
-    const match = TRAILING_BRACKETED_TAIL.exec(text);
+    // Linear stand-in for /(?<!\])(!?)\[([^\]\n]*)\](\[[^\]\n]*)?$/ (round 11).
+    const match = trailingBracketedTail(text);
     if (!match) return text;
-    const [whole, bang, label, referencePart] = match;
+    const { whole, bang, label, reference: referencePart } = match;
     if (isWithinCodeBlock(text, match.index)) return text;
     if (isInsideInlineCode(text, match.index)) return text;
     return text.slice(0, text.length - whole.length) + (bang ? "" : label);
@@ -262,7 +263,7 @@ const pendingReasoningSpan: RemendHandler = {
       cut = at;
       break;
     }
-    return cut === -1 ? text : text.slice(0, cut).replace(/[ \t]+$/, "");
+    return cut === -1 ? text : trimTrailingSpaceTab(text.slice(0, cut));
   },
 };
 
