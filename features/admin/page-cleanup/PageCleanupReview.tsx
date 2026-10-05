@@ -1,8 +1,13 @@
 "use client";
 
 /**
- * /review/page-cleanup — the owner walks every page nothing links to and says Yes (delete) / No /
- * Maybe, with a note. Each link opens the page in a new tab.
+ * /review/page-cleanup — the owner walks every page nothing links to and says Delete / Keep /
+ * Unsure, with a note. Each link opens the page in a new tab.
+ *
+ * LABELS vs STORED VALUES: the stored decision values stay `yes` / `no` / `maybe` (the app table's
+ * select options and the browser copy both already hold them), so nothing saved before the
+ * 2026-10-05 relabel is lost or needs migrating: yes = Delete, no = Keep, maybe = Unsure. Every
+ * word the owner sees — the control, the legend and the copied text — comes from DECISION_LABEL.
  *
  * PERSISTENCE: the record store's app table `pageCleanupDecisions` first (read across every
  * organization the person belongs to; each write carries the organization the person has
@@ -13,7 +18,7 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
-import { Check, Copy, ExternalLink, HardDrive, Database } from "lucide-react";
+import { Check, Copy, Database, ExternalLink, HardDrive, Trash2 } from "lucide-react";
 import { Badge, SegmentedControl, ToggleGroup, ToggleGroupItem } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import {
@@ -61,14 +66,9 @@ const BROWSER_KEY = "matrx:page-cleanup-decisions:v1";
 const NOTES_DEBOUNCE_MS = 700;
 
 const DECISION_LABEL: Record<PageCleanupDecision, string> = {
-  yes: "Yes",
-  no: "No",
-  maybe: "Maybe",
-};
-const COPY_LABEL: Record<PageCleanupDecision, string> = {
-  yes: "yes (delete)",
-  no: "no (keep)",
-  maybe: "maybe",
+  yes: "Delete",
+  no: "Keep",
+  maybe: "Unsure",
 };
 const REC_LABEL: Record<CleanupRecommendation, string> = {
   KILL: "Kill",
@@ -230,14 +230,16 @@ export default function PageCleanupReview() {
       areas: { area: string; rows: CleanupRow[] }[];
     }[] = [
       { key: "orphan", title: "Pages nothing links to", areas: [] },
-      {
-        key: "lower",
-        title: "Lower priority: aliases and empty shells",
-        areas: [],
-      },
+      { key: "forward", title: "Old addresses that forward", areas: [] },
+      { key: "lower", title: "Empty shells", areas: [] },
     ];
+    const index: Record<CleanupRow["group"], number> = {
+      orphan: 0,
+      forward: 1,
+      lower: 2,
+    };
     for (const row of visible) {
-      const section = out[row.group === "orphan" ? 0 : 1];
+      const section = out[index[row.group]];
       let bucket = section.areas.find((a) => a.area === row.area);
       if (!bucket) section.areas.push((bucket = { area: row.area, rows: [] }));
       bucket.rows.push(row);
@@ -252,7 +254,7 @@ export default function PageCleanupReview() {
       const e = entries[r.path];
       return [
         r.path,
-        e.decision ? COPY_LABEL[e.decision] : "undecided",
+        e.decision ? DECISION_LABEL[e.decision] : "Undecided",
         e.notes.trim(),
       ]
         .filter(Boolean)
@@ -328,6 +330,22 @@ export default function PageCleanupReview() {
             Copy decisions
           </Button>
         </div>
+      </div>
+
+      <div
+        className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-border px-3 py-1 text-xs text-muted-foreground"
+        data-testid="decision-legend"
+      >
+        <span>
+          <span className="font-medium text-destructive">Delete:</span> remove
+          the page
+        </span>
+        <span>
+          <span className="font-medium text-success">Keep:</span> leave it
+        </span>
+        <span>
+          <span className="font-medium text-warning">Unsure:</span> decide later
+        </span>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto pb-safe">
@@ -431,12 +449,29 @@ function CleanupRowView({
         </Badge>
         <div className="min-w-0">
           <div className="truncate text-foreground">{row.what}</div>
+          {row.target ? (
+            <div className="truncate font-mono text-xs text-muted-foreground">
+              → {row.target}
+            </div>
+          ) : null}
           <div
             className="line-clamp-2 text-xs text-muted-foreground"
             title={row.reason}
           >
             {row.reason}
           </div>
+          {row.removes ? (
+            <div
+              className="flex items-center gap-1 text-xs text-foreground/80"
+              data-testid="removes"
+            >
+              <Trash2
+                className="h-3 w-3 shrink-0 text-muted-foreground"
+                aria-label="Deleting removes"
+              />
+              <span className="truncate">{row.removes}</span>
+            </div>
+          ) : null}
         </div>
       </div>
       <div className="flex min-w-0 items-center gap-2 lg:contents">
@@ -448,7 +483,7 @@ function CleanupRowView({
           onValueChange={(v) =>
             onDecision(v ? (v as PageCleanupDecision) : null)
           }
-          aria-label={`Delete ${row.path}?`}
+          aria-label={`Decision for ${row.path}`}
           className="justify-start"
         >
           {PAGE_CLEANUP_DECISIONS.map((d) => (
