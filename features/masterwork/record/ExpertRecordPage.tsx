@@ -25,9 +25,9 @@
 // sections (never tabs), 44px touch targets, no vh units.
 
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import dynamic from "next/dynamic";
 import {
   ExternalLink,
   FileText,
@@ -65,13 +65,6 @@ import {
   corpusHuman,
 } from "./copy";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-
-// The canonical message renderer is heavy and client-only — one front-door
-// dynamic for the whole surface (THE FRAGMENTATION LAW), not one per item.
-const MarkdownStream = dynamic(() => import("@/components/MarkdownStream"), {
-  ssr: false,
-  loading: () => <div className="h-4 w-24 animate-pulse rounded bg-muted" />,
-});
 
 function when(iso: string): string {
   return new Date(iso).toLocaleString(undefined, {
@@ -184,9 +177,9 @@ function ContributionCard({
                       {turn.speaker}
                     </p>
                   ) : null}
-                  <MarkdownStream
+                  <RichContent level="full"
                     imagePolicy="self"
-                    content={turn.text}
+                    source={turn.text}
                     hideCopyButton
                   />
                 </div>
@@ -196,7 +189,7 @@ function ContributionCard({
         </ul>
       ) : c.text ? (
         <div className="mt-2 text-sm text-foreground">
-          <MarkdownStream imagePolicy="self" content={c.text} hideCopyButton />
+          <RichContent level="full" imagePolicy="self" source={c.text} hideCopyButton />
         </div>
       ) : null}
 
