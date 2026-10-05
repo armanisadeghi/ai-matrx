@@ -13,7 +13,7 @@
  *  2. SHAPES — any number of kinds from the whole catalog (system + org +
  *     mine). A picked shape is recorded in `outputKinds` ONLY and travels as the
  *     request field `output_kinds` on every turn; the SERVER resolves shape →
- *     skill (chat-shape-picks plan, rule 21). The frontend adds no skill ids for
+ *     skill (common-docs content-ir FEATURE rules 21–23). The frontend adds no skill ids for
  *     a pick and keeps no shape→skill resolver.
  *
  * The selected-kinds set is DERIVED: `outputKinds` ∪ the kinds of every
