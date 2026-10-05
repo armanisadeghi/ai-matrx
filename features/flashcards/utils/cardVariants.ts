@@ -244,6 +244,35 @@ const PLAIN_BLANK_RE = /\[\s*(?:blank|_{2,}|…|\.{3})\s*\]|_{3,}/gi;
 const FILLABLE_ANSWER_MAX = 80;
 
 /**
+ * Drop a unit the sentence already carries next to the blank, so a filled
+ * blank never reads "80%%", "$$50" or "2 years years". A trailing token of the
+ * answer (`%`, `years`, `mg`) that also opens the text after the blank, or a
+ * leading token (`$`) that also closes the text before it, is removed. Word
+ * units need a space boundary in the answer; symbols do not. The answer is
+ * never emptied.
+ */
+function dedupeUnits(answer: string, before: string, after: string): string {
+  let out = answer;
+  const next = after.match(/^\s*([^\s.,;:!?)]+)/)?.[1];
+  if (next) {
+    const re = /^[A-Za-z]/.test(next) ? new RegExp(`\\s${escapeRe(next)}$`, "i") : new RegExp(`${escapeRe(next)}$`);
+    const cut = out.replace(re, "");
+    if (cut && cut !== out && !/[A-Za-z0-9]$/.test(next) === !/[A-Za-z]/.test(next)) out = cut;
+  }
+  const prev = before.match(/(\S+)$/)?.[1];
+  if (prev) {
+    const re = /[A-Za-z0-9]$/.test(prev) ? new RegExp(`^${escapeRe(prev)}\\s`, "i") : new RegExp(`^${escapeRe(prev.slice(-1))}`);
+    const cut = out.replace(re, "");
+    if (cut && cut !== out) out = cut;
+  }
+  return out;
+}
+
+function escapeRe(v: string): string {
+  return v.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
  * A cloze card written with a plain blank ("…stored in ______.") and its
  * answer on the back — how generated cards arrive, with no `{{c1::…}}`
  * markup. The back used to be the blanked question again plus the answer
@@ -265,14 +294,13 @@ export function plainBlankFaces(
   PLAIN_BLANK_RE.lastIndex = 0;
   return {
     front,
-    // "[___]%" with answer "80%": the unit is on both sides — drop the one
-    // after the blank so it never reads "80%%".
-    back: front
-      .replace(PLAIN_BLANK_RE, (_m, offset: number) => {
-        const filled = answer.replace(/[.\s]+$/, "");
-        const next = front[offset + _m.length];
-        return `**${next === "%" && filled.endsWith("%") ? filled.slice(0, -1) : filled}**`;
-      }),
+    back: front.replace(PLAIN_BLANK_RE, (m, offset: number) =>
+      `**${dedupeUnits(
+        answer.replace(/[.\s]+$/, ""),
+        front.slice(0, offset),
+        front.slice(offset + m.length),
+      )}**`,
+    ),
   };
 }
 

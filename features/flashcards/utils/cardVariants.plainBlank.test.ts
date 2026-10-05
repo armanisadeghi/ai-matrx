@@ -24,6 +24,27 @@ describe("cloze card with a plain blank", () => {
     ).toBe("Guardian pays **80**% on any subsequent fillings.");
   });
 
+  it("drops a leading unit the text before the blank already has ($)", () => {
+    expect(cloze("The annual deductible is $[___] per person.", "$50").back).toBe(
+      "The annual deductible is $**50** per person.",
+    );
+  });
+
+  it("drops a trailing word unit the text after the blank already has", () => {
+    expect(cloze("Coverage resets every [___] years.", "2 years").back).toBe(
+      "Coverage resets every **2** years.",
+    );
+    expect(cloze("The dose is [___] mg daily.", "50 mg").back).toBe(
+      "The dose is **50** mg daily.",
+    );
+  });
+
+  it("keeps the answer whole when it only equals the neighbouring word", () => {
+    expect(cloze("It is paid in [___] terms.", "terms").back).toBe(
+      "It is paid in **terms** terms.",
+    );
+  });
+
   it("fills [blank] and [____] forms", () => {
     expect(cloze("It forms the foundation of the ecosystem's [blank].", "food web").back).toBe(
       "It forms the foundation of the ecosystem's **food web**.",
