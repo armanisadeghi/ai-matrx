@@ -81,6 +81,13 @@ export type ComposerTextMenu = Omit<
 export interface ComposerPresentation {
   size: ComposerSize;
   mode: ComposerMode;
+  /**
+   * `none`: no chips row above and no meta row below (scope · values · agent
+   * · output · effort) — the + menu, mic and send stay. For hosts where those
+   * pills would mislead: an Expert being interviewed by a fixed agent, or a
+   * shared input that fans out to other conversations. Absent = `full`.
+   */
+  meta?: "full" | "none";
   /** The Scope chip's face (meta row). Absent = `plain`, the Output pill's face. */
   scopeChipStyle?: "plain" | "pill";
   /** The chips row's corners (Cloud, connections). Absent = `md` (6px); `soft` = 8px. */

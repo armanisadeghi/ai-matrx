@@ -64,7 +64,6 @@ interface SmartInputForwardProps {
   draftAlias?: string;
   sendButtonVariant?: "default" | "blue";
   showSubmitOnEnterToggle?: boolean;
-  placeholder?: string;
   compact?: boolean;
   extraRightControls?: React.ReactNode;
   /**

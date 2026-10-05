@@ -395,8 +395,16 @@ function ConductorColumn({
                 ),
             },
           ],
-          placeholder:
-            "Argue with it, answer its questions, or tell it to build…",
+          // The Smart Agent Input, Full style, with no pill row: the Expert is
+          // interviewed by a fixed agent, so scope / agent / output pills would
+          // only mislead her (Arman, 2026-10-04). Chat mode: no chips row.
+          composer: {
+            size: "page",
+            mode: "chat",
+            meta: "none",
+            placeholder:
+              "Argue with it, answer its questions, or tell it to build…",
+          },
           extraRightControls: (
             <VoiceRelayBar
               primaryAgentId={agentId}

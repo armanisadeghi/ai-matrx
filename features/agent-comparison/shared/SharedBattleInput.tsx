@@ -61,6 +61,10 @@ export function SharedBattleInput({
         disableSend
         variablesPanelStyle="inline"
         surfaceValueAnchors={surfaceValueAnchors}
+        // The Smart Agent Input, Full style, with no pill row: Submit All fans
+        // this draft out to every column, so agent / model / output pills here
+        // would only change the template, never the columns (2026-10-04).
+        composer={{ size: "page", mode: "chat", meta: "none" }}
       />
       {notice ? (
         <p role="status" className="text-[11px] text-amber-600 dark:text-amber-400">

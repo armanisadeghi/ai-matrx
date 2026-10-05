@@ -345,7 +345,7 @@ export function SmartAgentInputStacked({
         // The floating assists control never rests on any of the composer's controls.
         data-assist-dock-avoid=""
       >
-        {composerShows(composer.mode, "chips.row") ? (
+        {composer.meta !== "none" && composerShows(composer.mode, "chips.row") ? (
           <ComposerChipsRow conversationId={conversationId} mode={composer.mode} menuSide={menuSide} chipShape={composer.chipShape} />
         ) : null}
         <SmartInputFileDropTarget
@@ -399,13 +399,17 @@ export function SmartAgentInputStacked({
             composer={{
               ...composerParts,
               part: "controls",
-              leading: <ComposerScopeCluster conversationId={conversationId} composer={composer} folded={folded} />,
-              trailing: (
-                <ComposerPills conversationId={conversationId} composer={composer} menuSide={menuSide} folded={folded} />
-              ),
+              leading:
+                composer.meta === "none" ? undefined : (
+                  <ComposerScopeCluster conversationId={conversationId} composer={composer} folded={folded} />
+                ),
+              trailing:
+                composer.meta === "none" ? undefined : (
+                  <ComposerPills conversationId={conversationId} composer={composer} menuSide={menuSide} folded={folded} />
+                ),
             }}
           />
-        ) : (
+        ) : composer.meta === "none" ? null : (
           <ComposerMetaRow conversationId={conversationId} composer={composer} menuSide={menuSide} folded={folded} />
         )}
       </div>
