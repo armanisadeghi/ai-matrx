@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Building2, Loader2, RefreshCw, UsersRound } from "lucide-react";
+import { Building2, RefreshCw, UsersRound } from "lucide-react";
 import { Skeleton } from "@ai-matrx/design-system";
 
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +25,7 @@ import {
   type DirectoryReviewService,
 } from "./service";
 
+import { Spinner } from "@/components/ui/loaders/Spinner";
 export interface DirectoryReviewContext {
   organizationId: string;
   actorId: string;
@@ -188,7 +189,7 @@ function DirectoryReviewBodyInner({
         <div className="max-w-sm space-y-2 text-center">
           <UsersRound className="mx-auto h-8 w-8 text-muted-foreground" />
           <p className="font-medium">Directory preview unavailable</p>
-          <p className="text-sm text-muted-foreground">
+          <p className="type-body text-muted-foreground">
             No personal Google account has Directory access.
           </p>
         </div>
@@ -216,7 +217,7 @@ function DirectoryReviewBodyInner({
         />
         <Button
           icon={loading ? (
-            <Loader2 className="animate-spin" />
+            <Spinner size="xs" className="text-current" />
           ) : (
             <UsersRound />
           )}
@@ -252,17 +253,17 @@ function DirectoryReviewBodyInner({
           <div className="max-w-sm space-y-2">
             <Building2 className="mx-auto h-8 w-8 text-muted-foreground" />
             <p className="font-medium">Workspace Directory unavailable</p>
-            <p className="text-sm text-muted-foreground">
+            <p className="type-body text-muted-foreground">
               This Google account has no readable Workspace Directory.
             </p>
-            <p className="text-xs text-muted-foreground">
+            <p className="type-secondary text-muted-foreground">
               Account: {preview.account_label}
             </p>
           </div>
         </div>
       ) : preview ? (
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border bg-card">
-          <div className="flex flex-wrap items-center gap-2 border-b px-3 py-2 text-xs text-muted-foreground">
+          <div className="flex flex-wrap items-center gap-2 border-b px-3 py-2 type-secondary text-muted-foreground">
             <span className="font-medium text-foreground">
               {people.length} {people.length === 1 ? "person" : "people"}
             </span>
@@ -273,13 +274,13 @@ function DirectoryReviewBodyInner({
             ) : null}
           </div>
           {people.length === 0 ? (
-            <div className="flex flex-1 items-center justify-center p-6 text-sm text-muted-foreground">
+            <div className="flex flex-1 items-center justify-center p-6 type-body text-muted-foreground">
               No Directory people were returned.
             </div>
           ) : (
             <div ref={scrollRef} className="min-h-0 flex-1 overflow-auto">
-              <table className="w-full min-w-[960px] text-left text-sm">
-                <thead className="sticky top-0 z-10 bg-muted/95 text-xs text-muted-foreground">
+              <table className="w-full min-w-[960px] text-left type-body">
+                <thead className="sticky top-0 z-10 bg-muted/95 type-secondary text-muted-foreground">
                   <tr>
                     <th className="px-3 py-2 font-medium">Name</th>
                     <th className="px-3 py-2 font-medium">Email</th>
@@ -342,7 +343,7 @@ export function DirectoryReview({
   if (!reviewerEligible) return null;
   if (!organizationId) {
     return (
-      <div className="flex h-full items-center justify-center p-6 text-sm text-muted-foreground">
+      <div className="flex h-full items-center justify-center p-6 type-body text-muted-foreground">
         Choose an organization to review Directory people.
       </div>
     );

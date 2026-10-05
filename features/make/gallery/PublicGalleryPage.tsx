@@ -40,16 +40,16 @@ export function PublicGalleryPage({
         <header className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex min-w-0 flex-col gap-1">
             {active ? (
-              <Link href={PUBLIC_GALLERY_PATH} className="text-sm text-muted-foreground hover:text-foreground">
+              <Link href={PUBLIC_GALLERY_PATH} className="type-body text-muted-foreground hover:text-foreground">
                 All templates
               </Link>
             ) : null}
             <h1 className="text-3xl font-semibold tracking-tight">{title}</h1>
-            <span className="text-sm text-muted-foreground tabular-nums">{cards.length} templates</span>
+            <span className="type-body text-muted-foreground tabular-nums">{cards.length} templates</span>
           </div>
           <Link
             href={signUpHref(PUBLIC_GALLERY_PATH)}
-            className="inline-flex h-9 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+            className="inline-flex h-9 items-center rounded-md bg-primary px-4 type-title text-primary-foreground hover:bg-primary/90"
             data-public-templates-signup=""
           >
             Sign up free
@@ -57,7 +57,7 @@ export function PublicGalleryPage({
         </header>
 
         {industries.length > 1 ? (
-          <nav aria-label="Industry" className="flex flex-wrap gap-2 text-sm" data-public-templates-industries="">
+          <nav aria-label="Industry" className="flex flex-wrap gap-2 type-body" data-public-templates-industries="">
             {industries.map((v) => (
               <FacetLink key={v} href={industryHref(v)} active={active?.industry === v}>
                 {wordFor("industry", v)}
@@ -66,7 +66,7 @@ export function PublicGalleryPage({
           </nav>
         ) : null}
         {jobs.length > 1 ? (
-          <nav aria-label="Job" className="flex flex-wrap gap-2 text-sm" data-public-templates-jobs="">
+          <nav aria-label="Job" className="flex flex-wrap gap-2 type-body" data-public-templates-jobs="">
             {jobs.map((v) => (
               <FacetLink key={v} href={jobHref(v)} active={active?.job === v}>
                 {wordFor("job", v)}
@@ -76,7 +76,7 @@ export function PublicGalleryPage({
         ) : null}
 
         {cards.length === 0 ? (
-          <p className="text-sm text-muted-foreground" data-public-templates-empty="">
+          <p className="type-body text-muted-foreground" data-public-templates-empty="">
             No public templates yet
           </p>
         ) : grouped ? (
@@ -89,7 +89,7 @@ export function PublicGalleryPage({
                   <h2 id={`templates-${industry}`} className="text-lg font-semibold tracking-tight">
                     {wordFor("industry", industry)}
                   </h2>
-                  <Link href={industryHref(industry)} className="text-sm text-primary hover:underline">
+                  <Link href={industryHref(industry)} className="type-body text-primary hover:underline">
                     All {inGroup.length}
                   </Link>
                 </div>

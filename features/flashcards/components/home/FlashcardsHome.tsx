@@ -273,7 +273,7 @@ export function FlashcardsHome() {
         // never an endless loader.
         <div className="flex h-full items-center justify-center px-4">
           <div className="max-w-sm rounded-xl border border-dashed border-border p-8 text-center">
-            <p className="text-sm text-muted-foreground">
+            <p className="type-body text-muted-foreground">
               Sign in to see your flashcard decks and create new ones.
             </p>
             <Button variant="primary" asChild className="mt-4">

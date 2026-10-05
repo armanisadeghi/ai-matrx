@@ -88,10 +88,10 @@ function WindowRow({ w }: { w: UsageWindow }) {
   return (
     <div className="border-b border-border py-3 last:border-b-0">
       <div className="flex items-baseline justify-between gap-3">
-        <span className="text-sm font-medium text-foreground">
+        <span className="type-title text-foreground">
           {windowLabel(w.period)}
         </span>
-        <span className="shrink-0 text-sm tabular-nums text-muted-foreground">
+        <span className="shrink-0 type-body tabular-nums text-muted-foreground">
           {w.limit === null ? (
             <span className="inline-flex items-center gap-1">
               <InfinityIcon className="h-3.5 w-3.5" aria-hidden />
@@ -119,7 +119,7 @@ function WindowRow({ w }: { w: UsageWindow }) {
         </div>
       ) : null}
       {reset && w.limit !== null ? (
-        <p className="mt-1 text-xs text-muted-foreground">Resets {reset}</p>
+        <p className="mt-1 type-secondary text-muted-foreground">Resets {reset}</p>
       ) : null}
     </div>
   );
@@ -155,7 +155,7 @@ export function MyUsageCard({ className }: { className?: string }) {
   if (level === "unknown") {
     return (
       <div className={cn(frame, "p-3 sm:p-4")}>
-        <h3 className="text-sm font-semibold text-foreground">Your AI usage</h3>
+        <h3 className="type-title text-foreground">Your AI usage</h3>
         {fetchedAt === null && reading ? (
           <div
             className="mt-3 space-y-2"
@@ -168,7 +168,7 @@ export function MyUsageCard({ className }: { className?: string }) {
           </div>
         ) : (
           <div className="mt-2 flex items-center gap-2">
-            <p className="text-sm text-muted-foreground">
+            <p className="type-body text-muted-foreground">
               We couldn&apos;t read your usage just now.
             </p>
             <Button icon={<RotateCw aria-hidden />} variant="outline" onClick={read}>
@@ -186,12 +186,12 @@ export function MyUsageCard({ className }: { className?: string }) {
       <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border p-3 sm:p-4">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <h3 className="text-sm font-semibold text-foreground">
+            <h3 className="type-title text-foreground">
               Your AI usage
             </h3>
             <span
               className={cn(
-                "inline-flex rounded px-1.5 py-0.5 text-[10px] font-medium",
+                "inline-flex rounded px-1.5 py-0.5 type-meta font-medium",
                 chip.tone,
               )}
             >
@@ -199,7 +199,7 @@ export function MyUsageCard({ className }: { className?: string }) {
             </span>
           </div>
           {planName ? (
-            <p className="mt-0.5 text-xs text-muted-foreground">
+            <p className="mt-0.5 type-secondary text-muted-foreground">
               {planName} plan
             </p>
           ) : null}
@@ -213,7 +213,7 @@ export function MyUsageCard({ className }: { className?: string }) {
       </div>
       <div className="px-3 sm:px-4">
         {windows.length === 0 ? (
-          <p className="py-3 text-sm text-muted-foreground">
+          <p className="py-3 type-body text-muted-foreground">
             Your plan sets no AI usage limits.
           </p>
         ) : (

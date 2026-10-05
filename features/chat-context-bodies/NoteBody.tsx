@@ -75,7 +75,7 @@ export function NoteBody({ item, setTitle }: ContextItemBodyProps) {
 
   if (!noteId) {
     return (
-      <p className="p-4 text-xs text-muted-foreground italic">
+      <p className="p-4 type-secondary text-muted-foreground italic">
         No note reference on this item.
       </p>
     );
@@ -91,9 +91,9 @@ export function NoteBody({ item, setTitle }: ContextItemBodyProps) {
             onRetry={() => void dispatch(fetchNoteContent(noteId))}
           />
         ) : note?.content?.trim() ? (
-          <div className="break-words text-sm leading-relaxed text-foreground"><RichContent source={note.content ?? ""} level="standard" /></div>
+          <div className="break-words type-body leading-relaxed text-foreground"><RichContent source={note.content ?? ""} level="standard" /></div>
         ) : (
-          <p className="text-xs italic text-muted-foreground">
+          <p className="type-secondary italic text-muted-foreground">
             {note && contentLoadStatus === "loaded" ? "This note is empty." : "Loading note…"}
           </p>
         )}
@@ -120,7 +120,7 @@ export function NoteFooter({ item }: ContextItemBodyProps) {
   return (
     <>
       {note?.folder_name && (
-        <span className="inline-flex min-w-0 items-center gap-1 text-[11px] text-muted-foreground">
+        <span className="inline-flex min-w-0 items-center gap-1 type-meta text-muted-foreground">
           <Folder className="h-3 w-3 shrink-0" />
           <span className="truncate">{note.folder_name}</span>
         </span>

@@ -127,18 +127,18 @@ export function RecipientPicker({
             }
             style={{ borderLeft: `4px solid ${recipientColor(i)}` }}
           >
-            {sequential && <span className="w-4 shrink-0 text-center text-xs tabular-nums text-muted-foreground">{i + 1}</span>}
+            {sequential && <span className="w-4 shrink-0 text-center type-secondary tabular-nums text-muted-foreground">{i + 1}</span>}
             <Avatar className="h-6 w-6 shrink-0">
               {r.avatarUrl && <AvatarImage src={r.avatarUrl} />}
-              <AvatarFallback className="text-[10px]" style={{ background: recipientColor(i, 0.18) }}>
+              <AvatarFallback className="type-meta" style={{ background: recipientColor(i, 0.18) }}>
                 {getInitials(r.fullName || r.email)}
               </AvatarFallback>
             </Avatar>
             <div className="min-w-0 flex-1">
-              <div className="truncate text-sm font-medium">{r.fullName}</div>
+              <div className="truncate type-title">{r.fullName}</div>
               <div className="flex min-w-0 items-center gap-1.5">
                 {r.userId ? <Badge tone="info">Member</Badge> : <Badge>Guest</Badge>}
-                <span className="truncate text-xs text-muted-foreground">
+                <span className="truncate type-secondary text-muted-foreground">
                   {missingSignature.has(r.key) ? "No signature box yet" : r.email}
                 </span>
               </div>
@@ -199,7 +199,7 @@ export function RecipientPicker({
         {q && (
           <div className="mt-1 flex flex-col overflow-hidden rounded-md border border-border bg-card">
             {isLoading ? (
-              <p className="px-3 py-2 text-xs text-muted-foreground">Loading members…</p>
+              <p className="px-3 py-2 type-secondary text-muted-foreground">Loading members…</p>
             ) : error && connections.length === 0 ? (
               <ReadFailure error={error} what="your organization's members" onRetry={() => void refresh()} className="m-2" />
             ) : (
@@ -213,15 +213,15 @@ export function RecipientPicker({
                   >
                     <Avatar className="h-6 w-6 shrink-0">
                       {c.avatar_url && <AvatarImage src={c.avatar_url} />}
-                      <AvatarFallback className="text-[10px]">{getInitials(c.display_name ?? c.email ?? "")}</AvatarFallback>
+                      <AvatarFallback className="type-meta">{getInitials(c.display_name ?? c.email ?? "")}</AvatarFallback>
                     </Avatar>
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm">{c.display_name || c.email}</span>
-                      {c.display_name && c.email && <span className="block truncate text-xs text-muted-foreground">{c.email}</span>}
+                      <span className="block truncate type-body">{c.display_name || c.email}</span>
+                      {c.display_name && c.email && <span className="block truncate type-secondary text-muted-foreground">{c.email}</span>}
                     </span>
                   </button>
                 ))}
-                {matches.length === 0 && <p className="px-3 py-2 text-xs text-muted-foreground">No member matches</p>}
+                {matches.length === 0 && <p className="px-3 py-2 type-secondary text-muted-foreground">No member matches</p>}
                 <button
                   type="button"
                   onClick={() => setOutsider({ fullName: typedEmail ? "" : query.trim(), email: typedEmail ?? "" })}

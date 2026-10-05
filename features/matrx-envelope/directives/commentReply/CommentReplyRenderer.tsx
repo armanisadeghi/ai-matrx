@@ -12,7 +12,7 @@
  *               (the handle resolved inside THIS conversation's remarks).
  */
 
-import { Loader2, MessagesSquare } from "lucide-react";
+import { MessagesSquare } from "lucide-react";
 import { useSelector } from "react-redux";
 import type { DirectiveRendererProps } from "@ai-matrx/content-ir-react";
 import { useOptionalCanvas } from "@ai-matrx/canvas/react";
@@ -27,6 +27,7 @@ import { useConversationReceipts } from "@/features/matrx-envelope/conversationR
 import { readThreadLink } from "@/components/mardown-display/blocks/data-events/DirectiveReceiptBlock";
 import { useDirectiveFence } from "@/features/matrx-envelope/directiveFence";
 
+import { Spinner } from "@/components/ui/loaders/Spinner";
 const NO_MESSAGES: readonly MessageRecord[] = [];
 
 function CommentReplyLine({ handle, conversationId, streaming }: { handle: string; conversationId: string | null; streaming: boolean }) {
@@ -44,8 +45,8 @@ function CommentReplyLine({ handle, conversationId, streaming }: { handle: strin
     .find((l) => l?.handle === handle) ?? null;
   if (streaming) {
     return (
-      <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground" data-comment-reply={handle}>
-        <Loader2 className="h-3 w-3 shrink-0 animate-spin" aria-hidden />
+      <span className="inline-flex items-center gap-1.5 type-secondary text-muted-foreground" data-comment-reply={handle}>
+        <Spinner size="xs" className="shrink-0" />
         Replying to {handle}…
       </span>
     );
@@ -68,7 +69,7 @@ function CommentReplyLine({ handle, conversationId, streaming }: { handle: strin
   );
   if (!thread) {
     return (
-      <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground" data-comment-reply={handle}>
+      <span className="inline-flex items-center gap-1.5 type-secondary text-muted-foreground" data-comment-reply={handle}>
         {label}
       </span>
     );

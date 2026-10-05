@@ -77,20 +77,20 @@ export function RedeemCodeField({ autoCode }: { autoCode?: string | null }) {
         </form>
       )}
       {autoCode && pending && (
-        <p className="text-sm text-muted-foreground">Redeeming your code…</p>
+        <p className="type-body text-muted-foreground">Redeeming your code…</p>
       )}
       {outcome && (
         <p
           className={
             outcome.ok
-              ? "flex items-center gap-1.5 text-sm text-foreground"
-              : "flex items-center gap-1.5 text-sm text-destructive"
+              ? "flex items-center gap-1.5 type-body text-foreground"
+              : "flex items-center gap-1.5 type-body text-destructive"
           }
           role="status"
           data-testid={outcome.ok ? "redeem-success" : "redeem-error"}
         >
           {outcome.ok ? (
-            <CheckCircle2 className="h-4 w-4 shrink-0 text-green-600 dark:text-green-400" />
+            <CheckCircle2 className="h-4 w-4 shrink-0 text-success" />
           ) : (
             <XCircle className="h-4 w-4 shrink-0" />
           )}

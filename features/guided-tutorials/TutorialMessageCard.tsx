@@ -33,8 +33,8 @@ export function TutorialMessageCard({ payload }: { payload: GuidedTutorialAction
         <GraduationCap className="h-5 w-5" aria-hidden />
       </span>
       <div className="min-w-0 flex-1">
-        <p className="m-0 truncate text-[13px] font-medium">{title}</p>
-        <p className="m-0 flex items-center gap-1 truncate text-[11px] text-muted-foreground">
+        <p className="m-0 truncate type-title">{title}</p>
+        <p className="m-0 flex items-center gap-1 truncate type-meta text-muted-foreground">
           {completed ? <CircleCheck className="h-3 w-3 text-success" aria-hidden /> : null}
           {!tutorial ? "No longer available" : completed ? "Done" : `${steps} steps`}
         </p>

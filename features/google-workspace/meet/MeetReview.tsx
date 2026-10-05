@@ -323,7 +323,7 @@ function MeetReviewBodyInner({
     >
       <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto p-3">
         <div className="space-y-3">
-          <p className="text-sm text-muted-foreground">
+          <p className="type-body text-muted-foreground">
             Read-only preview; nothing is saved or imported.
           </p>
           <GoogleAccountSelect
@@ -338,7 +338,7 @@ function MeetReviewBodyInner({
             requireExplicitSelection
           />
           {eligible.length === 0 ? (
-            <p className="rounded-md border border-border p-3 text-sm text-muted-foreground">
+            <p className="rounded-md border border-border p-3 type-body text-muted-foreground">
               No connected account has Meet read access.
             </p>
           ) : null}
@@ -424,9 +424,9 @@ function MeetReviewBodyInner({
           ) : null}
           {conferencePage ? (
             <div className="space-y-2">
-              <p className="text-sm font-medium">Conferences</p>
+              <p className="type-title">Conferences</p>
               {conferencePage.conferences.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
+                <p className="type-body text-muted-foreground">
                   No conferences matched this source window.
                 </p>
               ) : (
@@ -469,9 +469,9 @@ function MeetReviewBodyInner({
           ) : null}
           {conference ? (
             <div className="min-w-0 space-y-2 rounded-md border border-border p-3">
-              <p className="text-sm font-medium">Transcript choices</p>
+              <p className="type-title">Transcript choices</p>
               {conference.transcripts.state !== "available" ? (
-                <p className="text-sm text-muted-foreground">
+                <p className="type-body text-muted-foreground">
                   Transcript metadata is {conference.transcripts.state}.
                 </p>
               ) : null}
@@ -485,7 +485,7 @@ function MeetReviewBodyInner({
               )) ?? null}
               {conference.transcripts.state === "available" &&
               !conference.transcripts.names?.length ? (
-                <p className="text-sm text-muted-foreground">
+                <p className="type-body text-muted-foreground">
                   No transcript choices were returned.
                 </p>
               ) : null}
@@ -493,13 +493,13 @@ function MeetReviewBodyInner({
           ) : null}
           {transcriptPage ? (
             <div className="min-w-0 space-y-2">
-              <p className="text-sm font-medium">Transcript entries</p>
+              <p className="type-title">Transcript entries</p>
               {transcriptPage.entries.map((entry) => (
                 <article
                   key={entry.name}
-                  className="min-w-0 rounded-md border border-border p-3 text-sm"
+                  className="min-w-0 rounded-md border border-border p-3 type-body"
                 >
-                  <p className="text-xs text-muted-foreground">
+                  <p className="type-secondary text-muted-foreground">
                     {entry.start_time ?? "Time unavailable"}
                   </p>
                   <p className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
@@ -508,7 +508,7 @@ function MeetReviewBodyInner({
                 </article>
               ))}
               {transcriptPage.entries.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
+                <p className="type-body text-muted-foreground">
                   No entries were returned for this transcript.
                 </p>
               ) : null}
@@ -550,7 +550,7 @@ export function MeetReview() {
     );
   if (!actorId)
     return (
-      <p className="p-3 text-sm text-muted-foreground">
+      <p className="p-3 type-body text-muted-foreground">
         Sign in to review Meet sources.
       </p>
     );

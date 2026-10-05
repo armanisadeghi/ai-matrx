@@ -9,7 +9,7 @@
 // download only: a blob takes our origin, so it is never opened in a frame.
 
 import { useState } from "react";
-import { Download, Loader2, RotateCw } from "lucide-react";
+import { Download, RotateCw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
@@ -17,6 +17,7 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 
 import { signingAct, SigningRefusal, type SigningDoor } from "./signingService";
 
+import { Spinner } from "@/components/ui/loaders/Spinner";
 interface CopyFile {
   name: string;
   base64: string;
@@ -79,7 +80,7 @@ export function SignedCopy({ door }: { door: SigningDoor }) {
   return (
     <div className="flex flex-col gap-2">
       <Button icon={state === "busy" ? (
-          <Loader2 className="animate-spin" />
+          <Spinner size="xs" className="text-current" />
         ) : retry ? (
           <RotateCw />
         ) : (
@@ -88,10 +89,10 @@ export function SignedCopy({ door }: { door: SigningDoor }) {
         {retry ? "Try again" : "Download signed copy"}
       </Button>
       {state === "not_ready" && (
-        <p className="text-sm text-muted-foreground">Your signed copy is not ready yet.</p>
+        <p className="type-body text-muted-foreground">Your signed copy is not ready yet.</p>
       )}
       {state === "waiting" && (
-        <p className="text-sm text-muted-foreground">Ready once everyone has signed.</p>
+        <p className="type-body text-muted-foreground">Ready once everyone has signed.</p>
       )}
       {state === "failed" && (
         <ErrorNotice

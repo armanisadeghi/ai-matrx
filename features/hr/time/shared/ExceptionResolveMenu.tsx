@@ -57,7 +57,7 @@ export function ExceptionResolveMenu({
         }}
       >
         {readOnly ? (
-          <p className="text-sm text-muted-foreground">
+          <p className="type-body text-muted-foreground">
             Your manager decides this. You can add a comment from your HR tasks.
           </p>
         ) : (

@@ -170,7 +170,7 @@ function resultSummary(attempt: CalendarChangeAttempt): string {
 function ReturnedResultFacts({ attempt }: { attempt: CalendarChangeAttempt }) {
   const result = attempt.action.result;
   if (!result || calendarChangeResultMatches(attempt.action, result)) return null;
-  return <div className="grid gap-1 rounded-md border border-amber-500/40 bg-amber-500/10 p-2">
+  return <div className="grid gap-1 rounded-md border border-warning/40 bg-warning/10 p-2">
     <p className="font-medium text-foreground">Returned result differs</p>
     <p>Reviewed account: {attempt.action.preview.account_email}</p>
     <p>Returned account: {result.account_email}</p>
@@ -552,12 +552,12 @@ export function CalendarEventChangeReview(props: CalendarEventChangeReviewProps)
   return (
     <section className="space-y-3 rounded-md border border-border p-3" aria-label="Change Google Calendar event" data-calendar-event-change-review>
       <div>
-        <p className="text-sm font-medium">Change an existing event</p>
-        <p className="text-xs text-muted-foreground">{accountLabel} · {calendar.summary}</p>
+        <p className="type-title">Change an existing event</p>
+        <p className="type-secondary text-muted-foreground">{accountLabel} · {calendar.summary}</p>
       </div>
-      {warning ? <p className="text-xs text-amber-700 dark:text-amber-300">{warning}</p> : null}
-      {notice ? <p role="status" className="rounded-md border border-emerald-500/40 bg-emerald-500/10 p-2 text-xs text-foreground">{notice}</p> : null}
-      {problem ? <p role="alert" className="text-xs text-destructive">{problem} <ErrorAlchemyMenu error={problem} /></p> : null}
+      {warning ? <p className="type-secondary text-warning">{warning}</p> : null}
+      {notice ? <p role="status" className="rounded-md border border-success/40 bg-success/10 p-2 type-secondary text-foreground">{notice}</p> : null}
+      {problem ? <p role="alert" className="type-secondary text-destructive">{problem} <ErrorAlchemyMenu error={problem} /></p> : null}
       {collection.attempts.length ? (
         <div className="grid gap-1">
           <label htmlFor="calendar-change-attempt" className="text-xs font-medium text-muted-foreground">Saved actions</label>
@@ -568,7 +568,7 @@ export function CalendarEventChangeReview(props: CalendarEventChangeReviewProps)
         </div>
       ) : null}
       {activeAttempt ? (
-        <div className="space-y-2 rounded-md border border-border bg-muted/20 p-3 text-xs" data-calendar-change-attempt>
+        <div className="space-y-2 rounded-md border border-border bg-muted/20 p-3 type-secondary" data-calendar-change-attempt>
           <p className="font-medium text-foreground">{attemptLabel(activeAttempt)}</p>
           <p>Account: {activeAttempt.original_source.account_email}</p>
           <p>Calendar: {activeAttempt.calendar_summary}</p>
@@ -611,7 +611,7 @@ export function CalendarEventChangeReview(props: CalendarEventChangeReviewProps)
             </select>
           </label>
           <Button type="button" variant="outline" onClick={() => void readSource()} disabled={!selectedEventId.trim() || busy !== null}>{busy === "source" ? "Reading…" : "Read event source"}</Button>
-          {source ? <div className="space-y-1 rounded-md border border-border bg-muted/20 p-2 text-xs" data-calendar-change-source>
+          {source ? <div className="space-y-1 rounded-md border border-border bg-muted/20 p-2 type-secondary" data-calendar-change-source>
             <p className="font-medium text-foreground">{source.event_summary || "Google event"}</p>
             <p>{sourceTime(source.starts_at)} – {sourceTime(source.ends_at)}</p>
             <p>Selection: {source.occurrence}</p>
@@ -623,7 +623,7 @@ export function CalendarEventChangeReview(props: CalendarEventChangeReviewProps)
                 <option value="reschedule">Move event</option><option value="cancel">Cancel organizer event</option><option value="rsvp">Update my RSVP</option>
               </select>
             </label>
-            {sourceActionProblem ? <p className="text-xs text-muted-foreground">{sourceActionProblem} <ErrorAlchemyMenu error={sourceActionProblem} /></p> : null}
+            {sourceActionProblem ? <p className="type-secondary text-muted-foreground">{sourceActionProblem} <ErrorAlchemyMenu error={sourceActionProblem} /></p> : null}
             {actionKind === "reschedule" ? <div className="grid gap-2 sm:grid-cols-2"><Input aria-label="New start" placeholder="2026-10-08T09:00:00-07:00" value={startsAt} onChange={(event) => setStartsAt(event.target.value)} /><Input aria-label="New end" placeholder="2026-10-08T10:00:00-07:00" value={endsAt} onChange={(event) => setEndsAt(event.target.value)} /></div> : null}
             {actionKind === "rsvp" ? <label className="grid gap-1 text-xs font-medium text-muted-foreground">My response
               <select className="min-h-11 rounded-md border border-input bg-background px-3 text-sm" value={responseStatus} onChange={(event) => setResponseStatus(event.target.value as typeof responseStatus)}><option value="">Choose a response</option><option value="accepted">Accept</option><option value="declined">Decline</option><option value="tentative">Tentative</option><option value="needsAction">No response</option></select>

@@ -9,7 +9,7 @@
 // sessionStorage so a reload does not spend the link's single use again; it dies with the tab.
 
 import { useEffect, useState } from "react";
-import { Loader2, Lock, XCircle } from "lucide-react";
+import { Lock, XCircle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -24,6 +24,7 @@ import {
   verifyOutsiderCode,
 } from "./signingService";
 
+import { Spinner } from "@/components/ui/loaders/Spinner";
 const DEAD = "This link is no longer valid. Ask the sender for a new one.";
 const UNREACHABLE = "We could not reach AI Matrx just now. Your link is fine — try again in a moment.";
 
@@ -185,7 +186,7 @@ export function OutsiderSigning() {
 
   return (
     <main className="flex h-dvh flex-col items-center justify-center bg-textured px-6">
-      {phase.kind === "loading" && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />}
+      {phase.kind === "loading" && <Spinner size="sm" className="text-muted-foreground" />}
 
       {phase.kind === "dead" && (
         <div className="flex max-w-md flex-col items-center gap-3 text-center">
@@ -201,10 +202,10 @@ export function OutsiderSigning() {
           </div>
           {!phase.sent ? (
             <>
-              <p className="text-sm text-muted-foreground">
+              <p className="type-body text-muted-foreground">
                 {phase.maskedTarget ? `We will send a code to ${phase.maskedTarget}.` : "We will send you a code."}
               </p>
-              <Button icon={busy === "send" && <Loader2 className="animate-spin" />} type="submit" variant="primary" disabled={busy !== null} onClick={() => void send(secret)}>Send me the code
+              <Button icon={busy === "send" && <Spinner size="xs" className="text-current" />} type="submit" variant="primary" disabled={busy !== null} onClick={() => void send(secret)}>Send me the code
               </Button>
             </>
           ) : (
@@ -224,14 +225,14 @@ export function OutsiderSigning() {
                 maxLength={6}
                 onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
               />
-              <Button icon={busy === "verify" && <Loader2 className="animate-spin" />} variant="primary" type="submit" disabled={busy !== null || code.trim().length < 6}>Open the document
+              <Button icon={busy === "verify" && <Spinner size="xs" className="text-current" />} variant="primary" type="submit" disabled={busy !== null || code.trim().length < 6}>Open the document
               </Button>
               <Button type="button" variant="quiet" disabled={busy !== null} onClick={() => void send(secret)}>
                 Send a new code
               </Button>
             </form>
           )}
-          {notice && <p className="text-sm text-destructive">{notice}</p>}
+          {notice && <p className="type-body text-destructive">{notice}</p>}
         </div>
       )}
     </main>

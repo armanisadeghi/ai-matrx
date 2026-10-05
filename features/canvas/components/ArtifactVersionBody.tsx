@@ -45,7 +45,7 @@ export function ArtifactVersionBody({ row }: { row: CanvasArtifactRow }) {
   const rawPre = (
     <pre
       data-kind-source={holdsKind ? "explicit" : undefined}
-      className="max-h-40 overflow-auto whitespace-pre-wrap text-[11px] leading-relaxed text-foreground/80"
+      className="max-h-40 overflow-auto whitespace-pre-wrap type-meta leading-relaxed text-foreground/80"
     >
       {text.slice(0, 4000)}
     </pre>
@@ -65,7 +65,7 @@ export function ArtifactVersionBody({ row }: { row: CanvasArtifactRow }) {
       {showJson ? (
         rawPre
       ) : (
-        <div className="max-h-40 overflow-auto text-[11px] leading-relaxed text-foreground/80">
+        <div className="max-h-40 overflow-auto type-meta leading-relaxed text-foreground/80">
           <AnswerValueView
             value={structured ? data : undefined}
             text={structured ? undefined : text}

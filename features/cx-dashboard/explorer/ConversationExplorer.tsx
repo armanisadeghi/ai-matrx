@@ -77,9 +77,9 @@ function columnsFor(facets: ExplorerFacets): MatrxColumnDef<ExplorerConversation
       width: 200,
       cell: (r) => (
         <div className="min-w-0 leading-tight">
-          <p className="truncate text-xs">{r.owner_label ?? "—"}</p>
+          <p className="truncate type-secondary">{r.owner_label ?? "—"}</p>
           {r.owner_email && r.owner_email !== r.owner_label ? (
-            <p className="truncate text-[10px] text-muted-foreground">{r.owner_email}</p>
+            <p className="truncate type-meta text-muted-foreground">{r.owner_email}</p>
           ) : null}
         </div>
       ),
@@ -116,7 +116,7 @@ function columnsFor(facets: ExplorerFacets): MatrxColumnDef<ExplorerConversation
       align: "right",
       width: 100,
       cell: (r) => (
-        <span className="inline-flex items-center gap-1 text-xs">
+        <span className="inline-flex items-center gap-1 type-secondary">
           <MessageSquare className="h-3 w-3 text-muted-foreground" />
           {r.message_count}
         </span>
@@ -137,7 +137,7 @@ function columnsFor(facets: ExplorerFacets): MatrxColumnDef<ExplorerConversation
       filter: "number",
       align: "right",
       width: 95,
-      cell: (r) => <span className="text-xs tabular-nums">{compact(r.total_tokens)}</span>,
+      cell: (r) => <span className="type-secondary tabular-nums">{compact(r.total_tokens)}</span>,
     },
     {
       id: "total_cost",
@@ -146,7 +146,7 @@ function columnsFor(facets: ExplorerFacets): MatrxColumnDef<ExplorerConversation
       filter: "number",
       align: "right",
       width: 90,
-      cell: (r) => <span className="text-xs tabular-nums">{money(r.total_cost)}</span>,
+      cell: (r) => <span className="type-secondary tabular-nums">{money(r.total_cost)}</span>,
     },
     {
       id: "source_app",
@@ -189,7 +189,7 @@ function columnsFor(facets: ExplorerFacets): MatrxColumnDef<ExplorerConversation
       filter: "date",
       width: 115,
       cell: (r) => (
-        <span className="whitespace-nowrap text-xs text-muted-foreground">
+        <span className="whitespace-nowrap type-secondary text-muted-foreground">
           {formatRelativeTime(r.created_at)}
         </span>
       ),
@@ -201,7 +201,7 @@ function columnsFor(facets: ExplorerFacets): MatrxColumnDef<ExplorerConversation
       filter: "date",
       width: 115,
       cell: (r) => (
-        <span className="whitespace-nowrap text-xs text-muted-foreground">
+        <span className="whitespace-nowrap type-secondary text-muted-foreground">
           {formatRelativeTime(r.updated_at)}
         </span>
       ),

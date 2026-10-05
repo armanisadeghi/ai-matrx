@@ -40,7 +40,7 @@ export function PillSwitch<T extends string>({
       aria-label={ariaLabel}
       className={cn(
         "relative items-center rounded-full border border-border/80 bg-card/80 p-0.5 shadow-[0_1px_0_0_rgba(0,0,0,0.04)] backdrop-blur-sm",
-        size === "sm" ? "h-7 text-xs" : "h-9 text-sm",
+        size === "sm" ? "h-7 type-secondary" : "h-9 type-body",
         equal ? "inline-grid" : "inline-flex",
         className,
       )}
@@ -108,7 +108,7 @@ export function BillingToggle({
     <div
       className={cn(
         "inline-flex items-center gap-2",
-        size === "sm" ? "text-xs" : "text-sm",
+        size === "sm" ? "type-secondary" : "type-body",
         className,
       )}
     >

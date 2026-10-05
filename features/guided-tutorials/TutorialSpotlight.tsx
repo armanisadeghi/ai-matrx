@@ -294,8 +294,8 @@ export function TutorialSpotlight({ tutorial, onClose }: TutorialSpotlightProps)
             <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground">
               <PartyPopper className="h-5 w-5" aria-hidden />
             </span>
-            <p className="m-0 text-sm font-semibold">You're all set</p>
-            <p className="m-0 text-xs text-muted-foreground">{tutorial.title} — done</p>
+            <p className="m-0 type-title">You're all set</p>
+            <p className="m-0 type-secondary text-muted-foreground">{tutorial.title} — done</p>
             <Button variant="primary" autoFocus className="mt-1" icon={<Check />} onClick={() => onClose(true)}>
               Done
             </Button>
@@ -304,10 +304,10 @@ export function TutorialSpotlight({ tutorial, onClose }: TutorialSpotlightProps)
           <div className="flex flex-col gap-2">
             <div className="flex items-start gap-2">
               <div className="min-w-0 flex-1">
-                <p className="m-0 text-[11px] font-medium text-muted-foreground">
+                <p className="m-0 type-meta font-medium text-muted-foreground">
                   {tutorial.title} · {index + 1} of {tutorial.steps.length}
                 </p>
-                <p className="m-0 text-sm font-semibold">{step.title}</p>
+                <p className="m-0 type-title">{step.title}</p>
               </div>
               <Button
                 variant="quiet"
@@ -318,11 +318,11 @@ export function TutorialSpotlight({ tutorial, onClose }: TutorialSpotlightProps)
                 onClick={() => onClose(false)}
               />
             </div>
-            <p className="m-0 text-xs text-muted-foreground">
+            <p className="m-0 type-secondary text-muted-foreground">
               {missing ? "This part isn't on the page right now" : step.text}
             </p>
             {step.action && !missing ? (
-              <p className="m-0 inline-flex items-center gap-1.5 text-[11px] font-medium text-primary">
+              <p className="m-0 inline-flex items-center gap-1.5 type-meta font-medium text-primary">
                 {advancing ? <Check className="h-3.5 w-3.5" aria-hidden /> : <ActionIcon className="h-3.5 w-3.5" aria-hidden />}
                 {advancing ? "Nice" : step.action === "copy" ? "Copy it to continue" : "Click it to continue"}
               </p>

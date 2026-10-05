@@ -111,7 +111,7 @@ export function LinkRecordOverlay({ target, onClose }: { target: LinkRecordTarge
       attachedKeys={attachedKeys}
       question={
         words ? (
-          <div className="flex flex-col gap-2 rounded-md border p-3 text-sm" role="alertdialog" aria-label={words.title}>
+          <div className="flex flex-col gap-2 rounded-md border p-3 type-body" role="alertdialog" aria-label={words.title}>
             <p className="font-medium">{words.title}</p>
             <p className="text-muted-foreground">{words.description}</p>
             <div className="flex justify-end gap-2">

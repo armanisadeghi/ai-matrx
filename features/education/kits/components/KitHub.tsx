@@ -144,7 +144,7 @@ function ArtifactCard({
 
       <div className="mt-4">
         <h3 className="text-lg font-semibold text-foreground">{look.label}</h3>
-        <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+        <p className="mt-1 type-body leading-relaxed text-muted-foreground">
           {FORMAT_PROMISE[kind]}
         </p>
       </div>
@@ -163,7 +163,7 @@ function ArtifactCard({
               accuracy={stats.accuracy}
               className="mb-2"
             />
-            <p className="text-xs font-medium text-foreground">
+            <p className="type-secondary font-medium text-foreground">
               {stats.itemCount != null
                 ? `${stats.studiedCount} of ${stats.itemCount} practiced`
                 : `${stats.studiedCount} practiced`}
@@ -171,17 +171,17 @@ function ArtifactCard({
                 ` · ${Math.round(stats.accuracy * 100)}% correct`}
             </p>
             {stats.lastStudiedAt && (
-              <p className="mt-1 text-xs text-muted-foreground">
+              <p className="mt-1 type-secondary text-muted-foreground">
                 Last studied {formatRelativeTime(stats.lastStudiedAt)}
               </p>
             )}
           </>
         ) : showProgressUnavailable ? (
-          <p className="text-xs text-warning">
+          <p className="type-secondary text-warning">
             Progress is unavailable right now.
           </p>
         ) : (
-          <p className="text-xs text-muted-foreground">
+          <p className="type-secondary text-muted-foreground">
             {duration ?? count ?? artifact.detail ?? "Ready when you are"}
           </p>
         )}
@@ -189,7 +189,7 @@ function ArtifactCard({
 
       <span
         className={cn(
-          "mt-auto inline-flex min-h-10 items-center gap-1.5 self-start rounded-lg px-3 text-sm font-semibold transition-colors group-hover:brightness-110",
+          "mt-auto inline-flex min-h-10 items-center gap-1.5 self-start rounded-lg px-3 type-title transition-colors group-hover:brightness-110",
           artifactTile(look),
         )}
       >
@@ -440,7 +440,7 @@ export function KitHub({
                 This study kit could not be loaded
                 <ErrorAlchemyMenu />
               </h2>
-              <p className="mt-1 text-sm text-muted-foreground">
+              <p className="mt-1 type-body text-muted-foreground">
                 Your material is still safe. Try the read again.
               </p>
             </div>
@@ -460,7 +460,7 @@ export function KitHub({
         <KitBody narrow className="matrx-touch-targets">
           <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-border p-10 text-center">
             <AGENT_ICON className="h-8 w-8 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">
+            <p className="type-body text-muted-foreground">
               This material has no study kit grouping yet.
             </p>
             {sourceType === "file" ? (
@@ -668,20 +668,20 @@ export function KitHub({
               </label>
               <Button size="sm" disabled={writing || draftTitle.trim() === kit.title} onClick={() => void saveTitle()}>Save title</Button>
             </div>
-            <p className="mt-4 text-xs text-muted-foreground">Make more from it adds a new study aid. Removing an aid only takes it out of this kit; it stays saved in your library.</p>
+            <p className="mt-4 type-secondary text-muted-foreground">Make more from it adds a new study aid. Removing an aid only takes it out of this kit; it stays saved in your library.</p>
             <div className="mt-3 divide-y divide-border rounded-xl border border-border">
               {ordered.map((artifact) => (
                 <div key={artifact.edgeId} className="flex items-center gap-3 px-3 py-2.5">
-                  <span className="min-w-0 flex-1 truncate text-sm text-foreground">{artifact.title}</span>
+                  <span className="min-w-0 flex-1 truncate type-body text-foreground">{artifact.title}</span>
                   <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" disabled={writing} onClick={() => void removeMember(artifact)}><X className="h-4 w-4" />Remove</Button>
                 </div>
               ))}
             </div>
             <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-4">
-              <p className="text-xs text-muted-foreground">Deleting removes the kit grouping only. Your source material and study aids remain saved.</p>
+              <p className="type-secondary text-muted-foreground">Deleting removes the kit grouping only. Your source material and study aids remain saved.</p>
               <Button size="sm" variant="destructive" disabled={writing} onClick={() => void removeWholeKit()}><Trash2 className="h-4 w-4" />Delete kit</Button>
             </div>
-            {writeError && <p className="mt-3 text-sm text-destructive">{writeError} <ErrorAlchemyMenu error={writeError} /></p>}
+            {writeError && <p className="mt-3 type-body text-destructive">{writeError} <ErrorAlchemyMenu error={writeError} /></p>}
           </section>
   ) : null;
 
@@ -710,21 +710,21 @@ export function KitHub({
                   " Each progress number below comes from that study aid\u2019s real activity."}
               </p>
               <div className="mt-5 flex flex-wrap gap-2">
-                <span className="rounded-full border border-border bg-background/70 px-3 py-1.5 text-xs font-medium text-foreground">
+                <span className="rounded-full border border-border bg-background/70 px-3 py-1.5 type-secondary font-medium text-foreground">
                   {ordered.length} study aids
                 </span>
                 {!statsLoading && itemTotal > 0 && (
-                  <span className="rounded-full border border-border bg-background/70 px-3 py-1.5 text-xs font-medium text-foreground">
+                  <span className="rounded-full border border-border bg-background/70 px-3 py-1.5 type-secondary font-medium text-foreground">
                     {itemTotal} practice items
                   </span>
                 )}
                 {!statsLoading && practicedTotal > 0 && (
-                  <span className="rounded-full border border-border bg-background/70 px-3 py-1.5 text-xs font-medium text-foreground">
+                  <span className="rounded-full border border-border bg-background/70 px-3 py-1.5 type-secondary font-medium text-foreground">
                     {practicedTotal} practiced
                   </span>
                 )}
                 {!statsLoading && dueTotal > 0 && (
-                  <span className="rounded-full border border-warning/30 bg-warning/10 px-3 py-1.5 text-xs font-semibold text-warning">
+                  <span className="rounded-full border border-warning/30 bg-warning/10 px-3 py-1.5 type-secondary font-semibold text-warning">
                     {dueTotal} due now
                   </span>
                 )}
@@ -733,7 +733,7 @@ export function KitHub({
 
             {challenge && challengeLook && (
               <div className="rounded-2xl border border-glass-edge bg-glass p-4 shadow-glass backdrop-blur-glass backdrop-saturate-glass sm:p-5">
-                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-primary">
+                <div className="flex items-center gap-2 type-secondary font-semibold uppercase tracking-wide text-primary">
                   <Flag className="h-4 w-4" />
                   Next challenge
                 </div>
@@ -744,7 +744,7 @@ export function KitHub({
                       ? `Continue ${challengeLook.label}`
                       : `Try ${challengeLook.label}`}
                 </p>
-                <p className="mt-1 text-sm text-muted-foreground">
+                <p className="mt-1 type-body text-muted-foreground">
                   {challengeStats?.dueCount
                     ? `A focused ${challengeLook.label.toLowerCase()} review is ready.`
                     : challengeKind
@@ -790,14 +790,14 @@ export function KitHub({
               return (
                 <div key={stage.number} className="min-w-0">
                   <div className="mb-3 flex items-start gap-3">
-                    <span className="flex h-9 min-w-9 shrink-0 items-center justify-center rounded-full bg-primary px-3 text-xs font-bold text-primary-foreground">
+                    <span className="flex h-9 min-w-9 shrink-0 items-center justify-center rounded-full bg-primary px-3 type-secondary font-bold text-primary-foreground">
                       {stage.number}
                     </span>
                     <div>
                       <h3 className="font-semibold text-foreground">
                         {stage.title}
                       </h3>
-                      <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+                      <p className="mt-0.5 type-secondary leading-relaxed text-muted-foreground">
                         {stage.description}
                       </p>
                     </div>

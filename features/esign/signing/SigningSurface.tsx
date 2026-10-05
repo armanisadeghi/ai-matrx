@@ -19,7 +19,7 @@
 // Every refusal comes back as a reason code and is shown as one short sentence.
 
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
-import { ArrowRight, Check, Download, FileText, Loader2, PenLine, ShieldCheck, XCircle } from "lucide-react";
+import { ArrowRight, Check, Download, FileText, PenLine, ShieldCheck, XCircle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -46,6 +46,7 @@ import {
   SigningRefusal,
 } from "./signingService";
 
+import { Spinner } from "@/components/ui/loaders/Spinner";
 // THE platform PDF viewer (pdf.js): it draws pages on a canvas, so a document never runs script on
 // our origin, and it renders on Android, whose Chrome shows nothing for a PDF in an iframe.
 const PdfDocumentRenderer = lazy(() => import("@/features/pdf/components/viewer/PdfDocumentRenderer"));
@@ -548,8 +549,8 @@ export function SigningSurface({
   if (phase.kind === "loading") {
     return (
       <Shell>
-        <div className="flex flex-1 items-center justify-center gap-2 text-sm text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" /> Opening your document
+        <div className="flex flex-1 items-center justify-center gap-2 type-body text-muted-foreground">
+          <Spinner size="xs" className="text-current" /> Opening your document
         </div>
       </Shell>
     );
@@ -591,7 +592,7 @@ export function SigningSurface({
     <Shell>
       <header className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
         <div className="min-w-0">
-          {sender && <div className="truncate text-xs text-muted-foreground">{sender}</div>}
+          {sender && <div className="truncate type-secondary text-muted-foreground">{sender}</div>}
           <h1 className="truncate text-base font-semibold text-foreground">{title}</h1>
         </div>
         {step !== "done" && (
@@ -650,7 +651,7 @@ export function SigningSurface({
         </section>
 
         <aside className="flex w-full shrink-0 flex-col gap-4 border-t border-border p-4 pb-safe lg:w-96 lg:border-l lg:border-t-0">
-          {message && step !== "done" && <p className="text-sm text-muted-foreground">{message}</p>}
+          {message && step !== "done" && <p className="type-body text-muted-foreground">{message}</p>}
 
           {step === "review" && (
             <>
@@ -664,10 +665,10 @@ export function SigningSurface({
           {step === "consent" && (
             <>
               <StepTitle icon={ShieldCheck} label={text(consent, "title") ?? "Agree to sign electronically"} />
-              <div className="max-h-72 overflow-y-auto whitespace-pre-wrap rounded-md border border-border bg-card p-3 text-sm text-foreground">
+              <div className="max-h-72 overflow-y-auto whitespace-pre-wrap rounded-md border border-border bg-card p-3 type-body text-foreground">
                 {text(consent, "text") ?? ""}
               </div>
-              <Button icon={busy === "consent" && <Loader2 className="animate-spin" />} variant="primary" disabled={!disclosureId || busy !== null} onClick={() => disclosureId && void agree(disclosureId)}>I agree
+              <Button icon={busy === "consent" && <Spinner size="xs" className="text-current" />} variant="primary" disabled={!disclosureId || busy !== null} onClick={() => disclosureId && void agree(disclosureId)}>I agree
               </Button>
             </>
           )}
@@ -687,7 +688,7 @@ export function SigningSurface({
                 disabled={busy !== null}
               />
               <Button
-                icon={busy === "sign" && <Loader2 className="animate-spin" />}
+                icon={busy === "sign" && <Spinner size="xs" className="text-current" />}
                 variant="primary"
                 disabled={busy !== null || !typedName.trim() || (mark === "drawn" && !drawing)}
                 onClick={() => void sign()}
@@ -700,7 +701,7 @@ export function SigningSurface({
             <>
               <div className="flex items-center justify-between gap-2">
                 <StepTitle icon={PenLine} label="Sign" />
-                <span className="text-xs text-muted-foreground">
+                <span className="type-secondary text-muted-foreground">
                   {visited.size} of {myFields.length} fields
                 </span>
               </div>
@@ -732,7 +733,7 @@ export function SigningSurface({
                 </Button>
               )}
               <Button
-                icon={busy === "sign" && <Loader2 className="animate-spin" />}
+                icon={busy === "sign" && <Spinner size="xs" className="text-current" />}
                 variant={adopted && !guide ? "primary" : "outline"}
                 disabled={busy !== null || !adopted}
                 onClick={() => void sign()}
@@ -751,7 +752,7 @@ export function SigningSurface({
             />
           )}
 
-          {notice && <p className="text-sm text-destructive">{notice}</p>}
+          {notice && <p className="type-body text-destructive">{notice}</p>}
         </aside>
       </div>
 
@@ -772,7 +773,7 @@ export function SigningSurface({
             canDraw={canDraw}
             disabled={busy !== null}
           />
-          {notice && adoptOpen && <p className="text-sm text-destructive">{notice}</p>}
+          {notice && adoptOpen && <p className="type-body text-destructive">{notice}</p>}
           <DialogFooter>
             <Button variant="quiet" onClick={() => setAdoptOpen(false)}>
               Cancel
@@ -799,7 +800,7 @@ export function SigningSurface({
             <Button variant="quiet" disabled={busy === "decline"} onClick={() => setDeclineOpen(false)}>
               Cancel
             </Button>
-            <Button icon={busy === "decline" && <Loader2 className="animate-spin" />} variant="danger" disabled={!declineReason.trim() || busy === "decline"} onClick={() => void decline()}>Decline
+            <Button icon={busy === "decline" && <Spinner size="xs" className="text-current" />} variant="danger" disabled={!declineReason.trim() || busy === "decline"} onClick={() => void decline()}>Decline
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -814,7 +815,7 @@ function Shell({ children }: { children: React.ReactNode }) {
 
 function StepTitle({ icon: Icon, label }: { icon: typeof FileText; label: string }) {
   return (
-    <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+    <div className="flex items-center gap-2 type-title text-foreground">
       <Icon className="h-4 w-4" />
       {label}
     </div>
@@ -836,15 +837,15 @@ function DocumentFrame({
   renderFields: (pageNumber: number, rotation: number) => React.ReactNode;
 }) {
   if (doc.failed) {
-    return <p className="m-auto px-6 text-center text-sm text-muted-foreground">{doc.failed}</p>;
+    return <p className="m-auto px-6 text-center type-body text-muted-foreground">{doc.failed}</p>;
   }
   if (!doc.url) {
-    return <Loader2 className="m-auto h-5 w-5 animate-spin text-muted-foreground" />;
+    return <Spinner size="sm" className="m-auto text-muted-foreground" />;
   }
   const kind = displayKind(doc.mimeType);
   if (kind === "pdf") {
     return (
-      <Suspense fallback={<Loader2 className="m-auto h-5 w-5 animate-spin text-muted-foreground" />}>
+      <Suspense fallback={<Spinner size="sm" className="m-auto text-muted-foreground" />}>
         <PdfDocumentRenderer
           // The bytes, not just the document: swapping in the signed copy must reload the viewer.
           key={`${doc.id}:${doc.url}`}

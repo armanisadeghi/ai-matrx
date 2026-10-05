@@ -38,12 +38,12 @@ export function SignedDone({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col items-center gap-2 rounded-lg border border-border bg-card px-4 py-5 text-center">
-        <CheckCircle2 className="h-9 w-9 text-green-600 dark:text-green-500" />
+        <CheckCircle2 className="h-9 w-9 text-success" />
         <div className="text-base font-semibold text-foreground">You signed {title}</div>
-        <div className="text-sm text-muted-foreground">
+        <div className="type-body text-muted-foreground">
           {everyoneSigned ? "Everyone has signed." : "We will email you when everyone has signed."}
         </div>
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <div className="flex items-center gap-1.5 type-secondary text-muted-foreground">
           <ShieldCheck className="h-3.5 w-3.5" />
           Recorded {when.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
         </div>
@@ -52,16 +52,16 @@ export function SignedDone({
       {everyoneSigned ? (
         <SignedCopy door={door} />
       ) : (
-        <p className="text-sm text-muted-foreground">Your signed copy arrives by email when it is complete.</p>
+        <p className="type-body text-muted-foreground">Your signed copy arrives by email when it is complete.</p>
       )}
 
       {outsider ? (
         <div className="flex flex-col gap-2 rounded-lg border border-border bg-card px-4 py-4">
-          <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+          <div className="flex items-center gap-2 type-title text-foreground">
             <FileSignature className="h-4 w-4" />
             Keep your signed documents
           </div>
-          <p className="text-sm text-muted-foreground">Free AI Matrx account. Send your own for signature too.</p>
+          <p className="type-body text-muted-foreground">Free AI Matrx account. Send your own for signature too.</p>
           <Button variant="primary" asChild>
             <Link href={withSignerHint(signUpHref("/esign"), signupHint)}>Create free account</Link>
           </Button>

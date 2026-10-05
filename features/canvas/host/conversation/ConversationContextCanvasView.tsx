@@ -57,7 +57,7 @@ export default function ConversationContextCanvasView({ data, item, canvas, pres
   if (!loaded) {
     if (failed) {
       return (
-        <div className="p-4 text-sm text-muted-foreground" data-values-tab-state="unavailable">
+        <div className="p-4 type-body text-muted-foreground" data-values-tab-state="unavailable">
           This chat could not be opened.
         </div>
       );

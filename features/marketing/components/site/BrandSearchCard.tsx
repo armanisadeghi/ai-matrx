@@ -122,14 +122,14 @@ export function BrandSearchCard({
       copy={copy}
       headerExtra={
         capture ? (
-          <span className="text-[11px] text-muted-foreground">
+          <span className="type-meta text-muted-foreground">
             {formatDate(capture.captured_at)}
           </span>
         ) : null
       }
     >
       {!capture ? (
-        <p className="px-3 py-4 text-sm text-muted-foreground">
+        <p className="px-3 py-4 type-body text-muted-foreground">
           Not searched yet. Runs with site setup.
         </p>
       ) : (
@@ -146,30 +146,30 @@ export function BrandSearchCard({
                     className={
                       signal.severity === "high"
                         ? "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-destructive/10 text-destructive"
-                        : "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                        : "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-warning/10 text-warning"
                     }
                   >
                     <AlertTriangle className="h-3 w-3" />
                   </span>
-                  <span className="min-w-0 flex-1 text-sm text-foreground">
+                  <span className="min-w-0 flex-1 type-body text-foreground">
                     {signal.statement}
                   </span>
                 </li>
               ))}
             </ul>
           ) : received ? (
-            <div className="flex items-center gap-2.5 px-3 py-3 text-sm text-muted-foreground">
-              <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+            <div className="flex items-center gap-2.5 px-3 py-3 type-body text-muted-foreground">
+              <CheckCircle2 className="h-4 w-4 text-success" />
               No issues in these searches.
             </div>
           ) : (
-            <p className="px-3 py-3 text-sm text-muted-foreground">
+            <p className="px-3 py-3 type-body text-muted-foreground">
               No search results were received.
             </p>
           )}
 
           <div className="overflow-x-auto px-3 py-2">
-            <table className="w-full text-xs">
+            <table className="w-full type-secondary">
               <thead>
                 <tr className="text-left text-muted-foreground">
                   <th className="py-1 pr-3 font-medium">Search</th>
@@ -213,7 +213,7 @@ export function BrandSearchCard({
 
           {capture.profiles.length ? (
             <div className="px-3 py-2">
-              <p className="mb-1 text-[11px] font-medium text-muted-foreground">
+              <p className="mb-1 type-meta font-medium text-muted-foreground">
                 Listings in these results
               </p>
               <ul className="flex flex-wrap gap-x-3 gap-y-1">
@@ -223,7 +223,7 @@ export function BrandSearchCard({
                       href={url}
                       target="_blank"
                       rel="noreferrer"
-                      className="block max-w-[18rem] truncate text-xs text-foreground hover:text-primary"
+                      className="block max-w-[18rem] truncate type-secondary text-foreground hover:text-primary"
                     >
                       {url.replace(/^https?:\/\/(www\.)?/, "")}
                     </a>

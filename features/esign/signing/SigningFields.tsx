@@ -155,7 +155,7 @@ function MyField({
     >
       {/* An empty field already says what to do; a filled one the guide points at says "Next". */}
       {active && pressable && filled && (
-        <span className="pointer-events-none absolute right-full top-1/2 mr-1.5 -translate-y-1/2 whitespace-nowrap rounded-sm bg-primary px-1.5 py-0.5 text-[11px] font-medium leading-none text-primary-foreground shadow-sm">
+        <span className="pointer-events-none absolute right-full top-1/2 mr-1.5 -translate-y-1/2 whitespace-nowrap rounded-sm bg-primary px-1.5 py-0.5 type-meta font-medium leading-none text-primary-foreground shadow-sm">
           Next
         </span>
       )}

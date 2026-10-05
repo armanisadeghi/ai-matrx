@@ -181,7 +181,7 @@ function moneyText(n: number): string {
 }
 
 function Chip({ color, children }: { color?: string; children: ReactNode }) {
-  return <span className={cn("inline-flex max-w-full truncate rounded px-1.5 py-0.5 text-[11px] font-medium", CHIP[color ?? "gray"] ?? CHIP.gray)}>{children}</span>;
+  return <span className={cn("inline-flex max-w-full truncate rounded px-1.5 py-0.5 type-meta font-medium", CHIP[color ?? "gray"] ?? CHIP.gray)}>{children}</span>;
 }
 
 export function ValueText({ field, value, names }: { field: ShowField | undefined; value: unknown; names: Names }): ReactNode {
@@ -260,8 +260,8 @@ function Frame({ title, meta, children, attr }: { title: string; meta?: string; 
   return (
     <section className="flex min-w-0 flex-col gap-2" {...(attr ? { [attr]: "" } : {})}>
       <div className="flex min-w-0 items-baseline gap-2">
-        <h3 className="truncate text-sm font-semibold text-foreground">{title}</h3>
-        {meta ? <span className="shrink-0 text-xs text-muted-foreground">{meta}</span> : null}
+        <h3 className="truncate type-title text-foreground">{title}</h3>
+        {meta ? <span className="shrink-0 type-secondary text-muted-foreground">{meta}</span> : null}
       </div>
       <div className="min-w-0 overflow-hidden rounded-xl border border-border bg-card shadow-sm">{children}</div>
     </section>
@@ -273,7 +273,7 @@ export function GridShow({ table, view, names, limit = 12 }: { table: ShowTable;
   const rows = viewRows(table, view);
   return (
     <div className="overflow-x-auto" data-template-show="grid">
-      <table className="w-full min-w-[36rem] border-collapse text-left text-xs">
+      <table className="w-full min-w-[36rem] border-collapse text-left type-secondary">
         <thead className="bg-muted/50 text-muted-foreground">
           <tr>
             {fields.map((f) => (
@@ -295,7 +295,7 @@ export function GridShow({ table, view, names, limit = 12 }: { table: ShowTable;
           ))}
         </tbody>
       </table>
-      {rows.length > limit ? <p className="border-t border-border px-3 py-1.5 text-[11px] text-muted-foreground">{rows.length - limit} more rows</p> : null}
+      {rows.length > limit ? <p className="border-t border-border px-3 py-1.5 type-meta text-muted-foreground">{rows.length - limit} more rows</p> : null}
     </div>
   );
 }
@@ -309,9 +309,9 @@ function cardFields(table: ShowTable, skip: Array<string | undefined>): ShowFiel
 function RecordCard({ table, row, names, skip = [] }: { table: ShowTable; row: ShowRow; names: Names; skip?: Array<string | undefined> }) {
   return (
     <div className="flex min-w-0 flex-col gap-1 rounded-lg border border-border bg-background p-2 shadow-sm">
-      <span className="truncate text-xs font-medium text-foreground">{titleOf(table, row)}</span>
+      <span className="truncate type-secondary font-medium text-foreground">{titleOf(table, row)}</span>
       {cardFields(table, skip).map((f) => (
-        <span key={f.key} className="truncate text-[11px] text-muted-foreground">
+        <span key={f.key} className="truncate type-meta text-muted-foreground">
           <ValueText field={f} value={row.values[f.key]} names={names} />
         </span>
       ))}
@@ -331,12 +331,12 @@ export function KanbanShow({ table, view, names }: { table: ShowTable; view: Sho
           <div key={lane} className="flex w-56 shrink-0 flex-col gap-1.5 rounded-lg bg-muted/40 p-1.5">
             <div className="flex items-center justify-between gap-2 px-1">
               <Chip color={field?.choiceColors?.[lane]}>{lane || "None"}</Chip>
-              <span className="text-[11px] tabular-nums text-muted-foreground">{inLane.length}</span>
+              <span className="type-meta tabular-nums text-muted-foreground">{inLane.length}</span>
             </div>
             {inLane.slice(0, 5).map((r) => (
               <RecordCard key={r.key} table={table} row={r} names={names} skip={[view.groupBy]} />
             ))}
-            {inLane.length > 5 ? <span className="px-1 text-[11px] text-muted-foreground">{inLane.length - 5} more</span> : null}
+            {inLane.length > 5 ? <span className="px-1 type-meta text-muted-foreground">{inLane.length - 5} more</span> : null}
           </div>
         );
       })}
@@ -363,10 +363,10 @@ export function CalendarShow({ table, view, today }: { table: ShowTable; view: S
   while (cells.length % 7) cells.push(null);
   return (
     <div data-template-show="calendar">
-      <div className="border-b border-border px-3 py-1.5 text-xs font-medium text-foreground">
+      <div className="border-b border-border px-3 py-1.5 type-secondary font-medium text-foreground">
         {first.toLocaleDateString("en-US", { month: "long", year: "numeric", timeZone: "UTC" })}
       </div>
-      <div className="grid grid-cols-7 text-[11px]">
+      <div className="grid grid-cols-7 type-meta">
         {WEEKDAYS.map((w) => (
           <div key={w} className="border-b border-border px-1.5 py-1 text-muted-foreground">
             {w}
@@ -409,14 +409,14 @@ export function TimelineShow({ table, view }: { table: ShowTable; view: ShowView
     .filter((b): b is { row: ShowRow; start: number; end: number } => b !== null)
     .sort((a, b) => a.start - b.start)
     .slice(0, 14);
-  if (!bars.length) return <p className="p-3 text-xs text-muted-foreground">No dated rows</p>;
+  if (!bars.length) return <p className="p-3 type-secondary text-muted-foreground">No dated rows</p>;
   const lo = Math.min(...bars.map((b) => b.start));
   const hi = Math.max(...bars.map((b) => b.end));
   const span = Math.max(hi - lo, DAY_MS);
   const group = table.fields.find((f) => f.key === view.groupBy);
   return (
     <div className="flex flex-col gap-1 p-3" data-template-show="timeline">
-      <div className="flex justify-between text-[11px] text-muted-foreground">
+      <div className="flex justify-between type-meta text-muted-foreground">
         <span>{dateText(new Date(lo).toISOString().slice(0, 10))}</span>
         <span>{dateText(new Date(hi - DAY_MS).toISOString().slice(0, 10))}</span>
       </div>
@@ -425,7 +425,7 @@ export function TimelineShow({ table, view }: { table: ShowTable; view: ShowView
         const color = (group?.choiceColors?.[g] && BAR[group.choiceColors[g]]) || BAR_CYCLE[i % BAR_CYCLE.length];
         return (
           <div key={b.row.key} className="flex min-w-0 items-center gap-2">
-            <span className="w-40 shrink-0 truncate text-[11px] text-foreground">{titleOf(table, b.row)}</span>
+            <span className="w-40 shrink-0 truncate type-meta text-foreground">{titleOf(table, b.row)}</span>
             <div className="relative h-4 min-w-0 flex-1 rounded bg-muted/50">
               <span
                 className={cn("absolute top-0 h-4 rounded", color)}
@@ -450,9 +450,9 @@ export function GalleryShow({ table, view, names }: { table: ShowTable; view: Sh
               {titleOf(table, r).slice(0, 1)}
             </div>
             <div className="flex min-w-0 flex-col gap-0.5 p-2">
-              <span className="truncate text-xs font-medium">{titleOf(table, r)}</span>
+              <span className="truncate type-secondary font-medium">{titleOf(table, r)}</span>
               {cardFields(table, []).map((f) => (
-                <span key={f.key} className="truncate text-[11px] text-muted-foreground">
+                <span key={f.key} className="truncate type-meta text-muted-foreground">
                   <ValueText field={f} value={r.values[f.key]} names={names} />
                 </span>
               ))}
@@ -524,7 +524,7 @@ export function TemplateShowcase({ spec, today }: { spec: ShowSpec; today: strin
           </h2>
           {spec.tables.map((t) => (
             <Frame key={t.token} title={t.name} meta={`${t.rows?.length ?? 0} sample rows · ${t.fields.length} columns`} attr="data-template-table">
-              {t.describes ? <p className="border-b border-border px-3 py-2 text-xs text-muted-foreground">{t.describes}</p> : null}
+              {t.describes ? <p className="border-b border-border px-3 py-2 type-secondary text-muted-foreground">{t.describes}</p> : null}
               <GridShow table={t} view={(spec.views ?? []).find((v) => v.table === t.token && v.kind === "grid") ?? null} names={names} />
             </Frame>
           ))}
@@ -540,9 +540,9 @@ export function TemplateShowcase({ spec, today }: { spec: ShowSpec; today: strin
           <ul className="grid gap-2 sm:grid-cols-2">
             {rest.map((e) => (
               <li key={e.token} className="flex min-w-0 flex-col gap-0.5 rounded-lg border border-border bg-card px-3 py-2">
-                <span className="truncate text-sm font-medium">{e.name ?? e.title ?? e.token}</span>
-                <span className="text-[11px] text-muted-foreground">{EXTRA_WORD[e.kind]}</span>
-                {e.describes ? <span className="line-clamp-2 text-xs text-muted-foreground">{e.describes}</span> : null}
+                <span className="truncate type-title">{e.name ?? e.title ?? e.token}</span>
+                <span className="type-meta text-muted-foreground">{EXTRA_WORD[e.kind]}</span>
+                {e.describes ? <span className="line-clamp-2 type-secondary text-muted-foreground">{e.describes}</span> : null}
               </li>
             ))}
           </ul>
@@ -559,10 +559,10 @@ export function TemplateThumb({ thumb }: { thumb: GalleryThumb | null | undefine
   return (
     <div className="pointer-events-none overflow-hidden rounded-md border border-border bg-background" aria-hidden="true" data-template-thumb="">
       <div className="flex items-center justify-between gap-2 border-b border-border bg-muted/50 px-2 py-1">
-        <span className="truncate text-[10px] font-medium text-foreground">{thumb.table}</span>
-        {thumb.view ? <span className="shrink-0 text-[10px] text-muted-foreground">{VIEW_WORD[thumb.view] ?? thumb.view}</span> : null}
+        <span className="truncate type-meta font-medium text-foreground">{thumb.table}</span>
+        {thumb.view ? <span className="shrink-0 type-meta text-muted-foreground">{VIEW_WORD[thumb.view] ?? thumb.view}</span> : null}
       </div>
-      <table className="w-full table-fixed text-[10px]">
+      <table className="w-full table-fixed type-meta">
         <tbody>
           {thumb.rows.map((r, i) => (
             <tr key={i} className="border-b border-border/50 last:border-0">

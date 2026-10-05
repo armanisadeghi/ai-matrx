@@ -319,12 +319,12 @@ function BusinessProfileReviewBodyInner({
       className="rounded-xl border border-border bg-card p-4 shadow-sm space-y-3"
     >
       <div className="flex flex-wrap items-center gap-2">
-        <h2 className="text-sm font-semibold text-foreground">
+        <h2 className="type-title text-foreground">
           Business Profile reviews
         </h2>
-        <span className="text-xs text-muted-foreground">Read only</span>
+        <span className="type-secondary text-muted-foreground">Read only</span>
         <a
-          className="mt-2 inline-block text-sm text-primary hover:underline"
+          className="mt-2 inline-block type-body text-primary hover:underline"
           href="https://business.google.com/locations"
           target="_blank"
           rel="noopener noreferrer"
@@ -344,7 +344,7 @@ function BusinessProfileReviewBodyInner({
         requireExplicitSelection
       />
       {eligible.length === 0 ? (
-        <p className="rounded-md border border-border p-3 text-sm text-muted-foreground">
+        <p className="rounded-md border border-border p-3 type-body text-muted-foreground">
           No connected personal account has Business Profile access.
         </p>
       ) : null}
@@ -393,7 +393,7 @@ function BusinessProfileReviewBodyInner({
                 <span className="block font-medium">
                   {account.accountName ?? account.name}
                 </span>
-                <span className="block text-xs text-muted-foreground">
+                <span className="block type-secondary text-muted-foreground">
                   Source: {account.name}
                 </span>
               </Button>
@@ -434,7 +434,7 @@ function BusinessProfileReviewBodyInner({
                 <span className="block font-medium">
                   {location.title ?? location.name}
                 </span>
-                <span className="block text-xs text-muted-foreground">
+                <span className="block type-secondary text-muted-foreground">
                   Source: {location.name}
                 </span>
               </Button>
@@ -467,7 +467,7 @@ function BusinessProfileReviewBodyInner({
             reviews.reviews.map((review) => (
               <article
                 key={review.reviewId}
-                className="rounded-md border border-border p-3 text-sm"
+                className="rounded-md border border-border p-3 type-body"
               >
                 <p className="font-medium">
                   {review.starRating ?? "Rating unavailable"} ·{" "}
@@ -479,7 +479,7 @@ function BusinessProfileReviewBodyInner({
                 <p className="mt-1 whitespace-pre-wrap break-words">
                   {review.comment ?? "No comment"}
                 </p>
-                <p className="mt-1 text-xs text-muted-foreground">
+                <p className="mt-1 type-secondary text-muted-foreground">
                   {review.createTime ?? review.updateTime ?? "Date unavailable"}
                 </p>
                 {review.reviewReply ? (
@@ -488,7 +488,7 @@ function BusinessProfileReviewBodyInner({
                     <p className="whitespace-pre-wrap break-words">
                       {review.reviewReply.comment}
                     </p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="type-secondary text-muted-foreground">
                       {review.reviewReply.updateTime ??
                         "Reply date unavailable"}
                     </p>
@@ -505,7 +505,7 @@ function BusinessProfileReviewBodyInner({
   );
 }
 function Empty({ label }: { label: string }) {
-  return <p className="text-sm text-muted-foreground">{label}</p>;
+  return <p className="type-body text-muted-foreground">{label}</p>;
 }
 function Page({
   title,
@@ -523,8 +523,8 @@ function Page({
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-sm font-medium">{title}</p>
-        <span className="text-xs text-muted-foreground">
+        <p className="type-title">{title}</p>
+        <span className="type-secondary text-muted-foreground">
           {state === "incomplete" ? "More results available" : "End of results"}
         </span>
       </div>

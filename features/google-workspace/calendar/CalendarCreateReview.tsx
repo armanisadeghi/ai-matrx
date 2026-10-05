@@ -466,14 +466,14 @@ export function CalendarCreateReview({
   return (
     <section className="space-y-3 rounded-md border border-border p-3" aria-label="Create Google Calendar event">
       <div>
-        <p className="text-sm font-medium">Create an event</p>
-        <p className="text-xs text-muted-foreground">{accountLabel} · {calendar.summary}</p>
+        <p className="type-title">Create an event</p>
+        <p className="type-secondary text-muted-foreground">{accountLabel} · {calendar.summary}</p>
       </div>
-      {warning ? <p className="text-xs text-amber-700 dark:text-amber-300">{warning}</p> : null}
-      {error ? <p role="alert" className="text-xs text-destructive">{error}<ErrorAlchemyMenu error={error} /></p> : null}
-      {!canCreateHere ? <p className="text-xs text-muted-foreground">Choose a calendar that allows event changes.</p> : null}
+      {warning ? <p className="type-secondary text-warning">{warning}</p> : null}
+      {error ? <p role="alert" className="type-secondary text-destructive">{error}<ErrorAlchemyMenu error={error} /></p> : null}
+      {!canCreateHere ? <p className="type-secondary text-muted-foreground">Choose a calendar that allows event changes.</p> : null}
       {saved ? (
-        <div className="space-y-2 text-xs" data-calendar-create-recovery>
+        <div className="space-y-2 type-secondary" data-calendar-create-recovery>
           <p className="font-medium text-foreground">{saved.request.summary}</p>
           <p>{saved.request.starts_at} – {saved.request.ends_at}</p>
           <p>{saved.time_zone} · Notifications: {saved.request.send_updates}</p>
@@ -483,7 +483,7 @@ export function CalendarCreateReview({
             Event ID
             <Input mono readOnly value={saved.request.event_id} />
           </label>
-          {!scopeMatches ? <p className="text-amber-700 dark:text-amber-300">This saved action belongs to its original account, organization, and calendar.</p> : null}
+          {!scopeMatches ? <p className="text-warning">This saved action belongs to its original account, organization, and calendar.</p> : null}
           {saved.intent ? <p>Review expires: {saved.intent.expires_at}</p> : null}
           {saved.intent ? (
             <div className="space-y-1 rounded-md border border-border bg-muted/20 p-2">
@@ -511,10 +511,10 @@ export function CalendarCreateReview({
             <Button type="button" variant="outline" onClick={() => requireFreshReview("This event review expired. Review it again before creating.")}>Prepare fresh review</Button>
           ) : null}
           {["attempting", "uncertain", "reconciliation_required"].includes(saved.phase) ? (
-            <div className="space-y-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-2">
+            <div className="space-y-2 rounded-md border border-warning/40 bg-warning/10 p-2">
               {saved.problem ? <p>{saved.problem}<ErrorAlchemyMenu error={saved.problem} /></p> : null}
               {sourceMismatch && scopeMatches ? (
-                <div className="space-y-1 rounded-md border border-amber-500/40 bg-background/70 p-2" aria-label="Source differences">
+                <div className="space-y-1 rounded-md border border-warning/40 bg-background/70 p-2" aria-label="Source differences">
                   <p className="font-medium text-foreground">Returned source differences</p>
                   {sourceDifferences.length > 0 ? sourceDifferences.map((difference) => (
                     <div key={difference.label} className="grid gap-1 sm:grid-cols-[8rem_1fr]">
@@ -533,7 +533,7 @@ export function CalendarCreateReview({
             </div>
           ) : null}
           {saved.phase === "source_verified" && verifiedSource ? (
-            <div className="space-y-2 rounded-md border border-emerald-500/40 bg-emerald-500/10 p-2">
+            <div className="space-y-2 rounded-md border border-success/40 bg-success/10 p-2">
               <p className="font-medium text-foreground">Matching Google source verified</p>
               <p>{verifiedSource.title}</p>
               <p>{verifiedSource.startsAt} – {verifiedSource.endsAt}</p>

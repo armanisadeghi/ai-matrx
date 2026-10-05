@@ -261,17 +261,17 @@ export function GoogleTasksWriteControls({
   return (
     <section className="space-y-4 border-t border-border p-4" aria-label="Write to Google Tasks">
       <div>
-        <p className="text-sm font-medium">Google Tasks changes</p>
-        <p className="text-xs text-muted-foreground">{accountLabel} · {taskListTitle}</p>
+        <p className="type-title">Google Tasks changes</p>
+        <p className="type-secondary text-muted-foreground">{accountLabel} · {taskListTitle}</p>
       </div>
 
-      {createWarning ? <p className="text-xs text-amber-700 dark:text-amber-300">{createWarning}</p> : null}
-      {error ? <p role="alert" className="text-xs text-destructive">{error}<ErrorAlchemyMenu error={error} /></p> : null}
+      {createWarning ? <p className="type-secondary text-warning">{createWarning}</p> : null}
+      {error ? <p role="alert" className="type-secondary text-destructive">{error}<ErrorAlchemyMenu error={error} /></p> : null}
 
       <div className="space-y-2 rounded-md border border-border p-3">
-        <p className="text-sm font-medium">Create a task</p>
+        <p className="type-title">Create a task</p>
         {createRecovery ? (
-          <div className="space-y-2 text-xs">
+          <div className="space-y-2 type-secondary">
             <p>Title: {createRecovery.request.title}</p>
             {createRecovery.request.notes ? <p>Notes: {createRecovery.request.notes}</p> : null}
             {createRecovery.request.due ? <p>Due: {createRecovery.request.due.slice(0, 10)}</p> : null}
@@ -303,7 +303,7 @@ export function GoogleTasksWriteControls({
           </div>
         )}
         {createResult ? (
-          <div className="space-y-2 text-xs">
+          <div className="space-y-2 type-secondary">
             <p>Google confirmed task ID: <code>{createResult.remote_task_id}</code></p>
             <Button variant="outline" onClick={refreshSource}>Refresh source</Button>
           </div>
@@ -311,13 +311,13 @@ export function GoogleTasksWriteControls({
       </div>
 
       <div className="space-y-2 rounded-md border border-border p-3">
-        <p className="text-sm font-medium">Change selected task status</p>
-        {!selectedTask ? <p className="text-xs text-muted-foreground">Select one task to review a status change.</p> : null}
+        <p className="type-title">Change selected task status</p>
+        {!selectedTask ? <p className="type-secondary text-muted-foreground">Select one task to review a status change.</p> : null}
         {selectedTask && !selectedKnownStatus ? (
-          <div className="space-y-2 text-xs"><p>This task has an unknown Google status.</p><Button variant="outline" onClick={refreshSource}>Refresh source</Button></div>
+          <div className="space-y-2 type-secondary"><p>This task has an unknown Google status.</p><Button variant="outline" onClick={refreshSource}>Refresh source</Button></div>
         ) : null}
         {selectedTask && selectedKnownStatus && !statusPreview && !statusResult ? (
-          <div className="flex flex-wrap items-center gap-2 text-xs">
+          <div className="flex flex-wrap items-center gap-2 type-secondary">
             <span>{selectedTask.title} · {statusLabel(selectedTask.status as "completed" | "needsAction")}</span>
             <Button variant="outline" disabled={busy !== null} onClick={() => void reviewStatus(selectedTask.status === "completed" ? "needsAction" : "completed")}>
               Preview {selectedTask.status === "completed" ? "reopen" : "complete"}
@@ -325,20 +325,20 @@ export function GoogleTasksWriteControls({
           </div>
         ) : null}
         {statusPreview ? (
-          <div className="space-y-2 text-xs">
+          <div className="space-y-2 type-secondary">
             <p>{statusPreview.title}: {statusLabel(statusPreview.current_status)} → {statusLabel(statusPreview.desired_status)}</p>
             <p>Fresh review receipt ready.</p>
             <Button variant="primary" disabled={busy !== null} onClick={() => void applyStatus()}>Apply reviewed status</Button>
           </div>
         ) : null}
         {statusResult ? (
-          <div className="space-y-2 text-xs">
+          <div className="space-y-2 type-secondary">
             <p>Google verified {statusResult.title} as {statusLabel(statusResult.desired_status)}.</p>
             <Button variant="outline" onClick={refreshSource}>Refresh source</Button>
           </div>
         ) : null}
       </div>
-      <p className="text-[11px] text-muted-foreground">Create recovery lasts only while this tab stays open.</p>
+      <p className="type-meta text-muted-foreground">Create recovery lasts only while this tab stays open.</p>
     </section>
   );
 }

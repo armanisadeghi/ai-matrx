@@ -146,7 +146,7 @@ function Step({
       <span
         aria-hidden
         className={cn(
-          "mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold",
+          "mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full type-secondary font-semibold",
           done ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
         )}
       >
@@ -154,11 +154,11 @@ function Step({
       </span>
       <div className="flex min-w-0 flex-1 flex-col gap-3">
         <div className="flex flex-col">
-          <h2 className="m-0 text-sm font-medium text-foreground">
+          <h2 className="m-0 type-title text-foreground">
             {title}
             {done ? <span className="sr-only"> (done)</span> : null}
           </h2>
-          {hint ? <span className="text-xs text-muted-foreground">{hint}</span> : null}
+          {hint ? <span className="type-secondary text-muted-foreground">{hint}</span> : null}
         </div>
         {children}
       </div>
@@ -174,8 +174,8 @@ const CONNECTOR_NAME = "AI Matrx";
 function ConnectorField({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center gap-3 px-3 py-2">
-      <dt className="w-28 shrink-0 text-xs text-muted-foreground">{label}</dt>
-      <dd className="m-0 min-w-0 flex-1 truncate font-mono text-xs text-foreground" title={value}>
+      <dt className="w-28 shrink-0 type-secondary text-muted-foreground">{label}</dt>
+      <dd className="m-0 min-w-0 flex-1 truncate font-mono type-secondary text-foreground" title={value}>
         {value}
       </dd>
       <CopyAction text={value} label="Copy" variant="outline" />
@@ -310,9 +310,9 @@ export function BringYourWorkPage() {
                     {move.mark}
                   </span>
                   <div className="flex min-w-0 flex-1 flex-col">
-                    <span className="truncate text-sm font-medium text-foreground">{move.label}</span>
+                    <span className="truncate type-title text-foreground">{move.label}</span>
                     {move.app ? (
-                      <span className="text-xs text-muted-foreground">Connect {move.app} in your AI too</span>
+                      <span className="type-secondary text-muted-foreground">Connect {move.app} in your AI too</span>
                     ) : null}
                   </div>
                 </div>
@@ -328,7 +328,7 @@ export function BringYourWorkPage() {
                   </Button>
                 </div>
                 {open ? (
-                  <p className="m-0 rounded-md bg-muted/50 px-3 py-2 text-xs text-muted-foreground">{move.text}</p>
+                  <p className="m-0 rounded-md bg-muted/50 px-3 py-2 type-secondary text-muted-foreground">{move.text}</p>
                 ) : null}
               </div>
             );

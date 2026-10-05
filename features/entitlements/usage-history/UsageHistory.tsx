@@ -96,22 +96,22 @@ export function UsageHistory() {
         </Button>
       </div>
 
-      {loading ? <p className="py-6 text-sm text-muted-foreground">Loading usage history…</p> : null}
+      {loading ? <p className="py-6 type-body text-muted-foreground">Loading usage history…</p> : null}
       {error ? (
-        <div className="py-6 text-sm text-muted-foreground">
+        <div className="py-6 type-body text-muted-foreground">
           <p>{error}</p>
           <Button className="mt-2" variant="outline" onClick={() => setRetry((value) => value + 1)}>Try again</Button>
         </div>
       ) : null}
-      {!loading && !error && result?.entries.length === 0 ? <p className="py-6 text-sm text-muted-foreground">No activity in this interval.</p> : null}
+      {!loading && !error && result?.entries.length === 0 ? <p className="py-6 type-body text-muted-foreground">No activity in this interval.</p> : null}
       {!loading && !error && result && result.entries.length > 0 ? (
         <>
           <div className="mt-3 divide-y divide-border rounded-md border border-border" role="table" aria-label="Usage history">
-            <div className="hidden grid-cols-[minmax(9rem,1.2fr)_minmax(8rem,1fr)_minmax(8rem,1fr)_minmax(6rem,.7fr)] gap-3 bg-muted/40 px-3 py-2 text-xs font-medium text-muted-foreground sm:grid" role="row">
+            <div className="hidden grid-cols-[minmax(9rem,1.2fr)_minmax(8rem,1fr)_minmax(8rem,1fr)_minmax(6rem,.7fr)] gap-3 bg-muted/40 px-3 py-2 type-secondary font-medium text-muted-foreground sm:grid" role="row">
               <span role="columnheader">Recorded</span><span role="columnheader">Activity</span><span role="columnheader">Points</span><span role="columnheader">Outcome</span>
             </div>
             {result.entries.map((entry) => (
-              <div key={entry.id} className="grid gap-1 px-3 py-3 text-sm sm:grid-cols-[minmax(9rem,1.2fr)_minmax(8rem,1fr)_minmax(8rem,1fr)_minmax(6rem,.7fr)] sm:gap-3" role="row">
+              <div key={entry.id} className="grid gap-1 px-3 py-3 type-body sm:grid-cols-[minmax(9rem,1.2fr)_minmax(8rem,1fr)_minmax(8rem,1fr)_minmax(6rem,.7fr)] sm:gap-3" role="row">
                 <span className="tabular-nums text-muted-foreground" role="cell">{timestamp(entry.createdAt)}</span>
                 <span role="cell">{entry.activity ?? "—"}</span>
                 <span className={`tabular-nums ${rowTone(entry)}`} role="cell">{amount(entry)}</span>
@@ -122,7 +122,7 @@ export function UsageHistory() {
           <div className="mt-3 flex items-center justify-between gap-3">
             <Button icon={<ChevronLeft aria-hidden />} variant="outline" disabled={pageIndex === 0} onClick={previousPage}> Previous
             </Button>
-            <span className="text-xs text-muted-foreground">Page {pageIndex + 1}</span>
+            <span className="type-secondary text-muted-foreground">Page {pageIndex + 1}</span>
             <Button iconEnd={<ChevronRight aria-hidden />} variant="outline" disabled={!result.nextCursor} onClick={nextPage}>
               Next
             </Button>

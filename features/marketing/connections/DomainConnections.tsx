@@ -202,7 +202,7 @@ export function DomainConnections() {
             <Link href="/vault">Open Vault</Link>
           </Button>
         </div>
-        <p className="text-sm text-muted-foreground">
+        <p className="type-body text-muted-foreground">
           API credential fields: {requiredFields[provider].join(", ")}
         </p>
         {vault.error || accounts.error ? (
@@ -270,7 +270,7 @@ export function DomainConnections() {
                 </Button>
               </div>
               {inventory?.warnings.map((warning) => (
-                <p key={warning} role="status" className="text-sm">
+                <p key={warning} role="status" className="type-body">
                   {warning}
                 </p>
               ))}
@@ -299,7 +299,7 @@ export function DomainConnections() {
                       })
                     }
                   />
-                  <div className="text-sm">
+                  <div className="type-body">
                     <p>{row.domain}</p>
                     {row.sources.map((source) => (
                       <p
@@ -374,18 +374,18 @@ export function DomainConnections() {
           />
         ) : null}
         {message ? (
-          <p role="status" className="text-sm">
+          <p role="status" className="type-body">
             {message}
           </p>
         ) : null}
         {report ? (
           <div className="space-y-2">
-            <p className="text-sm">
+            <p className="type-body">
               {report.canonical} ·{" "}
               {new Date(report.observed_at).toLocaleString()}
             </p>
             {report.variants.map((variant) => (
-              <div key={variant.url} className="text-sm border-t pt-2">
+              <div key={variant.url} className="type-body border-t pt-2">
                 <p>
                   {variant.url} · {variant.outcome} · {variant.reason}
                 </p>

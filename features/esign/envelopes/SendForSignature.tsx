@@ -15,7 +15,7 @@
 import { useState, useTransition } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, FileText, FolderOpen, Loader2, Send, Trash2, Upload } from "lucide-react";
+import { AlertTriangle, FileText, FolderOpen, Send, Trash2, Upload } from "lucide-react";
 
 import { Button, EmptyState, Field, SegmentedControl, Select, Textarea } from "@ai-matrx/design-system/controls";
 import PageHeader from "@/features/shell/components/header/PageHeader";
@@ -33,6 +33,7 @@ import { fieldsForSend, type PlacedField, type Recipient } from "./types";
 import { RecipientPicker } from "./send/RecipientPicker";
 import { FieldPlacementCanvas } from "./send/FieldPlacementCanvas";
 
+import { Spinner } from "@/components/ui/loaders/Spinner";
 // The picker window is heavy and opened on demand — kept out of this route's first bundle.
 const FilePickerWindow = dynamic(
   () => import("@/features/resource-manager/resource-picker/FilePickerWindow").then((m) => ({ default: m.FilePickerWindow })),
@@ -143,15 +144,15 @@ export function SendForSignature() {
     <>
       <PageHeader>
         <div className="flex min-w-0 flex-1 items-center gap-2">
-          <h1 className="truncate text-sm font-semibold text-foreground">Send for signature</h1>
+          <h1 className="truncate type-title text-foreground">Send for signature</h1>
           {organizationName && (
-            <span className="hidden truncate text-xs text-muted-foreground sm:inline">From {organizationName}</span>
+            <span className="hidden truncate type-secondary text-muted-foreground sm:inline">From {organizationName}</span>
           )}
           <Button
             variant="primary"
             className="ml-auto shrink-0"
             disabled={!ready || busy}
-            icon={busy ? <Loader2 className="animate-spin" /> : <Send />}
+            icon={busy ? <Spinner size="xs" className="text-current" /> : <Send />}
             onClick={() => void send()}
           >
             Send
@@ -164,12 +165,12 @@ export function SendForSignature() {
           <div className="flex flex-col lg:h-full lg:flex-row">
             <aside className="flex shrink-0 flex-col gap-5 border-border p-4 lg:w-[22rem] lg:overflow-y-auto lg:border-r">
               <section className="flex flex-col gap-2">
-                <h2 className="text-sm font-semibold text-foreground">Documents</h2>
+                <h2 className="type-title text-foreground">Documents</h2>
                 {documents.map((d) => (
                   <div key={d.fileId} className="flex items-center gap-2 rounded-md border border-border bg-card px-2 py-1.5">
                     <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
-                    <span className="min-w-0 flex-1 truncate text-sm">{d.name}</span>
-                    {d.size !== null && <span className="text-xs text-muted-foreground">{formatFileSize(d.size)}</span>}
+                    <span className="min-w-0 flex-1 truncate type-body">{d.name}</span>
+                    {d.size !== null && <span className="type-secondary text-muted-foreground">{formatFileSize(d.size)}</span>}
                     <Button variant="quiet" aria-label={`Remove ${d.name}`} icon={<Trash2 />} onClick={() => removeDocument(d.fileId)} />
                   </div>
                 ))}
@@ -183,7 +184,7 @@ export function SendForSignature() {
 
               <section className="flex flex-col gap-2">
                 <div className="flex items-center justify-between gap-2">
-                  <h2 className="text-sm font-semibold text-foreground">Signers</h2>
+                  <h2 className="type-title text-foreground">Signers</h2>
                   {recipients.length > 1 && (
                     <SegmentedControl
                       aria-label="Signing order"
@@ -205,7 +206,7 @@ export function SendForSignature() {
               </section>
 
               <section className="flex flex-col gap-2">
-                <h2 className="text-sm font-semibold text-foreground">Message</h2>
+                <h2 className="type-title text-foreground">Message</h2>
                 <Field
                   aria-label="Subject"
                   placeholder="Subject"
@@ -219,14 +220,14 @@ export function SendForSignature() {
                   onChange={(e) => setMessage(e.target.value)}
                 />
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs text-muted-foreground">Expires after</span>
+                  <span className="type-secondary text-muted-foreground">Expires after</span>
                   <Select aria-label="Expires after" value={expiry} options={EXPIRY_CHOICES} onValueChange={setExpiry} />
                 </div>
               </section>
 
               <div className="flex flex-col gap-2">
                 {documents.length > 0 && missingNames.length > 0 && (
-                  <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
+                  <p className="flex items-start gap-1.5 type-secondary text-muted-foreground">
                     <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0 text-warning" />
                     <span>
                       No signature box: {missingNames.join(", ")}
@@ -236,12 +237,12 @@ export function SendForSignature() {
                 <Button
                   variant="primary"
                   disabled={!ready || busy}
-                  icon={busy ? <Loader2 className="animate-spin" /> : <Send />}
+                  icon={busy ? <Spinner size="xs" className="text-current" /> : <Send />}
                   onClick={() => void send()}
                 >
                   Send
                 </Button>
-                {notice && <p className="text-sm text-destructive">{notice}</p>}
+                {notice && <p className="type-body text-destructive">{notice}</p>}
               </div>
             </aside>
 
@@ -268,7 +269,7 @@ export function SendForSignature() {
               {documents.length === 0 ? (
                 <div className="flex h-full items-center justify-center p-6">
                   <EmptyState
-                    icon={uploading ? <Loader2 className="animate-spin" /> : <Upload />}
+                    icon={uploading ? <Spinner size="xs" className="text-current" /> : <Upload />}
                     title="Add a PDF to sign"
                     line="Drop it here, upload, or choose from your files"
                     action={
@@ -315,7 +316,7 @@ function UploadButton({ uploading, onFiles, primary }: { uploading: boolean; onF
   return (
     <Button variant={primary ? "primary" : "outline"} asChild disabled={uploading}>
       <label>
-        {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+        {uploading ? <Spinner size="xs" className="text-current" /> : <Upload className="h-4 w-4" />}
         Upload PDF
         <input
           type="file"

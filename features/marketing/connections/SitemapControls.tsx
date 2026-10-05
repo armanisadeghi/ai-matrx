@@ -73,7 +73,7 @@ export function SitemapControls({
           Refresh sitemaps
         </Button>
         {receipt ? (
-          <p className="text-sm break-all">
+          <p className="type-body break-all">
             {receipt.property} ·{" "}
             {receipt.account_name ?? "Connected Google account"}
           </p>
@@ -90,12 +90,12 @@ export function SitemapControls({
           />
         ) : null}
         {message ? (
-          <p role="status" className="text-sm">
+          <p role="status" className="type-body">
             {message}
           </p>
         ) : null}
         {receipt?.write_reason ? (
-          <p className="text-sm text-muted-foreground">
+          <p className="type-body text-muted-foreground">
             {receipt.write_reason}
           </p>
         ) : null}
@@ -118,14 +118,14 @@ export function SitemapControls({
         {!isError &&
         receipt?.sitemaps.length === 0 &&
         receipt.state === "listed" ? (
-          <p className="text-sm text-muted-foreground">No submitted sitemaps</p>
+          <p className="type-body text-muted-foreground">No submitted sitemaps</p>
         ) : null}
         {receipt?.sitemaps.map((sitemap) => (
           <div
             key={sitemap.path}
             className="flex items-center justify-between gap-3 border-t pt-2"
           >
-            <div className="min-w-0 text-sm">
+            <div className="min-w-0 type-body">
               <p className="break-all">{sitemap.path}</p>
               <p className="text-muted-foreground">
                 {sitemap.isPending

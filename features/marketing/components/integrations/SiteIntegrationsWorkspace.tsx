@@ -154,6 +154,7 @@ import { useGoogleAuthorizationWindow } from "@/providers/google-provider/useGoo
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { extractErrorMessage } from "@/utils/errors";
 
+import { Spinner } from "@/components/ui/loaders/Spinner";
 const integrationValueLabels = surfaceValueLabels(
   marketingIntegrationsManifest,
 );
@@ -1069,7 +1070,7 @@ function SiteIntegrationsEditor({
               <h1 className="text-base font-semibold">
                 {reviewMode ? "Google Analytics proof" : "Site integrations"}
               </h1>
-              <p className="mt-0.5 max-w-3xl text-xs text-muted-foreground">
+              <p className="mt-0.5 max-w-3xl type-secondary text-muted-foreground">
                 {reviewMode
                   ? `Authorize read-only Analytics, choose the exact property for ${site.domain}, run a bounded sync, and inspect the persisted report below.`
                   : `Connect data sources for ${site.domain}, then choose the property that belongs to this website.`}
@@ -1115,10 +1116,10 @@ function SiteIntegrationsEditor({
                 <KeyRound className="h-4 w-4" />
               </span>
               <div>
-                <h2 className="text-xs font-semibold">
+                <h2 className="type-secondary font-semibold">
                   Connect Google directly
                 </h2>
-                <p className="mt-0.5 text-[11px] leading-4 text-muted-foreground">
+                <p className="mt-0.5 type-meta leading-4 text-muted-foreground">
                   Authorize Search Console, choose the property for{" "}
                   {site.domain}, and connect it to this managed site. Analytics
                   is optional and does not affect this setup.
@@ -1320,8 +1321,8 @@ function SiteIntegrationsEditor({
           >
             <div className="flex min-h-10 items-center justify-between gap-3 border-b border-border px-3 py-1.5">
               <div>
-                <h2 className="text-sm font-semibold">Additional providers</h2>
-                <p className="text-[10px] text-muted-foreground">
+                <h2 className="type-title">Additional providers</h2>
+                <p className="type-meta text-muted-foreground">
                   Add extensible provider bindings without placing credentials
                   in site JSON.
                 </p>
@@ -1348,7 +1349,7 @@ function SiteIntegrationsEditor({
                 ))}
               </div>
             ) : (
-              <p className="p-3 text-xs text-muted-foreground">
+              <p className="p-3 type-secondary text-muted-foreground">
                 No additional provider references are configured.
               </p>
             )}
@@ -1357,13 +1358,13 @@ function SiteIntegrationsEditor({
           {visibleIssues.length ? (
             <Alert variant="destructive" className="py-2.5">
               <AlertTriangle className="h-4 w-4" />
-              <AlertTitle className="text-xs">
+              <AlertTitle className="type-secondary">
                 {/* read-gate-exempt: issues are computed by integrationsWriteIssues from the in-memory draft, shown only when non-zero — not a read's rows */}
                 Resolve {visibleIssues.length} configuration issue
                 {visibleIssues.length === 1 ? "" : "s"}
               </AlertTitle>
               <AlertDescription>
-                <ul className="mt-1 list-disc space-y-0.5 pl-4 text-[11px]">
+                <ul className="mt-1 list-disc space-y-0.5 pl-4 type-meta">
                   {visibleIssues.map((issue) => (
                     <li key={`${issue.field}:${issue.message}`}>
                       {issue.message}
@@ -1392,15 +1393,15 @@ function SiteIntegrationsEditor({
           {update.isError ? (
             <Alert variant="destructive" className="py-2.5">
               <AlertTriangle className="h-4 w-4" />
-              <AlertTitle className="text-xs">Save failed</AlertTitle>
-              <AlertDescription className="text-[11px]">
+              <AlertTitle className="type-secondary">Save failed</AlertTitle>
+              <AlertDescription className="type-meta">
                 {update.error.message}
               </AlertDescription>
             </Alert>
           ) : null}
 
           <div className="sticky bottom-0 flex items-center justify-between gap-3 border-t border-border/80 bg-background/95 py-2 backdrop-blur">
-            <p className="text-[11px] text-muted-foreground">
+            <p className="type-meta text-muted-foreground">
               {dirty ? "Unsaved changes" : "All integration changes saved"}
             </p>
             <Button
@@ -1454,10 +1455,10 @@ function Ga4CampaignPanel({
   if (!campaignActive) {
     return (
       <div className="space-y-1.5 rounded-md border border-warning/40 bg-warning/5 p-2">
-        <p className="text-[10px] font-medium text-foreground">
+        <p className="type-meta font-medium text-foreground">
           Analytics activation is safely paused
         </p>
-        <p className="text-[10px] leading-4 text-muted-foreground">
+        <p className="type-meta leading-4 text-muted-foreground">
           {GOOGLE_ANALYTICS_CAMPAIGN_PAUSE_REASON} Existing Search Console
           access and property bindings are unchanged.
         </p>
@@ -1471,10 +1472,10 @@ function Ga4CampaignPanel({
   if (!diagnosis?.blocking && hasAnalyticsAccess) {
     return (
       <div className="space-y-1.5 rounded-md border border-border bg-muted/20 p-2">
-        <p className="text-[10px] font-medium text-foreground">
+        <p className="type-meta font-medium text-foreground">
           Read-only Analytics access is available
         </p>
-        <p className="mt-1 text-[10px] leading-4 text-muted-foreground">
+        <p className="mt-1 type-meta leading-4 text-muted-foreground">
           Choose the Google account and exact GA4 property above. AI Matrx can
           read reporting data but cannot edit Google Analytics.
         </p>
@@ -1513,12 +1514,12 @@ function Ga4CampaignPanel({
 
   return (
     <div className="space-y-1.5 rounded-md border border-destructive/40 bg-destructive/5 p-2">
-      <p className="text-[10px] font-medium text-destructive">
+      <p className="type-meta font-medium text-destructive">
         {diagnosis?.blocking
           ? "Analytics is not collecting"
           : "Connect Google Analytics"}
       </p>
-      <p className="text-[10px] leading-4 text-destructive/90">
+      <p className="type-meta leading-4 text-destructive/90">
         {diagnosis?.reason ??
           "AI Matrx requests read-only Analytics access to discover your GA4 properties and collect sessions, users, and engagement for the property you choose. It cannot edit Analytics. Search Console access remains unchanged."}
       </p>
@@ -1579,7 +1580,7 @@ function Ga4CampaignPanel({
         </div>
       )}
       {canRebind ? (
-        <p className="text-[10px] leading-4 text-muted-foreground">
+        <p className="type-meta leading-4 text-muted-foreground">
           This rebinds the saved property to the live Google connection without
           requesting a new scope.
         </p>
@@ -1651,7 +1652,7 @@ function GscSyncRow({
       <div className="flex items-center justify-between gap-2">
         <p
           className={cn(
-            "text-[10px] leading-4",
+            "type-meta leading-4",
             connected && !site.gsc_synced_at
               ? "font-medium text-amber-600 dark:text-amber-400"
               : "text-muted-foreground",
@@ -1678,14 +1679,14 @@ function GscSyncRow({
           sync fail with a template. */}
       {diagnosis && diagnosis.blocking ? (
         <div className="rounded-sm border border-destructive/40 bg-destructive/5 p-1.5">
-          <p className="text-[10px] font-medium text-destructive">
+          <p className="type-meta font-medium text-destructive">
             Sync unavailable — {diagnosis.label.toLowerCase()}
           </p>
-          <p className="mt-0.5 text-[10px] leading-4 text-destructive/90">
+          <p className="mt-0.5 type-meta leading-4 text-destructive/90">
             {diagnosis.reason}
           </p>
           {diagnosis.remedy ? (
-            <p className="mt-0.5 text-[10px] leading-4 text-destructive/90">
+            <p className="mt-0.5 type-meta leading-4 text-destructive/90">
               {diagnosis.remedy}{" "}
               <Link
                 className="underline"
@@ -1778,8 +1779,8 @@ function BuiltInProviderCard({
             <Icon className="h-4 w-4" />
           </div>
           <div className="min-w-0">
-            <h2 className="text-xs font-semibold">{label}</h2>
-            <p className="mt-0.5 text-[10px] leading-4 text-muted-foreground">
+            <h2 className="type-secondary font-semibold">{label}</h2>
+            <p className="mt-0.5 type-meta leading-4 text-muted-foreground">
               {description}
             </p>
           </div>
@@ -1814,7 +1815,7 @@ function BuiltInProviderCard({
           // list the page-level Save does, and prints it right here.
           <div className="space-y-1.5">
             {issues.length ? (
-              <ul className="space-y-0.5 rounded-md border border-destructive/50 bg-destructive/10 px-2 py-1.5 text-[10px] leading-4 text-foreground">
+              <ul className="space-y-0.5 rounded-md border border-destructive/50 bg-destructive/10 px-2 py-1.5 type-meta leading-4 text-foreground">
                 {issues.map((issue, rowIndex, allRows) => (
                   <li key={issue}>
                     {issue}
@@ -1922,12 +1923,12 @@ function UrlChangeIntakeCard({
           </span>
           <div>
             <h2
-              className="text-xs font-semibold"
+              className="type-secondary font-semibold"
               data-surface-value="url_change_discovery"
             >
               {integrationValueLabels.url_change_discovery}
             </h2>
-            <p className="mt-0.5 max-w-3xl text-[10px] leading-4 text-muted-foreground">
+            <p className="mt-0.5 max-w-3xl type-meta leading-4 text-muted-foreground">
               Matrx CMS publishes automatically. Other CMSs can call this
               webhook immediately; scheduled crawls independently detect added,
               changed, and removed pages and trigger the same search discovery
@@ -1947,8 +1948,8 @@ function UrlChangeIntakeCard({
           className="space-y-2 rounded-md border border-border bg-muted/20 p-3"
           data-surface-value="indexnow_key_location"
         >
-          <p className="text-[11px] font-medium">1. Prove IndexNow ownership</p>
-          <p className="text-[10px] leading-4 text-muted-foreground">
+          <p className="type-meta font-medium">1. Prove IndexNow ownership</p>
+          <p className="type-meta leading-4 text-muted-foreground">
             Serve the exact key as plain text at the root file below. Matrx CMS
             sites already do this automatically.
           </p>
@@ -1965,7 +1966,7 @@ function UrlChangeIntakeCard({
             <Input readOnly value={keyLocation} />
           </div>
           <a
-            className="inline-flex text-[10px] text-primary underline"
+            className="inline-flex type-meta text-primary underline"
             href={keyLocation}
             target="_blank"
             rel="noreferrer"
@@ -1974,10 +1975,10 @@ function UrlChangeIntakeCard({
           </a>
         </div>
         <div className="space-y-2 rounded-md border border-border bg-muted/20 p-3">
-          <p className="text-[11px] font-medium">
+          <p className="type-meta font-medium">
             2. Notify on publish or delete
           </p>
-          <p className="text-[10px] leading-4 text-muted-foreground">
+          <p className="type-meta leading-4 text-muted-foreground">
             Generate a site-scoped URL once, then POST the shown JSON shape from
             WordPress, Shopify, Webflow, or another publishing system. The token
             is shown only after generation.
@@ -2006,19 +2007,19 @@ function UrlChangeIntakeCard({
         <div className="mb-2 flex items-center justify-between gap-3">
           <div>
             <p
-              className="text-[11px] font-medium"
+              className="type-meta font-medium"
               data-surface-value="url_change_evidence"
             >
               {integrationValueLabels.url_change_evidence}
             </p>
-            <p className="text-[10px] text-muted-foreground">
+            <p className="type-meta text-muted-foreground">
               What IndexNow accepted and what Google reported after a change.
             </p>
           </div>
           <Button
             icon={
               evidenceQuery.isFetching ? (
-                <Loader2 className="animate-spin" />
+                <Spinner size="xs" className="text-current" />
               ) : (
                 <RefreshCw />
               )
@@ -2033,10 +2034,10 @@ function UrlChangeIntakeCard({
         {evidenceQuery.isError ? (
           <Alert variant="destructive" className="py-2">
             <AlertTriangle className="h-3.5 w-3.5" />
-            <AlertTitle className="text-[11px]">
+            <AlertTitle className="type-meta">
               Provider evidence could not be loaded
             </AlertTitle>
-            <AlertDescription className="text-[10px]">
+            <AlertDescription className="type-meta">
               {evidenceQuery.error.message}
             </AlertDescription>
           </Alert>
@@ -2055,7 +2056,7 @@ function UrlChangeIntakeCard({
                   className="flex min-w-0 items-center justify-between gap-2 rounded-md border border-border px-2.5 py-2 hover:bg-muted/40"
                 >
                   <span className="min-w-0">
-                    <span className="block truncate text-[10px] font-medium">
+                    <span className="block truncate type-meta font-medium">
                       {row.page?.url ?? row.page_id}
                     </span>
                     <span className="text-[9px] text-muted-foreground">
@@ -2075,7 +2076,7 @@ function UrlChangeIntakeCard({
             })}
           </div>
         ) : (
-          <p className="rounded-md border border-dashed border-border p-3 text-[10px] text-muted-foreground">
+          <p className="rounded-md border border-dashed border-border p-3 type-meta text-muted-foreground">
             No provider evidence yet. It appears after the next CMS publish,
             external webhook, or crawler-detected change.
           </p>
@@ -2108,7 +2109,7 @@ function ProviderReferenceFields({
 }) {
   if (providerKey === "pageSpeedInsights") {
     return (
-      <p className="rounded-md border border-border bg-muted/20 p-2 text-[10px] leading-4 text-muted-foreground">
+      <p className="rounded-md border border-border bg-muted/20 p-2 type-meta leading-4 text-muted-foreground">
         PageSpeed uses the application quota key. No Google account or
         credential reference is required.
       </p>
@@ -2210,7 +2211,7 @@ function ProviderReferenceFields({
           </SelectContent>
         </Select>
         {!connections.length ? (
-          <p className="text-[10px] text-muted-foreground">
+          <p className="type-meta text-muted-foreground">
             <Link
               className="text-primary underline"
               href="/marketing/connections"
@@ -2263,10 +2264,10 @@ function ProviderReferenceFields({
                   : "space-y-1.5 rounded-md border border-warning/50 bg-warning/10 px-2 py-1.5"
               }
             >
-              <p className="text-[10px] font-medium leading-4 text-foreground">
+              <p className="type-meta font-medium leading-4 text-foreground">
                 {preflight.headline}
               </p>
-              <p className="text-[10px] leading-4 text-muted-foreground">
+              <p className="type-meta leading-4 text-muted-foreground">
                 {preflight.detail}
               </p>
               {preflightFix ? (
@@ -2286,7 +2287,7 @@ function ProviderReferenceFields({
           ) : null}
           {nonDomainChosen && domainProperty ? (
             <div className="flex flex-wrap items-center gap-2 rounded-md border border-warning/50 bg-warning/10 px-2 py-1.5">
-              <p className="min-w-0 flex-1 text-[10px] leading-4 text-foreground">
+              <p className="min-w-0 flex-1 type-meta leading-4 text-foreground">
                 {value.resourceRef} is only one version of {siteDomain}. The
                 domain property {domainProperty.resource_ref} covers every
                 version and is the one you want.

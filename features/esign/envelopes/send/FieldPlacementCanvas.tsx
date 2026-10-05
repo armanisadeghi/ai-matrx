@@ -10,7 +10,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import { Calendar, FileText, Loader2, PenLine, Type, X, type LucideIcon } from "lucide-react";
+import { Calendar, FileText, PenLine, Type, X, type LucideIcon } from "lucide-react";
 
 import { Tabs } from "@ai-matrx/design-system/controls";
 import { cn } from "@/lib/utils";
@@ -26,10 +26,11 @@ import {
   type Recipient,
 } from "../types";
 
+import { Spinner } from "@/components/ui/loaders/Spinner";
 // react-pdf needs the browser; the viewer is the heaviest part of the send page.
 const PdfPreview = dynamic(() => import("@/features/pdf/components/viewer/PdfPreview"), {
   ssr: false,
-  loading: () => <Loader2 className="m-auto h-5 w-5 animate-spin text-muted-foreground" />,
+  loading: () => <Spinner size="sm" className="m-auto text-muted-foreground" />,
 });
 
 const KIND_ICON: Record<FieldKind, LucideIcon> = {
@@ -184,10 +185,10 @@ export function FieldPlacementCanvas({
             })}
           </div>
         ) : (
-          <p className="text-xs text-muted-foreground">Add a signer to place fields</p>
+          <p className="type-secondary text-muted-foreground">Add a signer to place fields</p>
         )}
         {armed && active && (
-          <p className="text-xs text-muted-foreground">
+          <p className="type-secondary text-muted-foreground">
             Click the page to place {fieldKindSpec(armed).label.toLowerCase()} for {active.fullName} · Esc to cancel
           </p>
         )}
@@ -222,7 +223,7 @@ export function FieldPlacementCanvas({
           }
         />
       </div>
-      <div className="flex items-center justify-between border-t border-border px-3 py-1.5 text-xs text-muted-foreground">
+      <div className="flex items-center justify-between border-t border-border px-3 py-1.5 type-secondary text-muted-foreground">
         <span className="truncate">{activeDoc.name}</span>
         <span className="shrink-0 tabular-nums">
           {docFieldCount} {docFieldCount === 1 ? "field" : "fields"}
@@ -394,7 +395,7 @@ function FieldBox({ field, colorIndex, who, selected, layerRef, onSelect, onChan
       onPointerCancel={end}
       onFocus={onSelect}
       className={cn(
-        "absolute flex select-none items-center gap-1 overflow-visible rounded-sm border px-1 text-[11px] leading-none",
+        "absolute flex select-none items-center gap-1 overflow-visible rounded-sm border px-1 type-meta leading-none",
         selected ? "border-2 shadow-md" : "border-dashed",
       )}
       style={{

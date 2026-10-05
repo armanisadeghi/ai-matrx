@@ -51,7 +51,7 @@ function seoHeaderExtras(entry: ToolLifecycleEntry): React.ReactNode {
 
   if (variant.kind === "meta") {
     return (
-      <div className="flex items-center gap-3 text-white/90 text-xs mt-1">
+      <div className="flex items-center gap-3 text-white/90 type-secondary mt-1">
         <span className="flex items-center gap-1">
           <CheckCircle className="w-3.5 h-3.5" />
           {variant.passed} Passed
@@ -71,7 +71,7 @@ function seoHeaderExtras(entry: ToolLifecycleEntry): React.ReactNode {
 
   const sub = seoVariantSub(variant);
   if (!sub) return null;
-  return <div className="text-white/90 text-xs mt-1">{sub}</div>;
+  return <div className="text-white/90 type-secondary mt-1">{sub}</div>;
 }
 
 const FEATURE_TOOL_RENDERERS: ToolRegistry = {
@@ -235,7 +235,7 @@ const FEATURE_TOOL_RENDERERS: ToolRegistry = {
           : undefined;
       if (count == null) return null;
       return (
-        <div className="flex items-center gap-3 text-white/90 text-xs mt-1">
+        <div className="flex items-center gap-3 text-white/90 type-secondary mt-1">
           <span>
             {count} {count === 1 ? "item" : "items"}
           </span>
@@ -384,7 +384,7 @@ const FEATURE_TOOL_RENDERERS: ToolRegistry = {
       const pageSize = result.page_size as number | undefined;
       if (!count) return null;
       return (
-        <div className="flex items-center gap-3 text-white/90 text-xs mt-1">
+        <div className="flex items-center gap-3 text-white/90 type-secondary mt-1">
           <span>
             {count} {count === 1 ? "list" : "lists"}
           </span>
@@ -429,7 +429,7 @@ const FEATURE_TOOL_RENDERERS: ToolRegistry = {
           : null;
       const nHits = Array.isArray(hits) ? hits.length : 0;
       return (
-        <div className="flex items-center gap-3 text-white/90 text-xs mt-1">
+        <div className="flex items-center gap-3 text-white/90 type-secondary mt-1">
           <span>
             {nHits} {nHits === 1 ? "hit" : "hits"}
           </span>

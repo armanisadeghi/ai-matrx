@@ -116,7 +116,7 @@ export function SendTutorialDialog({
               }}
             />
           </label>
-          <div className="space-y-1 text-xs text-muted-foreground">
+          <div className="space-y-1 type-secondary text-muted-foreground">
             <span>Tutorial</span>
             <Select
               aria-label="Tutorial"
@@ -135,7 +135,7 @@ export function SendTutorialDialog({
               onChange={(e) => setNote(e.target.value)}
             />
           </label>
-          <div className="flex items-center gap-4 text-xs">
+          <div className="flex items-center gap-4 type-secondary">
             <label className="flex items-center gap-2">
               <Switch checked={viaDm} onCheckedChange={setViaDm} aria-label="Send as a message" />
               <MessageSquare className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />
