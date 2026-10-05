@@ -35,8 +35,11 @@ export function pricingSelectionFromSearch(
   search: Pick<URLSearchParams, "get">,
   fallback: Pick<PricingSelection, "cycle" | "groupId">,
 ): PricingSelection {
+  const requestedCycle = search.get("cycle");
   const cycle: BillingCycle =
-    search.get("cycle") === "annual" ? "annual" : fallback.cycle;
+    requestedCycle === "annual" || requestedCycle === "monthly"
+      ? requestedCycle
+      : fallback.cycle;
   const groups = pricingGroups(plans);
   const requestedPlan = search.get("plan");
   const group = groups.find((candidate) =>
