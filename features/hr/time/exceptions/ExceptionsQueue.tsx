@@ -99,15 +99,19 @@ export function ExceptionsQueue({
   const mockCase = useHrMockCase();
   // Every door out of this queue stays in the employer whose exceptions are on screen.
   const { orgRef } = useHrContext();
-  const { prefs } = useListViewPrefs("hr-time-exceptions", { pageSize: DEFAULT_PAGE_SIZE });
+  const { prefs, setPrefs } = useListViewPrefs("hr-time-exceptions", { pageSize: DEFAULT_PAGE_SIZE });
+  const preferredPageSize = HR_TIME_PAGE_SIZES.includes(prefs.pageSize) ? prefs.pageSize : DEFAULT_PAGE_SIZE;
   const [query, setQuery] = useState<MatrxDataTableQueryState>({
     page: 1,
-    pageSize: DEFAULT_PAGE_SIZE,
+    pageSize: preferredPageSize,
     search: "",
     anyOf: "",
     columnFilters: {},
     sort: null,
   });
+  if (query.pageSize !== preferredPageSize) {
+    setQuery((current) => ({ ...current, page: 1, pageSize: preferredPageSize }));
+  }
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [bulkOpen, setBulkOpen] = useState(false);
   const [contextRow, setContextRow] = useState<AttendanceExceptionRow | null>(null);
@@ -251,10 +255,12 @@ export function ExceptionsQueue({
                 sourceProcessing: { sort: "local", columnFilters: { source: ["resolutionState", "severity", "exceptionKind"] } },
                 state: query,
                 totalItems: queue.data?.totalRows ?? 0,
-                onStateChange: setQuery,
+                onStateChange: (next) => {
+                    setQuery(next);
+                    if (next.pageSize !== query.pageSize) setPrefs({ pageSize: next.pageSize });
+                  },
               }}
               pageSizeOptions={HR_TIME_PAGE_SIZES}
-              pageSize={prefs.pageSize}
               toolbar={{ search: false }}
               selection={
                 readOnly

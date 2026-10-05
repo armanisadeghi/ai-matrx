@@ -46,6 +46,7 @@ import type {
 } from "@ai-matrx/design-system/data-table/types";
 import { Button } from "@/components/ui/button";
 import { AssistStrip } from "@/features/assists/components/AssistStrip";
+import { HR_TIME_PAGE_SIZES } from "../api/timePage";
 import { useListViewPrefs } from "@/lib/list-views/useListViewPrefs";
 import {
   hrTimeExceptionsHref,
@@ -97,17 +98,21 @@ export function PeriodApprovalGrid({ payPeriodId }: { payPeriodId: string | null
    * group yet" directly above a table of a DIFFERENT employer's periods.
    */
   const { orgRef } = useHrContext();
-  const { prefs } = useListViewPrefs("hr-time-timesheets", {
+  const { prefs, setPrefs } = useListViewPrefs("hr-time-timesheets", {
     pageSize: DEFAULT_PAGE_SIZE,
   });
+  const preferredPageSize = HR_TIME_PAGE_SIZES.includes(prefs.pageSize) ? prefs.pageSize : DEFAULT_PAGE_SIZE;
   const [query, setQuery] = useState<MatrxDataTableQueryState>({
     page: 1,
-    pageSize: DEFAULT_PAGE_SIZE,
+    pageSize: preferredPageSize,
     search: "",
     anyOf: "",
     columnFilters: {},
     sort: null,
   });
+  if (query.pageSize !== preferredPageSize) {
+    setQuery((current) => ({ ...current, page: 1, pageSize: preferredPageSize }));
+  }
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [bulkOpen, setBulkOpen] = useState(false);
   const [rawFor, setRawFor] = useState<PeriodGridRow | null>(null);
@@ -277,9 +282,12 @@ export function PeriodApprovalGrid({ payPeriodId }: { payPeriodId: string | null
                   mode: "controlled",
                   state: query,
                   totalItems: grid.data?.totalRows ?? 0,
-                  onStateChange: setQuery,
+                  onStateChange: (next) => {
+                    setQuery(next);
+                    if (next.pageSize !== query.pageSize) setPrefs({ pageSize: next.pageSize });
+                  },
                 }}
-                pageSize={prefs.pageSize}
+                pageSizeOptions={HR_TIME_PAGE_SIZES}
                 selection={{
                   selectedIds,
                   onSelectedIdsChange: setSelectedIds,
