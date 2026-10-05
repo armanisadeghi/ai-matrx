@@ -263,7 +263,7 @@ function RecoveryItem({ item, onDismiss, onClose }: RecoveryItemProps) {
       {/* Transcription text */}
       {hasText && (
         <div className="bg-muted/50 rounded-md p-2 max-h-28 overflow-y-auto">
-          <p className="text-xs text-foreground/80 leading-relaxed whitespace-pre-wrap">
+          <p /* rich-content-exempt: verbatim transcript or extracted document text, not authored markdown */ className="text-xs text-foreground/80 leading-relaxed whitespace-pre-wrap">
             {localText}
           </p>
         </div>

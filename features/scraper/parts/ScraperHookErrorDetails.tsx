@@ -48,7 +48,7 @@ export function ScraperHookErrorDetails({
           <span className="ml-1 text-[10px]">{copied ? "Copied" : "Copy"}</span>
         </Button>
       </div>
-      <pre className="max-h-56 overflow-auto p-2 text-[10px] font-mono leading-relaxed whitespace-pre-wrap text-foreground">
+      <pre /* rich-content-exempt: debug or inspector output: logs, JSON, code or source view */ className="max-h-56 overflow-auto p-2 text-[10px] font-mono leading-relaxed whitespace-pre-wrap text-foreground">
         {text}
       </pre>
     </div>

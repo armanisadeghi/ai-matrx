@@ -259,7 +259,7 @@ export function ToastDetailBody({
         </dl>
       )}
       {detail.body && (
-        <p className="border-t border-border pt-2 text-[13px] whitespace-pre-wrap text-foreground">
+        <p /* rich-content-exempt: dev-only demo page: raw model, log and request output */ className="border-t border-border pt-2 text-[13px] whitespace-pre-wrap text-foreground">
           {detail.body}
         </p>
       )}

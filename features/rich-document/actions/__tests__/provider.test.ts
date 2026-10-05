@@ -91,12 +91,16 @@ describe("rich-document provider", () => {
   });
 });
 
-describe("one formatted copy (ALC-15 finding 5)", () => {
-  it("offers ONE 'Copy formatted' row, never two byte-identical Docs/Word rows", () => {
+describe("one copy, two explicit flavors (2026-10-04)", () => {
+  it("offers Copy, Copy markdown and Copy text — never a byte-identical twin", () => {
     const listed = resolveActions(chatContext("assistant")).map((a) => a.id);
-    expect(listed).toContain("copy-formatted");
-    expect(listed.filter((id) => /google-docs|copy-word/.test(id))).toEqual([]);
-    expect(getAction("copy-formatted")?.label).toBe("Copy formatted");
+    expect(listed).toEqual(expect.arrayContaining(["copy", "copy-markdown", "copy-plain-text"]));
+    expect(listed.filter((id) => /google-docs|copy-word|copy-formatted|copy-rich-text/.test(id))).toEqual([]);
+    expect([getAction("copy")?.label, getAction("copy-markdown")?.label, getAction("copy-plain-text")?.label]).toEqual([
+      "Copy",
+      "Copy markdown",
+      "Copy text",
+    ]);
   });
 });
 

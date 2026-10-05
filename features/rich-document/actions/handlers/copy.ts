@@ -4,53 +4,29 @@
 // which only makes sense for chat assistant messages (those have reasoning
 // blocks; notes / prompts / artifacts don't).
 
-import { Copy, FileText, Brain } from "lucide-react";
-import { toast } from "@/lib/toast";
-import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
+import { Copy, Brain } from "lucide-react";
+import { copyRichContent } from "@/components/matrx/buttons/markdown-copy-utils";
 import { registerAction } from "../provider";
 import { extractFlatText } from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors";
-import { getErrorMessage, contentForDestination } from "../utils";
+import { contentForDestination } from "../utils";
 import { kindTextToMarkdown } from "@/features/content-ir/surfaces/kind-text-to-markdown";
 
+// THE one-click Copy (Arman, 2026-10-04): formatted for Docs / Gmail AND the
+// knob's plain flavor (`copy.default_flavor`, default markdown) for a plain
+// field — one clipboard item, both flavors. "Copy markdown" and "Copy text"
+// (transfer.ts) are the explicit choices, the top two rows of Copy as.
+// "Copy formatted" and "Copy as rich text" are gone: this IS that copy.
 registerAction({
   id: "copy",
-  label: "Copy text",
+  label: "Copy",
   icon: Copy,
   iconColor: "text-blue-500 dark:text-blue-400",
   category: "copy",
   supportedSources: "*",
   renderSlot: "both",
   order: 0,
-  run: async ({ content }) => {
-    await copyToClipboard(content, {
-      onSuccess: () => toast.success("Copied"),
-      onError: (error) =>
-        toast.error(getErrorMessage(error, "Failed to copy")),
-    });
-  },
-});
-
-// ONE formatted copy (ALC-15, chair ruling on finding 5): "Copy for Google
-// Docs" and "Copy for Word" wrote byte-identical clipboard content, so two
-// rows offered a choice that did not exist. The rich clipboard skin pastes
-// correctly into Docs, Word, Pages and email alike.
-registerAction({
-  id: "copy-formatted",
-  label: "Copy formatted",
-  icon: FileText,
-  iconColor: "text-green-500 dark:text-green-400",
-  category: "copy",
-  supportedSources: "*",
-  renderSlot: "overflow",
-  order: 1,
-  run: async ({ content }) => {
-    await copyToClipboard(content, {
-      isMarkdown: true,
-      formatForGoogleDocs: true,
-      onSuccess: () => toast.success("Copied with formatting"),
-      onError: (error) =>
-        toast.error(getErrorMessage(error, "Failed to copy with formatting")),
-    });
+  run: async (ctx) => {
+    await copyRichContent(contentForDestination(ctx), "default");
   },
 });
 
@@ -81,12 +57,6 @@ registerAction({
     const fullContent = record
       ? kindTextToMarkdown(extractFlatText(record, { includeThinking: true }))
       : contentForDestination(ctx);
-    await copyToClipboard(fullContent, {
-      isMarkdown: true,
-      includeThinking: true,
-      onSuccess: () => toast.success("Copied with thinking"),
-      onError: (error) =>
-        toast.error(getErrorMessage(error, "Failed to copy with thinking")),
-    });
+    await copyRichContent(fullContent, "default", { includeThinking: true, toast: "Copied with thinking" });
   },
 });

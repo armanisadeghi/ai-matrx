@@ -190,7 +190,7 @@ function PreviewBlock({
         <Icon className="h-3.5 w-3.5" />
         {title}
       </div>
-      <p
+      <p /* rich-content-exempt: scraped page text or prompt text shown verbatim */
         className={cn(
           "max-h-40 overflow-hidden whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground",
           mono && "font-mono text-[13px]",

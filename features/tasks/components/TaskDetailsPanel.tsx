@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { toastWriteFailure } from "@/lib/errors/toastWriteFailure";
 import Link from "next/link";
 import {
@@ -584,14 +585,14 @@ export default function TaskDetailsPanel({
                 className="text-xs leading-relaxed"
               />
             ) : isTitleTruncated || title.includes("\n") ? (
-              <p
+              <div
                 className={cn(
-                  "text-xs leading-relaxed text-muted-foreground whitespace-pre-wrap break-words",
+                  "text-xs leading-relaxed text-muted-foreground break-words",
                   task.completed && "line-through",
                 )}
               >
-                {title}
-              </p>
+                <RichContent source={title} level="standard" />
+              </div>
             ) : null}
           </div>
         ) : (
@@ -790,8 +791,10 @@ export default function TaskDetailsPanel({
             </button>
           </div>
           {showDescPreview ? (
-            <div className="text-sm text-foreground prose prose-sm dark:prose-invert max-w-none min-h-[100px] p-2 bg-muted/40 rounded-md border border-border overflow-auto whitespace-pre-wrap">
-              {description || (
+            <div className="text-sm text-foreground max-w-none min-h-[100px] p-2 bg-muted/40 rounded-md border border-border overflow-auto">
+              {description ? (
+                <RichContent source={description} level="standard" />
+              ) : (
                 <span className="text-muted-foreground italic">
                   No description
                 </span>

@@ -237,6 +237,22 @@ export function SelectionToolbarRoot(): React.ReactElement | null {
     [close],
   );
 
+  // ⌘C on rendered content = formatted + markdown; ⌘⇧C = plain text (selection-copy.ts).
+  // Loaded after first paint so the copy machinery never rides the root chunk.
+  React.useEffect(() => {
+    let off: (() => void) | null = null;
+    let cancelled = false;
+    import("./selection-copy")
+      .then((m) => {
+        if (!cancelled) off = m.installRichCopyKeys();
+      })
+      .catch((error: unknown) => console.error("[selection-toolbar] rich copy keys could not load — ⌘C keeps the browser's copy:", error));
+    return () => {
+      cancelled = true;
+      off?.();
+    };
+  }, []);
+
   // Selection lifecycle: settle after the pointer lifts (desktop), or after
   // the selection stops moving (touch handles, keyboard).
   React.useEffect(() => {

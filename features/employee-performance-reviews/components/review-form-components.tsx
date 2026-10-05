@@ -5,6 +5,7 @@
 // only this interactive tree ships as client JS.
 
 import * as React from "react";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -217,9 +218,7 @@ export function ListEditor({
                 </div>
               ) : (
                 <>
-                  <span className="flex-1 whitespace-pre-wrap break-words text-sm leading-relaxed">
-                    {text}
-                  </span>
+                  <div className="flex-1 break-words text-sm leading-relaxed"><RichContent source={text ?? ""} level="standard" /></div>
                   <div className="flex flex-none items-center gap-0.5 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 print:hidden">
                     <Button
                       type="button"

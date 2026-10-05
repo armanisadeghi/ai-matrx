@@ -21,6 +21,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { motion } from "motion/react";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -1629,17 +1630,13 @@ function AgentToolResultBlock({
                       <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
                         knowledge_browse(chunk) → full chunk content
                       </div>
-                      <p className="whitespace-pre-wrap">
-                        {chunk.content_text}
-                      </p>
+                      <div className=""><RichContent source={chunk.content_text ?? ""} level="standard" /></div>
                       {chunk.parent?.content_text && (
                         <>
                           <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
                             parent passage
                           </div>
-                          <p className="whitespace-pre-wrap text-foreground/80">
-                            {chunk.parent.content_text}
-                          </p>
+                          <div className="text-foreground/80"><RichContent source={chunk.parent.content_text ?? ""} level="standard" /></div>
                         </>
                       )}
                     </div>
@@ -2137,9 +2134,7 @@ function AgentSimulationTab({ scope }: { scope: Scope }) {
                     <div className="text-[10px] font-mono uppercase tracking-wide text-muted-foreground mb-1">
                       HyDE passage (hypothetical answer)
                     </div>
-                    <div className="text-xs bg-muted/40 p-2 rounded whitespace-pre-wrap">
-                      {expand.hyde_passage}
-                    </div>
+                    <div className="text-xs bg-muted/40 p-2 rounded"><RichContent source={expand.hyde_passage ?? ""} level="standard" /></div>
                   </div>
                 )}
                 {/* Contract-optional — the server may omit the preview; skip
@@ -2300,7 +2295,7 @@ function AgentSimulationTab({ scope }: { scope: Scope }) {
                       <Copy className="h-3 w-3" />
                     </button>
                   </div>
-                  <pre className="px-3 py-2 text-[11px] font-mono whitespace-pre-wrap break-words max-h-96 overflow-auto text-foreground/90">
+                  <pre /* rich-content-exempt: raw tool result, JSON or assembled prompt shown verbatim */ className="px-3 py-2 text-[11px] font-mono whitespace-pre-wrap break-words max-h-96 overflow-auto text-foreground/90">
                     {assembledPrompt}
                   </pre>
                 </div>

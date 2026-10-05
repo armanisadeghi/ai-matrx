@@ -713,7 +713,7 @@ function MobileTextScroller({
         {field === "cleaned" && fallbackText ? (
           <PdfAiContent content={fallbackText} />
         ) : (
-          <pre className="whitespace-pre-wrap font-mono text-[11px] leading-relaxed text-foreground/85">
+          <pre /* rich-content-exempt: verbatim transcript or extracted document text, not authored markdown */ className="whitespace-pre-wrap font-mono text-[11px] leading-relaxed text-foreground/85">
             {fallbackText || "(no extracted text)"}
           </pre>
         )}
@@ -735,7 +735,7 @@ function MobileTextScroller({
           {field === "cleaned" && fallbackText ? (
             <PdfAiContent content={fallbackText} />
           ) : (
-            <pre className="whitespace-pre-wrap font-mono text-[12px] leading-relaxed text-foreground/85">
+            <pre /* rich-content-exempt: verbatim transcript or extracted document text, not authored markdown */ className="whitespace-pre-wrap font-mono text-[12px] leading-relaxed text-foreground/85">
               {fallbackText || "(no extracted text)"}
             </pre>
           )}
@@ -761,7 +761,7 @@ function MobileTextScroller({
             <div className="text-[10px] font-mono font-semibold text-muted-foreground mb-1">
               page {p.pageNumber}
             </div>
-            <pre className="whitespace-pre-wrap font-mono text-[12px] leading-relaxed text-foreground/85">
+            <pre /* rich-content-exempt: verbatim transcript or extracted document text, not authored markdown */ className="whitespace-pre-wrap font-mono text-[12px] leading-relaxed text-foreground/85">
               {text || (
                 <span className="italic text-muted-foreground">
                   (no text on this page)

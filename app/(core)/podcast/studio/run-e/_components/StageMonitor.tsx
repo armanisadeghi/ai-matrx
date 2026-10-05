@@ -142,7 +142,7 @@ function TextChannel({
     );
   }
   return (
-    <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
+    <p /* rich-content-exempt: scraped page text or prompt text shown verbatim */ className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
       {text}
       <span className={cn("ml-0.5 inline-block h-4 w-1.5 translate-y-0.5 animate-pulse rounded-sm bg-current", tone)} />
     </p>

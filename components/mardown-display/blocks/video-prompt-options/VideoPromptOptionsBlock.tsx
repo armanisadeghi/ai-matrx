@@ -172,7 +172,7 @@ function VariationCard({
           {variation.interpretation}
         </p>
       ) : null}
-      <p className="whitespace-pre-wrap rounded-md bg-muted/50 p-2 text-sm text-foreground">
+      <p /* rich-content-exempt: scraped page text or prompt text shown verbatim */ className="whitespace-pre-wrap rounded-md bg-muted/50 p-2 text-sm text-foreground">
         {variation.prompt}
       </p>
     </div>

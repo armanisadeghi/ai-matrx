@@ -129,7 +129,6 @@ export type RichDocumentActionId =
   | "thumbs-down"
   // Copy
   | "copy"
-  | "copy-formatted"
   | "copy-with-thinking"
   // Save
   | "save-as-file"
@@ -177,7 +176,6 @@ export type RichDocumentActionId =
   // Transfer — copy / download every format the best AI apps offer
   | "copy-markdown"
   | "copy-plain-text"
-  | "copy-rich-text"
   | "copy-html-source"
   | "copy-table-csv"
   | "copy-table-tsv"

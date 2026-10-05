@@ -112,7 +112,7 @@ export function RawView({
       </div>
       <div className="min-h-0 flex-1 overflow-auto">
         {raw ? (
-          <pre className="m-0 whitespace-pre-wrap break-words p-3 font-mono text-[11px] leading-snug">
+          <pre /* rich-content-exempt: debug or inspector output: logs, JSON, code or source view */ className="m-0 whitespace-pre-wrap break-words p-3 font-mono text-[11px] leading-snug">
             {jsonText}
           </pre>
         ) : (

@@ -150,7 +150,7 @@ export function IdentitySection({
           onCancel={() => setEditingDescription(false)}
         />
       ) : topic.description ? (
-        <p
+        <p /* rich-content-exempt: app-authored string, editable source text, or raw payload */
           className={cn(
             "whitespace-pre-wrap text-sm leading-snug",
             !readOnly && "cursor-text rounded-sm hover:bg-muted/60",

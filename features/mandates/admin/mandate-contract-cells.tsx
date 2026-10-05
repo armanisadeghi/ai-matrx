@@ -33,7 +33,7 @@ export function CompactMandateText({ text, description = text }: { text: string;
       <TooltipTrigger asChild>
         <span tabIndex={0} className="block min-w-0 max-w-full truncate text-xs">{text}</span>
       </TooltipTrigger>
-      <TooltipContent className="max-w-md whitespace-pre-wrap break-words">{description}</TooltipContent>
+      <TooltipContent /* rich-content-exempt: tooltip or title text, plain by design */ className="max-w-md whitespace-pre-wrap break-words">{description}</TooltipContent>
     </Tooltip>
   );
 }

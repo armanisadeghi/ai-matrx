@@ -260,7 +260,7 @@ function AudioTestModalContent({
           </div>
 
           <div className="flex-1 overflow-auto border rounded-lg bg-textured p-4">
-            <div className="font-mono text-sm whitespace-pre-wrap break-words text-gray-900 dark:text-gray-100">
+            <div /* rich-content-exempt: verbatim transcript or extracted document text, not authored markdown */ className="font-mono text-sm whitespace-pre-wrap break-words text-gray-900 dark:text-gray-100">
               {speechText || (
                 <span className="text-muted-foreground italic">
                   No content to convert. Enter some markdown content first.

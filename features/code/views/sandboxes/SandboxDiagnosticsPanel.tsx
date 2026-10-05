@@ -976,7 +976,7 @@ export const SandboxDiagnosticsPanel = forwardRef<
                             <ErrorAlchemyMenu error={fileError} />
                           </pre>
                         ) : (
-                          <pre className="font-mono whitespace-pre-wrap leading-tight">
+                          <pre /* rich-content-exempt: debug or inspector output: logs, JSON, code or source view */ className="font-mono whitespace-pre-wrap leading-tight">
                             {fileContent || "(empty file)"}
                           </pre>
                         )}

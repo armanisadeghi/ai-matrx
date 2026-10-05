@@ -56,7 +56,7 @@ export function YouTubeVideoPreviewContent({
           {action}
         </div>
         <div className="mt-4 flex items-start gap-2">
-          <p className="min-w-0 flex-1 whitespace-pre-line text-sm leading-6 text-muted-foreground dark:text-zinc-400">
+          <p /* rich-content-exempt: YouTube descriptions are plain text */ className="min-w-0 flex-1 whitespace-pre-line text-sm leading-6 text-muted-foreground dark:text-zinc-400">
             {video.description || "No description supplied."}
           </p>
           <CopyButton

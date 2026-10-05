@@ -48,7 +48,7 @@ function EmptyField({ label }: { label: string }) {
 function TextBlock({ content, label }: { content: string; label: string }) {
   if (!content) return <EmptyField label={label} />;
   return (
-    <pre className="whitespace-pre-wrap text-sm font-sans text-foreground bg-muted p-4 rounded-lg leading-relaxed">
+    <pre /* rich-content-exempt: dev-only demo page: raw model, log and request output */ className="whitespace-pre-wrap text-sm font-sans text-foreground bg-muted p-4 rounded-lg leading-relaxed">
       {content}
     </pre>
   );

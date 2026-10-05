@@ -900,7 +900,7 @@ function Refusal({
   return (
     <section className="rounded-lg border border-amber-300 bg-amber-50/70 p-4 dark:border-amber-900 dark:bg-amber-950/30">
       <h3 className="text-sm font-semibold">{title}</h3>
-      <p className="mt-1 whitespace-pre-line text-sm">{body}</p>
+      <p /* rich-content-exempt: app-authored string, editable source text, or raw payload */ className="mt-1 whitespace-pre-line text-sm">{body}</p>
       {action ? <div className="mt-3">{action}</div> : null}
     <ErrorAlchemyMenu /></section>
   );

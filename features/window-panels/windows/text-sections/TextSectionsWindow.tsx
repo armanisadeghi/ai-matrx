@@ -281,7 +281,7 @@ export function TextSectionsWindow({
                       view === "split" ? "w-1/2" : "w-full",
                     )}
                   >
-                    <pre className="whitespace-pre-wrap break-words font-mono text-[11px] leading-relaxed text-foreground/85">
+                    <pre /* rich-content-exempt: verbatim transcript or extracted document text, not authored markdown */ className="whitespace-pre-wrap break-words font-mono text-[11px] leading-relaxed text-foreground/85">
                       {shownContent}
                     </pre>
                   </div>

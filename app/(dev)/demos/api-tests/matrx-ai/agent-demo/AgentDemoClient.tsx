@@ -951,7 +951,7 @@ export default function AgentDemoClient() {
                     />
                   </div>
                   <div className="flex-1 overflow-y-auto min-h-0">
-                    <pre className="text-[11px] font-mono whitespace-pre-wrap text-foreground/80">
+                    <pre /* rich-content-exempt: dev-only demo page: raw model, log and request output */ className="text-[11px] font-mono whitespace-pre-wrap text-foreground/80">
                       {`POST ${config.serverUrl}${ENDPOINTS.ai.agentStart(agentId || "{agent_id}")}\n`}
                       {`Authorization: Bearer ${config.authToken || "<token>"}\n`}
                       {`Content-Type: application/json\n\n`}

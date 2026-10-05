@@ -12,6 +12,7 @@
 // opened, not to be waded through.
 
 import { Fragment, useMemo } from "react";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { cn } from "@/lib/utils";
 import {
   DOOR_LABEL,
@@ -124,9 +125,7 @@ export function QuestionScreen({ question, onReanswer }: QuestionScreenProps) {
       </p>
 
       {question.background ? (
-        <p className="mb-7 max-w-[66ch] text-[14.5px] leading-relaxed whitespace-pre-wrap text-foreground/80">
-          {question.background}
-        </p>
+        <div className="mb-7 max-w-[66ch] text-[14.5px] leading-relaxed text-foreground/80"><RichContent source={question.background ?? ""} level="standard" /></div>
       ) : null}
 
       {question.recommendation ? (
@@ -134,9 +133,7 @@ export function QuestionScreen({ question, onReanswer }: QuestionScreenProps) {
           <h3 className="mb-2 font-mono text-[10.5px] font-medium tracking-[0.12em] uppercase text-primary">
             My recommendation
           </h3>
-          <p className="m-0 max-w-[64ch] text-[14.5px] leading-relaxed whitespace-pre-wrap text-foreground">
-            {question.recommendation}
-          </p>
+          <div className="m-0 max-w-[64ch] text-[14.5px] leading-relaxed text-foreground"><RichContent source={question.recommendation ?? ""} level="standard" /></div>
         </div>
       ) : null}
 
@@ -148,9 +145,7 @@ export function QuestionScreen({ question, onReanswer }: QuestionScreenProps) {
           <h3 className="mb-2 font-mono text-[10.5px] font-medium tracking-[0.12em] uppercase text-warning">
             If you skip, this is what ships
           </h3>
-          <p className="m-0 max-w-[64ch] text-[14.5px] leading-relaxed whitespace-pre-wrap text-foreground">
-            {question.default_in_force}
-          </p>
+          <div className="m-0 max-w-[64ch] text-[14.5px] leading-relaxed text-foreground"><RichContent source={question.default_in_force ?? ""} level="standard" /></div>
         </div>
       ) : null}
 
@@ -174,9 +169,7 @@ export function QuestionScreen({ question, onReanswer }: QuestionScreenProps) {
             <summary className="cursor-pointer list-none font-mono text-[12px] tracking-[0.07em] uppercase text-muted-foreground focus-visible:rounded-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
               {part.label}
             </summary>
-            <p className="mt-2.5 max-w-[66ch] text-[14px] leading-relaxed whitespace-pre-wrap text-foreground/80">
-              {body}
-            </p>
+            <div className="mt-2.5 max-w-[66ch] text-[14px] leading-relaxed text-foreground/80"><RichContent source={body ?? ""} level="standard" /></div>
           </details>
         );
       })}
@@ -186,9 +179,7 @@ export function QuestionScreen({ question, onReanswer }: QuestionScreenProps) {
           <summary className="cursor-pointer list-none font-mono text-[12px] tracking-[0.07em] uppercase text-muted-foreground focus-visible:rounded-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
             Why this matters
           </summary>
-          <p className="mt-2.5 max-w-[66ch] text-[14px] leading-relaxed whitespace-pre-wrap text-foreground/80">
-            {question.why_it_matters}
-          </p>
+          <div className="mt-2.5 max-w-[66ch] text-[14px] leading-relaxed text-foreground/80"><RichContent source={question.why_it_matters ?? ""} level="standard" /></div>
         </details>
       ) : null}
 

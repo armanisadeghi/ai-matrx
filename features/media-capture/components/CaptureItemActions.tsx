@@ -126,7 +126,7 @@ export function CaptureItemActions({
         source={{ type: "raw", title: `Transcript — ${fileName}` }}
         actions={{ metadata: { file_id: fileId, capture_kind: kind } }}
       />
-      <div className="min-h-0 flex-1 overflow-y-auto whitespace-pre-wrap rounded-md border border-border bg-muted/30 px-3 py-2 text-sm leading-relaxed text-foreground">
+      <div /* rich-content-exempt: verbatim transcript or extracted document text, not authored markdown */ className="min-h-0 flex-1 overflow-y-auto whitespace-pre-wrap rounded-md border border-border bg-muted/30 px-3 py-2 text-sm leading-relaxed text-foreground">
         {transcript}
       </div>
     </div>

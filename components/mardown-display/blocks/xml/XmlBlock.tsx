@@ -109,7 +109,7 @@ const XmlBlock: React.FC<XmlBlockProps> = ({
   if (!tokens.some((token) => token.type !== "markdown")) {
     if (isStreaming) return null;
     return (
-      <div
+      <div /* rich-content-exempt: deliberate plain-text fallback for content that failed to render, or raw XML */
         data-xml-fragment
         className={cn("my-2 whitespace-pre-wrap break-words", className)}
       >

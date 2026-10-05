@@ -302,7 +302,7 @@ export function MicrophoneRecordingModal({
             <p className="text-sm text-muted-foreground">Finalizing transcription…</p>
             {hasText && (
               <div className="w-full rounded-lg bg-muted/50 px-3 py-2 max-h-24 overflow-y-auto">
-                <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                <p /* rich-content-exempt: verbatim transcript or extracted document text, not authored markdown */ className="text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap">
                   {editedText}
                 </p>
               </div>

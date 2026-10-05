@@ -167,8 +167,6 @@ export const MENU_STRUCTURE: MenuSection[] = [
       "copy",
       "copy-markdown",
       "copy-plain-text",
-      "copy-rich-text",
-      "copy-formatted",
       "copy-with-thinking",
       "copy-table-tsv",
       "copy-table-csv",

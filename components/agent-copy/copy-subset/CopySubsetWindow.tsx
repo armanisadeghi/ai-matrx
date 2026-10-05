@@ -225,7 +225,7 @@ function CopySubsetWindowBody<T>({
       cell: (row: T) => {
         const text = stringifyCellValue(getCellValue(row, base));
         return (
-          <span
+          <span /* rich-content-exempt: tooltip or title text, plain by design */
             className="block max-w-[32rem] whitespace-pre-wrap break-words text-xs"
             title={text}
           >

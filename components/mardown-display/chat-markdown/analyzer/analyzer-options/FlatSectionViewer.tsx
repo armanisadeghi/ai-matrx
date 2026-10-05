@@ -220,7 +220,7 @@ const FlatSectionViewer = ({ data, bookmark }: FlatSectionViewerProps) => {
                         No formatting applied
                       </span>
                     </div>
-                    <pre className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words bg-gray-50 dark:bg-gray-900 p-4 rounded-lg border-border font-mono">
+                    <pre /* rich-content-exempt: debug or inspector output: logs, JSON, code or source view */ className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words bg-gray-50 dark:bg-gray-900 p-4 rounded-lg border-border font-mono">
                       {selectedSection.content}
                     </pre>
                   </div>

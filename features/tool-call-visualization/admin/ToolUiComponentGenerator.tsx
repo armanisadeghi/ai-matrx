@@ -492,7 +492,7 @@ function RawResponse({ text }: RawResponseProps) {
       </button>
       {expanded && (
         <div className="border-t border-border">
-          <pre className="text-xs p-3 font-mono whitespace-pre-wrap overflow-auto max-h-[400px] text-muted-foreground">
+          <pre /* rich-content-exempt: debug or inspector output: logs, JSON, code or source view */ className="text-xs p-3 font-mono whitespace-pre-wrap overflow-auto max-h-[400px] text-muted-foreground">
             {text}
           </pre>
         </div>

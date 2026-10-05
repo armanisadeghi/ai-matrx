@@ -8,7 +8,6 @@
 // document composition), loaded at click time.
 
 import {
-  ClipboardType,
   Code2,
   Database,
   FileCode2,
@@ -19,9 +18,7 @@ import {
   Type,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
-import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
-import { cleanMarkdown } from "@/utils/markdown-processors/clean-markdown-to-text";
-import { unwrapKindEnvelopes } from "@/lib/markdown/plain-text";
+import { copyRichContent, copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
 import { registerAction } from "../provider";
 import { contentFileName, deriveContentTitle, getErrorMessage, contentForDestination } from "../utils";
 import { hasTableShape } from "@ai-matrx/records-ui/table-shape";
@@ -29,12 +26,6 @@ import { liveSelectionShapeText } from "@/components/selection-toolbar/selection
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { parseFirstMarkdownTable, tableToDelimited } from "../markdownTable";
 import type { RichDocumentActionContext } from "../../types";
-import {
-  findTableEnd,
-  rowCells,
-  tableStartsAt,
-  unescapeCellPipes,
-} from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
 
 async function copyText(text: string, done: string): Promise<void> {
   await copyToClipboard(text, {
@@ -61,91 +52,32 @@ function fileBase(ctx: RichDocumentActionContext): string {
   );
 }
 
-/**
- * Plain text a person would type: envelopes unwrapped, markdown chrome gone,
- * and a pipe table read as tab-separated cells (its `|---|` rule dropped) —
- * never raw table syntax.
- */
-function toPlainText(content: string): string {
-  const lines = unwrapKindEnvelopes(content).split("\n");
-  const out: string[] = [];
-  for (let i = 0; i < lines.length; i += 1) {
-    // THE table rule (gfm-table-lines): a header — edge pipes optional — over
-    // its delimiter row; `\|` stays in its cell and reads as `|`.
-    if (tableStartsAt(lines, i)) {
-      const end = findTableEnd(lines, i);
-      for (let j = i; j < end; j += 1) {
-        if (j === i + 1) continue; // the `|---|` rule
-        out.push(rowCells(lines[j]).map(unescapeCellPipes).join("\t"));
-      }
-      i = end - 1;
-      continue;
-    }
-    out.push(lines[i]);
-  }
-  return cleanMarkdown(out.join("\n"));
-}
-
 const hasTable = (ctx: RichDocumentActionContext) =>
   parseFirstMarkdownTable(ctx.content) !== null;
 
+// The two explicit choices beside the one-click Copy (copy.ts): the top rows of "Copy as".
 registerAction({
   id: "copy-markdown",
-  label: "Copy as Markdown",
+  label: "Copy markdown",
   icon: FileCode2,
   iconColor: "text-slate-500 dark:text-slate-400",
   category: "copy",
   supportedSources: "*",
   renderSlot: "overflow",
-  order: 4,
-  run: (ctx) => copyText(contentForDestination(ctx), "Markdown copied"),
+  order: 1,
+  run: (ctx) => copyRichContent(contentForDestination(ctx), "markdown"),
 });
 
 registerAction({
   id: "copy-plain-text",
-  label: "Copy as plain text",
+  label: "Copy text",
   icon: Type,
   iconColor: "text-slate-500 dark:text-slate-400",
   category: "copy",
   supportedSources: "*",
   renderSlot: "overflow",
-  order: 5,
-  run: (ctx) => copyText(toPlainText(contentForDestination(ctx)), "Plain text copied"),
-});
-
-registerAction({
-  // Rich text = the rendered HTML AND a plain-text fallback on the clipboard,
-  // so pasting into an email, a doc or Slack keeps headings, lists and tables.
-  id: "copy-rich-text",
-  label: "Copy as rich text",
-  icon: ClipboardType,
-  iconColor: "text-indigo-500 dark:text-indigo-400",
-  category: "copy",
-  supportedSources: "*",
-  renderSlot: "overflow",
-  order: 6,
-  run: async (ctx) => {
-    try {
-      const { markdownToHtml } = await import("@ai-matrx/print/markdown");
-      const html = markdownToHtml(contentForDestination(ctx));
-      const plain = cleanMarkdown(contentForDestination(ctx));
-      if (typeof ClipboardItem === "undefined" || !navigator.clipboard?.write) {
-        // No rich clipboard in this browser — say so and give the reader the
-        // plain text instead of silently copying less than they asked for.
-        await copyText(plain, "Copied as plain text (this browser cannot copy rich text)");
-        return;
-      }
-      await navigator.clipboard.write([
-        new ClipboardItem({
-          "text/html": new Blob([html], { type: "text/html" }),
-          "text/plain": new Blob([plain], { type: "text/plain" }),
-        }),
-      ]);
-      toast.success("Rich text copied");
-    } catch (error) {
-      toast.error(getErrorMessage(error, "Failed to copy rich text"));
-    }
-  },
+  order: 2,
+  run: (ctx) => copyRichContent(contentForDestination(ctx), "text"),
 });
 
 registerAction({

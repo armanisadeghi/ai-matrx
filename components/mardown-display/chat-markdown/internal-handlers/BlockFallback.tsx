@@ -25,7 +25,7 @@ const StructuredValueView = lazy(
  * fallback ladder.
  */
 const PlainTextFallback: React.FC<{ content: string }> = ({ content }) => (
-  <pre className="my-2 px-3 py-2 text-sm text-neutral-700 dark:text-neutral-300 whitespace-pre-wrap break-words rounded-md border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900/40 overflow-x-auto">
+  <pre /* rich-content-exempt: deliberate plain-text fallback for content that failed to render, or raw XML */ className="my-2 px-3 py-2 text-sm text-neutral-700 dark:text-neutral-300 whitespace-pre-wrap break-words rounded-md border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900/40 overflow-x-auto">
     {content || "[empty block]"}
   </pre>
 );

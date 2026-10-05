@@ -42,6 +42,9 @@ import { runDurationMs, runHref, type RunListRow } from "../runs";
 import { useRunsList } from "../useRunsList";
 import { useWorkflowFacts } from "../useWorkflowFacts";
 import { useUserOrganizations } from "@/features/organizations/hooks";
+import { EntityOrgFilter } from "@/lib/entity-list/components/EntityOrgFilter";
+import { useOrgFilterParam } from "@/lib/entity-list/orgFilterUrl";
+import { Button } from "@/components/ui/button";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 
@@ -76,8 +79,13 @@ function Muted({ children }: { children: React.ReactNode }) {
 export function RunsList({ definitionId }: { definitionId?: string }) {
   const router = useRouter();
   const [, startTransition] = useTransition();
+  // The organization FILTER: a visible on-page control, `?org_filter=`, All organizations by
+  // default, passed to the server (`GET /runs?organization_id=`). Never the header's organization.
+  const [orgFilter, setOrgFilter] = useOrgFilterParam();
+  const organizationFilter = definitionId ? null : orgFilter;
   const { rows, loading, error, refresh } = useRunsList({
     definitionId,
+    organizationId: organizationFilter,
   });
   const facts = useWorkflowFacts(rows.map((row) => row.definitionId));
   const [clickedRow, setClickedRow] = useState<RunRowView | null>(null);
@@ -123,10 +131,6 @@ export function RunsList({ definitionId }: { definitionId?: string }) {
               (row.organizationId && orgName.get(row.organizationId)) ?? "",
             header: "Organization",
             width: 170,
-            // The on-page organization filter (the table's own column filter):
-            // default is every organization; narrowing is the person's choice.
-            filter: "select",
-            filterOptions: organizations.map((o) => ({ value: o.name, label: o.name })),
             entityToken: (row: RunRowView) =>
               row.organizationId ? "organization" : undefined,
             entityId: (row: RunRowView) => row.organizationId ?? undefined,
@@ -223,6 +227,17 @@ export function RunsList({ definitionId }: { definitionId?: string }) {
           onRetry={refresh}
         />
       ) : (
+      <>
+      {definitionId ? null : (
+        <div className="flex items-center gap-2 px-3 pb-2" data-runs-org-filter="">
+          <EntityOrgFilter orgId={orgFilter} onChange={setOrgFilter} />
+          {orgFilter && !loading && view.length === 0 ? (
+            <Button size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => setOrgFilter(null)}>
+              View all organizations
+            </Button>
+          ) : null}
+        </div>
+      )}
       <NonEditableContextMenu
         sourceFeature="workflow_run"
         contentSource={{ type: "raw" }}
@@ -266,6 +281,7 @@ export function RunsList({ definitionId }: { definitionId?: string }) {
           />
         </div>
       </NonEditableContextMenu>
+      </>
       )}
     </div>
   );

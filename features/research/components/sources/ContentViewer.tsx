@@ -131,7 +131,7 @@ export function ContentViewer({
         />
       ) : (
         <div className="rounded-lg border border-border bg-muted/30 p-4 max-h-[500px] overflow-y-auto">
-          <pre className="whitespace-pre-wrap text-xs font-mono leading-relaxed text-foreground">
+          <pre /* rich-content-exempt: verbatim transcript or extracted document text, not authored markdown */ className="whitespace-pre-wrap text-xs font-mono leading-relaxed text-foreground">
             {content.content}
           </pre>
         </div>

@@ -109,7 +109,7 @@ export function FullTranscriptDrawer({
                 />
               )}
             </div>
-            <p className="whitespace-pre-wrap text-base leading-relaxed text-foreground">
+            <p /* rich-content-exempt: verbatim transcript or extracted document text, not authored markdown */ className="whitespace-pre-wrap text-base leading-relaxed text-foreground">
               {rawText || (
                 <span className="italic text-muted-foreground">
                   No transcript was captured for this recording.
@@ -172,7 +172,7 @@ export function FullTranscriptDrawer({
                 Cleaning this recording — the live output is in the run window.
               </p>
             ) : (
-              <p className="whitespace-pre-wrap text-base leading-relaxed text-foreground">
+              <p /* rich-content-exempt: verbatim transcript or extracted document text, not authored markdown */ className="whitespace-pre-wrap text-base leading-relaxed text-foreground">
                 {cleanText || (
                   <span className="italic text-muted-foreground">
                     Not cleaned yet. Tap “Clean” to tidy this recording.

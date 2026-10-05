@@ -1205,7 +1205,7 @@ export const EnhancedChatMarkdownInternal: React.FC<
           error,
         );
         return (
-          <div
+          <div /* rich-content-exempt: deliberate plain-text fallback for content that failed to render, or raw XML */
             key={blockKey(block, index)}
             className="py-2 px-1 text-sm text-neutral-600 dark:text-neutral-400 whitespace-pre-wrap break-words border-l-2 border-red-500 bg-red-50 dark:bg-red-950/20"
           >

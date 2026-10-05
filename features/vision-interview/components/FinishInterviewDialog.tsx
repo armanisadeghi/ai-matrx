@@ -52,6 +52,7 @@
 // both bind this surface.
 
 import { useState } from "react";
+import { RichContent } from "@/components/rich-content/RichContent";
 import {
   BookOpenText,
   Loader2,
@@ -218,9 +219,7 @@ export function FinishInterviewDialog({
             </p>
           ) : null}
           {waiting && interrupt?.prompt && (
-            <div className="max-h-40 overflow-y-auto whitespace-pre-wrap rounded-md border border-border bg-muted/50 p-3 text-xs text-muted-foreground">
-              {interrupt.prompt}
-            </div>
+            <div className="max-h-40 overflow-y-auto rounded-md border border-border bg-muted/50 p-3 text-xs text-muted-foreground"><RichContent source={interrupt.prompt ?? ""} level="standard" /></div>
           )}
           {failed && runError && (
             <p className="break-words rounded-md border border-border bg-muted/50 p-3 text-xs text-muted-foreground">

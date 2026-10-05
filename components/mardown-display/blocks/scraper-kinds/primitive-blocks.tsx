@@ -564,7 +564,7 @@ export function PageRemovalBlock({ serverData, className }: BlockProps) {
         )}
       </div>
       {body && (
-        <p className="max-h-24 overflow-auto whitespace-pre-wrap px-2 py-1.5 text-[11px] text-muted-foreground">
+        <p /* rich-content-exempt: scraped page text or prompt text shown verbatim */ className="max-h-24 overflow-auto whitespace-pre-wrap px-2 py-1.5 text-[11px] text-muted-foreground">
           {body}
         </p>
       )}

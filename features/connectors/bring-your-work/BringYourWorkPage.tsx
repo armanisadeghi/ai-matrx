@@ -215,7 +215,7 @@ function CopyAction({
 
 function CodeBlock({ text }: { text: string }) {
   return (
-    <pre className="m-0 max-h-48 overflow-auto whitespace-pre-wrap break-words rounded-md border border-border bg-muted/50 px-3 py-2 font-mono text-xs text-foreground">
+    <pre /* rich-content-exempt: scraped page text or prompt text shown verbatim */ className="m-0 max-h-48 overflow-auto whitespace-pre-wrap break-words rounded-md border border-border bg-muted/50 px-3 py-2 font-mono text-xs text-foreground">
       {text}
     </pre>
   );

@@ -315,7 +315,7 @@ function CanonicalFlashcardPlayer({ deck, style }: CanonicalPlayerProps) {
       >
         <div className="absolute inset-0 bg-[image:var(--gradient-1)] opacity-20" />
         <div className="relative z-10 max-h-full w-full max-w-3xl overflow-y-auto overscroll-contain scrollbar-hide">
-          <div
+          <div /* rich-content-exempt: dev-only demo page: raw model, log and request output */
             className={cn(
               "whitespace-pre-line text-center font-semibold leading-snug text-balance",
               focusTextSize(faceText),

@@ -354,7 +354,7 @@ export default function PdfExtractClient() {
                 <span className="text-xs font-medium">Extracted Text</span>
               </div>
               <div className="p-3">
-                <pre className="text-xs font-mono text-foreground/80 whitespace-pre-wrap leading-relaxed">
+                <pre /* rich-content-exempt: dev-only demo page: raw model, log and request output */ className="text-xs font-mono text-foreground/80 whitespace-pre-wrap leading-relaxed">
                   {textContent}
                 </pre>
               </div>

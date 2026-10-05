@@ -72,7 +72,7 @@ function piecesOf(content: string): Piece[] {
 }
 
 function ReadableText({ text }: { text: string }) {
-  return <div className="whitespace-pre-wrap break-words">{text}</div>;
+  return <div /* rich-content-exempt: deliberate plain-text fallback for content that failed to render, or raw XML */ className="whitespace-pre-wrap break-words">{text}</div>;
 }
 
 // Fallback component that renders plain text with basic formatting.

@@ -325,7 +325,7 @@ export function SingleSendDialog({
               <div className="border-b px-3 py-2 text-sm font-medium">
                 {draft.subject}
               </div>
-              <pre className="whitespace-pre-wrap px-3 py-3 font-sans text-sm leading-relaxed">
+              <pre /* rich-content-exempt: plain-text email or Google Doc body exchanged verbatim */ className="whitespace-pre-wrap px-3 py-3 font-sans text-sm leading-relaxed">
                 {draft.body}
               </pre>
             </div>

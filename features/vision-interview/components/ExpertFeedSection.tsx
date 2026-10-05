@@ -25,6 +25,7 @@
 // A finished turn always lands here regardless of which tab is active.
 
 import { cn } from "@/lib/utils";
+import { RichContent } from "@/components/rich-content/RichContent";
 import {
   AccordionContent,
   AccordionItem,
@@ -133,9 +134,7 @@ export function ExpertFeedSection({
                 Round {turn.round}
                 {turnTime(turn.created_at) && ` · ${turnTime(turn.created_at)}`}
               </p>
-              <p className="whitespace-pre-wrap break-words text-[13px] leading-relaxed text-foreground">
-                {turn.content}
-              </p>
+              <div className="break-words text-[13px] leading-relaxed text-foreground"><RichContent source={turn.content ?? ""} level="standard" /></div>
             </div>
           ) : (
             <div

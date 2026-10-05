@@ -16,6 +16,7 @@
  * the graph fills, before committing to the full cytoscape view (Phase G).
  * Pure reads through the typed kgInspectorService → Python backend.
  */
+import { KgOrganizationFilter } from "./KgOrganizationFilter";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
@@ -52,7 +53,6 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@ai-matrx/design-system";
 import {
@@ -883,13 +883,7 @@ function EdgesTab({
           title: "Top edges",
           search: false,
           leading: (
-            <Input
-              value={orgInput}
-              onChange={(event) => setOrgInput(event.target.value)}
-              placeholder="Organization ID (optional)"
-              className="h-8 w-64 text-base"
-              aria-label="Filter edges by organization ID"
-            />
+            <KgOrganizationFilter organizationId={orgInput} onChange={setOrgInput} />
           ),
         }}
         read={readOf({ loading, error }, { what: "edges", onRetry: () => setEdgesNonce((n) => n + 1) })}

@@ -64,7 +64,7 @@ function LiveTranscriptBox({
         </span>
         {paused ? "Paused" : "Listening…"}
       </div>
-      <div
+      <div /* rich-content-exempt: verbatim transcript or extracted document text, not authored markdown */
         ref={ref}
         onScroll={(e) => {
           const el = e.currentTarget;

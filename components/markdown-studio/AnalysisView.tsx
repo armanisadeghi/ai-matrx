@@ -740,7 +740,7 @@ function DiffPre({
 }) {
   if (highlightAt < 0) {
     return (
-      <pre className="max-h-40 overflow-auto whitespace-pre-wrap break-all rounded-md border border-border bg-background/40 px-2 py-1.5 text-[11px] font-mono leading-snug text-muted-foreground">
+      <pre /* rich-content-exempt: debug or inspector output: logs, JSON, code or source view */ className="max-h-40 overflow-auto whitespace-pre-wrap break-all rounded-md border border-border bg-background/40 px-2 py-1.5 text-[11px] font-mono leading-snug text-muted-foreground">
         {text || "(empty)"}
       </pre>
     );

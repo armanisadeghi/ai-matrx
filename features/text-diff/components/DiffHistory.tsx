@@ -288,7 +288,7 @@ export function DiffHistory({
                         </p>
                       )}
                       {version.content && (
-                        <div className="text-xs text-muted-foreground whitespace-pre-wrap break-all bg-background/60 rounded p-2 max-h-64 overflow-y-auto overflow-x-hidden">
+                        <div /* rich-content-exempt: verbatim transcript or extracted document text, not authored markdown */ className="text-xs text-muted-foreground whitespace-pre-wrap break-all bg-background/60 rounded p-2 max-h-64 overflow-y-auto overflow-x-hidden">
                           {version.content}
                         </div>
                       )}

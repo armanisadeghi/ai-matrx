@@ -8,6 +8,7 @@
  */
 
 import { useState } from "react";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { ExternalLink, History, Loader2, RotateCw } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { Cost } from "@/components/cost/Cost";
@@ -407,9 +408,7 @@ function CellDetail({
             </div>
           )}
           {r.answer && (
-            <div className="max-h-48 overflow-y-auto rounded border border-border bg-muted/30 px-2 py-1.5 whitespace-pre-wrap break-words">
-              {r.answer}
-            </div>
+            <div className="max-h-48 overflow-y-auto rounded border border-border bg-muted/30 px-2 py-1.5 break-words"><RichContent source={r.answer ?? ""} level="standard" /></div>
           )}
         </>
       )}

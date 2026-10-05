@@ -15,6 +15,7 @@ export const RUNS_PAGE_SIZE = 100;
 export async function fetchRuns(
   dispatch: AppDispatch,
   definitionId?: string,
+  organizationId?: string | null,
 ): Promise<{ ok: true; rows: RunListRow[] } | { ok: false; message: string }> {
   const result = definitionId
     ? await dispatch(
@@ -31,7 +32,13 @@ export async function fetchRuns(
           method: "GET",
           // Child runs are listed too: a fan-out item that failed is a run somebody has to be
           // able to find, and hiding it here would make this list quietly incomplete.
-          queryParams: { limit: RUNS_PAGE_SIZE, include_children: true },
+          queryParams: {
+            limit: RUNS_PAGE_SIZE,
+            include_children: true,
+            // The on-page organization filter, decided by the server (not among the loaded
+            // rows). Absent = every organization the person can see.
+            ...(organizationId ? { organization_id: organizationId } : {}),
+          },
         }),
       );
   if (result.error) return { ok: false, message: result.error.message || "Could not load runs." };

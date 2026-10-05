@@ -23,6 +23,7 @@
 "use client";
 
 import { useMemo, useEffect, useState } from "react";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { AlertTriangle, Loader2, RefreshCw, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -779,11 +780,11 @@ function TextResultCell({ value }: { value: unknown }) {
     <div className="min-w-[16rem] max-w-[40rem]">
       <div
         className={cn(
-          "whitespace-pre-wrap break-words text-xs leading-relaxed text-foreground/85",
+          "break-words text-xs leading-relaxed text-foreground/85",
           !expanded && long && "line-clamp-4",
         )}
       >
-        {text}
+        <RichContent source={text} level="standard" />
       </div>
       {long && (
         <button

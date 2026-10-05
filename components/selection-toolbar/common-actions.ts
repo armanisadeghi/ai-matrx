@@ -38,23 +38,39 @@ function eligible(id: string) {
       : ({ status: "absent" } as const);
 }
 
+const COPY_FLAVORS = [
+  { id: "selection:copy", label: "Copy", flavor: "default", order: 0, placement: "primary" },
+  { id: "selection:copy-markdown", label: "Copy markdown", flavor: "markdown", order: 1, placement: "overflow" },
+  { id: "selection:copy-text", label: "Copy text", flavor: "text", order: 2, placement: "overflow" },
+] as const;
+
 const ACTIONS: Action[] = [
-  {
-    id: "selection:copy",
-    label: "Copy",
-    icon: registerAlchemyIcon(ClipboardCopy),
-    category: "copy",
-    order: 0,
-    placement: "primary",
-    preserveSelection: true,
-    eligible: eligible("selection:copy"),
-    run: async (t) => {
-      const common = commonOf(t);
-      if (!common) return;
-      const { copyToClipboard } = await import("@/components/matrx/buttons/markdown-copy-utils");
-      await copyToClipboard(common.text, { isMarkdown: false });
-    },
-  },
+  // THE one copy module (markdown-copy-utils.ts, selection-copy.ts): Copy writes
+  // the formatted selection AND the knob's plain flavor (markdown by default);
+  // Copy markdown and Copy text are the explicit choices, under More.
+  ...COPY_FLAVORS.map(
+    ({ id, label, flavor, order, placement }): Action => ({
+      id,
+      label,
+      icon: registerAlchemyIcon(ClipboardCopy),
+      category: "copy",
+      order,
+      placement,
+      preserveSelection: true,
+      eligible: eligible(id),
+      run: async (t) => {
+        const common = commonOf(t);
+        if (!common) return;
+        const { copyRenderedSelection, renderedSelectionRange } = await import("./selection-copy");
+        const { copyRichContent } = await import("@/components/matrx/buttons/markdown-copy-utils");
+        // Rendered content: its formatted DOM + its markdown. A text field: its text IS markdown.
+        const ok = renderedSelectionRange()
+          ? await copyRenderedSelection(flavor, common.shapeText ?? common.text)
+          : await copyRichContent(common.text, flavor, { toast: false });
+        if (ok) (await import("@/lib/toast")).toast.success(flavor === "default" ? "Copied" : flavor === "markdown" ? "Markdown copied" : "Text copied");
+      },
+    }),
+  ),
   {
     id: "selection:save-to-notes",
     label: "Save to notes",

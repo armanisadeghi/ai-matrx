@@ -127,7 +127,7 @@ export function SpecCard({ task }: Props) {
           {promptOpen ? "Hide" : "Show"} prompt ({task.prompt.length} chars)
         </button>
         {promptOpen && (
-          <pre className="text-xs bg-muted rounded-md p-3 overflow-x-auto whitespace-pre-wrap font-mono max-h-72 overflow-y-auto">
+          <pre /* rich-content-exempt: scraped page text or prompt text shown verbatim */ className="text-xs bg-muted rounded-md p-3 overflow-x-auto whitespace-pre-wrap font-mono max-h-72 overflow-y-auto">
             {task.prompt}
           </pre>
         )}

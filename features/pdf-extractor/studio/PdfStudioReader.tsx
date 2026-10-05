@@ -2157,7 +2157,7 @@ function LegacyReaderFallback({ doc }: { doc: PdfDocument }) {
             <PdfAiContent content={doc.cleanContent} />
           </div>
         ) : (
-          <pre className="flex-1 min-h-0 overflow-y-auto whitespace-pre-wrap font-mono text-[11px] leading-relaxed text-foreground/85">
+          <pre /* rich-content-exempt: verbatim transcript or extracted document text, not authored markdown */ className="flex-1 min-h-0 overflow-y-auto whitespace-pre-wrap font-mono text-[11px] leading-relaxed text-foreground/85">
             {doc.content ?? "(no extracted text)"}
           </pre>
         )}

@@ -10,6 +10,7 @@
  * ~30s auto-clear — never Redux, storage, or query caches.
  */
 import { useEffect, useRef, useState } from "react";
+import { RichContent } from "@/components/rich-content/RichContent";
 import {
   ArrowLeftRight,
   Building2,
@@ -354,9 +355,7 @@ export function VaultItemDetail({
             )}
           </div>
           {item.description && !editingCredential && (
-            <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-5 text-muted-foreground">
-              {item.description}
-            </p>
+            <div className="mt-2 break-words text-sm leading-5 text-muted-foreground"><RichContent source={item.description ?? ""} level="standard" /></div>
           )}
           {item.tags.length > 0 && !editingCredential && (
             <div
@@ -920,8 +919,8 @@ function AttachmentRow({
           {attachment.description && (
             <>
               <dt className="font-medium text-muted-foreground">Purpose</dt>
-              <dd className="whitespace-pre-wrap break-words text-foreground">
-                {attachment.description}
+              <dd className="break-words text-foreground">
+                <RichContent source={attachment.description ?? ""} level="standard" />
               </dd>
             </>
           )}
@@ -1331,9 +1330,7 @@ function FieldRow({
               </span>
             )}
             {field.description && (
-              <span className="min-w-0 whitespace-pre-wrap break-words">
-                {field.description}
-              </span>
+              <div className="min-w-0 break-words"><RichContent source={field.description ?? ""} level="standard" /></div>
             )}
           </div>
         )}
@@ -2561,9 +2558,7 @@ function NotEncryptedSection({
             <p className="text-xs font-medium text-muted-foreground">
               {VAULT_LABELS.notes}
             </p>
-            <p className="mt-1 whitespace-pre-wrap break-words rounded border border-border bg-background p-2 text-xs">
-              {item.notes}
-            </p>
+            <div className="mt-1 break-words rounded border border-border bg-background p-2 text-xs"><RichContent source={item.notes ?? ""} level="standard" /></div>
           </div>
         )
       )}

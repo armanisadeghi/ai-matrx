@@ -358,7 +358,7 @@ export default function ScrapedPageBlock({ serverData, className }: Props) {
                   <MarkdownCore>{active.body ?? ""}</MarkdownCore>
                 </div>
               ) : (
-                <pre className="whitespace-pre-wrap text-xs leading-relaxed text-foreground">
+                <pre /* rich-content-exempt: scraped page text or prompt text shown verbatim */ className="whitespace-pre-wrap text-xs leading-relaxed text-foreground">
                   {active.body}
                 </pre>
               )}

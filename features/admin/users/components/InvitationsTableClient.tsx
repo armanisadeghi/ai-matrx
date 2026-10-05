@@ -14,7 +14,7 @@
 // can resolve must be RENDERED and LINKED, so it is now a Reviewer column
 // carrying `AdminUserRef`.
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { AdminUserRef } from "./AdminUserRef";
 import { CheckCircle, Loader2, XCircle } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -27,7 +27,11 @@ import { ProTextarea } from "@/components/official/ProTextarea";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
-import { readOf } from "@/components/read-state/ReadGate";
+import {
+  serverTableInitialState,
+  useServerTable,
+} from "@/features/admin/shared/server-table/useServerTable";
+import type { MatrxDataTableQueryState } from "@ai-matrx/design-system/data-table/types";
 
 interface InvitationRequest {
   id: string;
@@ -70,36 +74,51 @@ function summary(r: InvitationRequest): string {
   ].join("\n");
 }
 
+// Every search / filter / sort / page is answered by POST /api/admin/invitation-requests over ALL
+// requests (see that route) — the table never filters a slice the browser happens to hold.
+const INITIAL_STATE = serverTableInitialState({ id: "created_at", direction: "desc" });
+
+async function fetchInvitationPage(
+  state: MatrxDataTableQueryState,
+): Promise<{ rows: InvitationRequest[]; total: number }> {
+  const res = await fetch("/api/admin/invitation-requests", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ state }),
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.msg ?? "Failed to load invitation requests");
+  return { rows: (json.data ?? []) as InvitationRequest[], total: Number(json.total ?? 0) };
+}
+
+const USER_TYPE_OPTIONS = [
+  "ai_prompt_engineer",
+  "technical_lead",
+  "product_manager",
+  "business_executive",
+  "research_scientist",
+  "creative_professional",
+  "consultant",
+  "individual_hobbyist",
+  "other",
+].map((v) => ({ value: v, label: v.replace(/_/g, " ") }));
+
+const STATUS_OPTIONS = ["pending", "approved", "rejected", "invited", "converted"].map((v) => ({
+  value: v,
+  label: v,
+}));
+
 export function InvitationsTableClient() {
-  const [rows, setRows] = useState<InvitationRequest[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [notes, setNotes] = useState("");
   const [reason, setReason] = useState("");
   const [acting, setActing] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [clickedRow, setClickedRow] = useState<InvitationRequest | null>(null);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch(
-        "/api/admin/invitation-requests?status=all&limit=200",
-      );
-      const json = await res.json();
-      if (!json.success) throw new Error("Failed to load invitation requests");
-      setRows(json.data ?? []);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to load");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
+  const {
+    rows,
+    reload: load,
+    tableProps,
+  } = useServerTable<InvitationRequest>(fetchInvitationPage, INITIAL_STATE, "invitation requests");
 
   const act = useCallback(
     async (row: InvitationRequest, action: "approve" | "reject") => {
@@ -128,7 +147,7 @@ export function InvitationsTableClient() {
         setSelectedId(null);
         setNotes("");
         setReason("");
-        await load();
+        load();
       } catch (e) {
         toast.error(e instanceof Error ? e.message : "Action failed");
       } finally {
@@ -140,15 +159,16 @@ export function InvitationsTableClient() {
 
   const columns = useMemo((): MatrxColumnDef<InvitationRequest>[] => {
     return [
-      { id: "full_name", accessorKey: "full_name", header: "Name", width: 160 },
-      { id: "company", accessorKey: "company", header: "Company", width: 150 },
-      { id: "email", accessorKey: "email", header: "Email", width: 200 },
+      { id: "full_name", accessorKey: "full_name", header: "Name", filter: "text", width: 160 },
+      { id: "company", accessorKey: "company", header: "Company", filter: "text", width: 150 },
+      { id: "email", accessorKey: "email", header: "Email", filter: "text", width: 200 },
       {
         id: "user_type",
         header: "Type",
         accessorFn: (r) =>
           r.user_type === "other" ? r.user_type_other : r.user_type,
         filter: "select",
+        filterOptions: USER_TYPE_OPTIONS,
         width: 120,
       },
       {
@@ -156,6 +176,7 @@ export function InvitationsTableClient() {
         accessorKey: "status",
         header: "Status",
         filter: "select",
+        filterOptions: STATUS_OPTIONS,
         cell: (r) => (
           <Badge variant="outline" className={STATUS_CLASS[r.status] ?? ""}>
             {r.status}
@@ -167,6 +188,10 @@ export function InvitationsTableClient() {
         id: "reviewed_by",
         accessorKey: "reviewed_by",
         header: "Reviewer",
+        // The database has the reviewer's id only (no name to match); the cell resolves the
+        // person by name + email. Filtering/sorting by an id would be a control nobody can use.
+        filter: false,
+        sortable: false,
         cell: (r) =>
           r.reviewed_by ? (
             <AdminUserRef userId={r.reviewed_by} />
@@ -179,6 +204,7 @@ export function InvitationsTableClient() {
         id: "created_at",
         accessorKey: "created_at",
         header: "Submitted",
+        filter: "date",
         cell: (r) => (
           <span className="text-xs text-muted-foreground">
             {new Date(r.created_at).toLocaleDateString()}
@@ -242,12 +268,9 @@ export function InvitationsTableClient() {
           ]}
         >
         <MatrxDataTable
-          urlState={{ id: "user-invitations", selectedRow: false }}
-          data={rows}
+          {...tableProps}
           columns={columns}
           getRowId={(r) => r.id}
-          isLoading={loading}
-          pageSize={50}
           selectedId={selectedId}
           onSelectedIdChange={(id) => {
             setSelectedId(id);
@@ -255,13 +278,12 @@ export function InvitationsTableClient() {
             setNotes(row?.notes ?? "");
             setReason("");
           }}
-          read={readOf({ loading, error }, { what: "invitation requests", onRetry: () => void load() })}
           emptyState={{ title: "No invitation requests" }}
           toolbar={{
             search: true,
             searchPlaceholder: "Search name, email, company…",
             actions: (
-              <Button size="sm" variant="outline" onClick={() => void load()}>
+              <Button size="sm" variant="outline" onClick={load}>
                 Refresh
               </Button>
             ),

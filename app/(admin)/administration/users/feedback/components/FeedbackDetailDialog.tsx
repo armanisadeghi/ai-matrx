@@ -2807,9 +2807,7 @@ export default function FeedbackDetailDialog({
                               )}
                             >
                               {msg.content && (
-                                <p className="text-sm whitespace-pre-wrap">
-                                  {msg.content}
-                                </p>
+                                <div className="text-sm"><RichContent source={msg.content ?? ""} level="standard" /></div>
                               )}
                               {getFeedbackScreenshotRefs(msg).length > 0 && (
                                 <div

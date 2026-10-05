@@ -132,7 +132,7 @@ export default function DebatePage() {
                                                     : 'bg-muted'
                                             }`}
                                         >
-                                            <p className="text-sm md:text-base whitespace-pre-wrap">
+                                            <p /* rich-content-exempt: dev-only demo page: raw model, log and request output */ className="text-sm md:text-base whitespace-pre-wrap">
                                                 {message.content}
                                             </p>
                                         </div>

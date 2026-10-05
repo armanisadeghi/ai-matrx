@@ -584,7 +584,7 @@ export default function ServerEventInspector({ content: controlled }: ServerEven
                   </p>
                 )}
                 {rawOutputText && (
-                  <pre className="text-[11px] font-mono leading-relaxed text-foreground/85 whitespace-pre-wrap break-all">
+                  <pre /* rich-content-exempt: debug or inspector output: logs, JSON, code or source view */ className="text-[11px] font-mono leading-relaxed text-foreground/85 whitespace-pre-wrap break-all">
                     {rawOutputText}
                   </pre>
                 )}

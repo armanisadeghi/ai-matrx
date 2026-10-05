@@ -9,7 +9,7 @@
 
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Globe, Loader2, Trash2, UserPlus } from "lucide-react";
 import { extractErrorMessage } from "@/utils/errors";
 import {
@@ -33,6 +33,9 @@ import type {
   PermissionLevel,
   ResourceType,
 } from "@/features/files/types";
+import { UserSearchField } from "@/features/user-search/UserSearchField";
+import type { UserSearchCandidate } from "@/features/user-search/types";
+import { useUserConnections } from "@/features/messaging/hooks/useUserConnections";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface PermissionsDialogProps {
@@ -94,6 +97,29 @@ export function PermissionsDialogBody({
   );
 
   const [granteeId, setGranteeId] = useState("");
+  const [personQuery, setPersonQuery] = useState("");
+  // Only people the signed-in user may already see (contacts, organization
+  // members, invitees) are offered — never the full directory.
+  const { connections } = useUserConnections({});
+  const personCandidates = useMemo<UserSearchCandidate[]>(
+    () =>
+      connections.map((c) => ({
+        id: c.user_id,
+        email: c.email,
+        displayName: c.display_name,
+        avatarUrl: c.avatar_url,
+        phone: null,
+        adminLevel: null,
+        organizations:
+          c.source === "organization" && c.sourceDetails
+            ? [c.sourceDetails]
+            : [],
+        source: c.source,
+        createdAt: null,
+        lastSignInAt: null,
+      })),
+    [connections],
+  );
   const [granteeType, setGranteeType] = useState<GranteeType>("user");
   const [level, setLevel] = useState<PermissionLevel>("read");
   const [expiresAt, setExpiresAt] = useState<string>("");
@@ -106,7 +132,7 @@ export function PermissionsDialogBody({
 
   const handleGrant = useCallback(async () => {
     if (!granteeId.trim()) {
-      setError("Enter a user or group id.");
+      setError("Pick a person or enter a group id.");
       return;
     }
     setSubmitting(true);
@@ -123,6 +149,7 @@ export function PermissionsDialogBody({
         }),
       ).unwrap();
       setGranteeId("");
+      setPersonQuery("");
       setExpiresAt("");
     } catch (err) {
       setError(extractErrorMessage(err));
@@ -162,22 +189,53 @@ export function PermissionsDialogBody({
           Add people or groups
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          <label className="flex flex-col gap-1 text-xs sm:col-span-2">
-            <span className="text-muted-foreground">User or group id</span>
-            <input
-              type="text"
-              value={granteeId}
-              onChange={(e) => setGranteeId(e.target.value)}
-              placeholder="uuid…"
-              className="rounded-md border bg-background px-2 py-1 text-sm"
-              style={{ fontSize: "16px" }}
-            />
-          </label>
+          <div className="flex flex-col gap-1 text-xs sm:col-span-2">
+            <span className="text-muted-foreground">
+              {granteeType === "user" ? "Person" : "Group id"}
+            </span>
+            {granteeType === "user" ? (
+              <UserSearchField
+                value={personQuery}
+                onValueChange={(value) => {
+                  setPersonQuery(value);
+                  // A pasted id still works; anything else waits for a pick.
+                  setGranteeId(
+                    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+                      value.trim(),
+                    )
+                      ? value.trim()
+                      : "",
+                  );
+                }}
+                onUserSelect={(user) => {
+                  setGranteeId(user.id);
+                  setPersonQuery(user.email ?? user.displayName ?? user.id);
+                }}
+                candidates={personCandidates}
+                title="Choose a person to grant access"
+                placeholder="Search by name or email"
+                inputClassName="h-8"
+              />
+            ) : (
+              <input
+                type="text"
+                value={granteeId}
+                onChange={(e) => setGranteeId(e.target.value)}
+                placeholder="uuid…"
+                className="rounded-md border bg-background px-2 py-1 text-sm"
+                style={{ fontSize: "16px" }}
+              />
+            )}
+          </div>
           <label className="flex flex-col gap-1 text-xs">
             <span className="text-muted-foreground">Type</span>
             <select
               value={granteeType}
-              onChange={(e) => setGranteeType(e.target.value as GranteeType)}
+              onChange={(e) => {
+                setGranteeType(e.target.value as GranteeType);
+                setGranteeId("");
+                setPersonQuery("");
+              }}
               className="rounded-md border bg-background px-2 py-1 text-sm"
             >
               <option value="user">User</option>

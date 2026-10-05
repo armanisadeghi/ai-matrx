@@ -122,6 +122,8 @@ export const SELECTION_ACTION_MODES: Readonly<Record<string, ModeRule>> = {
   "selection:table-del-table": ["edit"],
   // Every selection that has no richer home: copy it, keep it
   "selection:copy": ["read", "edit"],
+  "selection:copy-markdown": ["read", "edit"],
+  "selection:copy-text": ["read", "edit"],
   "selection:save-to-notes": ["read", "edit"],
   // A selection that reads as rows (a table, a list, Key: value lines, CSV) — SAVE-AS-TABLE-EVERYWHERE
   "selection:save-to-table": ["read", "edit"],

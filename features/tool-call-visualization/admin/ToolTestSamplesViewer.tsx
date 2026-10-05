@@ -509,7 +509,7 @@ function SampleCard({ sample, index, onUpdate }: SampleCardProps) {
                                 </span>
                                 <CopyButton content={modelFacingContent} label="Copy" />
                             </div>
-                            <pre className="p-3 text-xs font-mono whitespace-pre-wrap text-foreground/80 max-h-96 overflow-y-auto">
+                            <pre /* rich-content-exempt: debug or inspector output: logs, JSON, code or source view */ className="p-3 text-xs font-mono whitespace-pre-wrap text-foreground/80 max-h-96 overflow-y-auto">
                                 {modelFacingContent}
                             </pre>
                         </div>

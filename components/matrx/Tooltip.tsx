@@ -72,7 +72,7 @@ export const AdvancedTooltip = ({
         sideOffset={sideOffset}
         className={`${baseContentClasses} ${variantStyles[variant]} ${contentClassName}`}
       >
-        <p className="leading-none whitespace-pre-wrap">{text}</p>
+        <p /* rich-content-exempt: tooltip or title text, plain by design */ className="leading-none whitespace-pre-wrap">{text}</p>
       </TooltipContent>
     </Tooltip>
   );

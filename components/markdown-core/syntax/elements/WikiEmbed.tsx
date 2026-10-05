@@ -78,7 +78,7 @@ export function WikiEmbed(props: { "data-target"?: string; "data-alias"?: string
           ) : body === null ? (
             <span className="block h-10 animate-pulse rounded bg-muted/60" aria-label="Loading the embedded note" />
           ) : body.trim() ? (
-            <Suspense fallback={<span className="block whitespace-pre-wrap text-sm">{body}</span>}>
+            <Suspense fallback={<span /* rich-content-exempt: deliberate plain-text fallback for content that failed to render, or raw XML */ className="block whitespace-pre-wrap text-sm">{body}</span>}>
               <NestedRichContent source={body} />
             </Suspense>
           ) : (

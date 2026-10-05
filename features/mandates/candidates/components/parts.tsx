@@ -100,7 +100,7 @@ export function JsonBlock({ value, className }: { value: unknown; className?: st
     text = String(value);
   }
   return (
-    <pre
+    <pre /* rich-content-exempt: debug or inspector output: logs, JSON, code or source view */
       className={cn(
         "max-h-60 overflow-auto whitespace-pre-wrap break-words rounded-md bg-muted/60 p-2 font-mono text-[11px] leading-snug",
         className,

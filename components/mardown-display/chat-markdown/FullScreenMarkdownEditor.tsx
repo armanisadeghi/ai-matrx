@@ -911,7 +911,7 @@ function AdminCodeBlock({
   maxH?: string;
 }) {
   return (
-    <pre
+    <pre /* rich-content-exempt: debug or inspector output: logs, JSON, code or source view */
       className={cn(
         "rounded-lg bg-muted border border-border px-3 py-2 text-xs font-mono text-foreground overflow-auto whitespace-pre-wrap break-all",
         maxH,

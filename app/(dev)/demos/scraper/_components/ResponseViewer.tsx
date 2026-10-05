@@ -398,7 +398,7 @@ export function ResponseViewer({
           )}
         </div>
         {errorDiagnostics != null && (
-          <pre className="flex-1 min-h-0 overflow-auto p-4 text-xs font-mono text-foreground bg-muted/50 whitespace-pre-wrap border-t border-border">
+          <pre /* rich-content-exempt: dev-only demo page: raw model, log and request output */ className="flex-1 min-h-0 overflow-auto p-4 text-xs font-mono text-foreground bg-muted/50 whitespace-pre-wrap border-t border-border">
             {diagnosticsText}
           </pre>
         )}

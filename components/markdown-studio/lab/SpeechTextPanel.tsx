@@ -42,7 +42,7 @@ export function SpeechTextPanel({ content }: SpeechTextPanelProps) {
         </Button>
       </div>
       {speechText.trim() ? (
-        <div className="whitespace-pre-wrap break-words font-mono text-sm text-foreground">
+        <div /* rich-content-exempt: debug or inspector output: logs, JSON, code or source view */ className="whitespace-pre-wrap break-words font-mono text-sm text-foreground">
           {speechText}
         </div>
       ) : (

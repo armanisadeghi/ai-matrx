@@ -159,7 +159,7 @@ const SectionGroupTab: React.FC<SectionGroupTabProps> = ({ data }) => {
                                                                                     {type}
                                                                                 </span>
                                                                             </td>
-                                                                            <td className="px-2 py-1 border-border font-mono whitespace-pre-wrap">
+                                                                            <td /* rich-content-exempt: debug or inspector output: logs, JSON, code or source view */ className="px-2 py-1 border-border font-mono whitespace-pre-wrap">
                                                                                 {text}
                                                                             </td>
                                                                         </tr>

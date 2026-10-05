@@ -176,7 +176,7 @@ function TurnBubble({ turn }: { turn: ConvTurn }) {
         <p className="text-[10px] text-muted-foreground mb-1">
           {turn.role} · {turn.timestamp}
         </p>
-        <div
+        <div /* rich-content-exempt: dev-only demo page: raw model, log and request output */
           className={`rounded p-2.5 text-xs max-w-[85%] whitespace-pre-wrap ${isUser ? "bg-primary/10 border border-primary/20" : "bg-muted border"}`}
         >
           {turn.content}

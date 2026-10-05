@@ -325,7 +325,7 @@ export function CaptureReview({
           )}
 
           {!transcribing && transcript && (
-            <p className="max-h-56 overflow-y-auto whitespace-pre-wrap text-xs leading-relaxed text-foreground">
+            <p /* rich-content-exempt: verbatim transcript or extracted document text, not authored markdown */ className="max-h-56 overflow-y-auto whitespace-pre-wrap text-xs leading-relaxed text-foreground">
               {transcript}
             </p>
           )}

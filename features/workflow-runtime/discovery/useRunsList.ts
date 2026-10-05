@@ -31,9 +31,11 @@ export interface RunsListState {
 export interface UseRunsListOptions {
   /** Omit for the global list; pass a workflow id for that workflow's history. */
   definitionId?: string;
+  /** The on-page organization filter (global list only); null/omitted = All organizations. */
+  organizationId?: string | null;
 }
 
-export function useRunsList({ definitionId }: UseRunsListOptions = {}): RunsListState {
+export function useRunsList({ definitionId, organizationId }: UseRunsListOptions = {}): RunsListState {
   const dispatch = useAppDispatch();
   // 🚨 A LIST IS DECIDED BY ACCESS, NEVER BY THE SELECTED ORGANIZATION
   // (common-docs/policies/access-ladder.md). `GET /runs` answers
@@ -51,7 +53,7 @@ export function useRunsList({ definitionId }: UseRunsListOptions = {}): RunsList
   useEffect(() => {
     let live = true;
     void (async () => {
-      const result = await fetchRuns(dispatch, definitionId);
+      const result = await fetchRuns(dispatch, definitionId, organizationId);
       if (!live) return;
       if (!result.ok) {
         setError(result.message);
@@ -64,7 +66,7 @@ export function useRunsList({ definitionId }: UseRunsListOptions = {}): RunsList
     return () => {
       live = false;
     };
-  }, [dispatch, definitionId, generation]);
+  }, [dispatch, definitionId, organizationId, generation]);
 
   /** Coalesced refetch — a burst of transitions is one read, not one each. */
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -91,6 +93,7 @@ export function useRunsList({ definitionId }: UseRunsListOptions = {}): RunsList
   useRunAnnouncements({
     onAnnounce: (event) => {
       if (scoped !== null && event.workflow_id !== scoped) return;
+      // A filtered list refetches on a run it has not seen (the server decides membership).
       setRows((current) => {
         const { rows: next, needsRefresh } = applyAnnouncement(current, event);
         if (needsRefresh) scheduleRefresh();

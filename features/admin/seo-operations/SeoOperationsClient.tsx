@@ -21,6 +21,7 @@ import {
   adminMandateRecordHref,
 } from "@/features/mandates/admin-routes";
 import { adminScheduleHref } from "@/features/scheduling/constants/routes";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import AppLink from "@/components/navigation/AppLink";
 import { ArrowUpRight } from "lucide-react";
@@ -252,9 +253,7 @@ function MandatesPanel() {
         header: "Goal (the judge rubric)",
         sortable: false,
         cell: (row) => (
-          <p className="max-w-2xl whitespace-pre-wrap text-xs leading-relaxed text-muted-foreground">
-            {row.description || "— no goal recorded —"}
-          </p>
+          <div className="max-w-2xl text-xs leading-relaxed text-muted-foreground"><RichContent source={row.description || "— no goal recorded —"} level="standard" /></div>
         ),
       },
       {

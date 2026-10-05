@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { RichContent } from "@/components/rich-content/RichContent";
 import {
   Dialog,
   DialogContent,
@@ -112,9 +113,7 @@ export function TextActionResultModal({
               </Button>
             </div>
             <ScrollArea className="h-[400px] border rounded-lg p-4 bg-muted/30">
-              <div className="whitespace-pre-wrap text-sm font-mono">
-                {aiResponse}
-              </div>
+              <div className="text-sm"><RichContent source={aiResponse ?? ""} level="standard" /></div>
             </ScrollArea>
           </TabsContent>
 
@@ -123,7 +122,7 @@ export function TextActionResultModal({
               <Badge variant="outline">Original</Badge>
             </div>
             <ScrollArea className="h-[400px] border rounded-lg p-4 bg-muted/30">
-              <div className="whitespace-pre-wrap text-sm font-mono">
+              <div /* rich-content-exempt: original text the user selected, shown verbatim */ className="whitespace-pre-wrap text-sm font-mono">
                 {originalText}
               </div>
             </ScrollArea>
@@ -136,7 +135,7 @@ export function TextActionResultModal({
                   <Badge variant="outline">Original</Badge>
                 </div>
                 <ScrollArea className="h-full border rounded-lg p-4 bg-muted/30">
-                  <div className="whitespace-pre-wrap text-sm font-mono">
+                  <div /* rich-content-exempt: original text the user selected, shown verbatim */ className="whitespace-pre-wrap text-sm font-mono">
                     {originalText}
                   </div>
                 </ScrollArea>
@@ -146,9 +145,7 @@ export function TextActionResultModal({
                   <Badge>AI Result</Badge>
                 </div>
                 <ScrollArea className="h-full border rounded-lg p-4 bg-muted/30">
-                  <div className="whitespace-pre-wrap text-sm font-mono">
-                    {aiResponse}
-                  </div>
+                  <div className="text-sm"><RichContent source={aiResponse ?? ""} level="standard" /></div>
                 </ScrollArea>
               </div>
             </div>

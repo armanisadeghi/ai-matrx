@@ -113,7 +113,7 @@ function ArtifactRow({
               />
             </div>
           ) : typeof content.data.content === "string" ? (
-            <pre className="max-h-80 overflow-auto whitespace-pre-wrap break-words p-3 text-[11px] leading-5">
+            <pre /* rich-content-exempt: app-authored string, editable source text, or raw payload */ className="max-h-80 overflow-auto whitespace-pre-wrap break-words p-3 text-[11px] leading-5">
               {content.data.content}
             </pre>
           ) : (

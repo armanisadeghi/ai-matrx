@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, useTransition, type ReactNode } from "react";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { Check, Inbox, Loader2, X } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
@@ -161,7 +162,7 @@ export function OwnerSuggestionInbox({ header }: { header?: ReactNode } = {}) {
         return (
           <div key={s.id} className="p-4 flex items-start gap-3">
             <div className="min-w-0 flex-1">
-              <p className="text-sm whitespace-pre-wrap">{s.body}</p>
+              <div className="text-sm"><RichContent source={s.body ?? ""} level="standard" /></div>
               <div className="mt-1.5 flex items-center gap-2 text-xs text-muted-foreground">
                 <Badge
                   variant={s.status === "open" ? "secondary" : "outline"}

@@ -535,7 +535,7 @@ export function ResultsPanel({
                     call_id: {finalPayload.output.model_facing_result.call_id}
                   </span>
                 </div>
-                <pre className="text-xs font-mono whitespace-pre-wrap text-foreground/80 bg-muted/50 rounded p-3 border border-border">
+                <pre /* rich-content-exempt: dev-only demo page: raw model, log and request output */ className="text-xs font-mono whitespace-pre-wrap text-foreground/80 bg-muted/50 rounded p-3 border border-border">
                   {finalPayload.output.model_facing_result.content}
                 </pre>
               </div>

@@ -808,7 +808,7 @@ export default function LaunchInspectorDemoPage() {
                     </div>
                   ))}
                   {latestText && (
-                    <pre className="max-h-56 overflow-auto whitespace-pre-wrap rounded bg-muted/30 p-2 font-mono text-[11px] text-muted-foreground">
+                    <pre /* rich-content-exempt: dev-only demo page: raw model, log and request output */ className="max-h-56 overflow-auto whitespace-pre-wrap rounded bg-muted/30 p-2 font-mono text-[11px] text-muted-foreground">
                       {latestText}
                     </pre>
                   )}

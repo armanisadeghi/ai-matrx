@@ -58,7 +58,7 @@ const AudioModal: React.FC<AudioModalProps> = ({
                 <CredenzaBody className="mt-4 sm:mt-6 flex flex-col gap-4">
                     {!hideText && (
                         <ScrollArea className="flex-grow h-[30dvh] sm:h-[40dvh] w-full rounded-md border p-4">
-                            <div className="text-base sm:text-lg leading-relaxed whitespace-pre-wrap">
+                            <div /* rich-content-exempt: verbatim transcript or extracted document text, not authored markdown */ className="text-base sm:text-lg leading-relaxed whitespace-pre-wrap">
                                 {text}
                             </div>
                         </ScrollArea>

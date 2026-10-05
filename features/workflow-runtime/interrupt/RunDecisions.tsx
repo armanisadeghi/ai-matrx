@@ -19,6 +19,7 @@
  */
 
 import { AlertTriangle, BotMessageSquare, Check, UserCheck, X } from "lucide-react";
+import { RichContent } from "@/components/rich-content/RichContent";
 
 import { useAppSelector } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
@@ -90,9 +91,9 @@ function DecisionRow({
         </p>
       ) : null}
       {answer ? (
-        <p className="mt-0.5 whitespace-pre-wrap break-words text-[11px] text-foreground/80">
-          “{answer}”
-        </p>
+        <div className="mt-0.5 break-words text-[11px] text-foreground/80">
+          <RichContent source={answer} level="standard" />
+        </div>
       ) : null}
     </li>
   );

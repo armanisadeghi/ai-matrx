@@ -15,6 +15,7 @@
  */
 
 import type { ApprovalKind, ApprovalScope } from "../types";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { formatCount } from "@ai-matrx/kit/format";
 import {
   GOOGLE_OPERATOR_SCOPE,
@@ -71,9 +72,7 @@ function AppendPreview({ payload }: { payload: GoogleProposalPayload }) {
             <p className="mb-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
               The document ends like this now
             </p>
-            <pre className="whitespace-pre-wrap break-words font-sans text-[11px] text-muted-foreground">
-              {tail}
-            </pre>
+            <div className="break-words font-sans text-[11px] text-muted-foreground"><RichContent source={tail ?? ""} level="standard" /></div>
           </div>
         ) : null}
         <div className="px-3 py-2">
@@ -81,9 +80,7 @@ function AppendPreview({ payload }: { payload: GoogleProposalPayload }) {
             This is added
           </p>
           {text ? (
-            <pre className="whitespace-pre-wrap break-words font-sans text-xs text-foreground">
-              {text}
-            </pre>
+            <div className="break-words font-sans text-xs text-foreground"><RichContent source={text ?? ""} level="standard" /></div>
           ) : (
             <p className="text-xs text-muted-foreground">
               This proposal carries no text to add, so approving it would write

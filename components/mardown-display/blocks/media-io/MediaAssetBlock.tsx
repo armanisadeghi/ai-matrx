@@ -204,7 +204,7 @@ export default function MediaAssetBlock({
           <summary className="cursor-pointer px-2 py-1.5 text-xs font-medium text-foreground">
             Transcript
           </summary>
-          <pre className="max-h-96 overflow-auto whitespace-pre-wrap px-2 pb-2 text-xs text-muted-foreground">
+          <pre /* rich-content-exempt: verbatim transcript or extracted document text, not authored markdown */ className="max-h-96 overflow-auto whitespace-pre-wrap px-2 pb-2 text-xs text-muted-foreground">
             {data.transcript}
           </pre>
         </details>

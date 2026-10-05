@@ -8,12 +8,11 @@
  */
 
 import { useEffect, useState } from "react";
-import { ChevronDown, ChevronUp, Hash, Loader2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Loader2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   fetchAgentVersionHistory,
-  fetchFullAgent,
   type AgentVersionHistoryItem,
 } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import {
@@ -56,10 +55,7 @@ export function LockedInputSection() {
     string | null
   >(null);
   const [collapsed, setCollapsed] = useState(false);
-  const [showIdInput, setShowIdInput] = useState(false);
   const columns = useAppSelector(selectModelColumns);
-  const [idInput, setIdInput] = useState("");
-  const [idLoading, setIdLoading] = useState(false);
 
   useEffect(() => {
     if (!agentId) {
@@ -111,28 +107,6 @@ export function LockedInputSection() {
           `Could not load agent: ${error instanceof Error ? error.message : String(error)}`,
         );
       });
-  };
-
-  const handleLoadById = async () => {
-    const id = idInput.trim();
-    if (!id || idLoading) return;
-    setIdLoading(true);
-    try {
-      // Validate access up front — fetchFullAgent reads the row directly via
-      // RLS, so any agent you have DB access to (incl. system agents that don't
-      // surface in search) loads here. Refuse before replacing the comparison
-      // when the agent cannot be read.
-      await dispatch(fetchFullAgent(id)).unwrap();
-      await dispatch(setLockedAgent({ agentId: id })).unwrap();
-      setIdInput("");
-      toast.success("Agent loaded by ID");
-    } catch {
-      toast.error(
-        "Could not load that agent — check the ID and that you have access.",
-      );
-    } finally {
-      setIdLoading(false);
-    }
   };
 
   const handleVersionChange = (opt: Option) => {
@@ -204,6 +178,8 @@ export function LockedInputSection() {
           <div className="w-[300px] max-w-full min-w-0">
             <AgentListDropdown
               onSelect={handleAgentSelect}
+              activeAgentId={agentId}
+              includeSystemInAll
               label={agentName ?? "Select agent..."}
               triggerSlot={
                 <button
@@ -245,60 +221,10 @@ export function LockedInputSection() {
               className="!h-8 max-sm:!h-11 !py-0 !px-2 !border !text-xs !font-medium !bg-background"
             />
           </div>
-          <button
-            type="button"
-            aria-label="Load agent by ID"
-            aria-expanded={showIdInput}
-            onClick={() => setShowIdInput((value) => !value)}
-            className="h-8 w-8 max-sm:h-11 max-sm:w-11 flex items-center justify-center rounded-md hover:bg-muted text-muted-foreground"
-            title="Load agent by ID"
-          >
-            <Hash className="w-3.5 h-3.5" />
-          </button>
           {versionsLoading && (
             <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />
           )}
         </div>
-
-        {showIdInput && (
-          <div className="flex items-center gap-2">
-            <label
-              htmlFor="model-battle-agent-id"
-              className="text-xs font-medium text-muted-foreground shrink-0"
-            >
-              Agent ID
-            </label>
-            <div className="flex-1 min-w-0 flex items-center gap-2">
-              <div className="relative flex-1 min-w-0">
-                <Hash className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground/60" />
-                {/* Identifier lookup, not authored agent content; no voice input. */}
-                <input
-                  id="model-battle-agent-id"
-                  value={idInput}
-                  onChange={(e) => setIdInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      void handleLoadById();
-                    }
-                  }}
-                  placeholder="Paste an agent ID…"
-                  spellCheck={false}
-                  className="w-full h-8 max-sm:h-11 pl-7 pr-2 text-xs max-sm:text-base font-mono bg-background border border-border rounded-md text-foreground focus:outline-none focus:border-primary"
-                />
-              </div>
-              <button
-                type="button"
-                onClick={() => void handleLoadById()}
-                disabled={!idInput.trim() || idLoading}
-                className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-xs font-medium border border-border bg-background hover:bg-muted/50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
-              >
-                {idLoading && <Loader2 className="w-3 h-3 animate-spin" />}
-                Load
-              </button>
-            </div>
-          </div>
-        )}
 
         <div
           data-surface-value={MODEL_BATTLE_SURFACE_ANCHORS.sharedUserInputDraft}

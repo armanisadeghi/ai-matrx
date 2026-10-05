@@ -402,7 +402,7 @@ function BodyView({ row }: { row: GoogleDocumentRow }) {
     );
   }
   return (
-    <div
+    <div /* rich-content-exempt: plain-text email or Google Doc body exchanged verbatim */
       className="max-h-80 overflow-auto whitespace-pre-wrap rounded-md border border-border/60 bg-muted/30 p-3 text-sm leading-relaxed text-foreground"
       data-google-document-body
     >

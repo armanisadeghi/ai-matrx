@@ -163,7 +163,7 @@ export function SessionTranscriptViewer({
               className="m-0"
             />
           ) : (
-            <p className="whitespace-pre-wrap text-base leading-relaxed text-foreground">
+            <p /* rich-content-exempt: verbatim transcript or extracted document text, not authored markdown */ className="whitespace-pre-wrap text-base leading-relaxed text-foreground">
               {text || (
                 <span className="italic text-muted-foreground">
                   {isClean

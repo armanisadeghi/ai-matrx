@@ -1,6 +1,7 @@
 "use client";
 
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
+import { RichContent } from "@/components/rich-content/RichContent";
 import React from "react";
 import { Copy, Table2 } from "lucide-react";
 import { shapeOfValue } from "@ai-matrx/records-ui/table-shape";
@@ -245,9 +246,7 @@ export function StructuredAgentAnswerBlock({
       {nextStep ? (
         <div className="border-l-2 border-primary/50 pl-3 text-sm">
           <p className="font-medium">Next step</p>
-          <p className="whitespace-pre-line text-muted-foreground">
-            {nextStep.text}
-          </p>
+          <div className="text-muted-foreground"><RichContent source={nextStep.text ?? ""} level="standard" /></div>
         </div>
       ) : null}
       {Object.entries(value).map(([key, item]) => {
@@ -321,7 +320,7 @@ export function StructuredAgentAnswerBlock({
           <CopyRawButton rawContent={rawContent} />
           <SaveAnswerToTableButton value={value} />
         </summary>
-        <pre className="mt-2 overflow-x-auto whitespace-pre-wrap text-xs">
+        <pre /* rich-content-exempt: app-authored string, editable source text, or raw payload */ className="mt-2 overflow-x-auto whitespace-pre-wrap text-xs">
           {rawContent}
         </pre>
       </details>

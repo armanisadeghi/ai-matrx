@@ -366,7 +366,10 @@ export function parseFacts(rel: string, text: string): FileFacts {
         const classAttr = n.openingElement.attributes.properties.find(
           (a) => ts.isJsxAttribute(a) && ts.isIdentifier(a.name) && a.name.text === "className",
         );
-        const preWrap = !!classAttr && PRE_WRAP_RE.test(classAttr.getText(sf));
+        // `rich-content-exempt: <reason>` inside the opening tag marks a value that is NOT markdown
+        // (logs, JSON, verbatim transcripts, code): a reasoned exemption, not a finding.
+        const exempt = /rich-content-exempt:/.test(n.openingElement.getText(sf));
+        const preWrap = !exempt && !!classAttr && PRE_WRAP_RE.test(classAttr.getText(sf));
         for (const child of n.children) {
           if (!ts.isJsxExpression(child) || !child.expression) continue;
           if (preWrap && fieldishOf(child.expression)) {

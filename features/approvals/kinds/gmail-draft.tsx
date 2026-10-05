@@ -28,7 +28,7 @@ function DraftPreview({ payload }: { payload: GoogleProposalPayload }) {
       <p>To: {to ?? "Missing recipient"}</p>
       <p>Cc: {recipients || "None"}</p>
       <p>Subject: {subject ?? "Missing subject"}</p>
-      <pre className="whitespace-pre-wrap break-words font-sans">{body ?? "Missing message"}</pre>
+      <pre /* rich-content-exempt: plain-text email or Google Doc body exchanged verbatim */ className="whitespace-pre-wrap break-words font-sans">{body ?? "Missing message"}</pre>
     </div>
   );
 }

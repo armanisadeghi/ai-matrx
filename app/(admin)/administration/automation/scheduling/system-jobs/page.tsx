@@ -713,29 +713,43 @@ export default function SystemJobsPage() {
     },
     {
       id: "classification",
-      accessorFn: (r) => r.taxonomy_path.map((node) => node.name).join(" / "),
+      // A job the Feature Registry does not know (made straight in the database,
+      // or filed under a retired node) arrives with an empty path; it is listed
+      // as Unregistered and Edit is where it gets classified.
+      accessorFn: (r) =>
+        r.taxonomy_path.length === 0
+          ? "Unregistered"
+          : r.taxonomy_path.map((node) => node.name).join(" / "),
       header: "Classification",
       width: 260,
-      cell: (r) => (
-        <span className="flex min-w-0 items-center gap-1 text-xs">
-          {r.taxonomy_path.map((node, index) => (
-            <span key={node.id} className="flex min-w-0 items-center gap-1">
-              {index > 0 && (
-                <span className="text-muted-foreground" aria-hidden="true">
-                  /
-                </span>
-              )}
-              <Link
-                href={`/administration/utilities/taxonomy?q=${encodeURIComponent(node.slug)}`}
-                className="truncate text-primary underline-offset-2 hover:underline"
-                title={`Open ${node.level}: ${node.name}`}
-              >
-                {node.name}
-              </Link>
-            </span>
-          ))}
-        </span>
-      ),
+      cell: (r) =>
+        r.taxonomy_path.length === 0 ? (
+          <span
+            className="text-xs text-amber-600 dark:text-amber-400"
+            title="No Feature Registry classification. Choose one with Edit."
+          >
+            Unregistered
+          </span>
+        ) : (
+          <span className="flex min-w-0 items-center gap-1 text-xs">
+            {r.taxonomy_path.map((node, index) => (
+              <span key={node.id} className="flex min-w-0 items-center gap-1">
+                {index > 0 && (
+                  <span className="text-muted-foreground" aria-hidden="true">
+                    /
+                  </span>
+                )}
+                <Link
+                  href={`/administration/utilities/taxonomy?q=${encodeURIComponent(node.slug)}`}
+                  className="truncate text-primary underline-offset-2 hover:underline"
+                  title={`Open ${node.level}: ${node.name}`}
+                >
+                  {node.name}
+                </Link>
+              </span>
+            ))}
+          </span>
+        ),
     },
     {
       id: "state",

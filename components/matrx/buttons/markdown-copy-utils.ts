@@ -10,6 +10,8 @@ import {
 import { removeThinkingContent } from "@ai-matrx/print/markdown";
 import { showManualCopy } from "@/components/dialogs/clipboard-fallback/manualCopyOpener";
 import { toast } from "@/lib/toast";
+import { getSessionKnob } from "@/lib/scoped-config/sessionKnob";
+import { markdownToReadableText } from "./markdown-readable-text";
 
 interface CopyOptions {
   isMarkdown?: boolean;
@@ -106,4 +108,103 @@ export async function copyToClipboard(
       );
     return false;
   }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// THE RICH-CONTENT COPY (Arman, 2026-10-04: "it's not giving me a super easy
+// way to get either the version with markdown markup or not").
+//
+// Every copy of rich content — answer bars, ⋯ menus, the selection toolbar,
+// notes, the studio, documents, tool cards — goes through `copyRichContent`.
+// Three flavors, each one click away:
+//
+//   "default"   the single Copy click. text/html = the formatted document (Docs,
+//               Gmail, Word paste it formatted) AND text/plain = the knob's
+//               flavor (`copy.default_flavor`, default markdown — a plain
+//               field gets markdown, like ChatGPT and Claude.ai).
+//   "markdown"  "Copy markdown": text/plain only, the markup kept.
+//   "text"      "Copy text": text/plain only, readable — no markup, lists as
+//               "• ", links as "text (url)", tables tab-separated, code kept.
+//
+// Code blocks keep their own raw copy. Guard: every rich-content host routes
+// here — `components/matrx/buttons/__tests__/rich-copy-hosts.census.test.ts`.
+// ═══════════════════════════════════════════════════════════════════════════
+
+export type CopyFlavor = "default" | "markdown" | "text";
+export { markdownToReadableText };
+
+/** The knob that decides what a single Copy click puts in a plain field. */
+export const COPY_DEFAULT_FLAVOR_KNOB = { feature: "copy", key: "default_flavor" } as const;
+
+/** The plain-text flavor of a single Copy click for this session ("markdown" until the knob answers). */
+export function defaultCopyFlavor(): "markdown" | "text" {
+  return getSessionKnob(COPY_DEFAULT_FLAVOR_KNOB) === "text" ? "text" : "markdown";
+}
+
+export interface RichCopyOptions {
+  /** Keep `<thinking>` / reasoning blocks (default: removed). */
+  includeThinking?: boolean;
+  /** Toast on success: a label, or false for none. Default: the flavor's label. */
+  toast?: string | false;
+}
+
+const FLAVOR_TOAST: Record<CopyFlavor, string> = {
+  default: "Copied",
+  markdown: "Markdown copied",
+  text: "Text copied",
+};
+
+/** The bytes a flavor writes — pure enough to test; the HTML is loaded at click time. */
+export function richCopyPlainText(markdown: string, flavor: CopyFlavor, defaultFlavor: "markdown" | "text" = "markdown"): string {
+  const plainFlavor = flavor === "default" ? defaultFlavor : flavor;
+  return plainFlavor === "text" ? markdownToReadableText(markdown) : markdown;
+}
+
+async function formattedHtml(markdown: string): Promise<string> {
+  const { markdownToHtml } = await import("@ai-matrx/print/markdown");
+  return markdownToHtml(markdown);
+}
+
+/**
+ * Write a clipboard item. `html` may be a promise: the item is created inside
+ * the click (Safari requires it), the browser waits for the bytes.
+ */
+export async function writeClipboardFlavors(plain: string, html?: Promise<string> | string): Promise<boolean> {
+  if (typeof navigator === "undefined" || !navigator.clipboard) {
+    showManualCopy({ text: plain });
+    return false;
+  }
+  try {
+    if (html !== undefined && typeof ClipboardItem !== "undefined" && navigator.clipboard.write) {
+      const htmlBlob = Promise.resolve(html).then((h) => new Blob([h], { type: "text/html" }));
+      await navigator.clipboard.write([
+        new ClipboardItem({ "text/html": htmlBlob, "text/plain": new Blob([plain], { type: "text/plain" }) }),
+      ]);
+      return true;
+    }
+    await navigator.clipboard.writeText(plain);
+    return true;
+  } catch (error) {
+    // A rich write can be refused (focus moved, an old engine): try the plain
+    // flavor before handing the person the text to copy themselves.
+    try {
+      await navigator.clipboard.writeText(plain);
+      if (html !== undefined) toast.info("Copied without formatting: this browser refused the formatted copy.");
+      return true;
+    } catch {
+      console.warn("[copy] the clipboard refused the write; showing the text to copy by hand:", error);
+      showManualCopy({ text: plain });
+      return false;
+    }
+  }
+}
+
+/** THE copy of rich content. Returns true when the clipboard holds it. */
+export async function copyRichContent(markdown: string, flavor: CopyFlavor = "default", options: RichCopyOptions = {}): Promise<boolean> {
+  const source = options.includeThinking ? markdown : removeThinkingContent(markdown);
+  const plain = richCopyPlainText(source, flavor, defaultCopyFlavor());
+  const ok = await writeClipboardFlavors(plain, flavor === "default" ? formattedHtml(source) : undefined);
+  const label = options.toast === undefined ? FLAVOR_TOAST[flavor] : options.toast;
+  if (ok && label) toast.success(label);
+  return ok;
 }

@@ -747,7 +747,7 @@ export default function AgentTestClient() {
                   Text
                 </p>
                 {liveText ? (
-                  <pre className="text-xs text-foreground/90 whitespace-pre-wrap leading-relaxed">
+                  <pre /* rich-content-exempt: dev-only demo page: raw model, log and request output */ className="text-xs text-foreground/90 whitespace-pre-wrap leading-relaxed">
                     {liveText}
                   </pre>
                 ) : (

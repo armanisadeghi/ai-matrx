@@ -531,7 +531,7 @@ function JsonInspectorBody({
               )}
             </div>
           )}
-          <pre
+          <pre /* rich-content-exempt: debug or inspector output: logs, JSON, code or source view */
             className={cn(
               "flex-1 min-h-0 overflow-auto p-2 text-xs text-gray-800 dark:text-gray-300",
               expandDepth <= 0

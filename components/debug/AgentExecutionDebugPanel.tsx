@@ -192,7 +192,7 @@ function CodeBlock({
         </Button>
       </div>
       <pre className="text-xs bg-white dark:bg-black p-3 rounded border border-border overflow-x-auto">
-        <code className="whitespace-pre-wrap break-words font-mono">
+        <code /* rich-content-exempt: debug or inspector output: logs, JSON, code or source view */ className="whitespace-pre-wrap break-words font-mono">
           {content}
         </code>
       </pre>
@@ -753,7 +753,7 @@ export const AgentExecutionDebugPanel: React.FC<
                   <h5 className="text-xs font-semibold mb-2">
                     Accumulated Response Text
                   </h5>
-                  <pre className="text-xs whitespace-pre-wrap break-words bg-white dark:bg-black p-2 rounded border border-border max-h-48 overflow-y-auto">
+                  <pre /* rich-content-exempt: debug or inspector output: logs, JSON, code or source view */ className="text-xs whitespace-pre-wrap break-words bg-white dark:bg-black p-2 rounded border border-border max-h-48 overflow-y-auto">
                     {accumulatedText}
                   </pre>
                   <p className="text-[10px] text-gray-400 mt-1">

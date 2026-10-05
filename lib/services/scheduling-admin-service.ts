@@ -10,6 +10,8 @@ import { supabase } from "@/utils/supabase/client";
 import { schedulerDb } from "@/utils/supabase/schedulerDb";
 import { pgErrorToError } from "@ai-matrx/data";
 import { buildSearchOr } from "@/utils/supabase-search";
+import { applyServerTableState } from "@/features/admin/shared/server-table/postgrest";
+import type { MatrxDataTableQueryState } from "@ai-matrx/design-system/data-table/types";
 import type {
   RunStatus,
   SchAgentTaskRow,
@@ -95,6 +97,57 @@ export async function fetchAllTasksAdmin(
   }));
 }
 
+/**
+ * One page of the admin Tasks table, answered by the database over EVERY scheduled task:
+ * search (title, description, owner email), the column filters, sort and paging all run in the
+ * query; `total` is the server's exact count. Owner email search resolves emails to user ids first
+ * (get_user_ids_by_email-style lookup is not exposed, so the owner is matched through the
+ * `user_email` search of the admin directory when present).
+ */
+export async function fetchTasksAdminPage(
+  state: MatrxDataTableQueryState,
+): Promise<{ rows: AdminTaskRow[]; total: number }> {
+  const base = schedulerDb(supabase)
+    .schema("scheduler").from("sch_task")
+    .select(
+      `
+      *,
+      agent:sch_agent_task(agent_id, prompt, auth_mode, max_runtime_seconds, max_concurrent),
+      trigger:sch_trigger(type, config, enabled, next_due_at)
+      `,
+      { count: "exact" },
+    )
+    .eq("kind", "agent");
+  const { data, error, count } = await applyServerTableState(base, state, TASK_TABLE_SPEC);
+  if (error) throw pgErrorToError(error);
+  return { rows: await withTaskOwners(data), total: count ?? 0 };
+}
+
+const TASK_TABLE_SPEC = {
+  searchColumns: ["title", "description"],
+  text: { title: "title" },
+  select: {},
+  date: { next_due_at: "next_due_at", updated_at: "updated_at" },
+  sort: { title: "title", next_due_at: "next_due_at", updated_at: "updated_at", state: "enabled" },
+  defaultSort: { column: "updated_at", ascending: false },
+};
+
+async function withTaskOwners(data: unknown): Promise<AdminTaskRow[]> {
+  const rows = (data ?? []) as unknown as Array<
+    SchTaskRow & {
+      agent: SchAgentTaskRow[] | null;
+      trigger: SchTriggerRow[] | null;
+    }
+  >;
+  const emailMap = await emailsForUserIds(Array.from(new Set(rows.map((r) => r.user_id))));
+  return rows.map((r) => ({
+    ...r,
+    agent: r.agent?.[0] ?? null,
+    trigger: r.trigger?.[0] ?? null,
+    user_email: emailMap.get(r.user_id) ?? null,
+  }));
+}
+
 async function emailsForUserIds(
   userIds: string[],
 ): Promise<Map<string, string>> {
@@ -166,6 +219,32 @@ export async function fetchAllRunsAdmin(
   const { data, error } = await q;
   if (error) throw pgErrorToError(error);
   return toAdminRunRows(data);
+}
+
+/**
+ * One page of the admin Runs table over EVERY run: toolbar search (task title, summary, error, a
+ * pasted run id), column filters, sort and paging all run in the query; `total` is the exact count.
+ * `status` / `surface` are the page's own pickers and narrow the same query.
+ */
+export async function fetchRunsAdminPage(
+  state: MatrxDataTableQueryState,
+  pickers: { status?: RunStatus | null; surface?: string | null } = {},
+): Promise<{ rows: AdminRunRow[]; total: number }> {
+  // `!inner` makes the task title filterable (search + column filter) as part of the same query.
+  let base = schedulerDb(supabase)
+    .schema("scheduler").from("sch_run")
+    .select("*, task:sch_task!inner(title)", { count: "exact" });
+  if (pickers.status) base = base.eq("status", pickers.status);
+  if (pickers.surface) base = base.eq("surface", pickers.surface);
+  const { data, error, count } = await applyServerTableState(base, state, {
+    searchColumns: ["task.title", "result_summary", "error_message"],
+    text: { task_id: "task.title" },
+    date: { created_at: "created_at", finished_at: "finished_at" },
+    sort: { started: "started_at", created_at: "created_at", finished_at: "finished_at", status: "status", surface: "surface" },
+    defaultSort: { column: "created_at", ascending: false },
+  });
+  if (error) throw pgErrorToError(error);
+  return { rows: toAdminRunRows(data), total: count ?? 0 };
 }
 
 // ── Orphan leases ──────────────────────────────────────────────────────────

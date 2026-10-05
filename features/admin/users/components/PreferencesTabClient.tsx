@@ -27,6 +27,7 @@ import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
 import { AdminUserRef } from "./AdminUserRef";
+import { UserSearchField } from "@/features/user-search/UserSearchField";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { buildAdminUserMenuSection } from "./admin-user-menu-section";
 import { USERS_ADMIN_LOCATION } from "../constants";
@@ -45,6 +46,30 @@ interface DriftReport {
   total: number;
   drifted: number;
   rows: DriftRow[];
+}
+
+// Find a person by name or email and open their preferences; ?user=<id> stays
+// the deep link.
+function PreferencesUserPicker() {
+  const router = useRouter();
+  const [query, setQuery] = useState("");
+  return (
+    <UserSearchField
+      value={query}
+      onValueChange={setQuery}
+      directory="admin"
+      title="Find a user's preferences"
+      placeholder="Find a user by name or email"
+      className="w-full max-w-sm"
+      onUserSelect={(user) => {
+        setQuery(user.email ?? user.displayName ?? user.id);
+        pushAppHref(
+          router,
+          `/administration/users/preferences?user=${encodeURIComponent(user.id)}`,
+        );
+      }}
+    />
+  );
 }
 
 function DriftDashboard() {
@@ -169,6 +194,7 @@ function DriftDashboard() {
           {/* Drifted rows self-heal on load and via the weekly heal-user-preferences-drift cron. */}
         </div>
         <div className="flex items-center gap-2">
+          <PreferencesUserPicker />
           <Button
             variant="outline"
             size="sm"
@@ -438,7 +464,10 @@ function UserPreferencesView({ userId }: { userId: string }) {
         >
           <ArrowLeft className="h-4 w-4" /> Drift overview
         </Button>
-        <h2 className="text-sm font-semibold">Preferences for {userId}</h2>
+        <h2 className="flex items-center gap-1.5 text-sm font-semibold">
+          Preferences for <AdminUserRef userId={userId} />
+        </h2>
+        <PreferencesUserPicker />
         {meta.updated_at ? (
           <span className="text-xs text-muted-foreground">
             updated {new Date(meta.updated_at).toLocaleString()}

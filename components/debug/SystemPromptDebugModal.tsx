@@ -132,7 +132,7 @@ export function SystemPromptDebugModal({
                     Selected Text
                     <Badge variant="secondary">{selectedText.length} chars</Badge>
                   </h3>
-                  <div className="bg-muted p-3 rounded-lg text-sm font-mono whitespace-pre-wrap max-h-32 overflow-y-auto">
+                  <div /* rich-content-exempt: debug or inspector output: logs, JSON, code or source view */ className="bg-muted p-3 rounded-lg text-sm font-mono whitespace-pre-wrap max-h-32 overflow-y-auto">
                     {selectedText || <span className="text-muted-foreground italic">No selection</span>}
                   </div>
                 </div>

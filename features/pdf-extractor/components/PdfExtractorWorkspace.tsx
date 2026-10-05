@@ -956,7 +956,7 @@ function RawTextView({ content }: { content: string | null }) {
     return <EmptyState message="No text extracted from this file" />;
   return (
     <div className="p-3">
-      <pre className="text-[11px] font-mono text-foreground/80 whitespace-pre-wrap leading-relaxed">
+      <pre /* rich-content-exempt: verbatim transcript or extracted document text, not authored markdown */ className="text-[11px] font-mono text-foreground/80 whitespace-pre-wrap leading-relaxed">
         {content}
       </pre>
     </div>

@@ -264,7 +264,7 @@ function PaneList({
                   hoverReveal
                 />
               </div>
-              <pre className="whitespace-pre-wrap font-mono text-foreground/80 leading-relaxed">
+              <pre /* rich-content-exempt: verbatim transcript or extracted document text, not authored markdown */ className="whitespace-pre-wrap font-mono text-foreground/80 leading-relaxed">
                 {text || (
                   <span className="italic text-muted-foreground">
                     (no text on this page)

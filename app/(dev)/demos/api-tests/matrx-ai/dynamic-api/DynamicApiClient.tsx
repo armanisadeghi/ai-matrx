@@ -1223,7 +1223,7 @@ export default function DynamicApiClient() {
                     <CopyButton text={responseBody} />
                   </div>
                   <div className="flex-1 overflow-y-auto min-h-0">
-                    <pre className="text-[11px] font-mono whitespace-pre-wrap break-all">
+                    <pre /* rich-content-exempt: dev-only demo page: raw model, log and request output */ className="text-[11px] font-mono whitespace-pre-wrap break-all">
                       {responseBody || (!isRunning ? "No response yet." : "")}
                     </pre>
                   </div>
