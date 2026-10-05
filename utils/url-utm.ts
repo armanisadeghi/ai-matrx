@@ -94,3 +94,23 @@ export function addUtmSourceToUrls(urls: string[], utmSource: string = 'aimatrx'
   return urls.map(url => addUtmSource(url, utmSource));
 }
 
+
+/**
+ * The link as its author wrote it: removes the utm_source WE add on render
+ * (`addUtmSource`). Copy uses it — a person copying text never receives a
+ * tracking parameter they did not write (2026-10-05 live walk).
+ */
+export function stripOwnUtmSource(url: string, utmSource: string = 'aimatrx'): string {
+  if (!url || !/[?&]utm_source=/i.test(url)) return url;
+  try {
+    const u = new URL(url);
+    for (const key of [...u.searchParams.keys()]) {
+      if (key.toLowerCase() === 'utm_source' && u.searchParams.get(key) === utmSource) u.searchParams.delete(key);
+    }
+    const out = u.toString();
+    // URL() adds a trailing slash to a bare origin; keep the author's spelling.
+    return !url.endsWith('/') && out.endsWith('/') && u.pathname === '/' && !u.search && !u.hash ? out.slice(0, -1) : out.replace(/\?$/, '');
+  } catch {
+    return url;
+  }
+}

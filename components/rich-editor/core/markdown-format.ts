@@ -457,7 +457,9 @@ export const FORMAT_COMMAND_KEYS: Readonly<Record<FormatCommandId, readonly stri
 
 /** ProseMirror-style key name for a keyboard event ("Mod-Shift-x"). */
 export function keyNameOf(event: Pick<KeyboardEvent, "key" | "code" | "metaKey" | "ctrlKey" | "altKey" | "shiftKey">, apple: boolean): string | null {
-  const mod = apple ? event.metaKey : event.ctrlKey;
+  // ⌘ on Apple, Ctrl elsewhere — and Ctrl on Apple too: people coming from
+  // Windows and Docs press Ctrl+B on a Mac and expect bold.
+  const mod = apple ? event.metaKey || event.ctrlKey : event.ctrlKey;
   if (!mod) return null;
   // Shift+digit / Alt+letter change `key` on many layouts — read the physical key.
   let base: string | null = null;

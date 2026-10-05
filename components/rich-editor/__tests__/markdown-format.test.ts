@@ -157,9 +157,10 @@ describe("keyboard chords", () => {
     expect(formatCommandForKey(keyNameOf(ev("KeyE"), true))).toBe("code");
     expect(formatCommandForKey(keyNameOf(ev("Digit7", { shiftKey: true, key: "&" }), true))).toBe("orderedList");
     expect(formatCommandForKey(keyNameOf(ev("Digit8", { shiftKey: true, key: "*" }), true))).toBe("bulletList");
-    // Ctrl on Windows/Linux, never on a Mac.
+    // Ctrl on Windows/Linux, and on a Mac too (⌘ or Ctrl).
     expect(formatCommandForKey(keyNameOf(ev("KeyB", { metaKey: false, ctrlKey: true }), false))).toBe("bold");
-    expect(keyNameOf(ev("KeyB", { metaKey: false, ctrlKey: true }), true)).toBeNull();
+    expect(formatCommandForKey(keyNameOf(ev("KeyB", { metaKey: false, ctrlKey: true }), true))).toBe("bold");
+    expect(keyNameOf(ev("KeyB", { metaKey: true }), false)).toBeNull();
     expect(formatCommandForKey(keyNameOf(ev("KeyC"), true))).toBeNull();
   });
 });

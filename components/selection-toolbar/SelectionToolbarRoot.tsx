@@ -57,6 +57,7 @@ import {
 import type { Rect } from "./SelectionToolbarFrame";
 // The common pair (copy, save to notes) declares itself on load.
 import "./common-actions";
+import { textareaSelectionRect } from "./textarea-caret";
 // The formatting buttons for every engine (no Tiptap in this chunk).
 import "@/components/rich-editor/format/format-actions";
 import { liveSelectionShapeText } from "./selection-shape";
@@ -184,11 +185,14 @@ export function SelectionToolbarRoot(): React.ReactElement | null {
         node = active;
         text = active.value.slice(active.selectionStart, active.selectionEnd);
         fieldEditable = !active.readOnly && !active.disabled;
-        const p = lastPointer.current;
+        // The selection's own box (caret mirror) — never the field's left edge.
         const box = active.getBoundingClientRect();
-        rect = p && p.x >= box.left && p.x <= box.right && p.y >= box.top && p.y <= box.bottom
-          ? { left: p.x, top: p.y - 10, bottom: p.y + 10, width: 1 }
-          : rectOf(box);
+        rect = (active instanceof HTMLTextAreaElement ? textareaSelectionRect(active) : null) ?? (() => {
+          const p = lastPointer.current;
+          return p && p.x >= box.left && p.x <= box.right && p.y >= box.top && p.y <= box.bottom
+            ? { left: p.x, top: p.y - 10, bottom: p.y + 10, width: 1 }
+            : rectOf(box);
+        })();
       } else {
         const sel = window.getSelection();
         if (sel && sel.rangeCount > 0 && !sel.isCollapsed) {

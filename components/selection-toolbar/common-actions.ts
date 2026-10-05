@@ -31,6 +31,12 @@ function rowsTextOf(common: SelectionCommonHost): string {
   return common.text;
 }
 
+/** Copy is every selection's — an annotated reading passage (a note in Read) included. */
+function copyEligible(id: string) {
+  return (t: ClickTarget) =>
+    commonOf(t) && shownInSelectionMode(id, t) ? ({ status: "available" } as const) : ({ status: "absent" } as const);
+}
+
 function eligible(id: string) {
   return (t: ClickTarget) =>
     commonOf(t) && !hostHalf(t, "annotation") && shownInSelectionMode(id, t)
@@ -57,7 +63,7 @@ const ACTIONS: Action[] = [
       order,
       placement,
       preserveSelection: true,
-      eligible: eligible(id),
+      eligible: copyEligible(id),
       run: async (t) => {
         const common = commonOf(t);
         if (!common) return;

@@ -44,6 +44,7 @@ import { useUserOrganizations } from "@/features/organizations/hooks";
 import { NoteContextSection } from "./NoteContextSection";
 import { CreateFolderDialog } from "./CreateFolderDialog";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { getNoteLiveContent } from "../utils/noteLiveContent";
 import {
   noteDisplayLabel,
   noteLocation,
@@ -346,7 +347,10 @@ export function NoteMetadataBar({
             label={`Note "${noteDisplayLabel(note)}"`}
             references={[{ id: note.id, label: "Copy note reference", noun: "note", items: [{ id: note.id, label: noteDisplayLabel(note) }] }]}
             className="shrink-0"
-            human={() => noteRecordSummary(buildRecordView())}
+            // Copy / Copy as → Text and Markdown carry the NOTE: its live
+            // markdown, nothing else. The record summary (metadata, save
+            // state, "--- Body ---") is the AI copy below, never the person's.
+            human={() => getNoteLiveContent(note.id) ?? note.content ?? ""}
             json={() => noteRecordData(buildRecordView())}
             agent={() => {
               const view = buildRecordView();

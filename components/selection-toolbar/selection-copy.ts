@@ -20,6 +20,7 @@ import {
   type CopyFlavor,
 } from "@/components/matrx/buttons/markdown-copy-utils";
 import { liveSelectionShapeText } from "./selection-shape";
+import { stripOwnUtmSource } from "@/utils/url-utm";
 
 /** The live selection's range when it lies over rendered (non-editable) content. */
 export function renderedSelectionRange(): Range | null {
@@ -35,10 +36,15 @@ export function renderedSelectionRange(): Range | null {
   return range;
 }
 
-/** The selected DOM as HTML (what the person sees, formatted). */
+/** The selected DOM as HTML (what the person sees, formatted), links as their author wrote them. */
 export function rangeHtml(range: Range): string {
   const box = document.createElement("div");
   box.appendChild(range.cloneContents());
+  for (const a of Array.from(box.querySelectorAll("a[href]"))) {
+    const href = a.getAttribute("href") ?? "";
+    const clean = stripOwnUtmSource(href);
+    if (clean !== href) a.setAttribute("href", clean);
+  }
   return box.innerHTML;
 }
 
