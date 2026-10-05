@@ -276,6 +276,37 @@ describe("never raw: a kind on the same line as prose (A5)", () => {
   });
 });
 
+describe("never raw: a kind right after inline markup on its line (P2, round 4)", () => {
+  // Each line STARTS with inline markup the old structural-line rule mistook
+  // for structure (`<`, a backtick, `~`), so the A5 split never ran and the
+  // kind printed as prose for ~88 of 105 frames.
+  const CASES: Array<[string, string]> = [
+    ["inline HTML tag", `<b>Cards</b>: ${KIND_PAYLOAD_ONE_LINE}\n\nAfter.`],
+    ["inline code span", "`x` " + KIND_PAYLOAD_ONE_LINE + "\n\nAfter."],
+    ["HTML comment", `<!-- note -->${KIND_PAYLOAD_ONE_LINE}\n\nAfter.`],
+    ["void inline tag", `<img src=x>${KIND_PAYLOAD_ONE_LINE}\n\nAfter.`],
+    ["strikethrough", `~~old~~ ${KIND_PAYLOAD_ONE_LINE}\n\nAfter.`],
+    ["single tilde", `~approx ${KIND_PAYLOAD_ONE_LINE}\n\nAfter.`],
+  ];
+
+  it.each(CASES)("%s: once __kind is visible, no frame prints it as prose or a raw card", (_label, stream) => {
+    const frames = streamingFrames(streamCharByChar(stream, "req-p2"));
+    const afterKind = frames.filter((b) => hasKindKey(b.content ?? ""));
+    expect(afterKind.length).toBeGreaterThan(0);
+    expect(afterKind.filter(textShowsRawKind).map((b) => (b.content ?? "").slice(0, 40))).toEqual([]);
+    expect(afterKind.filter(rendersRawJson).map((b) => (b.content ?? "").slice(0, 40))).toEqual([]);
+  });
+
+  it.each(CASES)("%s: the kind is its own block, live and on reload", (_label, stream) => {
+    const live = finalBlocks(stream, "req-p2-final").map((b) => (b.content ?? "").trim());
+    expect(live).toContain(KIND_PAYLOAD_ONE_LINE);
+    const reloaded = splitContentIntoBlocksV2(stream)
+      .filter((b) => b.content.trim())
+      .map((b) => b.content.trim());
+    expect(reloaded).toContain(KIND_PAYLOAD_ONE_LINE);
+  });
+});
+
 describe("never raw: an array of kinds (A6)", () => {
   const SECOND = JSON.stringify({
     __kind: "flashcard_set",

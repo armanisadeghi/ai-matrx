@@ -411,14 +411,34 @@ function proseKindObjectStart(line: string): number {
   return -1;
 }
 
-/** A line whose first character opens a structure the prose split must leave alone. */
+/**
+ * Inline (phrasing) HTML a model writes inside a sentence: `<b>Cards</b>: {…}`
+ * is a line of PROSE (P2, round 4) — the kind on it splits out live.
+ */
+const HTML_PHRASING_TAGS = new Set([
+  "a", "abbr", "b", "bdi", "bdo", "big", "br", "cite", "code", "data", "del", "dfn", "em", "font", "i",
+  "img", "ins", "kbd", "mark", "q", "s", "samp", "small", "span", "strike", "strong", "sub", "sup",
+  "time", "tt", "u", "var", "wbr",
+]);
+
+/**
+ * A line whose START opens a structure the prose split must leave alone: bare
+ * JSON (`{`, `[{`), a table row (`|`), a FENCE (three or more backticks or
+ * tildes), a directive (`:::`), or a tag that owns its line. Not structure
+ * (P2, round 4): an inline code span (`` `x` {…} ``), strikethrough
+ * (`~~old~~ {…}`), an HTML comment (`<!-- … -->{…}`), inline HTML
+ * (`<b>`, `<img src=x>`) — each is the start of a prose line.
+ */
 function startsStructuralLine(line: string): boolean {
-  if (/^\s*(?:\{|\[\s*\{|\||`|~|:::)/.test(line)) return true;
+  if (/^\s*(?:\{|\[\s*\{|\||`{3,}|~{3,}|:::)/.test(line)) return true;
+  if (/^\s*<!--/.test(line)) return false;
   // An HTML block line (`<details><summary>…</summary>{"__kind":…`) is prose
   // to the markdown renderer — the kind on it splits out like any prose line
-  // (X-minor, round 3). Every other tag owns its line.
+  // (X-minor, round 3); so is inline HTML. Every other tag owns its line.
   const tag = /^\s*<\/?([A-Za-z][\w-]*)/.exec(line);
-  return tag ? !isHtmlBlockTagName(tag[1]!) : /^\s*</.test(line);
+  if (!tag) return /^\s*</.test(line);
+  const name = tag[1]!.toLowerCase();
+  return !isHtmlBlockTagName(name) && !HTML_PHRASING_TAGS.has(name);
 }
 
 function extractFenceInfo(
