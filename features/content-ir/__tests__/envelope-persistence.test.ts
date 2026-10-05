@@ -42,6 +42,19 @@ import { sanitizeInboundEnvelopeMetadata } from "../redux/render-block-envelope"
 import { fingerprintText } from "@ai-matrx/content-ir";
 import { chunkText } from "./seeded-random";
 
+// The inbound-envelope guard lives in the chat package and reports through its diagnostics seam.
+const mockPackageDiagnostics: Array<{ source: string; message: string }> = [];
+jest.mock("@ai-matrx/chat/host/diagnostics", () => {
+  const actual = jest.requireActual("@ai-matrx/chat/host/diagnostics");
+  return {
+    ...actual,
+    captureError: (entry: { source: string; message: string }) => {
+      mockPackageDiagnostics.push(entry);
+      return actual.captureError(entry);
+    },
+  };
+});
+
 // ---------------------------------------------------------------------------
 // Harness
 // ---------------------------------------------------------------------------
@@ -346,7 +359,7 @@ describe("inbound py-block-detector envelopes", () => {
   });
 
   it("a malformed __ir is stripped into a copy + captured loudly; input never mutated", () => {
-    clearCapturedErrors();
+    mockPackageDiagnostics.length = 0;
     const metadata: Record<string, unknown> = {
       [IR_ENVELOPE_KEY]: { v: 2, engine: "py-block-detector", junk: true },
       other_key: "kept",
@@ -360,7 +373,7 @@ describe("inbound py-block-detector envelopes", () => {
     // The inbound object itself is not mutated.
     expect(metadata[IR_ENVELOPE_KEY]).toBeDefined();
 
-    const captured = getSnapshot();
+    const captured = mockPackageDiagnostics;
     expect(
       captured.some(
         (e) =>

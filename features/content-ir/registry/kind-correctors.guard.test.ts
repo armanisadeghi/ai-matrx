@@ -15,6 +15,10 @@ import { join, relative } from "node:path";
 const ROOT = join(__dirname, "..", "..", "..");
 const SCAN = ["app", "components", "features", "packages/chat/src", "lib", "hooks", "utils"];
 const OWNER = "features/content-ir/registry/kind-correctors.ts";
+// The chat package's bare-host stand-in for the `sessionEnvelope` slot (a host with NO correctors
+// takes the session's own envelope, reported once). Every real host registers `sessionEnvelope`
+// from OWNER (providers/chatContentIrRegistration.ts), so no render path in this app uses it.
+const BARE_HOST_STAND_IN = "packages/chat/src/host/content-ir-slots.ts";
 
 function files(dir: string, out: string[] = []): string[] {
   let entries: string[];
@@ -59,7 +63,7 @@ describe("every envelope goes through the kind-correction step", () => {
     const offenders: string[] = [];
     for (const file of all) {
       const rel = relative(ROOT, file);
-      if (rel === OWNER || rel.startsWith("app/(dev)/")) continue;
+      if (rel === OWNER || rel === BARE_HOST_STAND_IN || rel.startsWith("app/(dev)/")) continue;
       readFileSync(file, "utf8")
         .split("\n")
         .forEach((line, i) => {
