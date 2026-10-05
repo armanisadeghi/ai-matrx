@@ -22,7 +22,7 @@ import { CopyButton } from "@/components/matrx/buttons/CopyButton";
 import ApiKeysTab from "@/features/settings/tabs/ApiKeysTab";
 
 const MATRX_MCP_URL = "https://server.app.matrxserver.com/api/matrx-mcp";
-const MARKETPLACE_URL = "https://aimatrx.com/claude/marketplace.json";
+const MARKETPLACE_URL = "https://www.aimatrx.com/claude/marketplace.json";
 
 type Client = "claude-code" | "claude-app" | "chatgpt" | "cursor";
 

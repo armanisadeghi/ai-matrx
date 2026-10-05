@@ -5,10 +5,10 @@
   "plugins": [
     {
       "name": "ai-matrx",
-      "source": { "source": "archive", "url": "https://aimatrx.com/claude/ai-matrx-plugin.zip" },
+      "source": { "source": "archive", "url": "https://www.aimatrx.com/claude/ai-matrx-plugin.zip" },
       "description": "Your AI Matrx tables and agents in Claude, plus skills that move a Notion workspace in and split a big task into AI Matrx agents.",
       "version": "1.0.0",
-      "homepage": "https://aimatrx.com/bring-your-work"
+      "homepage": "https://www.aimatrx.com/bring-your-work"
     }
   ]
 }
