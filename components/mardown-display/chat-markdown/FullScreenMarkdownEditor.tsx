@@ -1,5 +1,5 @@
 "use client";
-import { Chip } from "@ai-matrx/design-system/controls";
+import { Button, Chip } from "@ai-matrx/design-system/controls";
 import React, {
   useState,
   useEffect,
@@ -722,17 +722,14 @@ function TabErrorFallback({
                 label="Copy with content"
                 icon={FileCode}
               />
-              <button
+              <Button
+                variant="quiet"
+                className="ml-1"
                 onClick={onToggleDetails}
-                className="ml-1 flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-primary/80 hover:bg-primary/10 transition-colors"
+                iconEnd={showDetails ? <ChevronDown /> : <ChevronRight />}
               >
                 {showDetails ? "Collapse" : "Expand"}
-                {showDetails ? (
-                  <ChevronDown className="h-3.5 w-3.5" />
-                ) : (
-                  <ChevronRight className="h-3.5 w-3.5" />
-                )}
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -1713,17 +1710,14 @@ function UnavailableDataNotice({
                 label="Copy with content"
                 icon={FileCode}
               />
-              <button
+              <Button
+                variant="quiet"
+                className="ml-1"
                 onClick={() => setShowDetails((v) => !v)}
-                className="ml-1 flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-primary/80 hover:bg-primary/10 transition-colors"
+                iconEnd={showDetails ? <ChevronDown /> : <ChevronRight />}
               >
                 {showDetails ? "Collapse" : "Expand"}
-                {showDetails ? (
-                  <ChevronDown className="h-3.5 w-3.5" />
-                ) : (
-                  <ChevronRight className="h-3.5 w-3.5" />
-                )}
-              </button>
+              </Button>
             </div>
           </div>
 

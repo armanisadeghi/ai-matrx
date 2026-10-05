@@ -2,7 +2,7 @@
 
 // THE SHAPES COME FROM THE REGISTRY, via the parser that produces them —
 // this renderer never re-declares them (`check:kind-type-twins`).
-import { Badge } from "@ai-matrx/design-system/controls";
+import { Badge, Chip } from "@ai-matrx/design-system/controls";
 import type {
   ResearchFinding,
   ResearchSection,
@@ -535,16 +535,15 @@ const ResearchBlock: React.FC<ResearchBlockProps> = ({
                                       {finding.urls.length > 0 && (
                                         <div className="flex flex-wrap gap-2 mt-2">
                                           {finding.urls.map((url, urlIndex) => (
-                                            <a
+                                            <Chip
                                               key={urlIndex}
-                                              href={url}
-                                              target="_blank"
-                                              rel="noopener noreferrer"
-                                              className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 text-xs rounded-md hover:bg-blue-100 dark:hover:bg-blue-950/50 transition-colors"
+                                              asChild
+                                              tone="blue"
+                                              icon={<ExternalLink />}
+                                              label={`Source ${urlIndex + 1}`}
                                             >
-                                              <ExternalLink className="h-3 w-3" />
-                                              Source {urlIndex + 1}
-                                            </a>
+                                              <a href={url} target="_blank" rel="noopener noreferrer" />
+                                            </Chip>
                                           ))}
                                         </div>
                                       )}

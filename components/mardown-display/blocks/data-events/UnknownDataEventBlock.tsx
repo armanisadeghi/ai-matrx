@@ -1,5 +1,5 @@
 "use client";
-import { Chip } from "@ai-matrx/design-system/controls";
+import { Button, Chip } from "@ai-matrx/design-system/controls";
 import React, { useState } from "react";
 import { HelpCircle, ChevronDown, ChevronUp, Copy, Check } from "lucide-react";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
@@ -105,18 +105,14 @@ const UnknownDataEventBlock: React.FC<UnknownDataEventBlockProps> = ({
           </p>
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
-          <button
+          <Button
+            variant="quiet"
             onClick={handleCopyForAi}
-            className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20"
             title="Copy full failure context for an AI agent"
+            icon={aiCopied ? <Check /> : <AGENT_ICON />}
           >
-            {aiCopied ? (
-              <Check className="w-3.5 h-3.5 text-success" />
-            ) : (
-              <AGENT_ICON className="w-3.5 h-3.5" />
-            )}
-            <span>Copy for AI</span>
-          </button>
+            Copy for AI
+          </Button>
           <button
             onClick={handleCopy}
             className="p-1 rounded hover:bg-muted/50 text-muted-foreground hover:text-foreground"

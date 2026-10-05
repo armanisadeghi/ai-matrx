@@ -1,4 +1,5 @@
 "use client";
+import { Badge } from "@ai-matrx/design-system/controls";
 import React from 'react';
 import { GitBranch, HelpCircle, Target, CheckCircle2, XCircle, Zap, ArrowRight } from 'lucide-react';
 
@@ -62,9 +63,7 @@ const DecisionTreeLoadingVisualization: React.FC<DecisionTreeLoadingVisualizatio
             <div className="flex items-center gap-8">
               <div className="flex flex-col items-center space-y-3">
                 <div className="flex items-center gap-2">
-                  <div className="px-2 py-1 bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300 rounded-full text-xs font-bold animate-pulse">
-                    YES
-                  </div>
+                  <Badge tone="success">YES</Badge>
                   <ArrowRight className="h-4 w-4 text-gray-400 animate-pulse" />
                 </div>
                 <div className="flex items-center gap-3 p-3 bg-purple-100 dark:bg-purple-950/30 rounded-lg border border-purple-300 dark:border-purple-700 animate-pulse" style={{ animationDelay: '200ms' }}>
@@ -75,9 +74,7 @@ const DecisionTreeLoadingVisualization: React.FC<DecisionTreeLoadingVisualizatio
               
               <div className="flex flex-col items-center space-y-3">
                 <div className="flex items-center gap-2">
-                  <div className="px-2 py-1 bg-red-100 dark:bg-red-950/30 text-red-700 dark:text-red-300 rounded-full text-xs font-bold animate-pulse">
-                    NO
-                  </div>
+                  <Badge tone="destructive">NO</Badge>
                   <ArrowRight className="h-4 w-4 text-gray-400 animate-pulse" />
                 </div>
                 <div className="flex items-center gap-3 p-3 bg-blue-100 dark:bg-blue-950/30 rounded-lg border border-blue-300 dark:border-blue-700 animate-pulse" style={{ animationDelay: '400ms' }}>
@@ -91,7 +88,7 @@ const DecisionTreeLoadingVisualization: React.FC<DecisionTreeLoadingVisualizatio
             <div className="flex items-center gap-12">
               <div className="flex flex-col items-center space-y-2">
                 <div className="flex items-center gap-1">
-                  <div className="px-1.5 py-0.5 bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300 rounded text-xs animate-pulse">Y</div>
+                  <Badge tone="success">Y</Badge>
                   <ArrowRight className="h-3 w-3 text-gray-300 animate-pulse" />
                 </div>
                 <div className="flex items-center gap-2 p-2 bg-green-50 dark:bg-green-950/20 rounded border border-green-200 dark:border-green-800 animate-pulse" style={{ animationDelay: '600ms' }}>
@@ -102,7 +99,7 @@ const DecisionTreeLoadingVisualization: React.FC<DecisionTreeLoadingVisualizatio
               
               <div className="flex flex-col items-center space-y-2">
                 <div className="flex items-center gap-1">
-                  <div className="px-1.5 py-0.5 bg-red-100 dark:bg-red-950/30 text-red-700 dark:text-red-300 rounded text-xs animate-pulse">N</div>
+                  <Badge tone="destructive">N</Badge>
                   <ArrowRight className="h-3 w-3 text-gray-300 animate-pulse" />
                 </div>
                 <div className="flex items-center gap-2 p-2 bg-purple-50 dark:bg-purple-950/20 rounded border border-purple-200 dark:border-purple-800 animate-pulse" style={{ animationDelay: '800ms' }}>
@@ -113,7 +110,7 @@ const DecisionTreeLoadingVisualization: React.FC<DecisionTreeLoadingVisualizatio
               
               <div className="flex flex-col items-center space-y-2">
                 <div className="flex items-center gap-1">
-                  <div className="px-1.5 py-0.5 bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300 rounded text-xs animate-pulse">Y</div>
+                  <Badge tone="success">Y</Badge>
                   <ArrowRight className="h-3 w-3 text-gray-300 animate-pulse" />
                 </div>
                 <div className="flex items-center gap-2 p-2 bg-orange-50 dark:bg-orange-950/20 rounded border border-orange-200 dark:border-orange-800 animate-pulse" style={{ animationDelay: '1000ms' }}>
@@ -124,7 +121,7 @@ const DecisionTreeLoadingVisualization: React.FC<DecisionTreeLoadingVisualizatio
               
               <div className="flex flex-col items-center space-y-2">
                 <div className="flex items-center gap-1">
-                  <div className="px-1.5 py-0.5 bg-red-100 dark:bg-red-950/30 text-red-700 dark:text-red-300 rounded text-xs animate-pulse">N</div>
+                  <Badge tone="destructive">N</Badge>
                   <ArrowRight className="h-3 w-3 text-gray-300 animate-pulse" />
                 </div>
                 <div className="flex items-center gap-2 p-2 bg-blue-50 dark:bg-blue-950/20 rounded border border-blue-200 dark:border-blue-800 animate-pulse" style={{ animationDelay: '1200ms' }}>
@@ -170,16 +167,12 @@ const DecisionTreeLoadingVisualization: React.FC<DecisionTreeLoadingVisualizatio
             <ArrowRight className="h-4 w-4 text-gray-400 animate-pulse" />
             <div className="flex items-center gap-2">
               <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-32 animate-pulse" />
-              <div className="px-2 py-1 bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300 rounded-full text-xs font-bold animate-pulse">
-                YES
-              </div>
+              <Badge tone="success">YES</Badge>
             </div>
             <ArrowRight className="h-4 w-4 text-gray-400 animate-pulse" />
             <div className="flex items-center gap-2">
               <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-28 animate-pulse" />
-              <div className="px-2 py-1 bg-red-100 dark:bg-red-950/30 text-red-700 dark:text-red-300 rounded-full text-xs font-bold animate-pulse">
-                NO
-              </div>
+              <Badge tone="destructive">NO</Badge>
             </div>
           </div>
         </div>
