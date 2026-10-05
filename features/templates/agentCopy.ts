@@ -1,10 +1,10 @@
-// features/kits/templateAgentCopy.ts — the host's `copyAgent` for template installs.
+// features/templates/agentCopy.ts — the host's `copyAgent` for template installs.
 //
 // `installTemplate(client, orgId, spec, { copyAgent })` in @ai-matrx/records
 // (aidream/apps/shared/records/src/templates/install.ts) installs a template through
 // store doors and hands the ONE step it cannot take — copying a platform agent and
 // binding its variables to the installed tables — to the host. This is that step,
-// built on the kit installer's own path (installer.ts), never a second one:
+// built on the shared agent writes (agentWrites.ts), never a second path:
 //
 //   1. the platform agent the template names (its id, or its name in the system org)
 //   2. `agx_duplicate_agent` through the `duplicateAgent` thunk — the ONE fork, as the person
@@ -38,11 +38,11 @@
 
 // This file holds no app imports (types only), so a node script can run the same
 // copier against the clone with its own ports; the browser wiring is
-// `templateAgentCopyHost.ts`.
+// `agentCopyHost.ts`.
 import type { Json } from "@/types/database.types";
 import type { CustomDataBinding } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import { tableReferenceValue, tableVariableTypeOf } from "@ai-matrx/chat/agents/utils/table-variable";
-import type { AgentRow } from "./installer";
+import type { AgentRow } from "./agentWrites";
 import type { MergeFieldBinding } from "@/features/make/gallery/mergeBinding";
 
 // ─── the contract (structurally identical to @ai-matrx/records templates/install.ts) ──
@@ -69,6 +69,11 @@ export interface TemplateAgentCopyRequest {
   bindings: TemplateAgentBinding[];
   /** Called with the copy's id the moment the fork returns, before anything else can fail. */
   onCreated?: (agentId: string) => void;
+  /**
+   * A copy an interrupted run already made (the install's stale claim answered it): it is
+   * finished — named, connected — instead of forking a second one.
+   */
+  existingAgentId?: string;
 }
 
 export type TemplateAgentCopier = (request: TemplateAgentCopyRequest) => Promise<{ agentId: string }>;
@@ -114,7 +119,7 @@ export function templateBinding(binding: TemplateAgentBinding, limit: number): C
 
 /**
  * The copied agent's `variable_definitions`, with each template variable connected.
- * Read and written RAW, like the kit installer: every other key of every variable
+ * Read and written RAW: every other key of every variable
  * is kept byte-for-byte. A template naming a variable the agent does not have, or a
  * table the install did not create, is a named failure — never a skipped binding.
  *
@@ -194,8 +199,12 @@ export function createTemplateAgentCopier(
   const attachRecords = options.attachRecordsTool ?? true;
 
   return async (request) => {
-    const sourceId = request.platformAgentId ?? (await ports.platformAgentIdByName(request.platformAgent));
-    const agentId = await ports.duplicate(sourceId, request.organizationId);
+    const agentId =
+      request.existingAgentId ??
+      (await ports.duplicate(
+        request.platformAgentId ?? (await ports.platformAgentIdByName(request.platformAgent)),
+        request.organizationId,
+      ));
     request.onCreated?.(agentId);
     try {
       // No tags on a template copy (TAGS above).

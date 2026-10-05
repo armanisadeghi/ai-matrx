@@ -25,6 +25,7 @@
 import { buildDirectiveSlug, type DirectiveClass } from "@ai-matrx/content-ir";
 
 import { supabase } from "@/utils/supabase/client";
+import { useStoreRead } from "@/lib/redux/store-reads/useStoreRead";
 
 export interface ConversationDirectiveReceipt {
   /** The ledger key — stable, unique, and the React key. */
@@ -106,4 +107,32 @@ export async function fetchConversationReceipts(
       },
     ];
   });
+}
+
+const NO_RECEIPTS: ConversationDirectiveReceipt[] = [];
+
+/**
+ * The conversation's already-applied directives, read from the ledger.
+ *
+ * Read ONCE per conversation into Redux (`useStoreRead`): a confirm made later
+ * in this session is shown by its own card, and a remount or a wake renders the
+ * stored receipts and reads nothing — the same apply is never put on screen
+ * twice. `refresh` is the ONE deliberate exception (DD-145) — the zone calls it
+ * only while a card is waiting for a receipt another request is still writing,
+ * and that card removes itself the moment the read produces it, so the "never
+ * twice" rule holds through the exception rather than around it.
+ *
+ * Shared by every reader: the foot zone, and a `comment_reply` line deciding
+ * whether its receipt exists.
+ */
+export function useConversationReceipts(conversationId: string | null) {
+  const read = useStoreRead<ConversationDirectiveReceipt[]>(
+    conversationId ? `chat.directive-receipts:${conversationId}` : null,
+    () => fetchConversationReceipts(conversationId as string),
+  );
+  return {
+    receipts: read.data ?? NO_RECEIPTS,
+    loadError: read.error,
+    refresh: read.refresh,
+  };
 }

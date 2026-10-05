@@ -51,8 +51,7 @@ import {
 } from "@ai-matrx/chat/agents/redux/proposed-directives/proposedDirectivesSlice";
 import { BackendApiError } from "@/lib/api/errors";
 import {
-  fetchConversationReceipts,
-  type ConversationDirectiveReceipt,
+  useConversationReceipts,
 } from "@/features/matrx-envelope/conversationReceipts";
 import DirectiveReceiptBlock from "@/components/mardown-display/blocks/data-events/DirectiveReceiptBlock";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -238,31 +237,6 @@ function useRehydratedProposals(
     unreadable.join(" ")
   );
 }
-
-/**
- * The conversation's already-applied directives, read from the ledger.
- *
- * Read ONCE per conversation into Redux (`useStoreRead`): a confirm made later
- * in this session is shown by its own card, and a remount or a wake renders the
- * stored receipts and reads nothing — the same apply is never put on screen
- * twice. `refresh` is the ONE deliberate exception (DD-145) — the zone calls it
- * only while a card is waiting for a receipt another request is still writing,
- * and that card removes itself the moment the read produces it, so the "never
- * twice" rule holds through the exception rather than around it.
- */
-function useConversationReceipts(conversationId: string) {
-  const read = useStoreRead<ConversationDirectiveReceipt[]>(
-    conversationId ? `chat.directive-receipts:${conversationId}` : null,
-    () => fetchConversationReceipts(conversationId),
-  );
-  return {
-    receipts: read.data ?? NO_RECEIPTS,
-    loadError: read.error,
-    refresh: read.refresh,
-  };
-}
-
-const NO_RECEIPTS: ConversationDirectiveReceipt[] = [];
 
 function ProposedDirectiveCard({ proposal }: { proposal: ProposedDirective }) {
   const dispatch = useAppDispatch();

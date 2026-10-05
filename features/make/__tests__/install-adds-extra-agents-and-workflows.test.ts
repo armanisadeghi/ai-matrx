@@ -10,7 +10,7 @@
 // pointer resolved to the wrong row · a workflow created with a raw {{agent:…}} · a workflow not
 // recorded (kind 'workflow') · a re-open copying again.
 
-jest.mock("@/features/kits/templateAgentCopyHost", () => ({ templateAgentCopier: jest.fn(), templateAgentArchiver: jest.fn() }));
+jest.mock("@/features/templates/agentCopyHost", () => ({ templateAgentCopier: jest.fn(), templateAgentArchiver: jest.fn() }));
 
 import { addInstalledAgent, hostStepsPending, type InstallAnswer } from "../gallery/installAgent";
 

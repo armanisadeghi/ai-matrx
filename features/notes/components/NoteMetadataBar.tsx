@@ -351,6 +351,7 @@ export function NoteMetadataBar({
             // markdown, nothing else. The record summary (metadata, save
             // state, "--- Body ---") is the AI copy below, never the person's.
             human={() => getNoteLiveContent(note.id) ?? note.content ?? ""}
+            contentFlavor="markdown"
             json={() => noteRecordData(buildRecordView())}
             agent={() => {
               const view = buildRecordView();

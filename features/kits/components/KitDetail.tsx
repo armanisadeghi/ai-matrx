@@ -4,8 +4,8 @@
 // (drawn), every table with its example rows, the agent it forks and which of its
 // variables get connected, the workflow, the guide — and the install rail.
 
-import { variableLabel } from "../format";
-import { useScopedKitKnobs } from "../knobs";
+import { variableLabel } from "@/features/templates/format";
+import { useScopedTemplateKnobs } from "@/features/templates/knobs";
 import Link from "next/link";
 import { ArrowRight, Link2, Workflow } from "lucide-react";
 import type { ReactNode } from "react";
@@ -117,7 +117,7 @@ export function KitDetail({
   const m = kit.manifest;
   // The organization filter (?org_filter=) names where a new install goes; none = the active organization.
   const api = useKitInstall(m, useOrgFilterParam()[0]);
-  const kitKnobs = useScopedKitKnobs(api.organizationId);
+  const kitKnobs = useScopedTemplateKnobs(api.organizationId);
   const installed = api.install?.status === "installed";
   const router = useRouter();
   const userId = useAppSelector(selectUserId);

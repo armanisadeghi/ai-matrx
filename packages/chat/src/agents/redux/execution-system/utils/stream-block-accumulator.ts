@@ -36,6 +36,7 @@ import {
   fenceNestsInnerFences,
   fenceOpenerOf,
   FenceReader,
+  findCodeRanges,
   trimFenceLine,
 } from "@ai-matrx/content-ir/source";
 import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
@@ -358,6 +359,22 @@ function isParseableJsonObject(text: string): boolean {
  * text until finalize. Prose almost never opens a line with `{"…":`, and a
  * false positive degrades gracefully to a JSON code block, so this is safe.
  */
+/**
+ * Whether XML source so far ends inside a literal context: an open comment,
+ * an open CDATA section, or an open fence (any language — a JSON fence inside
+ * a tag opens its own candidate at its opener line, X1).
+ */
+function endsInsideXmlLiteral(source: string): boolean {
+  const lastComment = source.lastIndexOf("<!--");
+  if (lastComment !== -1 && source.indexOf("-->", lastComment + 4) === -1) return true;
+  const lastCdata = source.lastIndexOf("<![CDATA[");
+  if (lastCdata !== -1 && source.indexOf("]]>", lastCdata + 9) === -1) return true;
+  const last = findCodeRanges(source).at(-1);
+  if (!last || last.kind !== "fence") return false;
+  const closer = /\n[ \t]*(`{3,}|~{3,})[ \t]*$/.test(source.slice(last.start, last.end));
+  return last.end >= source.length && !closer;
+}
+
 /** The text a generic-XML kind candidate shows so far — a fence's body without its opener (X1). */
 function genericCandidateBody(candidate: GenericXmlKindCandidate): string {
   return (candidate.fence ? candidate.lines.slice(1) : candidate.lines).join("\n");
@@ -1529,6 +1546,9 @@ export class StreamBlockAccumulator {
     if (this.subState.kind !== "generic_xml") return false;
     let candidate = this.subState.kindCandidate ?? null;
     if (!candidate) {
+      // Comments, CDATA and fences of other languages stay the card's literal
+      // examples — the reload's region finder skips the same contexts.
+      if (endsInsideXmlLiteral(this.currentBlockContent)) return false;
       const trimmed = line.trimStart();
       const opener = /^ {0,3}[`~]/.test(line) ? fenceOpenerOf(trimmed) : null;
       const fence = opener && isJsonFenceLanguage(opener.lang) ? opener : null;

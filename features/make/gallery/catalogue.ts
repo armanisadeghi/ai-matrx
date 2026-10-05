@@ -43,6 +43,7 @@ export interface GalleryFootprint {
   forms?: number;
   dimensions?: number;
   agents?: number;
+  workflows?: number;
   sharedBlocks?: number;
   extras?: Record<string, number>;
   opensOutsideSignIn?: boolean;
@@ -131,6 +132,7 @@ export function footprintLine(fp: GalleryFootprint | null | undefined): string {
   add(fp.forms, "form", "forms");
   for (const [kind, n] of Object.entries(fp.extras ?? {})) add(n, kind, `${kind}s`);
   add(fp.agents, "agent", "agents");
+  add(fp.workflows, "workflow", "workflows");
   return parts.join(" · ");
 }
 
@@ -150,6 +152,7 @@ export function footprintParts(fp: GalleryFootprint | null | undefined): Array<{
     add(kind, n, word[0], word[1]);
   }
   add("agent", fp.agents, "agent", "agents");
+  add("workflow", fp.workflows, "workflow", "workflows");
   return out;
 }
 

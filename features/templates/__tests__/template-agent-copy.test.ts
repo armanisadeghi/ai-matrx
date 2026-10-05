@@ -15,8 +15,8 @@ import {
   TEMPLATE_AGENT_COLLECTION_LIMIT,
   type TemplateAgentCopyPorts,
   type TemplateAgentCopyRequest,
-} from "../templateAgentCopy";
-import type { AgentRow } from "../installer";
+} from "../agentCopy";
+import type { AgentRow } from "../agentWrites";
 
 const ORG = "6f1d2c34-9a7b-4e21-8c55-0d3e7f9a1b20";
 const CHIEF_OF_STAFF = "4383174d-aae9-4bb8-a2ea-0498f3cc47a3";
@@ -194,7 +194,7 @@ describe("template agent copy", () => {
 // custom-data picker as an ordinary whole-table binding — the same shape the picker starts
 // from — never a second binding dialect the picker cannot edit.
 import { emptyCustomDataBinding, isCompleteBinding } from "@/features/agents/components/variables-management/custom-data/customDataBinding";
-import { templateBinding } from "../templateAgentCopy";
+import { templateBinding } from "../agentCopy";
 
 describe("template binding = the From my data binding", () => {
   it("is the picker's whole-table binding with only the table and row cap filled in", () => {
@@ -210,7 +210,7 @@ describe("template binding = the From my data binding", () => {
 // in the run form — never a merge-field binding and never text.
 // The module under test can be swapped for a scratch copy with a planted break (forcing function).
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const underTest = require(process.env.TEMPLATE_AGENT_COPY_UNDER_TEST ?? "../templateAgentCopy") as typeof import("../templateAgentCopy");
+const underTest = require(process.env.TEMPLATE_AGENT_COPY_UNDER_TEST ?? "../agentCopy") as typeof import("../agentCopy");
 
 describe("a Table variable gets the table reference", () => {
   const bindTables = underTest.bindTemplateVariables;

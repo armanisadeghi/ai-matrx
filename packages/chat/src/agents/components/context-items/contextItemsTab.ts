@@ -81,7 +81,20 @@ export function contextItemsListKey(conversationId: string, items: readonly Cont
 export function useContextItemsTab(hostKey: string) {
   const tab = useChatCanvasTab({ kind: CONTEXT_ITEMS_KIND, key: hostKey });
   return {
+    /** The item id in front (null when the tab is closed or behind). */
+    shownId: tab.isVisible ? tab.selected : null,
     isShowing: (id: string) => tab.isVisible && tab.selected === id,
+    /**
+     * The tab shows a copy of the host's items; when the item in front no
+     * longer exists (its chip was removed, an edit reverted, the message sent)
+     * the tab closes — it never keeps showing a stale item. Pressing the item
+     * already in front is the port's close.
+     */
+    closeIfGone: (liveIds: readonly string[]) => {
+      if (tab.isVisible && tab.selected !== null && !liveIds.includes(tab.selected)) {
+        tab.toggle({ title: "", data: {}, selected: tab.selected });
+      }
+    },
     open: (items: readonly ContextDrawerItem[], id: string) => {
       const item = items.find((candidate) => candidate.id === id) ?? items[0];
       if (!item) return;

@@ -256,10 +256,29 @@ function literalRanges(
         cursor = end;
         continue;
       }
+      // An opening tag still arriving (`<custom value='{…` — no `>` yet): its
+      // attributes are literal to the end of the source, never a kind.
+      if (/^<[A-Za-z_][\w.:-]*\s/.test(source.slice(cursor, cursor + 64)) && !tagCloses(source, cursor)) {
+        ranges.push([cursor, source.length]);
+        break;
+      }
     }
     cursor++;
   }
   return ranges;
+}
+
+/** Whether the tag opening at `start` reaches its `>` (quoted attribute values honoured). */
+function tagCloses(source: string, start: number): boolean {
+  let quote: string | null = null;
+  for (let i = start + 1; i < source.length; i++) {
+    const ch = source[i];
+    if (quote) {
+      if (ch === quote) quote = null;
+    } else if (ch === "'" || ch === '"') quote = ch;
+    else if (ch === ">") return true;
+  }
+  return false;
 }
 
 /** Whether a code range is a fence whose language makes its body JSON (unlabelled included). */

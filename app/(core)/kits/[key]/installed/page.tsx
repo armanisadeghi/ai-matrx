@@ -1,18 +1,9 @@
+// app/(core)/kits/[key]/installed/page.tsx — the installed view moved into the Template product
+// (/make/templates/<id>, "Show what it made"); this route goes back to the kit's page until /kits
+// is deleted (Kits → Template merge, slice 2).
 import { redirect } from "next/navigation";
-import { createClient } from "@/utils/supabase/server";
-import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
-import { loginHref } from "@/utils/auth/auth-destination";
-import { fetchKit } from "@/features/kits/service";
-import { KitInstalled } from "@/features/kits/components/KitInstalled";
-import { KitMissing } from "@/features/kits/components/KitMissing";
 
-/** /kits/[key]/installed — the kit as it exists in the organization the person set. */
 export default async function KitInstalledPage({ params }: { params: Promise<{ key: string }> }) {
   const { key } = await params;
-  const { isAuthenticated } = await getSessionVerdict();
-  if (!isAuthenticated) redirect(loginHref(`/kits/${key}/installed`));
-  // An installed kit stays reachable after the kit leaves the gallery: what it made is yours.
-  const { kit, error } = await fetchKit(await createClient(), key, { includeInactive: true });
-  if (!kit) return <KitMissing kitKey={key} error={error} />;
-  return <KitInstalled kit={kit} />;
+  redirect(`/kits/${encodeURIComponent(key)}`);
 }

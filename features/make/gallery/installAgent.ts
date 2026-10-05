@@ -11,9 +11,15 @@
 // agent is copied and noted (kind 'agent'), each workflow created through aidream `POST /workflows`
 // with `{{table:…}}` / `{{agent:…}}` resolved and noted (kind 'workflow'). A re-open resumes:
 // what the install already lists (by its title) is never made twice.
+//
+// CLAIM, THEN CREATE (2026-10-05): every agent and workflow is first CLAIMED on the install
+// (`custom.template_install_claim`, kind + title) and only then created, so a page closed between
+// the create and the note leaves a claim, not an unrecorded copy. A re-open taking over a stale
+// claim gets the orphans that run made: the first is finished and recorded, any others archived.
+// A fresh claim held by another tab stops this run with a sentence — it never creates beside it.
 
 import type { TemplateDoorAnswer } from "@ai-matrx/records/templates";
-import type { TemplateAgentBinding, TemplateAgentCopier } from "@/features/kits/templateAgentCopy";
+import type { TemplateAgentBinding, TemplateAgentCopier } from "@/features/templates/agentCopy";
 import { buildMergeFieldBinding, resolveIdPlaceholders, type MergeBindingResolver, type MergeFieldBinding } from "./mergeBinding";
 
 export type InstallAnswer = TemplateDoorAnswer;
@@ -111,8 +117,27 @@ export interface AddAgentPorts {
   extraCopier?: TemplateAgentCopier;
   /** `custom.template_install_note`: records a copy (or, with kind 'workflow', a workflow) and answers the install again. */
   note: (installId: string, id: string, label: string, kind?: "workflow") => Promise<InstallAnswer>;
+  /** Archives an agent an interrupted run made twice. */
+  archiveAgent?: (agentId: string) => Promise<void>;
+  /**
+   * `custom.template_install_claim`: claims (kind, title) on the install BEFORE it is created.
+   * Answers `made` (already recorded: its id), `held` (another tab is making it) or `claimed`
+   * (go ahead; `orphans` = what an interrupted run made and never recorded).
+   */
+  claim: (installId: string, kind: "agent" | "workflow", label: string, sourceId: string | null) => Promise<Claim>;
+  /** Archives a workflow an interrupted run made twice. */
+  archiveWorkflow?: (workflowId: string) => Promise<void>;
   /** aidream `POST /workflows` in `organizationId`, as the person. Returns the workflow's id. */
   createWorkflow?: (organizationId: string, workflow: { name: string; description: string; definition: unknown }) => Promise<string>;
+}
+
+export type Claim =
+  | { state: "made"; id: string }
+  | { state: "held" }
+  | { state: "claimed"; orphans: string[] };
+
+function heldSentence(what: string): string {
+  return `"${what}" is being made in another tab or window. Reopen this page in a few minutes to finish.`;
 }
 
 export type AddAgentResult = { ok: true; answer: InstallAnswer } | { ok: false; why: string; answer: InstallAnswer };
@@ -124,11 +149,18 @@ async function copyAndNote(
   organizationId: string,
   agent: { platformAgentId: string; platformAgent: string; name: string; bindings: TemplateAgentBinding[] },
 ): Promise<{ answer: InstallAnswer; agentId: string }> {
-  let created: string | null = null;
+  const claim = await ports.claim(installId, "agent", agent.name, agent.platformAgentId || null);
+  if (claim.state === "made") return { agentId: claim.id, answer: await ports.note(installId, claim.id, agent.name) };
+  if (claim.state === "held") throw new Error(heldSentence(agent.name));
+  const [adopt, ...extra] = claim.orphans;
+  let created: string | null = adopt ?? null;
   try {
+    // Copies an interrupted run made twice: archived, so exactly one stays.
+    for (const id of extra) await ports.archiveAgent?.(id);
     const made = await copier({
       organizationId,
       ...agent,
+      ...(adopt ? { existingAgentId: adopt } : {}),
       onCreated: (id) => {
         created = id;
       },
@@ -205,8 +237,18 @@ export async function addInstalledAgent(
       for (const wf of workflows) {
         if (madeOf(current, "workflow").some((m) => m.title === wf.name)) continue;
         if (!ports.createWorkflow) throw new Error(`The workflow "${wf.name}" could not be made: this screen cannot create workflows.`);
-        const definition = resolveIdPlaceholders(wf.definition, { table: tables, agent: agentIds });
-        const workflowId = await ports.createWorkflow(organizationId, { name: wf.name, description: wf.description, definition });
+        const claim = await ports.claim(installId, "workflow", wf.name, null);
+        if (claim.state === "held") throw new Error(heldSentence(wf.name));
+        let workflowId: string;
+        if (claim.state === "made") workflowId = claim.id;
+        else if (claim.orphans.length) {
+          const [adopt, ...extra] = claim.orphans as [string, ...string[]];
+          for (const id of extra) await ports.archiveWorkflow?.(id);
+          workflowId = adopt;
+        } else {
+          const definition = resolveIdPlaceholders(wf.definition, { table: tables, agent: agentIds });
+          workflowId = await ports.createWorkflow(organizationId, { name: wf.name, description: wf.description, definition });
+        }
         current = await ports.note(installId, workflowId, wf.name, "workflow");
       }
     }

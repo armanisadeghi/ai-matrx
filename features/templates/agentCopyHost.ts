@@ -1,15 +1,15 @@
-// features/kits/templateAgentCopyHost.ts — the browser wiring of the template agent copy.
+// features/templates/agentCopyHost.ts — the browser wiring of the template agent copy.
 //
 // `templateAgentCopier(dispatch)` is the `copyAgent` to pass to @ai-matrx/records'
-// `installTemplate`: every port runs as the signed-in person through the kit
+// `installTemplate`: every port runs as the signed-in person through the shared
 // installer's own doors (`duplicateAgent` thunk, `nameCopiedAgent`, `writeAgent`).
-// The logic lives in `templateAgentCopy.ts`.
+// The logic lives in `agentCopy.ts`.
 
 import type { AppDispatch } from "@/lib/redux/store";
 import { supabase } from "@/utils/supabase/client";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import { duplicateAgent, saveAgentField } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
-import { nameCopiedAgent, writeAgent } from "./installer";
+import { nameCopiedAgent, writeAgent } from "./agentWrites";
 import { callApi } from "@/lib/api/call-api";
 import type { components } from "@ai-matrx/agents/generated/api-types";
 import {
@@ -18,7 +18,7 @@ import {
   type TemplateAgentCopyPorts,
   type TemplateAgentCopier,
   type TemplateAgentCopyOptions,
-} from "./templateAgentCopy";
+} from "./agentCopy";
 
 function messageOf(err: unknown): string {
   if (err instanceof Error) return err.message;
@@ -28,7 +28,7 @@ function messageOf(err: unknown): string {
   return String(err);
 }
 
-/** Archive through the agents list's own Archive (`is_archived`), as kit removal does. */
+/** Archive through the agents list's own Archive (`is_archived`), as every template removal does. */
 function archivePort(dispatch: AppDispatch): TemplateAgentCopyPorts["archive"] {
   return async (agentId) => {
     try {
@@ -94,7 +94,7 @@ export function templateAgentCopier(dispatch: AppDispatch, options?: TemplateAge
 
 /**
  * A template's workflow: aidream `POST /workflows` in the captured organization, as the person
- * (the same door the kit installer uses). Answers the workflow's id.
+ * (the studio.s own create door). Answers the workflow's id.
  */
 export function templateWorkflowCreator(
   dispatch: AppDispatch,

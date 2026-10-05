@@ -20,7 +20,7 @@ import {
   isKindJsonText,
   markdownCarriesKind,
 } from "@/features/content-ir/surfaces/json-kind-signal";
-import { useKindSourceView } from "./kind-source-view";
+import { KindSourceView, useKindSourceView } from "./kind-source-view";
 import { useReportKindAtRawRenderer } from "@/features/content-ir/surfaces/report-kind-at-raw-renderer";
 import type { ImagePolicyDeclaration } from "@/components/rich-content/prose/remote-image-policy";
 
@@ -72,7 +72,9 @@ export function KindTextGate({
     reroute ? firstKindSlug(content) : null,
     reroute,
   );
-  if (!reroute) return <>{children}</>;
+  // A deliberate source view reaches the leaves below it too (the compact
+  // code snippet honours it), so the text stays exactly as written.
+  if (!reroute) return showSource ? <KindSourceView>{children}</KindSourceView> : <>{children}</>;
   // A whole-text kind object has no fence for the pipeline to find — give it one.
   const trimmed = content.trim();
   const pipelineText = isKindJsonText(trimmed)

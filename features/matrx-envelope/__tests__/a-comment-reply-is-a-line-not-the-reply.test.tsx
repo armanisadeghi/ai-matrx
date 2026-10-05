@@ -66,11 +66,28 @@ afterEach(() => {
   host.remove();
 });
 
-function render(node: React.ReactNode, messages: Record<string, unknown>[] = [userTurn([C3, C4])]) {
+/** The ledger's reply receipt for one handle, as `fetchConversationReceipts` returns it. */
+const replyReceipt = (handle: string) => ({
+  ledgerKey: `ledger-${handle}`,
+  directive: SLUG,
+  message: `Replied in the thread on ${handle}.`,
+  createdAt: "2026-10-05T00:00:00Z",
+  thread: { entity_type: "message", entity_id: "answer-1", root_id: "root-7", reply_id: "reply-9", handle },
+});
+
+function render(
+  node: React.ReactNode,
+  messages: Record<string, unknown>[] = [userTurn([C3, C4])],
+  receipts: unknown[] = [],
+) {
   const byId = Object.fromEntries(messages.map((m) => [m.id as string, m]));
   const store = configureStore({
     reducer: {
       messages: () => ({ byConversationId: { [CONVERSATION]: { orderedIds: Object.keys(byId), byId } } }),
+      // The receipts read is already answered (the zone at the foot reads it once).
+      storeReads: () => ({
+        byKey: { [`chat.directive-receipts:${CONVERSATION}`]: { status: "ready", data: receipts, hasData: true, error: null, at: Date.now() } },
+      }),
     },
   });
   act(() =>
@@ -122,6 +139,21 @@ describe("the fence in the answer", () => {
     render(<Fence streaming={false} items={[{ to: "c99", body: REPLY_TEXT }]} />);
     expect(host.querySelector('[data-comment-reply="c99"]')?.tagName).toBe("SPAN");
     expect(host.textContent).not.toContain("truck scale —");
+  });
+});
+
+describe("one cue per reply", () => {
+  // Live walk 2026-10-05: "Reply in thread · c1" above the paragraph AND
+  // "Replied in the thread on c1. Open thread" at the foot — two cues, one reply.
+  it("once the ledger's receipt exists, the fence line stands down", () => {
+    render(<Fence streaming={false} items={[{ to: "c3", body: REPLY_TEXT }]} />, undefined, [replyReceipt("c3")]);
+    expect(host.querySelector('[data-comment-reply="c3"]')).toBeNull();
+    expect(host.textContent).not.toContain("Reply in thread");
+  });
+
+  it("another handle's receipt does not hide this reply's line", () => {
+    render(<Fence streaming={false} items={[{ to: "c3", body: REPLY_TEXT }]} />, undefined, [replyReceipt("c4")]);
+    expect(host.querySelector('[data-comment-reply="c3"]')).not.toBeNull();
   });
 });
 

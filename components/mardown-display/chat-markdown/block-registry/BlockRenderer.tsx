@@ -27,7 +27,10 @@ import { earlyKeysFromValue } from "@/features/content-ir/react/loading/kind-loa
 import { readEnvelope } from "@/features/content-ir/redux/render-block-envelope";
 import {
   firstKindSlug,
+  hasKindKey,
+  isJsonFenceLanguage,
   jsonKindSignal,
+  withoutLeadingJsonComments,
 } from "@/features/content-ir/surfaces/json-kind-signal";
 import { withIrEnvelope } from "@/features/content-ir/registry/region-envelope-memo";
 import {
@@ -159,6 +162,7 @@ function readRecordValue(block: {
 export function pendingStructuredEnvelope(block: {
   type: string;
   content?: string | null;
+  language?: string;
   metadata?: Record<string, unknown>;
   isStreamingBlock?: boolean;
 }): CanonicalBlockIR | null {
@@ -252,7 +256,7 @@ export function settleBrokenKindRoute<
 >(block: T): T {
   if (block.type !== "code" || block.isStreamingBlock) return block;
   const slug = firstKindSlug(block.content ?? "");
-  if (!slug) return block;
+  if (!slug) return settleUnnamedKindRoute(block);
   const envelope = readEnvelope(block.metadata);
   if (envelope?.root.kind || envelope?.root.status === "complete") return block;
   const broken: CanonicalBlockIR = {
@@ -277,6 +281,56 @@ export function settleBrokenKindRoute<
 }
 
 /**
+ * Ruling (c), round 3 (X4): a settled JSON region that carries a `__kind` KEY
+ * whose value is missing, unreadable or not a slug (`5`, `null`, `""`,
+ * `"My Kind!"`, a stream cut inside the name) is BROKEN STRUCTURED OUTPUT —
+ * the generic structured floor with a broken notice, never the raw card. A
+ * region that names a kind elsewhere (a nested kind) is the recovery pass's;
+ * a fence of another language is quoted source.
+ */
+function settleUnnamedKindRoute<
+  T extends {
+    type: string;
+    content?: string | null;
+    language?: string;
+    metadata?: Record<string, unknown>;
+  },
+>(block: T): T {
+  const content = block.content ?? "";
+  if (!isJsonFenceLanguage(block.language) || !hasKindKey(content)) return block;
+  if (readEnvelope(block.metadata)?.root.kind) return block;
+  const broken: CanonicalBlockIR = {
+    v: IR_VERSION,
+    engine: "fe-kind-parser",
+    fingerprint: "broken-unnamed-kind",
+    root: {
+      role: "structured",
+      kind: "",
+      kindState: "raw",
+      discriminator: { format: "json", key: "__kind" },
+      status: "error",
+      path: [],
+      value: {},
+      residue: {
+        extra: null,
+        optionalMissing: null,
+        notices: [
+          {
+            code: "parse_error",
+            message: "Broken structured output: its __kind is missing or unreadable.",
+          },
+        ],
+      },
+    },
+  };
+  return {
+    ...block,
+    type: GENERIC_STRUCTURED_COMPONENT_KEY,
+    metadata: { ...(block.metadata ?? {}), [IR_ENVELOPE_KEY]: broken },
+  };
+}
+
+/**
  * A streaming code block NO parser opened for (a fence with no language, or
  * ```jsonc / ```json5, or any arrival path that stamps no envelope) still
  * obeys the first-key rule: JSON text that COULD be a kind shows a kind
@@ -285,11 +339,17 @@ export function settleBrokenKindRoute<
  */
 function unparsedKindPendingEnvelope(block: {
   content?: string | null;
+  language?: string;
   isStreamingBlock?: boolean;
 }): CanonicalBlockIR | null {
   if (!block.isStreamingBlock) return null;
   const text = block.content ?? "";
-  if (!/^\s*[[{]/.test(text)) return null;
+  // Leading JSONC comments and whitespace pass the first-key rule (X3): a
+  // ```jsonc fence that opens `// cards for the quiz` is still a JSON region.
+  const leadingComment = /^\s*\/[/*]/.test(text);
+  if (leadingComment && !isJsonFenceLanguage(block.language)) return null;
+  const body = leadingComment ? withoutLeadingJsonComments(text) : text;
+  if (!/^\s*[[{]/.test(body) && !(leadingComment && !body.trim())) return null;
   if (jsonKindSignal(text) === "not_kind") return null;
   return {
     v: IR_VERSION,

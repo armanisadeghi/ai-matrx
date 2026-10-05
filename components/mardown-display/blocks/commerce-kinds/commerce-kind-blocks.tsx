@@ -27,6 +27,7 @@ import {
   TriangleAlert,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { kindValueToMarkdown } from "@/features/canvas/export/exportArtifactMarkdown";
 import { KindHeaderBar } from "@/components/kind-kit/KindHeaderBar";
 import { KindPanel } from "@/components/kind-kit/KindPanel";
 import { KindPanelGrid } from "@/components/kind-kit/KindPanelGrid";
@@ -110,7 +111,9 @@ function CommerceShell({
         streaming={!isComplete}
         copy={{
           label: title,
-          human: () => JSON.stringify(value, null, 2),
+          // A person copies the kind's readable markdown, never its JSON;
+          // `json` / `agent` below keep the data whole (`__kind` is data).
+          human: () => kindValueToMarkdown({ __kind: slug, ...value }),
           json: () => value,
           agent: () => ({
             kind: slug,

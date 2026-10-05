@@ -15,6 +15,7 @@
 //              which carries everything (nothing is lost).
 
 import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
+import { taskToggleProjection } from "./task-toggle-projection";
 import {
   remarkSourceOf,
   stageRemark,
@@ -57,6 +58,20 @@ export function mergeEditRemark(
 ): EditRemark | null {
   const before = live ? live.before : args.beforeText;
   if (before === args.afterText) return null;
+  // A diff that is only task-list boxes ticked/unticked is an interaction: it
+  // is named by the items, whichever door toggled them.
+  const toggled = taskToggleProjection(before, args.afterText);
+  if (toggled) {
+    return {
+      kind: "edit",
+      target: { conversationId: composerConversationId, messageId: args.messageId },
+      before,
+      after: args.afterText,
+      origin: "kind",
+      projection: toggled,
+      quote: null,
+    };
+  }
   const meta = args.meta ?? null;
   const projection = meta?.projection?.trim() ? meta.projection.trim() : null;
   const quote = meta?.quote?.trim() ? meta.quote.trim() : null;

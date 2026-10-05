@@ -9,7 +9,7 @@
 //   the agent id   → {{agent:key}}       (source_agent_id stays the real id — the installer forks it)
 // Entity references to PLATFORM records ({token, id}) are kept as they are.
 
-import { variableLabel } from "./format";
+import { variableLabel } from "@/features/templates/format";
 import type {
   KitAgent,
   KitBinding,

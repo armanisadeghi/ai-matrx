@@ -7,7 +7,7 @@
  * live it says so calmly; it never invents text.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Eye, Loader2, RotateCw } from "lucide-react";
 import type { CustomDataBinding } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import {
@@ -15,7 +15,8 @@ import {
   type VariableBindingPreview,
 } from "@ai-matrx/chat/agents/services/variable-binding-preview.service";
 import { isCompleteBinding } from "./customDataBinding";
-import { useCustomDataOrganizationId } from "./CustomDataRecordsScope";
+import { sharedCustomDataSource, useCustomDataOrganizationId } from "./CustomDataRecordsScope";
+import { useObjectOrganization } from "@/features/unified-data/objectOrganization";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { asClause } from "@ai-matrx/kit/text";
 import { InfoHint } from "@/components/official/InfoHint";
@@ -37,9 +38,23 @@ export function CustomDataBindingPreview({
   binding: CustomDataBinding;
   variableName?: string;
 }) {
-  const organizationId = useCustomDataOrganizationId();
+  // Inside a CustomDataRecordsScope the Table's organization is known; outside one (the run
+  // form's locked chip) the preview asks where the Table opens itself. Before 2026-10-05 it
+  // waited for a scope that was never there and said "Reading your data…" forever.
+  const scoped = useCustomDataOrganizationId();
+  const opens = useObjectOrganization(
+    sharedCustomDataSource(),
+    scoped ? null : binding.table_id || null,
+  );
+  const organizationId =
+    scoped ?? (opens.state === "found" ? opens.organizationId : null);
   const complete = isCompleteBinding(binding);
   const key = JSON.stringify(binding);
+  // The request reads the binding through a ref: the effect re-runs on the binding's CONTENT
+  // (`key`), never on a parent handing a fresh object each render — that reset the debounce
+  // timer on every render, so the request never left.
+  const bindingRef = useRef(binding);
+  bindingRef.current = binding;
   const [result, setResult] = useState<{
     key: string;
     state: PreviewState;
@@ -64,7 +79,7 @@ export function CustomDataBindingPreview({
     const controller = new AbortController();
     const timer = setTimeout(() => {
       setResult({ key, state: { status: "loading" } });
-      previewVariableBinding(organizationId, binding, {
+      previewVariableBinding(organizationId, bindingRef.current, {
         variableName,
         signal: controller.signal,
       })
@@ -88,10 +103,18 @@ export function CustomDataBindingPreview({
       clearTimeout(timer);
       controller.abort();
     };
-  }, [key, complete, organizationId, binding, variableName, revision]);
+  }, [key, complete, organizationId, variableName, revision]);
 
   const state: PreviewState = !complete
     ? { status: "incomplete" }
+    : !organizationId && (opens.state === "not-given" || opens.state === "unavailable")
+      ? {
+          state: "error",
+          message:
+            opens.state === "not-given"
+              ? "You can't open this table"
+              : `Where this table lives could not be read: ${opens.why}`,
+        }
     : result && result.key === key
       ? result.state
       : { status: "loading" };

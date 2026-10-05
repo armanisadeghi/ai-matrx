@@ -383,7 +383,7 @@ export function AgentAppFullyCustomShell({
             <CopyButtons
               size="icon"
               label={`${app.name || "App"} result`}
-              human={() => ctx.response}
+              human={() => kindTextToMarkdown(ctx.response)}
               agent={() =>
                 `Result from the "${app.name || "agent"}" app:\n\n${ctx.response}`
               }

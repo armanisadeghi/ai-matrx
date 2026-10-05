@@ -32,6 +32,9 @@ import { commitInlineContentEdit, flushPendingInlineEdit } from "../commit-inlin
 import { markResourcesSubmitted } from "../../instance-resources/instance-resources.slice";
 import { REMARKS_BLOCK_TYPE, remarkSourceOf, type EditRemark } from "../../instance-resources/remarks";
 import { remarkDiff } from "../../instance-resources/remark-diff";
+import { remarkChipTitle } from "../../instance-resources/remarks";
+import { remarkKindDisplay } from "../../../../components/context-items/remark-display";
+import { MousePointerClick, PencilLine } from "lucide-react";
 
 const rpc = jest.fn();
 let dbContent: unknown = null;
@@ -245,4 +248,52 @@ test("knob off: an edit stages nothing", async () => {
   await save(s, ORIGINAL.replace("Redis", "SQLite"));
   expect(rpc).toHaveBeenCalledTimes(1);
   expect(editChips(s)).toHaveLength(0);
+});
+
+describe("task-list ticks are interactions, not diffs", () => {
+  // Live walk 2026-10-05: ticking two boxes in "Ingredient Checklist" gave one
+  // chip labelled "- [ ] → + [x]" with a pencil — it named neither item.
+  const LIST = "Ingredient Checklist\n\n- [ ] 2 cups flour\n- [ ] 1 tsp salt\n- [ ] 2 tbsp sugar\n\nMix well.";
+  const tick = (text: string, item: string) => text.replace(`- [ ] ${item}`, `- [x] ${item}`);
+
+  test("two ticks: one chip, named by the items, origin kind", async () => {
+    const s = makeStore(LIST);
+    const one = tick(LIST, "2 cups flour");
+    await save(s, one);
+    const two = tick(one, "2 tbsp sugar");
+    await save(s, two);
+    const chips = editChips(s);
+    expect(chips).toHaveLength(1);
+    expect(chips[0].remark).toMatchObject({
+      before: LIST,
+      after: two,
+      origin: "kind",
+      projection: "I checked off: 2 cups flour, 2 tbsp sugar.",
+    });
+    expect(remarkChipTitle(chips[0].remark)).toBe("I checked off: 2 cups flour, 2 tbsp sugar.");
+  });
+
+  test("unticking one of them renames the chip; unticking all removes it", async () => {
+    const s = makeStore(LIST);
+    const two = tick(tick(LIST, "2 cups flour"), "2 tbsp sugar");
+    await save(s, two);
+    await save(s, two.replace("- [x] 2 tbsp sugar", "- [ ] 2 tbsp sugar"));
+    expect(editChips(s)[0].remark.projection).toBe("I checked off: 2 cups flour.");
+    await save(s, LIST);
+    expect(editChips(s)).toHaveLength(0);
+  });
+
+  test("a tick plus typed words is a real edit: the diff carries both", async () => {
+    const s = makeStore(LIST);
+    const one = tick(LIST, "2 cups flour");
+    await save(s, one);
+    await save(s, one.replace("Mix well.", "Mix very well."));
+    const [chip] = editChips(s);
+    expect(chip.remark).toMatchObject({ projection: null, origin: "text", before: LIST });
+  });
+
+  test("the chip shows the interaction icon, an ordinary edit the pencil", () => {
+    expect(remarkKindDisplay("edit", "kind").icon).toBe(MousePointerClick);
+    expect(remarkKindDisplay("edit", "text").icon).toBe(PencilLine);
+  });
 });

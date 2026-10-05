@@ -8,7 +8,7 @@
 
 import { ArrowDown, ArrowRight, Table2, Workflow } from "lucide-react";
 import { cn } from "@/utils/cn";
-import { count, variableLabel } from "../format";
+import { count, variableLabel } from "@/features/templates/format";
 import type { KitAgent, KitBinding, KitManifest } from "../types";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 

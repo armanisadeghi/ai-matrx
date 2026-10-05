@@ -23,6 +23,8 @@ import {
   remarkByHandle,
 } from "@ai-matrx/chat/agents/redux/execution-system/instance-resources/remark-handles";
 import { openCommentThread } from "@/features/rich-document/annotations/canvas/commentThreadKind";
+import { useConversationReceipts } from "@/features/matrx-envelope/conversationReceipts";
+import { readThreadLink } from "@/components/mardown-display/blocks/data-events/DirectiveReceiptBlock";
 import { useDirectiveFence } from "@/features/matrx-envelope/directiveFence";
 
 const NO_MESSAGES: readonly MessageRecord[] = [];
@@ -32,6 +34,13 @@ function CommentReplyLine({ handle, conversationId, streaming }: { handle: strin
   const messages = useSelector((state: unknown) =>
     conversationId ? selectConversationMessages(conversationId)(state as never) : NO_MESSAGES,
   );
+  const { receipts } = useConversationReceipts(streaming ? null : conversationId);
+  // ONE cue per reply: once the ledger's receipt ("Replied in the thread on c1.
+  // Open thread") exists it is the cue, and this fence line stands down.
+  const hasReceipt = receipts.some(
+    (r) => /comment_reply$/.test(r.directive) && readThreadLink(r.thread)?.handle === handle,
+  );
+  if (hasReceipt) return null;
   if (streaming) {
     return (
       <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground" data-comment-reply={handle}>

@@ -1,6 +1,6 @@
 "use client";
 
-import { count } from "../format";
+import { count } from "@/features/templates/format";
 
 // InstallPanel — the detail page's right rail: WHERE it installs (the organization
 // the person set), WHAT it will create (said before the click), the live stepper,

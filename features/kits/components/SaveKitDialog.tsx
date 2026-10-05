@@ -1,6 +1,6 @@
 "use client";
 
-import { count, variableLabel } from "../format";
+import { count, variableLabel } from "@/features/templates/format";
 
 // SaveKitDialog — "Save as kit": a person's own setup (an agent whose variables read
 // their tables, those tables, the workflows that use them) becomes a kit their
@@ -29,7 +29,7 @@ import { createClient } from "@/utils/supabase/client";
 import { toast } from "@/lib/toast";
 import { cn } from "@/utils/cn";
 import { KIT_ROUTES, KIT_WORD, KITS_CHANGED_EVENT } from "../constants";
-import { useScopedKitKnobs } from "../knobs";
+import { useScopedTemplateKnobs } from "@/features/templates/knobs";
 import { kitRecordsClient } from "../installer";
 import { publishKit, updateKit } from "../publish";
 import { buildManifest, draftGuide, type Snapshot } from "../serialize";
@@ -87,7 +87,7 @@ export function SaveKitDialog({ isOpen, onClose, initialAgentId, editKitKey }: S
   const org = useOrganizationRequired();
   const organizationId = org.organizationState === "ready" ? org.organizationId : null;
   // The `kits.seed_row_cap` knob for the organization the kit is saved into.
-  const knobs = useScopedKitKnobs(organizationId);
+  const knobs = useScopedTemplateKnobs(organizationId);
   const seedRowCap = knobs.seedRowCap;
   const { organizations } = useUserOrganizations();
   const orgName = organizations.find((o) => o.id === organizationId)?.name ?? "your organization";

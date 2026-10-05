@@ -10,7 +10,7 @@
 
 import { renderToStaticMarkup } from "react-dom/server";
 
-jest.mock("@/features/kits/templateAgentCopyHost", () => ({ templateAgentCopier: jest.fn(), templateAgentArchiver: jest.fn() }));
+jest.mock("@/features/templates/agentCopyHost", () => ({ templateAgentCopier: jest.fn(), templateAgentArchiver: jest.fn() }));
 
 import { addInstalledAgent, agentStillToCopy, agentsLeftBy, type InstallAnswer } from "../gallery/installAgent";
 import { Landing } from "../gallery/TemplateGallery";

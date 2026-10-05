@@ -9,6 +9,7 @@
  * Reads from instanceResources, dispatches removeResource directly.
  */
 
+import { useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { FileText, Layers } from "lucide-react";
 import { useAppSelector, useAppDispatch } from "../../../../store/hooks";
@@ -195,7 +196,7 @@ function ResourceChip({
   // SAME ResourceAttachmentTile so the row is uniform regardless of content.
   const remark = remarkSourceOf(resource)?.remark;
   const display = remark
-    ? remarkKindDisplay(remark.kind)
+    ? remarkKindDisplay(remark.kind, remark.kind === "edit" ? remark.origin : null)
     : isContextValueResource(resource)
       ? { icon: Layers, label: "Context value" }
       : getBlockTypeDisplay(resource.blockType);
@@ -360,6 +361,13 @@ export function SmartAgentResourceChips({
   const openDrawerForResource = (resourceId: string) => {
     itemsTab.open(drawerItems, itemIdForResource(resourceId));
   };
+  // The canvas tab is a copy of these items: close it when its item is gone.
+  const liveIdsKey = drawerItems.map((it) => it.id).join("\u0000");
+  useEffect(() => {
+    itemsTab.closeIfGone(liveIdsKey === "" ? [] : liveIdsKey.split("\u0000"));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [liveIdsKey, itemsTab.shownId]);
+
   const isShowingResource = (resourceId: string) => itemsTab.isShowing(itemIdForResource(resourceId));
 
   const handleRemove = (resourceId: string) => {

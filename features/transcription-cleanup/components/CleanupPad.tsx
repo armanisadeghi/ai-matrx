@@ -160,6 +160,7 @@ import { CLEANUP_OVERLAY_ID, cleanupVoicePadInstanceId } from "../constants";
 // lightweight shell (imported statically); MenuContent lazy-loads on first open.
 // All three panes (Transcript / Clean / Custom) are editable textareas.
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
+import { kindTextToMarkdown } from "@/features/content-ir/surfaces/kind-text-to-markdown";
 
 // Shared with external hosts (e.g. the War Room room-level recording
 // controller) via features/transcription-cleanup/constants.ts — the slice keys
@@ -2046,7 +2047,7 @@ export default function CleanupPad({
     }
     const parts: string[] = [];
     if (transcript) parts.push(transcript);
-    if (response) parts.push(response);
+    if (response) parts.push(kindTextToMarkdown(response));
     try {
       await navigator.clipboard.writeText(parts.join("\n\n---\n\n"));
       toast.success("Both copied to clipboard");

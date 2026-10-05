@@ -33,6 +33,9 @@ function sharedDataSource() {
   return dataSource;
 }
 
+/** The same one seam, for a binding's preview that sits outside a scope. */
+export const sharedCustomDataSource = sharedDataSource;
+
 /** Why the bound Table's details are not shown — handed to `fallback`. */
 export type CustomDataScopeHeld =
   | { state: "resolving" }

@@ -36,8 +36,11 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@ai-matrx/design-system";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { templateAgentArchiver, templateAgentCopier, templateWorkflowCreator } from "@/features/kits/templateAgentCopyHost";
-import { addInstalledAgent, agentsLeftBy, hostStepsPending } from "./installAgent";
+import { templateAgentArchiver, templateAgentCopier, templateWorkflowCreator } from "@/features/templates/agentCopyHost";
+import { addInstalledAgent, agentsLeftBy, hostStepsPending, type Claim } from "./installAgent";
+import { InstalledTemplate, type TemplateTryIt } from "@/features/templates/components/InstalledTemplate";
+import { templateKnob } from "@/features/templates/knobs";
+import { setWorkflowFlag } from "@/features/workflow-runtime/browse/service";
 import { selectActiveOrganizationName } from "@/features/scopes/redux/selectors/active-context";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
@@ -256,6 +259,22 @@ export function TemplatePreview({ templateId }: { templateId: string }) {
       // Extra agents (Kits → Template merge) are copied as the kit copied them: no records tool added.
       extraCopier: templateAgentCopier(dispatch, { attachRecordsTool: false }),
       createWorkflow: templateWorkflowCreator(dispatch),
+      archiveAgent: templateAgentArchiver(dispatch),
+      archiveWorkflow: (workflowId) => setWorkflowFlag(workflowId, { is_archived: true }),
+      claim: async (installId, kind, label, sourceId) => {
+        const { data, error } = await supabase
+          .schema("custom")
+          .rpc("template_install_claim", {
+            p_organization_id: orgId,
+            p_install_id: installId,
+            p_kind: kind,
+            p_label: label,
+            ...(sourceId ? { p_source_id: sourceId } : {}),
+            p_lease_seconds: await templateKnob("run_lease_seconds"),
+          });
+        if (error) throw new Error(error.message);
+        return (data as { claim: Claim }).claim;
+      },
       note: async (installId, agentId, label, kind) => {
         const { data, error } = await supabase
           .schema("custom")
@@ -384,6 +403,9 @@ export function TemplatePreview({ templateId }: { templateId: string }) {
             retryAgent={() => organizationId && void addAgent(run.answer, organizationId)}
           />
         ) : null}
+        {run.phase === "installed" && agent.phase === "idle" && typeof run.answer.organization_id === "string" ? (
+          <InstalledTemplate organizationId={run.answer.organization_id} made={made} tryIts={tryItsOf(run.answer)} />
+        ) : null}
       </section>
 
       <ConfirmDialog
@@ -400,6 +422,17 @@ export function TemplatePreview({ templateId }: { templateId: string }) {
       />
     </div>
   );
+}
+
+/** Try-it prompts by agent title: the template's agent and its extra agents (the install's host block). */
+function tryItsOf(answer: TemplateDoorAnswer): Record<string, TemplateTryIt> {
+  const out: Record<string, TemplateTryIt> = {};
+  const agent = answer.agent as (Record<string, unknown> & { name?: string }) | null | undefined;
+  const own = (agent?.["tryIt"] ?? agent?.["try_it"]) as TemplateTryIt | undefined;
+  if (agent?.name && own) out[agent.name] = own;
+  const host = (answer["host"] ?? null) as { extra_agents?: Array<{ name: string; tryIt?: TemplateTryIt }> | null } | null;
+  for (const x of host?.extra_agents ?? []) if (x.tryIt) out[x.name] = x.tryIt;
+  return out;
 }
 
 /** Live progress: every object ticks as the install makes it. */

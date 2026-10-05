@@ -24,7 +24,7 @@ import {
   stepsFromInstall,
   type RemovalFacts,
 } from "../installer";
-import { kitKnob } from "../knobs";
+import { templateKnob } from "@/features/templates/knobs";
 import type { InstallStepView, KitInstallRecord, KitManifest } from "../types";
 
 export type KitInstallPhase = "loading" | "ready" | "installing" | "removing";

@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { RichContent } from "@/components/rich-content/RichContent";
+import { kindTextToMarkdown } from "@/features/content-ir/surfaces/kind-text-to-markdown";
 import {
   Dialog,
   DialogContent,
@@ -49,7 +50,7 @@ export function TextActionResultModal({
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(aiResponse);
+    await navigator.clipboard.writeText(kindTextToMarkdown(aiResponse));
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

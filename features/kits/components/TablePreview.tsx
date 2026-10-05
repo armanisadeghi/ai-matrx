@@ -7,7 +7,7 @@
 import { Table2 } from "lucide-react";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import type { KitTable } from "../types";
-import { count } from "../format";
+import { count } from "@/features/templates/format";
 import { Skeleton } from "@ai-matrx/design-system";
 import { cn } from "@/utils/cn";
 import { KindCellPeek } from "@/features/data-tables/components/KindCellPeek";

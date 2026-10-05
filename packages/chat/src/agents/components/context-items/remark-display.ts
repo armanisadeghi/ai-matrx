@@ -25,6 +25,11 @@ const KIND_ICON: Record<RemarkKind, LucideIcon> = {
   interaction: MousePointerClick,
 };
 
-export function remarkKindDisplay(kind: RemarkKind): { icon: LucideIcon; label: string } {
-  return { icon: KIND_ICON[kind], label: remarkKindLabel(kind) };
+export function remarkKindDisplay(
+  kind: RemarkKind,
+  /** An edit made by interacting with a shape (a ticked box) shows as an interaction. */
+  editOrigin?: "text" | "choice" | "kind" | null,
+): { icon: LucideIcon; label: string } {
+  const icon = kind === "edit" && editOrigin === "kind" ? MousePointerClick : KIND_ICON[kind];
+  return { icon, label: remarkKindLabel(kind) };
 }
