@@ -135,6 +135,16 @@ const provider = (name: string, version: number): AiProvider => ({
   deleted_at: null,
 });
 
+// DockedSidePanel (the detail dock these containers mount) measures its parent with ResizeObserver,
+// which jsdom does not ship. A silent observer is enough: these suites assert refresh/draft races, not width.
+if (typeof ResizeObserver === "undefined") {
+  (globalThis as { ResizeObserver: unknown }).ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  };
+}
+
 describe("ProvidersContainer refresh races", () => {
   let root: Root;
   let host: HTMLDivElement;
