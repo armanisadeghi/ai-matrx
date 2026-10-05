@@ -57,11 +57,20 @@ def call(tool: str, **arguments) -> dict:
     for attempt in range(5):
         request = urllib.request.Request(MCP_URL, data=body.encode(), method="POST", headers={
             "Authorization": f"Bearer {key}", "Content-Type": "application/json",
-            "Accept": "application/json, text/event-stream"})
+            "Accept": "application/json, text/event-stream",
+            # The edge refuses Python's default "Python-urllib" agent with a 403.
+            "User-Agent": "ai-matrx-notion-import/1.0 (+https://www.aimatrx.com/bring-your-work)"})
         try:
             with urllib.request.urlopen(request, timeout=600) as answer:
                 payload = json.loads(answer.read())
             break
+        except urllib.error.HTTPError as exc:
+            if exc.code < 500 or attempt == 4:
+                detail = exc.read().decode("utf-8", "replace")[:500]
+                sys.exit(f"AI Matrx answered {exc.code}: {detail or exc.reason}"
+                         + (" — check AI_MATRX_API_KEY (Settings, API keys)." if exc.code == 401 else ""))
+            print(f"  … the server answered {exc.code}; trying again", flush=True)
+            time.sleep(3 * (attempt + 1))
         except (urllib.error.URLError, TimeoutError) as exc:
             if attempt == 4:
                 raise
@@ -231,7 +240,7 @@ def _file_under(root: Path, value: str) -> bool:
 
 
 def _views(cols: list[dict]) -> list[dict]:
-    views = [{"name": "All", "layout": "grid", "is_default": True}]
+    views = [{"name": "All", "layout": "grid", "is_default": True, "hidden": [BODY_COLUMN, KEY_COLUMN]}]
     status = next((c for c in cols if c["type"] == "status"), None) or next((c for c in cols if c["type"] == "choice"), None)
     if status:
         views.append({"name": f"By {status['name'].lower()}", "layout": "board", "group_by": status["name"]})
@@ -298,9 +307,7 @@ def run(root: Path, plan: dict, organization: str, progress_path: Path) -> None:
     for p in plan["databases"]:
         if p["notion_id"] in tables:
             continue
-        columns = [{"name": p["title_column"], "type": "text"},
-                   {"name": KEY_COLUMN, "type": "text", "unique": True},
-                   {"name": BODY_COLUMN, "type": "rich_text"}]
+        columns = [{"name": p["title_column"], "type": "text"}]
         for c in p["columns"]:
             if c["type"] in ("relation", "rollup", "lookup", "formula"):
                 continue
@@ -308,6 +315,8 @@ def run(root: Path, plan: dict, organization: str, progress_path: Path) -> None:
             columns.append(col)
             if c.get("end"):
                 columns.append({"name": c["end"], "type": "date"})
+        # Last, and hidden from the default view: in Notion a page's body opens on click and its id never shows.
+        columns += [{"name": BODY_COLUMN, "type": "rich_text"}, {"name": KEY_COLUMN, "type": "text", "unique": True}]
         made = must(call("tables", action="create_table", organization_id=organization, name=p["table"], columns=columns),
                     f"make {p['table']}")
         tables[p["notion_id"]] = made["id"]
