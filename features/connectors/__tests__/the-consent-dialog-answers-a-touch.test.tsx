@@ -184,7 +184,10 @@ describe("D1 — the scope wording opens on a tap", () => {
       "https://www.googleapis.com/auth/gmail.send",
     );
 
-    const gmailTrigger = buttonsByText("What Google is asked for")[1]!;
+    // By the product's place in the catalog, never a hard-coded index: new products slot in between.
+    const gmailTrigger = buttonsByText("What Google is asked for")[
+      provider.products.findIndex((product) => product.key === "gmail")
+    ]!;
     click(gmailTrigger);
 
     expect(gmailTrigger.getAttribute("aria-expanded")).toBe("true");

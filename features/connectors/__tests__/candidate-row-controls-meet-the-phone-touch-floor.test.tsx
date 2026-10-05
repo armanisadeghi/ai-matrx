@@ -136,6 +136,16 @@ function carries(className: string | null, ...tokens: string[]) {
   return tokens.every((token) => value.includes(token));
 }
 
+/**
+ * The floor is met by a utility token OR by the control door: a `matrx-control` carries a 44px hit
+ * area on coarse pointers itself (design-system controls.css, `--matrx-control-touch`), which is how
+ * Button/Input render since the wave 1A button door (cedd3c01be). Asserting the old utility token on
+ * a door control would fail the very thing that now guarantees the floor.
+ */
+function meetsFloor(className: string | null) {
+  return carries(className, "max-sm:min-h-11") || carries(className, "matrx-control");
+}
+
 describe("every interactive control on a candidate row meets the phone touch floor", () => {
   it("floors the PRIMARY select control — the most-tapped control in the row", async () => {
     await mount();
@@ -152,7 +162,7 @@ describe("every interactive control on a candidate row meets the phone touch flo
       'input[aria-label="Search Google Calendar event"]',
     );
     expect(search).not.toBeNull();
-    expect(carries(search!.className, "max-sm:min-h-11")).toBe(true);
+    expect(meetsFloor(search!.className)).toBe(true);
   });
 
   it("floors both secondary doors on a Record-backed row", async () => {
@@ -181,8 +191,8 @@ describe("every interactive control on a candidate row meets the phone touch flo
     );
     expect(cancelBtn).toBeDefined();
     expect(attachBtn).toBeDefined();
-    expect(carries(cancelBtn!.className, "max-sm:min-h-11")).toBe(true);
-    expect(carries(attachBtn!.className, "max-sm:min-h-11")).toBe(true);
+    expect(meetsFloor(cancelBtn!.className)).toBe(true);
+    expect(meetsFloor(attachBtn!.className)).toBe(true);
   });
 
   it("keeps the two doors distinguishable WITHOUT hover — a visible text label at every width, not `hidden sm:inline`", async () => {

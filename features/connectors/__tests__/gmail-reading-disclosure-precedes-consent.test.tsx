@@ -203,7 +203,7 @@ describe("Gmail changes disclosure", () => {
     mockOrganizations = [{ id: "org-1", name: "Example Team", role: "owner" }];
     mockActiveOrganizationId = "org-1";
     mount("gmail_modify");
-    expect(container.textContent).toContain("Gmail changes connect only to your personal Google account");
+    expect(container.textContent).toContain("Gmail changes: your own Google account only");
     expect(container.querySelector('[aria-label="Connect for Example Team"]')).toBeNull();
   });
   it("explains Google's broader grant and blocks OAuth when declined", async () => {
