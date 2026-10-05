@@ -478,7 +478,144 @@ function slotHook<K extends keyof ChatUiSlots>(name: K, fallback?: AnyFn): ChatU
   return hook as ChatUiSlots[K];
 }
 
-function slotFn<K extends keyof ChatUiSlots>(name: K, fallback?: AnyFn): ChatUiSlots[K] {
+// ── Stand-ins for function / hook / selector slots the host did not register ─────────────────
+// Each is the honest "nothing here" answer (empty, null, a no-op, or a plain-web behaviour) and the
+// slot reports itself once through the diagnostics port. Constants are module-level so a selector
+// answers the SAME reference every call (a fresh `[]` per read would loop useSyncExternalStore).
+//
+// NOT listed, so an unregistered call throws naming the slot — a made-up answer would be a lie:
+//   getAgentCatalog (a catalog object cannot be faked), createSandboxFilesystemAdapter,
+//   useFileActions, useFileResourceFamily, useRecordAndTranscribe, useHtmlPreviewState,
+//   useOrganizationRequired, useAgentChangeReach, useAccess, useGitHubConnection (rich host objects
+//   callers read members of), requireAuthenticatedSupabaseSession, ensureOrgAvailability (auth/org
+//   gates: continuing without them would skip the check), normalize, toMediaRef, resolveFile,
+//   toGlobalOwnershipRecord, fromGlobalOwnershipRecord, publishedToWebPatch (data transforms whose
+//   wrong output would corrupt a write), dispatchWarRoomTool, dispatchWarRoomMasterTool (a delegated
+//   tool call has no honest local result), useTablesEverywhere-style readers are listed below.
+const NONE: never[] = [];
+const NO_MAP = new Map<string, string>();
+const EMPTY_REPORT = { status: "idle", error: null, fetchedAt: null, rows: NONE, adminRows: NONE };
+const EMPTY_SORTED = { rows: NONE, adminRows: NONE };
+const EMPTY_TOTALS = { totals: { breaking: 0, silent_breaking: 0, warning: 0, info: 0 }, agents: 0, order: NONE };
+const EMPTY_RED_FLAGS = { bySeverity: { breaking: 0, silent_breaking: 0, warning: 0, info: 0 }, stalePins: 0, totalUsages: 0, updatableKeys: NONE, hasRedFlags: false };
+const NO_ATTACH_HOST = (name: string) => () => Promise.reject(new Error(`The host registered no "${name}" for the chat package (registerChatUi).`));
+/** A thunk creator whose thunk does nothing (reads and refreshes a bare host has no data for). */
+const noopThunk = () => () => Promise.resolve(undefined);
+/** A thunk creator whose thunk (and its `.unwrap()`) REJECTS naming the slot: a write nobody can perform. */
+const failingThunk = (name: string) => () => () => {
+  const p = Promise.reject(new Error(`The host registered no "${name}" for the chat package (registerChatUi).`)) as Promise<never> & { unwrap: () => Promise<never> };
+  p.unwrap = () => p;
+  p.catch(() => undefined);
+  return p;
+};
+const STAND_INS: Partial<Record<keyof ChatUiSlots, AnyFn>> = {
+  confirm: async () => false,
+  copyRichContent: async () => false,
+  copyToClipboard: async (text: unknown) => {
+    try {
+      await navigator.clipboard.writeText(String(text));
+      return true;
+    } catch {
+      return false;
+    }
+  },
+  useTablesEverywhere: () => NONE,
+  useCenterControlFit: () => true,
+  connectorDefinitionFromMcp: () => null,
+  useKnowledgeAttachSearch: () => () => undefined,
+  useConversationAttachments: () => ({ items: NONE, loading: false, error: null, refresh: () => undefined }),
+  fetchConversationAttachments: async () => NONE,
+  notesCreate: NO_ATTACH_HOST("notesCreate"),
+  attachConversationResource: NO_ATTACH_HOST("attachConversationResource"),
+  detachConversationResource: NO_ATTACH_HOST("detachConversationResource"),
+  createHtmlPage: NO_ATTACH_HOST("createHtmlPage"),
+  saveOutputFeedback: NO_ATTACH_HOST("saveOutputFeedback"),
+  resolveSystemOrgId: async () => null,
+  readProjectScopeOrganizationId: async () => ({ data: null, error: { message: "This host registers no project directory." } }),
+  readListRpc: async () => ({ data: null, error: { message: "This host registers no list reader." } }),
+  fetchArtifactsForMessageThunk: noopThunk,
+  updateArtifactThunk: failingThunk("updateArtifactThunk"),
+  registerArtifactThunk: failingThunk("registerArtifactThunk"),
+  renameFile: failingThunk("renameFile"),
+  refreshNoteContent: failingThunk("refreshNoteContent"),
+  saveNoteField: failingThunk("saveNoteField"),
+  fetchNotesList: noopThunk,
+  loadProjectsWithTasks: noopThunk,
+  loadCodeEditHistoryThunk: noopThunk,
+  fetchDriftAlerts: noopThunk,
+  fetchAgentUsages: noopThunk,
+  fetchAgentUsageReport: noopThunk,
+  markDriftAlertViewed: noopThunk,
+  dismissDriftAlert: noopThunk,
+  noteBrowserActivity: noopThunk,
+  adoptCloudBrowserRunFromStream: noopThunk,
+  receivedFsChange: () => undefined,
+  applySkillStreamEvent: () => undefined,
+  studioDocumentContentChanged: () => undefined,
+  selectHtmlPageArtifactForMessage: () => undefined,
+  selectEditorState: () => null,
+  selectActiveSandboxId: () => null,
+  selectActiveSandboxProxyUrl: () => null,
+  selectEditorMode: () => null,
+  selectCloudBrowserRunLive: () => false,
+  selectAllContentBlocksArray: () => NONE,
+  selectContentBlocksByScope: () => NONE,
+  selectContentBlocksByScopeRef: () => NONE,
+  selectActiveContentBlocks: () => NONE,
+  selectShouldPromptForOrganization: () => false,
+  selectActiveBannerAlerts: () => NONE,
+  selectDriftAlertsStatus: () => "idle",
+  makeSelectUsageCache: () => () => null,
+  makeSelectUsageGroups: () => () => NONE,
+  makeSelectUsageAggregates: () => () => NONE,
+  makeSelectRedFlagSummary: () => () => EMPTY_RED_FLAGS,
+  makeSelectReport: () => () => EMPTY_REPORT,
+  makeSelectReportSorted: () => () => EMPTY_SORTED,
+  makeSelectReportTotals: () => () => EMPTY_TOTALS,
+  humanLines: (lines: unknown) => (Array.isArray(lines) ? lines.filter(Boolean).join("\n") : ""),
+  generateLabelFromContent: (content: unknown, max?: number) => String(content ?? "").trim().slice(0, max ?? 60),
+  precedingQuestion: () => null,
+  materializeMessageArtifacts: async () => ({ materializedCount: 0, rewrittenContent: null, errors: [] }),
+  resolveGmailSendConnection: async () => null,
+  canvasGetVersionHistory: async () => NONE,
+  canvasGetById: async () => null,
+  notesGetById: async () => null,
+  convertMarkdownToHtml: (markdown: unknown) => `<pre>${String(markdown ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;")}</pre>`,
+  compileSlotComponent: () => ({ Component: null, error: "This host cannot compile tool renderers." }),
+  useModelFull: () => null,
+  useModelOptions: () => NONE,
+  useAuthGuardedAction: (action: unknown) => action,
+  readOf: (read: { isLoading?: boolean; error?: unknown } | undefined) => ({
+    status: read?.isLoading ? "loading" : read?.error ? "error" : "ready",
+    error: read?.error ?? undefined,
+    hasData: true,
+  }),
+  pushAppHref: (router: { push: (href: string) => void }, href: string) => router.push(href),
+  replaceAppHref: (router: { replace: (href: string) => void }, href: string) => router.replace(href),
+  announceComingSoon: async () => undefined,
+  peekSystemOrgId: () => null,
+  peekMandateCatalogueEntry: () => null,
+  invalidateMandateCatalogueCache: () => undefined,
+  useLoginHref: () => "/login",
+  resolveEntityToken: () => null,
+  entityTitleFallback: (token: unknown) => String(token ?? ""),
+  fetchEntityTitles: async () => NO_MAP,
+  getCachedEntityTitle: () => null,
+  bookmarksToReferenceDirectives: () => NONE,
+  notifyPrintOutcome: () => undefined,
+  awaitEffectiveOrganizationId: async () => ({ status: "unavailable", reason: "This host registers no organization source.", cause: "no-selection" }),
+  isUuidValue: (value: unknown) => typeof value === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value),
+  useClippedContentGuard: () => undefined,
+  answerPreviewText: (text: unknown) => String(text ?? ""),
+  beginPlaybackSession: () => ({ id: "", update: () => undefined, end: () => undefined }),
+  useCanvasOpenGuard: () => ({ ensureCanvasReachable: async () => true }),
+  useSkills: () => ({ skills: NONE, grouped: {}, count: 0, loading: false, error: null, reload: async () => undefined }),
+  useStructuredListForSelection: () => ({ items: NONE, groups: NONE, loading: false, unavailable: true, error: null, retry: () => undefined }),
+  useOutputFeedback: () => ({ verdict: null, isLoaded: true }),
+};
+
+function slotFn<K extends keyof ChatUiSlots>(name: K, declared?: AnyFn): ChatUiSlots[K] {
+  const fallback = declared ?? STAND_INS[name];
   if (/^use[A-Z]/.test(name)) return slotHook(name, fallback);
   const fn = (...args: unknown[]) => {
     const registered = slots[name] as AnyFn | undefined;
