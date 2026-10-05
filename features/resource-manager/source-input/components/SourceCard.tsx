@@ -102,6 +102,7 @@ export function SourceCard({
   job,
   deliveries,
   heldForOrganization = false,
+  mark,
   onProcessingSettled,
   onCleanNow,
   onTryAgain,
@@ -113,6 +114,8 @@ export function SourceCard({
   deliveries?: readonly SourceDelivery[];
   /** A stored file whose state cannot be asked for until an organization is picked (V2-F #3). */
   heldForOrganization?: boolean;
+  /** A short word the host puts beside the state (e.g. "Not in this deck"). */
+  mark?: string;
   /** The processing-runner job reading this file, when this session started one. */
   job: ProcessingJob | null;
   onProcessingSettled: () => void;
@@ -190,6 +193,7 @@ export function SourceCard({
                 · {isArchivedSource(entry) ? ARCHIVED_SOURCE_LABEL : STATE_WORDS[measuredState]}
               </span>
             ) : null}
+            {mark ? <span className="font-medium text-warning">· {mark}</span> : null}
             {card.draft.origin && card.draft.origin !== sourceKindNoun(card.draft) ? (
               <span className="truncate">
                 {sourceKindNoun(card.draft) !== card.draft.label ? "· " : ""}

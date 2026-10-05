@@ -72,8 +72,9 @@ import { useAiComplianceGate } from "@/features/education/compliance/useAiCompli
 import { useEntitlementGuard } from "@/features/entitlements/components/useEntitlementGuard";
 import { EntitlementMeter } from "@/features/entitlements/components/EntitlementMeter";
 import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
+import { isArchivedSource } from "@/features/resource-manager/source-input/components/ArchivedSource";
 import { SourceInput } from "@/features/resource-manager/source-input/components/SourceInput";
-import { useSourceSet } from "@/features/resource-manager/source-input/useSourceSet";
+import { sourceSurfaceKey, useSourceSet } from "@/features/resource-manager/source-input/useSourceSet";
 import {
   ASSISTANT_MESSAGE_COLUMN_CLASS,
   ASSISTANT_MESSAGE_COLUMN_INSET_CLASS,
@@ -98,6 +99,7 @@ import {
   generateDeckFromSources,
   plannedCardCount,
 } from "../../data/generateDeckFromSources";
+import { lateSourceIds, unreadableRestoredIds } from "../../data/draftSourceHonesty";
 import { saveDeckSourceSet, sourceNamesOf } from "../../data/deckSourceSet";
 import { useSuppressAmbientAssistant } from "@ai-matrx/chat/agents/components/ambient-assistant/ambientAssistantSuppression";
 import { useWizardDraft } from "@/lib/wizard-draft/useWizardDraft";
@@ -232,6 +234,11 @@ export function CreateDeckPage({
   // One run, one deck: Try again hands the stopped run's conversations to the
   // next run, whose save continues a deck already made for them.
   const continuesRef = useRef<readonly string[]>([]);
+  // The Sources a run was started from. A Source added after that moment is not
+  // in the deck: it stays in the draft, marked, and the finish says so.
+  const usedIdsRef = useRef<ReadonlySet<string>>(new Set());
+  const [usedIds, setUsedIds] = useState<ReadonlySet<string>>(new Set());
+  const [leftOutIds, setLeftOutIds] = useState<ReadonlySet<string>>(new Set());
 
   // ── A Source handed over in the link (old "from a document" links) ───────
   const seeded = useRef(false);
@@ -272,6 +279,36 @@ export function CreateDeckPage({
     envelopeRef.current = topicEnvelope;
   }, [topicEnvelope]);
 
+  // ── Sources kept from before a reload that cannot be read ────────────────
+  // Taken once, when the draft has been read back: only these are ever dropped.
+  const restoredIds = useRef<ReadonlySet<string> | null>(null);
+  const [dropNotice, setDropNotice] = useState<string | null>(null);
+  const dropUnreadable = useEffectEvent(() => {
+    if (restoredIds.current === null) {
+      if (!set.restoring) restoredIds.current = new Set(set.sources.map((s) => s.id));
+      return;
+    }
+    const goneIds = new Set(
+      unreadableRestoredIds(
+        set.sources.map((s) => ({
+          id: s.id,
+          status: s.status,
+          archived: isArchivedSource(s.manifest),
+          state: s.manifest?.state,
+        })),
+        restoredIds.current,
+      ),
+    );
+    const gone = set.sources.filter((s) => goneIds.has(s.id));
+    if (gone.length === 0) return;
+    for (const s of gone) set.remove(s.id);
+    const names = gone.map((s) => s.draft.label).join(", ");
+    setDropNotice(`Taken out of your draft, nothing to read: ${names.length > 90 ? `${names.slice(0, 90)}…` : names}`);
+  });
+  useEffect(() => {
+    dropUnreadable();
+  }, [set.sources, set.restoring]);
+
   const ready = set.sources.filter((s) => s.status === "ready" && s.draft.ref);
   const landing = set.sources.filter(
     (s) => s.status === "pending" || s.status === "resolving",
@@ -311,10 +348,20 @@ export function CreateDeckPage({
       : null;
   const canGenerate = !blockedReason && !busy;
 
+  // After a deck is made only the Sources it used leave the draft; one added
+  // while it was being made stays, marked "Not in this deck".
   const clearDraft = () => {
-    for (const s of set.sources) set.remove(s.id);
+    const used = usedIdsRef.current;
+    // Read the draft as it is NOW — this runs long after the render that started the run.
+    const live = Object.values(
+      store.getState().instanceResources.byConversationId[sourceSurfaceKey(CREATE_DECK_SURFACE_KEY)] ?? {},
+    ).filter((r) => r.blockType === "source_ref");
+    const late = new Set(lateSourceIds(live.map((r) => r.resourceId), used));
+    for (const r of live) if (!late.has(r.resourceId)) set.remove(r.resourceId);
     set.setTopic("");
     styleDraft.clear();
+    setLeftOutIds(late);
+    return late.size;
   };
 
   const finish = async (setId: string, name: string, cards: number, gap: string | null) => {
@@ -324,7 +371,12 @@ export function CreateDeckPage({
       { type: "flashcard_set", id: setId, title: name },
       `Created "${name}" with ${cards} ${cards === 1 ? "card" : "cards"}${gap ? ` — ${gap}` : ""}`,
     );
-    clearDraft();
+    const leftOut = clearDraft();
+    if (leftOut > 0) {
+      toast.info(
+        `${leftOut === 1 ? "A source you added" : `${leftOut} sources you added`} while the deck was being made ${leftOut === 1 ? "is" : "are"} not in it. Use “Add more cards” on the deck.`,
+      );
+    }
     if (onMade) {
       onMade(setId, name);
       return;
@@ -386,14 +438,21 @@ export function CreateDeckPage({
   ) => {
     setRunPlanned(null);
     setPhase("reading");
-    const orgId = await ensureOrgId(undefined);
     // What the deck is made from, exactly as chosen (parts, form, limit) and as
     // named on the cards — recorded on the deck so "Add more cards" starts
-    // from the same material (V2-F #2).
+    // from the same material (V2-F #2). Fixed in this one moment, before any
+    // wait, so a Source added later is never half in.
     const chosen = set.toSourceSet();
     const chosenNames = sourceNamesOf(set.sources);
+    const used = new Set(set.sources.filter((s) => s.status === "ready" && s.draft.ref).map((s) => s.id));
+    usedIdsRef.current = used;
+    setUsedIds(used);
+    setLeftOutIds(new Set());
+    const resolving = set.resolve();
+    resolving.catch(() => undefined);
+    const orgId = await ensureOrgId(undefined);
     // Citations open the real file only through its file id.
-    const resolved = await backfillFileIds(await set.resolve());
+    const resolved = await backfillFileIds(await resolving);
     setRunPlanned(
       plannedCardCount(safeCount, resolved.sources.filter((src) => src.text.trim().length > 0).length),
     );
@@ -439,6 +498,9 @@ export function CreateDeckPage({
   };
 
   const run = async () => {
+    usedIdsRef.current = new Set();
+    setUsedIds(new Set());
+    setLeftOutIds(new Set());
     setRunError(null);
     setNotes([]);
     setProgress(null);
@@ -527,6 +589,11 @@ export function CreateDeckPage({
   }, [holding, waitingCount]);
 
   const previewId = topicRun.activeRequestId ?? liveRequestId;
+  // A Source added while the deck was being made: still in the draft, marked.
+  const marks: Record<string, string> = {};
+  for (const s of set.sources) {
+    if (leftOutIds.has(s.id) || (phase !== "idle" && usedIds.size > 0 && !usedIds.has(s.id))) marks[s.id] = "Not in this deck";
+  }
 
   return (
     <>
@@ -561,6 +628,14 @@ export function CreateDeckPage({
           ) : (
             <>
               <Step n={1} title="What should the cards come from?">
+                {dropNotice ? (
+                  <p role="status" className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <span className="min-w-0 flex-1">{dropNotice}</span>
+                    <Button type="button" variant="quiet" onClick={() => setDropNotice(null)}>
+                      Dismiss
+                    </Button>
+                  </p>
+                ) : null}
                 <SourceInput
                   surfaceKey={CREATE_DECK_SURFACE_KEY}
                   title="Sources"
@@ -568,6 +643,7 @@ export function CreateDeckPage({
                   required
                   attachTo={undefined}
                   deliveries={FLASHCARD_SOURCE_DELIVERIES}
+                  marks={marks}
                 />
               </Step>
 

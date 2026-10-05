@@ -21,6 +21,7 @@ import React from 'react';
 import { Check } from 'lucide-react';
 import { cn } from '@ai-matrx/design-system';
 import { LEVELS, type Level } from './constants';
+import { SegmentedControl } from '@ai-matrx/design-system/controls';
 
 // ── Accent colors per section ────────────────────────────────────────────────
 
@@ -90,7 +91,7 @@ export function SectionRow({
 }
 
 // ── Level pill group ─────────────────────────────────────────────────────────
-// Full-width, equal-size pills. Selected = vivid blue fill.
+// Full-width, equal-size segments (SegmentedControl fill).
 
 export function LevelPillGroup({
   value,
@@ -102,35 +103,14 @@ export function LevelPillGroup({
   className?: string;
 }) {
   return (
-    <div
-      role="radiogroup"
-      className={cn(
-        'flex w-full rounded-md border border-border bg-muted/30 p-0.5',
-        className,
-      )}
-    >
-      {LEVELS.map((l) => {
-        const selected = l.id === value;
-        return (
-          <button
-            key={l.id}
-            type="button"
-            role="radio"
-            aria-checked={selected}
-            onClick={() => onChange(l.id)}
-            className={cn(
-              'flex-1 rounded-[5px] px-2 py-1.5 text-xs font-medium transition-colors',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-              selected
-                ? 'bg-blue-600 text-white dark:bg-blue-500 shadow-sm'
-                : 'text-muted-foreground hover:text-foreground hover:bg-background/60',
-            )}
-          >
-            {l.label}
-          </button>
-        );
-      })}
-    </div>
+    <SegmentedControl
+      fill
+      aria-label="Level"
+      value={value}
+      onValueChange={onChange}
+      data={LEVELS.map((l) => ({ value: l.id, label: l.label }))}
+      className={className}
+    />
   );
 }
 

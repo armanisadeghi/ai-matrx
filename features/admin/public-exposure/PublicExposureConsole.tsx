@@ -32,7 +32,8 @@ import {
   ShieldAlert,
   ShieldCheck,
 } from "lucide-react";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@ai-matrx/design-system";
 import { Badge } from "@/components/ui/badge";
 import { createClient } from "@/utils/supabase/client";
 import Link from "next/link";

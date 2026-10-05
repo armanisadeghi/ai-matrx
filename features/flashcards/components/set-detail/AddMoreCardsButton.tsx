@@ -61,6 +61,7 @@ import {
 import {
   FLASHCARD_SOURCE_DELIVERIES,
   backfillFileIds,
+  plannedCardCount,
   deckLineageResult,
   generateCardsFromSources,
   lineageSourceOf,
@@ -303,6 +304,10 @@ function AddMoreCardsDialog({
     cardLimit.max === null
       ? Math.max(MIN_CARDS_PER_RUN, count || 10)
       : clampCardCount(count, cardLimit.max);
+  // The plan makes at least one card per Source: the count shown (status,
+  // progress, button, hint) is the plan's, never the typed one.
+  const plannedCount = plannedCardCount(safeCount, ready.length);
+  const plannedShown = shownCount === null ? null : plannedCardCount(shownCount, ready.length);
   const hasMaterial = origins !== null && origins.length > 0;
 
   const run = async () => {
@@ -315,7 +320,7 @@ function AddMoreCardsDialog({
       const chosenNames = sourceNamesOf(set.sources);
       // The run lives in this tab: its request is kept until the cards are in
       // the deck, so a reload mid-run is reported and can be repeated.
-      await tabRun.track(cardRunRequest(safeCount, chosen, chosenNames), async (settle, saving) => {
+      await tabRun.track(cardRunRequest(plannedCount, chosen, chosenNames), async (settle, saving) => {
         const resolved = await backfillFileIds(await set.resolve());
         if (resolved.dropped.length) {
           toast.info(
@@ -324,7 +329,7 @@ function AddMoreCardsDialog({
               .join(" "),
           );
         }
-        setStatus(`Making ${cardCount(safeCount, "new")}…`);
+        setStatus(`Making ${cardCount(plannedCount, "new")}…`);
         const made = await generateCardsFromSources({
           resolved,
           count: safeCount,
@@ -337,7 +342,7 @@ function AddMoreCardsDialog({
             store,
             orgId,
             onProgress: (p: ConvertProgress) =>
-              setStatus(cardProgressLine(p, safeCount, "new") ?? `Making ${cardCount(safeCount, "new")}…`),
+              setStatus(cardProgressLine(p, plannedCount, "new") ?? `Making ${cardCount(plannedCount, "new")}…`),
           },
         });
         if (made.cards.length === 0) {
@@ -453,6 +458,8 @@ function AddMoreCardsDialog({
           <p role="alert" className="text-xs text-destructive">
             {cardLimit.error}
           </p>
+        ) : plannedShown !== null && shownCount !== null && plannedShown > shownCount ? (
+          <p className="text-xs text-muted-foreground">{`One card per source: ${cardCount(plannedShown)}`}</p>
         ) : null}
       </div>
       {error ? (
@@ -485,7 +492,7 @@ function AddMoreCardsDialog({
           ) : (
             <AGENT_ICON className="mr-1.5 h-4 w-4" />
           )}
-          {makeMoreCardsLabel(shownCount)}
+          {makeMoreCardsLabel(plannedShown)}
         </Button>
       </div>
       <cardGen.Paywall />

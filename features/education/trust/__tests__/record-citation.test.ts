@@ -67,6 +67,19 @@ describe("a pick list citation targets the cited choice", () => {
   });
 });
 
+describe("a pick list line written as cells finds the choice by its NAME, not the column word", () => {
+  it("filters on the name cell's value", () => {
+    const t = recordCitationTarget(
+      cite({
+        recordKind: "pick_list",
+        sourceId: `${ID}:r1-4`,
+        excerpt: "name: Delta Dental PPO | help_text: Verify frequency limits | group_name: PPO",
+      }),
+    );
+    expect(t?.href).toBe(`/lists/${ID}?filter=${encodeURIComponent('{"name":"Delta Dental PPO"}')}`);
+  });
+});
+
 describe("a saved result citation opens AT its field", () => {
   it("names the field and carries it to the page", () => {
     const t = recordCitationTarget(cite({ recordKind: "saved_result", sourceId: `${ID}:cards-3` }));

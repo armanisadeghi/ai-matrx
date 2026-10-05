@@ -88,6 +88,7 @@ export function SourceInput({
   purpose,
   targetModelId,
   deliveries,
+  marks,
   className,
 }: SourceInputProps) {
   const tiles = visibleSourceKinds(kinds);
@@ -324,6 +325,7 @@ export function SourceInput({
             }
             onCleanNow={(pdId) => void runner.runStage(pdId, "clean", card.draft.label)}
             deliveries={deliveries}
+            mark={marks?.[card.id]}
             heldForOrganization={fileCardHeldForOrganization(card, activeOrgId, fileOrganizationId)}
             onProcessingSettled={() => void set.manifest()}
             // A retry is a card already in the list — it never counts against `max`.

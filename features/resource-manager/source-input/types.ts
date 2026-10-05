@@ -41,5 +41,7 @@ export interface SourceInputProps {
    * already set to it is switched back with a note on its card.
    */
   deliveries?: readonly SourceDelivery[];
+  /** A short word on a card, by card id (e.g. "Not in this deck"), shown beside its state. */
+  marks?: Readonly<Record<string, string>>;
   className?: string;
 }

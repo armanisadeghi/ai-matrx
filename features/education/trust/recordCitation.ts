@@ -94,10 +94,18 @@ export function cellsOfExcerpt(excerpt: string | null | undefined): Record<strin
   return cells;
 }
 
-/** A pick list line is `label: description`; the choice is found by its name (the label). */
+/**
+ * A pick-list line is `name: Delta Dental PPO | help_text: …` (cells, like a
+ * table row) or the older `label: description`; the choice is found by its
+ * name, never by the column word.
+ */
 export function choiceNameOfExcerpt(excerpt: string | null | undefined): string | null {
   const line = (excerpt ?? "").split("\n")[0]!.trim();
   if (!line) return null;
+  const cells = cellsOfExcerpt(line);
+  const named = cells.name ?? cells.label ?? cells.title;
+  if (named) return named;
+  if (line.includes(" | ")) return null;
   const at = line.indexOf(": ");
   return (at > 0 ? line.slice(0, at) : line).trim() || null;
 }
