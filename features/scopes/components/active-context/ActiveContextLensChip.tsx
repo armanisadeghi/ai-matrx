@@ -15,6 +15,7 @@
 
 import React, { useEffect, useState } from "react";
 import { Eye } from "lucide-react";
+import { Button, SplitButton } from "@ai-matrx/design-system/controls";
 import {
   Tooltip,
   TooltipContent,
@@ -229,36 +230,23 @@ export function ActiveContextLensChip({
   if (!withPreview) return chip;
 
   return (
-    <div
-      className={cn(
-        "group inline-flex h-7 shrink-0 items-center rounded-full border bg-card pl-1 pr-0.5 text-xs transition-colors",
-        previewOpen
-          ? "border-primary/50 hover:border-primary/70"
-          : "border-border hover:border-primary/45",
-        className,
-      )}
-    >
+    <SplitButton className={cn("shrink-0", className)}>
       <Tooltip>
         <TooltipTrigger asChild>
-          <button
-            type="button"
+          <Button
+            variant="quiet"
+            tone="primary"
+            pressed={previewOpen}
+            icon={<Eye />}
             onClick={onOpenPreview}
             aria-label="See exactly what the agent receives"
-            className={cn(
-              "inline-flex h-5 items-center rounded-full px-1.5 transition-colors",
-              previewOpen
-                ? "bg-primary/15 text-primary"
-                : "text-primary/80 group-hover:bg-primary/10 group-hover:text-primary",
-            )}
-          >
-            <Eye className="h-3.5 w-3.5" />
-          </button>
+          />
         </TooltipTrigger>
         <TooltipContent side="top">
           See exactly what the agent receives
         </TooltipContent>
       </Tooltip>
       {chip}
-    </div>
+    </SplitButton>
   );
 }
