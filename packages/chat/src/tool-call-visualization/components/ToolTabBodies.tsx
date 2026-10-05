@@ -21,6 +21,7 @@
 
 import { resultToHuman } from "../utils/human-copy";
 import React, { useState } from "react";
+import { useToolConversationId } from "./ToolConversationContext";
 import { Check, CircleAlert, Copy, FileCode2, Route, Settings2 } from "lucide-react";
 
 import { Badge } from "@ai-matrx/design-system";
@@ -306,7 +307,9 @@ export const RawDataView: React.FC<{ entry: ToolLifecycleEntry }> = ({
 export const EntryResultsBody: React.FC<{
   entry: ToolLifecycleEntry | null;
   conversationId?: string | null;
-}> = ({ entry, conversationId }) => {
+}> = ({ entry, conversationId: conversationIdProp }) => {
+  const contextConversationId = useToolConversationId();
+  const conversationId = conversationIdProp ?? contextConversationId;
   if (!entry) {
     return (
       <div className="p-8">
@@ -345,16 +348,20 @@ export const CustomOverlayBody: React.FC<{
     | ToolOverlayTabSpec["Component"]
     | React.ComponentType<ToolRendererProps>;
   conversationId?: string | null;
-}> = ({ entry, Component, conversationId }) => (
-  <div className="flex h-full flex-col">
-    <div className="flex-1 overflow-auto">
-      <Component
-        entry={entry}
-        events={entry.events}
-        toolGroupId={entry.callId}
-        isPersisted={false}
-        conversationId={conversationId ?? undefined}
-      />
+}> = ({ entry, Component, conversationId: conversationIdProp }) => {
+  const contextConversationId = useToolConversationId();
+  const conversationId = conversationIdProp ?? contextConversationId;
+  return (
+    <div className="flex h-full flex-col">
+      <div className="flex-1 overflow-auto">
+        <Component
+          entry={entry}
+          events={entry.events}
+          toolGroupId={entry.callId}
+          isPersisted={false}
+          conversationId={conversationId ?? undefined}
+        />
+      </div>
     </div>
-  </div>
-);
+  );
+};
