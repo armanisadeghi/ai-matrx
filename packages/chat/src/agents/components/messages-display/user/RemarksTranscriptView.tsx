@@ -8,6 +8,7 @@
  * can name it ("about c3…") the way the agent does.
  */
 
+import { InlineTextDiff } from "@ai-matrx/diff/react";
 import { remarkKindDisplay } from "../../context-items/remark-display";
 import type { RemarkKind } from "../../../redux/execution-system/instance-resources/remarks";
 
@@ -23,6 +24,31 @@ interface Row {
   title: string | null;
   answers: { question: string; answer: string }[];
   handle: string | null;
+}
+
+/**
+ * An edit remark's persisted `diff` is `- before` / `+ after` lines (plus blank
+ * context). Read it back into the two texts so the card draws the same word-level
+ * diff the chip drawer does, never the raw -/+ sentences. Null when the text
+ * carries no `-`/`+` line (then the raw text still shows).
+ */
+export function splitRemarkDiff(diff: string): { before: string; after: string } | null {
+  const before: string[] = [];
+  const after: string[] = [];
+  let changed = false;
+  for (const line of diff.split("\n")) {
+    if (line.startsWith("- ") || line === "-") {
+      before.push(line.slice(2));
+      changed = true;
+    } else if (line.startsWith("+ ") || line === "+") {
+      after.push(line.slice(2));
+      changed = true;
+    } else if (line.startsWith("  ") && line.trim() !== "") {
+      before.push(line.slice(2));
+      after.push(line.slice(2));
+    }
+  }
+  return changed ? { before: before.join("\n"), after: after.join("\n") } : null;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -58,6 +84,18 @@ function readRows(payload: Record<string, unknown> | null): Row[] {
   });
 }
 
+function RemarkDiff({ diff }: { diff: string }) {
+  const parts = splitRemarkDiff(diff);
+  if (!parts) {
+    return <pre className="overflow-x-auto whitespace-pre-wrap font-mono text-[11px] text-foreground">{diff}</pre>;
+  }
+  return (
+    <div className="text-[11px] leading-snug" data-remark-diff>
+      <InlineTextDiff view="inline" original={parts.before} modified={parts.after} />
+    </div>
+  );
+}
+
 export function RemarksTranscriptView({ payload }: { payload: Record<string, unknown> | null }) {
   const rows = readRows(payload);
   if (rows.length === 0) return null;
@@ -75,9 +113,7 @@ export function RemarksTranscriptView({ payload }: { payload: Record<string, unk
                 </div>
               ) : null}
               {row.body ? <div className="whitespace-pre-wrap text-foreground">{row.body}</div> : null}
-              {row.diff ? (
-                <pre className="overflow-x-auto whitespace-pre-wrap font-mono text-[11px] text-foreground">{row.diff}</pre>
-              ) : null}
+              {row.diff ? <RemarkDiff diff={row.diff} /> : null}
               {row.answers.length ? (
                 <ul className="grid gap-0.5 text-foreground">
                   {row.answers.map((a, j) => (

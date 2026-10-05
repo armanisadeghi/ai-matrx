@@ -404,6 +404,9 @@ function AnnotationPanelBody({
   const suggest = panel === ANNOTATION_PANELS.suggest;
   return (
     <CommentComposerPanel
+      // One composer per passage: the "With next message" flip belongs to THAT comment, so a
+      // new passage always starts at the knob's default (never the last comment's flip).
+      key={`${selection.anchor.content_version}:${selection.anchor.start}:${selection.anchor.end}:${suggest ? "suggest" : "comment"}`}
       api={api}
       source={source}
       selection={selection}
