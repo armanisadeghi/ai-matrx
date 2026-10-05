@@ -33,6 +33,7 @@ import {
   GENERIC_FLASHCARD_TITLE,
   isGenericFlashcardTitle,
 } from "@/features/flashcards/utils/deckName";
+import { Button as ControlButton } from "@ai-matrx/design-system/controls";
 
 export type LayoutMode = "grid" | "list";
 
@@ -369,9 +370,6 @@ export function FlashcardsSetControls({
     );
   }
 
-  const btnClass = size === "xs" ? "h-7 w-7 p-0" : "h-7 w-7 p-0";
-  const iconClass = size === "xs" ? "h-3 w-3" : "h-3.5 w-3.5";
-
   return (
     <>
       <LayoutToggle
@@ -380,34 +378,29 @@ export function FlashcardsSetControls({
         onMobileView={onMobileView}
         size={size}
       />
-      <Button
-        variant="ghost"
-        size="sm"
-        className={cn(btnClass, "text-muted-foreground hover:text-foreground")}
+      <ControlButton
+        variant="quiet"
+        icon={<Printer />}
+        aria-label="Print flashcards"
+        title="Print flashcards"
         onClick={(e) => {
           e.stopPropagation();
           onPrint();
         }}
-        title="Print flashcards"
-      >
-        <Printer className={iconClass} />
-      </Button>
+      />
       {deckHref && (
-        <Button
+        <ControlButton
           asChild
-          variant="ghost"
-          size="sm"
-          className={cn(btnClass, "text-muted-foreground hover:text-foreground")}
+          variant="quiet"
+          icon={<Library />}
           title="Open in Flashcards"
         >
           <Link
             href={deckHref}
             aria-label="Open in Flashcards"
             onClick={(e) => e.stopPropagation()}
-          >
-            <Library className={iconClass} />
-          </Link>
-        </Button>
+          />
+        </ControlButton>
       )}
       {SHOW_DEV_CONTROLS && showDevWindow && isAdmin && onOpenInWindow && (
         <div
@@ -426,35 +419,28 @@ export function FlashcardsSetControls({
           />
         </div>
       )}
-      <Button
-        variant="ghost"
-        size="sm"
-        className={cn(
-          btnClass,
-          "bg-purple-500 dark:bg-purple-600 hover:bg-purple-600 dark:hover:bg-purple-700 text-white",
-        )}
+      <ControlButton
+        variant="quiet"
+        icon={<ArrowUpRight />}
+        aria-label="Open in canvas"
+        title="Open in canvas"
+        disabled={openingCanvas}
         onClick={(e) => {
           e.stopPropagation();
           onOpenCanvas();
         }}
-        disabled={openingCanvas}
-        title="Open in canvas"
-      >
-        <ArrowUpRight className={iconClass} />
-      </Button>
+      />
       {showFullscreen && onFullscreen && (
-        <Button
-          variant="ghost"
-          size="sm"
-          className={btnClass}
+        <ControlButton
+          variant="quiet"
+          icon={<Maximize2 />}
+          aria-label="Fullscreen mode"
+          title="Fullscreen mode"
           onClick={(e) => {
             e.stopPropagation();
             onFullscreen();
           }}
-          title="Fullscreen mode"
-        >
-          <Maximize2 className={iconClass} />
-        </Button>
+        />
       )}
     </>
   );

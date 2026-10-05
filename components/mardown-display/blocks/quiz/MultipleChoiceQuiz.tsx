@@ -37,7 +37,6 @@ import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artif
 import { getArtifactDef } from "@/features/canvas/artifact-types/artifact-type-registry";
 import IconButton from "@/components/official/IconButton";
 import ChatCollapsibleWrapper from "@/components/mardown-display/blocks/ChatCollapsibleWrapper";
-import { Button } from "@ai-matrx/design-system";
 import type { OriginalQuestion, QuizState } from "./quiz-types";
 import {
   appendNewQuestions,
@@ -58,6 +57,7 @@ import { parseQuizJSON, type RawQuizJSON } from "./quiz-parser";
 import { InlineLatexRenderer } from "@/features/math/components/InlineLatexRenderer";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useCanvasFit } from "../canvas-fit";
+import { Button as ControlButton } from "@ai-matrx/design-system/controls";
 
 // Legacy type for backwards compatibility
 export type Question = OriginalQuestion;
@@ -998,7 +998,7 @@ const MultipleChoiceQuiz: React.FC<MultipleChoiceQuizProps> = ({
   const headerControls = (
     <>
       {enableAutoSave && (
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 px-[3px]">
           {isSaving && (
             <div title="Saving..." className="text-blue-600 dark:text-blue-400">
               <Cloud className="h-3.5 w-3.5 animate-pulse" />
@@ -1020,44 +1020,38 @@ const MultipleChoiceQuiz: React.FC<MultipleChoiceQuizProps> = ({
           )}
         </div>
       )}
-      <Button
-        variant="ghost"
-        size="sm"
-        className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+      <ControlButton
+        variant="quiet"
+        icon={<Printer />}
+        aria-label="Print quiz"
+        title="Print quiz"
         onClick={(e) => {
           e.stopPropagation();
           triggerPrint();
         }}
-        title="Print quiz"
-      >
-        <Printer className="h-3.5 w-3.5" />
-      </Button>
+      />
       {showCanvasButton && (
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-7 w-7 p-0 bg-purple-500 dark:bg-purple-600 hover:bg-purple-600 dark:hover:bg-purple-700 text-white"
+        <ControlButton
+          variant="quiet"
+          icon={<ArrowUpRight />}
+          aria-label="Open in Canvas"
+          title="Open in Canvas"
           onClick={(e) => {
             e.stopPropagation();
             handleOpenCanvas();
           }}
-          title="Open in Canvas"
-        >
-          <ArrowUpRight className="h-3.5 w-3.5" />
-        </Button>
+        />
       )}
-      <Button
-        variant="ghost"
-        size="sm"
-        className="h-7 w-7 p-0"
+      <ControlButton
+        variant="quiet"
+        icon={<Maximize2 />}
+        aria-label="Focus mode"
+        title="Focus mode"
         onClick={(e) => {
           e.stopPropagation();
           setIsFullScreen(true);
         }}
-        title="Focus mode"
-      >
-        <Maximize2 className="h-3.5 w-3.5" />
-      </Button>
+      />
     </>
   );
 

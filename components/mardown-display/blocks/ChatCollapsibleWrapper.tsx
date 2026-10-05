@@ -2,6 +2,7 @@
 import React, { useState, ReactNode } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown } from "lucide-react";
+import { ControlRow } from "@ai-matrx/design-system/controls";
 
 interface ChatCollapsibleWrapperProps {
     icon: ReactNode;
@@ -48,9 +49,10 @@ const ChatCollapsibleWrapper: React.FC<ChatCollapsibleWrapperProps> = ({
                     />
                 </CollapsibleTrigger>
                 {controls && (
-                    <div className="flex items-center gap-1 pr-4" onClick={(e) => e.stopPropagation()}>
+                    // One ControlRow: every action carries its own 3px half-gap, the row adds none.
+                    <ControlRow nowrap className="shrink-0 pr-3" onClick={(e) => e.stopPropagation()}>
                         {controls}
-                    </div>
+                    </ControlRow>
                 )}
             </div>
             <CollapsibleContent className="bg-transparent dark:bg-transparent border-none">
