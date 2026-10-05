@@ -112,14 +112,13 @@ import appContextReducer from "@/lib/redux/slices/appContextSlice";
 import wizardDraftReducer from "@/lib/redux/slices/wizardDraftSlice";
 
 // ─── New scopes module (features/scopes) ────────────────────────────
-// These three keys are the only scope state. The legacy `scopes` /
+// These two keys are the only scope state. The legacy `scopes` /
 // `scopeTypes` keys were deleted 2026-09-25 (lane SCOPE-ADMIN-CANONICAL), and
 // `contextItems`, `scopeValues`, `templates` the same day (lane SCOPE-ADMIN-2):
 // catalogs live on `scopesTree.contextItemsByTypeId`, values on `contextValues`,
-// templates on `scopeTemplates`.
+// templates are no longer in the store (the gallery reads them itself).
 import scopesTreeReducer from "@/features/scopes/redux/scopesSlice";
 import contextValuesReducer from "@/features/scopes/redux/contextValuesSlice";
-import scopeTemplatesReducer from "@/features/scopes/redux/templatesSlice";
 
 import hierarchyReducer from "@/features/agent-context/redux/hierarchySlice";
 import organizationsReducer from "@/features/agent-context/redux/organizationsSlice";
@@ -273,7 +272,6 @@ export const slimReducerMap = {
   // ─── features/scopes — the only scope state ─────────────────────────
   scopesTree: scopesTreeReducer,
   contextValues: contextValuesReducer,
-  scopeTemplates: scopeTemplatesReducer,
   // Reads kept by key and read once (`lib/redux/store-reads/useStoreRead.ts`):
   // a remount, a wake or a second view renders the answer and reads nothing.
   storeReads: storeReadsReducer,

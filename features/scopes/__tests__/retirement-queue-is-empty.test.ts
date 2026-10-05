@@ -14,8 +14,7 @@
  *     (`get_user_full_context` read beside the service)
  *
  * Catalogs live on `scopesTree.contextItemsByTypeId` (contextItemCatalog.ts),
- * values on `contextValues` (scopeContextView.ts), templates on
- * `scopeTemplates`, and the full-context read is `scopesService.fetchUserFullContext`.
+ * values on `contextValues` (scopeContextView.ts), no templates slice, and the full-context read is `scopesService.fetchUserFullContext`.
  * This fails if any of it comes back: a deleted module, an import of one, a
  * reducer key, an allowlist entry, or a scope RPC / context table called by
  * name outside the one service.
@@ -103,7 +102,7 @@ it("the root reducer mounts no second catalog, values or templates key", () => {
   expect(src).not.toMatch(/^\s*scopeValues\s*:/m);
   expect(src).not.toMatch(/^\s*templates\s*:/m);
   expect(src).toMatch(/^\s*contextValues\s*:/m);
-  expect(src).toMatch(/^\s*scopeTemplates\s*:/m);
+  expect(src).not.toMatch(/^\s*scopeTemplates\s*:/m);
 });
 
 it("the chokepoint allowlist names none of the retired paths", () => {

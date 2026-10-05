@@ -89,8 +89,8 @@ this directory.
      `set_scope_context_value` second write path and the denormalized definition copy are gone; save
      state is `contextValues.savingPairs` / `lastSavedAt`.
    - `scope-system/redux/templatesSlice.ts` (+ `templates`) and its `components/TemplateGalleryDrawer.tsx`
-     → the canonical `components/management/TemplateGalleryDrawer` over `scopeTemplates`
-     (`ensureTemplates`, `applyTemplate`).
+     → retired; every entry opens the template gallery at `/make#make-templates`
+     (the scope-template read slice `scopeTemplates`, `ensureTemplates` and `useTemplates` were deleted).
    - `agent-context/{service/hierarchyService,redux/hierarchyThunks}.ts` → the full-context read is
      `scopesService.fetchUserFullContext` (hierarchyService's twin + the consumerless
      `get_user_nav_tree` reader deleted).
@@ -204,7 +204,7 @@ this directory.
   `ensureScopeTypeItems` — the association/category cache fragments were DELETED in the
   W5 swap; that cache now lives in the package store), `contextValuesSlice.ts` (high-churn values sidecar; writes echo through
   `thunks/setContextValue.ts` → the sanctioned `set_context_value` RPC),
-  `templatesSlice.ts`, `contextItemCatalog.ts` (the catalog surface every scope screen reads),
+  `contextItemCatalog.ts` (the catalog surface every scope screen reads),
   `scopeContextView.ts` (a scope's fields joined to its values — derived, not cached), plus `thunks/`
   and `selectors/`. `appContextSlice.ts` lives at
   `lib/redux/slices/`. **Structural writes go ONLY through the mutation thunks**
@@ -214,8 +214,8 @@ this directory.
   `set_context_value` family (C17 HYBRID ruling: reads stay direct RLS table
   reads, writes go through the RPCs) and folding the authoritative row straight
   into the slice — no refetch, no legacy-action mirroring.
-- `hooks/` — `useScopeTree`, `useActiveContext`, `useContextValues`, `useEntityScopes`,
-  `useTemplates` are Lane F implementations. `useAssociations` (alias
+- `hooks/` — `useScopeTree`, `useActiveContext`, `useContextValues`, `useEntityScopes`
+  are Lane F implementations. `useAssociations` (alias
   `useEntityRelationships`), `useContainerLinks`, `useAssociationCandidates`,
   `useCategories`, `useEntityTitles`, `useUniversalEntitySearch`,
   `useAssociationEntitySelect` are RE-EXPORTS of `@ai-matrx/associations/react`
