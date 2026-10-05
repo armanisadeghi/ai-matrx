@@ -3,7 +3,8 @@
  * keys a step does not take (`extra="forbid"`) and a `to` on anything but "becomes". So what is
  * SAVED is the draft without its empty slots and without the trigger arm it is not using.
  */
-import { emptySpec, freshAction, specForSave } from "../builderSpec";
+import { emptySpec, freshAction, specForSave, TRIGGER_LABEL } from "../builderSpec";
+import { workflowSummary } from "../workflowSummary";
 import { extrasAsActionHost } from "@/features/unified-data/actions/tableMenuExtensions";
 
 const TABLE = "5b0f7f0e-8a3c-4c1e-9a52-1c2d3e4f5a6b";
@@ -23,6 +24,38 @@ describe("the saved spec", () => {
     const spec = emptySpec(TABLE);
     spec.trigger = { event: "record.updated", table_id: TABLE, to: { const: true }, field_ids: ["f2"] };
     expect(specForSave(spec).trigger).toEqual({ event: "record.updated", table_id: TABLE, field_ids: ["f2"] });
+  });
+});
+
+describe("form answered / booking made (AGENTS-ON-DATA item 5)", () => {
+  it("the picker offers both, and they save as the compiler's verbs with no becomes rule", () => {
+    expect(TRIGGER_LABEL["form.answered"]).toBe("comes in from a form");
+    expect(TRIGGER_LABEL["booking.made"]).toBe("comes in from a booking");
+    for (const event of ["form.answered", "booking.made"] as const) {
+      const spec = emptySpec(TABLE);
+      spec.trigger = { event, table_id: TABLE, to: { const: true } };
+      expect(specForSave(spec).trigger).toEqual({ event, table_id: TABLE });
+    }
+  });
+
+  it("the sentence says what starts it", () => {
+    const spec = emptySpec(TABLE);
+    spec.trigger = { event: "form.answered", table_id: TABLE };
+    expect(workflowSummary(spec, { tableName: "Leads", fieldName: () => null, otherTableName: () => null })).toMatch(
+      /^When someone answers the form \(a new lead\)/i,
+    );
+  });
+});
+
+describe("fill a column with AI (AGENTS-ON-DATA item 5)", () => {
+  it("saves as the compiler's fill_with_ai step and reads as a sentence", () => {
+    const spec = emptySpec(TABLE);
+    spec.trigger = { event: "form.answered", table_id: TABLE };
+    spec.actions = [{ ...freshAction("fill_with_ai", TABLE), field_id: "f-summary" }];
+    expect(specForSave(spec).actions[0]).toEqual({ type: "fill_with_ai", field_id: "f-summary" });
+    expect(
+      workflowSummary(spec, { tableName: "Leads", fieldName: (r) => (r === "f-summary" ? "Summary" : null), otherTableName: () => null }),
+    ).toMatch(/fill Summary with AI/);
   });
 });
 

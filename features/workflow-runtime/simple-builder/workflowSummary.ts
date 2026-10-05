@@ -76,6 +76,10 @@ function actionWords(action: BuilderAction, names: SummaryNames): string {
       return "send an email";
     case "send_text":
       return "send a text";
+    case "fill_with_ai": {
+      const column = typeof action["field_id"] === "string" ? names.fieldName(action["field_id"]) : null;
+      return column ? `fill ${column} with AI` : "fill a column with AI";
+    }
     case "wait": {
       const seconds = Number(action["seconds"]);
       if (!Number.isFinite(seconds) || seconds <= 0) return "wait";
@@ -100,6 +104,12 @@ export function workflowSummary(spec: BuilderSpec, names: SummaryNames): string 
       break;
     case "record.archived":
       when = `When a ${thing} is archived`;
+      break;
+    case "form.answered":
+      when = `When someone answers the form (a new ${thing})`;
+      break;
+    case "booking.made":
+      when = `When someone books (a new ${thing})`;
       break;
     default: {
       const clause = becomes(t.to, names);

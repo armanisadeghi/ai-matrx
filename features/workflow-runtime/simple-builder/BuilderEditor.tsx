@@ -830,6 +830,34 @@ function ActionFields({
           </Labeled>
         </>
       );
+    case "fill_with_ai": {
+      // The column's OWN enrichment (its instruction and inputs) runs for this record — a
+      // column a model fills is set up once, on the column; this step just says "now".
+      const aiColumns = triggerFields.filter((f) => f.source === "agent");
+      if (aiColumns.length === 0) {
+        return (
+          <p className="text-xs text-muted-foreground">
+            No column on this table is filled by AI yet. Set one up from the column&apos;s menu first.
+          </p>
+        );
+      }
+      return (
+        <Labeled label="Column">
+          <Select value={text("field_id")} onValueChange={(v) => set("field_id", v)} disabled={readOnly}>
+            <SelectTrigger className="h-8 w-auto min-w-[10rem]" aria-label="Column">
+              <SelectValue placeholder="Choose a column" />
+            </SelectTrigger>
+            <SelectContent>
+              {aiColumns.map((f) => (
+                <SelectItem key={String(f.id)} value={String(f.id)}>
+                  {fieldName(f)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Labeled>
+      );
+    }
     case "wait":
       return (
         <WaitFields

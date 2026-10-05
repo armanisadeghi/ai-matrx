@@ -7,7 +7,14 @@
 export type RuleExpr = Record<string, unknown>;
 
 export type TriggerEvent =
-  "record.created" | "record.updated" | "record.matches" | "record.archived";
+  | "record.created"
+  | "record.updated"
+  | "record.matches"
+  | "record.archived"
+  // A created record that came through that public door (`metadata.change.via`; the compiler's
+  // STORE_EVENT_VIA). AGENTS-ON-DATA item 5.
+  | "form.answered"
+  | "booking.made";
 
 export interface BuilderTrigger {
   event: TriggerEvent;
@@ -27,6 +34,7 @@ export type ActionType =
   | "notify_person"
   | "send_email"
   | "send_text"
+  | "fill_with_ai"
   | "wait";
 
 export type BuilderAction = { type: ActionType } & Record<string, unknown>;
@@ -43,6 +51,8 @@ export const TRIGGER_LABEL: Record<TriggerEvent, string> = {
   "record.matches": "becomes",
   "record.updated": "is updated",
   "record.archived": "is archived",
+  "form.answered": "comes in from a form",
+  "booking.made": "comes in from a booking",
 };
 
 export const ACTION_LABEL: Record<ActionType, string> = {
@@ -54,6 +64,7 @@ export const ACTION_LABEL: Record<ActionType, string> = {
   notify_person: "Notify a person",
   send_email: "Send email",
   send_text: "Send text",
+  fill_with_ai: "Fill a column with AI",
   wait: "Wait",
 };
 
@@ -65,6 +76,7 @@ export const ACTION_ORDER: ActionType[] = [
   "send_text",
   "send_email",
   "run_agent",
+  "fill_with_ai",
   "call_webhook",
   "wait",
 ];
@@ -96,6 +108,8 @@ export function freshAction(type: ActionType, tableId: string): BuilderAction {
       return { type, subject: "", body: "" };
     case "send_text":
       return { type, message: "" };
+    case "fill_with_ai":
+      return { type, field_id: "" };
     case "wait":
       return { type, seconds: 3600 };
   }
