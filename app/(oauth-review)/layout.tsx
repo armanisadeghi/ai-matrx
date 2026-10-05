@@ -4,6 +4,7 @@ import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import { createClient } from "@/utils/supabase/server";
 import { getAdminStatus } from "@/utils/supabase/userSessionData";
 import { mapUserData } from "@/utils/userDataMapper";
+import { KindLeakSentinel } from "@/features/content-ir/surfaces/KindLeakSentinel";
 
 export default async function OAuthReviewLayout({
   children,
@@ -23,6 +24,8 @@ export default async function OAuthReviewLayout({
   return (
     <StoreProvider initialState={initialState}>
       <ReactQueryProvider>{children}</ReactQueryProvider>
+      {/* No Providers / AppShell here, so the leak sentinel mounts directly (K6). */}
+      <KindLeakSentinel />
     </StoreProvider>
   );
 }

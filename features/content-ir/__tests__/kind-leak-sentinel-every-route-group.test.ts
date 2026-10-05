@@ -4,13 +4,15 @@
  * groups mount — so a group with its own bare layout ((auth-pages),
  * (oauth-review)) had no sentinel at all. Every route group's root layout
  * must reach it: through Providers / AppShell, or by mounting
- * `<KindLeakSentinel />` itself. (popup) is an unused demo and is skipped.
+ * `<KindLeakSentinel />` itself. Skipped: (popup), an unused demo, and
+ * (lab), the deliberately thin demo site whose layout carries no providers
+ * (each lab page renders what it needs — its README).
  */
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 
 const APP = path.resolve(__dirname, "../../../app");
-const SKIPPED = new Set(["(popup)"]);
+const SKIPPED = new Set(["(popup)", "(lab)"]);
 const REACHES_SENTINEL = /<(?:Providers|AppShell|KindLeakSentinel)\b/;
 
 const groups = readdirSync(APP).filter((name) => /^\(.+\)$/.test(name) && !SKIPPED.has(name));
