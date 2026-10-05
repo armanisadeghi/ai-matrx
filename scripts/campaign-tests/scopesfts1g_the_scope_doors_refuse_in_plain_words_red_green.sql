@@ -1,4 +1,5 @@
--- FTS-1d (lane FINISH-THE-SWITCH; plain words FTS-1g 2026-10-05) — THE STORE HALVES REFUSE WHAT THE OLD ROWS REFUSED, measured RED then GREEN on live,
+-- FTS-1g (lane FINISH-THE-SWITCH) — THE SCOPE DOORS REFUSE IN PLAIN WORDS (same cases and SQLSTATEs as FTS-1d; RED before
+-- migrations/campaign/scopesfts1g_the_scope_doors_refuse_in_plain_words.sql: raw constraint sentences; GREEN after). Was: measured RED then GREEN on live,
 -- rolled back (migrations/campaign/scopesfts1d_the_store_halves_refuse_what_the_old_rows_refused.sql).
 --
 -- THE USE CASE. Cedar Ridge Physical Therapy keeps its referring physicians as a scope type. When the old context.*
@@ -20,7 +21,7 @@ declare
   t1 uuid; t2 uuid; sp uuid; i1 uuid; red text[] := '{}'; st text; m text;
   c record;
 begin
-  perform set_config('app.actor_system', 'campaign-test/scopesfts1d', true);
+  perform set_config('app.actor_system', 'campaign-test/scopesfts1g', true);
   perform set_config('request.jwt.claims', jsonb_build_object('sub', c_admin, 'role', 'authenticated')::text, true);
   perform set_config('role', 'authenticated', true);
   t1 := (custom.context_type_write(c_cedar, null, '{"label_singular":"Referring Physician","label_plural":"Referring Physicians","slug":"referring-physicians-fx"}') -> 'row' ->> 'id')::uuid;
