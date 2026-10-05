@@ -107,6 +107,13 @@ jest.mock("../director-context", () => ({
 
 import { PrDirectorPanel } from "../PrDirectorPanel";
 
+// jsdom has no ResizeObserver; the composer measures its panel with one.
+globalThis.ResizeObserver ??= class {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+} as unknown as typeof ResizeObserver;
+
 beforeEach(() => {
   launchMandate.mockClear();
   resumeCalls.length = 0;
