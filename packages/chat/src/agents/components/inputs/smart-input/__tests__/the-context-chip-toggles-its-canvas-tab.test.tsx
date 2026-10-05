@@ -127,11 +127,14 @@ it("a row opens the tab on that value", () => {
 it("is pressed (a real toggle, not a colour) only while the tab is in front", () => {
   let unmount = render();
   expect(chip.props?.pressed).toBe(false);
-  expect(chip.props?.className).toBeUndefined();
+  // The chip has ONE face (no text, no border); pressed never swaps it for a colour.
+  const restingFace = chip.props?.className;
   unmount();
   canvas.tab = { ...canvas.tab, isVisible: true };
   unmount = render();
   expect(chip.props?.pressed).toBe(true);
+  expect(chip.props?.className).toBe(restingFace);
+  expect(chip.props?.label).toBe("");
   unmount();
 });
 
