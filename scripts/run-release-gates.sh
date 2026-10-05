@@ -287,6 +287,10 @@ if $STRICT; then
         # runway under floating chrome; no hand pb-safe, no unreasoned opt-out. Offline, ~2 s.
         "Floating clearance|pnpm check:floating-clearance:strict"
         "Floating clearance — self-test|pnpm check:floating-clearance:self-test"
+        # SSR ZERO LAYOUT SHIFT (skill ssr-zero-layout-shift): a viewport hook choosing between JSX
+        # trees paints the wrong tree first on phones; shrink-only baseline. Offline, ~2 s.
+        "SSR viewport branch|pnpm check:ssr-viewport-branch:strict"
+        "SSR viewport branch — self-test|pnpm check:ssr-viewport-branch:self-test"
         # UI DRIFT (docs/ui-unification-plan.md §2.12): one item per drifting site, ratcheted against
         # scripts/ui-drift/baseline.json, which only shrinks. Measured centrally by its OWN daily
         # schedule ("UI drift check — daily", .github/workflows/ui-drift-daily.yml), never the hourly
@@ -1112,6 +1116,8 @@ else
         "Scroll-chain (clipped tables/lists)|pnpm exec tsx scripts/check-scroll-chain.ts"
         "Floating clearance|pnpm check:floating-clearance"
         "Floating clearance — self-test|pnpm check:floating-clearance:self-test"
+        "SSR viewport branch|pnpm check:ssr-viewport-branch"
+        "SSR viewport branch — self-test|pnpm check:ssr-viewport-branch:self-test"
         "UI drift|pnpm check:ui-drift"
         "One control|pnpm check:one-control"
         "Bare secret fill|pnpm check:fill-secret"
