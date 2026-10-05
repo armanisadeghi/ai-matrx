@@ -52,7 +52,7 @@ export function ChatPanelTitleMenu({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="quiet" iconEnd={<ChevronDown />} className="min-w-0">{title}</Button>
+        <Button variant="quiet" iconEnd={<ChevronDown />} className="min-w-0" title={title}>{title}</Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-56">
         <DropdownMenuItem onSelect={onNewChat}>

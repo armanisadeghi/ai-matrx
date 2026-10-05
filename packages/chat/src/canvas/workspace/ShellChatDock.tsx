@@ -355,7 +355,10 @@ export function ShellChatDock({ initialChat, initialWidth, initialMode = null, s
             <div className="min-w-0 flex-1">
               <ChatPanelTitleMenu conversationId={conversationId} onNewChat={chat.startNew} />
             </div>
-            <ComposerModeSwitch size="panel" initialMode={initialMode} />
+            {/* The switch keeps its full size; the title beside it shortens with "…". */}
+            <div className="shrink-0">
+              <ComposerModeSwitch size="panel" initialMode={initialMode} />
+            </div>
             <Button
               variant="quiet"
               icon={<PictureInPicture2 />}
