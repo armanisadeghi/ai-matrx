@@ -15,26 +15,23 @@ export const DATA_PLACES: FeaturePlaces = {
   roots: ["features/data-tables", "components/user-generated-table-data", "app/(core)/data"],
   places: [
     {
+      // ONE table page (lane CHAIR-ONE-GRID): /data/<table> and every host that mounts it. The
+      // classic sheet (UserTableViewer) is its "Sheet" layout and starts the same row job.
       id: "table",
       label: "A table",
-      trigger: "Run an agent on a row",
-      urlPattern: "/data/[id]",
-      mandateKeys: [K.data__row_action],
-      sources: ["components/user-generated-table-data/UserTableViewer.tsx"],
-    },
-    {
-      id: "table-v2",
-      label: "A table (new grid)",
       trigger: "Row actions, page assistant",
       urlPattern: "/data/[tableId]",
       mandateKeys: [K.data__row_action, K.data__page_guidance],
-      sources: ["features/data-tables/records-ui-host/recordsUiHost.tsx"],
+      sources: [
+        "features/data-tables/records-ui-host/recordsUiHost.tsx",
+        "components/user-generated-table-data/UserTableViewer.tsx",
+      ],
     },
     {
       id: "formula",
       label: "Column formula editor",
       trigger: "Write a formula with AI",
-      urlPattern: "/data/[id]",
+      urlPattern: "/data/[tableId]",
       mandateKeys: [K.data__formula_writing],
       sources: ["features/data-tables/components/FormulaExpressionEditor.tsx"],
     },
