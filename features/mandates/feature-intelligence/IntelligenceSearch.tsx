@@ -165,18 +165,18 @@ export function EverywhereElse({
   return (
     <section className="mt-6" aria-labelledby="intelligence-elsewhere">
       <div className="mb-2 flex items-center gap-3">
-        <h2 id="intelligence-elsewhere" className="shrink-0 text-[12px] font-semibold uppercase tracking-wide text-muted-foreground">
+        <h2 id="intelligence-elsewhere" className="shrink-0 type-secondary font-semibold uppercase tracking-wide text-muted-foreground">
           Everywhere else
         </h2>
         <span className="h-px flex-1 bg-border" aria-hidden />
         {domains ? (
-          <span className="shrink-0 text-[12px] tabular-nums text-muted-foreground">
+          <span className="shrink-0 type-secondary tabular-nums text-muted-foreground">
             {hits.length} {hits.length === 1 ? "match" : "matches"}
           </span>
         ) : null}
       </div>
       {error ? (
-        <p className="truncate text-[13px] text-destructive" title={error}>
+        <p className="truncate type-body text-destructive" title={error}>
           Other features could not be searched: {error}
           <ErrorAlchemyMenu error={error} size="xs" />
         </p>
@@ -187,7 +187,7 @@ export function EverywhereElse({
           ))}
         </div>
       ) : hits.length === 0 ? (
-        <p className="text-[13px] text-muted-foreground">No other feature has a job matching &ldquo;{query.trim()}&rdquo;.</p>
+        <p className="type-body text-muted-foreground">No other feature has a job matching &ldquo;{query.trim()}&rdquo;.</p>
       ) : (
         <ul className="divide-y divide-border/60 overflow-hidden rounded-xl border border-border bg-card">
           {hits.slice(0, ELSEWHERE_LIMIT).map(({ feature, job }) => {
@@ -204,7 +204,7 @@ export function EverywhereElse({
                     <span className="block truncate text-[13.5px] font-medium text-foreground" title={job.name}>
                       {job.name}
                     </span>
-                    <span className="block truncate text-[12px] text-muted-foreground" title={feature.label}>
+                    <span className="block truncate type-secondary text-muted-foreground" title={feature.label}>
                       {feature.label}
                     </span>
                   </span>
@@ -226,7 +226,7 @@ export function EverywhereElse({
       {hits.length > ELSEWHERE_LIMIT ? (
         <Link
           href={`/intelligence?${INTELLIGENCE_QUERY_PARAM}=${encodeURIComponent(query.trim())}`}
-          className="mt-2 inline-block text-[13px] font-medium text-primary hover:underline"
+          className="mt-2 inline-block type-title text-primary hover:underline"
         >
           All {hits.length} in the directory
         </Link>

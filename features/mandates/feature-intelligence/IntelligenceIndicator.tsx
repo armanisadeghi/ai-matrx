@@ -220,7 +220,7 @@ export function IntelligenceIndicator({
       <PopoverContent sizing="content" align="start" className="p-0">
         <div className="border-b border-border px-3 py-2">
           {/* Lists the AI jobs behind this surface; each opens to see, duplicate or replace it. */}
-          <p className="text-[13px] font-semibold text-foreground">Intelligence</p>
+          <p className="type-title text-foreground">Intelligence</p>
         </div>
         {keys.length > 0 ? (
           <ul className="max-h-72 overflow-y-auto py-1">
@@ -241,9 +241,9 @@ export function IntelligenceIndicator({
                     className="group flex items-start gap-2 px-3 py-1.5 hover:bg-accent"
                   >
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[13px] text-foreground">{name}</span>
+                      <span className="block truncate type-body text-foreground">{name}</span>
                       {does.get(key) ?? identity?.description ? (
-                        <span className="block truncate text-[11px] text-muted-foreground">
+                        <span className="block truncate type-meta text-muted-foreground">
                           {does.get(key) ?? identity?.description}
                         </span>
                       ) : null}
@@ -256,7 +256,7 @@ export function IntelligenceIndicator({
           </ul>
         ) : null}
         {identitiesFailed && keys.length > 0 ? (
-          <p className="border-t border-border px-3 py-1.5 text-[11px] text-muted-foreground">
+          <p className="border-t border-border px-3 py-1.5 type-meta text-muted-foreground">
             Couldn&apos;t read job names; showing their keys
             <ErrorAlchemyMenu operation="Read the intelligence job names" />
           </p>

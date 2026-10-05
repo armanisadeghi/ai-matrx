@@ -192,7 +192,7 @@ export function IntelligenceJobCard({
         </button>
 
         <div className="flex min-w-0 items-center gap-1">
-          <h3 className="min-w-[7rem] shrink truncate text-[14px] font-semibold text-foreground" title={row.shortName}>
+          <h3 className="min-w-[7rem] shrink truncate type-title text-foreground" title={row.shortName}>
             {row.shortName}
           </h3>
           <MandatePeekButton mandate={row.id} name={row.shortName} href={detailsHref} />
@@ -212,7 +212,7 @@ export function IntelligenceJobCard({
           {row.health !== "OK" ? <span className="hidden shrink-0 sm:inline-flex"><MemberHealthBadge health={row.health} /></span> : null}
         </div>
 
-        <div className="col-start-2 flex min-w-0 items-center gap-2 text-[13px] md:col-start-3">
+        <div className="col-start-2 flex min-w-0 items-center gap-2 type-body md:col-start-3">
           <HolderRef row={row} className="min-w-0 flex-1" />
           {runOverride ? (
             <Badge
@@ -245,7 +245,7 @@ export function IntelligenceJobCard({
       {expanded ? (
         <div id={panelId} className="grid min-w-0 border-t border-border/60 md:grid-cols-[minmax(0,1fr)_minmax(0,22rem)]">
           <div className="min-w-0 space-y-3 p-4">
-            {job.about ? <Line text={job.about} className="text-[13px] text-muted-foreground" /> : null}
+            {job.about ? <Line text={job.about} className="type-body text-muted-foreground" /> : null}
             {row.health !== "OK" ? <span className="inline-flex sm:hidden"><MemberHealthBadge health={row.health} /></span> : null}
             {!row.isSystem ? (
               <Badge variant="outline" className="max-w-full truncate font-normal text-muted-foreground" title={row.homeLabel}>
@@ -256,7 +256,7 @@ export function IntelligenceJobCard({
               <div className={LABEL}>Can use</div>
               <InputChips mandateKey={row.mandateKey} />
             </div>
-            <div className="flex min-w-0 items-baseline gap-2 text-[13px]">
+            <div className="flex min-w-0 items-baseline gap-2 type-body">
               <span className={LABEL}>Makes</span>
               <Line text={makesWords(row)} className="text-foreground" />
             </div>
@@ -269,11 +269,11 @@ export function IntelligenceJobCard({
           <div className="min-w-0 space-y-3 border-t border-border/60 bg-muted/20 p-4 md:border-l md:border-t-0">
             <div className="min-w-0 space-y-1.5">
               <div className={LABEL}>{overriding ? "Mandate choice" : "Runs now"}</div>
-              <div className="flex min-w-0 items-center gap-2 text-[13px]">
+              <div className="flex min-w-0 items-center gap-2 type-body">
                 <HolderRef row={row} className="min-w-0 flex-1" />
                 <Line
                   text={`${row.holderType === "workflow" ? "Workflow" : row.holderType === "agent" ? "Agent" : ""}${row.pinText && row.pinText !== "None" ? ` · ${row.pinText}` : ""}`}
-                  className="max-w-[45%] shrink-0 text-xs text-muted-foreground"
+                  className="max-w-[45%] shrink-0 type-secondary text-muted-foreground"
                 />
               </div>
               <Actions
@@ -289,7 +289,7 @@ export function IntelligenceJobCard({
                 <div className={LABEL}>
                   {runOverride.matchesMandate ? "Recorded on" : "Runs on"} {runOverride.contextLabel.toLowerCase()}
                 </div>
-                <div className="flex min-w-0 items-center gap-2 text-[13px]">
+                <div className="flex min-w-0 items-center gap-2 type-body">
                   {runOverride.health === "unavailable" ? (
                     <Line text={topicSentence(runOverride)} className="text-destructive" />
                   ) : (
@@ -303,17 +303,17 @@ export function IntelligenceJobCard({
                         alwaysShowActions
                         className="min-w-0 shrink"
                       />
-                      <Line text={topicSentence(runOverride)} className="text-xs text-muted-foreground" />
+                      <Line text={topicSentence(runOverride)} className="type-secondary text-muted-foreground" />
                     </>
                   )}
-                  <Link href={runOverride.manageHref} className="shrink-0 text-xs text-primary hover:underline">
+                  <Link href={runOverride.manageHref} className="shrink-0 type-secondary text-primary hover:underline">
                     Manage
                   </Link>
                 </div>
               </div>
             ) : null}
 
-            <ol className="space-y-0.5 text-[12px]" aria-label="Mandate precedence">
+            <ol className="space-y-0.5 type-secondary" aria-label="Mandate precedence">
               {RUNGS.map((rung) => {
                 const entry = job.ladder.rows.find((item) => item.rung === rung);
                 const winner = row.decidedRung === rung && !overriding;
@@ -334,7 +334,7 @@ export function IntelligenceJobCard({
               })}
             </ol>
             {job.ladder.error ? (
-              <p className="min-w-0 truncate text-xs text-destructive" title={job.ladder.error}>
+              <p className="min-w-0 truncate type-secondary text-destructive" title={job.ladder.error}>
                 Could not read the mandate layers: {job.ladder.error} <ErrorAlchemyMenu error={job.ladder.error} />
               </p>
             ) : null}

@@ -512,8 +512,8 @@ function OneMandateWorkspace({
         <p
           className={
             verdict.kind === "load-failed"
-              ? "text-sm text-destructive"
-              : "text-sm text-muted-foreground"
+              ? "type-body text-destructive"
+              : "type-body text-muted-foreground"
           }
         >
           {verdict.message}
@@ -610,7 +610,7 @@ function OneMandateWorkspace({
           {host === "window" ? (
             <Link
               href={`/mandates/${encodeURIComponent(data.mandate.mandate_key)}`}
-              className="text-xs text-muted-foreground underline"
+              className="type-secondary text-muted-foreground underline"
             >
               Open full page
             </Link>
@@ -1327,7 +1327,7 @@ function LadderSection({
   }
   if (ladder.error) {
     return (
-      <p className="flex items-start gap-1.5 px-1 text-[12px] leading-relaxed text-destructive">
+      <p className="flex items-start gap-1.5 px-1 type-secondary leading-relaxed text-destructive">
         <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
         The rungs behind this job could not be read: {ladder.error}
         <ErrorAlchemyMenu error={ladder.error} />

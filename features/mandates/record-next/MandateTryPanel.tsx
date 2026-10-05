@@ -272,7 +272,7 @@ export function MandateTryPanel({
   return (
     <div className="space-y-4" data-testid="mandate-try-panel">
       <div className="space-y-2 rounded-lg border border-border bg-card p-3">
-        <h3 className="flex items-center gap-2 text-sm font-medium">
+        <h3 className="flex items-center gap-2 type-title">
           <FlaskConical className="h-4 w-4 text-muted-foreground" />
           Try this job
         </h3>
@@ -304,7 +304,7 @@ export function MandateTryPanel({
             disabled={running}
           />
         ) : null}
-        <p className="text-xs text-muted-foreground">
+        <p className="type-secondary text-muted-foreground">
           {mode === "current"
             ? "Runs your binding, else your org's, else the platform's."
             : "Runs your pick for this try only; nothing is saved."}
@@ -312,12 +312,12 @@ export function MandateTryPanel({
       </div>
 
       <div className="space-y-3 rounded-lg border border-border bg-card p-3">
-        <h3 className="text-sm font-medium">Inputs</h3>
+        <h3 className="type-title">Inputs</h3>
         {surfaceState.status === "loading" ? (
-          <p className="text-xs text-muted-foreground">Reading what this job takes…</p>
+          <p className="type-secondary text-muted-foreground">Reading what this job takes…</p>
         ) : null}
         {surfaceState.status === "error" ? (
-          <p className="text-xs text-destructive">
+          <p className="type-secondary text-destructive">
             {surfaceState.message}{" "}
             <ErrorAlchemyMenu error={surfaceState.message} />
           </p>
@@ -345,7 +345,7 @@ export function MandateTryPanel({
                 ) : null}
               </label>
               {field.help ? (
-                <p className="text-xs text-muted-foreground">{field.help}</p>
+                <p className="type-secondary text-muted-foreground">{field.help}</p>
               ) : null}
               {field.pinned ? (
                 <PropertyRow
@@ -399,7 +399,7 @@ export function MandateTryPanel({
                 />
               )}
               {problem ? (
-                <p className="text-xs text-destructive" role="alert">
+                <p className="type-secondary text-destructive" role="alert">
                   {problem}
                   <ErrorAlchemyMenu error={problem} size="xs" />
                 </p>
@@ -408,7 +408,7 @@ export function MandateTryPanel({
           );
         })}
         {surface && fields.length === 0 && !surface.acceptsUserInput ? (
-          <p className="text-xs text-muted-foreground">This job takes no inputs.</p>
+          <p className="type-secondary text-muted-foreground">This job takes no inputs.</p>
         ) : null}
         {surface?.acceptsUserInput ? (
           <div className="space-y-1">
@@ -442,7 +442,7 @@ export function MandateTryPanel({
           >
             {running ? "Running…" : "Run it"}
           </Button>
-          <p className="text-xs text-muted-foreground">
+          <p className="type-secondary text-muted-foreground">
             {!candidate
               ? draft.kind === "agent"
                 ? "Choose an agent to try."
@@ -464,7 +464,7 @@ function TryResult({ result }: { result: MandateTestResponse }) {
   const holder = readMandateRunHolder(result);
   return (
     <div className="space-y-2 rounded-lg border border-border bg-card p-3" data-testid="mandate-try-result">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 type-secondary text-muted-foreground">
         <span className="font-medium text-foreground">Result</span>
         <span>{formatDurationMs(result.duration_ms)}</span>
         {result.model_id ? <span>{result.model_id}</span> : null}
@@ -481,10 +481,10 @@ function TryResult({ result }: { result: MandateTestResponse }) {
         ) : null}
       </div>
       {result.error ? (
-        <p className="text-sm text-destructive">{result.error} <ErrorAlchemyMenu error={result.error} /></p>
+        <p className="type-body text-destructive">{result.error} <ErrorAlchemyMenu error={result.error} /></p>
       ) : null}
       {result.structural.checked && result.structural.ok === false ? (
-        <div className="rounded border border-warning/50 bg-warning/5 p-2 text-xs">
+        <div className="rounded border border-warning/50 bg-warning/5 p-2 type-secondary">
           <p className="font-medium text-foreground">The answer could not be confirmed against this job&rsquo;s output:</p>
           <ul className="mt-1 list-disc pl-4 text-muted-foreground">
             {(result.structural.errors ?? []).map((error) => (

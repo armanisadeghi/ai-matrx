@@ -173,7 +173,7 @@ export function memberMandateColumns(options: MemberColumnOptions = {}): Spec[] 
     // (owner ruling — the admin list's Key column is the one place a key shows).
     facetColumn("holderName", "Mandate Holder", 210, (row) => <HolderCell row={row} />),
     facetColumn("customizedBy", "Customized by", 160, (row) => (
-      <span className="block truncate text-xs" title={row.customizedBy.join(", ")}>
+      <span className="block truncate type-secondary" title={row.customizedBy.join(", ")}>
         {row.customizedBy.join(", ")}
       </span>
     )),
@@ -234,14 +234,14 @@ export function memberMandateColumns(options: MemberColumnOptions = {}): Spec[] 
       "origin",
       "Type",
       90,
-      (row) => <span className="text-xs">{ORIGIN_WORDS[row.origin] ?? row.origin}</span>,
+      (row) => <span className="type-secondary">{ORIGIN_WORDS[row.origin] ?? row.origin}</span>,
       { defaultHidden: true, formatFacetValue: (v: string) => ORIGIN_WORDS[v] ?? v },
     ),
     facetColumn(
       "visibility",
       "Visible to",
       130,
-      (row) => <span className="text-xs">{VISIBILITY_WORDS[row.visibility] ?? row.visibility}</span>,
+      (row) => <span className="type-secondary">{VISIBILITY_WORDS[row.visibility] ?? row.visibility}</span>,
       { defaultHidden: true, formatFacetValue: (v: string) => VISIBILITY_WORDS[v] ?? v },
     ),
     {
@@ -254,7 +254,7 @@ export function memberMandateColumns(options: MemberColumnOptions = {}): Spec[] 
         filter: "boolean",
         align: "center",
         width: 80,
-        cell: (row) => (row.isEnabled ? <span className="text-xs">Yes</span> : <Muted>Off</Muted>),
+        cell: (row) => (row.isEnabled ? <span className="type-secondary">Yes</span> : <Muted>Off</Muted>),
       },
     },
     {

@@ -29,7 +29,7 @@ export function OrgMandateCreateRefusal({
         left={
           <div className="flex min-w-0 items-center gap-1">
             <ChevronLeftTapButton href={orgMandateListHref(orgId)} ariaLabel="All mandates" />
-            <span className="truncate text-sm font-medium">New mandate for {orgName}</span>
+            <span className="truncate type-title">New mandate for {orgName}</span>
           </div>
         }
       />
@@ -44,7 +44,7 @@ export function OrgMandateCreateRefusal({
           reason={`Only the owners and admins of ${orgName} can create its mandates.`}
         />
         <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border/60 bg-card px-3 py-2.5">
-          <p className="min-w-0 flex-1 text-sm text-muted-foreground">
+          <p className="min-w-0 flex-1 type-body text-muted-foreground">
             Make your own; it stays yours until you share it.
           </p>
           <Button asChild variant="outline">

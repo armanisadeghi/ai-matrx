@@ -45,7 +45,7 @@ export function MandateGoalBlock({
   );
   return (
     <div className="space-y-1 rounded-md border border-border bg-card px-3 py-2.5">
-      <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+      <div className="type-meta font-semibold uppercase tracking-[0.08em] text-muted-foreground">
         Goal
       </div>
       {goal ? (
@@ -53,26 +53,26 @@ export function MandateGoalBlock({
           <p className="text-[13.5px] font-medium leading-snug text-foreground">
             {goal}
           </p>
-          <p className="text-[11px] text-muted-foreground/70">
+          <p className="type-meta text-muted-foreground/70">
             {source === "catalogue"
               ? "Declared in code; not editable here"
               : "Editable in this Mandate's Goal section"}
           </p>
         </>
       ) : loading ? (
-        <p className="text-xs text-muted-foreground">Reading the goal…</p>
+        <p className="type-secondary text-muted-foreground">Reading the goal…</p>
       ) : error ? (
-        <p className="text-xs text-amber-700 dark:text-amber-400">
+        <p className="type-secondary text-amber-700 dark:text-amber-400">
           The goal could not be read: <TextWithDoors text={error} />
           <ErrorAlchemyMenu />
         </p>
       ) : loaded ? (
-        <p className="text-xs italic text-muted-foreground">
+        <p className="type-secondary italic text-muted-foreground">
           No goal declared for {mandateKey}.
         </p>
       ) : null}
       {description && description !== goal ? (
-        <p className="pt-1 text-xs text-muted-foreground">{description}</p>
+        <p className="pt-1 type-secondary text-muted-foreground">{description}</p>
       ) : null}
     </div>
   );

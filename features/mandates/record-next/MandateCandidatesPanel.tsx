@@ -208,7 +208,7 @@ export function MandateCandidatesPanel({
   if (failure && !state) {
     return (
       <div className="space-y-2 py-6 text-center">
-        <p className="text-sm text-destructive">
+        <p className="type-body text-destructive">
           {failure} <ErrorAlchemyMenu error={failure} />
         </p>
         <Button variant="outline" onClick={reload}>
@@ -219,7 +219,7 @@ export function MandateCandidatesPanel({
   }
   if (!state) {
     return (
-      <div className="flex items-center gap-2 py-8 text-sm text-muted-foreground">
+      <div className="flex items-center gap-2 py-8 type-body text-muted-foreground">
         <Loader2 className="h-4 w-4 animate-spin" /> Reading candidates
       </div>
     );
@@ -233,7 +233,7 @@ export function MandateCandidatesPanel({
   return (
     <div className="space-y-4" data-testid="mandate-candidates-panel">
       {failure ? (
-        <p className="text-xs text-destructive">
+        <p className="type-secondary text-destructive">
           {failure} <ErrorAlchemyMenu error={failure} />{" "}
           <button type="button" className="underline" onClick={reload}>
             Retry
@@ -241,7 +241,7 @@ export function MandateCandidatesPanel({
         </p>
       ) : null}
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="text-xs text-muted-foreground">
+        <div className="type-secondary text-muted-foreground">
           {active ? null : "No candidate is collecting. Set one to try a change on real runs first."}
         </div>
         {readOnly ? null : (
@@ -257,9 +257,9 @@ export function MandateCandidatesPanel({
 
       {active ? (
         <section className="space-y-1.5">
-          <h3 className="text-xs font-semibold">Pairs</h3>
+          <h3 className="type-secondary font-semibold">Pairs</h3>
           {runsFailure ? (
-            <p className="text-xs text-destructive">
+            <p className="type-secondary text-destructive">
               {runsFailure} <ErrorAlchemyMenu error={runsFailure} />
             </p>
           ) : (
@@ -270,7 +270,7 @@ export function MandateCandidatesPanel({
 
       {others.length > 0 ? (
         <section className="space-y-1.5">
-          <h3 className="text-xs font-semibold">Also open at other levels</h3>
+          <h3 className="type-secondary font-semibold">Also open at other levels</h3>
           {others.map((candidate) => (
             <CandidateCard key={candidate.id} candidate={candidate} compact onChanged={changed} />
           ))}
@@ -280,7 +280,7 @@ export function MandateCandidatesPanel({
       <CoverageFacts active={active} uncovered={uncovered} windowDays={state.forecast.window_days} />
 
       <section className="space-y-1.5">
-        <h3 className="text-xs font-semibold">History</h3>
+        <h3 className="type-secondary font-semibold">History</h3>
         <HistoryTable history={state.history ?? []} onChanged={changed} />
       </section>
 
@@ -320,14 +320,14 @@ function CandidateCard({
         bad ? "border-destructive/50" : candidate.stalled ? "border-amber-500/50" : "border-border",
       )}
     >
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 type-body">
         <CandidateHolderName
           type={candidate.holder_type}
           id={candidate.holder_id}
           versionId={candidate.holder_version_id ?? null}
           name={candidate.holder_name}
         />
-        <span className="text-xs text-muted-foreground">instead of</span>
+        <span className="type-secondary text-muted-foreground">instead of</span>
         {candidate.baseline_holder_id && candidate.baseline_holder_type ? (
           <CandidateHolderName
             type={candidate.baseline_holder_type}
@@ -336,7 +336,7 @@ function CandidateCard({
             name={candidate.baseline_holder_name ?? null}
           />
         ) : (
-          <span className="text-xs text-muted-foreground">nothing</span>
+          <span className="type-secondary text-muted-foreground">nothing</span>
         )}
         <Badge variant="outline" className="text-[11px]">
           {RUNG_LABEL[candidate.rung]}
@@ -346,7 +346,7 @@ function CandidateCard({
         </Badge>
       </div>
 
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 type-secondary">
         <span
           data-testid="candidate-runs-in"
           className={cn("font-semibold tabular-nums", bad && "text-destructive")}
@@ -386,7 +386,7 @@ function CandidateCard({
       </div>
 
       {candidate.recommendation ? (
-        <div className="flex flex-wrap items-center gap-2 text-xs">
+        <div className="flex flex-wrap items-center gap-2 type-secondary">
           <Badge
             variant="outline"
             className={cn("capitalize", RECOMMENDATION_TONE[candidate.recommendation])}
@@ -528,7 +528,7 @@ function DecisionButtons({
         ) : null}
       </div>
       {versions && versions.length > 0 ? (
-        <div className="flex flex-wrap items-center gap-1.5 text-xs">
+        <div className="flex flex-wrap items-center gap-1.5 type-secondary">
           <span className="text-muted-foreground">Pairs ran different versions. Promote:</span>
           {versions.map((choice) => (
             <Button
@@ -543,7 +543,7 @@ function DecisionButtons({
         </div>
       ) : null}
       {refusal ? (
-        <p className="text-xs text-destructive">
+        <p className="type-secondary text-destructive">
           {refusal} <ErrorAlchemyMenu error={refusal} />
         </p>
       ) : null}
@@ -605,7 +605,7 @@ function PairsTable({ runs }: { runs: LiveCandidateRun[] | null }) {
         width: 120,
         filter: "select",
         accessorFn: (run) => doorLabel(run.door),
-        cell: (run) => <span className="text-xs">{doorLabel(run.door)}</span>,
+        cell: (run) => <span className="type-secondary">{doorLabel(run.door)}</span>,
       },
       {
         id: "stop",
@@ -615,7 +615,7 @@ function PairsTable({ runs }: { runs: LiveCandidateRun[] | null }) {
         accessorFn: (run) => run.stop_match ?? "",
         cell: (run) =>
           run.status === "stopped" ? (
-            <span className="text-xs">
+            <span className="type-secondary">
               {stoppedTool(run) ?? "a write"}
               {run.stop_match ? (
                 <span className="text-muted-foreground"> · {STOP_MATCH_WORD[run.stop_match] ?? run.stop_match}</span>
@@ -632,7 +632,7 @@ function PairsTable({ runs }: { runs: LiveCandidateRun[] | null }) {
         filter: false,
         sortable: false,
         cell: (run) => (
-          <span className="text-xs">
+          <span className="type-secondary">
             <Cost usd={metric(run.live_metrics, "cost_usd")} short /> →{" "}
             <Cost usd={metric(run.candidate_metrics, "cost_usd")} short />
           </span>
@@ -644,14 +644,14 @@ function PairsTable({ runs }: { runs: LiveCandidateRun[] | null }) {
         width: 110,
         filter: false,
         accessorFn: (run) => run.created_at,
-        cell: (run) => <span className="text-xs text-muted-foreground">{formatRelativeTime(run.created_at)}</span>,
+        cell: (run) => <span className="type-secondary text-muted-foreground">{formatRelativeTime(run.created_at)}</span>,
       },
     ],
     [],
   );
   if (runs === null) {
     return (
-      <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+      <p className="flex items-center gap-1.5 type-secondary text-muted-foreground">
         <Loader2 className="h-3 w-3 animate-spin" /> Reading pairs
       </p>
     );
@@ -679,7 +679,7 @@ function PairOutcome({ run }: { run: LiveCandidateRun }) {
     <span className="inline-flex items-center gap-1">
       <PairOutcomeBadge run={run} />
       {attempt ? (
-        <span className="text-[10px] text-muted-foreground" title="Interrupted, then run again.">
+        <span className="type-meta text-muted-foreground" title="Interrupted, then run again.">
           {attempt}
         </span>
       ) : null}
@@ -709,7 +709,7 @@ function PairOutcomeBadge({ run }: { run: LiveCandidateRun }) {
     return <Badge variant="outline" className="text-[11px]">stopped</Badge>;
   }
   return run.verdict ? (
-    <span className={cn("rounded px-1.5 py-0.5 text-[11px] font-medium", VERDICT_TONE[run.verdict])}>
+    <span className={cn("rounded px-1.5 py-0.5 type-meta font-medium", VERDICT_TONE[run.verdict])}>
       {run.verdict}
     </span>
   ) : (
@@ -745,8 +745,8 @@ function CoverageFacts({
     <section className="grid gap-3 sm:grid-cols-2" data-testid="candidate-coverage">
       {skips.length > 0 ? (
         <div className="space-y-1">
-          <h3 className="text-xs font-semibold">Runs it skipped</h3>
-          <ul className="space-y-0.5 text-xs">
+          <h3 className="type-secondary font-semibold">Runs it skipped</h3>
+          <ul className="space-y-0.5 type-secondary">
             {skips.map(([reason, n]) => (
               <li key={reason} className="flex justify-between gap-2">
                 <span>{skipLabel(reason)}</span>
@@ -758,10 +758,10 @@ function CoverageFacts({
       ) : null}
       {uncovered.length > 0 ? (
         <div className="space-y-1">
-          <h3 className="text-xs font-semibold" title={`This job's runs in the last ${windowDays} days`}>
+          <h3 className="type-secondary font-semibold" title={`This job's runs in the last ${windowDays} days`}>
             Doors a candidate never sees
           </h3>
-          <ul className="space-y-0.5 text-xs">
+          <ul className="space-y-0.5 type-secondary">
             {uncovered.map(([door, n]) => (
               <li key={door} className="flex justify-between gap-2">
                 <span>{doorLabel(door)}</span>
@@ -792,7 +792,7 @@ function HistoryTable({
         filter: "text",
         accessorFn: (c) => c.holder_name,
         cell: (c) => (
-          <span className="block truncate text-xs">
+          <span className="block truncate type-secondary">
             <CandidateHolderName
               type={c.holder_type}
               id={c.holder_id}
@@ -817,7 +817,7 @@ function HistoryTable({
         filter: false,
         accessorFn: (c) => c.counts.runs_in ?? 0,
         cell: (c) => (
-          <span className="text-xs tabular-nums">
+          <span className="type-secondary tabular-nums">
             {c.counts.runs_in ?? 0}/{c.counts.runs_wanted}
           </span>
         ),
@@ -843,7 +843,7 @@ function HistoryTable({
         width: 110,
         filter: "select",
         accessorFn: (c) => RUNG_LABEL[c.rung],
-        cell: (c) => <span className="text-xs">{RUNG_LABEL[c.rung]}</span>,
+        cell: (c) => <span className="type-secondary">{RUNG_LABEL[c.rung]}</span>,
       },
       {
         id: "decided",
@@ -852,7 +852,7 @@ function HistoryTable({
         filter: false,
         accessorFn: (c) => c.decided_at ?? c.updated_at,
         cell: (c) => (
-          <span className="text-xs text-muted-foreground">
+          <span className="type-secondary text-muted-foreground">
             {formatRelativeTime(c.decided_at ?? c.updated_at)}
           </span>
         ),

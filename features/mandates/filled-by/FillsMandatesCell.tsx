@@ -62,7 +62,7 @@ export function FillsMandatesCell({
             <li key={m.mandateId}>
               <Link
                 href={featureIntelligenceHref("", { mandateKey: m.mandateKey })}
-                className="block truncate px-3 py-1.5 text-[13px] text-foreground hover:bg-accent"
+                className="block truncate px-3 py-1.5 type-body text-foreground hover:bg-accent"
                 title={m.mandateKey}
               >
                 {mandateDisplayName(m.mandateKey, m.label)}

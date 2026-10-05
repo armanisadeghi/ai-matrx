@@ -153,12 +153,12 @@ function Section({
     <section className="flex min-w-0 flex-col gap-2">
       <header className="flex min-w-0 items-center gap-2">
         <Icon className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
-        <h2 className="text-sm font-semibold text-foreground">{title}</h2>
+        <h2 className="type-title text-foreground">{title}</h2>
       </header>
       {error ? (
         <div
           role="alert"
-          className="flex items-start gap-2 rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-xs text-destructive"
+          className="flex items-start gap-2 rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 type-secondary text-destructive"
         >
           <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
           <span className="min-w-0 [overflow-wrap:anywhere]">
@@ -293,11 +293,11 @@ export function MandateDashboard() {
           Refresh label folds to its icon on a phone (punch list 2026-09-26). */}
       <header className="flex min-w-0 items-center gap-2 sm:gap-3">
         <h1 className="truncate text-lg font-semibold">Mandate numbers</h1>
-        <span className="shrink-0 whitespace-nowrap rounded border border-border px-1.5 py-0.5 text-[11px] text-muted-foreground">
+        <span className="shrink-0 whitespace-nowrap rounded border border-border px-1.5 py-0.5 type-meta text-muted-foreground">
           System
         </span>
         {coverageSlot.data ? (
-          <span className="shrink-0 whitespace-nowrap text-xs text-muted-foreground">
+          <span className="shrink-0 whitespace-nowrap type-secondary text-muted-foreground">
             {ago(coverageSlot.data.computed_at)}
           </span>
         ) : null}
@@ -395,7 +395,7 @@ export function MandateDashboard() {
                 <Link
                   key={row.feature}
                   href={mandateListHref({ [COL.feature]: row.feature })}
-                  className="group flex min-w-0 items-center gap-2 rounded px-1 py-1 text-xs hover:bg-accent/40"
+                  className="group flex min-w-0 items-center gap-2 rounded px-1 py-1 type-secondary hover:bg-accent/40"
                 >
                   <span className="w-28 shrink-0 truncate font-medium text-foreground group-hover:text-primary">
                     {row.feature}
@@ -416,7 +416,7 @@ export function MandateDashboard() {
                 </Link>
               ))}
             </div>
-            <div className="flex items-center gap-3 border-t border-border px-3 py-1.5 text-[11px] text-muted-foreground">
+            <div className="flex items-center gap-3 border-t border-border px-3 py-1.5 type-meta text-muted-foreground">
               <span className="flex items-center gap-1">
                 <span className="inline-block h-2 w-2 rounded-sm bg-chart-1" aria-hidden />
                 Code-backed

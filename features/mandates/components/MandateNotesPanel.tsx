@@ -179,7 +179,7 @@ export function MandateNotesPanel({
           role="group"
           aria-label="Note type"
         >
-          <span className="mr-1 text-xs text-muted-foreground">Type</span>
+          <span className="mr-1 type-secondary text-muted-foreground">Type</span>
           {MANDATE_NOTE_KINDS.map((option) => (
             <button
               key={option}
@@ -222,7 +222,7 @@ export function MandateNotesPanel({
       )}
 
       {notes === null ? (
-        <div className="flex items-center gap-2 py-2 text-[11px] text-muted-foreground">
+        <div className="flex items-center gap-2 py-2 type-meta text-muted-foreground">
           <Loader2 className="h-3 w-3 animate-spin" /> Loading notes…
         </div>
       ) : notes.length === 0 ? (
@@ -242,7 +242,7 @@ export function MandateNotesPanel({
               className="min-w-0 rounded-md border border-border bg-card p-2"
             >
               <div className="flex min-w-0 items-start gap-2">
-                <div className="min-w-0 flex-1 break-words text-xs text-foreground"><RichContent source={note.body ?? ""} level="standard" /></div>
+                <div className="min-w-0 flex-1 break-words type-secondary text-foreground"><RichContent source={note.body ?? ""} level="standard" /></div>
                 <button
                   type="button"
                   onClick={() => void remove(note)}
@@ -253,7 +253,7 @@ export function MandateNotesPanel({
                   <Trash2 className="h-3 w-3" />
                 </button>
               </div>
-              <div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-muted-foreground">
+              <div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 type-meta text-muted-foreground">
                 <span className="font-medium text-foreground/70">
                   {MANDATE_NOTE_KIND_LABELS[note.noteKind]}
                 </span>

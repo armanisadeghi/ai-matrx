@@ -80,7 +80,7 @@ export function MandateProvenancePanel({
   if (loading && !report && !error) {
     return (
       <Section title={PROVENANCE_SECTION_TITLE}>
-        <div className="rounded-lg border border-border bg-card px-3 py-3 text-sm text-muted-foreground">
+        <div className="rounded-lg border border-border bg-card px-3 py-3 type-body text-muted-foreground">
           Reading where this Mandate came from…
         </div>
       </Section>
@@ -94,7 +94,7 @@ export function MandateProvenancePanel({
           role="status"
           className="rounded-lg border border-border bg-muted/40 px-3 py-3"
         >
-          <p className="text-sm font-semibold text-foreground">
+          <p className="type-title text-foreground">
             Where this Mandate came from, and whether anything runs it, is
             unknown — not clean.
           </p>

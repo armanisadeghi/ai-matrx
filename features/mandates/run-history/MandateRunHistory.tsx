@@ -204,8 +204,8 @@ export function MandateRunHistory({
     <div className={cn("min-w-0 space-y-2", className)} data-mandate-runs={mandateKey}>
       {compact ? null : (
         <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <h3 className="shrink-0 text-sm font-semibold text-foreground">Runs</h3>
-          <span className="shrink-0 text-xs text-muted-foreground" aria-live="polite">
+          <h3 className="shrink-0 type-title text-foreground">Runs</h3>
+          <span className="shrink-0 type-secondary text-muted-foreground" aria-live="polite">
             {!error && page ? `${formatCount(total)} ${total === 1 ? "run" : "runs"}` : " "}
           </span>
           <div className="ml-auto flex min-w-0 flex-wrap items-center gap-2">
@@ -248,7 +248,7 @@ export function MandateRunHistory({
       )}
 
       {error ? (
-        <div role="alert" className="flex min-w-0 items-center gap-2 rounded-md border border-destructive/30 px-3 py-2 text-sm text-destructive">
+        <div role="alert" className="flex min-w-0 items-center gap-2 rounded-md border border-destructive/30 px-3 py-2 type-body text-destructive">
           <span className="min-w-0 truncate" title={error.message}>
             Could not read the runs: {error.message}
           </span>
@@ -259,7 +259,7 @@ export function MandateRunHistory({
         </div>
       ) : (
         <div className="min-w-0 overflow-x-auto rounded-md border border-border">
-          <Table wrap={false} className="min-w-[30rem] text-xs sm:min-w-[36rem] [&_td]:whitespace-nowrap [&_th]:whitespace-nowrap">
+          <Table wrap={false} className="min-w-[30rem] type-secondary sm:min-w-[36rem] [&_td]:whitespace-nowrap [&_th]:whitespace-nowrap">
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[6.5rem]">When</TableHead>
@@ -321,7 +321,7 @@ export function MandateRunHistory({
 
       {compact ? (
         !error && page && total > 0 && seeAllHref ? (
-          <div className="flex min-w-0 items-center justify-between gap-2 text-xs">
+          <div className="flex min-w-0 items-center justify-between gap-2 type-secondary">
             <span className="text-muted-foreground">
               {total > page.rows.length ? `Last ${page.rows.length} of ${formatCount(total)}` : `${total} ${total === 1 ? "run" : "runs"}`}
             </span>
@@ -331,7 +331,7 @@ export function MandateRunHistory({
           </div>
         ) : null
       ) : !error && page && total > limit ? (
-        <div className="flex min-w-0 items-center justify-end gap-2 text-xs text-muted-foreground">
+        <div className="flex min-w-0 items-center justify-end gap-2 type-secondary text-muted-foreground">
           <span>
             {offset + 1}–{Math.min(offset + limit, total)} of {formatCount(total)}
           </span>

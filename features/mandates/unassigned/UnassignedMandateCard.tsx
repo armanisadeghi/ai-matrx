@@ -44,7 +44,7 @@ export function UnassignedMandateCard({
       data-testid="unassigned-mandate-card"
       data-mandate-key={mandateKey}
       className={cn(
-        "flex flex-wrap items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-xs",
+        "flex flex-wrap items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-2 type-secondary",
         className,
       )}
     >

@@ -195,7 +195,7 @@ export function MandateCoverageAlert({
       >
         <HelpCircle className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
         <div className="min-w-0 space-y-0.5">
-          <p className="text-sm font-semibold text-foreground">
+          <p className="type-title text-foreground">
             {verdict.title}
           </p>
           <p className="break-words text-[12.5px] text-muted-foreground">
@@ -232,7 +232,7 @@ export function MandateCoverageAlert({
       <div className="min-w-0 flex-1 space-y-0.5">
         <p
           className={cn(
-            "text-sm font-semibold",
+            "type-title",
             isRed
               ? "text-rose-700 dark:text-rose-300"
               : "text-amber-700 dark:text-amber-300",

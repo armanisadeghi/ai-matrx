@@ -102,7 +102,7 @@ export function GroundingBadge({ grounding }: { grounding: string | null }) {
           ? "Agent-written"
           : "Unknown";
   return (
-    <span className="text-xs text-foreground">
+    <span className="type-secondary text-foreground">
       <span className="font-semibold">Authority:</span> {label}
     </span>
   );

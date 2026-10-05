@@ -289,7 +289,7 @@ function OneMandateRecordBody({
     if (failed.kind === "not-a-system-mandate" && "mandateId" in failed) {
       return (
         <div className="mx-auto flex max-w-md flex-col items-center gap-3 px-6 py-16 text-center">
-          <p className="text-sm text-muted-foreground">{failed.message} <ErrorAlchemyMenu error={failed.message} /></p>
+          <p className="type-body text-muted-foreground">{failed.message} <ErrorAlchemyMenu error={failed.message} /></p>
           <div className="flex items-center gap-2">
             <Button asChild variant="outline">
               <Link href={adminMandateSupportRecordHref(String(failed.mandateId))}>
@@ -321,8 +321,8 @@ function OneMandateRecordBody({
         <p
           className={
             failed.kind === "load-failed"
-              ? "text-sm text-destructive"
-              : "text-sm text-muted-foreground"
+              ? "type-body text-destructive"
+              : "type-body text-muted-foreground"
           }
         >
           {/* A key nothing answers to is simply not found — never the dotted
@@ -595,7 +595,7 @@ function OneMandateRecordBody({
           <div className="flex justify-end">
             <Link
               href={adminMandateOverridesHref(storedMandateKey(data.mandate.mandate_key))}
-              className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+              className="inline-flex items-center gap-1 type-secondary text-muted-foreground hover:text-foreground"
             >
               Open as page
               <ExternalLink className="h-3 w-3" />
@@ -716,7 +716,7 @@ function MandateFactsLine({
       ? "System"
       : (homeName ?? "An organization you are not in");
   return (
-    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 type-secondary text-muted-foreground">
       <span className="font-medium text-foreground">{homeLabel}</span>
       <span aria-hidden>·</span>
       <span>{feature}</span>
@@ -898,7 +898,7 @@ function LadderSection({
   }
   if (ladder.error) {
     return (
-      <p className="flex items-start gap-1.5 px-1 text-[12px] leading-relaxed text-destructive">
+      <p className="flex items-start gap-1.5 px-1 type-secondary leading-relaxed text-destructive">
         <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
         The rungs behind this job could not be read: {ladder.error}
         <ErrorAlchemyMenu error={ladder.error} />

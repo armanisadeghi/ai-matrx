@@ -230,7 +230,7 @@ export function RecordAdminPanels({
         />
       ) : null}
       {loadError ? (
-        <div role="alert" className="flex items-center gap-2 text-sm text-destructive">
+        <div role="alert" className="flex items-center gap-2 type-body text-destructive">
           {loadError}
           <Button variant="outline" onClick={load}>
             Retry
@@ -243,18 +243,18 @@ export function RecordAdminPanels({
           aria-label="Reading administration details"
         />
       ) : !row ? (
-        <p className="text-sm text-destructive">Mandate unavailable</p>
+        <p className="type-body text-destructive">Mandate unavailable</p>
       ) : (
         <>
         {codeTruthFailed ? (
-          <p className="mb-2 text-xs text-muted-foreground">
+          <p className="mb-2 type-secondary text-muted-foreground">
             What the code declares for this job could not be read, so the code
             diagnostics below are incomplete.
             <ErrorAlchemyMenu />
           </p>
         ) : null}
         {schemasFailed ? (
-          <p className="mb-2 text-xs text-muted-foreground">
+          <p className="mb-2 type-secondary text-muted-foreground">
             The agent&apos;s output contract could not be read, so the contract
             check below is incomplete.
             <ErrorAlchemyMenu />

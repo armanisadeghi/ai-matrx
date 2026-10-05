@@ -73,7 +73,7 @@ export async function IntelligenceTargetRoute({
   return (
     <>
       <PageHeader>
-        <span className="truncate text-sm font-medium text-foreground">
+        <span className="truncate type-title text-foreground">
           {intelligencePageTitle(target)}
         </span>
       </PageHeader>

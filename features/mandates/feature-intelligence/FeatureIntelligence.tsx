@@ -204,7 +204,7 @@ export function FeatureIntelligence({
           />
         )}
         {state.placesError ? (
-          <p className="mt-1 text-[11px] text-destructive">
+          <p className="mt-1 type-meta text-destructive">
             Some places could not be read: {state.placesError}
             <ErrorAlchemyMenu error={state.placesError} />
           </p>
@@ -212,7 +212,7 @@ export function FeatureIntelligence({
       </section>
 
       {state.error ? (
-        <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-3.5 py-2.5 text-[13px] text-destructive">
+        <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-3.5 py-2.5 type-body text-destructive">
           The jobs could not be read: {state.error}
           <ErrorAlchemyMenu error={state.error} />
         </div>
@@ -221,11 +221,11 @@ export function FeatureIntelligence({
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" aria-label="Loading jobs" />
         </div>
       ) : state.rows.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-border px-4 py-8 text-center text-[13px] text-muted-foreground">
+        <p className="rounded-xl border border-dashed border-border px-4 py-8 text-center type-body text-muted-foreground">
           No AI jobs are recorded for {featureLabel} yet.
         </p>
       ) : shownRows.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-border px-4 py-6 text-center text-[13px] text-muted-foreground">
+        <p className="rounded-xl border border-dashed border-border px-4 py-6 text-center type-body text-muted-foreground">
           No job on this page matches &ldquo;{query.trim()}&rdquo;.
         </p>
       ) : (

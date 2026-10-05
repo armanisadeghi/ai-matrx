@@ -103,17 +103,17 @@ function FeatureCard({
           <span className="min-w-0 flex-1 truncate text-[14.5px] font-semibold text-foreground">
             {feature.label}
           </span>
-          <span className="shrink-0 rounded-md bg-muted px-1.5 py-0.5 text-[12px] font-medium tabular-nums text-muted-foreground">
+          <span className="shrink-0 rounded-md bg-muted px-1.5 py-0.5 type-secondary font-medium tabular-nums text-muted-foreground">
             {plural(feature.jobs.length, "job")}
           </span>
         </div>
-        <p className="line-clamp-2 text-[13px] leading-snug text-muted-foreground">
+        <p className="line-clamp-2 type-body leading-snug text-muted-foreground">
           {jobsLine(feature)}
         </p>
         {why ? (
-          <p className="truncate text-[12px] font-medium text-primary">{why}</p>
+          <p className="truncate type-secondary font-medium text-primary">{why}</p>
         ) : null}
-        <div className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-1 pt-0.5 text-[12px] text-muted-foreground">
+        <div className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-1 pt-0.5 type-secondary text-muted-foreground">
           {summary.agents > 0 ? (
             <span className="inline-flex items-center gap-1">
               <AGENT_ICON className="h-3.5 w-3.5" aria-hidden />
@@ -172,12 +172,12 @@ function DomainSection({
       <h2
         id={`${id}-title`}
         className={cn(
-          "mb-2 flex items-baseline gap-2 text-[13px] font-semibold text-foreground",
+          "mb-2 flex items-baseline gap-2 type-title text-foreground",
           focused && "text-primary",
         )}
       >
         <span>{domain.label}</span>
-        <span className="text-[12px] font-normal tabular-nums text-muted-foreground">
+        <span className="type-secondary font-normal tabular-nums text-muted-foreground">
           {plural(items.length, domain.domain === "unassigned" ? "group" : "feature")}, {plural(jobs, "job")}
         </span>
       </h2>
@@ -253,7 +253,7 @@ export function IntelligenceIndex({
         className="-mx-4 px-4 sm:-mx-6 sm:px-6"
       />
       {error ? (
-        <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-3.5 py-2.5 text-[13px] text-destructive">
+        <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-3.5 py-2.5 type-body text-destructive">
           The features could not be read: {error}
           <ErrorAlchemyMenu error={error} />
         </div>

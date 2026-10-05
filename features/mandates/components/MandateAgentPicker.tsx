@@ -384,13 +384,13 @@ export function MandateAgentPicker({
       </PopoverTrigger>
       <PopoverContent sizing="content" align="end" className="p-3">
         {loadError ? (
-          <p className="flex items-start gap-1.5 text-[12px] text-destructive">
+          <p className="flex items-start gap-1.5 type-secondary text-destructive">
             <AlertCircle className="mt-px h-3.5 w-3.5 shrink-0" />
             {loadError}
             <ErrorAlchemyMenu error={loadError} />
           </p>
         ) : !data ? (
-          <div className="flex items-center justify-center py-6 text-xs text-muted-foreground">
+          <div className="flex items-center justify-center py-6 type-secondary text-muted-foreground">
             <SuspenseLoader
               size="sm"
               centered={false}
@@ -400,7 +400,7 @@ export function MandateAgentPicker({
         ) : (
           <div className="space-y-2.5">
             <div>
-              <p className="text-[13px] font-semibold text-foreground">
+              <p className="type-title text-foreground">
                 {data.mandate.label ?? data.mandate.mandate_key}
               </p>
               <p className="text-[11.5px] text-muted-foreground">

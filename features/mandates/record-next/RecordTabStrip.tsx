@@ -28,7 +28,7 @@ export function TabCount({ count }: { count: RecordTabCount }) {
       data-testid="record-tab-count"
       title={count.title}
       className={cn(
-        "ml-0.5 rounded px-1 text-[10px] font-semibold tabular-nums leading-4",
+        "ml-0.5 rounded px-1 type-meta font-semibold tabular-nums leading-4",
         count.tone === "danger"
           ? "bg-destructive/15 text-destructive"
           : count.tone === "warning"

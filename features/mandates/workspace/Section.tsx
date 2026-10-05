@@ -31,13 +31,13 @@ export function Section({
       <div className="flex flex-wrap items-center justify-between gap-2">
         {info ? (
           <div className="flex items-center gap-1.5">
-            <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+            <h3 className="type-title text-foreground">{title}</h3>
             <InfoHint label={`About ${title}`} text={info} />
           </div>
         ) : (
-          <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+          <h3 className="type-title text-foreground">{title}</h3>
         )}
-        {hint ? <span className="text-xs text-foreground">{hint}</span> : null}
+        {hint ? <span className="type-secondary text-foreground">{hint}</span> : null}
         {actions}
       </div>
       {children}

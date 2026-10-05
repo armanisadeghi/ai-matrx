@@ -37,7 +37,7 @@ export function PlacesMap({
           const dim = activeMandateKey !== null && !lit;
           const inner = (
             <>
-              <span className="flex items-center gap-1 text-[12px] font-medium text-foreground">
+              <span className="flex items-center gap-1 type-secondary font-medium text-foreground">
                 <MapPin
                   className={cn(
                     "h-3 w-3 shrink-0",
@@ -46,11 +46,11 @@ export function PlacesMap({
                   aria-hidden
                 />
                 <span className="truncate">{place.label}</span>
-                <span className="ml-auto pl-2 text-[10px] tabular-nums text-muted-foreground">
+                <span className="ml-auto pl-2 type-meta tabular-nums text-muted-foreground">
                   {place.mandateKeys.length}
                 </span>
               </span>
-              <span className="block truncate text-[11px] text-muted-foreground">
+              <span className="block truncate type-meta text-muted-foreground">
                 {place.trigger}
               </span>
             </>

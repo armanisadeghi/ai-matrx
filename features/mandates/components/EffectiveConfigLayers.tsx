@@ -87,7 +87,7 @@ export function EffectiveConfigLayers({
 
   return (
     <div className={cn("space-y-1", className)}>
-      <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+      <p className="type-meta font-semibold uppercase tracking-[0.08em] text-muted-foreground">
         Effective settings — agent → binding → mandate pins
       </p>
       <div className="overflow-hidden rounded-md border border-border">
@@ -98,7 +98,7 @@ export function EffectiveConfigLayers({
           return (
             <div
               key={key}
-              className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] items-center gap-2 border-b border-border/60 px-2 py-1 text-[11px] last:border-b-0"
+              className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] items-center gap-2 border-b border-border/60 px-2 py-1 type-meta last:border-b-0"
             >
               <code className="truncate font-mono text-foreground">{key}</code>
               {/* Layer 1 — the agent's own definition (base). */}

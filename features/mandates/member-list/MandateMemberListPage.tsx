@@ -97,7 +97,7 @@ export function MandateMemberListPage({
       }
       notice={
         level === "organization" && orgName ? (
-          <p className="rounded-md border border-border/60 bg-card px-2 py-1 text-xs text-muted-foreground">
+          <p className="rounded-md border border-border/60 bg-card px-2 py-1 type-secondary text-muted-foreground">
             {canManageOrg ? (
               <>
                 A binding set here runs for every member of{" "}

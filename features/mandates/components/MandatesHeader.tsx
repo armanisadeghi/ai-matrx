@@ -8,7 +8,7 @@ export function MandatesHeader() {
   return (
     <div className="flex w-full items-center gap-2 px-1">
       <Replace className="h-4 w-4 shrink-0 text-muted-foreground" />
-      <h1 className="text-sm font-semibold text-foreground">Mandates</h1>
+      <h1 className="type-title text-foreground">Mandates</h1>
     </div>
   );
 }

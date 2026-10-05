@@ -111,7 +111,7 @@ export function MandateTitle({
       <h3
         className={cn(
           "min-w-0 truncate font-semibold leading-tight text-foreground",
-          size === "lg" ? "text-[17px]" : size === "sm" ? "text-[13px]" : "text-[15px]",
+          size === "lg" ? "text-[17px]" : size === "sm" ? "type-body" : "text-[15px]",
         )}
       >
         {row.shortName}
@@ -158,7 +158,7 @@ export function HolderRef({ row, className }: { row: FeatureIntelligenceRow; cla
 export function HolderMeta({ row, ctx, badge = true }: { row: FeatureIntelligenceRow; ctx: JobContext; badge?: boolean }) {
   return (
     <>
-      <span className="text-xs text-muted-foreground">
+      <span className="type-secondary text-muted-foreground">
         {row.holderType === "workflow" ? "Workflow" : row.holderType === "agent" ? "Agent" : ""}
         {row.pinText && row.pinText !== "None" ? ` · ${row.pinText}` : ""}
       </span>
@@ -218,7 +218,7 @@ export function Actions({
 /** System → Organization → You, as chips. */
 export function LadderChips({ row, job, className }: { row: FeatureIntelligenceRow; job: Job; className?: string }) {
   return (
-    <div className={cn("flex flex-wrap items-center gap-1.5 text-[11px]", className)} aria-label="Mandate precedence">
+    <div className={cn("flex flex-wrap items-center gap-1.5 type-meta", className)} aria-label="Mandate precedence">
       {RUNGS.map((rung, index) => {
         const isWinner = row.decidedRung === rung;
         const entry = job.ladder.rows.find((item) => item.rung === rung);
@@ -259,7 +259,7 @@ export function InputChips({ mandateKey, className }: { mandateKey: AnyMandateKe
   }
   if (state.status === "error") {
     return (
-      <span className="text-xs text-muted-foreground">
+      <span className="type-secondary text-muted-foreground">
         {state.message} <ErrorAlchemyMenu error={state.message} />
       </span>
     );
@@ -267,7 +267,7 @@ export function InputChips({ mandateKey, className }: { mandateKey: AnyMandateKe
   const { inputs, acceptsUserInput } = state.surface;
   if (inputs.length === 0) {
     return (
-      <span className="text-xs text-muted-foreground">
+      <span className="type-secondary text-muted-foreground">
         {acceptsUserInput ? "Your text" : "No declared inputs"}
       </span>
     );
@@ -279,7 +279,7 @@ export function InputChips({ mandateKey, className }: { mandateKey: AnyMandateKe
           key={input.name}
           title={input.help || undefined}
           className={cn(
-            "inline-flex max-w-[14rem] items-center truncate rounded-md border px-1.5 py-0.5 text-[11px]",
+            "inline-flex max-w-[14rem] items-center truncate rounded-md border px-1.5 py-0.5 type-meta",
             input.sourcing === "require"
               ? "border-primary/30 bg-primary/5 text-foreground"
               : "border-border bg-muted/40 text-muted-foreground",
@@ -289,7 +289,7 @@ export function InputChips({ mandateKey, className }: { mandateKey: AnyMandateKe
         </span>
       ))}
       {acceptsUserInput ? (
-        <span className="inline-flex items-center rounded-md border border-dashed border-border px-1.5 py-0.5 text-[11px] text-muted-foreground">
+        <span className="inline-flex items-center rounded-md border border-dashed border-border px-1.5 py-0.5 type-meta text-muted-foreground">
           + your text
         </span>
       ) : null}
@@ -304,7 +304,7 @@ export function makesWords(row: FeatureIntelligenceRow): string {
 /** Where it runs — each place links to its screen when the page is known. */
 export function PlaceChips({ places, className }: { places: readonly ResolvedPlace[]; className?: string }) {
   if (places.length === 0) {
-    return <span className="text-xs text-muted-foreground">Not recorded yet</span>;
+    return <span className="type-secondary text-muted-foreground">Not recorded yet</span>;
   }
   return (
     <div className={cn("flex min-w-0 flex-wrap gap-1", className)}>

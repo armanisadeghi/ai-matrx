@@ -621,7 +621,7 @@ function OverridesBody({
   // ── Render ─────────────────────────────────────────────────────────────────
   if (holder.kind === "workflow") {
     return (
-      <p className="text-sm text-muted-foreground">
+      <p className="type-body text-muted-foreground">
         A workflow runs this job; it has no model settings.
       </p>
     );
@@ -646,7 +646,7 @@ function OverridesBody({
   }
   if (!agentId) {
     return (
-      <p className="text-sm text-muted-foreground">
+      <p className="type-body text-muted-foreground">
         {picked.source === "none" && picked.message
           ? picked.message
           : "No agent is set for this job yet."}
@@ -659,7 +659,7 @@ function OverridesBody({
   return (
     <div className="space-y-2">
       <div className="flex min-w-0 items-center justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-1.5 text-sm text-muted-foreground">
+        <div className="flex min-w-0 items-center gap-1.5 type-body text-muted-foreground">
           <span className="shrink-0">Settings from</span>
           <EntityRef
             token="agent"
@@ -669,20 +669,20 @@ function OverridesBody({
             labelClassName="font-medium text-foreground"
           />
           {inheritedHolder ? (
-            <span className="shrink-0 text-xs text-muted-foreground/70">
+            <span className="shrink-0 type-secondary text-muted-foreground/70">
               (runs for you today)
             </span>
           ) : null}
         </div>
         {overriddenCount > 0 ? (
-          <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+          <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 type-secondary font-medium text-primary">
             {overriddenCount} overridden
           </span>
         ) : null}
       </div>
 
       {load.status === "error" ? (
-        <div className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm">
+        <div className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 type-body">
           <span className="text-destructive">{load.message} <ErrorAlchemyMenu error={load.message} /></span>
           <Button
             variant="outline"
@@ -762,7 +762,7 @@ function OverridesBody({
                 }
                 editor={
                   removals.includes(row.key) ? (
-                    <span className="text-sm text-muted-foreground">
+                    <span className="type-body text-muted-foreground">
                       <AgentValue
                         value={holderSettings[row.key]}
                         control={row.control}
@@ -794,12 +794,12 @@ function OverridesBody({
       {dirty || saveError ? (
         <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
           {saveError ? (
-            <span className="mr-auto text-sm text-destructive">
+            <span className="mr-auto type-body text-destructive">
               {saveError}
               <ErrorAlchemyMenu error={saveError} />
             </span>
           ) : refusal ? (
-            <span className="mr-auto text-sm text-muted-foreground">
+            <span className="mr-auto type-body text-muted-foreground">
               {refusal}
               <ErrorAlchemyMenu error={refusal} />
             </span>
@@ -899,10 +899,10 @@ function SettingRow({
       )}
       style={{ gridTemplateColumns: ROW_COLUMNS }}
     >
-      <div className="flex min-w-0 items-center gap-1.5 text-sm text-foreground">
+      <div className="flex min-w-0 items-center gap-1.5 type-body text-foreground">
         <span className="truncate">{label}</span>
         {overridden ? (
-          <span className="shrink-0 text-[11px] font-medium text-primary">
+          <span className="shrink-0 type-meta font-medium text-primary">
             Overridden
           </span>
         ) : null}
@@ -911,10 +911,10 @@ function SettingRow({
         {open ? (
           editor
         ) : (
-          <div className="flex min-w-0 items-center gap-1.5 text-sm text-muted-foreground">
+          <div className="flex min-w-0 items-center gap-1.5 type-body text-muted-foreground">
             <span className="min-w-0 truncate">{display}</span>
             {inheritedFrom ? (
-              <span className="shrink-0 text-xs text-muted-foreground/70">
+              <span className="shrink-0 type-secondary text-muted-foreground/70">
                 (set by {inheritedFrom})
               </span>
             ) : null}

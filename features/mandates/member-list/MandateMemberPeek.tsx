@@ -26,10 +26,10 @@ import type { MandateListLevel, MandateMemberRow } from "./types";
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex items-baseline gap-3 py-1">
-      <span className="w-28 shrink-0 text-[0.625rem] uppercase tracking-wider text-muted-foreground">
+      <span className="w-28 shrink-0 type-meta uppercase tracking-wider text-muted-foreground">
         {label}
       </span>
-      <div className="min-w-0 flex-1 text-sm">{children}</div>
+      <div className="min-w-0 flex-1 type-body">{children}</div>
     </div>
   );
 }
@@ -176,7 +176,7 @@ export function MandateMemberPeek({
           ) : null}
         </div>
         <div className="flex items-center gap-2 border-t border-border pt-2">
-          <span className="text-[10px] tabular-nums text-muted-foreground">
+          <span className="type-meta tabular-nums text-muted-foreground">
             {index + 1} / {rows.length}
           </span>
           <Button variant="quiet" onClick={onClose} className="ml-auto">

@@ -112,7 +112,7 @@ export function OutputMismatchNotice({
       className="flex min-w-0 flex-col gap-2 border-t border-amber-500/30 bg-amber-500/5 px-3 py-2 sm:flex-row sm:items-center"
       onClick={(event) => event.stopPropagation()}
     >
-      <p className="flex min-w-0 flex-1 items-center gap-2 text-[13px] text-amber-800 dark:text-amber-200">
+      <p className="flex min-w-0 flex-1 items-center gap-2 type-body text-amber-800 dark:text-amber-200">
         <TriangleAlert className="h-4 w-4 shrink-0" aria-hidden />
         <span className="min-w-0 truncate" title={`${sentence}${rung.output_warning ? `\n\n${rung.output_warning}` : ""}`}>
           {sentence}
@@ -128,7 +128,7 @@ export function OutputMismatchNotice({
           onClick={() => void announceComingSoon("mandates.fix-output-mismatch-with-ai")}
         >
           Fix with AI
-          <span className="ml-1 rounded bg-muted px-1 text-[10px] text-muted-foreground">Soon</span>
+          <span className="ml-1 rounded bg-muted px-1 type-meta text-muted-foreground">Soon</span>
         </Button>
       </span>
     </div>

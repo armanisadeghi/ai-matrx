@@ -75,7 +75,7 @@ export function MandateHealthSummary({ mandateKey }: { mandateKey: AnyMandateKey
 
   if (state.status === "loading") {
     return (
-      <div role="status" className="flex items-center gap-2 text-sm text-muted-foreground">
+      <div role="status" className="flex items-center gap-2 type-body text-muted-foreground">
         <Loader2 className="size-4 animate-spin" aria-hidden="true" />
         Checking this job for open problems…
       </div>
@@ -84,7 +84,7 @@ export function MandateHealthSummary({ mandateKey }: { mandateKey: AnyMandateKey
 
   if (state.status === "error") {
     return (
-      <div role="alert" className="flex items-center gap-2 text-sm text-destructive">
+      <div role="alert" className="flex items-center gap-2 type-body text-destructive">
         <span>Open problems could not be checked: the check {asClause(state.message)}. Reload the page to try again.
         <ErrorAlchemyMenu className="ml-auto" /></span>
       </div>
@@ -94,17 +94,17 @@ export function MandateHealthSummary({ mandateKey }: { mandateKey: AnyMandateKey
   return (
     <div className="space-y-2">
       {state.findings.length === 0 ? (
-        <div className="flex items-center gap-2 text-sm">
+        <div className="flex items-center gap-2 type-body">
           <StatusToken status={state.failed.length > 0 ? "caution" : "ok"} label={state.failed.length > 0 ? "Partly checked" : "No open problems"} />
           {state.failed.length > 0 ? (
-            <span className="text-xs text-muted-foreground">
+            <span className="type-secondary text-muted-foreground">
               Some checks could not run: {state.failed.join("; ")}.
               <ErrorAlchemyMenu />
             </span>
           ) : null}
         </div>
       ) : (
-        <div className="divide-y divide-border rounded-md border border-border text-sm">
+        <div className="divide-y divide-border rounded-md border border-border type-body">
           {state.findings.map((f) => (
             <div key={f.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2">
               <Badge variant="outline" className={SEVERITY_CLASS[f.severity]}>
@@ -120,12 +120,12 @@ export function MandateHealthSummary({ mandateKey }: { mandateKey: AnyMandateKey
                   href={f.codeUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs text-primary hover:underline"
+                  className="type-secondary text-primary hover:underline"
                 >
                   Open code
                 </a>
               ) : null}
-              <span className="text-xs">
+              <span className="type-secondary">
                 Fix: {f.fixHref ? (
                   <Link href={f.fixHref} className="text-primary hover:underline">
                     {f.fix}

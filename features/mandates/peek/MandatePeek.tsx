@@ -144,7 +144,7 @@ function useWorkflowNames(ids: readonly string[]): Record<string, string> {
 function Section({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <section className="space-y-1.5">
-      <h4 className="text-[0.625rem] font-semibold uppercase tracking-wider text-muted-foreground">
+      <h4 className="type-meta font-semibold uppercase tracking-wider text-muted-foreground">
         {label}
       </h4>
       {children}
@@ -166,14 +166,14 @@ function Inputs({
   }
   if (state.status === "error") {
     return (
-      <p className="text-xs text-muted-foreground">
+      <p className="type-secondary text-muted-foreground">
         {state.message} <ErrorAlchemyMenu error={state.message} />
       </p>
     );
   }
   const { inputs, acceptsUserInput } = state.surface;
   if (inputs.length === 0 && !acceptsUserInput) {
-    return <p className="text-sm text-muted-foreground">None</p>;
+    return <p className="type-body text-muted-foreground">None</p>;
   }
   return (
     <div className="flex flex-wrap gap-1.5">
@@ -182,7 +182,7 @@ function Inputs({
           key={input.name}
           title={input.help || undefined}
           className={cn(
-            "inline-flex items-center rounded-md border px-2 py-0.5 text-xs",
+            "inline-flex items-center rounded-md border px-2 py-0.5 type-secondary",
             input.sourcing === "require"
               ? "border-primary/30 bg-primary/5 text-foreground"
               : "border-border bg-muted/40 text-muted-foreground",
@@ -192,7 +192,7 @@ function Inputs({
         </span>
       ))}
       {acceptsUserInput ? (
-        <span className="inline-flex items-center rounded-md border border-dashed border-border px-2 py-0.5 text-xs text-muted-foreground">
+        <span className="inline-flex items-center rounded-md border border-dashed border-border px-2 py-0.5 type-secondary text-muted-foreground">
           Your text
         </span>
       ) : null}
@@ -217,7 +217,7 @@ function Ladder({ rows, loading, error }: { rows: MandateLadderRow[]; loading: b
   }
   if (error) {
     return (
-      <p className="text-xs text-destructive">
+      <p className="type-secondary text-destructive">
         {error} <ErrorAlchemyMenu error={error} />
       </p>
     );
@@ -230,8 +230,8 @@ function Ladder({ rows, loading, error }: { rows: MandateLadderRow[]; loading: b
         const Icon = isWorkflow ? Workflow : AGENT_ICON;
         const holderId = row?.chose_holder ? row.holder_id : null;
         return (
-          <div key={rung} className="flex min-w-0 items-center gap-3 px-2.5 py-1.5 text-sm">
-            <span className="w-24 shrink-0 text-xs text-muted-foreground">{RUNG_LABEL[rung]}</span>
+          <div key={rung} className="flex min-w-0 items-center gap-3 px-2.5 py-1.5 type-body">
+            <span className="w-24 shrink-0 type-secondary text-muted-foreground">{RUNG_LABEL[rung]}</span>
             {holderId ? (
               <span className="flex min-w-0 items-center gap-1.5">
                 <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
@@ -245,13 +245,13 @@ function Ladder({ rows, loading, error }: { rows: MandateLadderRow[]; loading: b
               <span className="text-muted-foreground">No choice</span>
             )}
             {row?.dropped_reason ? (
-              <span className="ml-auto shrink-0 text-xs text-destructive" title={row.dropped_reason}>
+              <span className="ml-auto shrink-0 type-secondary text-destructive" title={row.dropped_reason}>
                 Needs attention
               </span>
             ) : holderId && row?.output_warning ? (
               // A warned rung is LIVE (aidream 1363): it runs, but its output
               // may not fit. Amber, with the door's own sentence as the title.
-              <span className="ml-auto shrink-0 text-xs text-amber-700 dark:text-amber-300" title={row.output_warning}>
+              <span className="ml-auto shrink-0 type-secondary text-amber-700 dark:text-amber-300" title={row.output_warning}>
                 May not fit
               </span>
             ) : null}
@@ -328,21 +328,21 @@ export function MandatePeekModal({ mandate, isOpen, onClose, href }: MandatePeek
               <div className="h-4 w-1/2 animate-pulse rounded bg-muted" />
             </div>
           ) : facts.status === "error" ? (
-            <p className="text-sm text-destructive">
+            <p className="type-body text-destructive">
               {facts.message} <ErrorAlchemyMenu error={facts.message} />
             </p>
           ) : facts.status === "missing" ? (
-            <p className="text-sm text-muted-foreground">This mandate does not exist or is not shared with you.</p>
+            <p className="type-body text-muted-foreground">This mandate does not exist or is not shared with you.</p>
           ) : ready ? (
             <>
               {ready.description ? (
-                <div className="break-words text-sm text-foreground"><RichContent source={ready.description ?? ""} level="standard" /></div>
+                <div className="break-words type-body text-foreground"><RichContent source={ready.description ?? ""} level="standard" /></div>
               ) : null}
               <Section label="Inputs">
                 <Inputs mandateKey={ready.mandateKey} organizationId={ladderOrgId} />
               </Section>
               <Section label="Output">
-                <p className="flex items-center gap-1.5 text-sm text-foreground">
+                <p className="flex items-center gap-1.5 type-body text-foreground">
                   <Braces className="h-3.5 w-3.5 text-primary" aria-hidden />
                   {ready.outputKind
                     ? kindPhrase(ready.outputKind).replace(/^an? /, "").replace(/^./, (c) => c.toUpperCase())
