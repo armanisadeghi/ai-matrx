@@ -236,6 +236,16 @@ while the user is typing, so the search field keeps its own arrow keys.
 this feature's to edit — hence the explicit `href` above. When those tables get
 registry tokens, `routes.ts` is the only file that changes.
 
+## Media desk (`media-desk/`)
+
+Make clip (every coverage mention here and on the site's Coverage tab, plus "Make clip from a link"
+in the Clips gallery), Headlines (an open angle's action, from the angle's stored facts) and the
+reputation workspace's "Crisis: holding statement" (`features/marketing/components/reputation/crisis/`).
+Each is a durable streamed command in aidream `services/media_desk` (its FEATURE.md holds the loop,
+the counsel gate and the knobs). `api.ts` is the one consumer; `clips-data.ts` reads the gallery
+straight from `seo.collection_run` (operation `press.clip.make`); `rejoin.ts` remembers each run id
+so a reload or remount picks a minutes-long run back up instead of losing it.
+
 ## Files
 
 ```
@@ -290,6 +300,9 @@ dense's four-tab shell (the consolidated surface shows all four things at once),
 and both losers' fixture files.
 
 ## Change Log
+
+- 2026-10-05 — Media desk: Make clip + clips gallery, angle Headlines, crisis intake; runs survive
+  remounts (`media-desk/rejoin.ts`).
 
 - 2026-08-22 — Source-request ingestion UI: `IngestRequestsDialog` (paste a digest, platform picker,
   score-now toggle, streamed milestones, loud screened-out report), `SourceRequestRail` header
