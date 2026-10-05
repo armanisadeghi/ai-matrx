@@ -25704,6 +25704,16 @@ export type ChatDatabase = {
         Returns: boolean
       }
       retention_settling_interval: { Args: never; Returns: string }
+      retired_into_record_store: {
+        Args: never
+        Returns: {
+          archive_door: string
+          restore_door: string
+          schema_name: string
+          table_name: string
+          token: string
+        }[]
+      }
       retrofit_entity: {
         Args: {
           p_legacy_trigger?: string
@@ -26062,6 +26072,13 @@ export type ChatDatabase = {
           action: string
           edge: string
           live_rows_under_removed_parent: number
+        }[]
+      }
+      soft_delete_parent_source: {
+        Args: { p_schema: string; p_table: string }
+        Returns: {
+          schema_name: string
+          table_name: string
         }[]
       }
       static_row_probe_spec: {
@@ -29195,12 +29212,15 @@ export type ChatDatabase = {
         Returns: {
           access_level: string
           auto_context_disabled: boolean
+          connection_count: number
           context_policies: Json
+          custom_tool_count: number
           description: string
           id: string
           is_version: boolean
           model_id: string
           name: string
+          skill_count: number
           tool_ids: string[]
           ui_gates: Json
           variable_definitions: Json

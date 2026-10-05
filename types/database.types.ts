@@ -31319,6 +31319,7 @@ export type Database = {
           catalogue_id: string
           created_at: string
           declared_by: string | null
+          ephemeral: boolean
           id: string
           organization_id: string
           plan: Json
@@ -31334,6 +31335,7 @@ export type Database = {
           catalogue_id: string
           created_at?: string
           declared_by?: string | null
+          ephemeral?: boolean
           id?: string
           organization_id: string
           plan: Json
@@ -31349,6 +31351,7 @@ export type Database = {
           catalogue_id?: string
           created_at?: string
           declared_by?: string | null
+          ephemeral?: boolean
           id?: string
           organization_id?: string
           plan?: Json
@@ -31567,6 +31570,32 @@ export type Database = {
         }
         Relationships: []
       }
+      context_scope_items: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          created_by: string | null
+          deleted_at: string | null
+          description: string | null
+          display_name: string | null
+          fetch_hint: string | null
+          id: string | null
+          is_active: boolean | null
+          key: string | null
+          organization_id: string | null
+          scope_type_id: string | null
+          sensitivity: string | null
+          slug: string | null
+          sort_order: number | null
+          status: string | null
+          status_note: string | null
+          tags: Json | null
+          updated_at: string | null
+          value_type: string | null
+          version: number | null
+        }
+        Relationships: []
+      }
       context_scope_types: {
         Row: {
           created_at: string | null
@@ -31609,6 +31638,27 @@ export type Database = {
           updated_at?: string | null
           updated_by?: string | null
           version?: number | null
+        }
+        Relationships: []
+      }
+      context_scope_values: {
+        Row: {
+          authored_by: string | null
+          context_item_id: string | null
+          created_at: string | null
+          deleted_at: string | null
+          id: string | null
+          is_current: boolean | null
+          organization_id: string | null
+          scope_id: string | null
+          source_type: string | null
+          value_boolean: boolean | null
+          value_date: string | null
+          value_json: Json | null
+          value_number: number | null
+          value_text: string | null
+          value_whole: Json | null
+          version: number | null
         }
         Relationships: []
       }
@@ -45333,6 +45383,10 @@ export type Database = {
       outsider_token_sender: { Args: { p_secret: string }; Returns: Json }
       record_signed_copy: {
         Args: { p_document_id: string; p_file_id: string }
+        Returns: boolean
+      }
+      record_signer_time_zone: {
+        Args: { p_signer_id: string; p_time_zone: string }
         Returns: boolean
       }
       resolve_config_snapshot: {
@@ -91665,6 +91719,16 @@ export type Database = {
         Returns: boolean
       }
       retention_settling_interval: { Args: never; Returns: string }
+      retired_into_record_store: {
+        Args: never
+        Returns: {
+          archive_door: string
+          restore_door: string
+          schema_name: string
+          table_name: string
+          token: string
+        }[]
+      }
       retrofit_entity: {
         Args: {
           p_legacy_trigger?: string
@@ -92023,6 +92087,13 @@ export type Database = {
           action: string
           edge: string
           live_rows_under_removed_parent: number
+        }[]
+      }
+      soft_delete_parent_source: {
+        Args: { p_schema: string; p_table: string }
+        Returns: {
+          schema_name: string
+          table_name: string
         }[]
       }
       static_row_probe_spec: {
@@ -96513,12 +96584,15 @@ export type Database = {
         Returns: {
           access_level: string
           auto_context_disabled: boolean
+          connection_count: number
           context_policies: Json
+          custom_tool_count: number
           description: string
           id: string
           is_version: boolean
           model_id: string
           name: string
+          skill_count: number
           tool_ids: string[]
           ui_gates: Json
           variable_definitions: Json
