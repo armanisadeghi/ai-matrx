@@ -7,7 +7,7 @@
 // draws the print package's divider; comments and anchors, which render as
 // nothing, show their source quietly so the person knows they are there.
 
-import MarkdownStream from "@/components/MarkdownStream";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { PAGE_BREAK_CLASS, PAGE_BREAK_LABEL, isPageBreakLine } from "@ai-matrx/print/directives";
 import { cn } from "@/lib/utils";
 import { islandMeta } from "./island-meta";
@@ -42,7 +42,7 @@ export function IslandPreview({ raw, islandType, className }: IslandPreviewProps
   }
   return (
     <div className={cn("rich-editor-island-render min-w-0", className)}>
-      <MarkdownStream imagePolicy="inherit" content={raw} hideCopyButton allowFullScreenEditor={false} />
+      <RichContent level="full" imagePolicy="inherit" source={raw} hideCopyButton allowFullScreenEditor={false} />
     </div>
   );
 }
