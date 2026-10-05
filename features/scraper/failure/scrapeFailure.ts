@@ -24,7 +24,10 @@
 // features/scraper/failure/__tests__/scrapeFailure.test.ts.
 
 import type { ScraperApiErrorDiagnostics } from "@/features/scraper/hooks/useScraperApi";
-import { ORGANIZATION_REQUIRED_REMEDY } from "@ai-matrx/chat/host/org";
+import {
+  ORGANIZATION_REQUIRED_REMEDY,
+  organizationRefusalMessage,
+} from "@ai-matrx/chat/host/org";
 
 /** What actually went wrong, in the terms a REMEDY depends on. */
 export type ScrapeFailureKind =
@@ -219,7 +222,11 @@ function plainWords(
       // the kernel's own refusal after the organization wait — never from a
       // nullable id — and worded by the ONE remedy sentence.
       return {
-        title: "The page was not read because no organization is selected.",
+        // The ONE sentence builder; the title is its refusal half, the remedy
+        // below is its second half, shown separately.
+        title: organizationRefusalMessage({ subject: "The page", act: "read" })
+          .replace(` ${ORGANIZATION_REQUIRED_REMEDY}`, "")
+          .trim(),
         remedy: ORGANIZATION_REQUIRED_REMEDY,
       };
     default:
