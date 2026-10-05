@@ -13,7 +13,7 @@ describe("plannedCardCount: the count shown matches the plan", () => {
   });
   it("Create deck shows the planned count in progress and summary, never the typed one", () => {
     const src = readFileSync(join(__dirname, "../../components/create/CreateDeckPage.tsx"), "utf8");
-    expect(src).toContain("cardProgressLine(progress, plannedCount)");
+    expect(src).toContain("cardProgressLine(progress, runPlanned ?? plannedCount)");
     expect(src).not.toContain("cardProgressLine(progress, safeCount)");
   });
 });

@@ -220,6 +220,9 @@ export function CreateDeckPage({
   const [liveRequestId, setLiveRequestId] = useState<string | null>(null);
   const [progress, setProgress] = useState<ConvertProgress | null>(null);
   const [notes, setNotes] = useState<string[]>([]);
+  // The count the plan actually uses, fixed once the Sources are read (a Source
+  // with no text earns no card), so progress never moves with later edits.
+  const [runPlanned, setRunPlanned] = useState<number | null>(null);
   const [runError, setRunError] = useState<string | null>(null);
   const [holding, setHolding] = useState(false);
   // The run lives in this tab (fan-out + save): a reload mid-run stops it. Its
@@ -381,6 +384,7 @@ export function CreateDeckPage({
     attach: (conversationId: string) => void,
     continues: readonly string[],
   ) => {
+    setRunPlanned(null);
     setPhase("reading");
     const orgId = await ensureOrgId(undefined);
     // What the deck is made from, exactly as chosen (parts, form, limit) and as
@@ -390,6 +394,9 @@ export function CreateDeckPage({
     const chosenNames = sourceNamesOf(set.sources);
     // Citations open the real file only through its file id.
     const resolved = await backfillFileIds(await set.resolve());
+    setRunPlanned(
+      plannedCardCount(safeCount, resolved.sources.filter((src) => src.text.trim().length > 0).length),
+    );
     const dropped = resolved.dropped.map(
       (d) =>
         d.detail ??
@@ -725,8 +732,8 @@ export function CreateDeckPage({
                               ? isNavigating
                                 ? "Opening your deck…"
                                 : "Saving your deck…"
-                              : (cardProgressLine(progress, plannedCount) ??
-                                `Making ${cardCount(plannedCount)}${hasSources ? "" : ` about “${topic}”`}`)}
+                              : (cardProgressLine(progress, runPlanned ?? plannedCount) ??
+                                `Making ${cardCount(runPlanned ?? plannedCount)}${hasSources ? "" : ` about “${topic}”`}`)}
                         </p>
                       </div>
                     </div>
