@@ -31,6 +31,7 @@ import { Eye, EyeOff } from "lucide-react";
 import { Input } from "@ai-matrx/design-system";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { cn } from "@/lib/utils";
+import { QuestionsAskForm } from "@ai-matrx/chat/agents/ui-first-tools/ui/QuestionsAskForm";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import {
   MAX_APPROVAL_USD,
@@ -158,8 +159,11 @@ export function ActionRequestAnswerForm({
   refusal,
   onSubmit,
   layout = "page",
+  askKey,
 }: {
   render: ActionRequestRender;
+  /** The request id — keys each question's draft on a `questions` ask. */
+  askKey?: string;
   busy: boolean;
   refusal: ActionRequestRefusal | null;
   onSubmit: (answer: ActionRequestAnswer) => void | Promise<void>;
@@ -211,6 +215,29 @@ export function ActionRequestAnswerForm({
   const common = { busy, onSubmit, idPrefix, autoFocus: !card };
 
   switch (render.form) {
+    // THE ASKCARD WIZARD, from the server's stored questions. It carries its
+    // own card chrome, so it is not wrapped in `shell` inside a chat card.
+    case "questions": {
+      const wizard = (
+        <QuestionsAskForm
+          askKey={askKey ?? idPrefix}
+          questions={render.questions}
+          busy={busy}
+          notice={problem}
+          onSubmit={(body) => void onSubmit({ result: body })}
+        />
+      );
+      return card ? (
+        <div className="p-2">{wizard}</div>
+      ) : (
+        <section className="flex flex-col gap-5 py-10">
+          {head(render.title)}
+          {wizard}
+          {foot}
+        </section>
+      );
+    }
+
     case "approve":
       return shell(
         <div className="flex flex-col gap-3">

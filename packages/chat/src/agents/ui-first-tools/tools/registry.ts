@@ -11,13 +11,11 @@
 import type { z } from "zod";
 import type { ToolHandler } from "../handlers/types";
 import {
-  userArgsSchema,
   updatePlanArgsSchema,
   requestTakeoverArgsSchema,
   userTodosArgsSchema,
   googleEmailSendArgsSchema,
 } from "./schemas";
-import { userHandler } from "../handlers/user.handler";
 import { updatePlanHandler } from "../handlers/update-plan.handler";
 import { requestTakeoverHandler } from "../handlers/request-takeover.handler";
 // `tasks` is intentionally absent — it is server-executed in aidream now (see
@@ -33,7 +31,9 @@ export interface ToolRegistryEntry {
 }
 
 const registry: Record<string, ToolRegistryEntry> = {
-  user: { schema: userArgsSchema, handler: userHandler },
+  // `user` was RETIRED 2026-10-04: `ask_person` (server-run, stored, survives a
+  // reload) is the one way an agent asks the person. Old `user` calls still
+  // render in history (tool-call-visualization `user` → AskInline).
   update_plan: { schema: updatePlanArgsSchema, handler: updatePlanHandler },
   request_user_takeover: {
     schema: requestTakeoverArgsSchema,

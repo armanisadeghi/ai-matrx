@@ -26,7 +26,6 @@ import { extractErrorMessage } from "@ai-matrx/data/net";
 import { submitToolResult } from "../../api/submit-tool-results";
 import { upsertToolLifecycle } from "../../redux/execution-system/active-requests/active-requests.slice";
 import { getUiFirstToolEntry } from "../tools/registry";
-import { recoverUserArgs } from "../tools/schemas";
 
 export interface DispatchUiFirstToolPayload {
   conversationId: string;
@@ -109,18 +108,7 @@ export const dispatchUiFirstTool = createAsyncThunk<
       return;
     }
 
-    const recovery =
-      toolName === "user"
-        ? recoverUserArgs(args)
-        : { args, recoveredAlias: null };
-    if (recovery.recoveredAlias) {
-      console.warn(
-        "[ui-first-tools] recovered user tool discriminator alias `action` → `type`.",
-        { conversationId, requestId, callId },
-      );
-    }
-
-    const parsed = entry.schema.safeParse(recovery.args);
+    const parsed = entry.schema.safeParse(args);
     if (!parsed.success) {
       const message = `args failed schema for ${toolName}: ${JSON.stringify(
         parsed.error.format(),

@@ -129,7 +129,7 @@ export const AskPersonInline: React.FC<ToolRendererProps> = (props) => {
   if (!onToggleExpanded) {
     return (
       <div>
-        {open ? (
+        {open && open.render.form !== "questions" ? (
           <p className="px-4 pt-4 text-sm font-medium">{open.render.title}</p>
         ) : null}
         {body}

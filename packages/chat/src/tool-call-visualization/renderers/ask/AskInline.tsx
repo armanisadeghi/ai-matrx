@@ -58,10 +58,58 @@ function answerText(v: unknown): string | null {
     return null;
 }
 
-/** Extract the Q&A list from either tool's args + result. Null = unknown shape. */
+/**
+ * One answer envelope of the RETIRED `user` tool (2026-10-04 — `ask_person`
+ * replaced it; old conversations still hold these calls and must render):
+ * `{answer, selected, confirmed, action, freeform, cancelled, timed_out,
+ *   wrote_instead, additional_instructions}`.
+ */
+function userEnvelopeText(env: unknown): string | null {
+    if (env === null || typeof env !== "object") return null;
+    const e = env as Record<string, unknown>;
+    if (e.timed_out === true) return "(no answer in time)";
+    if (e.cancelled === true) return "(skipped)";
+    const parts = [
+        typeof e.confirmed === "boolean" ? (e.confirmed ? "Yes" : "No") : null,
+        answerText(e.selected),
+        answerText(e.answer),
+        answerText(e.action),
+        answerText(e.freeform),
+    ].filter((s): s is string => s !== null);
+    return parts.length > 0 ? parts.join(" · ") : null;
+}
+
+function userQuestionText(q: Record<string, unknown>): string | null {
+    return str(q.question) ?? str(q.message);
+}
+
+/** Extract the Q&A list from any ask tool's args + result. Null = unknown shape. */
 function extractQAs(props: ToolRendererProps): { qas: QA[]; intro: string | null } | null {
     const { entry } = props;
     const result = resultAsObject(entry);
+
+    // user (retired): single question, or `questions[]` answered by POSITION
+    // in `answers[]`. Recognised by its `type` discriminator.
+    if (entry.toolName === "user") {
+        const rawQs = getArg<unknown>(entry, "questions");
+        const note = str(result?.additional_instructions);
+        if (Array.isArray(rawQs)) {
+            const answers = Array.isArray(result?.answers) ? (result?.answers as unknown[]) : [];
+            const qas: QA[] = [];
+            rawQs.forEach((raw, i) => {
+                if (raw === null || typeof raw !== "object") return;
+                const text = userQuestionText(raw as Record<string, unknown>);
+                if (text) qas.push({ question: text, answer: userEnvelopeText(answers[i]) });
+            });
+            if (qas.length > 0) return { qas, intro: note };
+        }
+        const text =
+            str(getArg<string>(entry, "question")) ?? str(getArg<string>(entry, "message"));
+        if (text) {
+            return { qas: [{ question: text, answer: userEnvelopeText(result) }], intro: note };
+        }
+        return null;
+    }
 
     // ask_user: single question → single answer.
     const singleQ = str(getArg<string>(entry, "question"));

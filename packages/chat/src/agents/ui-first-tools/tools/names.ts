@@ -13,7 +13,8 @@
  */
 
 export const UI_FIRST_TOOL_NAMES = [
-  "user",
+  // `user` was RETIRED 2026-10-04 — `ask_person` (server-run) is the one way
+  // to ask the person; every client renders it through this chat package.
   "update_plan",
   "request_user_takeover",
   // NOTE: `tasks` was removed 2026-07-22 — it moved from client-delegated to

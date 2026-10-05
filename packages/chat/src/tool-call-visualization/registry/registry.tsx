@@ -1470,6 +1470,24 @@ export const toolRendererRegistry: ToolRegistry = {
     },
   },
 
+  // RETIRED 2026-10-04 (`ask_person` is the one way to ask the person). Kept
+  // ONLY so old conversations that hold `user` calls still show each question
+  // and its answer — never a generic JSON dump.
+  user: {
+    toolName: "user",
+    chrome: "card",
+    displayName: "Question",
+    phaseLabels: {
+      running: "Asking you",
+      complete: "Asked you",
+      errorPrefix: "Couldn't ask",
+    },
+    resultsLabel: "Answer",
+    InlineComponent: AskInline,
+    OverlayComponent: AskInline,
+    keepExpandedOnStream: true,
+  },
+
   // The agent asks the person it works for for ONE thing (a yes, a choice, a
   // sign-in, a code, a vault item). By text that is a `/q/<token>` link; in the
   // chat it is this card, drawing the SAME form (features/action-requests).

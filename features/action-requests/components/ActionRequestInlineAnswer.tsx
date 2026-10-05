@@ -50,6 +50,7 @@ export function ActionRequestInlineAnswer({
   return (
     <ActionRequestAnswerForm
       render={request.render}
+      askKey={request.request_id}
       busy={busy}
       refusal={refusal}
       onSubmit={submit}
