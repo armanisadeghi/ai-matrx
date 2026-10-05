@@ -522,7 +522,7 @@ const WAR_ROOM_NAV_CHILDREN: ShellNavChild[] = [
  * and the War Room is in Board.
  */
 export const WORKSPACES_NAV_GROUP: ShellNavGroupDef = {
-  label: "Workspaces",
+  label: "Projects",
   color: "violet",
   children: [...PROJECTS_NAV_CHILDREN, ...WAR_ROOM_NAV_CHILDREN],
 };
@@ -1911,15 +1911,16 @@ export const adminNavItems: ShellNavItem[] = [
  * The phone's bottom dock — the eight most-used destinations, unchanged by the
  * domain reorganization (the dock is a launcher, not the menu tree).
  */
+// The phone dock uses the strip's own names and icons, so the two never disagree.
 export const dockItems: ShellNavItem[] = [
-  { label: "AI Matrx", href: "/dashboard", guestHref: "/features", iconName: "LayoutDashboard", section: "primary", dockOrder: 1 },
+  { label: "Board", href: "/dashboard", guestHref: "/features", iconName: "LayoutDashboard", section: "primary", dockOrder: 1 },
   { label: "Chat", href: "/chat/new", guestHref: "/chat", iconName: "MessageCircle", section: "primary", dockOrder: 2 },
   { label: "Agents", href: "/agents/all", guestHref: "/agents", iconName: AGENT_ICON_NAME, section: "primary", dockOrder: 3 },
-  { label: "Docs", href: "/notes", iconName: "NotepadText", section: "primary", dockOrder: 4 },
-  { label: "Data", href: "/data", iconName: "Table", section: "primary", dockOrder: 5 },
-  { label: "My Orgs", href: "/organizations", iconName: "Building2", section: "primary", dockOrder: 6, guestHidden: true },
-  { label: "Workspaces", href: "/projects", iconName: "LayoutGrid", section: "primary", dockOrder: 7 },
-  { label: "Files", href: "/files/all", guestHref: "/files", iconName: "FolderOpen", section: "primary", dockOrder: 8 },
+  { label: "Content", href: "/notes", iconName: "FileText", section: "primary", dockOrder: 4 },
+  { label: "Data", href: "/data", iconName: "Database", section: "primary", dockOrder: 5 },
+  { label: "Account", href: "/organizations", iconName: "Building2", section: "primary", dockOrder: 6, guestHidden: true },
+  { label: "Projects", href: "/projects", iconName: "FolderKanban", section: "primary", dockOrder: 7 },
+  { label: "Files", href: "/files/all", guestHref: "/files", iconName: "Cloud", section: "primary", dockOrder: 8 },
 ];
 
 export interface ShellNavChildSection {
