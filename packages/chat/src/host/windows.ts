@@ -55,6 +55,9 @@ export const CHAT_WINDOWS = {
   // Host windows the package opens with its own payload.
   fullScreenEditor: "fullScreenEditor",
   saveToNotes: "saveToNotes",
+  // THE ONE "Save to a table" (CPM register F-ST, windows-port option): a tool result's rows,
+  // payload { text, value, hasValue, grid, title, shapeIndex, organizationId, callbackGroupId }.
+  saveToTable: "saveToTable",
   shareModal: "shareModal",
   agentFromChatWindow: "agentFromChatWindow",
 } as const;

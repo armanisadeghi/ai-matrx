@@ -64,6 +64,8 @@ const SHAPE_MARKERS = [
 const OFFERS = [
   /\buseOpenSaveToTable\b/,
   /overlayId:\s*"saveToTable"/,
+  // The chat package names host windows only through CHAT_WINDOWS (no-bare-overlay-id guard).
+  /CHAT_WINDOWS\.saveToTable\b/,
   /<TableSaveToMenu\b/,
   /<StreamingTableRenderer\b/,
   /<MarkdownTable\b/,
@@ -99,10 +101,6 @@ export const OFFERED_BY: Record<string, { by: readonly string[]; why: string }> 
   "features/meet/components/record/TranscriptPanel.tsx": {
     by: ["features/meet/components/record/RecordExportMenu.tsx"],
     why: "the meeting record's Export menu offers the transcript lines",
-  },
-  "packages/chat/src/tool-call-visualization/result-fields/ResultTable.tsx": {
-    by: [],
-    why: "AWAITING the chat package's result-actions registration (CPM register F-ST); the package owns this file",
   },
 };
 

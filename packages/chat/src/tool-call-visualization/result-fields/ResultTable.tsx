@@ -16,7 +16,9 @@
  */
 
 import React from "react";
-import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, TableProperties } from "lucide-react";
+import { CHAT_WINDOWS, chatWindowsPort } from "../../host/windows";
+import { isChatHostConfigured } from "../../host/configure";
 import { cn } from "@ai-matrx/design-system";
 import type { TableColumn } from "./shape";
 import {
@@ -306,6 +308,24 @@ const Cell: React.FC<{ fieldKey: string; value: unknown; depth: number; embedMed
     return <span className="break-words">{cellToText(value)}</span>;
 };
 
+/** Opens the host's one "Save to a table" with these rows. */
+function saveRows(rows: Array<Record<string, unknown>>): void {
+    chatWindowsPort().open(
+        CHAT_WINDOWS.saveToTable,
+        {
+            text: null,
+            value: rows,
+            hasValue: true,
+            grid: null,
+            title: null,
+            shapeIndex: 0,
+            organizationId: null,
+            callbackGroupId: null,
+        },
+        `saveToTable-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    );
+}
+
 export const ResultTable: React.FC<ResultTableProps> = ({
     rows,
     columns,
@@ -318,6 +338,8 @@ export const ResultTable: React.FC<ResultTableProps> = ({
     const [sortKey, setSortKey] = React.useState<string | null>(null);
     const [sortDir, setSortDir] = React.useState<SortDir>(null);
     const [filter, setFilter] = React.useState("");
+    // Absent, never dead: with no host there is nowhere to save to, so no button is drawn.
+    const canSave = rows.length > 0 && isChatHostConfigured();
 
     const full = density === "full";
     const technicalColumns = columns.filter((column) =>
@@ -480,17 +502,36 @@ export const ResultTable: React.FC<ResultTableProps> = ({
                 </table>
             </div>
 
-            {remaining > 0 && (
-                <button
-                    type="button"
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        setShowAll(true);
-                    }}
-                    className="text-xs font-medium text-primary "
-                >
-                    +{remaining} more {remaining === 1 ? "row" : "rows"}
-                </button>
+            {(remaining > 0 || canSave) && (
+                <div className="flex flex-wrap items-center gap-3">
+                    {remaining > 0 && (
+                        <button
+                            type="button"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setShowAll(true);
+                            }}
+                            className="text-xs font-medium text-primary "
+                        >
+                            +{remaining} more {remaining === 1 ? "row" : "rows"}
+                        </button>
+                    )}
+                    {canSave && (
+                        // THE ONE "Save to a table" (W1.6, AGENTS-ON-DATA item 3): every row the
+                        // tool returned — never only the inline three — through the host's overlay.
+                        <button
+                            type="button"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                saveRows(rows);
+                            }}
+                            className="ml-auto inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground"
+                        >
+                            <TableProperties className="h-3 w-3" aria-hidden />
+                            Save to a table
+                        </button>
+                    )}
+                </div>
             )}
         </div>
     );
