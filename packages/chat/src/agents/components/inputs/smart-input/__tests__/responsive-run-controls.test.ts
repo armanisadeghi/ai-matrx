@@ -14,9 +14,12 @@ describe("responsive chat run controls", () => {
     expect(stacked).toContain('className="matrx-touch-targets mx-auto flex w-full min-w-0 max-w-[420px]');
   });
 
-  it("draws Stop and Send as the composer's own 32px controls", () => {
+  it("draws Stop and Send as the composer's own control (the one Button), not a hand-sized box", () => {
+    // 2026-10: the composer row moved onto the one design-system Button (commit 381e69b1c0), which owns
+    // the size; a hand-rolled h-8 w-8 box here would be the drift this test now guards against.
     expect(buttons).toContain('aria-label="Stop the run"');
     const send = buttons.slice(buttons.indexOf("function ComposerSendButton"));
-    expect(send).toContain("h-8 w-8");
+    expect(send).toContain('<Button variant="quiet" icon={<CornerDownLeft />}');
+    expect(send).not.toContain("h-8 w-8");
   });
 });

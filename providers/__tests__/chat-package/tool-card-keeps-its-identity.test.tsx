@@ -1,3 +1,4 @@
+import "@/__tests__/helpers/register-chat-host";
 import "@/providers/chatUiRegistration";
 /**
  * GUARD: a tool card is the SAME DOM node from the moment it appears in a

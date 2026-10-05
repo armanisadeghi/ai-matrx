@@ -11,6 +11,7 @@
  * The second case catches the opposite break: a model the PERSON picked in the
  * picker for this conversation being dropped by the switch.
  */
+import "@/__tests__/helpers/register-chat-host";
 import { combineReducers, configureStore } from "@reduxjs/toolkit";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import input from "@ai-matrx/chat/agents/redux/execution-system/instance-user-input/instance-user-input.slice";

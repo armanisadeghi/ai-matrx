@@ -114,7 +114,7 @@ const ScalarList: React.FC<{
                 <Button variant="quiet" tone="primary" onClick={(e) => {
                         e.stopPropagation();
                         setShowAll(true);
-                    }}>+{remaining}more</Button>
+                    }}>+{remaining} more</Button>
             )}
         </div>
     );

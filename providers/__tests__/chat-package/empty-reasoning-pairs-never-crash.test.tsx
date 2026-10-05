@@ -24,6 +24,7 @@
  * redux/execution-system/active-requests/__tests__/empty-reasoning-pairs-coalesce.test.ts.
  */
 
+import "@/__tests__/helpers/register-chat-host";
 import React, { act } from "react";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";

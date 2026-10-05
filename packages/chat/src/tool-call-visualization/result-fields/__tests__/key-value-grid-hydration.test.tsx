@@ -1,3 +1,4 @@
+import "@/__tests__/helpers/register-chat-host";
 import React, { act } from "react";
 import { hydrateRoot, type Root } from "react-dom/client";
 import { renderToString } from "react-dom/server";

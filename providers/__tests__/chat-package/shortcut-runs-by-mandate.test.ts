@@ -16,14 +16,14 @@ jest.mock(
   "@ai-matrx/chat/agents/redux/execution-system/instance-input-capabilities/input-capabilities-snapshot",
   () => ({ fetchInputCapabilitiesSnapshot: jest.fn(async () => ({})) }),
 );
-jest.mock("@/lib/supabase/shortcutStorage", () => ({
-  ...jest.requireActual("@/lib/supabase/shortcutStorage"),
+jest.mock("@ai-matrx/chat/ui/mandates-storage/shortcutStorage", () => ({
+  ...jest.requireActual("@ai-matrx/chat/ui/mandates-storage/shortcutStorage"),
   fetchShortcutMandateKey: jest.fn(async () => "shortcut.looked_up_key"),
 }));
 
 import { createInstanceFromShortcut } from "@ai-matrx/chat/agents/redux/execution-system/thunks/create-instance.thunk";
 import { resolveStartPath } from "@ai-matrx/chat/agents/redux/execution-system/utils/resolve-start-path";
-import { fetchShortcutMandateKey } from "@/lib/supabase/shortcutStorage";
+import { fetchShortcutMandateKey } from "@ai-matrx/chat/ui/mandates-storage/shortcutStorage";
 import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 const SHORTCUT_ID = "11111111-1111-4111-8111-111111111111";

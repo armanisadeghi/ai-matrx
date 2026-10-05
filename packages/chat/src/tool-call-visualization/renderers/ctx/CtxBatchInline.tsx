@@ -201,7 +201,7 @@ export const CtxBatchInline: React.FC<Props> = ({
         <Button variant="quiet" tone="primary" onClick={(e) => {
             e.stopPropagation();
             setShowAll(true);
-          }}>+{remaining}more</Button>
+          }}>+{remaining} more</Button>
       )}
     </div>
   );

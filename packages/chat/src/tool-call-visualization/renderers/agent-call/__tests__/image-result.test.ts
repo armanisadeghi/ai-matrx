@@ -3,6 +3,7 @@
  * child agent can hand it back, and must NOT invent one when there is none.
  */
 
+import "@/__tests__/helpers/register-chat-host";
 import { findResultMedia } from "../findResultMedia";
 
 const FILE_ID = "6feae31a-945b-4dcc-8fc0-2041bb76c6b1";

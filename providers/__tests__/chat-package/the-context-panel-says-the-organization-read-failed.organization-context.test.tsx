@@ -18,6 +18,7 @@
  * conversation's context…" and no notice at all.
  */
 
+import "@/__tests__/helpers/register-chat-host";
 import * as React from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";

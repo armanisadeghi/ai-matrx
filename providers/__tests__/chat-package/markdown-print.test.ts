@@ -1,3 +1,4 @@
+import "@/__tests__/helpers/register-chat-host";
 import { toast } from "@/lib/toast";
 import { PRINT_BLOCKED_TOAST } from "@/lib/print/print-outcome-toast";
 import { printMarkdownContent } from "@ai-matrx/chat/conversation/utils/markdown-print";
@@ -78,6 +79,8 @@ describe("printMarkdownContent — diagrams print as pictures (verifier round 2)
             document: { open: () => {}, write: (h: string) => writes.push(h), close: () => {} },
         };
         jest.spyOn(window, "open").mockReturnValue(fakeWin as unknown as Window);
+        // resetModules gave this test a fresh slot registry: register the app's markdown doors into it, as at startup.
+        await import("@/providers/chatMarkdownRegistration");
         const { printMarkdownContent: print } = await import("@ai-matrx/chat/conversation/utils/markdown-print");
         const outcome = await print("# Runbook\n\n```mermaid\nflowchart LR\n  A --> B\n```\n", "Runbook");
         expect(outcome).toBe("opened");

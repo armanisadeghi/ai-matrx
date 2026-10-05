@@ -122,6 +122,13 @@ async function flush(ms: number) {
   });
 }
 
+// The suite's db mock reads consts declared above, so the host registers once they exist (not hoisted
+// ahead of them like an import): the same shared helper, loaded in beforeAll.
+beforeAll(() => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  require("@/__tests__/helpers/register-chat-host");
+});
+
 describe("dense conversation history search", () => {
   it("shows a conversation outside the loaded page (other org, older) from the server search", async () => {
     const store = makeStore();

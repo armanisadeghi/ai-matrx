@@ -1,3 +1,4 @@
+import "@/__tests__/helpers/register-chat-host";
 import "@/providers/chatUiRegistration";
 /** @jest-environment jsdom */
 /**

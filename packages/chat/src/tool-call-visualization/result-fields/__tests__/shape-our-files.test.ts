@@ -10,6 +10,7 @@
  * Third-party URLs must keep their UrlChip — that IS the useful rendering.
  */
 
+import "@/__tests__/helpers/register-chat-host";
 import {
   detectResultShape,
   coerceMediaRef,

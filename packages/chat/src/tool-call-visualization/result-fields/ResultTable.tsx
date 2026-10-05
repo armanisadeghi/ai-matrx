@@ -488,7 +488,7 @@ export const ResultTable: React.FC<ResultTableProps> = ({
                         <Button variant="quiet" tone="primary" onClick={(e) => {
                                 e.stopPropagation();
                                 setShowAll(true);
-                            }}>+{remaining}more {remaining === 1 ? "row" : "rows"}</Button>
+                            }}>+{remaining} more {remaining === 1 ? "row" : "rows"}</Button>
                     )}
                     {canSave && (
                         // THE ONE "Save to a table" (W1.6, AGENTS-ON-DATA item 3): every row the

@@ -14,6 +14,7 @@
  * stand-ins: next/dynamic (sync), the title read (network) and the capture
  * sink (observed).
  */
+import "@/__tests__/helpers/register-chat-host";
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 

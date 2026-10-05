@@ -1,3 +1,4 @@
+import "@/__tests__/helpers/register-chat-host";
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 

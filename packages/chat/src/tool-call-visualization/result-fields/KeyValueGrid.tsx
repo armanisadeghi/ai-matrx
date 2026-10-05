@@ -496,7 +496,7 @@ const KeyValueGridBody: React.FC<KeyValueGridProps> = ({
         <Button variant="quiet" tone="primary" onClick={(e) => {
             e.stopPropagation();
             setShowAll(true);
-          }}>+{remaining}more {remaining === 1 ? "field" : "fields"}</Button>
+          }}>+{remaining} more {remaining === 1 ? "field" : "fields"}</Button>
       )}
     </div>
   );

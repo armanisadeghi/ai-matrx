@@ -109,8 +109,8 @@ describe("ChatConnectionsStrip — scoped to the surface's own conversation", ()
 
     expect(container.textContent).not.toContain("ACCOUNT-WIDE");
     expect(container.textContent).not.toContain("Firecrawl");
-    // Nothing but this conversation's own line — any foreign item fails here.
-    expect(container.textContent).toBe("Connectionsnone for this chat");
+    // Nothing but this conversation's own line (now one "Connections: none" button) — any foreign item fails here.
+    expect(container.textContent).toBe("Connections: none");
   });
 
   it("is absent rather than dead when there is no conversation at all", () => {

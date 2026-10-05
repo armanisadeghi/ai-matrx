@@ -7,6 +7,7 @@
  * Only the kind router and the stream pipeline are stand-ins (each marks the
  * route taken); the grid, the floor and the viewers are real.
  */
+import "@/__tests__/helpers/register-chat-host";
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 

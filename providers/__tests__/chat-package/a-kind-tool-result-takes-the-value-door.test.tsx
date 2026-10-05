@@ -12,6 +12,7 @@
  * RED BEFORE GREEN: before the fix both renders reported `ResultValue`, and the
  * census found `<ResultValue value={entry.result}` in the renderers.
  */
+import "@/__tests__/helpers/register-chat-host";
 import { registerChatUi } from "@ai-matrx/chat/host/ui-slots";
 import fs from "node:fs";
 import path from "node:path";
