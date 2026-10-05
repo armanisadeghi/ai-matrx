@@ -141,13 +141,13 @@ describe("census items that are wiring", () => {
 
   // G5 b (lane MAKE-HOME, 2026-10-02): New table is never hidden for want of an organization; the
   // press opens the one New table dialog, which says where the table is saved and asks when none is.
-  it("1 · header: Back, New table and Start from an example whenever the store is open, opening the one dialog", () => {
+  it("1 · header: Back, New table and Start from a template whenever the store is open, opening the one dialog", () => {
     expect(page).toMatch(/back=\{goBack\}/);
     expect(page).not.toMatch(/storeOn && active\.organizationId/);
     expect(page).toMatch(/making\.ask\("create"\)/);
     expect(route).toContain("<NewTableDialog");
     expect(page).toContain('"New table"');
-    expect(page).toContain('"Start from an example"');
+    expect(page).toContain('"Start from a template"');
   });
 
   it("2 · 3 · the shell's lanes (System absent) and the shell's organization filter; no hand-rolled control", () => {
