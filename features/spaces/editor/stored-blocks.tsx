@@ -242,11 +242,11 @@ function Breadcrumb() {
 
 /** A data block that throws keeps the page: it says so in place, and the rest of the page still works. */
 class BlockBoundary extends Component<{ children: ReactNode }, { error: string | null }> {
-  state = { error: null as string | null };
+  override state = { error: null as string | null };
   static getDerivedStateFromError(e: unknown) {
     return { error: e instanceof Error ? e.message : "This block could not be drawn." };
   }
-  render() {
+  override render() {
     return this.state.error ? <div className="spaces-unknown">This block could not be drawn: {this.state.error}</div> : this.props.children;
   }
 }
