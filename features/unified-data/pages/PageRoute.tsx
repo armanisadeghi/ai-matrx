@@ -11,7 +11,9 @@
 
 import { useCallback, type ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
+import { Button } from "@ai-matrx/design-system/controls";
 import { PageScreen } from "@ai-matrx/records-ui";
 
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
@@ -22,6 +24,7 @@ import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { useRecordsDataSource } from "@/features/data-tables/records-ui-host/recordsUiHost";
 import { useObjectOrganization } from "@/features/unified-data/objectOrganization";
 import { MakeMount } from "@/features/make/MakeMount";
+import { useStartPage } from "@/features/start/useStartPage";
 
 const PAGES_HOME = "/data/pages";
 
@@ -46,7 +49,12 @@ export function PageRoute({ pageId }: { pageId: string }) {
           <span className="truncate px-1.5 text-sm font-medium text-foreground">{name}</span>
         </>
       }
-      right={actions}
+      right={
+        <>
+          {making ? null : <MakeStartPage pageId={pageId} />}
+          {actions}
+        </>
+      }
     />
   );
   const fallbackHeader = (
@@ -99,5 +107,22 @@ export function PageRoute({ pageId }: { pageId: string }) {
       {fallbackHeader}
       <div className="h-full overflow-y-auto px-3 pb-6 pt-2">{body}</div>
     </div>
+  );
+}
+
+/** "Make start page": this page becomes the person's /start (v7 APPS-ON-DATA item 3). */
+function MakeStartPage({ pageId }: { pageId: string }) {
+  const start = useStartPage();
+  if (start.pageId === pageId) {
+    return (
+      <Button variant="quiet" asChild>
+        <Link href="/start">Your start page</Link>
+      </Button>
+    );
+  }
+  return (
+    <Button variant="quiet" disabled={start.loading} onClick={() => void start.choose(pageId)}>
+      Make start page
+    </Button>
   );
 }

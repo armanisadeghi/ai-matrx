@@ -338,6 +338,15 @@ export const ALLOWED_IMPORTS_CONFIG: AllowedImportConfig[] = [
     exports: ["Skeleton"],
   },
   {
+    // APPLET PARTS (v7 APPS-ON-DATA item 3): a page built from tables (`DataPage`) and another applet
+    // (`Applet`), so applets nest and mix the person's own data with platform features. Data reach is
+    // the VIEWER's own — the page reads through the store's doors under her session (store decides).
+    path: "@/applets",
+    loader: () => require("@/features/agent-apps/embed/AppletParts"),
+    scopeStrategy: "named",
+    exports: ["DataPage", "Applet"],
+  },
+  {
     // The app's bundled chart library (already proven in the dynamic-react
     // registry). Heavy — but this whole module only lives in lazy compile
     // chunks, so recharts joins those chunks and never the main bundle.
