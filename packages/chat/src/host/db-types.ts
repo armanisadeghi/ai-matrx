@@ -8836,15 +8836,6 @@ export type ChatDatabase = {
           isSetofReturn: true
         }
       }
-      index_reference_value: {
-        Args: {
-          p_item_id: string
-          p_scope_id: string
-          p_value_id: string
-          p_value_text: string
-        }
-        Returns: undefined
-      }
       named_system_context_items: {
         Args: { p_refs: string[] }
         Returns: {
@@ -8885,10 +8876,6 @@ export type ChatDatabase = {
         }
       }
       parse_reference_fence: { Args: { p_value_text: string }; Returns: Json }
-      provision_scope_dataset: {
-        Args: { p_item_id: string; p_scope_id: string }
-        Returns: string
-      }
       reference_item_ref_key: {
         Args: { p_item: Json; p_type: string }
         Returns: string
@@ -8901,59 +8888,6 @@ export type ChatDatabase = {
       validate_dataset_template_source: {
         Args: { p_org_id: string; p_source: Json }
         Returns: string
-      }
-      validate_reference_value: {
-        Args: { p_item_id: string; p_value_text: string }
-        Returns: undefined
-      }
-      write_context_value: {
-        Args: {
-          p_actor?: string
-          p_change_summary?: string
-          p_item_id: string
-          p_scope_id: string
-          p_source_type?: string
-          p_value_boolean?: boolean
-          p_value_date?: string
-          p_value_document_url?: string
-          p_value_json?: Json
-          p_value_number?: number
-          p_value_text?: string
-          p_value_time?: string
-          p_value_timestamp?: string
-        }
-        Returns: {
-          authored_by: string | null
-          change_summary: string | null
-          char_count: number | null
-          context_item_id: string
-          created_at: string
-          custom_fields: Json
-          data_point_count: number | null
-          has_nested_objects: boolean
-          id: string
-          is_current: boolean
-          scope_id: string
-          source_type: Database["public"]["Enums"]["context_source_type"]
-          value_boolean: boolean | null
-          value_date: string | null
-          value_document_size_bytes: number | null
-          value_document_url: string | null
-          value_json: Json | null
-          value_number: number | null
-          value_reference_id: string | null
-          value_reference_type: string | null
-          value_text: string | null
-          value_time: string | null
-          value_timestamp: string | null
-          version: number
-        }
-        SetofOptions: {
-          from: "*"
-          to: "context_item_values"
-          isOneToOne: true
-          isSetofReturn: false
-        }
       }
     }
     Enums: {
@@ -14712,6 +14646,7 @@ export type ChatDatabase = {
       }
       org_open_gate_deparsed: { Args: never; Returns: string }
       org_open_predicate: { Args: never; Returns: string }
+      org_peer_user_ids: { Args: never; Returns: string[] }
       org_readable: {
         Args: { p_org: string; p_token: string }
         Returns: boolean
@@ -30808,26 +30743,6 @@ export type ChatDatabase = {
         }
         Returns: string
       }
-      create_context_item: {
-        Args: {
-          p_allowed_reference_types?: string[]
-          p_allowed_scope_type_ids?: string[]
-          p_category?: string
-          p_description?: string
-          p_display_name: string
-          p_fetch_hint?: Database["public"]["Enums"]["context_fetch_hint"]
-          p_key: string
-          p_max_items?: number
-          p_reference_source?: Json
-          p_scope_type_id: string
-          p_sensitivity?: Database["public"]["Enums"]["context_sensitivity"]
-          p_slug?: string
-          p_sort_order?: number
-          p_tags?: string[]
-          p_value_type: Database["public"]["Enums"]["context_value_type"]
-        }
-        Returns: Json
-      }
       create_note_version_manual: {
         Args: {
           p_change_source?: string
@@ -30843,35 +30758,6 @@ export type ChatDatabase = {
         Returns: Json
       }
       create_related_records: { Args: { input_data: Json }; Returns: Json }
-      create_scope: {
-        Args: {
-          p_description?: string
-          p_name: string
-          p_org_id: string
-          p_parent_scope_id?: string
-          p_settings?: Json
-          p_slug?: string
-          p_sort_order?: number
-          p_type_id: string
-        }
-        Returns: Json
-      }
-      create_scope_type: {
-        Args: {
-          p_color?: string
-          p_default_variable_keys?: string[]
-          p_description?: string
-          p_icon?: string
-          p_label_plural: string
-          p_label_singular: string
-          p_max_assignments?: number
-          p_org_id: string
-          p_parent_type_id?: string
-          p_slug?: string
-          p_sort_order?: number
-        }
-        Returns: Json
-      }
       create_share_link: {
         Args: {
           p_expires_at?: string
@@ -31475,14 +31361,11 @@ export type ChatDatabase = {
         Args: { p_ids: string[]; p_table_name: string }
         Returns: Json
       }
-      delete_context_item: { Args: { p_item_id: string }; Returns: Json }
       delete_conversation_for_user: {
         Args: { p_conversation_id: string }
         Returns: boolean
       }
       delete_note_version: { Args: { p_id: string }; Returns: boolean }
-      delete_scope: { Args: { p_scope_id: string }; Returns: Json }
-      delete_scope_type: { Args: { p_type_id: string }; Returns: Json }
       detect_self_containment_row_cycles: { Args: never; Returns: Json }
       dict_assert_access: {
         Args: { p_level: string; p_owner_id: string; p_user_id: string }
@@ -36283,15 +36166,12 @@ export type ChatDatabase = {
           isSetofReturn: false
         }
       }
-      restore_context_item: { Args: { p_item_id: string }; Returns: Json }
       restore_file: { Args: { p_file_id: string }; Returns: boolean }
       restore_folder: { Args: { p_folder_id: string }; Returns: Json }
       restore_note_version: {
         Args: { p_note_id: string; p_version_number: number }
         Returns: boolean
       }
-      restore_scope: { Args: { p_scope_id: string }; Returns: Json }
-      restore_scope_type: { Args: { p_type_id: string }; Returns: Json }
       restore_version: {
         Args: { p_entity_id: string; p_entity_type: string; p_version: number }
         Returns: number
@@ -36642,7 +36522,6 @@ export type ChatDatabase = {
           isSetofReturn: false
         }
       }
-      set_context_value: { Args: { p_payload: Json }; Returns: Json }
       set_entity_scopes: {
         Args: {
           p_entity_id: string
@@ -36660,22 +36539,6 @@ export type ChatDatabase = {
           p_module_key: string
           p_org_id: string
           p_requires_approval: boolean
-        }
-        Returns: Json
-      }
-      set_scope_context_value: {
-        Args: {
-          p_change_summary?: string
-          p_context_item_id: string
-          p_scope_id: string
-          p_value_boolean?: boolean
-          p_value_date?: string
-          p_value_document_url?: string
-          p_value_json?: Json
-          p_value_number?: number
-          p_value_text?: string
-          p_value_time?: string
-          p_value_timestamp?: string
         }
         Returns: Json
       }
@@ -37286,22 +37149,6 @@ export type ChatDatabase = {
         Returns: undefined
       }
       update_all_trending_scores: { Args: never; Returns: undefined }
-      update_context_item: {
-        Args: {
-          p_category?: string
-          p_description?: string
-          p_display_name?: string
-          p_fetch_hint?: Database["public"]["Enums"]["context_fetch_hint"]
-          p_item_id: string
-          p_sensitivity?: Database["public"]["Enums"]["context_sensitivity"]
-          p_sort_order?: number
-          p_status?: Database["public"]["Enums"]["context_item_status"]
-          p_status_note?: string
-          p_tags?: string[]
-          p_value_type?: Database["public"]["Enums"]["context_value_type"]
-        }
-        Returns: Json
-      }
       update_one: {
         Args: { p_data: Json; p_id: string; p_table_name: string }
         Returns: undefined
@@ -37313,31 +37160,6 @@ export type ChatDatabase = {
           p_resource_type: string
           p_target_org_id?: string
           p_target_user_id?: string
-        }
-        Returns: Json
-      }
-      update_scope: {
-        Args: {
-          p_description?: string
-          p_name?: string
-          p_scope_id: string
-          p_settings?: Json
-          p_slug?: string
-          p_sort_order?: number
-        }
-        Returns: Json
-      }
-      update_scope_type: {
-        Args: {
-          p_color?: string
-          p_description?: string
-          p_icon?: string
-          p_label_plural?: string
-          p_label_singular?: string
-          p_max_assignments?: number
-          p_slug?: string
-          p_sort_order?: number
-          p_type_id: string
         }
         Returns: Json
       }
