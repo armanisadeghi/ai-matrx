@@ -623,7 +623,7 @@ export function Landing({
               className={cn("flex min-w-0 items-center gap-3 px-3 py-2.5 hover:bg-muted")}
             >
               <span className="min-w-0 flex-1 truncate text-sm">{m.title ?? m.ref}</span>
-              <span className="shrink-0 text-xs text-muted-foreground">{m.kind}</span>
+              <span className="shrink-0 text-xs text-muted-foreground">{madeWord(m)}</span>
               <ExternalLink className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
             </Link>
           </li>
