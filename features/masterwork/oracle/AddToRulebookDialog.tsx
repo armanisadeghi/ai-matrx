@@ -24,6 +24,7 @@ import {
   firstBlockingReason,
   GatedActionButton,
 } from "@/components/official/GatedActionButton";
+import { kindTextToMarkdown } from "@/features/content-ir/surfaces/kind-text-to-markdown";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import {
@@ -64,7 +65,8 @@ export function AddToRulebookDialog({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  const content = initialContent ?? "";
+  // The saved text is what a person reads: a kind answer as its markdown.
+  const content = kindTextToMarkdown(initialContent ?? "");
   const question = (initialQuestion ?? "").trim() || null;
   const derivedName = useMemo(
     () => deriveRuleNameFromContent(question ?? content),

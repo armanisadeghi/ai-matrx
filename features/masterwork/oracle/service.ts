@@ -5,6 +5,7 @@ import { operationFailed } from "@/utils/errors";
 import { getRulebook, saveRules } from "../service";
 import { nextRuleId } from "../ruleIds";
 import type { Rulebook, RulebookRule } from "../types";
+import { kindTextToMarkdown } from "@/features/content-ir/surfaces/kind-text-to-markdown";
 import { defaultListFilter, type ListScopeWord } from "@/lib/list-scope";
 
 /**
@@ -35,8 +36,9 @@ const CAS_RETRIES = 3;
  * during review like any draft.
  */
 export function deriveRuleNameFromContent(content: string): string {
+  // A kind answer is named by its title (its markdown heading), never its JSON.
   const firstLine =
-    content
+    kindTextToMarkdown(content)
       .split("\n")
       .map((line) =>
         line
@@ -173,14 +175,17 @@ export async function appendDraftRuleFromMessage(opts: {
   question?: string | null;
 }): Promise<AppendDraftRuleResult> {
   const question = (opts.question ?? "").trim() || null;
+  // A rule statement is read by the Expert: a kind answer is kept as its
+  // readable markdown, never `{"__kind":…}` (KIND_NEVER_RAW S4).
+  const content = kindTextToMarkdown(opts.content);
   const statement =
-    opts.content.length > STATEMENT_MAX_CHARS
-      ? `${opts.content.slice(0, STATEMENT_MAX_CHARS).trimEnd()}…`
-      : opts.content;
+    content.length > STATEMENT_MAX_CHARS
+      ? `${content.slice(0, STATEMENT_MAX_CHARS).trimEnd()}…`
+      : content;
   // The name reads best as the QUESTION when there is one — that is the shape
   // the Expert recognises in their review queue ("what do I do if…"), not the
   // first line of the answer.
-  const name = deriveRuleNameFromContent(question ?? opts.content);
+  const name = deriveRuleNameFromContent(question ?? content);
 
   let lastError: unknown = null;
   for (let attempt = 0; attempt < CAS_RETRIES; attempt++) {

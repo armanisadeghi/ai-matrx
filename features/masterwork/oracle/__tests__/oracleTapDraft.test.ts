@@ -33,6 +33,7 @@ jest.mock("@/lib/list-scope", () => ({
 
 import {
   appendDraftRuleFromMessage,
+  deriveRuleNameFromContent,
   precedingQuestion,
 } from "../service";
 import { ruleState } from "../../types";
@@ -97,6 +98,31 @@ describe("the Oracle tap's write", () => {
     expect(ruleState(rule)).toBe("draft");
     expect(rule.source_ref?.message_id).toBe("msg-78");
     expect(rule.rationale).toBeUndefined();
+  });
+});
+
+describe("a kind answer worth keeping (KIND_NEVER_RAW S4)", () => {
+  const KIND = JSON.stringify({
+    __kind: "flashcard_set",
+    title: "Cell biology",
+    cards: [{ __kind: "flashcard", front: "Powerhouse?", back: "Mitochondria" }],
+  });
+
+  it("names the draft from the kind's title and keeps readable text", async () => {
+    const { rule } = await appendDraftRuleFromMessage({
+      rulebookId: "rb1",
+      content: KIND,
+      conversationId: null,
+      messageId: "msg-79",
+    });
+    expect(rule.name).toBe("Cell biology");
+    expect(rule.quote).not.toContain("__kind");
+    expect(rule.quote).toContain("Mitochondria");
+  });
+
+  it("derives the dialog's name from the kind's title, never its JSON", () => {
+    expect(deriveRuleNameFromContent(KIND)).toBe("Cell biology");
+    expect(deriveRuleNameFromContent(`\`\`\`json\n${KIND}\n\`\`\``)).toBe("Cell biology");
   });
 });
 
