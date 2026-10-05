@@ -226,7 +226,8 @@ describe("AgentConversationColumn cold history anchoring", () => {
             conversationId={conversationId}
             surfaceKey="chat"
             deferColdMarkdown
-            smartInputProps={{ composer: { size: "page", mode: "chat" } }}
+            // This test is about the transcript's anchoring, not the input.
+            hideInput
           />
         </Provider>,
       );
