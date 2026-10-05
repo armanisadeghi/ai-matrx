@@ -8,6 +8,11 @@
  * phone sheet) is the same in every mode; the modes differ only in CHROME —
  * the agent pill, the chips row, the Effort pill, repository chips.
  *
+ * The one deliberate exception is the `launcher` SIZE (not a mode): the quiet
+ * box at the foot of a page exists to ask about THAT page — the page is its
+ * context, nothing more. No +, no agent, tool or model choice (Arman,
+ * 2026-10-04: "If you want to get fancy, use the composer on the side").
+ *
  * Hiding is chrome only: switching to a quieter mode never turns anything off
  * (a tool added in Work stays on in Chat; RAG still auto-injects for a big PDF
  * in Chat — the user just never sees the switch).
