@@ -21,6 +21,7 @@ import { supabase } from "@/utils/supabase/client";
 import { recordsDataSource } from "@ai-matrx/records-ui";
 import { dataHomeTables, doorFailureLine } from "@/features/unified-data/hub/doors";
 import { readPickListIndexOrThrow } from "@/features/user-lists/pick-list-index";
+import { RECORD_STORE_NOUN } from "@/features/resource-manager/source-input/recordStoreNouns";
 import type { KindItem, KindScope } from "@/features/scopes/service/kindInventory";
 
 export type RecordStoreKind = "table" | "pick_list";
@@ -33,7 +34,7 @@ export const RECORD_STORE_TOKEN: Record<RecordStoreKind, string> = {
 };
 
 /** The badge a pick list's row carries inside Tables (vocabulary: a Pick list is a Table). */
-export const PICK_LIST_BADGE = "Pick list";
+export const PICK_LIST_BADGE = RECORD_STORE_NOUN.structured_list!;
 
 /** A Tables row; `badge` set on a pick list. */
 export interface TablesItem extends KindItem {

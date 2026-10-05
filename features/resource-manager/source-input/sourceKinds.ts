@@ -24,6 +24,7 @@
  * Hosts narrow the tiles with the `kinds` prop — never by forking this list.
  */
 
+import { RECORD_STORE_NOUN } from "@/features/resource-manager/source-input/recordStoreNouns";
 import type { ComponentType } from "react";
 import { FileText, Library, StickyNote } from "lucide-react";
 import { RESOURCE_PICKER_SOURCE_ITEMS } from "@/features/resource-manager/resource-picker/resource-picker-menu-items";
@@ -120,6 +121,7 @@ export function sourceKindNoun(draft: Pick<SourceDraft, "kind" | "ref" | "source
   if (def) return def.noun;
   const type = draft.ref?.resource_type;
   if (type === "processed_document") return "Source";
+  if (type && RECORD_STORE_NOUN[type]) return RECORD_STORE_NOUN[type];
   const info = type ? tryGetEntityInfo(type) : null;
   return info?.label ?? "Record";
 }
