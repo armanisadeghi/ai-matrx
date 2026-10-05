@@ -30,6 +30,12 @@ export interface SaveDraft {
   spec: Record<string, unknown> & { tables: DraftTable[] };
 }
 
+/** An installed agent copy is named "<name> 2", "<name> 3"…; the template carries the base name. */
+export function baseAgentName(name: string): string {
+  const base = name.replace(/\s+\d+$/, "").trim();
+  return base || name;
+}
+
 /** Every table id an agent's merge-field bindings read. */
 export function tablesReadBy(agents: SetupAgent[]): string[] {
   const ids = new Set<string>();
@@ -88,7 +94,8 @@ export function buildTemplateSpec(
   }
   const left: string[] = [];
   const keys = new Set<string>();
-  const extraAgents = choices.agents.map((a) => {
+  const extraAgents = choices.agents.map((src) => {
+    const a = { ...src, name: baseAgentName(src.name) };
     let key = a.name.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "") || "agent";
     while (keys.has(key)) key = `${key}_2`;
     keys.add(key);

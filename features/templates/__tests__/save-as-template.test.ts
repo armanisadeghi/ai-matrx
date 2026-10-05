@@ -6,7 +6,7 @@
 // every binding carried with template-local handles, nothing dropped silently.
 import fs from "fs";
 import { templateDeclaration } from "@ai-matrx/records/templates";
-import { buildTemplateSpec, rowKeyOf, templateBindingOf, type SaveDraft } from "../saveAsTemplate";
+import { baseAgentName, buildTemplateSpec, rowKeyOf, templateBindingOf, type SaveDraft } from "../saveAsTemplate";
 
 const DRAFT_FILE = process.env.SAVE_AS_TEMPLATE_DRAFT;
 const TABLE = "e86fdaee-14b9-4a1c-b6c7-08e40a578785";
@@ -52,5 +52,15 @@ describe("save as template", () => {
     expect(d.card.footprint.line).toMatch(/^1 table · .*1 agent$/);
     expect(d.card.footprint.line).not.toMatch(/(^| )0 /);
     expect(d.installPlan.steps.length).toBeGreaterThan(0);
+  });
+
+  it("strips a trailing install number from agent names, and only that", () => {
+    expect(baseAgentName("My Ad Brief Builder 3")).toBe("My Ad Brief Builder");
+    expect(baseAgentName("My Company Strengths Analyst 12")).toBe("My Company Strengths Analyst");
+    expect(baseAgentName("Strengths")).toBe("Strengths");
+    expect(baseAgentName("Top 5 Picks")).toBe("Top 5 Picks");
+    expect(baseAgentName("7")).toBe("7");
+    const { spec } = buildTemplateSpec(draft, { name: "Our setup", describes: "d", agents: [{ ...agents[0], name: "Strengths 3" }], tableNames: { [TABLE]: "Company Profile" } }, "120000");
+    expect((spec.agent as { name: string }).name).toBe("Strengths");
   });
 });
