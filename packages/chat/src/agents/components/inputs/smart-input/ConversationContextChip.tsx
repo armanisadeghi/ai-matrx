@@ -320,17 +320,10 @@ export function ConversationContextChip({
       mismatchCount={mismatches.length}
       mismatches={mismatches}
       isMobile={isMobile}
-      // With a canvas the chip never opens its popover: every press toggles the tab.
-      {...(tab.isAvailable
-        ? {
-            open: false,
-            onOpenChange: (next: boolean) => {
-              if (next) tab.toggle();
-            },
-            // A real toggle: aria-pressed and the package's pressed face.
-            pressed: tab.isVisible,
-          }
-        : {})}
+      // A press opens the SMALL preview first (Arman, 2026-10-04); its
+      // "full view" opens the canvas tab (onOpenFullView). While that tab is
+      // showing, the chip wears its pressed face.
+      {...(tab.isAvailable ? { pressed: tab.isVisible } : {})}
     />
   );
 }

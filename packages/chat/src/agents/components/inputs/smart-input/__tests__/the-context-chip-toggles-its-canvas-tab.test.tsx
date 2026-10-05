@@ -104,11 +104,13 @@ beforeEach(() => {
   canvas.tab = { isAvailable: true, isVisible: false, selected: null, toggle: () => undefined };
 });
 
-it("a press toggles the conversation's context tab and never opens the popover", () => {
+it("a press opens the small preview first; its full view opens the canvas tab (Arman, 2026-10-04)", () => {
   const unmount = render();
   expect(canvas.ref).toEqual({ kind: CONVERSATION_CONTEXT_KIND, key: "c1" });
-  expect(chip.props?.open).toBe(false);
-  act(() => chip.props?.onOpenChange?.(true));
+  // The chip owns its popover again: nothing forces it shut or hijacks the press.
+  expect(chip.props?.open).toBeUndefined();
+  expect(chip.props?.onOpenChange).toBeUndefined();
+  act(() => chip.props?.onOpenFullView());
   expect(canvas.presses).toEqual([
     { title: "Notes", data: { conversationId: "c1", agentId: "a1", title: "Notes" } },
   ]);
