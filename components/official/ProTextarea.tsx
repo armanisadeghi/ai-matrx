@@ -154,7 +154,7 @@ const TEXT_AGENT_ACTION_IDS = [
 ] as const;
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 import { useIsInsideContextMenu } from "@/features/context-menu-v3/menu-presence";
-import { Check, Loader2, Send, MoreHorizontal } from "lucide-react";
+import { Check, Loader2, Send } from "lucide-react";
 import { motion } from "motion/react";
 import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";
 import { useMicField } from "@/features/audio/hooks/useMicField";
@@ -164,8 +164,11 @@ import {
   isOrganizationGateInteraction,
 } from "@/lib/organization/organization-gate";
 import { Label } from "@/components/ui/label";
-import { TapTargetButton, TapTargetButtonSolid } from "@ai-matrx/tap-target";
-import { CheckTapButton } from "@ai-matrx/tap-target/buttons";
+import { TapTargetButtonSolid } from "@ai-matrx/tap-target";
+import {
+  CheckTapButton,
+  MoreHorizontalTapButton,
+} from "@ai-matrx/tap-target/buttons";
 import {
   Popover,
   PopoverTrigger,
@@ -1339,8 +1342,9 @@ export const ProTextarea = React.forwardRef<
               {showMenu && (
                 <Popover open={menuOpen} onOpenChange={handleMenuOpenChange}>
                   <PopoverTrigger asChild>
-                    <TapTargetButton
+                    <MoreHorizontalTapButton
                       tabIndex={auxiliaryControlsTabIndex}
+                      variant="transparent"
                       ariaLabel={
                         auxiliaryControlsLabel
                           ? `More options for ${auxiliaryControlsLabel}`
@@ -1348,7 +1352,6 @@ export const ProTextarea = React.forwardRef<
                       }
                       tooltip="More"
                       className="text-muted-foreground"
-                      icon={<MoreHorizontal className="h-4 w-4" />}
                     />
                   </PopoverTrigger>
                   <PopoverContent

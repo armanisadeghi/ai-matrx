@@ -70,9 +70,10 @@
 import React, { useCallback, useState, useRef, useEffect, useId } from "react";
 import {
   hoverRevealsCluster,
+  proInputClusterTier,
   reservedRightPaddingPx,
 } from "@/components/official/proInputReservedPadding";
-import { Check, Copy, Loader2 } from "lucide-react";
+import { Check, Copy, Loader2, Mic, SlidersHorizontal } from "lucide-react";
 import { motion } from "motion/react";
 import { useMicField } from "@/features/audio/hooks/useMicField";
 import { cn } from "@/lib/utils";
@@ -91,6 +92,7 @@ import {
 } from "@ai-matrx/design-system";
 import { MicWithDeviceMenu } from "@/components/audio/MicWithDeviceMenu";
 import { VoiceTroubleshootingModal } from "@/features/audio/components/VoiceTroubleshootingModal";
+import { useOpenAudioDevices } from "@/features/overlays/openers/audioDevices";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -191,7 +193,8 @@ function rightPaddingClass(hasSubmit: boolean, showClear: boolean): string {
   // One tap box each: the pill plus one gap, as `.matrx-tap-target` sizes it.
   if (count === 2)
     return "pr-[calc(2*(var(--matrx-tap-pill-size)+var(--matrx-tap-gap)))]";
-  if (count === 1) return "pr-[calc(var(--matrx-tap-pill-size)+var(--matrx-tap-gap))]";
+  if (count === 1)
+    return "pr-[calc(var(--matrx-tap-pill-size)+var(--matrx-tap-gap))]";
   return "pr-3";
 }
 
@@ -286,6 +289,7 @@ export const ProInput = React.forwardRef<HTMLInputElement, ProInputProps>(
       observer.observe(el);
       return () => observer.disconnect();
     }, [inputRef]);
+    const openAudioDevices = useOpenAudioDevices();
     const cleanupAction = useProTextareaAgentAction();
     const cleanupSurfaceRoles = useSurfaceAgentRoles(CLEANUP_SURFACE_NAME);
     const cleanupSurfaceAgentId =
@@ -524,9 +528,24 @@ export const ProInput = React.forwardRef<HTMLInputElement, ProInputProps>(
     const showMic = enableVoice && isAudioAvailable;
     const showClear = clearable && hasContent;
     const cleanupEligible = type === "text" && enableCleanup;
-    const showMenu = !disabled && (showCopyButton || cleanupEligible);
+    // The hover cluster steps down to fit the room the field has
+    // (proInputClusterTier): mic capsule + "…", then "…" alone with voice
+    // inside it, then nothing. A live recording always keeps its stop button.
+    const clusterTier = proInputClusterTier(
+      inputWidth,
+      clusterWidths.cluster - clusterWidths.aux,
+    );
+    const voiceBusy = isRecording || isTranscribing;
+    const showMicInline = showMic && (clusterTier === "full" || voiceBusy);
+    const voiceInMenu = showMic && !showMicInline && clusterTier === "menu";
+    const micChoiceInMenu = showMic && clusterTier === "menu";
+    const showMenu =
+      !disabled &&
+      clusterTier !== "none" &&
+      (showCopyButton || cleanupEligible || micChoiceInMenu);
     const rightPadding = rightPaddingClass(!!onSubmit, showClear);
-    const auxVisible = (showHoverControls || menuOpen) && (showMic || showMenu);
+    const auxVisible =
+      (showHoverControls || menuOpen) && (showMicInline || showMenu);
     const measuredRightPadding = reservedRightPaddingPx({
       clusterWidth: clusterWidths.cluster,
       auxWidth: clusterWidths.aux,
@@ -621,8 +640,9 @@ export const ProInput = React.forwardRef<HTMLInputElement, ProInputProps>(
                 : "opacity-0 pointer-events-none",
             )}
           >
-            {showMic && (
+            {showMicInline && (
               <MicWithDeviceMenu
+                showDeviceMenu={clusterTier === "full" ? undefined : false}
                 tabIndex={auxiliaryControlsTabIndex}
                 deviceMenuAriaLabel={
                   auxiliaryControlsLabel
@@ -685,6 +705,40 @@ export const ProInput = React.forwardRef<HTMLInputElement, ProInputProps>(
                 >
                   {menuMode === "menu" ? (
                     <div className="flex flex-col p-1">
+                      {voiceInMenu && (
+                        <button
+                          type="button"
+                          disabled={isVoiceDisabled}
+                          onClick={() => {
+                            setMenuOpen(false);
+                            handleVoiceClick();
+                          }}
+                          className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm text-foreground transition-colors hover:bg-accent hover:text-accent-foreground disabled:opacity-50"
+                        >
+                          <Mic className="h-4 w-4" />
+                          Voice input
+                        </button>
+                      )}
+                      {micChoiceInMenu && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setMenuOpen(false);
+                            openAudioDevices();
+                          }}
+                          className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                        >
+                          <SlidersHorizontal className="h-4 w-4" />
+                          Microphone
+                        </button>
+                      )}
+                      {micChoiceInMenu &&
+                        (showCopyButton || cleanupEligible) && (
+                          <div
+                            className="my-1 h-px bg-border"
+                            role="separator"
+                          />
+                        )}
                       {showCopyButton && (
                         <button
                           type="button"

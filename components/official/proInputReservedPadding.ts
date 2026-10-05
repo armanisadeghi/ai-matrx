@@ -52,3 +52,37 @@ export const PRO_INPUT_NARROW_FIELD_PX = 260;
 export function hoverRevealsCluster(inputWidth: number): boolean {
   return !(inputWidth > 0 && inputWidth < PRO_INPUT_NARROW_FIELD_PX);
 }
+
+/**
+ * THE CLUSTER FITS THE ROOM IT HAS (owner, 2026-10-04: the input "has
+ * ABSOLUTELY no sense of the total space so if there is no room, it has no
+ * problem fully occupying 100% of the available space").
+ *
+ * The hover cluster may take at most a fraction of the room left after the
+ * always-visible controls (clear, submit). It steps down as the room shrinks:
+ *
+ *  - `full`  — mic capsule (with its device chevron) + "…";
+ *  - `menu`  — only "…"; voice input and the microphone choice move inside it;
+ *  - `none`  — nothing: the field is too small to give any of it away.
+ *
+ * A width of 0 means "not measured yet" (first paint, jsdom) → `full`.
+ */
+export type ProInputClusterTier = "full" | "menu" | "none";
+
+/** Widths the cluster takes per tier, px (tap boxes + the mic capsule). */
+export const PRO_INPUT_FULL_CLUSTER_PX = 86;
+export const PRO_INPUT_MENU_CLUSTER_PX = 38;
+/** The most of the free room the hover cluster may ever take. */
+export const PRO_INPUT_CLUSTER_MAX_SHARE = 0.4;
+
+export function proInputClusterTier(
+  inputWidth: number,
+  persistentWidth = 0,
+): ProInputClusterTier {
+  if (!(inputWidth > 0)) return "full";
+  const room = Math.max(0, inputWidth - Math.max(0, persistentWidth));
+  const budget = room * PRO_INPUT_CLUSTER_MAX_SHARE;
+  if (budget >= PRO_INPUT_FULL_CLUSTER_PX) return "full";
+  if (budget >= PRO_INPUT_MENU_CLUSTER_PX) return "menu";
+  return "none";
+}

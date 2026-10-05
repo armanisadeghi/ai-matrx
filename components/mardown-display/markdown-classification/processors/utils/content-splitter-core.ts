@@ -30,6 +30,7 @@
 
 import { RESERVED_PREFIX, tryDecodeDirective } from "@ai-matrx/content-ir";
 import { isJsonObject } from "@/types/json";
+import { parseDecisionOptionsFromBody } from "@/components/mardown-display/blocks/inline-decision/decision-options";
 import {
   DIRECTIVE_CONTAINER_OPEN,
   DirectiveContainerTracker,
@@ -918,17 +919,9 @@ function extractAttributeXmlBlock(
   }
 
   // Default: decision block parsing
-  const options: DecisionOption[] = [];
-  const optionRegex = /<option\s+label="([^"]*)">([\s\S]*?)<\/option>/g;
-  let optMatch: RegExpExecArray | null;
-  let optIndex = 0;
-  while ((optMatch = optionRegex.exec(innerContent)) !== null) {
-    options.push({
-      id: `opt-${optIndex++}`,
-      label: optMatch[1],
-      text: optMatch[2].trim(),
-    });
-  }
+  const options: DecisionOption[] = parseDecisionOptionsFromBody(innerContent).map(
+    (o, i) => ({ id: `opt-${i}`, label: o.label, text: o.text }),
+  );
 
   const prompt = detection.attributes.prompt || "Make a selection";
 

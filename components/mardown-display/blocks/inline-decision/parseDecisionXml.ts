@@ -1,4 +1,5 @@
 import type { InlineDecision, InlineDecisionOption } from './types';
+import { parseDecisionOptionsFromBody } from './decision-options';
 import { parseXmlAttributes } from '@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2';
 
 /**
@@ -14,18 +15,11 @@ export function parseDecisionFromContent(
     attributes: Record<string, string>,
     blockIndex: number = 0,
 ): InlineDecision | null {
-    const options: InlineDecisionOption[] = [];
-    const optionRegex = /<option\s+label="([^"]*)">([\s\S]*?)<\/option>/g;
-    let match: RegExpExecArray | null;
-    let optIdx = 0;
-
-    while ((match = optionRegex.exec(innerContent)) !== null) {
-        options.push({
-            id: `opt-${optIdx++}`,
-            label: match[1],
-            text: match[2].trim(),
-        });
-    }
+    const options: InlineDecisionOption[] = parseDecisionOptionsFromBody(innerContent).map((o, i) => ({
+        id: `opt-${i}`,
+        label: o.label,
+        text: o.text,
+    }));
 
     if (options.length === 0) return null;
 

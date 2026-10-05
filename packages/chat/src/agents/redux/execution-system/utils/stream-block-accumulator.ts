@@ -14,6 +14,7 @@
  * accumulator never re-reads completed blocks.
  */
 
+import { parseDecisionOptionsFromBody } from "@host/components/mardown-display/blocks/inline-decision/decision-options";
 import { QuotedKindLift } from "@host/features/content-ir/surfaces/quoted-kind-lift";
 import { FENCE_META_KEY, splitFenceInfo } from "@host/components/markdown-core/fence-meta";
 import {
@@ -467,18 +468,9 @@ function parseDecisionOptions(
   blockSourceText: string,
   decisionId: string,
 ): DecisionOption[] {
-  const options: DecisionOption[] = [];
-  const optionRegex = /<option\s+label="([^"]*)">([\s\S]*?)<\/option>/g;
-  let match: RegExpExecArray | null;
-  let i = 0;
-  while ((match = optionRegex.exec(blockSourceText)) !== null) {
-    options.push({
-      id: `${decisionId}-opt-${i}`,
-      label: match[1],
-      text: match[2].trim(),
-    });
-    i++;
-  }
+  const options: DecisionOption[] = parseDecisionOptionsFromBody(blockSourceText).map(
+    (o, i) => ({ id: `${decisionId}-opt-${i}`, label: o.label, text: o.text }),
+  );
   return options;
 }
 

@@ -2,8 +2,7 @@
 
 // components/audio/MicWithDeviceMenu.tsx
 //
-// Combined mic toggle + device picker in one split pill (Anthropic-style).
-// Replaces the awkward "full tap target + tiny orphan chevron" pairing in
+// Combined mic toggle + device picker in one compact split capsule, used by
 // ProTextarea / ProInput. The chevron hides while recording or transcribing.
 
 import { ChevronDown, Loader2, Mic } from "lucide-react";
@@ -18,8 +17,16 @@ import {
   useMicDevicePicker,
 } from "@/components/audio/micDeviceMenuShared";
 
-const SEGMENT_TOUCH =
-  "inline-flex min-h-[2.75rem] min-w-[2.75rem] -my-[9px] touch-manipulation items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:pointer-events-none disabled:opacity-40";
+// ONE compact capsule (owner, 2026-10-04: "the down chevron taking up an
+// entire icon space is horrible"). The mic and a 12px device chevron share a
+// ~40px pill, where the old pair took two full 44px touch boxes (~90px). The
+// outer padding is equal on both ends so the ink sits centred in the pill
+// (tap-target guard); on a touch screen both ends pad out a little more.
+const SEGMENT =
+  "relative z-[1] inline-flex h-full touch-manipulation items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-40";
+const MIC_ALONE = "px-1.5 pointer-coarse:px-2.5";
+const MIC_SPLIT = "pl-1.5 pr-0.5 pointer-coarse:pl-2.5 pointer-coarse:pr-1";
+const CHEVRON_SPLIT = "pl-0 pr-1.5 pointer-coarse:pl-0.5 pointer-coarse:pr-2.5";
 
 export interface MicWithDeviceMenuProps {
   onMicClick: () => void;
@@ -27,7 +34,11 @@ export interface MicWithDeviceMenuProps {
   isRecording?: boolean;
   isTranscribing?: boolean;
   audioLevel?: number;
-  /** Defaults to true only when idle (not recording / transcribing). */
+  /**
+   * Show the device chevron. Defaults to true only when idle (not recording /
+   * transcribing); a host short on room passes false and offers the device
+   * choice elsewhere.
+   */
   showDeviceMenu?: boolean;
   micAriaLabel?: string;
   deviceMenuAriaLabel?: string;
@@ -63,16 +74,11 @@ export function MicWithDeviceMenu({
       : "text-muted-foreground";
 
   return (
-    // `data-matrx-glass`: the capsule below IS glass (matrx-glass-thin-border),
-    // so a glass tap button beside it (ProTextarea's "…") is an all-glass row
-    // — tap-target placement rule 2 — not glass beside bare chrome.
-    <div data-matrx-glass className="relative inline-flex h-10 items-center">
-      <div
-        className={cn(
-          "relative flex h-7 items-stretch overflow-hidden rounded-full matrx-glass-thin-border",
-          deviceMenuVisible ? "pr-0" : "px-0",
-        )}
-      >
+    // Plain ink, no glass border: the hosts pair it with a transparent "…"
+    // tap button, so the row is all non-glass (tap-target placement rule 2)
+    // and reads as two quiet icons, not a stack of pills.
+    <div className="relative mx-[3px] inline-flex h-7 shrink-0 items-center">
+      <div className="relative flex h-6 items-stretch overflow-hidden rounded-full pointer-coarse:h-7">
         {isRecording && (
           <>
             <span
@@ -95,57 +101,53 @@ export function MicWithDeviceMenu({
           onClick={onMicClick}
           disabled={disabled}
           aria-label={micLabel}
+          title={micLabel}
           className={cn(
-            SEGMENT_TOUCH,
-            "relative z-[1]",
+            SEGMENT,
             deviceMenuVisible
-              ? "rounded-l-full pl-2.5 pr-2 hover:bg-muted/60 active:bg-muted-foreground/15"
-              : "rounded-full px-2.5 hover:bg-muted/60 active:bg-muted-foreground/15",
+              ? cn(MIC_SPLIT, "rounded-l-full")
+              : cn(MIC_ALONE, "rounded-full"),
+            "hover:bg-muted/60 active:bg-muted-foreground/15",
             stateColor,
             iconClassName,
           )}
         >
           {isTranscribing && !isRecording ? (
-            <Loader2 className="matrx-tap-icon animate-spin" />
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
           ) : (
-            <Mic className="matrx-tap-icon" />
+            <Mic className="h-3.5 w-3.5" />
           )}
         </button>
 
         {deviceMenuVisible && (
-          <>
-            <span
-              className="my-1.5 w-px shrink-0 self-stretch bg-border/70"
-              aria-hidden
-            />
-            <Popover onOpenChange={handleOpenChange}>
-              <PopoverTrigger asChild>
-                <button
-                  tabIndex={tabIndex}
-                  type="button"
-                  disabled={disabled}
-                  aria-label={deviceMenuAriaLabel}
-                  className={cn(
-                    SEGMENT_TOUCH,
-                    "relative z-[1]",
-                    "rounded-r-full pl-1 pr-1.5 text-muted-foreground hover:bg-muted/60 hover:text-foreground active:bg-muted-foreground/15",
-                  )}
-                >
-                  <ChevronDown className="matrx-tap-icon opacity-70" />
-                </button>
-              </PopoverTrigger>
-              <PopoverContent
-                sizing="content"
-                align="end"
-                side="bottom"
-                sideOffset={6}
-                className="p-1"
-                onOpenAutoFocus={(e) => e.preventDefault()}
+          <Popover onOpenChange={handleOpenChange}>
+            <PopoverTrigger asChild>
+              <button
+                tabIndex={tabIndex}
+                type="button"
+                disabled={disabled}
+                aria-label={deviceMenuAriaLabel}
+                title="Microphone"
+                className={cn(
+                  SEGMENT,
+                  CHEVRON_SPLIT,
+                  "rounded-r-full text-muted-foreground hover:bg-muted/60 hover:text-foreground active:bg-muted-foreground/15",
+                )}
               >
-                <MicDeviceMenuPanel onOpenSettings={() => openSettings()} />
-              </PopoverContent>
-            </Popover>
-          </>
+                <ChevronDown className="h-3 w-3 opacity-70" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent
+              sizing="content"
+              align="end"
+              side="bottom"
+              sideOffset={6}
+              className="p-1"
+              onOpenAutoFocus={(e) => e.preventDefault()}
+            >
+              <MicDeviceMenuPanel onOpenSettings={() => openSettings()} />
+            </PopoverContent>
+          </Popover>
         )}
       </div>
     </div>

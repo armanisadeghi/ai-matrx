@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { ComponentEntry } from "../parts/component-list";
 import { ComponentDisplayWrapper } from "../component-usage";
 import { ProInput } from "@/components/official/ProInput";
+import { ProFieldWidthsShowcase } from "@/components/official/ProFieldWidthsShowcase";
 import { Field } from "@/components/official/Field";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -106,6 +107,7 @@ import { Field } from '@/components/official/Field';
       description="Tier-2 canonical single-line input. Streaming voice, AI cleanup with copyable streamed results, a hover-revealed '…' menu, submit, floating label, and protection modal. Cleanup defaults on for human-authored text and is explicitly excluded from search, URLs, tags, and configuration values."
     >
       <div className="w-full max-w-3xl space-y-8">
+        <ProFieldWidthsShowcase />
         <div className="rounded-lg border border-border bg-muted/40 p-3 text-xs text-muted-foreground space-y-1">
           <p>
             <span className="font-semibold text-foreground">
