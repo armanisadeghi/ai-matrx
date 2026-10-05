@@ -469,7 +469,7 @@ function parseDecisionOptions(
   decisionId: string,
 ): DecisionOption[] {
   const options: DecisionOption[] = parseDecisionOptionsFromBody(blockSourceText).map(
-    (o, i) => ({ id: `${decisionId}-opt-${i}`, label: o.label, text: o.text }),
+    (o) => ({ id: o.id, label: o.label, text: o.text }),
   );
   return options;
 }

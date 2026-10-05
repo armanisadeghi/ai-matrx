@@ -920,7 +920,7 @@ function extractAttributeXmlBlock(
 
   // Default: decision block parsing
   const options: DecisionOption[] = parseDecisionOptionsFromBody(innerContent).map(
-    (o, i) => ({ id: `opt-${i}`, label: o.label, text: o.text }),
+    (o) => ({ id: o.id, label: o.label, text: o.text }),
   );
 
   const prompt = detection.attributes.prompt || "Make a selection";

@@ -8,10 +8,13 @@
  * <option> (`id` before/after `label`), single or double quotes, indentation
  * and blank lines, and self-describing options with no `label` attribute
  * (`<option id="x">Label text</option>` — the text names the choice).
- * Only options whose closing tag has arrived count.
+ * The choice id is the model's `id` attribute when present (unique), else
+ * `opt-N`. Only options whose closing tag has arrived count.
  */
 
 export interface ParsedDecisionOption {
+    /** The model's own `id` attribute when present and unique, else `opt-N`. */
+    id: string;
     label: string;
     text: string;
 }
@@ -31,6 +34,7 @@ export function parseOptionAttributes(attrString: string): Record<string, string
 
 export function parseDecisionOptionsFromBody(body: string): ParsedDecisionOption[] {
     const options: ParsedDecisionOption[] = [];
+    const seen = new Set<string>();
     const re = new RegExp(OPTION_RE.source, OPTION_RE.flags);
     let m: RegExpExecArray | null;
     while ((m = re.exec(body)) !== null) {
@@ -38,7 +42,10 @@ export function parseDecisionOptionsFromBody(body: string): ParsedDecisionOption
         const text = m[2].trim();
         const label = (attrs.label ?? attrs.title ?? attrs.name ?? '').trim() || text.split('\n')[0].trim();
         if (label === '') continue;
-        options.push({ label, text });
+        const own = (attrs.id ?? '').trim();
+        const id = own !== '' && !seen.has(own) ? own : `opt-${options.length}`;
+        seen.add(id);
+        options.push({ id, label, text });
     }
     return options;
 }

@@ -15,8 +15,8 @@ export function parseDecisionFromContent(
     attributes: Record<string, string>,
     blockIndex: number = 0,
 ): InlineDecision | null {
-    const options: InlineDecisionOption[] = parseDecisionOptionsFromBody(innerContent).map((o, i) => ({
-        id: `opt-${i}`,
+    const options: InlineDecisionOption[] = parseDecisionOptionsFromBody(innerContent).map((o) => ({
+        id: o.id,
         label: o.label,
         text: o.text,
     }));

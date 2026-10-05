@@ -80,8 +80,21 @@ describe("parseDecisionOptionsFromBody tolerance", () => {
       `<option label='A' id="a">first</option>\n\n<option id="b">Plain label only</option>`,
     );
     expect(opts).toEqual([
-      { label: "A", text: "first" },
-      { label: "Plain label only", text: "Plain label only" },
+      { id: "a", label: "A", text: "first" },
+      { id: "b", label: "Plain label only", text: "Plain label only" },
+    ]);
+  });
+  it("uses the model's id as the choice id, opt-N when missing or duplicate", () => {
+    const opts = parseDecisionOptionsFromBody(
+      `<option id="x" label="A">a</option><option label="B">b</option><option id="x" label="C">c</option>`,
+    );
+    expect(opts.map((o) => o.id)).toEqual(["x", "opt-1", "opt-2"]);
+  });
+  it("parseDecisionXml carries the parsed id through", () => {
+    expect(parseDecisionXml(DECISION_LINE_START_WITH_ID)?.options.map((o) => o.id)).toEqual([
+      "subscription",
+      "freemium",
+      "one-time",
     ]);
   });
   it("ignores an option whose closing tag has not streamed in", () => {
