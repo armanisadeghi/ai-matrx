@@ -36,10 +36,21 @@ const report = { steps: [], consoleErrors: [], failedRequests: [] };
 const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage({ viewport: { width: 1400, height: 1000 } });
 page.on("console", (m) => m.type() === "error" && report.consoleErrors.push(m.text().slice(0, 200)));
+report.redirects = [];
+page.on("response", (r) => {
+  if (r.status() >= 300 && r.status() < 400 && report.redirects.length < 40)
+    report.redirects.push(`${r.status()} ${r.url().slice(0, 100)} -> ${(r.headers()["location"] || "").slice(0, 100)}`);
+});
 page.on("response", (r) => r.status() >= 400 && report.failedRequests.push(`${r.status()} ${r.url().replace(/\?.*$/, "").slice(0, 150)}`));
 const shot = async (name) => page.screenshot({ path: path.join(out, `${name}.png`), fullPage: true });
 // A shared dev server parks idle preview tabs; resume it rather than walking the parking page.
+// Reclaim the slot explicitly (the dev server's own resume door: same-origin POST /__dev-walk).
+const reclaim = async () =>
+  page.request
+    .post(`${base}/__dev-walk`, { headers: { origin: base }, form: { returnTo: "/" }, maxRedirects: 0 })
+    .catch(() => {});
 const resumeIfParked = async () => {
+  await reclaim();
   for (let i = 0; i < 3 && page.url().includes("__dev-walk"); i++) {
     await page.getByRole("button", { name: "Resume this preview" }).click().catch(() => {});
     await page.waitForURL((u) => !u.toString().includes("__dev-walk"), { timeout: 120000 }).catch(() => {});
@@ -48,6 +59,7 @@ const resumeIfParked = async () => {
 const text = async () => (await page.locator("main").innerText().catch(() => "")) || "";
 
 try {
+  await reclaim();
   await page.goto(`${base}/login`, { timeout: 180000 });
   await resumeIfParked();
   await page.waitForTimeout(4000);
@@ -55,6 +67,7 @@ try {
   await fillSecret(page, 'input[type="password"]', pass);
   await page.evaluate(() => document.querySelector("form")?.requestSubmit());
   await page.waitForFunction(() => !document.querySelector('input[type="email"]'), null, { timeout: 60000 });
+  await reclaim();
   await page.goto(`${base}${route}`, { timeout: 300000 });
   await resumeIfParked();
   await page.waitForTimeout(20000);
