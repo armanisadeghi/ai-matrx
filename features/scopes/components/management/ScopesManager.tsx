@@ -144,8 +144,8 @@ export function ScopesManager({ organization, role }: ScopesManagerProps) {
 
   const slug = organization.slug ?? organization.id;
   const totalScopes = orgScopes.length;
-  // Any member may reorder, archive and restore — the store doors admit every member.
-  const canManage = Boolean(role);
+  // Structure is the org admins' (owner/admin); members work with the data inside it.
+  const canManage = role === "owner" || role === "admin";
 
   const orderedTypes = useMemo(
     () => [...scopeTypes].sort((a, b) => a.sort_order - b.sort_order),
