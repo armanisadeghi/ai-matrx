@@ -377,9 +377,13 @@ accumulator), read through `isQuotedSourceXmlBlock` (`json-kind-signal.ts`) by X
       `__kind` a json code block — loader live, broken state settled. Guard `content-fed-stream-never-raw.test.tsx` (unmocked).
 - [x] P6. Inline level: `surfaces/kind-one-line.ts` (`inlineKindText`, `kindOneLine`) in `RichContentInline` and
       `RichContentPreview` (before the cut); `ExtractionCellDisplay` kind cells. Guard `inline-level-never-raw-kind.test.tsx`.
-- [ ] P7. Tables mid-stream. PARTIAL: cells render through the inline level, so a kind in a header/body cell now reads
-      as its one-line form (DOM judge: 0 raw frames on header-row, cell-after-prose and cell-only streams). Not done: a
-      dedicated midstream P7 guard; live lifting of the kind OUT of the table (the reload splitter does, V2).
-- [ ] P8. Markdown-escaped `{"\_\_kind":…}` and double-encoded kind strings — NOT STARTED.
-- [ ] P9. `![{kind}](url)` stray "!"/"(url)" blocks — NOT STARTED. Truncated kind settled at message end: no raw frame
-      after P3 (explored), but loader-vs-broken state on the settled frame not asserted.
+- [x] P7. Tables mid-stream. Cells render through the inline level (P6), so a kind in a header or body cell reads as
+      its one-line form. Guard: midstream P7 — header row, cell after prose, cell only, DOM-judged (every 3rd kind
+      frame + first + last). Live lifting of the kind OUT of the table stays the reload splitter's (V2).
+- [x] P8. Markdown-escaped `{"\_\_kind":…}`: `hasKindKey(…, { markdown: true })` (text contexts; `markdownCarriesKind`);
+      `surfaces/markdown-escaped-kind.ts` un-escapes the key and every `\_` in its object — accumulator per delta,
+      splitter on the whole text (live = reload). Double-encoded: DECIDED — a whole answer that is a JSON string of kind
+      JSON reads as that kind (`decodeDoubleEncodedKindText`, splitter). Guards midstream P8 + `kind-text-transforms-chunk-invariant`.
+- [x] P9. `![{kind}](url)`: `surfaces/kind-image-alt.ts` drops the image wrapper of a kind (kindless alt untouched), both
+      hosts — no stray `!` / `(url)`. A truncated kind settled at message end decides as the broken state (gate null,
+      never text, never the raw card), live-finalized and reload. Guards midstream P9 + chunk-invariance.
