@@ -24,6 +24,7 @@ import {
   registerRemarkDurability,
   remarkSourceOf,
   restageRemarks,
+  unstageRemark,
   type RemarkDurability,
   type RemarkItem,
 } from "@ai-matrx/chat/agents/redux/execution-system/instance-resources/remarks";
@@ -35,6 +36,9 @@ import { BLOCK_STATE_DEBOUNCE_MS } from "./useBlockState";
 import { isChipDue, type BlockStateRow } from "./types";
 import { composerSurfaceAliasOf } from "@ai-matrx/chat/agents/redux/execution-system/instance-user-input/composer-draft-store";
 import { purgeLegacyBrowserStores } from "./legacyPurge";
+import { unitRefOf } from "./redux/blockStateThunks";
+import { subscribeBlockStateFeed } from "./blockStateRealtime";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 
 interface Slot {
   timer: ReturnType<typeof setTimeout> | null;
@@ -131,6 +135,85 @@ export function createRemarkDurability(
   const slotsOf = (conversationId: string): Slot[] =>
     [...slots.entries()].filter(([id]) => id.startsWith(`${conversationId}\u0000`)).map(([, slot]) => slot);
 
+  /** Stage (or refresh, or clear) this conversation's chips from saved rows, from any device. */
+  const applyRows = async (conversationId: string, rows: BlockStateRow[], surfaceAlias: string | null): Promise<void> => {
+    dispatch(upsertBlockStateRows(rows));
+    const state = store.getState() as unknown as ChatRootState;
+    const submitted = new Set(state.instanceResources.submittedIds[conversationId] ?? []);
+    const sentRefs = new Set<string>();
+    for (const resourceId of submitted) {
+      const resource = state.instanceResources.byConversationId[conversationId]?.[resourceId];
+      const sentRef = resource ? remarkSourceOf(resource)?.remark.blockStateRef : null;
+      if (sentRef) sentRefs.add(`${sentRef.id}:${sentRef.stateVersion}`);
+    }
+    const isRemark = (r: BlockStateRow) => r.kind === "remark" && r.state.remark && typeof r.state.remark === "object";
+    // A chip another tab sent or dismissed is no longer due: it leaves this composer too.
+    for (const r of rows) {
+      if (!isRemark(r) || isChipDue(r) || typeof r.state.coalesceKey !== "string") continue;
+      dispatch(unstageRemark(conversationId, r.state.coalesceKey, { retire: false }));
+    }
+    const due = rows.filter((r) => isRemark(r) && isChipDue(r)).filter((r) => !sentRefs.has(`${r.id}:${r.state_version}`));
+    const stored = readStoredRemarks(
+      due.map((r) => ({
+        resourceId: typeof r.state.resourceId === "string" ? r.state.resourceId : r.id,
+        coalesceKey: typeof r.state.coalesceKey === "string" ? r.state.coalesceKey : null,
+        item: { ...(r.state.remark as object), blockStateRef: { id: r.id, stateVersion: r.state_version } },
+      })),
+    );
+    if (stored.length > 0) dispatch(restageRemarks(conversationId, stored));
+    // RE-KEY: a chip found by its surface now belongs to the conversation on screen.
+    for (const r of due) {
+      if (r.state.stagedIn === conversationId) continue;
+      const entity = { entityType: r.entity_type, entityId: r.entity_id };
+      const coalesceKey = typeof r.state.coalesceKey === "string" ? r.state.coalesceKey : null;
+      const held = Object.values(
+        (store.getState() as unknown as ChatRootState).instanceResources.byConversationId[conversationId] ?? {},
+      ).find((res) => coalesceKey && remarkSourceOf(res)?.coalesceKey === coalesceKey);
+      const resourceId = held?.resourceId ?? (typeof r.state.resourceId === "string" ? r.state.resourceId : r.id);
+      try {
+        const saved = await setBlockState({
+          ...entity,
+          blockKey: r.block_key,
+          kind: "remark",
+          scope: "viewer",
+          patch: { stagedIn: conversationId, stagedSurface: surfaceAlias },
+          fingerprint: null,
+        });
+        dispatch(upsertBlockStateRows([saved]));
+        // The new version is the one the send must name, or the chip would be due again.
+        dispatch(attachRemarkRef(conversationId, resourceId, { id: saved.id, stateVersion: saved.state_version }));
+      } catch (error) {
+        reportFailure(error);
+      }
+    }
+  };
+
+  // THE LIVE FEED: a chip made in another tab or on another device lands here without a reload.
+  // One feed per real conversation (a conversation with no answers yet has nothing to watch —
+  // its topic would be refused, which is a CHANNEL_ERROR for nothing).
+  const watching = new Map<string, () => void>();
+  const watch = (conversationId: string, surfaceAlias: string | null): void => {
+    if (watching.has(conversationId)) return;
+    const answers = (store.getState() as unknown as ChatRootState).messages?.byConversationId?.[conversationId]?.orderedIds.length ?? 0;
+    if (answers === 0) return;
+    const ref = unitRefOf("message", null, conversationId);
+    if (!ref) return;
+    const userId = selectUserId(store.getState() as RootState);
+    if (!userId) return;
+    const release = subscribeBlockStateFeed({ scope: ref.scope, entityId: ref.entityId }, userId, (signal) => {
+      if ("rows" in signal) {
+        const mine = signal.rows.filter((r) => r.kind === "remark");
+        if (mine.length > 0) void applyRows(conversationId, mine, surfaceAlias);
+      } else {
+        void listStagedBlockStates(conversationId, surfaceAlias).then(
+          (all) => applyRows(conversationId, all, surfaceAlias),
+          (e) => console.error("[block-state] resync failed:", e),
+        );
+      }
+    });
+    watching.set(conversationId, release);
+  };
+
   return {
     save(conversationId, resourceId, coalesceKey, item) {
       const key = coalesceKey ?? resourceId;
@@ -184,7 +267,6 @@ export function createRemarkDurability(
     },
 
     restore(conversationId, surfaceAlias) {
-      console.info('[DBG-A] restore', conversationId, 'alias=', surfaceAlias);
       void (async () => {
         let rows: BlockStateRow[];
         try {
@@ -193,53 +275,8 @@ export function createRemarkDurability(
           console.error("[block-state] restoring unsent chips failed:", error);
           return;
         }
-        if (rows.length === 0) return;
-        dispatch(upsertBlockStateRows(rows));
-        const state = store.getState() as unknown as ChatRootState;
-        const submitted = new Set(state.instanceResources.submittedIds[conversationId] ?? []);
-        const sentRefs = new Set<string>();
-        for (const resourceId of submitted) {
-          const resource = state.instanceResources.byConversationId[conversationId]?.[resourceId];
-          const sentRef = resource ? remarkSourceOf(resource)?.remark.blockStateRef : null;
-          if (sentRef) sentRefs.add(`${sentRef.id}:${sentRef.stateVersion}`);
-        }
-        const due = rows
-          .filter((r) => isChipDue(r) && r.state.remark && typeof r.state.remark === "object")
-          .filter((r) => !sentRefs.has(`${r.id}:${r.state_version}`));
-        const stored = readStoredRemarks(
-          due.map((r) => ({
-            resourceId: typeof r.state.resourceId === "string" ? r.state.resourceId : r.id,
-            coalesceKey: typeof r.state.coalesceKey === "string" ? r.state.coalesceKey : null,
-            item: { ...(r.state.remark as object), blockStateRef: { id: r.id, stateVersion: r.state_version } },
-          })),
-        );
-        if (stored.length > 0) dispatch(restageRemarks(conversationId, stored));
-        // RE-KEY: a chip found by its surface now belongs to the conversation on screen.
-        for (const r of due) {
-          if (r.state.stagedIn === conversationId) continue;
-          const entity = { entityType: r.entity_type, entityId: r.entity_id };
-          const coalesceKey = typeof r.state.coalesceKey === "string" ? r.state.coalesceKey : null;
-          const held = Object.values(
-            (store.getState() as unknown as ChatRootState).instanceResources.byConversationId[conversationId] ?? {},
-          ).find((res) => coalesceKey && remarkSourceOf(res)?.coalesceKey === coalesceKey);
-          const resourceId =
-            held?.resourceId ?? (typeof r.state.resourceId === "string" ? r.state.resourceId : r.id);
-          try {
-            const saved = await setBlockState({
-              ...entity,
-              blockKey: r.block_key,
-              kind: "remark",
-              scope: "viewer",
-              patch: { stagedIn: conversationId, stagedSurface: surfaceAlias ?? null },
-              fingerprint: null,
-            });
-            dispatch(upsertBlockStateRows([saved]));
-            // The new version is the one the send must name, or the chip would be due again.
-            dispatch(attachRemarkRef(conversationId, resourceId, { id: saved.id, stateVersion: saved.state_version }));
-          } catch (error) {
-            reportFailure(error);
-          }
-        }
+        if (rows.length > 0) await applyRows(conversationId, rows, surfaceAlias ?? null);
+        watch(conversationId, surfaceAlias ?? null);
       })();
     },
   };
