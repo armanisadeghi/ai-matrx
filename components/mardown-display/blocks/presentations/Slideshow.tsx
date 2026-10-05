@@ -28,6 +28,7 @@ import { deckFontFamily, PRESET_LIST, presetTheme, resolveDeckTheme } from "./pr
 import { ScaledSlide } from "./ScaledSlide";
 import { useCanvasPresentation } from "@ai-matrx/canvas/react";
 import { slideThumbnailPlacement } from "../canvas-adaptive";
+import { Button } from "@ai-matrx/design-system/controls";
 
 // Lazy load PresentationExportMenu to avoid loading GoogleAPIProvider on initial render
 const PresentationExportMenu = lazy(() => import("./PresentationExportMenu"));
@@ -215,17 +216,11 @@ const Slideshow = (
             <div className="flex items-center gap-1 flex-shrink-0">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button
-                    type="button"
-                    aria-label="Theme / template"
-                    title="Theme / template"
-                    className="flex h-11 min-w-11 items-center justify-center gap-1.5 rounded-md border border-border bg-card/70 px-2 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground sm:h-7 sm:min-w-0"
-                  >
-                    <Palette className="h-3.5 w-3.5" style={{ color: effectiveTheme.primaryColor }} />
+                  <Button variant="outline" icon={<Palette style={{ color: effectiveTheme.primaryColor }} />} aria-label="Theme / template" title="Theme / template" className="sm:min-w-0">
                     <span className="hidden capitalize sm:inline">
                       {PRESET_LIST.find((p) => p.key === activePresetKey)?.name ?? "Theme"}
                     </span>
-                  </button>
+                  </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="max-h-80 w-56 overflow-y-auto">
                   <DropdownMenuLabel className="text-xs">Template</DropdownMenuLabel>
@@ -366,18 +361,9 @@ const Slideshow = (
           {/* Bottom Navigation Bar with Arrow Buttons */}
           <div className="flex-shrink-0 px-4 py-3 border-t border-border bg-gray-50 dark:bg-gray-800">
             <div className="flex items-center justify-between gap-3">
-              <button
-                onClick={goToPrevious}
-                disabled={currentSlide === 0}
-                className={`min-h-11 px-3 py-1 rounded-lg font-medium transition-all flex items-center gap-2 sm:min-h-0 ${
-                  currentSlide === 0
-                    ? "bg-gray-300 dark:bg-gray-700 cursor-not-allowed text-gray-400 dark:text-gray-600"
-                    : "bg-blue-500 dark:bg-blue-600 hover:bg-blue-600 dark:hover:bg-blue-700 text-white shadow-sm hover:shadow-md"
-                } ${isFullScreen ? "text-base" : "text-sm"}`}
-              >
-                <ChevronLeft className="h-4 w-4" />
+              <Button variant="quiet" icon={<ChevronLeft />} onClick={goToPrevious} disabled={currentSlide === 0}>
                 <span>Previous</span>
-              </button>
+              </Button>
 
               <button
                 onClick={goToNext}

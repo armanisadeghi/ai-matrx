@@ -21,6 +21,7 @@ import { useSearchParams } from "next/navigation";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsAdmin } from "@/lib/redux/slices/userSlice";
 import { useOpenFlashcardsBlockWindow } from "@/features/overlays/openers/flashcardsBlockWindow";
+import { Button } from "@ai-matrx/design-system/controls";
 
 interface FlashcardsBlockProps {
   content?: string;
@@ -201,14 +202,7 @@ const FlashcardsBlock: React.FC<FlashcardsBlockProps> = ({
                   showDevWindow
                   size="sm"
                 />
-                <button
-                  type="button"
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-md hover:bg-muted"
-                  onClick={() => setIsFullscreen(false)}
-                  title="Exit fullscreen (ESC)"
-                >
-                  <X className="h-4 w-4" />
-                </button>
+                <Button variant="quiet" icon={<X />} onClick={() => setIsFullscreen(false)} title="Exit fullscreen (ESC)" aria-label="Exit fullscreen (ESC)" />
               </div>
             </div>
 
@@ -366,13 +360,7 @@ function MobileFlashPrompt({
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 animate-in slide-in-from-bottom duration-300 pb-safe">
       <div className="relative mx-3 mb-3 rounded-2xl border border-blue-700/50 bg-gradient-to-r from-blue-900 to-indigo-900 p-4 shadow-2xl">
-        <button
-          type="button"
-          onClick={onDismiss}
-          className="absolute right-3 top-3 p-1 text-white/40 hover:text-white/80"
-        >
-          <X className="h-4 w-4" />
-        </button>
+        <Button variant="quiet" icon={<X />} onClick={onDismiss} aria-label="Close" className="absolute right-3 top-3" />
         <div className="flex items-start gap-3 pr-6">
           <div className="mt-0.5 rounded-xl bg-blue-800/60 p-2">
             <Zap className="h-5 w-5 text-blue-300" />
@@ -383,20 +371,12 @@ function MobileFlashPrompt({
               Study one card at a time — tap to flip, swipe to navigate.
             </p>
             <div className="mt-3 flex gap-2">
-              <button
-                type="button"
-                onClick={onEnter}
-                className="flex-1 rounded-xl bg-blue-500 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-400"
-              >
+              <Button variant="quiet" onClick={onEnter}>
                 Enter Flash Mode
-              </button>
-              <button
-                type="button"
-                onClick={onDismiss}
-                className="rounded-xl bg-white/10 px-4 py-2 text-sm text-white/70 transition-colors hover:bg-white/20"
-              >
+              </Button>
+              <Button variant="quiet" onClick={onDismiss}>
                 Not now
-              </button>
+              </Button>
             </div>
           </div>
         </div>

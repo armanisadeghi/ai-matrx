@@ -42,6 +42,7 @@ import {
 import type { PageBriefData } from "@/features/content-ir/kinds/page-brief";
 import { useKindActionRunner } from "@/features/content-ir/react/actions/useKindActionRunner";
 import { cn } from "@/lib/utils";
+import { Button } from "@ai-matrx/design-system/controls";
 
 export interface PageBriefBlockProps {
   serverData?: unknown;
@@ -189,14 +190,9 @@ export function PageBriefPoints({
       title="The brief"
       headerExtra={
         canEdit ? (
-          <button
-            type="button"
-            onClick={() => onChange?.([...lines, ""])}
-            className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-          >
-            <Plus className="h-3 w-3" />
+          <Button variant="quiet" icon={<Plus />} onClick={() => onChange?.([...lines, ""])}>
             Add point
-          </button>
+          </Button>
         ) : null
       }
     >
@@ -217,14 +213,7 @@ export function PageBriefPoints({
                 placeholder="What this page must cover…"
                 className="min-h-9 flex-1 resize-y rounded-md border border-input bg-transparent px-2 py-1.5 text-sm leading-relaxed text-foreground shadow-xs transition-[color,box-shadow] outline-none [field-sizing:content] placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
               />
-              <button
-                type="button"
-                onClick={() => removeLine(index)}
-                aria-label={`Remove point ${index + 1}`}
-                className="mt-1 shrink-0 rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-destructive"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </button>
+              <Button variant="quiet" icon={<Trash2 />} removes onClick={() => removeLine(index)} aria-label={`Remove point ${index + 1}`} className="mt-1 shrink-0" />
             </li>
           ))}
         </ul>
@@ -362,15 +351,9 @@ export default function PageBriefBlock({
             </span>
           )}
           {acceptTarget && canAccept ? (
-            <button
-              type="button"
-              onClick={() => void accept()}
-              disabled={accepting}
-              className="inline-flex h-7 shrink-0 items-center gap-1 rounded-md bg-primary px-2.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60"
-            >
-              <Check className="h-3.5 w-3.5" />
+            <Button variant="primary" icon={<Check />} onClick={() => void accept()} disabled={accepting} className="shrink-0">
               {accepting ? "Applying…" : acceptLabel}
-            </button>
+            </Button>
           ) : null}
         </div>
       </div>

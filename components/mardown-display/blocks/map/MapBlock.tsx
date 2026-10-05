@@ -22,6 +22,7 @@ import { soleFence } from "@/lib/markdown/code-ranges";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useCanvasPresentation } from "@ai-matrx/canvas/react";
 import { mapPlacesList } from "@/components/mardown-display/blocks/canvas-adaptive";
+import { Button } from "@ai-matrx/design-system/controls";
 
 interface MapSpec {
   title?: string;
@@ -180,34 +181,14 @@ export const MapBlock: React.FC<MapBlockProps> = ({
         </div>
         <div className="flex shrink-0 items-center gap-0.5">
           {!isStreamActive && spec && placesList === "toggle" && (
-            <button
-              type="button"
-              aria-label={listOpen ? "Hide places" : "Show places"}
-              aria-pressed={listOpen}
-              title={listOpen ? "Hide places" : "Show places"}
-              onClick={() => setListOpen((v) => !v)}
-              className={cn(
-                "rounded p-1.5 transition-colors hover:bg-primary/10 hover:text-primary",
-                listOpen ? "text-primary" : "text-muted-foreground",
-              )}
-            >
-              <List className="h-3.5 w-3.5" />
-            </button>
+            <Button variant="quiet" pressed={listOpen} icon={<List />} aria-label={listOpen ? "Hide places" : "Show places"} title={listOpen ? "Hide places" : "Show places"} onClick={() => setListOpen((v) => !v)} />
           )}
           {!isStreamActive && spec && (
-            <button
-              type="button"
-              aria-label={copied ? "Copied" : "Copy source"}
-              title={copied ? "Copied" : "Copy source"}
-              onClick={handleCopy}
-              className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
-            >
-              {copied ? (
-                <Check className="h-3.5 w-3.5" />
+            <Button variant="quiet" icon={copied ? (
+                <Check />
               ) : (
-                <Copy className="h-3.5 w-3.5" />
-              )}
-            </button>
+                <Copy />
+              )} aria-label={copied ? "Copied" : "Copy source"} title={copied ? "Copied" : "Copy source"} onClick={handleCopy} />
           )}
         </div>
       </div>

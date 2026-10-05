@@ -5,6 +5,7 @@ import { cn } from "@/styles/themes/utils";
 import { Copy, Check, Eye, Code2, FileText } from "lucide-react";
 import { NestedRichContent } from "@/components/rich-content/standard/NestedRichContent";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
+import { Button } from "@ai-matrx/design-system/controls";
 
 const CodeBlock = lazy(
   () => import("@/features/code-editor/components/code-block/CodeBlock"),
@@ -59,41 +60,18 @@ const MarkdownPreviewBlock: React.FC<MarkdownPreviewBlockProps> = ({
         <div className="flex items-center gap-1">
           {/* Preview / Source toggle */}
           <div className="flex items-center rounded-md border border-border/50 overflow-hidden mr-1">
-            <button
-              onClick={() => setMode("preview")}
-              className={cn(
-                "flex items-center gap-1 px-2 py-0.5 text-xs transition-colors",
-                mode === "preview"
-                  ? "bg-primary/10 text-primary font-medium"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
-              )}
-            >
-              <Eye className="w-3 h-3" />
+            <Button variant="quiet" pressed={mode === "preview"} icon={<Eye />} onClick={() => setMode("preview")}>
               Preview
-            </button>
-            <button
-              onClick={() => setMode("source")}
-              className={cn(
-                "flex items-center gap-1 px-2 py-0.5 text-xs transition-colors border-l border-border/50",
-                mode === "source"
-                  ? "bg-primary/10 text-primary font-medium"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
-              )}
-            >
-              <Code2 className="w-3 h-3" />
+            </Button>
+            <Button variant="quiet" pressed={mode === "source"} icon={<Code2 />} onClick={() => setMode("source")}>
               Source
-            </button>
+            </Button>
           </div>
-          <button
-            onClick={handleCopy}
-            className="p-1 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-          >
-            {copied ? (
-              <Check className="w-3.5 h-3.5 text-green-500" />
+          <Button variant="quiet" icon={copied ? (
+              <Check />
             ) : (
-              <Copy className="w-3.5 h-3.5" />
-            )}
-          </button>
+              <Copy />
+            )} glyphTone="success" onClick={handleCopy} aria-label="Copy" />
         </div>
       </div>
 

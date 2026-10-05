@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
-import { Input } from "@ai-matrx/design-system/controls";
+import { Button, Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Bug } from "lucide-react";
@@ -27,7 +27,6 @@ import {
   useQuestionnaireContext,
 } from "./QuestionnaireContext";
 import { ProTextarea } from "@/components/official/ProTextarea";
-import { Button } from "@ai-matrx/design-system";
 import { questionnaireAnswers } from "./questionnaire-answers";
 
 export type QuestionOption = { name: string };
@@ -801,12 +800,9 @@ const DebugDisplay = ({
         <div>
           <CardTitle>Debug View</CardTitle>
         </div>
-        <button
-          onClick={handleCopy}
-          className="px-4 py-2 text-sm font-medium text-primary bg-primary/10 hover:bg-primary/20 rounded-md transition-colors"
-        >
+        <Button variant="quiet" onClick={handleCopy}>
           Copy to Clipboard
-        </button>
+        </Button>
       </CardHeader>
       <CardContent>
         <pre className="bg-slate-100 dark:bg-slate-900 p-4 rounded-lg overflow-auto max-h-[calc(100dvh-20rem)] text-sm whitespace-pre-wrap break-all">
@@ -829,17 +825,7 @@ const DebugToggle = ({
   if (!DEBUG_RESPONSES) return null;
 
   return (
-    <button
-      onClick={onClick}
-      className={`fixed top-10 left-4 p-2 rounded-full transition-colors ${
-        active
-          ? "bg-primary/20 text-primary hover:bg-primary/30"
-          : "bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700"
-      }`}
-      title={active ? "Hide Debug View" : "Show Debug View"}
-    >
-      <Bug className="h-5 w-5" />
-    </button>
+    <Button variant="quiet" pressed={active} icon={<Bug />} onClick={onClick} title={active ? "Hide Debug View" : "Show Debug View"} aria-label={active ? "Hide Debug View" : "Show Debug View"} className="fixed top-10 left-4" />
   );
 };
 
@@ -858,7 +844,7 @@ const SubmitAnswersRow = ({
     {submitted && !changed ? (
       <span className="text-xs text-muted-foreground">Added to your next message</span>
     ) : null}
-    <Button size="sm" onClick={onSubmit} disabled={answeredCount === 0 || (submitted && !changed)}>
+    <Button variant="primary" onClick={onSubmit} disabled={answeredCount === 0 || (submitted && !changed)}>
       {submitted ? "Update" : "Submit"}
     </Button>
   </div>

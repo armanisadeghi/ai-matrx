@@ -34,7 +34,6 @@
 
 import { useCallback, useState } from "react";
 import { Check, Copy, Loader2, Type } from "lucide-react";
-import { Button } from "@ai-matrx/design-system";
 import { useKindActionRunner } from "@/features/content-ir/react/actions/useKindActionRunner";
 import { useCurrentSurfaceUiState } from "@ai-matrx/chat/surfaces/runtime/surface-ui-state";
 import {
@@ -43,6 +42,7 @@ import {
   type EpisodeTitleOptionData,
   type EpisodeTitleOptionsData,
 } from "@/features/content-ir/kinds/episode-title-options";
+import { Button } from "@ai-matrx/design-system/controls";
 
 export interface EpisodeTitleOptionsBlockProps {
   serverData?: unknown;
@@ -97,15 +97,9 @@ function CopyTitleButton({ title }: { title: string }) {
     });
   }, [title]);
   return (
-    <button
-      type="button"
-      onClick={handleCopy}
-      className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-      aria-label="Copy title"
-    >
-      {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+    <Button variant="outline" icon={copied ? <Check /> : <Copy />} onClick={handleCopy} aria-label="Copy title">
       {copied ? "Copied" : "Copy"}
-    </button>
+    </Button>
   );
 }
 
@@ -133,14 +127,12 @@ function ApplyTitleButton({ title }: { title: string }) {
 
   return (
     <Button
-      type="button"
-      size="sm"
       variant="outline"
-      className="shrink-0 gap-1"
+      icon={applying ? <Loader2 className="animate-spin" /> : undefined}
+      className="shrink-0"
       disabled={applying}
       onClick={() => void handleApply()}
     >
-      {applying ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
       Use this title
     </Button>
   );

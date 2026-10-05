@@ -24,6 +24,7 @@ import {
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import BasicMarkdownContent from "../../chat-markdown/BasicMarkdownContent";
 import { safeJsonParse } from "../../chat-markdown/block-registry/json-parse-utils";
+import { Button } from "@ai-matrx/design-system/controls";
 // Lazy load block renderers — only the ones that accept raw content strings
 const CodeBlock = lazy(
   () => import("@/features/code-editor/components/code-block/CodeBlock"),
@@ -320,25 +321,10 @@ const ArtifactBlock: React.FC<ArtifactBlockProps> = ({
             />
           )}
           {canUnbind && (
-            <button
-              onClick={() => void handleUnbind()}
-              disabled={unbindBusy}
-              className="rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:text-foreground focus-visible:opacity-100 group-hover/artifact:opacity-100 disabled:opacity-50"
-              title="Detach as text"
-              aria-label="Detach as text"
-            >
-              <Unlink className="h-3.5 w-3.5" />
-            </button>
+            <Button variant="quiet" icon={<Unlink />} onClick={() => void handleUnbind()} disabled={unbindBusy} title="Detach as text" aria-label="Detach as text" className="opacity-0 focus-visible:opacity-100 group-hover/artifact:opacity-100" />
           )}
           {isComplete && content.trim() !== "" && (
-            <button
-              onClick={handleCopyMarkdown}
-              className="rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:text-foreground focus-visible:opacity-100 group-hover/artifact:opacity-100"
-              title="Copy as Markdown"
-              aria-label="Copy as Markdown"
-            >
-              <Copy className="h-3.5 w-3.5" />
-            </button>
+            <Button variant="quiet" icon={<Copy />} onClick={handleCopyMarkdown} title="Copy as Markdown" aria-label="Copy as Markdown" className="opacity-0 focus-visible:opacity-100 group-hover/artifact:opacity-100" />
           )}
           {isCanvasAvailable && (
             <button

@@ -4,6 +4,7 @@ import { Globe, ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
 import { ToggledDataBody } from "./ToggledDataBody";
 // The preview line is a fragment: a kind in it reads as its one-line label (K8).
 import { snippetKindText } from "@/features/content-ir/surfaces/kind-snippet-text";
+import { Button } from "@ai-matrx/design-system/controls";
 
 export interface FetchResultsBlockProps {
   results?: Record<string, unknown>[];
@@ -103,16 +104,11 @@ const FetchResultsBlock: React.FC<FetchResultsBlockProps> = ({
                         </p>
                       )}
                     </div>
-                    <button
-                      onClick={() => toggleItem(i)}
-                      className="flex-shrink-0 text-muted-foreground hover:text-foreground p-0.5"
-                    >
-                      {isOpen ? (
-                        <ChevronUp className="w-3.5 h-3.5" />
+                    <Button variant="quiet" icon={isOpen ? (
+                        <ChevronUp />
                       ) : (
-                        <ChevronDown className="w-3.5 h-3.5" />
-                      )}
-                    </button>
+                        <ChevronDown />
+                      )} onClick={() => toggleItem(i)} aria-label={isOpen ? "Collapse" : "Expand"} aria-expanded={isOpen} />
                   </div>
                   {isOpen && (
                     <ToggledDataBody

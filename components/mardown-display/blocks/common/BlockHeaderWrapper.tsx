@@ -19,6 +19,7 @@ import IconButton from "@/components/official/IconButton";
 import AdvancedMenu, { MenuItem } from "@/components/official/AdvancedMenu";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import type { CanvasContentType } from "@/features/canvas/canvasContent";
+import { Button } from "@ai-matrx/design-system/controls";
 
 export interface BlockHeaderWrapperProps {
   // Header left side
@@ -313,19 +314,13 @@ const BlockHeaderWrapper: React.FC<BlockHeaderWrapperProps> = ({
                         {title}
                       </h1>
                       {description && (
-                        <button
-                          type="button"
-                          onClick={() =>
+                        <Button variant="quiet" onClick={() =>
                             setDescriptionExpanded((prev) => !prev)
-                          }
-                          aria-expanded={descriptionExpanded}
-                          aria-label={
+                          } aria-expanded={descriptionExpanded} aria-label={
                             descriptionExpanded
                               ? "Collapse description"
                               : "Expand description"
-                          }
-                          className="text-left text-xs text-muted-foreground mt-1 w-full group flex items-start gap-1.5 cursor-pointer hover:text-foreground/80 transition-colors"
-                        >
+                          } className="mt-1 w-full">
                           <span
                             className={`flex-1 min-w-0 ${
                               descriptionExpanded
@@ -336,7 +331,7 @@ const BlockHeaderWrapper: React.FC<BlockHeaderWrapperProps> = ({
                             {description}
                           </span>
                           <span className="flex-shrink-0 mt-0.5 opacity-70 group-hover:opacity-100 transition-opacity"></span>
-                        </button>
+                        </Button>
                       )}
                     </div>
                   </div>

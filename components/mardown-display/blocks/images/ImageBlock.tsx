@@ -22,6 +22,8 @@ import {
 import { fileSourceToMediaRef } from "@/features/files/media-client/refs";
 import { recognizeOurFileUrl } from "@/lib/media/our-file-sources";
 import { RemoteImageGate, remoteImageHost } from "@/components/rich-content/prose/remote-image-policy";
+import { Button } from "@ai-matrx/design-system/controls";
+import { TapTargetButton } from "@ai-matrx/design-system/tap-target";
 
 const MAX_IMAGE_HEIGHT = 700;
 
@@ -82,8 +84,8 @@ const ImageBlockImpl: React.FC<ImageBlockProps> = ({ src: srcProp, alt = "Image"
   const [zoomLevel, setZoomLevel] = useState(1);
   const imageRef = useRef<HTMLImageElement>(null);
 
-  const handleDownload = async (e: React.MouseEvent) => {
-    e.preventDefault();
+  const handleDownload = async (e?: React.MouseEvent) => {
+    e?.preventDefault();
 
     try {
       // Fetch the image first
@@ -106,8 +108,8 @@ const ImageBlockImpl: React.FC<ImageBlockProps> = ({ src: srcProp, alt = "Image"
     }
   };
 
-  const handleCopyUrl = (e: React.MouseEvent) => {
-    e.preventDefault();
+  const handleCopyUrl = (e?: React.MouseEvent) => {
+    e?.preventDefault();
     navigator.clipboard
       .writeText(src)
       .then(() => {
@@ -119,8 +121,8 @@ const ImageBlockImpl: React.FC<ImageBlockProps> = ({ src: srcProp, alt = "Image"
       });
   };
 
-  const handleCopyImage = async (e: React.MouseEvent) => {
-    e.preventDefault();
+  const handleCopyImage = async (e?: React.MouseEvent) => {
+    e?.preventDefault();
     try {
       const response = await fetch(src);
       const blob = await response.blob();
@@ -142,8 +144,8 @@ const ImageBlockImpl: React.FC<ImageBlockProps> = ({ src: srcProp, alt = "Image"
     }
   };
 
-  const handleShare = async (e: React.MouseEvent) => {
-    e.preventDefault();
+  const handleShare = async (e?: React.MouseEvent) => {
+    e?.preventDefault();
     if (navigator.share) {
       try {
         await navigator.share({
@@ -211,71 +213,25 @@ const ImageBlockImpl: React.FC<ImageBlockProps> = ({ src: srcProp, alt = "Image"
 
       {/* Action buttons - visible on group hover */}
       <div className="absolute top-4 right-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-        <button
-          onClick={handleDownload}
-          className="text-white bg-black/40 hover:bg-black/60 p-2 rounded-full transition-all duration-200"
-          title="Download"
-        >
-          <DownloadIcon className="w-4 h-4" />
-        </button>
-        <button
-          onClick={handleCopyUrl}
-          className="text-white bg-black/40 hover:bg-black/60 p-2 rounded-full transition-all duration-200"
-          title="Copy URL"
-        >
-          <ClipboardCopyIcon className="w-4 h-4" />
-        </button>
-        <button
-          onClick={handleCopyImage}
-          className="text-white bg-black/40 hover:bg-black/60 p-2 rounded-full transition-all duration-200"
-          title="Copy Image"
-        >
-          <CopyIcon className="w-4 h-4" />
-        </button>
-        <button
-          onClick={handleShare}
-          className="text-white bg-black/40 hover:bg-black/60 p-2 rounded-full transition-all duration-200"
-          title="Share"
-        >
-          <ShareIcon className="w-4 h-4" />
-        </button>
+        <TapTargetButton icon={<DownloadIcon />} ariaLabel="Download" onClick={handleDownload} />
+        <TapTargetButton icon={<ClipboardCopyIcon />} ariaLabel="Copy URL" onClick={handleCopyUrl} />
+        <TapTargetButton icon={<CopyIcon />} ariaLabel="Copy Image" onClick={handleCopyImage} />
+        <TapTargetButton icon={<ShareIcon />} ariaLabel="Share" onClick={handleShare} />
         {editableFileId && (
-          <button
-            onClick={() =>
+          <TapTargetButton icon={<PencilIcon />} ariaLabel="Edit image" onClick={() =>
               window.open(
                 `/images/edit/${editableFileId}`,
                 "_blank",
                 "noopener,noreferrer",
               )
-            }
-            className="text-white bg-black/40 hover:bg-black/60 p-2 rounded-full transition-all duration-200"
-            title="Edit image"
-          >
-            <PencilIcon className="w-4 h-4" />
-          </button>
+            } />
         )}
-        <button
-          onClick={handleExpand}
-          className="text-white bg-black/40 hover:bg-black/60 p-2 rounded-full transition-all duration-200"
-          title="Expand"
-        >
-          <Maximize2Icon className="w-4 h-4" />
-        </button>
+        <TapTargetButton icon={<Maximize2Icon />} ariaLabel="Expand" onClick={handleExpand} />
       </div>
 
       {/* Feedback section - now on bottom left */}
       <div className="absolute bottom-2 left-2 flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-        <button
-          onClick={() => handleFeedback("like")}
-          className={`p-2 rounded-full transition-all duration-200 ${
-            feedback === "like"
-              ? "bg-green-500 text-white"
-              : "text-white bg-black/40 hover:bg-black/60"
-          }`}
-          title="Like"
-        >
-          <ThumbsUpIcon className="w-4 h-4" />
-        </button>
+        <Button variant="quiet" pressed={feedback === "like"} icon={<ThumbsUpIcon />} onClick={() => handleFeedback("like")} title="Like" aria-label="Like" />
         <button
           onClick={() => handleFeedback("dislike")}
           className={`p-2 rounded-full transition-all duration-200 ${
@@ -301,36 +257,27 @@ const ImageBlockImpl: React.FC<ImageBlockProps> = ({ src: srcProp, alt = "Image"
           >
             <h3 className="text-lg font-bold mb-4">Share this image</h3>
             <div className="flex flex-wrap gap-4 mb-4">
-              <button
-                onClick={() =>
+              <Button variant="quiet" onClick={() =>
                   openInNewTab(
                     `https://twitter.com/intent/tweet?url=${encodeURIComponent(src)}`,
                   )
-                }
-                className="bg-blue-400 text-white px-4 py-2 rounded hover:bg-blue-500"
-              >
+                }>
                 Twitter
-              </button>
-              <button
-                onClick={() =>
+              </Button>
+              <Button variant="quiet" onClick={() =>
                   openInNewTab(
                     `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(src)}`,
                   )
-                }
-                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-              >
+                }>
                 Facebook
-              </button>
-              <button
-                onClick={() =>
+              </Button>
+              <Button variant="quiet" onClick={() =>
                   openInNewTab(
                     `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(src)}`,
                   )
-                }
-                className="bg-blue-800 text-white px-4 py-2 rounded hover:bg-blue-900"
-              >
+                }>
                 LinkedIn
-              </button>
+              </Button>
             </div>
             <div className="flex justify-between items-center mt-4">
               <input
@@ -339,19 +286,13 @@ const ImageBlockImpl: React.FC<ImageBlockProps> = ({ src: srcProp, alt = "Image"
                 readOnly
                 className="flex-1 border border-border bg-background p-2 rounded mr-2"
               />
-              <button
-                onClick={handleCopyUrl}
-                className="bg-muted px-4 py-2 rounded hover:bg-accent"
-              >
+              <Button variant="quiet" onClick={handleCopyUrl}>
                 {showCopySuccess ? "Copied!" : "Copy"}
-              </button>
+              </Button>
             </div>
-            <button
-              onClick={() => setShowShareModal(false)}
-              className="mt-4 w-full bg-muted px-4 py-2 rounded hover:bg-accent"
-            >
+            <Button variant="quiet" onClick={() => setShowShareModal(false)} className="mt-4 w-full">
               Close
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -378,48 +319,25 @@ const ImageBlockImpl: React.FC<ImageBlockProps> = ({ src: srcProp, alt = "Image"
           />
 
           {/* Top-center close button — avoids sidebar (left) and avatar (right) */}
-          <button
-            onClick={handleCloseExpanded}
-            className="fixed top-3 left-1/2 -translate-x-1/2 z-[10000] text-white/80 hover:text-white bg-white/10 hover:bg-white/20 px-4 py-1.5 rounded-full transition-all duration-200 flex items-center gap-1.5 text-xs"
-            title="Close (Esc)"
-          >
-            <XIcon className="w-4 h-4" />
+          <Button variant="quiet" icon={<XIcon />} onClick={handleCloseExpanded} title="Close (Esc)" className="fixed top-3 left-1/2 z-[10000]">
             <span>Close</span>
-          </button>
+          </Button>
 
           {/* Bottom controls: zoom + close */}
           <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[10000] flex items-center gap-3 bg-black/70 backdrop-blur-sm px-5 py-2.5 rounded-full">
-            <button
-              onClick={(e) => {
+            <Button variant="quiet" icon={<ZoomOutIcon />} onClick={(e) => {
                 e.stopPropagation();
                 handleZoomOut();
-              }}
-              className="text-white hover:text-gray-300 p-1.5"
-              title="Zoom Out"
-            >
-              <ZoomOutIcon className="w-5 h-5" />
-            </button>
+              }} title="Zoom Out" aria-label="Zoom Out" />
             <span className="text-white text-sm font-medium min-w-[3rem] text-center">
               {Math.round(zoomLevel * 100)}%
             </span>
-            <button
-              onClick={(e) => {
+            <Button variant="quiet" icon={<ZoomInIcon />} onClick={(e) => {
                 e.stopPropagation();
                 handleZoomIn();
-              }}
-              className="text-white hover:text-gray-300 p-1.5"
-              title="Zoom In"
-            >
-              <ZoomInIcon className="w-5 h-5" />
-            </button>
+              }} title="Zoom In" aria-label="Zoom In" />
             <div className="w-px h-5 bg-white/20" />
-            <button
-              onClick={handleCloseExpanded}
-              className="text-white/70 hover:text-white p-1.5"
-              title="Close (Esc)"
-            >
-              <XIcon className="w-4 h-4" />
-            </button>
+            <Button variant="quiet" icon={<XIcon />} onClick={handleCloseExpanded} title="Close (Esc)" aria-label="Close (Esc)" />
           </div>
         </div>
       )}

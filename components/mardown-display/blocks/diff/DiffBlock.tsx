@@ -26,6 +26,7 @@ import { soleFence } from "@/lib/markdown/code-ranges";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useCanvasPresentation } from "@ai-matrx/canvas/react";
 import { diffIsSplit } from "@/components/mardown-display/blocks/canvas-adaptive";
+import { Button } from "@ai-matrx/design-system/controls";
 
 interface DiffSpec {
   title?: string;
@@ -139,24 +140,8 @@ const DiffSpecBlock: React.FC<DiffBlockProps> = ({ content = "", isStreamActive 
         </div>
         {!isStreamActive && spec && (
           <div className="flex shrink-0 items-center gap-0.5">
-            <button
-              type="button"
-              aria-label={effectiveSplit ? "Unified view" : "Split view"}
-              title={effectiveSplit ? "Unified view" : "Split view"}
-              onClick={() => setSplit(!effectiveSplit)}
-              className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
-            >
-              {effectiveSplit ? <Rows3 className="h-3.5 w-3.5" /> : <Columns2 className="h-3.5 w-3.5" />}
-            </button>
-            <button
-              type="button"
-              aria-label={copied ? "Copied" : "Copy source"}
-              title={copied ? "Copied" : "Copy source"}
-              onClick={handleCopy}
-              className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
-            >
-              {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-            </button>
+            <Button variant="quiet" icon={effectiveSplit ? <Rows3 /> : <Columns2 />} aria-label={effectiveSplit ? "Unified view" : "Split view"} title={effectiveSplit ? "Unified view" : "Split view"} onClick={() => setSplit(!effectiveSplit)} />
+            <Button variant="quiet" icon={copied ? <Check /> : <Copy />} aria-label={copied ? "Copied" : "Copy source"} title={copied ? "Copied" : "Copy source"} onClick={handleCopy} />
           </div>
         )}
       </div>

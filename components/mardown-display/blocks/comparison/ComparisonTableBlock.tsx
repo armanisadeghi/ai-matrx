@@ -1,6 +1,6 @@
 "use client";
 
-import { Badge, Chip, ChipSet } from "@ai-matrx/design-system/controls";
+import { Button, Badge, Chip, ChipSet } from "@ai-matrx/design-system/controls";
 import type { KIND_KEY } from "@ai-matrx/content-ir";
 // THE SHAPES COME FROM THE REGISTRY (`pnpm shape:types`) — this file never
 // re-declares a registered kind's fields (`check:kind-type-twins`).
@@ -851,25 +851,17 @@ const ComparisonTableBlock: React.FC<ComparisonTableBlockProps> = ({
                     <thead className="bg-muted">
                       <tr>
                         <th className="px-2 py-2 text-left sticky left-0 z-10 bg-muted border-r border-border shadow-[2px_0_6px_-2px_rgba(0,0,0,0.06)] dark:shadow-[2px_0_6px_-2px_rgba(0,0,0,0.35)]">
-                          <button
-                            type="button"
-                            onClick={() => handleSort("name")}
-                            className="inline-flex items-center gap-1 font-semibold text-foreground hover:text-emerald-600 dark:hover:text-emerald-400"
-                          >
+                          <Button variant="quiet" onClick={() => handleSort("name")}>
                             Item
                             {getSortIcon("name")}
-                          </button>
+                          </Button>
                         </th>
                         {showScores && (
                           <th className="px-2 py-2 text-center">
-                            <button
-                              type="button"
-                              onClick={() => handleSort("score")}
-                              className="inline-flex items-center gap-1 font-semibold text-foreground hover:text-emerald-600 dark:hover:text-emerald-400"
-                            >
+                            <Button variant="quiet" onClick={() => handleSort("score")}>
                               Score
                               {getSortIcon("score")}
-                            </button>
+                            </Button>
                           </th>
                         )}
                         {comparison.criteria.map(
@@ -879,14 +871,10 @@ const ComparisonTableBlock: React.FC<ComparisonTableBlockProps> = ({
                                 key={criterion.name}
                                 className="px-2 py-2 text-center"
                               >
-                                <button
-                                  type="button"
-                                  onClick={() => handleSort(criterion.name)}
-                                  className="inline-flex items-center gap-1 font-semibold text-foreground hover:text-emerald-600 dark:hover:text-emerald-400"
-                                >
+                                <Button variant="quiet" onClick={() => handleSort(criterion.name)}>
                                   <span>{criterion.name}</span>
                                   {getSortIcon(criterion.name)}
-                                </button>
+                                </Button>
                               </th>
                             ),
                         )}

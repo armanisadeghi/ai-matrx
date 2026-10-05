@@ -28,6 +28,7 @@ import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artif
 import { getArtifactDef } from "@/features/canvas/artifact-types/artifact-type-registry";
 import IconButton from "@/components/official/IconButton";
 import { useCanvasFit } from "../canvas-fit";
+import { Button } from "@ai-matrx/design-system/controls";
 
 interface Ingredient {
   amount: string;
@@ -432,27 +433,11 @@ const RecipeViewer: React.FC<RecipeViewerProps> = ({
                           Servings
                         </span>
                         <div className="flex items-center gap-1.5 ml-auto">
-                          <button
-                            type="button"
-                            onClick={() => adjustServings(false)}
-                            disabled={servingMultiplier <= 0.5}
-                            aria-label="Decrease servings"
-                            className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-purple-500 text-white transition-colors hover:bg-purple-600 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-purple-600 dark:hover:bg-purple-700 sm:h-6 sm:w-6"
-                          >
-                            <Minus className="h-3 w-3" />
-                          </button>
+                          <Button variant="quiet" icon={<Minus />} onClick={() => adjustServings(false)} disabled={servingMultiplier <= 0.5} aria-label="Decrease servings" />
                           <span className="min-w-[2rem] text-center font-bold text-xs tabular-nums text-purple-700 dark:text-purple-300">
                             {servingMultiplier}x
                           </span>
-                          <button
-                            type="button"
-                            onClick={() => adjustServings(true)}
-                            disabled={servingMultiplier >= 5}
-                            aria-label="Increase servings"
-                            className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-purple-500 text-white transition-colors hover:bg-purple-600 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-purple-600 dark:hover:bg-purple-700 sm:h-6 sm:w-6"
-                          >
-                            <Plus className="h-3 w-3" />
-                          </button>
+                          <Button variant="quiet" icon={<Plus />} onClick={() => adjustServings(true)} disabled={servingMultiplier >= 5} aria-label="Increase servings" />
                         </div>
                       </div>
 
@@ -508,12 +493,9 @@ const RecipeViewer: React.FC<RecipeViewerProps> = ({
                         Instructions
                       </h2>
                       {completedSteps.size > 0 && (
-                        <button
-                          onClick={resetProgress}
-                          className="text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
-                        >
+                        <Button variant="quiet" onClick={resetProgress}>
                           Reset
-                        </button>
+                        </Button>
                       )}
                     </div>
 
@@ -629,12 +611,9 @@ const RecipeViewer: React.FC<RecipeViewerProps> = ({
                         enjoy!
                       </p>
                     </div>
-                    <button
-                      onClick={resetProgress}
-                      className="mt-1 px-3 py-1.5 bg-green-500 dark:bg-green-600 hover:bg-green-600 dark:hover:bg-green-700 text-white rounded-lg font-medium text-xs shadow-md hover:shadow-lg transform hover:scale-105 transition-all"
-                    >
+                    <Button variant="success" onClick={resetProgress} className="mt-1">
                       Start Again
-                    </button>
+                    </Button>
                   </div>
                 </div>
               )}

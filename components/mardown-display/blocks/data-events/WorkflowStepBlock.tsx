@@ -10,6 +10,7 @@ import {
   ChevronUp,
 } from "lucide-react";
 import { ToggledDataBody } from "./ToggledDataBody";
+import { Button } from "@ai-matrx/design-system/controls";
 
 export interface WorkflowStepBlockProps {
   stepName: string;
@@ -83,16 +84,11 @@ const WorkflowStepBlock: React.FC<WorkflowStepBlockProps> = ({
         </div>
         <span className={`text-xs font-medium ${cfg.color}`}>{cfg.label}</span>
         {hasData && (
-          <button
-            onClick={() => setShowData((v) => !v)}
-            className="text-muted-foreground hover:text-foreground"
-          >
-            {showData ? (
-              <ChevronUp className="w-3.5 h-3.5" />
+          <Button variant="quiet" icon={showData ? (
+              <ChevronUp />
             ) : (
-              <ChevronDown className="w-3.5 h-3.5" />
-            )}
-          </button>
+              <ChevronDown />
+            )} onClick={() => setShowData((v) => !v)} aria-label={showData ? "Collapse" : "Expand"} aria-expanded={showData} />
         )}
       </div>
       {showData && data && (

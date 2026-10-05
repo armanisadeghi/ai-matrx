@@ -30,6 +30,7 @@ import {
   readUsage,
 } from "@/features/content-ir/kinds/media-io-shared";
 import { cn } from "@/lib/utils";
+import { Button } from "@ai-matrx/design-system/controls";
 
 export interface GeneratedAudioBlockProps {
   serverData?: unknown;
@@ -129,13 +130,9 @@ export default function GeneratedAudioBlock({
           </div>
           {/* NO DEAD ENDS: a clip with a durable id is a file the user can open. */}
           {data.file_id && (
-            <button
-              type="button"
-              onClick={() => openFilePreview({ fileId: data.file_id })}
-              className="rounded text-[11px] text-primary underline-offset-2 hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
-            >
+            <Button variant="link" onClick={() => openFilePreview({ fileId: data.file_id })}>
               Open file
-            </button>
+            </Button>
           )}
         </>
       ) : (

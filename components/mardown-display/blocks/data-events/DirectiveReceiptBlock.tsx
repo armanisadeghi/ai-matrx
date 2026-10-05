@@ -3,6 +3,7 @@ import React from "react";
 import { AlertTriangle, Check, CircleSlash, Clock, MessagesSquare, RotateCcw } from "lucide-react";
 import { useOptionalCanvas } from "@ai-matrx/canvas/react";
 import { openCommentThread } from "@/features/rich-document/annotations/canvas/commentThreadKind";
+import { Button } from "@ai-matrx/design-system/controls";
 
 /**
  * DirectiveReceiptBlock — what the directive actually DID, in a sentence.
@@ -94,14 +95,9 @@ function CommentReplyReceipt({ directive, outcome, message, thread }: DirectiveR
       <Icon className={`h-3.5 w-3.5 shrink-0 ${failed ? style.tone : "text-muted-foreground"}`} />
       <span className={`min-w-0 truncate ${failed ? "text-foreground" : "text-muted-foreground"}`}>{message}</span>
       {link && !failed ? (
-        <button
-          type="button"
-          className="shrink-0 text-primary hover:underline"
-          // Focus the reply that landed; the thread view resolves a reply to its root's card.
-          onClick={() => openCommentThread(canvas, { entity: link.entity, id: link.id, title: "Comments", focus: link.replyId ?? link.rootId })}
-        >
+        <Button variant="link" onClick={() => openCommentThread(canvas, { entity: link.entity, id: link.id, title: "Comments", focus: link.replyId ?? link.rootId })} className="shrink-0">
           Open thread
-        </button>
+        </Button>
       ) : null}
     </div>
   );

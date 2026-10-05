@@ -1,5 +1,5 @@
 "use client";
-import { Badge } from "@ai-matrx/design-system/controls";
+import { Button, Badge } from "@ai-matrx/design-system/controls";
 import React, { useState } from "react";
 import { AlertTriangle, ChevronDown, ChevronUp } from "lucide-react";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -36,16 +36,11 @@ const StructuredInputWarningBlock: React.FC<
           </div>
         </div>
         {hasFailures && (
-          <button
-            onClick={() => setShowFailures((v) => !v)}
-            className="text-muted-foreground hover:text-foreground flex-shrink-0"
-          >
-            {showFailures ? (
-              <ChevronUp className="w-3.5 h-3.5" />
+          <Button variant="quiet" icon={showFailures ? (
+              <ChevronUp />
             ) : (
-              <ChevronDown className="w-3.5 h-3.5" />
-            )}
-          </button>
+              <ChevronDown />
+            )} onClick={() => setShowFailures((v) => !v)} aria-label={showFailures ? "Collapse" : "Expand"} aria-expanded={showFailures} />
         )}
       </div>
       {showFailures && hasFailures && (

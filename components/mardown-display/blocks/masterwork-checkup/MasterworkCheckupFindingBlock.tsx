@@ -65,6 +65,7 @@ import {
   RuleDecisionActions,
   type RuleDecisionVerb,
 } from "@/features/masterwork/review/RuleDecisionActions";
+import { Button } from "@ai-matrx/design-system/controls";
 
 export interface MasterworkCheckupFindingBlockProps {
   serverData?: unknown;
@@ -345,15 +346,9 @@ export function MasterworkCheckupFindingBlock({
                 Other wordings we saw — pick one to edit it instead:
               </p>
               {finding.alternatives.map((alternative, index) => (
-                <button
-                  key={`${alternative.name}-${index}`}
-                  type="button"
-                  disabled={!interactive || busy}
-                  onClick={() => void decide("edit", index)}
-                  className="w-full rounded-md border border-border bg-card px-2 py-1 text-left text-xs text-muted-foreground transition-colors hover:text-foreground disabled:cursor-default disabled:hover:text-muted-foreground"
-                >
+                <Button variant="outline" key={`${alternative.name}-${index}`} disabled={!interactive || busy} onClick={() => void decide("edit", index)} className="w-full">
                   {alternative.statement}
-                </button>
+                </Button>
               ))}
             </div>
           ) : null}

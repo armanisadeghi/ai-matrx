@@ -4,6 +4,7 @@ import { AlertCircle, ChevronDown, ChevronUp } from "lucide-react";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { inlineKindText } from "@/features/content-ir/surfaces/kind-one-line";
 import { ToggledDataBody } from "./ToggledDataBody";
+import { Button } from "@ai-matrx/design-system/controls";
 
 export interface SearchErrorBlockProps {
   error: string;
@@ -22,12 +23,7 @@ const SearchErrorBlock: React.FC<SearchErrorBlockProps> = ({ error, metadata }) 
           <div className="flex items-center justify-between gap-2">
             <span className="text-sm font-medium text-foreground">Search Error</span>
             {hasExtra && (
-              <button
-                onClick={() => setShowDetail((v) => !v)}
-                className="text-muted-foreground hover:text-foreground"
-              >
-                {showDetail ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-              </button>
+              <Button variant="quiet" icon={showDetail ? <ChevronUp /> : <ChevronDown />} onClick={() => setShowDetail((v) => !v)} aria-label={showDetail ? "Collapse" : "Expand"} aria-expanded={showDetail} />
             )}
           </div>
           <p className="text-xs text-destructive/80 mt-0.5 leading-relaxed">

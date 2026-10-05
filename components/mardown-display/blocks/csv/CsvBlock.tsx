@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { useOpenSaveToTable } from "@/features/overlays/openers/saveToTable";
+import { Button } from "@ai-matrx/design-system/controls";
 
 function parseCsv(content: string, delimiter: string): string[][] {
   const rows: string[][] = [];
@@ -201,25 +202,15 @@ const CsvBlock: React.FC<CsvBlockProps> = ({
         </div>
         <div className="flex items-center gap-1">
           {openSaveToTable ? (
-          <button
-            onClick={handleSaveAsTable}
-            title="Save to a table"
-            className="flex items-center gap-1 px-2 py-1 rounded text-xs hover:bg-muted transition-colors text-muted-foreground hover:text-foreground disabled:opacity-50"
-          >
-            <Table2 className="w-3.5 h-3.5" />
+          <Button variant="quiet" icon={<Table2 />} onClick={handleSaveAsTable} title="Save to a table">
             <span>Save to a table</span>
-          </button>
+          </Button>
           ) : null}
-          <button
-            onClick={handleCopy}
-            className="p-1 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-          >
-            {copied ? (
-              <Check className="w-3.5 h-3.5 text-green-500" />
+          <Button variant="quiet" icon={copied ? (
+              <Check />
             ) : (
-              <Copy className="w-3.5 h-3.5" />
-            )}
-          </button>
+              <Copy />
+            )} glyphTone="success" onClick={handleCopy} aria-label="Copy" />
         </div>
       </div>
       <div className="overflow-x-auto">
@@ -277,18 +268,8 @@ const CsvBlock: React.FC<CsvBlockProps> = ({
                             style={{ fontSize: "16px" }}
                             autoFocus
                           />
-                          <button
-                            onClick={commitEdit}
-                            className="text-green-500 hover:text-green-400"
-                          >
-                            <CheckIcon className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={cancelEdit}
-                            className="text-destructive hover:text-destructive/80"
-                          >
-                            <X className="w-3.5 h-3.5" />
-                          </button>
+                          <Button variant="quiet" icon={<CheckIcon />} onClick={commitEdit} aria-label="Done" />
+                          <Button variant="quiet" icon={<X />} removes onClick={cancelEdit} aria-label="Close" />
                         </div>
                       ) : (
                         <>
@@ -301,12 +282,7 @@ const CsvBlock: React.FC<CsvBlockProps> = ({
                           >
                             {cellValue}
                           </span>
-                          <button
-                            onClick={() => startEdit(rowIdx, colIdx)}
-                            className="absolute right-1 top-1/2 -translate-y-1/2 opacity-0 group-hover/cell:opacity-50 hover:!opacity-100 transition-opacity"
-                          >
-                            <Pencil className="w-3 h-3 text-muted-foreground" />
-                          </button>
+                          <Button variant="quiet" icon={<Pencil />} onClick={() => startEdit(rowIdx, colIdx)} aria-label="Edit" className="absolute right-1 top-1/2 opacity-0 hover:!opacity-100" />
                         </>
                       )}
                     </td>

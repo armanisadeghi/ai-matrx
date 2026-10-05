@@ -113,27 +113,16 @@ const UnknownDataEventBlock: React.FC<UnknownDataEventBlockProps> = ({
           >
             Copy for AI
           </Button>
-          <button
-            onClick={handleCopy}
-            className="p-1 rounded hover:bg-muted/50 text-muted-foreground hover:text-foreground"
-            title="Copy JSON"
-          >
-            {isCopied ? (
-              <Check className="w-3.5 h-3.5 text-success" />
+          <Button variant="quiet" icon={isCopied ? (
+              <Check />
             ) : (
-              <Copy className="w-3.5 h-3.5" />
-            )}
-          </button>
-          <button
-            onClick={() => setIsExpanded((v) => !v)}
-            className="p-1 rounded hover:bg-muted/50 text-muted-foreground hover:text-foreground"
-          >
-            {isExpanded ? (
-              <ChevronUp className="w-3.5 h-3.5" />
+              <Copy />
+            )} glyphTone="success" onClick={handleCopy} title="Copy JSON" aria-label="Copy JSON" />
+          <Button variant="quiet" icon={isExpanded ? (
+              <ChevronUp />
             ) : (
-              <ChevronDown className="w-3.5 h-3.5" />
-            )}
-          </button>
+              <ChevronDown />
+            )} onClick={() => setIsExpanded((v) => !v)} aria-label={isExpanded ? "Collapse" : "Expand"} aria-expanded={isExpanded} />
         </div>
       </div>
       {isExpanded && (

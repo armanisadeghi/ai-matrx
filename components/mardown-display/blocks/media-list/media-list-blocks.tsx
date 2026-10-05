@@ -29,6 +29,7 @@ import type { MediaCandidateVerdict } from "@/features/content-ir/kinds/generate
 import { cn } from "@/lib/utils";
 
 import { readSearchKindValue } from "../search-kinds/search-kind-data";
+import { Button } from "@ai-matrx/design-system/controls";
 
 type Status = MediaCandidateVerdict["status"];
 type Candidate = Partial<MediaCandidateVerdict> & Record<string, unknown>;
@@ -288,19 +289,9 @@ export function MediaListRankingBlock({ serverData, className }: MediaListBlockP
           {(["all", ...STATUS_ORDER] as const).map((s) => {
             const n = s === "all" ? results.length - counts.cut : counts[s];
             return (
-              <button
-                key={s}
-                type="button"
-                onClick={() => setFilter(s)}
-                className={cn(
-                  "rounded-full border px-2.5 py-0.5 text-xs transition-colors",
-                  filter === s
-                    ? "border-primary bg-primary text-primary-foreground"
-                    : "border-border bg-background text-muted-foreground hover:bg-muted",
-                )}
-              >
+              <Button variant="outline" pressed={filter === s} key={s} onClick={() => setFilter(s)}>
                 {s === "all" ? "Kept" : STATUS_META[s].label} {n}
-              </button>
+              </Button>
             );
           })}
         </div>
@@ -333,14 +324,9 @@ export function MediaListRankingBlock({ serverData, className }: MediaListBlockP
 
       {filter === "all" && cut.length > 0 && (
         <div className="border-t border-border pt-1">
-          <button
-            type="button"
-            onClick={() => setShowCut((v) => !v)}
-            className="flex items-center gap-1 px-1 py-1 text-xs text-muted-foreground hover:text-foreground"
-          >
-            <ChevronDown className={cn("h-3 w-3 transition-transform", showCut && "rotate-180")} />
+          <Button variant="quiet" icon={<ChevronDown className={cn("h-3 w-3 transition-transform", showCut && "rotate-180")} />} onClick={() => setShowCut((v) => !v)}>
             {cut.length} cut
-          </button>
+          </Button>
           {showCut && (
             <ul>
               {cut.map((item, i) => (

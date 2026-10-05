@@ -35,6 +35,7 @@ import { confidenceToResult } from "@/lib/srs/fsrs";
 import type { FlashcardMobileCard } from "./flashcard-mobile-bridge";
 import { FlashcardFaceImage, hasFaceImage } from "./FlashcardFaceImage";
 import { markdownToPlainText } from "@/lib/markdown/plain-text";
+import { Button } from "@ai-matrx/design-system/controls";
 
 const ANIM_MS = 320;
 const TEXT_FADE_OUT_MS = 120;
@@ -646,27 +647,18 @@ const FilmstripScrubber: React.FC<{
 
       {/* Compact action row — keeps total scrubber height tight */}
       <div className="flex items-center justify-center gap-3 mt-2.5">
-        <button
-          onClick={() => onSelect(centeredIndex)}
-          className="px-5 py-1.5 rounded-full bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition-colors"
-        >
+        <Button variant="quiet" onClick={() => onSelect(centeredIndex)}>
           Go to #{centeredIndex + 1}
-        </button>
-        <button
-          onClick={() => {
+        </Button>
+        <Button variant="quiet" onClick={() => {
             const random = Math.floor(Math.random() * total);
             onSelect(random);
-          }}
-          className="px-4 py-1.5 rounded-full bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold transition-colors"
-        >
+          }}>
           Surprise me
-        </button>
-        <button
-          onClick={onClose}
-          className="px-4 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white/60 hover:text-white text-xs transition-colors"
-        >
+        </Button>
+        <Button variant="quiet" onClick={onClose}>
           cancel
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -687,14 +679,10 @@ const ActionButton: React.FC<ActionButtonProps> = ({
   onClick,
   disabled,
 }) => (
-  <button
-    onClick={onClick}
-    disabled={disabled}
-    className="flex flex-col items-center justify-center gap-1 py-4 bg-zinc-900 hover:bg-zinc-800 disabled:opacity-25 transition-colors"
-  >
+  <Button variant="quiet" onClick={onClick} disabled={disabled}>
     <span className="text-white/70">{icon}</span>
     <span className="text-[10px] text-white/50">{label}</span>
-  </button>
+  </Button>
 );
 
 // ─────────────────────────────────────────────
@@ -964,13 +952,7 @@ const FlashcardMobileView: React.FC<FlashcardMobileViewProps> = ({
     <div className="fixed inset-0 z-[100] flex flex-col bg-black overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-3 pt-3 pb-1 select-none shrink-0">
-        <button
-          onClick={goPrev}
-          disabled={index === 0}
-          className="p-1.5 rounded-full text-white/60 hover:text-white disabled:opacity-20 transition-opacity"
-        >
-          <ChevronLeft className="h-5 w-5" />
-        </button>
+        <Button variant="quiet" icon={<ChevronLeft />} onClick={goPrev} disabled={index === 0} aria-label="Previous" />
 
         <div className="flex flex-col items-center gap-0.5">
           <span className="text-white/70 text-xs font-medium">
@@ -995,22 +977,11 @@ const FlashcardMobileView: React.FC<FlashcardMobileViewProps> = ({
         </div>
 
         <div className="flex items-center gap-1">
-          <button
-            onClick={() => {
+          <Button variant="quiet" icon={<Layers />} onClick={() => {
               setMenuOpen(false);
               setScrubOpen((s) => !s);
-            }}
-            className="p-1.5 rounded-full text-white/40 hover:text-white transition-opacity"
-            title="Jump to card"
-          >
-            <Layers className="h-4 w-4" />
-          </button>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-full text-white/60 hover:text-white transition-opacity"
-          >
-            <X className="h-5 w-5" />
-          </button>
+            }} title="Jump to card" aria-label="Jump to card" />
+          <Button variant="quiet" icon={<X />} onClick={onClose} aria-label="Close" />
         </div>
       </div>
 
@@ -1042,18 +1013,13 @@ const FlashcardMobileView: React.FC<FlashcardMobileViewProps> = ({
             </div>
             {/* No tap-to-flip zones here, so the drawer (manual grade + exit)
                 needs an explicit opener — swipe-up would fight the pair grid. */}
-            <button
-              type="button"
-              onClick={(e) => {
+            <Button variant="quiet" icon={<GripHorizontal />} onClick={(e) => {
                 e.stopPropagation();
                 setScrubOpen(false);
                 setMenuOpen(true);
-              }}
-              className="mx-auto flex items-center gap-1.5 rounded-full bg-white/10 px-4 py-2 text-xs text-white/70 transition-colors hover:bg-white/20 hover:text-white"
-            >
-              <GripHorizontal className="h-4 w-4" />
+              }} className="mx-auto">
               Options
-            </button>
+            </Button>
           </div>
         </div>
       ) : (
@@ -1254,24 +1220,16 @@ const FlashcardMobileView: React.FC<FlashcardMobileViewProps> = ({
           ) : null}
 
           {/* Jump to card shortcut */}
-          <button
-            onClick={() => {
+          <Button variant="quiet" icon={<Layers />} onClick={() => {
               setMenuOpen(false);
               setScrubOpen(true);
-            }}
-            className="w-full flex items-center justify-center gap-2 py-3 text-blue-400/70 hover:text-blue-400 transition-colors border-t border-white/5"
-          >
-            <Layers className="h-4 w-4" />
+            }} className="w-full">
             <span className="text-sm">Jump to Card</span>
-          </button>
+          </Button>
 
-          <button
-            onClick={onClose}
-            className="w-full flex items-center justify-center gap-2 py-3 text-red-400/70 hover:text-red-400 transition-colors border-t border-white/5"
-          >
-            <LogOut className="h-4 w-4" />
+          <Button variant="quiet" icon={<LogOut />} removes onClick={onClose} className="w-full">
             <span className="text-sm">Exit Flash Mode</span>
-          </button>
+          </Button>
         </div>
       </div>
     </div>

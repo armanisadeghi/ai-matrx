@@ -47,6 +47,7 @@ import type {
 } from "@/features/content-ir/kinds/cms-page-build";
 import { cmsPageBuildPreviewDocument } from "@/features/content-ir/kinds/cms-page-build";
 import { cn } from "@/lib/utils";
+import { Button } from "@ai-matrx/design-system/controls";
 
 export interface CmsPageBuildBlockProps {
   serverData?: unknown;
@@ -198,14 +199,9 @@ export function CmsBuildPreview({ data }: { data: CmsPageBuildData }) {
         <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           The built page
         </span>
-        <button
-          type="button"
-          onClick={() => setShowMarkup((open) => !open)}
-          className="ml-auto inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-        >
-          <Code2 className="h-3 w-3" aria-hidden />
+        <Button variant="quiet" icon={<Code2 aria-hidden />} onClick={() => setShowMarkup((open) => !open)} className="ml-auto">
           {showMarkup ? "Hide code" : "Show code"}
-        </button>
+        </Button>
       </div>
       {showMarkup ? (
         <pre className="max-h-[45dvh] overflow-auto p-3 font-mono text-[11px] leading-relaxed text-foreground">

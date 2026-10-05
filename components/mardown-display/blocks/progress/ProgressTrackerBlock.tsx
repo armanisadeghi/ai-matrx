@@ -2,7 +2,7 @@
 
 // THE SHAPES COME FROM THE REGISTRY (`pnpm shape:types`) — this file never
 // re-declares a registered kind's fields (`check:kind-type-twins`).
-import { Badge } from "@ai-matrx/design-system/controls";
+import { Button, Badge } from "@ai-matrx/design-system/controls";
 import type {
   ProgressCategory,
   ProgressItem,
@@ -386,13 +386,9 @@ const ProgressTrackerBlock: React.FC<ProgressTrackerBlockProps> = ({
                   Progress Tracker
                 </h3>
               </div>
-              <button
-                onClick={() => setIsFullScreen(false)}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-textured hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium transition-all shadow-sm"
-              >
-                <Minimize2 className="h-4 w-4" />
+              <Button variant="quiet" icon={<Minimize2 />} onClick={() => setIsFullScreen(false)}>
                 <span>Exit</span>
-              </button>
+              </Button>
             </div>
           )}
 
@@ -420,34 +416,18 @@ const ProgressTrackerBlock: React.FC<ProgressTrackerBlockProps> = ({
 
                   {!isFullScreen && (
                     <div className="flex w-full flex-col items-stretch gap-2 @4xl:w-auto @4xl:flex-row @4xl:items-center">
-                      <button
-                        onClick={() => setIsImportModalOpen(true)}
-                        className="flex min-h-11 w-full items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-green-500 dark:bg-green-600 text-white text-sm font-semibold shadow-md hover:bg-green-600 dark:hover:bg-green-700 hover:shadow-lg transition-all @4xl:min-h-0 @4xl:w-auto @4xl:flex-none"
-                      >
-                        <Upload className="h-4 w-4" />
+                      <Button variant="success" icon={<Upload />} onClick={() => setIsImportModalOpen(true)} className="w-full @4xl:w-auto">
                         <span>Import to Tasks</span>
-                      </button>
-                      <button
-                        onClick={handleOpenCanvas}
-                        className="flex min-h-11 w-full items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-purple-500 dark:bg-purple-600 text-white text-sm font-semibold shadow-md hover:bg-purple-600 dark:hover:bg-purple-700 hover:shadow-lg transition-all @4xl:min-h-0 @4xl:w-auto @4xl:flex-none"
-                      >
-                        <ArrowUpRight className="h-4 w-4" />
+                      </Button>
+                      <Button variant="quiet" icon={<ArrowUpRight />} onClick={handleOpenCanvas} className="w-full @4xl:w-auto">
                         <span>Canvas</span>
-                      </button>
-                      <button
-                        onClick={handlePrint}
-                        className="flex min-h-11 w-full items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-slate-500 dark:bg-slate-600 text-white text-sm font-semibold shadow-md hover:bg-slate-600 dark:hover:bg-slate-700 hover:shadow-lg transition-all @4xl:min-h-0 @4xl:w-auto @4xl:flex-none"
-                      >
-                        <Printer className="h-4 w-4" />
+                      </Button>
+                      <Button variant="quiet" icon={<Printer />} onClick={handlePrint} className="w-full @4xl:w-auto">
                         <span>Print</span>
-                      </button>
-                      <button
-                        onClick={() => setIsFullScreen(true)}
-                        className="flex min-h-11 w-full items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-blue-500 dark:bg-blue-600 text-white text-sm font-semibold shadow-md hover:bg-blue-600 dark:hover:bg-blue-700 hover:shadow-lg transition-all @4xl:min-h-0 @4xl:w-auto @4xl:flex-none"
-                      >
-                        <Maximize2 className="h-4 w-4" />
+                      </Button>
+                      <Button variant="quiet" icon={<Maximize2 />} onClick={() => setIsFullScreen(true)} className="w-full @4xl:w-auto">
                         <span>Focus</span>
-                      </button>
+                      </Button>
                     </div>
                   )}
                 </div>
@@ -552,13 +532,9 @@ const ProgressTrackerBlock: React.FC<ProgressTrackerBlockProps> = ({
                   </div>
 
                   <div className="flex w-full gap-2 sm:w-auto">
-                    <button
-                      onClick={resetProgress}
-                      className="flex min-h-11 w-full items-center justify-center gap-2 px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium transition-colors sm:min-h-0 sm:w-auto"
-                    >
-                      <RotateCcw className="h-4 w-4" />
+                    <Button variant="quiet" icon={<RotateCcw />} onClick={resetProgress} className="w-full sm:w-auto">
                       <span>Reset</span>
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -629,12 +605,9 @@ const ProgressTrackerBlock: React.FC<ProgressTrackerBlockProps> = ({
                             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                               Progress
                             </span>
-                            <button
-                              onClick={() => toggleAllInCategory(category.id)}
-                              className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
-                            >
+                            <Button variant="quiet" onClick={() => toggleAllInCategory(category.id)}>
                               {allItemsCompleted ? "Uncheck All" : "Check All"}
-                            </button>
+                            </Button>
                           </div>
                           <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden shadow-inner">
                             <div

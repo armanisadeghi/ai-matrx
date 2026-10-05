@@ -345,48 +345,19 @@ function PortraitPlayer({ url, mimeType, title, artist, cover }: PlayerProps) {
 
       {/* Controls */}
       <div className="px-1 flex items-center justify-between mb-4">
-        <button
-          onClick={() => setIsRepeat((r) => !r)}
-          className={`p-2 rounded-full transition-colors ${isRepeat ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-accent"}`}
-          title="Repeat"
-        >
-          <Repeat size={16} />
-        </button>
+        <Button variant="quiet" pressed={isRepeat} icon={<Repeat size={16} />} onClick={() => setIsRepeat((r) => !r)} title="Repeat" aria-label="Repeat" />
 
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => seek(Math.max(0, currentTime - 10))}
-            className="p-2 text-muted-foreground hover:text-foreground hover:bg-accent rounded-full transition-colors"
-            title="Back 10s"
-          >
-            <SkipBack size={22} />
-          </button>
-          <button
-            onClick={togglePlay}
-            className="w-12 h-12 flex items-center justify-center bg-primary text-primary-foreground rounded-full shadow-md hover:scale-105 active:scale-95 transition-all"
-          >
-            {isPlaying ? (
-              <Pause size={22} fill="currentColor" />
+          <Button variant="quiet" icon={<SkipBack size={22} />} onClick={() => seek(Math.max(0, currentTime - 10))} title="Back 10s" aria-label="Back 10s" />
+          <Button variant="primary" icon={isPlaying ? (
+              <Pause  size={22} fill="currentColor" />
             ) : (
-              <Play size={22} fill="currentColor" className="ml-0.5" />
-            )}
-          </button>
-          <button
-            onClick={() => seek(Math.min(duration, currentTime + 10))}
-            className="p-2 text-muted-foreground hover:text-foreground hover:bg-accent rounded-full transition-colors"
-            title="Forward 10s"
-          >
-            <SkipForward size={22} />
-          </button>
+              <Play  size={22} fill="currentColor" />
+            )} onClick={togglePlay} aria-label={isPlaying ? "Pause" : "Play"} />
+          <Button variant="quiet" icon={<SkipForward size={22} />} onClick={() => seek(Math.min(duration, currentTime + 10))} title="Forward 10s" aria-label="Forward 10s" />
         </div>
 
-        <button
-          onClick={toggleMute}
-          className="p-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-          title={isMuted ? "Unmute" : "Mute"}
-        >
-          {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
-        </button>
+        <Button variant="quiet" icon={isMuted ? <VolumeX  size={16} /> : <Volume2  size={16} />} onClick={toggleMute} title={isMuted ? "Unmute" : "Mute"} aria-label={isMuted ? "Unmute" : "Mute"} />
       </div>
 
       {/* Volume */}
@@ -413,13 +384,9 @@ function PortraitPlayer({ url, mimeType, title, artist, cover }: PlayerProps) {
         >
           {isDownloading ? "Downloading…" : "Download"}
         </Button>
-        <button
-          onClick={copyLink}
-          className="flex items-center gap-1 px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors"
-        >
-          {isCopied ? <Check size={12} /> : <Link size={12} />}
+        <Button variant="quiet" icon={isCopied ? <Check  size={12} /> : <Link  size={12} />} onClick={copyLink}>
           {isCopied ? "Copied!" : "Copy link"}
-        </button>
+        </Button>
         {mimeType && (
           <span className="ml-auto text-[10px] font-mono px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
             {mimeType}
@@ -505,44 +472,19 @@ function LandscapePlayer({ url, mimeType, title, artist, cover }: PlayerProps) {
           {/* Controls row */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1">
-              <button
-                onClick={() => seek(Math.max(0, currentTime - 10))}
-                className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-accent rounded-full transition-colors"
-              >
-                <SkipBack size={16} />
-              </button>
-              <button
-                onClick={togglePlay}
-                className="w-9 h-9 flex items-center justify-center bg-primary text-primary-foreground rounded-full shadow hover:scale-105 active:scale-95 transition-all"
-              >
-                {isPlaying ? (
-                  <Pause size={16} fill="currentColor" />
+              <Button variant="quiet" icon={<SkipBack size={16} />} onClick={() => seek(Math.max(0, currentTime - 10))} aria-label="Previous" />
+              <Button variant="primary" icon={isPlaying ? (
+                  <Pause  size={16} fill="currentColor" />
                 ) : (
-                  <Play size={16} fill="currentColor" className="ml-0.5" />
-                )}
-              </button>
-              <button
-                onClick={() => seek(Math.min(duration, currentTime + 10))}
-                className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-accent rounded-full transition-colors"
-              >
-                <SkipForward size={16} />
-              </button>
-              <button
-                onClick={() => setIsRepeat((r) => !r)}
-                className={`p-1.5 rounded-full transition-colors ${isRepeat ? "text-primary" : "text-muted-foreground hover:text-foreground hover:bg-accent"}`}
-              >
-                <Repeat size={14} />
-              </button>
+                  <Play  size={16} fill="currentColor" />
+                )} onClick={togglePlay} aria-label={isPlaying ? "Pause" : "Play"} />
+              <Button variant="quiet" icon={<SkipForward size={16} />} onClick={() => seek(Math.min(duration, currentTime + 10))} aria-label="Next" />
+              <Button variant="quiet" pressed={isRepeat} icon={<Repeat size={14} />} onClick={() => setIsRepeat((r) => !r)} aria-label="Repeat" />
             </div>
 
             {/* Volume mini */}
             <div className="flex items-center gap-1.5 w-28">
-              <button
-                onClick={toggleMute}
-                className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
-              >
-                {isMuted ? <VolumeX size={14} /> : <Volume2 size={14} />}
-              </button>
+              <Button variant="quiet" icon={isMuted ? <VolumeX  size={14} /> : <Volume2  size={14} />} onClick={toggleMute} aria-label="Toggle sound" />
               <RangeInput
                 min={0}
                 max={1}
@@ -564,13 +506,9 @@ function LandscapePlayer({ url, mimeType, title, artist, cover }: PlayerProps) {
             >
               {isDownloading ? "Downloading…" : "Download"}
             </Button>
-            <button
-              onClick={copyLink}
-              className="flex items-center gap-1 px-2 py-0.5 text-[11px] text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors"
-            >
-              {isCopied ? <Check size={10} /> : <Link size={10} />}
+            <Button variant="quiet" icon={isCopied ? <Check  size={10} /> : <Link  size={10} />} onClick={copyLink}>
               {isCopied ? "Copied!" : "Copy link"}
-            </button>
+            </Button>
             {mimeType && (
               <span className="ml-auto text-[10px] font-mono px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
                 {mimeType}

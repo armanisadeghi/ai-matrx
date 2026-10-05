@@ -10,7 +10,7 @@ import {
   Search,
 } from "lucide-react";
 import { cn } from "@/styles/themes/utils";
-import { Input } from "@ai-matrx/design-system/controls";
+import { Button, Input } from "@ai-matrx/design-system/controls";
 
 type SortDir = "asc" | "desc" | null;
 
@@ -55,17 +55,13 @@ const NestedCell: React.FC<NestedCellProps> = ({ value }) => {
 
   return (
     <div className="flex flex-col gap-1 min-w-0">
-      <button
-        onClick={() => setExpanded((v) => !v)}
-        className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-      >
-        {expanded ? (
-          <ChevronDown className="h-3 w-3 shrink-0" />
+      <Button variant="quiet" icon={expanded ? (
+          <ChevronDown />
         ) : (
-          <ChevronRight className="h-3 w-3 shrink-0" />
-        )}
+          <ChevronRight />
+        )} onClick={() => setExpanded((v) => !v)}>
         <span className="font-mono">{preview}</span>
-      </button>
+      </Button>
       {expanded && (
         <pre className="text-[11px] bg-muted/50 rounded px-2 py-1 overflow-auto max-h-48 whitespace-pre-wrap break-all">
           {JSON.stringify(value, null, 2)}

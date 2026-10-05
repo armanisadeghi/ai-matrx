@@ -1,6 +1,6 @@
 "use client";
 
-import { Badge, Chip } from "@ai-matrx/design-system/controls";
+import { Button, Badge, Chip } from "@ai-matrx/design-system/controls";
 import type { KIND_KEY } from "@ai-matrx/content-ir";
 // THE SHAPES COME FROM THE REGISTRY (`pnpm shape:types`) — this file never
 // re-declares a registered kind's fields (`check:kind-type-twins`).
@@ -386,17 +386,11 @@ const DecisionTreeBlock: React.FC<DecisionTreeBlockProps> = ({
                   {node.question}
                 </p>
                 {hasChildren && showFullTree && (
-                  <button
-                    type="button"
-                    onClick={() => toggleNodeExpansion(node.id)}
-                    className="p-1 hover:bg-white/20 rounded transition-colors flex-shrink-0"
-                  >
-                    {isExpanded ? (
-                      <ChevronDown className="h-3.5 w-3.5" />
+                  <Button variant="quiet" icon={isExpanded ? (
+                      <ChevronDown />
                     ) : (
-                      <ChevronRight className="h-3.5 w-3.5" />
-                    )}
-                  </button>
+                      <ChevronRight />
+                    )} onClick={() => toggleNodeExpansion(node.id)} aria-label={isExpanded ? "Collapse" : "Expand"} aria-expanded={isExpanded} />
                 )}
               </div>
 
@@ -428,26 +422,12 @@ const DecisionTreeBlock: React.FC<DecisionTreeBlockProps> = ({
               )}
 
               <div className="flex gap-2 pt-0.5">
-                <button
-                  type="button"
-                  onClick={() => handleChoice("yes")}
-                  disabled={!node.yes}
-                  title="Yes"
-                  className="inline-flex shrink-0 w-20 max-w-20 items-center justify-center gap-1 py-2 bg-green-500 hover:bg-green-600 disabled:bg-gray-400 text-white rounded-md text-xs font-medium transition-colors"
-                >
-                  <CheckCircle2 className="h-3.5 w-3.5" />
+                <Button variant="success" icon={<CheckCircle2 />} onClick={() => handleChoice("yes")} disabled={!node.yes} title="Yes" className="shrink-0">
                   Yes
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleChoice("no")}
-                  disabled={!node.no}
-                  title="No"
-                  className="inline-flex shrink-0 w-20 max-w-20 items-center justify-center gap-1 py-2 bg-red-500 hover:bg-red-600 disabled:bg-gray-400 text-white rounded-md text-xs font-medium transition-colors"
-                >
-                  <XCircle className="h-3.5 w-3.5" />
+                </Button>
+                <Button variant="danger" icon={<XCircle />} onClick={() => handleChoice("no")} disabled={!node.no} title="No" className="shrink-0">
                   No
-                </button>
+                </Button>
               </div>
             </div>
           ) : (
@@ -494,17 +474,11 @@ const DecisionTreeBlock: React.FC<DecisionTreeBlockProps> = ({
               </div>
 
               {hasChildren && showFullTree && (
-                <button
-                  type="button"
-                  onClick={() => toggleNodeExpansion(node.id)}
-                  className="p-1 hover:bg-muted rounded transition-colors flex-shrink-0"
-                >
-                  {isExpanded ? (
-                    <ChevronDown className="h-3.5 w-3.5" />
+                <Button variant="quiet" icon={isExpanded ? (
+                    <ChevronDown />
                   ) : (
-                    <ChevronRight className="h-3.5 w-3.5" />
-                  )}
-                </button>
+                    <ChevronRight />
+                  )} onClick={() => toggleNodeExpansion(node.id)} aria-label={isExpanded ? "Collapse" : "Expand"} aria-expanded={isExpanded} />
               )}
             </div>
           )}
@@ -814,32 +788,20 @@ const DecisionTreeBlock: React.FC<DecisionTreeBlockProps> = ({
                         </p>
                       )}
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <button
-                          type="button"
-                          onClick={() => {
+                        <Button variant="success" icon={<CheckCircle2 />} onClick={() => {
                             const newPaths = new Set([...completedPaths, currentNode.id]);
                             setCompletedPaths(newPaths);
                             emitState(currentNode, navigationHistory, newPaths);
-                          }}
-                          title="Mark as Completed"
-                          className="inline-flex items-center gap-1 px-2 py-1.5 bg-green-600 dark:bg-green-700 text-white rounded-md text-xs font-medium hover:bg-green-700 dark:hover:bg-green-800 transition-colors"
-                        >
-                          <CheckCircle2 className="h-3.5 w-3.5" />
+                          }} title="Mark as Completed">
                           <span className="hidden sm:inline">
                             Mark as Completed
                           </span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={goToRoot}
-                          title="Start New Decision"
-                          className="inline-flex items-center gap-1 px-2 py-1.5 bg-background text-green-700 dark:text-green-300 border border-green-300 dark:border-green-700 rounded-md text-xs font-medium hover:bg-green-50 dark:hover:bg-green-950/30 transition-colors"
-                        >
-                          <RotateCcw className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button variant="outline" icon={<RotateCcw />} onClick={goToRoot} title="Start New Decision">
                           <span className="hidden sm:inline">
                             Start New Decision
                           </span>
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   </div>

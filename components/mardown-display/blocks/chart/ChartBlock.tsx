@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 import { parseChartSpec, type ChartSpec } from "./chart-spec";
 import { useCanvasPresentation } from "@ai-matrx/canvas/react";
 import { chartPaneLayout } from "@/components/mardown-display/blocks/canvas-adaptive";
+import { Button } from "@ai-matrx/design-system/controls";
 
 const CHART_TYPE_LABEL: Record<string, string> = {
   bar: "Bar chart",
@@ -130,15 +131,9 @@ export const ChartBlock: React.FC<ChartBlockProps> = ({ content = "", isStreamAc
 
 function IconBtn({ label, onClick, children }: { label: string; onClick: () => void; children: React.ReactNode }) {
   return (
-    <button
-      type="button"
-      aria-label={label}
-      title={label}
-      onClick={onClick}
-      className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
-    >
+    <Button variant="quiet" aria-label={label} title={label} onClick={onClick}>
       {children}
-    </button>
+    </Button>
   );
 }
 
@@ -160,9 +155,9 @@ function ChartError({
         <div className="min-w-0 flex-1 space-y-1.5">
           <p className="font-medium text-foreground">This chart could not be drawn</p>
           <p className="break-words text-xs text-muted-foreground">{error}</p>
-          <button type="button" className="text-xs font-medium text-primary hover:underline" onClick={onToggle}>
+          <Button variant="link" onClick={onToggle}>
             {show ? "Hide source" : "Show source"}
-          </button>
+          </Button>
           {show && (
             <pre className="mt-1 max-h-64 overflow-auto rounded bg-muted p-2 text-xs text-muted-foreground">
               {source}
@@ -194,15 +189,7 @@ function ChartFullscreen({ spec, title, onClose }: { spec: ChartSpec; title: str
     <div className="fixed inset-0 z-[120] flex flex-col bg-background/98 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label={title}>
       <div className="flex items-center justify-between border-b border-border px-4 py-2 pt-safe">
         <span className="truncate text-sm font-medium text-foreground">{title}</span>
-        <button
-          type="button"
-          aria-label="Exit fullscreen"
-          title="Exit fullscreen (Esc)"
-          onClick={onClose}
-          className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-        >
-          <X className="h-4 w-4" />
-        </button>
+        <Button variant="quiet" icon={<X />} aria-label="Exit fullscreen" title="Exit fullscreen (Esc)" onClick={onClose} />
       </div>
       <div className="min-h-0 flex-1 p-6">
         <ChartCanvas spec={spec} />

@@ -1,5 +1,5 @@
 "use client";
-import { Chip } from "@ai-matrx/design-system/controls";
+import { Button, Chip } from "@ai-matrx/design-system/controls";
 import React, { useState } from "react";
 import { Tag, ChevronDown, ChevronUp, TestTube2 } from "lucide-react";
 import { ToggledDataBody } from "./ToggledDataBody";
@@ -58,16 +58,11 @@ const CategorizationResultBlock: React.FC<CategorizationResultBlockProps> = ({
           </p>
         </div>
         {hasExtra && (
-          <button
-            onClick={() => setShowMeta((v) => !v)}
-            className="text-muted-foreground hover:text-foreground flex-shrink-0"
-          >
-            {showMeta ? (
-              <ChevronUp className="w-3.5 h-3.5" />
+          <Button variant="quiet" icon={showMeta ? (
+              <ChevronUp />
             ) : (
-              <ChevronDown className="w-3.5 h-3.5" />
-            )}
-          </button>
+              <ChevronDown />
+            )} onClick={() => setShowMeta((v) => !v)} aria-label={showMeta ? "Collapse" : "Expand"} aria-expanded={showMeta} />
         )}
       </div>
       {showMeta && (

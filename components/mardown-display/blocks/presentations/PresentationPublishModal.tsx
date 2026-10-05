@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, ExternalLink, Copy, CheckCircle2 } from 'lucide-react';
 import { PresentationData } from './Slideshow';
+import { Button } from "@ai-matrx/design-system/controls";
 
 interface PresentationPublishModalProps {
     isOpen: boolean;
@@ -51,12 +52,7 @@ export const PresentationPublishModal: React.FC<PresentationPublishModalProps> =
                     <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
                         {isPublishing ? 'Publishing Presentation...' : 'Presentation Published'}
                     </h2>
-                    <button
-                        onClick={onClose}
-                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-                    >
-                        <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
-                    </button>
+                    <Button variant="quiet" icon={<X />} onClick={onClose} aria-label="Close" />
                 </div>
 
                 {/* Content */}
@@ -86,17 +82,11 @@ export const PresentationPublishModal: React.FC<PresentationPublishModalProps> =
                                     >
                                         {publishedUrl}
                                     </a>
-                                    <button
-                                        onClick={handleCopyUrl}
-                                        className="p-2 hover:bg-blue-100 dark:hover:bg-blue-800 rounded transition-colors"
-                                        title="Copy URL"
-                                    >
-                                        {copiedUrl ? (
-                                            <CheckCircle2 size={18} className="text-green-600 dark:text-green-400" />
+                                    <Button variant="quiet" icon={copiedUrl ? (
+                                            <CheckCircle2  size={18} />
                                         ) : (
-                                            <Copy size={18} className="text-blue-600 dark:text-blue-400" />
-                                        )}
-                                    </button>
+                                            <Copy  size={18} />
+                                        )} glyphTone="success" onClick={handleCopyUrl} title="Copy URL" aria-label="Copy URL" />
                                     <a
                                         href={publishedUrl}
                                         target="_blank"
@@ -133,12 +123,9 @@ export const PresentationPublishModal: React.FC<PresentationPublishModalProps> =
 
                             {/* Footer Actions */}
                             <div className="mt-4 flex justify-end gap-3">
-                                <button
-                                    onClick={onClose}
-                                    className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-                                >
+                                <Button variant="quiet" onClick={onClose}>
                                     Close
-                                </button>
+                                </Button>
                                 <a
                                     href={publishedUrl}
                                     target="_blank"

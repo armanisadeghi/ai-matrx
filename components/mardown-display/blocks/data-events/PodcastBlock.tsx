@@ -9,6 +9,7 @@ import {
   ChevronUp,
 } from "lucide-react";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { Button } from "@ai-matrx/design-system/controls";
 
 // ── PodcastCompleteBlock ─────────────────────────────────────────────────────
 
@@ -100,16 +101,11 @@ export const PodcastStageBlock: React.FC<PodcastStageBlockProps> = ({
           )}
         </div>
         {resultKeys.length > 0 && (
-          <button
-            onClick={() => setShowKeys((v) => !v)}
-            className="text-muted-foreground hover:text-foreground flex-shrink-0"
-          >
-            {showKeys ? (
-              <ChevronUp className="w-3.5 h-3.5" />
+          <Button variant="quiet" icon={showKeys ? (
+              <ChevronUp />
             ) : (
-              <ChevronDown className="w-3.5 h-3.5" />
-            )}
-          </button>
+              <ChevronDown />
+            )} onClick={() => setShowKeys((v) => !v)} aria-label={showKeys ? "Collapse" : "Expand"} aria-expanded={showKeys} />
         )}
       </div>
       {showKeys && resultKeys.length > 0 && (

@@ -42,6 +42,7 @@ import { cn } from "@/lib/utils";
 // THE package duration formatter (`@ai-matrx/kit/format`, census H1
 // 2026-09-07). THE UNIT LAW: the unit is in the name.
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
+import { Button } from "@ai-matrx/design-system/controls";
 
 const formatDuration = (seconds: number): string =>
   formatDurationSeconds(seconds, { style: "compact" });
@@ -146,15 +147,9 @@ function CopyChip({
   what: string;
 }) {
   return (
-    <button
-      type="button"
-      onClick={() => void copyText(makeText(), what)}
-      className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-      title={`Copy as ${what}`}
-    >
-      <Copy className="h-3 w-3" />
+    <Button variant="outline" icon={<Copy />} onClick={() => void copyText(makeText(), what)} title={`Copy as ${what}`}>
       {label}
-    </button>
+    </Button>
   );
 }
 
@@ -221,18 +216,11 @@ export function LessonScriptSectionCard({
         {streaming ? (
           <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-muted-foreground" />
         ) : (
-          <button
-            type="button"
-            onClick={() => void handleCopy()}
-            className="shrink-0 rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            title="Copy this section's script"
-          >
-            {copied ? (
-              <Check className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
+          <Button variant="quiet" icon={copied ? (
+              <Check />
             ) : (
-              <Copy className="h-3.5 w-3.5" />
-            )}
-          </button>
+              <Copy />
+            )} glyphTone="success" onClick={() => void handleCopy()} title="Copy this section's script" aria-label="Copy this section's script" className="shrink-0" />
         )}
       </div>
 

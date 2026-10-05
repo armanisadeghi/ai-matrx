@@ -1,5 +1,5 @@
 "use client";
-import { Chip } from "@ai-matrx/design-system/controls";
+import { Button, Chip } from "@ai-matrx/design-system/controls";
 import React, {
   useState,
   useCallback,
@@ -2039,24 +2039,12 @@ const DiagramFlow: React.FC<{
           </div>
 
           <div className="grid grid-cols-2 gap-1.5">
-            <button
-              type="button"
-              onClick={addBox}
-              aria-label="Add box"
-              className="flex items-center justify-center gap-1.5 rounded-lg bg-primary px-2 py-2 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-            >
-              <Plus className="h-3.5 w-3.5" />
+            <Button variant="primary" icon={<Plus />} onClick={addBox} aria-label="Add box">
               Add box
-            </button>
-            <button
-              type="button"
-              onClick={addSection}
-              aria-label="Add section"
-              className="flex items-center justify-center gap-1.5 rounded-lg border border-border bg-background px-2 py-2 text-xs font-medium text-foreground transition-colors hover:bg-muted"
-            >
-              <Boxes className="h-3.5 w-3.5" />
+            </Button>
+            <Button variant="outline" icon={<Boxes />} onClick={addSection} aria-label="Add section">
               Add section
-            </button>
+            </Button>
           </div>
 
           {!selectedNode && !selectedEdge && (
@@ -2287,21 +2275,15 @@ const DiagramFlow: React.FC<{
                   </p>
                 </>
               )}
-              <button
-                type="button"
-                onClick={deleteSelectedNode}
-                aria-label={
+              <Button variant="outline" icon={<Trash2 />} onClick={deleteSelectedNode} aria-label={
                   selectedIsSection
                     ? "Remove section and keep its boxes"
                     : "Remove box"
-                }
-                className="flex w-full items-center justify-center gap-1.5 rounded-md border border-destructive/40 px-2 py-1.5 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
+                } className="w-full">
                 {selectedIsSection
                   ? "Remove section (keep boxes)"
                   : "Remove box"}
-              </button>
+              </Button>
             </div>
           )}
 
@@ -2448,30 +2430,15 @@ const DiagramFlow: React.FC<{
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-1.5">
-                <button
-                  type="button"
-                  onClick={() =>
+                <Button variant="outline" pressed={selectedEdge.animated} onClick={() =>
                     patchSelectedEdge({ animated: !selectedEdge.animated })
-                  }
-                  aria-pressed={selectedEdge.animated}
-                  className={`rounded-md border px-2 py-1.5 text-[11px] font-medium transition-colors ${
-                    selectedEdge.animated
-                      ? "border-primary/40 bg-primary/10 text-primary"
-                      : "border-border text-muted-foreground hover:bg-muted"
-                  }`}
-                >
+                  }>
                   {selectedEdge.animated ? "Motion on" : "Motion off"}
-                </button>
+                </Button>
               </div>
-              <button
-                type="button"
-                onClick={deleteSelectedEdge}
-                aria-label="Remove arrow"
-                className="flex w-full items-center justify-center gap-1.5 rounded-md border border-destructive/40 px-2 py-1.5 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
+              <Button variant="outline" icon={<Trash2 />} onClick={deleteSelectedEdge} aria-label="Remove arrow" className="w-full">
                 Remove arrow
-              </button>
+              </Button>
             </div>
           )}
 
@@ -2520,14 +2487,9 @@ const DiagramFlow: React.FC<{
               </label>
             </div>
             <div className="grid grid-cols-2 gap-1.5">
-              <button
-                type="button"
-                onClick={() => chooseMiniMap(!showMiniMap)}
-                aria-pressed={showMiniMap}
-                className={`rounded-md border px-2 py-1.5 text-[11px] font-medium ${showMiniMap ? "border-primary/40 bg-primary/10 text-primary" : "border-border text-muted-foreground"}`}
-              >
+              <Button variant="outline" pressed={showMiniMap} onClick={() => chooseMiniMap(!showMiniMap)}>
                 Mini map {showMiniMap ? "on" : "off"}
-              </button>
+              </Button>
               <button
                 type="button"
                 onClick={() =>
@@ -2540,33 +2502,23 @@ const DiagramFlow: React.FC<{
               >
                 Snap {diagram.renderHints?.snapToGrid ? "on" : "off"}
               </button>
-              <button
-                type="button"
-                onClick={() =>
+              <Button variant="outline" pressed={diagram.renderHints?.showEdgeLabels !== false} onClick={() =>
                   patchRenderHints({
                     showEdgeLabels:
                       diagram.renderHints?.showEdgeLabels === false,
                   })
-                }
-                aria-pressed={diagram.renderHints?.showEdgeLabels !== false}
-                className={`rounded-md border px-2 py-1.5 text-[11px] font-medium ${diagram.renderHints?.showEdgeLabels !== false ? "border-primary/40 bg-primary/10 text-primary" : "border-border text-muted-foreground"}`}
-              >
+                }>
                 Labels{" "}
                 {diagram.renderHints?.showEdgeLabels !== false ? "on" : "off"}
-              </button>
-              <button
-                type="button"
-                onClick={() =>
+              </Button>
+              <Button variant="outline" pressed={diagram.renderHints?.showLegend !== false} onClick={() =>
                   patchRenderHints({
                     showLegend: diagram.renderHints?.showLegend === false,
                   })
-                }
-                aria-pressed={diagram.renderHints?.showLegend !== false}
-                className={`rounded-md border px-2 py-1.5 text-[11px] font-medium ${diagram.renderHints?.showLegend !== false ? "border-primary/40 bg-primary/10 text-primary" : "border-border text-muted-foreground"}`}
-              >
+                }>
                 Legend{" "}
                 {diagram.renderHints?.showLegend !== false ? "on" : "off"}
-              </button>
+              </Button>
             </div>
             <p className="text-[10px] leading-snug text-muted-foreground">
               Flow direction is used the next time you choose a directional
@@ -2631,46 +2583,21 @@ const DiagramFlow: React.FC<{
             </DropdownMenuContent>
           </DropdownMenu>
           <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => arrangeByPerson(resetLayout)}
-              aria-label="Restore saved layout"
-              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-              title="Reset Layout"
-            >
-              <RotateCcw className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-            </button>
-            <button
-              type="button"
-              onClick={() =>
+            <Button variant="quiet" icon={<RotateCcw />} onClick={() => arrangeByPerson(resetLayout)} aria-label="Restore saved layout" title="Reset Layout" />
+            <Button variant="quiet" icon={<Square />} onClick={() =>
                 chooseBackground(
                   backgroundVariant === BackgroundVariant.Dots
                     ? BackgroundVariant.Lines
                     : BackgroundVariant.Dots,
                 )
-              }
-              aria-label={
+              } aria-label={
                 backgroundVariant === BackgroundVariant.Dots
                   ? "Use lined background"
                   : "Use dotted background"
-              }
-              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-              title="Toggle Background"
-            >
-              <Square className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-            </button>
+              } title="Toggle Background" />
           </div>
           <div className="flex gap-2 justify-center">
-            <button
-              type="button"
-              onClick={() => chooseMiniMap(!showMiniMap)}
-              aria-label={showMiniMap ? "Hide mini map" : "Show mini map"}
-              aria-pressed={showMiniMap}
-              className={`p-2 rounded-lg transition-colors ${showMiniMap ? "bg-blue-100 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900/50" : "hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400"}`}
-              title="Toggle Mini Map"
-            >
-              <Layers className="h-4 w-4" />
-            </button>
+            <Button variant="quiet" pressed={showMiniMap} icon={<Layers />} onClick={() => chooseMiniMap(!showMiniMap)} aria-label={showMiniMap ? "Hide mini map" : "Show mini map"} title="Toggle Mini Map" />
             {editing && (
               <button
                 type="button"
@@ -2691,15 +2618,7 @@ const DiagramFlow: React.FC<{
                 <Magnet className="h-4 w-4" />
               </button>
             )}
-            <button
-              type="button"
-              onClick={exportImage}
-              aria-label="Export map as image"
-              className="p-2 hover:bg-green-100 dark:hover:bg-green-900/30 bg-green-50 dark:bg-green-950/20 rounded-lg transition-colors border border-green-200 dark:border-green-800"
-              title="Export as Image"
-            >
-              <Camera className="h-4 w-4 text-green-600 dark:text-green-400" />
-            </button>
+            <Button variant="outline" icon={<Camera />} glyphTone="success" onClick={exportImage} aria-label="Export map as image" title="Export as Image" />
           </div>
         </div>
       </Panel>

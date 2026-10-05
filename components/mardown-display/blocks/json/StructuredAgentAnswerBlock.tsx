@@ -15,6 +15,7 @@ import { valueCarriesKind } from "@/features/content-ir/surfaces/json-kind-signa
 import { kindTextLabel } from "@/features/content-ir/surfaces/kind-text-label";
 import { kindOneLine } from "@/features/content-ir/surfaces/kind-one-line";
 import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
+import { Button } from "@ai-matrx/design-system/controls";
 
 type StructuredValue = Record<string, unknown>;
 
@@ -99,21 +100,15 @@ const STATUS_TONE_CLASS: Record<
  */
 function CopyRawButton({ rawContent }: { rawContent: string }) {
   return (
-    <button
-      type="button"
-      aria-label="Copy raw JSON"
-      className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
-      onClick={(event) => {
+    <Button variant="quiet" icon={<Copy />} aria-label="Copy raw JSON" onClick={(event) => {
         event.preventDefault();
         event.stopPropagation();
         void writeClipboard(rawContent).then(() => {
           toast.success("Raw answer copied");
         });
-      }}
-    >
-      <Copy className="h-3.5 w-3.5" />
+      }}>
       Copy
-    </button>
+    </Button>
   );
 }
 
@@ -126,19 +121,13 @@ function SaveAnswerToTableButton({ value }: { value: StructuredValue }) {
   const openSaveToTable = useOpenSaveToTable();
   if (!openSaveToTable || !shapeOfValue(value)) return null;
   return (
-    <button
-      type="button"
-      aria-label="Save to a table"
-      className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
-      onClick={(event) => {
+    <Button variant="quiet" icon={<Table2 />} aria-label="Save to a table" onClick={(event) => {
         event.preventDefault();
         event.stopPropagation();
         openSaveToTable({ value });
-      }}
-    >
-      <Table2 className="h-3.5 w-3.5" />
+      }}>
       Save to a table
-    </button>
+    </Button>
   );
 }
 

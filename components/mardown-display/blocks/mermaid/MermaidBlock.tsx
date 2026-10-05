@@ -348,13 +348,7 @@ const MermaidBlock: React.FC<MermaidBlockProps> = ({
             <DropdownMenu>
               <SimpleTooltip text="Diagram style">
                 <DropdownMenuTrigger asChild>
-                  <button
-                    type="button"
-                    aria-label="Diagram style"
-                    className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
-                  >
-                    <Palette className="h-3.5 w-3.5" />
-                  </button>
+                  <Button variant="quiet" icon={<Palette />} aria-label="Diagram style" />
                 </DropdownMenuTrigger>
               </SimpleTooltip>
               <DropdownMenuContent align="end" className="w-44">
@@ -420,13 +414,7 @@ const MermaidBlock: React.FC<MermaidBlockProps> = ({
             <DropdownMenu>
               <SimpleTooltip text="Export diagram">
                 <DropdownMenuTrigger asChild>
-                  <button
-                    type="button"
-                    aria-label="Export diagram"
-                    className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
-                  >
-                    <Download className="h-3.5 w-3.5" />
-                  </button>
+                  <Button variant="quiet" icon={<Download />} aria-label="Export diagram" />
                 </DropdownMenuTrigger>
               </SimpleTooltip>
               <DropdownMenuContent align="end" className="w-48">
@@ -470,43 +458,19 @@ const MermaidBlock: React.FC<MermaidBlockProps> = ({
             </DropdownMenu>
 
             <SimpleTooltip text={copied ? "Copied" : "Copy diagram source"}>
-              <button
-                type="button"
-                aria-label="Copy diagram source"
-                className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
-                onClick={handleCopy}
-              >
-                {copied ? (
-                  <Check className="h-3.5 w-3.5" />
+              <Button variant="quiet" icon={copied ? (
+                  <Check />
                 ) : (
-                  <Copy className="h-3.5 w-3.5" />
-                )}
-              </button>
+                  <Copy />
+                )} aria-label="Copy diagram source" onClick={handleCopy} />
             </SimpleTooltip>
 
             <SimpleTooltip text={showSource ? "Hide source" : "Show source"}>
-              <button
-                type="button"
-                aria-label={showSource ? "Hide source" : "Show source"}
-                className={cn(
-                  "rounded p-1.5 transition-colors hover:bg-primary/10 hover:text-primary",
-                  showSource ? "text-primary" : "text-muted-foreground",
-                )}
-                onClick={() => setShowSource((v) => !v)}
-              >
-                <Code2 className="h-3.5 w-3.5" />
-              </button>
+              <Button variant="quiet" pressed={showSource} icon={<Code2 />} aria-label={showSource ? "Hide source" : "Show source"} onClick={() => setShowSource((v) => !v)} />
             </SimpleTooltip>
 
             <SimpleTooltip text="View fullscreen">
-              <button
-                type="button"
-                aria-label="View fullscreen"
-                className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
-                onClick={() => setFullscreen(true)}
-              >
-                <Expand className="h-3.5 w-3.5" />
-              </button>
+              <Button variant="quiet" icon={<Expand />} aria-label="View fullscreen" onClick={() => setFullscreen(true)} />
             </SimpleTooltip>
 
             {isCanvasAvailable && (

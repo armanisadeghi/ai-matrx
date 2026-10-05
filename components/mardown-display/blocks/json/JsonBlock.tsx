@@ -55,6 +55,7 @@ import { findEscapedKindMarkers } from "@/features/content-ir/react/kind-problem
 import KindEscapedNotice from "@/features/content-ir/react/KindEscapedNotice";
 import { KindValueFrontDoor } from "@/components/official/structured-value/KindValueFrontDoor";
 import { textCarriesKind, valueCarriesKind } from "@/features/content-ir/surfaces/json-kind-signal";
+import { Button } from "@ai-matrx/design-system/controls";
 
 // Lazy-loaded — these views/dialogs only open on user action, and JsonBlock
 // itself lives inside the MarkdownStream ssr:false gate, so the boundaries
@@ -595,31 +596,16 @@ const FormatToggleButton: React.FC<FormatToggleButtonProps> = ({
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <button
-            type="button"
-            onMouseDown={(e) => e.stopPropagation()}
-            onClick={(e) => {
+          <Button variant="outline" icon={<AlignJustify />} onMouseDown={(e) => e.stopPropagation()} onClick={(e) => {
               e.stopPropagation();
               if (!disabled) onToggle();
-            }}
-            disabled={disabled}
-            title={
+            }} disabled={disabled} title={
               disabled
                 ? "Available when the JSON is valid"
                 : isCompact
                   ? "Expand JSON"
                   : "Compact JSON"
-            }
-            aria-label={isCompact ? "Expand JSON" : "Compact JSON"}
-            className={cn(
-              "h-5 w-5 flex items-center justify-center rounded transition-colors",
-              "text-muted-foreground hover:text-foreground hover:bg-muted",
-              "border border-border/50 bg-background/50",
-              disabled && "cursor-not-allowed opacity-40",
-            )}
-          >
-            <AlignJustify className="h-3 w-3" />
-          </button>
+            } aria-label={isCompact ? "Expand JSON" : "Compact JSON"} />
         </TooltipTrigger>
         <TooltipContent side="bottom" className="text-xs">
           {disabled
