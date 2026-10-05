@@ -303,7 +303,7 @@ export interface CandidateRun {
   sourceFeature: string | null;
   /** The human-typed text (reserved key), for the list preview. */
   userInput: string | null;
-  /** Exact first user turn: text plus every attached media/resource block. */
+  /** The typed text (never the rendered template) plus every attached media/resource block. */
   inputContent: MessagePart[];
   /** Declared-variable values only — the raw inputs a sample would keep. */
   variables: JsonObject;
@@ -345,6 +345,38 @@ function declaredVariableNames(
 }
 
 /**
+ * What a run's test case holds: declared variable values, the TYPED text, and
+ * the attachments. The stored first message is the RENDERED turn — with a
+ * user-message template it is the template with every variable substituted —
+ * so its text is never "what was typed". The reserved key is (the server
+ * always records it, "" when nothing was typed). Runs from before that rule
+ * carry no key: if they declared variables the stored text is the template and
+ * the typed text is unknown, so it is empty rather than the template again.
+ */
+export function runTestCaseInputs(
+  merged: unknown,
+  declaredNames: ReadonlySet<string> | null,
+  storedContent: readonly MessagePart[],
+): { variables: JsonObject; userInput: string | null; inputContent: MessagePart[] } {
+  const { variables, userInput: recorded } = extractRawInputs(
+    merged,
+    declaredNames,
+  );
+  const userInput =
+    recorded ??
+    (Object.keys(variables).length > 0
+      ? null
+      : textFromMessageContent(storedContent));
+  const inputContent: MessagePart[] = [
+    ...(userInput
+      ? parseMessageContent([{ type: "text", text: userInput }])
+      : []),
+    ...storedContent.filter((part) => part.type !== "text"),
+  ];
+  return { variables, userInput: userInput || null, inputContent };
+}
+
+/**
  * Recent real runs of this agent the CALLER can see (RLS scopes the read; the
  * default view is "mine" per THE VIEW LAW). Each row shows the raw inputs so
  * the human can judge before borrowing.
@@ -361,6 +393,10 @@ export async function fetchCandidateRuns(
       "id, title, created_at, source_feature, variables, initial_agent_version_id",
     )
     .eq("initial_agent_id", agentId)
+    // A run is one a person launched. Child conversations (the title labeler,
+    // held code calls) used to inherit the parent's agent id and showed up
+    // here as runs whose "input" was the labeler prompt.
+    .is("parent_conversation_id", null)
     .is("deleted_at", null)
     .order("created_at", { ascending: false })
     .order("id", { ascending: false })
@@ -425,12 +461,11 @@ export async function fetchCandidateRuns(
     const declared = row.initial_agent_version_id
       ? (namesByVersionId.get(row.initial_agent_version_id) ?? null)
       : null;
-    const { variables, userInput: mergedUserInput } = extractRawInputs(
+    const { variables, userInput, inputContent } = runTestCaseInputs(
       row.variables,
       declared,
+      firstInputByConversation.get(row.id) ?? [],
     );
-    const inputContent = firstInputByConversation.get(row.id) ?? [];
-    const userInput = textFromMessageContent(inputContent) ?? mergedUserInput;
     return {
       conversationId: row.id,
       title: row.title,
