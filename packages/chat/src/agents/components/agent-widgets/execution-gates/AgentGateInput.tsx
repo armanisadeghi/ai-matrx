@@ -19,6 +19,7 @@ import { setPreExecutionSatisfied } from "../../../redux/execution-system/instan
 import { destroyInstanceIfAllowed } from "../../../redux/execution-system/conversations/conversations.thunks";
 import { closeOverlay, openOverlay, CHAT_WINDOWS, type ChatWindowId } from "../../../../host/windows";
 import { SmartAgentInput } from "../../inputs/smart-input/SmartAgentInput";
+import { useComposerMode } from "../../inputs/smart-input/composer/useComposerMode";
 import { WindowPanel } from "@host/features/window-panels/WindowPanel";
 import { PaperPlaneIcon } from "@radix-ui/react-icons";
 import { Button } from "@ai-matrx/design-system";
@@ -42,6 +43,7 @@ export function AgentGateBody({
   onClose: () => void;
 }) {
   const dispatch = useAppDispatch();
+  const { mode: composerMode } = useComposerMode();
   const agentName = useAppSelector(selectInstanceAgentName(conversationId));
   const preExecutionMessage = useAppSelector(
     selectPreExecutionMessage(conversationId),
@@ -178,6 +180,7 @@ export function AgentGateBody({
             conversationId={conversationId}
             singleRowTextarea={false}
             compact={true}
+            composer={{ size: "compact", mode: composerMode }}
             showSendButton={false}
             showVariableIcon={false}
             showSubmitOnEnterToggle={false}

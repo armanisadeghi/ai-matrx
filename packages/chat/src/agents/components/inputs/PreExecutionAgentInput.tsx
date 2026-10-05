@@ -25,6 +25,7 @@ import { selectHasUserInput } from "../../redux/execution-system/instance-user-i
 import { destroyInstanceIfAllowed } from "../../redux/execution-system/conversations/conversations.thunks";
 import { selectInstanceAgentName } from "../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { SmartAgentInput } from "./smart-input/SmartAgentInput";
+import { useComposerMode } from "./smart-input/composer/useComposerMode";
 
 interface PreExecutionAgentInputProps {
   conversationId: string;
@@ -34,6 +35,7 @@ export function PreExecutionAgentInput({
   conversationId,
 }: PreExecutionAgentInputProps) {
   const dispatch = useAppDispatch();
+  const { mode: composerMode } = useComposerMode();
   const title = useAppSelector(selectInstanceAgentName(conversationId));
 
   console.log("[PreExecutionAgentInput] title", title);
@@ -89,6 +91,7 @@ export function PreExecutionAgentInput({
         <SmartAgentInput
           conversationId={conversationId}
           compact
+          composer={{ size: "compact", mode: composerMode }}
           showSubmitOnEnterToggle={false}
           disableSend
         />

@@ -28,6 +28,7 @@ import { selectTurnCount } from "../../_legacy-stubs";
 import { ArrowDown } from "lucide-react";
 import { AgentConversationDisplay } from "../../../agents/components/messages-display/AgentConversationDisplay";
 import { SmartAgentInput } from "../../../agents/components/inputs/smart-input/SmartAgentInput";
+import { useComposerMode } from "../../../agents/components/inputs/smart-input/composer/useComposerMode";
 import { ProposedDirectivesZone } from "@host/features/matrx-envelope/components/ProposedDirectivesZone";
 import { ServerOperationBanner } from "../../../agents/runtime-reconnect/ServerOperationBanner";
 import { pushAppHref } from "@host/lib/deployment/navigate";
@@ -47,6 +48,7 @@ export default function ChatConversationClient({
   agentId,
 }: ChatConversationClientProps) {
   const router = useRouter();
+  const { mode: composerMode } = useComposerMode();
   const { isAuthenticated, isAdmin } = useAppSelector(selectUserContext);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -217,6 +219,7 @@ export default function ChatConversationClient({
               conversationId={conversationId}
               surfaceKey={`cx-chat:${agentId}`}
               showSubmitOnEnterToggle
+              composer={{ size: "page", mode: composerMode }}
               enablePasteImages={isAuthenticated}
             />
           </div>

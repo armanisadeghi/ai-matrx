@@ -16,6 +16,7 @@ import { useAppSelector, useAppDispatch } from "../../store/hooks";
 import { selectAgentById } from "../../agents/redux/agent-definition/selectors";
 import { selectLatestConversationId } from "../../agents/redux/execution-system/selectors/aggregate.selectors";
 import { SmartAgentInput } from "../../agents/components/inputs/smart-input/SmartAgentInput";
+import { useComposerMode } from "../../agents/components/inputs/smart-input/composer/useComposerMode";
 import { setInputPlaceholder } from "../../agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { pushAppHref, replaceAppHref } from "@host/lib/deployment/navigate";
 import { selectIsAuthenticated } from "../../host/identity";
@@ -40,6 +41,7 @@ export default function ChatWelcomeClient({
   const router = useRouter();
   const dispatch = useAppDispatch();
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
+  const { mode: composerMode } = useComposerMode();
   const [isPickerOpen, setIsPickerOpen] = useState(false);
 
   // Welcome-screen placeholder lives in Redux now (no more prop chain).
@@ -111,6 +113,7 @@ export default function ChatWelcomeClient({
               surfaceKey={`cx-chat:${agentId}`}
               sendButtonVariant="blue"
               showSubmitOnEnterToggle
+              composer={{ size: "splash", mode: composerMode }}
               enablePasteImages={isAuthenticated}
             />
           </div>

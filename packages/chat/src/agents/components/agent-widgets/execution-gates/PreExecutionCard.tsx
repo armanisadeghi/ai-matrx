@@ -8,6 +8,7 @@ import { selectHasUserInput } from "../../../redux/execution-system/instance-use
 import { setPreExecutionSatisfied } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { destroyInstanceIfAllowed } from "../../../redux/execution-system/conversations/conversations.thunks";
 import { SmartAgentInput } from "../../inputs/smart-input/SmartAgentInput";
+import { useComposerMode } from "../../inputs/smart-input/composer/useComposerMode";
 import { cn } from "@ai-matrx/design-system";
 
 // ─── Pre-execution compact card (portalled, no WindowPanel) ──────────────────
@@ -20,6 +21,7 @@ export function PreExecutionCard({
   onClose: () => void;
 }) {
   const dispatch = useAppDispatch();
+  const { mode: composerMode } = useComposerMode();
   const agentName = useAppSelector(selectInstanceAgentName(conversationId));
   const hasInput = useAppSelector(selectHasUserInput(conversationId));
   const preExecutionMessage = useAppSelector(
@@ -92,6 +94,7 @@ export function PreExecutionCard({
           <SmartAgentInput
             conversationId={conversationId}
             compact
+            composer={{ size: "compact", mode: composerMode }}
             showSubmitOnEnterToggle={false}
             disableSend
           />
