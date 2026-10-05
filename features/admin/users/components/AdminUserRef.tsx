@@ -72,6 +72,7 @@ import {
 import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
 import { cn } from "@/lib/utils";
 import { usagePersonHref } from "@/features/admin/usage-drill/usageLinks";
+import { useAdminUserLabel } from "@/features/admin/users/useAdminUserLabel";
 
 export interface AdminUserRefProps {
   userId: string;
@@ -209,8 +210,13 @@ export function AdminUserRef({
   hideEmail = false,
   className,
 }: AdminUserRefProps) {
-  const primary = name?.trim() || email?.trim() || null;
-  const secondary = !hideEmail && primary !== email ? email?.trim() : null;
+  // Given only an id, look the person up (batched, cached) — an admin never reads a bare id
+  // where a person is meant. A caller that passed a name or email costs nothing.
+  const looked = useAdminUserLabel(userId, Boolean(name?.trim() || email?.trim()));
+  const shownName = name?.trim() || looked.label?.trim() || null;
+  const shownEmail = email?.trim() || looked.email?.trim() || null;
+  const primary = shownName || shownEmail || null;
+  const secondary = !hideEmail && primary !== shownEmail ? shownEmail : null;
 
   return (
     <div className={cn("flex min-w-0 items-center gap-1", className)}>

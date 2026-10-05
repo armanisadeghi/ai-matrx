@@ -29215,6 +29215,14 @@ export type ChatDatabase = {
         Returns: undefined
       }
       admin_user_ids_matching: { Args: { p_term: string }; Returns: string[] }
+      admin_user_labels: {
+        Args: { p_ids: string[] }
+        Returns: {
+          email: string
+          id: string
+          label: string
+        }[]
+      }
       agent_mandate_rungs: {
         Args: {
           p_agent_ids: string[]

@@ -43,6 +43,15 @@ export function UserSearchField({
   ariaLabel = "Open advanced user search",
 }: UserSearchFieldProps) {
   const openUserSearch = useOpenUserSearchWindow();
+  const openSearch = () =>
+    openUserSearch({
+      title,
+      initialQuery: value,
+      directory,
+      candidates,
+      excludeUserIds,
+      onSelected: ({ user }) => onUserSelect(user),
+    });
 
   return (
     <div className={cn("flex min-w-0 gap-2", className)}>
@@ -52,7 +61,12 @@ export function UserSearchField({
         value={value}
         onChange={(event) => onValueChange(event.target.value)}
         onKeyDown={(event) => {
-          if (event.key === "Enter" && onEnter) onEnter();
+          if (event.key !== "Enter") return;
+          // A host with its own Enter action keeps it; everywhere else Enter does what a person
+          // expects after typing a name — opens the search on what they typed (2026-10-05: Enter
+          // on a typed name did nothing, and the magnifier was the only way in).
+          if (onEnter) onEnter();
+          else openSearch();
         }}
         placeholder={placeholder}
         disabled={disabled}
@@ -67,16 +81,7 @@ export function UserSearchField({
         aria-label={ariaLabel}
         title={ariaLabel}
         className="shrink-0"
-        onClick={() =>
-          openUserSearch({
-            title,
-            initialQuery: value,
-            directory,
-            candidates,
-            excludeUserIds,
-            onSelected: ({ user }) => onUserSelect(user),
-          })
-        }
+        onClick={openSearch}
       >
         <Search className="h-4 w-4" />
       </Button>
