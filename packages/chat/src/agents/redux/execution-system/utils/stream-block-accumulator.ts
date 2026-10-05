@@ -16,6 +16,7 @@
 
 import { parseDecisionOptionsFromBody } from "@host/components/mardown-display/blocks/inline-decision/decision-options";
 import { QuotedKindLift } from "@host/features/content-ir/surfaces/quoted-kind-lift";
+import { MarkdownEscapedKindJson } from "@host/features/content-ir/surfaces/markdown-escaped-kind";
 import { FENCE_META_KEY, splitFenceInfo } from "@host/components/markdown-core/fence-meta";
 import {
   hasUnclosedBacktickRun,
@@ -663,6 +664,8 @@ export class StreamBlockAccumulator {
   private suppressEmptyTrailingSlot = false;
   /** Lifts JSON regions out of blockquotes before the line machine (V1). */
   private quoteLift = new QuotedKindLift();
+  /** Un-escapes a markdown-escaped kind (`"\_\_kind"`) before the quote lift (P8). */
+  private kindUnescape = new MarkdownEscapedKindJson();
 
   constructor(
     requestId: string,
@@ -686,12 +689,13 @@ export class StreamBlockAccumulator {
     this.ingestCount++;
     // A JSON region inside a blockquote leaves the quote before the line
     // machine sees it — the same transform the static splitter runs (V1).
-    this.ingestText(this.quoteLift.push(delta), dispatch);
+    this.ingestText(this.quoteLift.push(this.kindUnescape.push(delta)), dispatch);
   }
 
   /** Release what the quote lift still holds (stream end or a hard boundary). */
   private flushQuoteLift(dispatch: DispatchFn): void {
-    const held = this.quoteLift.flush();
+    const unescaped = this.kindUnescape.flush();
+    const held = (unescaped ? this.quoteLift.push(unescaped) : "") + this.quoteLift.flush();
     if (held) this.ingestText(held, dispatch);
   }
 
@@ -890,6 +894,7 @@ export class StreamBlockAccumulator {
     this.genericXmlRecoverySuppressed = false;
     this.suppressEmptyTrailingSlot = false;
     this.quoteLift = new QuotedKindLift();
+    this.kindUnescape = new MarkdownEscapedKindJson();
   }
 
   /**

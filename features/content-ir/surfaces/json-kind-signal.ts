@@ -54,9 +54,19 @@ const KIND_KEY = new RegExp(String.raw`(?<!\\)"${KIND_KEY_BODY}"\s*:`);
 const JSON5_KIND_KEY = /(?:^|[{,]\s*|\n\s*)(?:__kind|'__kind')\s*:/;
 const JSON5_KIND_SLUG = /(?:^|[{,]\s*|\n\s*)(?:__kind|'__kind'|"__kind")\s*:\s*("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')/;
 
-/** Options for the JSON-text readers: `json5` widens the key rule to JSON5's. */
+/**
+ * The key as MARKDOWN may spell it (P8, round 4): `"\_\_kind"` — the renderer
+ * un-escapes it to `"__kind"` on screen. Text contexts only.
+ */
+const MARKDOWN_KIND_KEY = /(?<!\\)"\\_\\_kind"\s*:/;
+
+/**
+ * Options for the JSON-text readers: `json5` widens the key rule to JSON5's;
+ * `markdown` also reads the markdown-escaped key (`"\_\_kind"`, P8).
+ */
 export interface KindTextOptions {
   json5?: boolean;
+  markdown?: boolean;
 }
 
 /** Whether a fence language is JSON5 (the one context that widens the key rule). */
@@ -65,7 +75,11 @@ export function isJson5Language(lang: string | null | undefined): boolean {
 }
 
 export function hasKindKey(text: string, options: KindTextOptions = {}): boolean {
-  return KIND_KEY.test(text) || (options.json5 === true && JSON5_KIND_KEY.test(text));
+  return (
+    KIND_KEY.test(text) ||
+    (options.json5 === true && JSON5_KIND_KEY.test(text)) ||
+    (options.markdown === true && MARKDOWN_KIND_KEY.test(text))
+  );
 }
 
 /** The key, then its string value (escapes allowed), captured whole. */
@@ -422,7 +436,7 @@ export function markdownCarriesKind(source: string): boolean {
   // Front matter is document properties, hidden on screen and never lifted
   // (X-minor, round 3): a kind there is not a region of the text.
   const text = source.slice(frontMatterEnd(source));
-  if (!hasKindKey(text)) return false;
+  if (!hasKindKey(text, { markdown: true })) return false;
   if (isKindJsonText(text)) return true;
   const quoted = quotedSourceRanges(text);
   if (quoted.length === 0) return true;
@@ -434,5 +448,5 @@ export function markdownCarriesKind(source: string): boolean {
     cursor = end;
   }
   outside += text.slice(cursor);
-  return hasKindKey(outside);
+  return hasKindKey(outside, { markdown: true });
 }

@@ -26,6 +26,7 @@ import { StreamBlockAccumulator } from "@ai-matrx/chat/agents/redux/execution-sy
 import { renderBlockToContentBlock } from "@/components/mardown-display/chat-markdown/render-block-to-content-block";
 import { drawsKindAsRawJson, drawsRawJsonCard } from "../render-paths/draws-raw-kind-json";
 import { applyIrKindRoute } from "../react/kind-route";
+import { decideBlockRender } from "@/components/mardown-display/chat-markdown/block-registry/BlockRenderer";
 import { hasKindKey } from "../surfaces/json-kind-signal";
 import { componentRegistry } from "../registry/component-registry";
 import {
@@ -304,6 +305,104 @@ describe("never raw: a kind right after inline markup on its line (P2, round 4)"
       .filter((b) => b.content.trim())
       .map((b) => b.content.trim());
     expect(reloaded).toContain(KIND_PAYLOAD_ONE_LINE);
+  });
+});
+
+describe("never raw: a kind in a TABLE mid-stream (P7, round 4)", () => {
+  // Drawn, not decided: the DOM judge renders each frame through BlockRenderer
+  // (a header row holding a kind, a cell after prose, a cell that IS the kind).
+  const CASES: Array<[string, string]> = [
+    ["header row", `| ${KIND_PAYLOAD_ONE_LINE} | b |\n|---|---|\n| 1 | 2 |\n\nAfter.`],
+    ["cell after prose", `| a | b |\n|---|---|\n| x | Some prose ${KIND_PAYLOAD_ONE_LINE} |\n\nAfter.`],
+    ["cell only", `| a | b |\n|---|---|\n| x | ${KIND_PAYLOAD_ONE_LINE} |\n| y | z |\n\nAfter.`],
+  ];
+
+  it.each(CASES)("%s: no frame puts a __kind key on screen (DOM, every 3rd kind frame)", async (_label, stream) => {
+    const frames: Array<{ block: RenderBlockPayload; live: boolean }> = [];
+    const accumulator = new StreamBlockAccumulator("req-p7", (payload) => {
+      frames.push({ block: (payload as Upsert).block, live: true });
+      return payload;
+    });
+    const dispatch = (action: unknown) => action;
+    for (const ch of stream) accumulator.ingest(ch, dispatch);
+    const liveCount = frames.length;
+    accumulator.finalize(dispatch);
+    frames.forEach((frame, i) => {
+      frame.live = i < liveCount;
+    });
+    const sampled = sampleKindFrames(frames, 3);
+    expect(sampled.length).toBeGreaterThan(0);
+    const leaks: string[] = [];
+    for (const frame of sampled) {
+      const verdict = await domFrameVerdict(frame.block, { isStreamActive: frame.live });
+      if (verdict.raw) leaks.push(`${frame.live ? "live" : "final"} ${frame.block.type}: ${verdict.text.slice(0, 80)}`);
+    }
+    expect(leaks).toEqual([]);
+  }, 300_000);
+});
+
+describe("never raw: the markdown-escaped key `\\_\\_kind` (P8, round 4)", () => {
+  // A model that escapes markdown writes `{"\_\_kind":"flashcard\_set",…}`;
+  // the renderer un-escapes it to `{"__kind":…}` ON SCREEN.
+  const ESCAPED = '{"\\_\\_kind":"flashcard\\_set","title":"Cells","cards":[{"\\_\\_kind":"flashcard","front":"Q","back":"A"}]}';
+  const STREAM = `Here are your cards:\n\n${ESCAPED}\n\nAfter.`;
+
+  it("the detector reads the escaped key in text contexts only", () => {
+    expect(hasKindKey(ESCAPED)).toBe(false);
+    expect(hasKindKey(ESCAPED, { markdown: true })).toBe(true);
+  });
+
+  it("live: the region is a kind block whose JSON parses, frame by frame never prose", () => {
+    const frames = streamingFrames(streamCharByChar(STREAM, "req-p8"));
+    expect(frames.filter((b) => b.type === "text" && /\\_\\_kind/.test(b.content ?? "")).map((b) => b.content)).toEqual([]);
+    const blocks = finalBlocks(STREAM, "req-p8-final");
+    const kindBlock = blocks.find((b) => hasKindKey(b.content ?? ""));
+    expect(kindBlock).toBeDefined();
+    expect(JSON.parse(kindBlock!.content ?? "")).toMatchObject({ __kind: "flashcard_set", title: "Cells" });
+  });
+
+  it("reload ≡ stream (the static splitter un-escapes the same bytes)", () => {
+    const live = finalBlocks(STREAM, "req-p8-parity").map((b) => (b.content ?? "").trim());
+    const reloaded = splitContentIntoBlocksV2(STREAM)
+      .filter((b) => b.content.trim())
+      .map((b) => b.content.trim());
+    expect(reloaded).toEqual(live);
+  });
+
+  it("a double-encoded kind (a JSON string of kind JSON) as the whole answer reads as the kind on reload", () => {
+    const doubled = JSON.stringify(JSON.stringify({ __kind: "flashcard_set", title: "Cells", cards: [] }));
+    const reloaded = splitContentIntoBlocksV2(doubled).filter((b) => b.content.trim());
+    expect(reloaded.some((b) => hasKindKey(b.content))).toBe(true);
+    expect(reloaded.some((b) => b.content.includes('\\"__kind\\"'))).toBe(false);
+  });
+});
+
+describe("never raw: an image whose alt is a kind, and a kind cut off at message end (P9, round 4)", () => {
+  it("reload: `![{kind}](url)` leaves no stray `!` or `(url)` block", () => {
+    const stream = `Look:\n\n![${KIND_PAYLOAD_ONE_LINE}](https://x.test/a.png)\n\nAfter.`;
+    for (const blocks of [
+      splitContentIntoBlocksV2(stream).filter((b) => b.content.trim()).map((b) => b.content.trim()),
+      finalBlocks(stream, "req-p9-img").map((b) => (b.content ?? "").trim()),
+    ]) {
+      expect(blocks.filter((c) => c === "!" || /^\(https?:[^)]*\)$/.test(c))).toEqual([]);
+    }
+  });
+
+  it("a truncated kind settled at the end of the message is the BROKEN state, never a loader", () => {
+    const stream = `Here are cards:\n\n${KIND_PAYLOAD_ONE_LINE.slice(0, 120)}`;
+    const live = finalBlocks(stream, "req-p9-trunc");
+    const reloaded = splitContentIntoBlocksV2(stream).filter((b) => b.content.trim());
+    const candidates = [
+      ...live.filter((b) => hasKindKey(b.content ?? "")).map((b) => renderBlockToContentBlock(b)),
+      ...reloaded.filter((b) => hasKindKey(b.content)),
+    ];
+    expect(candidates.length).toBeGreaterThanOrEqual(2);
+    for (const block of candidates) {
+      const decision = decideBlockRender(block as never, { isStreamActive: false });
+      expect(decision.gate).toBeNull();
+      expect(decision.block.type).not.toBe("text");
+      expect(decision.block.type === "code" && ["", "json"].includes((decision.block.language ?? "").toLowerCase())).toBe(false);
+    }
   });
 });
 

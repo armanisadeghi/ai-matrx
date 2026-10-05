@@ -60,6 +60,10 @@ import {
   jsonKindSignal,
 } from "@/features/content-ir/surfaces/json-kind-signal";
 import { liftQuotedKindRegions } from "@/features/content-ir/surfaces/quoted-kind-lift";
+import {
+  decodeDoubleEncodedKindText,
+  unescapeMarkdownKindJson,
+} from "@/features/content-ir/surfaces/markdown-escaped-kind";
 import { IR_ENVELOPE_KEY, type CanonicalBlockIR } from "@ai-matrx/content-ir";
 import { ALLOWED_RAW_HTML_TAGS } from "@/components/mardown-display/chat-markdown/rehypeSafeRawHtml";
 import { isPageBreakLine } from "@ai-matrx/print/directives";
@@ -2047,7 +2051,12 @@ export const splitContentIntoBlocksWith = (
   const blocks: SplitterBlock[] = [];
   // A JSON region inside a blockquote leaves the quote first — the same
   // transform the live accumulator runs on every delta (V1, quoted-kind-lift).
-  const lines = liftQuotedKindRegions(mdContent).split(/\r?\n/);
+  // P8: a markdown-escaped kind (`"\_\_kind"`) is un-escaped first — the
+  // same transform the live accumulator runs on every delta — and a whole
+  // answer that is a double-encoded kind string reads as that kind.
+  const lines = liftQuotedKindRegions(
+    unescapeMarkdownKindJson(decodeDoubleEncodedKindText(mdContent)),
+  ).split(/\r?\n/);
 
   let currentText = "";
   let i = 0;
