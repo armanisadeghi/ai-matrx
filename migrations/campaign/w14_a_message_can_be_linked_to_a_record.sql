@@ -1,5 +1,4 @@
--- target: production
--- additive: yes
+-- chair-step: inserts two platform.association_types rows (record <-> dm_message, conveys no access). Nothing granted, revoked, dropped or replaced. Re-headed from `target: production` (that allow-list has no platform-registry insert shape and the file carried no guard) by lane ship-unshipped-additive, 2026-10-04.
 -- lane: INTEGRATION
 -- lock: platform
 --
