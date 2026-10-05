@@ -14,9 +14,8 @@ vision: []
 
 Everything durable (vision in Arman's words, mechanics, the one open list) is in [`features/board/FEATURE.md`](../../features/board/FEATURE.md). Read it first.
 
-**Live at `/board`, `/board/<id>`, `/board/all`:** saved boards, every item type passing the remount quiet law (record, table, task, project, meeting, chat fixed 2026-10-04), the two-request agent bridge, board comments, Page tiles.
-**Fixed 2026-10-04:** unsent chat tile reload; "New board" in the title menu opens the board; two-tab per-tile merge; tile placement in rows; phone toolbar "More tools"; documents no longer render black; file Versions loads in about 2.5 s.
+**Live at `/board`, `/board/<id>`, `/board/all` (2026-10-04, end of day):** Board is its own Workspace menu item with all 21 item types one click away; every tile type wakes without re-reading; agents reach every item through `board_items` → `board_open_item` → `board_item_act`, every write asks first; the feature is named Board in code, docs and the database (`projects.boards`, token `board`, surface `matrx-user/board`).
 
-**Still open (full wording in FEATURE.md "Open"):** feature boards (War Room, Meetings, Workflow runs) as Board menu sub-options and publishing `board_items` basics; dormant table says "not loaded yet"; same-tab document sync (realtime package); saving a file shared with edit rights (aidream replace-by-id); `change_summary` stored null; camera overshoot on table checkboxes; caret following in textarea/Monaco; more item types (lists, scopes, study sets, flashcards); agent multi-item run and approval-card tool trace (untested, blocked); a full `pnpm type-check` never run.
+**Still open:** the numbered list under "Open" in FEATURE.md — first: with a tile live the agent still prefers knowledge_search over the Board's tools.
 
 Tests: `pnpm -s jest --forceExit features/board packages/chat/src/surfaces/runtime`. Browser: `docs/official/browser-testing.md`; `pnpm preview:start` then `pnpm dev-login /board`.
