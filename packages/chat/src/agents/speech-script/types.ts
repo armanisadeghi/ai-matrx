@@ -12,7 +12,7 @@
 import type { AIModelRecord } from "../redux/model-registry";
 import type { UserInputPart } from "../types/request.types";
 import { parseCapabilities } from "../model-registry/parse";
-import { partKind } from "@host/features/agents/decision-questions/types";
+import { partKind } from "@ai-matrx/chat/agents/decision-questions/types";
 
 export const SPEECH_SCRIPT_KIND = "speech_script" as const;
 

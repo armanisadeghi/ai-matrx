@@ -35,7 +35,7 @@ import {
     Lightbulb,
 } from "lucide-react";
 import { cn } from "@ai-matrx/design-system";
-import { BasicMarkdownContent } from "@host/components/mardown-display/chat-markdown/BasicMarkdownContent";
+import { BasicMarkdownContent } from "../../../host/markdown-slots";
 import type { ToolRendererProps } from "../../types";
 import { PartPeekPopover } from "../_shared-entity/PartPeekPopover";
 import { resultAsString } from "../_shared";

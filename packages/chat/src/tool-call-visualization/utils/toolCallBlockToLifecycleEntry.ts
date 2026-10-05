@@ -1,4 +1,4 @@
-import type { ToolCallBlock } from "@host/lib/chat-protocol/types";
+import type { ToolCallBlock } from "@ai-matrx/chat/ui/chat-protocol-types";
 import type { ToolLifecycleEntry } from "../../agents/types/request.types";
 
 /**

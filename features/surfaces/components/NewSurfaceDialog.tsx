@@ -29,14 +29,8 @@ import { SURFACE_LAYER_ATTRIBUTE } from "@ai-matrx/chat/surfaces/runtime/window-
 import type { NewSurfaceDraftFields } from "@ai-matrx/chat/surfaces/lib/ui-surfaces-agent-writes";
 
 /** The dialog's live values — the `new_surface_draft` read twin. */
-export interface NewSurfaceDraftScope {
-  name: string;
-  client: string;
-  local: string;
-  parent_surface_name: string | null;
-  tier: string;
-  description: string;
-}
+import type { NewSurfaceDraftScope } from "@ai-matrx/chat/surfaces/host-surface-types";
+export type { NewSurfaceDraftScope };
 
 export const DEFAULT_PARENT_SURFACE = "matrx-default/default";
 export const PARENT_NONE = "__none__";

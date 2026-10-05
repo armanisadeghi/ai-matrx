@@ -25,8 +25,8 @@
 // Pure, fence-aware, safe on a streaming prefix (numbers only ever append).
 // ─────────────────────────────────────────────────────────────────────────
 
-import { DirectiveContainerTracker } from "../directive-container";
-import { TITLED_IMAGE_LINE } from "../image-figure";
+import { DirectiveContainerTracker } from "@ai-matrx/content-ir/source";
+import { TITLED_IMAGE_LINE } from "@ai-matrx/content-ir/source";
 import { collectLinkDefinitions, fenceLineKinds } from "@ai-matrx/content-ir/source";
 
 export interface NumberedTarget {

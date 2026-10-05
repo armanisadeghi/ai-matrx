@@ -19,7 +19,7 @@ import { RotateCcw } from "lucide-react";
 import { cn } from "@ai-matrx/design-system";
 import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import { useEffectiveClassPin } from "../../redux/execution-system/instance-model-overrides/useEffectiveClassPin";
-import { ModelListDropdown } from "@host/features/ai-models/components/lab/ModelListDropdown";
+import { ModelListDropdown } from "@ai-matrx/chat/host/ui-slots";
 import { selectAgentModelId } from "../../redux/agent-definition/selectors";
 import { selectAgentIdFromInstance } from "../../redux/execution-system/conversations/conversations.selectors";
 import { selectInstanceOverrideState } from "../../redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";

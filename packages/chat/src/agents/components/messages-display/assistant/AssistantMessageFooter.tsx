@@ -29,10 +29,10 @@ import {
   convertOriginForSource,
   useDocumentDialogsHost,
 } from "@host/features/rich-document/hosts/DocumentDialogsHost";
-import { useOutputFeedback } from "@host/lib/output-feedback/useOutputFeedback";
+import { useOutputFeedback } from "@ai-matrx/chat/host/ui-slots";
 import { NegativeVerdictFollowUp } from "../../../../host/ui-slots";
 import { RulebookNudge } from "../../../../host/ui-slots";
-import { precedingQuestion } from "@host/features/masterwork/oracle/service";
+import { precedingQuestion } from "@ai-matrx/chat/host/ui-slots";
 import {
   selectMessageById,
   selectOrderedMessageIds,

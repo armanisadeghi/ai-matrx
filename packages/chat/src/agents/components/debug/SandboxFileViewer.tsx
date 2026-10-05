@@ -17,7 +17,13 @@ import { Button } from "@ai-matrx/design-system/controls";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { FileText, Loader2, RefreshCw, Copy, Check } from "lucide-react";
 import { toast } from "../../../host/notify";
-import { SandboxFilesystemAdapter } from "@host/features/code/adapters/SandboxFilesystemAdapter";
+import { createSandboxFilesystemAdapter } from "@ai-matrx/chat/host/ui-slots";
+
+/** The host sandbox filesystem adapter, as this viewer uses it. */
+interface SandboxFsAdapter {
+  readonly instanceId: string;
+  readFile(path: string): Promise<string>;
+}
 import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 
 interface SandboxFileViewerProps {
@@ -40,9 +46,9 @@ export function SandboxFileViewer({
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   // Recreate the adapter only when the box changes.
-  const adapterRef = useRef<SandboxFilesystemAdapter | null>(null);
+  const adapterRef = useRef<SandboxFsAdapter | null>(null);
   if (!adapterRef.current || adapterRef.current.instanceId !== sandboxRowId) {
-    adapterRef.current = new SandboxFilesystemAdapter(sandboxRowId);
+    adapterRef.current = createSandboxFilesystemAdapter(sandboxRowId) as SandboxFsAdapter;
   }
 
   const load = useCallback(

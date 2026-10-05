@@ -28,7 +28,7 @@ import { isSpeechScriptPart } from "../../speech-script/types";
 import {
   DECISION_QUESTIONS_KIND,
   isDecisionQuestionsPart,
-} from "@host/features/agents/decision-questions/types";
+} from "@ai-matrx/chat/agents/decision-questions/types";
 
 type DefinitionMessage = AgentDefinition["messages"][number];
 type DefinitionMessagePart = DefinitionMessage["content"][number];

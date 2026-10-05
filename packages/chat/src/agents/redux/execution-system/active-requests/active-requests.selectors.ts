@@ -84,7 +84,7 @@ import {
   type LiveCitationIndex,
   type MessageCitationSource,
 } from "../messages/message-citations";
-import { soleFence } from "@host/lib/markdown/code-ranges";
+import { soleFence } from "@ai-matrx/content-ir/source";
 import { stripThinkingStreaming } from "@ai-matrx/kit/text";
 
 /** Stable fallbacks — never inline `?? []` in selector outputs. */

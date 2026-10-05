@@ -33,11 +33,7 @@
  */
 
 import { Badge } from "@ai-matrx/design-system/controls";
-import {
-  ConfigurationTable,
-  ConfigurationTableRow,
-  FieldHelp,
-} from "@host/components/official/ConfigurationFields";
+import { ConfigurationTable, ConfigurationTableRow, FieldHelp } from "@ai-matrx/chat/host/ui-slots";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@ai-matrx/design-system";
 import { AlertTriangle, CircleSlash, RotateCcw } from "lucide-react";
@@ -70,18 +66,18 @@ import {
   type SettingsRow,
 } from "../../redux/agent-settings/settings-catalogue";
 import type { ControlDefinition } from "../../redux/agent-settings/types";
-import { SettingControlInput } from "@host/features/agents/components/settings-management/controls/SettingControlInput";
+import { SettingControlInput } from "@ai-matrx/chat/host/ui-slots";
 import { Label } from "@ai-matrx/design-system";
 import { cn } from "@ai-matrx/design-system";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@ai-matrx/chat/ui/tabs";
 import { Textarea } from "@ai-matrx/design-system";
-import { ModelListDropdown } from "@host/features/ai-models/components/lab/ModelListDropdown";
+import { ModelListDropdown } from "@ai-matrx/chat/host/ui-slots";
 import { parseRequestOverrides } from "../../redux/execution-system/utils/request-overrides";
 import { isUnsetChoice } from "../../redux/execution-system/instance-model-overrides/auto-means-unset";
 import type { LLMParams } from "../../types/agent-api-types";
 import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
-import { InfoHint } from "@host/components/official/InfoHint";
+import { InfoHint } from "@ai-matrx/chat/host/ui-slots";
 
 /**
  * Sentence case for catalogue labels ("Feature Flags" → "Feature flags")

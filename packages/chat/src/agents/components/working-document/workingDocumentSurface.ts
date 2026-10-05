@@ -15,7 +15,7 @@ import { PLACEMENT_TYPES } from "../../shortcuts/constants";
 import {
   countWords,
   findCurrentHeading,
-} from "@host/features/notes/utils/markdown-headings";
+} from "@ai-matrx/chat/agents/components/working-document/markdown-headings";
 import { formatEditorSurroundContext } from "@ai-matrx/kit/text";
 import { createConversationDocumentScope } from "../../../surfaces/manifests/_conversation-document.manifest";
 import type { WorkingDocumentBinding, WorkingDocumentKind } from "../../redux/execution-system/instance-working-document/instance-working-document.slice";

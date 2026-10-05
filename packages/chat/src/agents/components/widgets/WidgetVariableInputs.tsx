@@ -14,7 +14,7 @@
 
 import { Label } from "@ai-matrx/design-system";
 import type { VariableDefinition } from "../../types/agent-definition.types";
-import { ProTextarea } from "@host/components/official/ProTextarea";
+import { ProTextarea } from "@ai-matrx/chat/host/ui-slots";
 import { variableRunLabel } from "@ai-matrx/agents";
 
 interface WidgetVariableInputsProps {

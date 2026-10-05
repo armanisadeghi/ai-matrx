@@ -30,7 +30,7 @@ import { cn } from "@ai-matrx/design-system";
 import { RichContent } from "@ai-matrx/chat/host/ui-slots";
 import { copyRichContent } from "@ai-matrx/chat/host/ui-slots";
 import { RichDocument } from "@ai-matrx/chat/host/ui-slots";
-import { BasicMarkdownContent } from "@host/components/mardown-display/chat-markdown/BasicMarkdownContent";
+import { BasicMarkdownContent } from "../../../host/markdown-slots";
 
 import type { ToolOverlayTabSpec, ToolRendererProps } from "../../types";
 import { resultAsString } from "../_shared";

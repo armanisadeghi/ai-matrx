@@ -1,6 +1,6 @@
 import { createSlice } from "@reduxjs/toolkit";
 import { fetchAvailableTools, fetchToolById } from "./tools.thunks";
-import type { DatabaseTool } from "@host/utils/supabase/tools-service";
+import type { DatabaseTool } from "@ai-matrx/chat/ui/database-tool";
 
 interface ToolsSliceState {
   tools: DatabaseTool[];

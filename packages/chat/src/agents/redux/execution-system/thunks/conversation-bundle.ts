@@ -31,7 +31,7 @@ import type {
   CxRequestRecord,
   CxToolCallRecord,
 } from "../observability/observability.slice";
-import { componentSaver } from "@host/lib/provenance/componentSaver";
+import { componentSaver } from "@ai-matrx/chat/ui/componentSaver";
 
 /**
  * Error code for "the conversation row doesn't exist YET" — a client-minted

@@ -14,7 +14,7 @@
  * shell, not a new editor.
  */
 
-import { StaleDataNotice } from "@host/components/official/stale-data/StaleDataNotice";
+import { StaleDataNotice } from "@ai-matrx/chat/host/ui-slots";
 import { toast } from "../../../../host/notify";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {

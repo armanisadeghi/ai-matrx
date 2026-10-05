@@ -9,7 +9,7 @@ import { selectInstanceAgentId } from "../../redux/execution-system/instance-ui-
 import { fetchAgentConversations } from "../../redux/conversation-list/conversation-list.thunks";
 import { makeSelectAgentConversations } from "../../redux/conversation-list/conversation-list.selectors";
 import type { ConversationListItem } from "../../redux/conversation-list/conversation-list.types";
-import { ItemRow } from "@host/components/official/item/ItemRow";
+import { ItemRow } from "@ai-matrx/chat/host/ui-slots";
 import { buildConversationMenu } from "../conversation-actions/conversationActionRegistry";
 import { renameConversation } from "../../redux/conversation-list/conversation-row-actions.thunks";
 import type { ChatDispatch } from "../../../store/root-state";

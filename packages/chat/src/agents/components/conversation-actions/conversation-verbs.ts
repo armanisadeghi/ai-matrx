@@ -11,7 +11,7 @@
  */
 
 import { toast } from "../../../host/notify";
-import { toastDoor } from "@host/components/official/entity-ref/toastDoor";
+import { toastDoor } from "@ai-matrx/chat/host/ui-slots";
 import type { ChatDispatch, ChatRootState } from "../../../store/root-state";
 import { openOverlay, CHAT_WINDOWS } from "../../../host/windows";
 import {

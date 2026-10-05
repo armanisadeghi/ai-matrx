@@ -57,7 +57,7 @@ import { toast } from "../../host/notify";
 import { isNotAuthenticatedError } from "../../host/identity";
 import { DEFAULT_AGENT_ID } from "../components/agent/local-agents";
 import type { ChatRootState } from "../../store/root-state";
-import { replaceAddressWithoutNavigating } from "@host/lib/url-state/addressWithoutNavigating";
+import { replaceAddressWithoutNavigating } from "@ai-matrx/chat/ui/addressWithoutNavigating";
 
 // ── URL parsing ───────────────────────────────────────────────────────────────
 

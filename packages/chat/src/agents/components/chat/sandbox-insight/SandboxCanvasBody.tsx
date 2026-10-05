@@ -37,7 +37,7 @@ import { Box, FolderTree, ListTree, TerminalSquare } from "lucide-react";
 
 import { cn } from "@ai-matrx/design-system";
 import { useAppSelector } from "../../../../store/hooks";
-import { SimpleTerminal } from "@host/features/code/terminal/SimpleTerminal";
+import { SimpleTerminal } from "@ai-matrx/chat/host/ui-slots";
 import { SandboxFileViewer } from "../../debug/SandboxFileViewer";
 import { sandboxDisplayName } from "../../../../compute/targets";
 import {

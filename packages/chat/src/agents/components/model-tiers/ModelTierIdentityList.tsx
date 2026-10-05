@@ -1,6 +1,6 @@
 "use client";
 
-import { AiModelRef } from "@host/components/official/entity-ref/AiIdentityRef";
+import { AiModelRef } from "@ai-matrx/chat/host/ui-slots";
 import { cn } from "@ai-matrx/design-system";
 
 interface ModelTierIdentity {

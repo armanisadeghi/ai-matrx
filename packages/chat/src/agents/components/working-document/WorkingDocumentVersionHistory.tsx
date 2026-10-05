@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { NoteVersionHistoryPanel } from "../../../next/lazy/NoteVersionHistoryPanel";
+import { NoteVersionHistoryPanel } from "../../../host/ui-slots";
 import { ChevronLeft, ChevronRight, Loader2, RotateCcw } from "lucide-react";
 import { DiffViewer } from "@ai-matrx/diff/react";
 import { Button } from "@ai-matrx/design-system/controls";

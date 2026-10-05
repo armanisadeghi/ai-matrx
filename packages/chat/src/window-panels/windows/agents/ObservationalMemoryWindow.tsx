@@ -30,8 +30,8 @@ import {
   CircleOff,
 } from "lucide-react";
 import { WindowPanel } from "../../../host/ui-slots";
-import { EntityDoorControls } from "@host/components/official/entity-ref/EntityDoorControls";
-import { EntityRef } from "@host/components/official/entity-ref/EntityRef";
+import { EntityDoorControls } from "@ai-matrx/chat/host/ui-slots";
+import { EntityRef } from "@ai-matrx/chat/host/ui-slots";
 import { useAppSelector } from "../../../store/hooks";
 import { cn } from "@ai-matrx/design-system";
 import { ObservationalMemoryCore } from "../../../agents/components/observational-memory/ObservationalMemoryCore";

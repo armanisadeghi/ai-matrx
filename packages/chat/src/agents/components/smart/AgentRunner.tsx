@@ -37,7 +37,7 @@ import { SmartAgentInput } from "../inputs/smart-input/SmartAgentInput";
 import { useComposerMode } from "../inputs/smart-input/composer/useComposerMode";
 import { PreExecutionAgentInput } from "../inputs/PreExecutionAgentInput";
 import { AgentConversationDisplay } from "../messages-display/AgentConversationDisplay";
-import { ProposedDirectivesZone } from "@host/features/matrx-envelope/components/ProposedDirectivesZone";
+import { ProposedDirectivesZone } from "@ai-matrx/chat/host/ui-slots";
 import { PendingAsksZone } from "../../ui-first-tools/ui/PendingAsksZone";
 import { ServerOperationBanner } from "../../runtime-reconnect/ServerOperationBanner";
 

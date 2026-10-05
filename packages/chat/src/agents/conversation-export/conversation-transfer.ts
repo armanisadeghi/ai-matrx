@@ -21,12 +21,12 @@ import type { Coverage, Payload, Section, Source } from "@ai-matrx/alchemy/opera
 import type { FormatAdapter } from "@ai-matrx/kit/content-transfer";
 import type { ChatDispatch, ChatRootState } from "../../store/root-state";
 import { toast } from "../../host/notify";
-import { unwrapKindEnvelopes } from "@host/lib/markdown/plain-text";
+import { unwrapKindEnvelopes } from "@ai-matrx/content-ir/source";
 import { kindTextToMarkdown } from "@ai-matrx/chat/utils/content-ir/surfaces/kind-text-to-markdown";
 import { extractFlatText } from "../redux/execution-system/messages/messages.selectors";
 import { selectConversationTitle } from "../redux/execution-system/conversations/conversations.selectors";
 import { isMessagePinned } from "../message-pins/pinned-messages-store";
-import { stripTurnTrust } from "@host/features/education/tutor/turnTrust";
+import { stripTurnTrust } from "@ai-matrx/chat/host/ui-slots";
 import { openAlchemySession } from "../../agent-copy/alchemy-session";
 import { buildConversationMarkdown } from "./conversation-markdown";
 import { documentMarkdown } from "./document-markdown";

@@ -301,7 +301,7 @@ export const editMessage = createAsyncThunk<
         try {
           const [{ saveOutputFeedback }, { extractFlatText }] =
             await Promise.all([
-              import("@host/lib/output-feedback/service"),
+              import("../../../../host/ui-slots"),
               import("../messages/messages.selectors"),
             ]);
           const originalText = extractFlatText(prevRecord);

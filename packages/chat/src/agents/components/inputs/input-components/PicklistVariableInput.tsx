@@ -12,8 +12,8 @@ import {
   buildPicklistItemFence,
   readPicklistSelection,
 } from "@ai-matrx/agents/envelope";
-import { useStructuredListForSelection } from "@host/features/user-lists/hooks/useStructuredListForSelection";
-import { ReadFailure } from "@host/components/read-state/ReadFailure";
+import { useStructuredListForSelection } from "@ai-matrx/chat/host/ui-slots";
+import { ReadFailure } from "@ai-matrx/chat/host/ui-slots";
 
 interface PicklistVariableInputProps {
   value: unknown;

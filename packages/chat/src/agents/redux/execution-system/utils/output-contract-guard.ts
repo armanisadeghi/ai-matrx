@@ -44,7 +44,7 @@
 import type { ChatRootState } from "../../../../store/root-state";
 import { selectAgentById } from "../../agent-definition/selectors";
 import { hasField } from "@ai-matrx/agents/field-flags";
-import { peekMandateCatalogueEntry } from "@host/features/mandates/catalogue";
+import { peekMandateCatalogueEntry } from "@ai-matrx/chat/host/ui-slots";
 import { fetchAgentOutputSchemas } from "../../../../mandates/output-contract";
 import { SURFACE_WRITE_TOOL_NAME } from "../../../../surfaces/runtime/surface-writeback";
 import { isJsonObject } from "@ai-matrx/chat/utils/json";

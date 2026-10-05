@@ -6,7 +6,7 @@
  */
 
 import { useEffect } from "react";
-import { DataRefPreviewContent } from "@host/features/agents/components/previews/DataRefHoverPreview";
+import { DataRefPreviewContent } from "@ai-matrx/chat/host/ui-slots";
 import type { ContextItemBodyProps } from "../types";
 
 export function DataBody({ item, setTitle }: ContextItemBodyProps) {

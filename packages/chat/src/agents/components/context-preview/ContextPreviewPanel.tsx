@@ -25,7 +25,7 @@ import { AlertTriangle, Braces, FileCode2, RefreshCw } from "lucide-react";
 import { cn } from "@ai-matrx/design-system";
 import { Skeleton } from "@ai-matrx/design-system";
 import { Badge, Button, Chip, SegmentedControl } from "@ai-matrx/design-system/controls";
-import { InlineCopyButton } from "@host/components/matrx/buttons/InlineCopyButton";
+import { InlineCopyButton } from "@ai-matrx/chat/host/ui-slots";
 import { useAppSelector } from "../../../store/hooks";
 import { SurfaceRuntimeProvider } from "../../../surfaces/runtime/SurfaceRuntimeContext";
 import {

@@ -13,9 +13,9 @@
  * no `window.confirm`).
  */
 
-import { readOf } from "@host/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/chat/host/ui-slots";
 import { RichContent } from "@ai-matrx/chat/host/ui-slots";
-import { UntrustedCount } from "@host/components/official/stale-data/UntrustedCount";
+import { UntrustedCount } from "@ai-matrx/chat/host/ui-slots";
 import { useCallback, useEffect, useState } from "react";
 import {
   CheckCircle2,
@@ -39,8 +39,8 @@ import {
   selectAgentTasks,
   selectUserTodosForConversation,
 } from "../../redux/agent-lists.selectors";
-import { ReadFailure } from "@host/components/read-state/ReadFailure";
-import { StaleDataNotice } from "@host/components/official/stale-data/StaleDataNotice";
+import { ReadFailure } from "@ai-matrx/chat/host/ui-slots";
+import { StaleDataNotice } from "@ai-matrx/chat/host/ui-slots";
 import {
   ensureAgentLists,
   hydrateAgentLists,
@@ -63,7 +63,7 @@ import {
   removeUserTodo,
 } from "../../service/user-todo.service";
 import { setPlanStatus } from "../../service/agent-plan.service";
-import { confirm as confirmDialog } from "@host/components/dialogs/confirm/ConfirmDialogHost";
+import { confirm as confirmDialog } from "@ai-matrx/chat/host/ui-slots";
 import { selectUserId } from "../../../../host/identity";
 import { useChatCanvasTab } from "../../../../host/canvas";
 import { CONVERSATION_LISTS_KIND } from "../../../../host/canvas-tabs";

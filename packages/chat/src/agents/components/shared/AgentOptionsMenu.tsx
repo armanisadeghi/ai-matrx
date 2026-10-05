@@ -73,7 +73,7 @@ import {
   AgentDuplicateOutcomeDialog,
   type DuplicateOutcomeState,
 } from "./AgentDuplicateOutcomeDialog";
-import { ReferenceCopyMenuItem } from "@host/features/matrx-envelope/components/ReferenceCopyMenuItem";
+import { ReferenceCopyMenuItem } from "@ai-matrx/chat/host/ui-slots";
 import {
   ADMIN_SYSTEM_AGENTS_BASE_PATH,
   isAdminSystemAgentsContext,

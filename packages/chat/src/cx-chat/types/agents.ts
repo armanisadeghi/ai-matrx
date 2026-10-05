@@ -1,4 +1,4 @@
-import type { PromptVariable } from "@host/lib/types/agent-chat";
+import type { VariableDefinition as PromptVariable } from "../../agents/types/agent-definition.types";
 
 /**
  * Minimal agent shape used by the SSR welcome screen and agent resolver.

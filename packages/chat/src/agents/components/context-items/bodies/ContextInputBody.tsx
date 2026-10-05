@@ -2,7 +2,7 @@
 
 import type { ContextItemBodyProps } from "../types";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
-import { AnswerValueView } from "@host/components/official/structured-value/AnswerValueView";
+import { AnswerValueView } from "@ai-matrx/chat/host/ui-slots";
 import { valueCarriesKind } from "@ai-matrx/chat/utils/content-ir/surfaces/json-kind-signal";
 
 function displayValue(value: unknown): string {

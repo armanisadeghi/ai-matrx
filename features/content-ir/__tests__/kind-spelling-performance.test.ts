@@ -9,7 +9,14 @@
  * numbers (see the checklist, R9-3).
  */
 import { normalizeKindSpellings } from "@/features/content-ir/surfaces/json-kind-signal";
-import { spelledKindsAsOneLine } from "@/features/content-ir/surfaces/kind-one-line";
+import { detectionOnlyKindsAsWritten, spelledKindsAsOneLine } from "@/features/content-ir/surfaces/kind-one-line";
+import { markdownCarriesKind } from "@/features/content-ir/surfaces/json-kind-signal";
+
+/** The prose leaf's whole per-frame work (round 10): the render decision + the leaf's two passes. */
+const proseLeaf = (text: string) => {
+  markdownCarriesKind(text);
+  return detectionOnlyKindsAsWritten(spelledKindsAsOneLine(text));
+};
 
 /** Best of `runs` fresh-string calls (no memo hit: every run gets a new string). */
 function bestMs(make: () => string, fn: (text: string) => unknown, runs = 3): number {
@@ -36,14 +43,15 @@ describe("prose spelling reader — linear-time budgets", () => {
   it("600 escaped regions (~30 KB) in under 30 ms", () => {
     const text = repeat(ESCAPED, ESCAPED.length * 600);
     const ms = bestMs(fresh(text), spelledKindsAsOneLine);
-    expect(spelledKindsAsOneLine(text)).not.toContain("__kind");
+    // Round 10: a non-JSON spelling is left exactly as written.
+    expect(spelledKindsAsOneLine(text)).toBe(text);
     expect(ms).toBeLessThan(30);
   });
 
   it("1 MB of math prose with one escaped kind at the start in under 40 ms", () => {
     const text = ESCAPED + repeat(MATH, 1_000_000);
     const ms = bestMs(fresh(text), spelledKindsAsOneLine);
-    expect(spelledKindsAsOneLine(text).startsWith("Log: **Hi** · Note ok.")).toBe(true);
+    expect(spelledKindsAsOneLine(text)).toBe(text);
     expect(ms).toBeLessThan(40);
   });
 
@@ -66,5 +74,28 @@ describe("prose spelling reader — linear-time budgets", () => {
     expect(again).toBe(first);
     expect(performance.now() - started).toBeLessThan(5);
   });
-});
 
+  // Round 10 (C3): one early brace, many key mentions — the brace is never re-read
+  // per mention (round 9 decoded from it once per mention: 256 ms at 100 KB, 2.9 s at 1 MB).
+  it("an early object then 600 key mentions: render decision + prose leaf under 16 ms at 100 KB, linear at 1 MB", () => {
+    const make = (size: number) => () =>
+      `Data: {"rows": "${"x".repeat(size)}"} and then ` + 'the "__kind": "note" field. '.repeat(600) + ` w${++frame}`;
+    const small = bestMs(make(100_000), proseLeaf);
+    const large = bestMs(make(1_000_000), proseLeaf);
+    expect(small).toBeLessThan(16);
+    expect(large).toBeLessThan(Math.max(80, small * 25));
+  });
+
+  it("100 KB of every shape, streamed: render decision + prose leaf under 16 ms per frame", () => {
+    for (const unit of [PLAIN, MATH, ESCAPED, '{{x the "__kind": "note" field. ']) {
+      // A streamed frame is the previous frame plus a few characters.
+      let text = repeat(unit, 100_000);
+      const next = () => (text = `${text} w${++frame}`);
+      expect(bestMs(next, proseLeaf, 5)).toBeLessThan(16);
+    }
+  });
+
+  it("100 KB of escaped kinds, cold (no previous frame): under 30 ms", () => {
+    expect(bestMs(fresh(repeat(ESCAPED, 100_000)), proseLeaf)).toBeLessThan(30);
+  });
+});

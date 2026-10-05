@@ -3,7 +3,7 @@
 import { useAppSelector } from "../../../store/hooks";
 import { selectInstanceDisplayTitle } from "../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { selectHasUnsentComposerDraft } from "../../redux/execution-system/instance-user-input/unsent-draft.selectors";
-import FloatingSheet from "@host/components/official/FloatingSheet";
+import { FloatingSheet } from "@ai-matrx/chat/host/ui-slots";
 import { AgentRunner } from "../smart/AgentRunner";
 import { useAgentShellAddress } from "./useAgentShellAddress";
 

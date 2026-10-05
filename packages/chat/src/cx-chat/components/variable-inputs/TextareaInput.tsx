@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { VoiceTextarea } from '@host/components/official/VoiceTextarea';
+import { VoiceTextarea } from "@ai-matrx/chat/host/ui-slots";
 import { toast } from "../../../host/notify";
 import { variableInputPlaceholder } from "../../../agents/components/inputs/input-components/variablePlaceholder";
 

@@ -5,7 +5,7 @@
  * Client components should call these through API routes.
  */
 
-import { createClient } from "@host/utils/supabase/server";
+import { createClient } from "@ai-matrx/chat/host/ui-slots";
 import type {
   CxConversation,
   CxConversationInsert,

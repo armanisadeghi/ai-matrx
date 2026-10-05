@@ -42,7 +42,7 @@ import {
 } from "@ai-matrx/design-system";
 import { useAppSelector } from "../../store/hooks";
 import { selectWorkingDocTitle } from "../../agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
-import { reportCanvasOpenDrop } from "@host/features/canvas/openRequest";
+import { reportCanvasOpenDrop } from "@ai-matrx/chat/host/ui-slots";
 import {
   useOpenNotesWindow,
   useOpenWorkingDocumentPanel,

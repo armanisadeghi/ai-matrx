@@ -13,7 +13,7 @@
 
 import type { ChatRootState } from "../../../../store/root-state";
 import { selectAgentSkillConfig } from "../../agent-definition/selectors";
-import type { SkillConfig } from "@host/features/skills/types";
+import type { SkillConfig } from "@ai-matrx/chat/ui/skills-types";
 
 export function buildSkillConfigForRequest(
   agentSkillConfig: SkillConfig,

@@ -42,7 +42,7 @@ import {
   clearBuilderContext,
 } from "../../hooks/useBuilderContextSeed";
 import { cn } from "@ai-matrx/design-system";
-import { ConfirmDialog } from "@host/components/ui/confirm-dialog";
+import { ConfirmDialog } from "@ai-matrx/chat/host/ui-slots";
 import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 
 // =============================================================================

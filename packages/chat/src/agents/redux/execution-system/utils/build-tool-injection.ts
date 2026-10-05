@@ -48,10 +48,10 @@ import "../client-capabilities/register-all";
 import { surfacePatchContractLine } from "../../../../surfaces/runtime/surface-write-patch";
 import { detectActiveSurface } from "../../../../surfaces/utils/route-to-surface";
 import { selectCreatorSettings } from "../../../../host/prefs";
-import { isWarRoomToolName } from "@host/features/agents/war-room-tools/tools/names";
-import { getWarRoomInlineToolDef } from "@host/features/agents/war-room-tools/tools/tool-defs";
-import { isWarRoomMasterToolName } from "@host/features/agents/war-room-master-tools/tools/names";
-import { getWarRoomMasterInlineToolDef } from "@host/features/agents/war-room-master-tools/tools/tool-defs";
+import { isWarRoomToolName } from "@ai-matrx/chat/agents/war-room-tools/names";
+import { getWarRoomInlineToolDef } from "@ai-matrx/chat/agents/war-room-tools/tool-defs";
+import { isWarRoomMasterToolName } from "@ai-matrx/chat/agents/war-room-master-tools/names";
+import { getWarRoomMasterInlineToolDef } from "@ai-matrx/chat/agents/war-room-master-tools/tool-defs";
 import { isScribeToolName } from "../../../scribe-tools/tools/names";
 import { getScribeInlineToolDef } from "../../../scribe-tools/tools/tool-defs";
 import {

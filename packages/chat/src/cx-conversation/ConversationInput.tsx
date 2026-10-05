@@ -49,7 +49,7 @@ import {
   selectUIState,
   selectShowDebugInfo,
 } from "./_legacy-stubs";
-import { ModelListDropdown } from "@host/features/ai-models/components/lab/ModelListDropdown";
+import { ModelListDropdown } from "@ai-matrx/chat/host/ui-slots";
 import { selectIsSuperAdminDebugger } from "../host/prefs";
 import { selectActiveChatAgent } from "./_legacy-stubs";
 import { selectIsDebugMode } from "../host/prefs";
@@ -65,11 +65,11 @@ import type { Resource } from "../agents/resources/types";
 import type { ConversationResource } from "../cx-chat/types/conversation";
 import type { LLMParams } from "../agents/types/agent-api-types";
 import type { VariableDefinition } from "../agents/types/agent-definition.types";
-import { useTouchOnlyDevice } from "@host/components/official/composer/useTouchOnlyDevice";
+import { useTouchOnlyDevice } from "@ai-matrx/chat/ui/composer/useTouchOnlyDevice";
 import {
   composerKeyIntent,
   intentTakesTheKey,
-} from "@host/components/official/composer/composerSubmit";
+} from "@ai-matrx/chat/ui/composer/composerSubmit";
 // PromptSettings / PromptVariable replaced with agents equivalents.
 // PromptSettings was @/features/prompts/types/core — model_id added as it isn't in LLMParams.
 type PromptSettings = LLMParams & { model_id?: string };

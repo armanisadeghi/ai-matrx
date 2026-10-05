@@ -8,8 +8,6 @@
  */
 
 import type { PreFetchedUrl } from "@ai-matrx/agents/generated/stream-events";
-import type { Note } from "@host/features/notes/types";
-import type { DatabaseTask, ProjectWithTasks } from "@host/features/tasks/types";
 import type { ComponentType } from "react";
 import type { TableBookmark } from "@ai-matrx/agents/message-parts";
 
@@ -28,17 +26,39 @@ export interface BaseResourceData {
 /**
  * Note resource data structure
  */
-export type NoteResourceData = Note;
+export interface NoteResourceData {
+  id: string;
+  label: string;
+  content: string | null;
+  folder_name?: string | null;
+  tags?: string[] | null;
+  [key: string]: unknown;
+}
 
 /**
  * Task resource data structure
  */
-export type TaskResourceData = DatabaseTask;
+export interface TaskResourceData {
+  id: string;
+  title: string;
+  status: string | null;
+  priority?: string | null;
+  due_date?: string | null;
+  project_id?: string | null;
+  description?: string | null;
+  [key: string]: unknown;
+}
 
 /**
  * Project resource data structure
  */
-export type ProjectResourceData = ProjectWithTasks;
+export interface ProjectResourceData {
+  id: string;
+  name: string;
+  description?: string | null;
+  tasks?: TaskResourceData[];
+  [key: string]: unknown;
+}
 
 /**
  * Table resource data structure

@@ -35,7 +35,7 @@ import {
   selectActiveSandboxId,
   selectActiveSandboxProxyUrl,
   selectEditorMode,
-} from "@host/features/code/redux/codeWorkspaceSlice";
+} from "@ai-matrx/chat/host/ui-slots";
 import { cn } from "@ai-matrx/design-system";
 import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 

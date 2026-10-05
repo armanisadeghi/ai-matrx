@@ -11,13 +11,9 @@
  */
 
 import React, { useEffect, useState } from "react";
-import { EntityRef } from "@host/components/official/entity-ref/EntityRef";
-import {
-    entityTitleFallback,
-    fetchEntityTitles,
-    getCachedEntityTitle,
-} from "@host/features/scopes/service/entityTitles";
-import { resolveEntityToken } from "@host/features/scopes/registry/entityRegistry";
+import { EntityRef } from "@ai-matrx/chat/host/ui-slots";
+import { entityTitleFallback, fetchEntityTitles, getCachedEntityTitle } from "@ai-matrx/chat/host/ui-slots";
+import { resolveEntityToken } from "@ai-matrx/chat/host/ui-slots";
 
 export interface ResultRecordRefProps {
     /** The pointer's `resource_type`. */

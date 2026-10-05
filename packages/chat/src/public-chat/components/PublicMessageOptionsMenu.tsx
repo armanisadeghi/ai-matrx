@@ -34,7 +34,7 @@ import { selectIsAuthenticated } from "../../host/identity";
 import { useAppDispatch } from "../../store/hooks";
 import { openOverlay, CHAT_WINDOWS } from "../../host/windows";
 import { kindTextToMarkdown } from "@ai-matrx/chat/utils/content-ir/surfaces/kind-text-to-markdown";
-import { removeCodeSpans, replaceFences } from "@host/lib/markdown/code-ranges";
+import { removeCodeSpans, replaceFences } from "@ai-matrx/content-ir/source";
 import { selectOrganizationId, ensureOrganizationContext, isOrganizationSelectionCancelled } from "../../host/org";
 
 // Key used to store pending actions across the auth redirect

@@ -51,8 +51,8 @@ import {
   fetchMandateIdentities,
   type MandateIdentity,
 } from "../../../mandates/service";
-import { MandateNotesPanel } from "@host/features/mandates/components/MandateNotesPanel";
-import { mandateDisplayName } from "@host/features/mandates/mandate-words";
+import { MandateNotesPanel } from "@ai-matrx/chat/host/ui-slots";
+import { mandateDisplayName } from "@ai-matrx/chat/ui/mandate-words";
 import { useOpenMandateWindow } from "../../../host/window-openers";
 import { INTELLIGENCE_ICON } from "@ai-matrx/icons/domain";
 import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";

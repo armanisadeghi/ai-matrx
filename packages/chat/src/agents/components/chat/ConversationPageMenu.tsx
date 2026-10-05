@@ -36,12 +36,12 @@ import { Button } from "@ai-matrx/design-system/controls";
 import { useRef } from "react";
 import { ClipboardCopy, Download, MoreHorizontal, Pin, Search, Send, Share, X } from "lucide-react";
 import { useAssociations } from "@ai-matrx/associations/react";
-import { ItemMenu } from "@host/components/official/item/ItemMenu";
+import { ItemMenu } from "@ai-matrx/chat/host/ui-slots";
 import { buildConversationMenu } from "../conversation-actions/conversationActionRegistry";
 import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import { openConversationRename } from "../conversation-actions/conversation-verbs";
 import { useOpenGmailComposeWindow } from "../../../host/window-openers";
-import type { ItemMenuSection } from "@host/components/official/item/types";
+import type { ItemMenuSection } from "@ai-matrx/chat/ui/item-types";
 import { conversationEmailEntrances } from "./conversation-email-entrance";
 import type { ChatDispatch, ChatRootState } from "../../../store/root-state";
 import { selectConversationMessages } from "../../redux/execution-system/messages/messages.selectors";
@@ -49,7 +49,7 @@ import {
   usePinnedMessageIds,
   usePinnedMessagesReadFailed,
 } from "../../message-pins/pinned-messages-store";
-import { UntrustedCount } from "@host/components/official/stale-data/UntrustedCount";
+import { UntrustedCount } from "@ai-matrx/chat/host/ui-slots";
 import {
   CONVERSATION_TRANSFER_ROWS,
   type ConversationTransferRow,

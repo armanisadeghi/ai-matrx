@@ -23,7 +23,7 @@ import {
   extractFlatText,
   selectMessageById,
 } from "../../../redux/execution-system/messages/messages.selectors";
-import { BasicMarkdownContent } from "@host/components/mardown-display/chat-markdown/BasicMarkdownContent";
+import { BasicMarkdownContent } from "../../../../host/markdown-slots";
 
 interface CollabNoteMessageProps {
   conversationId: string;

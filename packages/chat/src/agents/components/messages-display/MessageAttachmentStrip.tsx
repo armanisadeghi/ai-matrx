@@ -4,7 +4,7 @@ import { cn } from "@ai-matrx/design-system";
 import { FileResourceChip } from "@ai-matrx/chat/host/ui-slots";
 import { contextItemsListKey, useContextItemsTab } from "../context-items/contextItemsTab";
 import { normalizeMessagePart } from "../context-items/normalize";
-import { BlockHoverPreview } from "@host/features/agents/components/previews/BlockHoverPreview";
+import { BlockHoverPreview } from "@ai-matrx/chat/host/ui-slots";
 import { ResourceAttachmentTile } from "./user/ResourceAttachmentTile";
 import type { MessagePart } from "@ai-matrx/agents/generated/stream-events";
 import type { ContextDrawerItem } from "../context-items/types";

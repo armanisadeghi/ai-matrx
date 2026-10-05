@@ -21,7 +21,7 @@ import {
   isProjectCreateFlow,
   logProjectCreateAiSnapshot,
   logProjectCreateAiStage,
-} from "@host/features/projects/debug/projectCreateAiDebug";
+} from "@ai-matrx/chat/ui/projectCreateAiDebug";
 import { AgentRunner } from "./AgentRunner";
 
 interface AgentRunWrapperProps {

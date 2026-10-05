@@ -15,6 +15,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { toast } from "@/lib/toast";
+import type { ApplyManifestSyncResult } from "@/features/surfaces/services/manifest-sync.service";
 import {
   getDriftReport,
   syncManifests,
@@ -26,7 +27,7 @@ import {
 import type { SurfaceDriftReport } from "@ai-matrx/chat/surfaces/types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
-type SyncResult = Awaited<ReturnType<typeof syncManifests>>;
+type SyncResult = ApplyManifestSyncResult;
 
 interface Props {
   onClose: () => void;
@@ -73,7 +74,7 @@ export function ManifestSyncDialog({ onClose, onSynced, cleanUp = false }: Props
     setBusy(true);
     setError(null);
     try {
-      const res = await syncManifests({ deleteStale, createMissingSurfaces });
+      const res = await syncManifests<ApplyManifestSyncResult>({ deleteStale, createMissingSurfaces });
       setResult(res);
       const changeCount =
         res.upserted.length +

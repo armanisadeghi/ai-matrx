@@ -18,7 +18,7 @@ import { selectMessageHasUnsavedChanges } from "../../_legacy-stubs";
 import { editMessage } from "../../_legacy-stubs";
 import { buildContentBlocksForSave } from "../../utils/buildContentBlocksForSave";
 import { useMediaLoadRecovery } from "@ai-matrx/media/core";
-import { recognizeOurFileUrl } from "@host/lib/media/our-file-sources";
+import { recognizeOurFileUrl } from "@ai-matrx/chat/host/ui-slots";
 import { chatConversationsActions } from "../../_legacy-stubs";
 import { RichDocumentActions } from "@host/features/rich-document/RichDocumentActions";
 import { MessageTimestamp } from "../../../agents/components/messages-display/MessageTimestamp";

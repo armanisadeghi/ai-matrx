@@ -23,7 +23,7 @@
 
 import { useEffect, useEffectEvent, useRef } from "react";
 import { useRouter } from "../../host/navigation";
-import { replaceAddressWithoutNavigating } from "@host/lib/url-state/addressWithoutNavigating";
+import { replaceAddressWithoutNavigating } from "@ai-matrx/chat/ui/addressWithoutNavigating";
 import { useAppDispatch, useAppSelector, useAppStore } from "../../store/hooks";
 import { waitForConversationPersisted } from "../redux/execution-system/conversations/conversation-persistence";
 import { selectMessageCount } from "../redux/execution-system/messages/messages.selectors";

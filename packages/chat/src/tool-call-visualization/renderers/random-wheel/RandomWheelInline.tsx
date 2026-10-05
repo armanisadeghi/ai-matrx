@@ -42,7 +42,7 @@ import type { ToolEventPayload } from "@ai-matrx/agents/generated/stream-events"
 import { useAppDispatch } from "../../../store/hooks";
 import { cn } from "@ai-matrx/design-system";
 import { setContextEntry } from "../../../agents/redux/execution-system/instance-context/instance-context.slice";
-import { BasicMarkdownContent } from "@host/components/mardown-display/chat-markdown/BasicMarkdownContent";
+import { BasicMarkdownContent } from "../../../host/markdown-slots";
 import { filterStepEvents, isTerminal, resultAsObject } from "../_shared";
 import type {
   RandomWheelImage,

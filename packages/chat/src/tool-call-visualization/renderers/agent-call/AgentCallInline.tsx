@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { Aperture, ImageIcon } from "lucide-react";
-import MarkdownStream from "@host/components/MarkdownStream";
+import { MarkdownStream } from "../../../host/markdown-slots";
 import { useAppSelector } from "../../../store/hooks";
 import { selectAgentCallChildStream } from "../../../agents/redux/execution-system/active-requests/active-requests.selectors";
 

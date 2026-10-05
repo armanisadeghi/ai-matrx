@@ -31,7 +31,7 @@ import {
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { selectAgentById } from "../../agents/redux/agent-definition/selectors";
 import { initializeChatAgents } from "../../agents/redux/agent-definition/thunks";
-import { pushAppHref } from "@host/lib/deployment/navigate";
+import { pushAppHref } from "@ai-matrx/chat/host/ui-slots";
 
 // ============================================================================
 // NAVIGATION HELPERS

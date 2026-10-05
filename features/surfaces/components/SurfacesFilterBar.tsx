@@ -20,23 +20,8 @@ import type { SurfaceReadinessBucket } from "@ai-matrx/chat/surfaces/services/su
 import { READINESS_META } from "@/features/surfaces/components/SurfaceReadinessBadge";
 import { getSurfaceDisplayLabel } from "@ai-matrx/chat/surfaces/utils/surface-display";
 
-export type StatusFilter = "all" | "active" | "inactive";
-export type ManifestFilter = "all" | "with_manifest" | "without_manifest";
-export type ReadinessFilter = SurfaceReadinessBucket | "all";
-/** THE UI SURFACE CHECKLIST ledger filter — the dispatch queue. */
-export type CheckedFilter = "all" | "never" | "stale" | "fresh";
-
-export interface SurfacesFilterState {
-  status: StatusFilter;
-  client: string;
-  manifest: ManifestFilter;
-  /** `__all__` | `__none__` (roots) | a parent surface name */
-  parent: string;
-  /** Readiness bucket, driven by the rollup tiles above the filter bar. */
-  readiness: ReadinessFilter;
-  /** Last completed full surface check (see surface-check-ledger). */
-  checked: CheckedFilter;
-}
+import type { StatusFilter, ManifestFilter, ReadinessFilter, CheckedFilter, SurfacesFilterState } from "@ai-matrx/chat/surfaces/host-surface-types";
+export type { StatusFilter, ManifestFilter, ReadinessFilter, CheckedFilter, SurfacesFilterState };
 
 export const DEFAULT_FILTER_STATE: SurfacesFilterState = {
   status: "all",

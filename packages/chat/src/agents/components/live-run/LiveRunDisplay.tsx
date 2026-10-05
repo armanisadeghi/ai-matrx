@@ -23,7 +23,7 @@ import { useEffect, useRef } from "react";
 import { Loader2, TriangleAlert, X } from "lucide-react";
 import { cn } from "@ai-matrx/design-system";
 import { useAppSelector } from "../../../store/hooks";
-import MarkdownStream from "@host/components/MarkdownStream";
+import { MarkdownStream } from "../../../host/markdown-slots";
 import { AgentAssistantMessage } from "../messages-display/assistant/AgentAssistantMessage";
 import { useRetainRequestForViewer } from "../../redux/execution-system/active-requests/useRetainRequestForViewer";
 import {

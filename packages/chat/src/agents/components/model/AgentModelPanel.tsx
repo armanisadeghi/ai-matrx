@@ -1,6 +1,6 @@
 "use client";
 
-import { AgentSettingsCore } from "@host/features/agents/components/settings-management/AgentSettingsCore";
+import { AgentSettingsCore } from "@ai-matrx/chat/host/ui-slots";
 
 export interface AgentModelPanelProps {
   agentId: string;

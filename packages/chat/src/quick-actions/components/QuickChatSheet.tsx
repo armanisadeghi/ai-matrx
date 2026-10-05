@@ -28,7 +28,7 @@ import { clearFocus } from "../../agents/redux/execution-system/conversation-foc
 import type { ConversationListItem } from "../../agents/redux/conversation-list/conversation-list.types";
 import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 import { asClause } from "@ai-matrx/kit/text";
-import { WorkspaceGate } from "@host/features/organizations/components/WorkspaceGate";
+import { WorkspaceGate } from "@ai-matrx/chat/host/ui-slots";
 import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 import { useComposerMode } from "../../agents/components/inputs/smart-input/composer/useComposerMode";
 import { useCompactInputMaxHeight } from "../../agents/components/inputs/smart-input/composer/useCompactInputMaxHeight";

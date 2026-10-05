@@ -16,12 +16,10 @@
  */
 
 import type { MediaRef } from "@ai-matrx/media/files";
-import {
-    fileNameFromUrl,
-    recognizeOurFileUrl,
-} from "@host/lib/media/our-file-sources";
+import { fileNameFromUrl } from "@ai-matrx/data/files";
+import { recognizeOurFileUrl } from "@ai-matrx/chat/host/ui-slots";
 import { findCodeRanges } from "@ai-matrx/content-ir/source";
-import { findTableStart } from "@host/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
+import { findTableStart } from "@ai-matrx/content-ir/source";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 import {
     firstKindSlug,

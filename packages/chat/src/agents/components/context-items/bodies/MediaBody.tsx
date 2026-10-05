@@ -10,7 +10,7 @@
 import { ExternalLink } from "lucide-react";
 import { InlineMediaRef } from "@ai-matrx/media/react";
 import { useMediaResolution } from "@ai-matrx/media/core";
-import type { FileSource } from "@host/features/files/handler/types";
+import type { FileSource } from "@ai-matrx/chat/ui/file-source";
 import {
   Tooltip,
   TooltipContent,

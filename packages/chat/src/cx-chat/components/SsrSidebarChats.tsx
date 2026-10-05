@@ -33,7 +33,7 @@ import {
 import { ShareModal } from "../../host/ui-slots";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
-import { ReadFailure } from "@host/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/chat/host/ui-slots";
 // The main list reads the REAL conversation list — the same slice and fetch
 // the chat-history sidebar uses (features/agents/redux/conversation-list).
 // It used to read inert stub selectors whose status was always "idle", so

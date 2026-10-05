@@ -34,7 +34,7 @@ import {
   hydrateMessages,
   setMessagesHydrationFailure,
 } from "../messages/messages.slice";
-import { reconcileMessagesArtifacts } from "@host/features/canvas/materialization/reconcileArtifacts";
+import { reconcileMessagesArtifacts } from "@ai-matrx/chat/host/ui-slots";
 import {
   parsePersistedEngineeredInputs,
   parsePersistedSurfaceOwnsOutput,
@@ -81,7 +81,7 @@ import {
   setMemoryMetadata,
   type ObservationalMemoryMetadata,
 } from "../observational-memory/observational-memory.slice";
-import { loadCodeEditHistoryThunk } from "@host/features/code/redux/codeEditHistoryHydration";
+import { loadCodeEditHistoryThunk } from "@ai-matrx/chat/host/ui-slots";
 import {
   CONVERSATION_NOT_MATERIALIZED,
   fetchConversationBundle,
@@ -97,7 +97,7 @@ import {
 } from "./conversation-bundle";
 
 import { getClaimsUser } from "../../../../host/db";
-import { canActOn } from "@host/features/access-gate/service/canActOn";
+import { canActOn } from "@ai-matrx/chat/host/ui-slots";
 // =============================================================================
 // Thunk
 // =============================================================================

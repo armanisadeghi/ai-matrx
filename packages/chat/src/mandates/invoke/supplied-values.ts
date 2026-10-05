@@ -25,7 +25,7 @@
 // through here, so "the caller supplies known values by served name, and
 // anything a person must answer is asked inline" is THE pattern, not a fix.
 
-import type { ServedInput } from "@host/features/workflow-runtime/served-form/served-input";
+import type { ServedInput } from "@ai-matrx/chat/mandates/invoke/served-input";
 
 /** What a call site holds, keyed by the SERVED input name. A key nothing
  * serves is simply never sent — it is not an error, it is a caller that knows

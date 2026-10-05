@@ -16,12 +16,12 @@
  *      Same state the Quickset ShapeChipsRow toggles — keep them consistent.
  */
 
-import { UntrustedCount } from "@host/components/official/stale-data/UntrustedCount";
-import { readOf } from "@host/components/read-state/ReadGate";
+import { UntrustedCount } from "@ai-matrx/chat/host/ui-slots";
+import { readOf } from "@ai-matrx/chat/host/ui-slots";
 import { useEffect } from "react";
 import { Lightbulb, CheckCircle2, ListOrdered, EyeOff } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "../../../../store/hooks";
-import { EntityRef } from "@host/components/official/entity-ref/EntityRef";
+import { EntityRef } from "@ai-matrx/chat/host/ui-slots";
 import { PickerEmpty } from "@ai-matrx/chat/utils/resource-picker/ResourcePickerSubViewHeader";
 import { selectAgentIdFromInstance } from "../../../redux/execution-system/conversations/conversations.selectors";
 import {
@@ -33,9 +33,9 @@ import { fetchAgentRunControls } from "../../../redux/agent-definition/thunks";
 import { selectBuilderAdvancedSettings } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { setBuilderAdvancedSettings } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { DEFAULT_BUILDER_ADVANCED_SETTINGS } from "../../../types/instance.types";
-import { useSkills } from "@host/features/skills/hooks/useSkills";
-import { ReadFailure } from "@host/components/read-state/ReadFailure";
-import type { SkillRow } from "@host/features/skills/types";
+import { useSkills } from "@ai-matrx/chat/host/ui-slots";
+import { ReadFailure } from "@ai-matrx/chat/host/ui-slots";
+import type { SkillRow } from "@ai-matrx/chat/ui/skills-types";
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import {
   RunPicksSurface,

@@ -87,20 +87,8 @@ export interface TaskUserStateEntry {
   seenAt: string | null;
 }
 
-export interface PendingSource {
-  // Null when the captured content has no registered entity row (raw content,
-  // retired prompt-result, scraper-result) → the task is created with NO edge.
-  // Never a phantom token.
-  entity_type: string | null;
-  entity_id: string | null;
-  label?: string;
-  metadata?: Record<string, unknown>;
-  prePopulate?: {
-    title?: string;
-    description?: string;
-    priority?: "low" | "medium" | "high";
-  };
-}
+export type { PendingSource } from "@ai-matrx/chat/agents/components/messages-display/message-options/pending-source";
+import type { PendingSource } from "@ai-matrx/chat/agents/components/messages-display/message-options/pending-source";
 
 /** Current wall-clock time truncated to the minute, as an ISO string. */
 export function currentMinuteIso(): string {

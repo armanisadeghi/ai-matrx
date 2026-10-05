@@ -27,7 +27,7 @@ import {
   AlertDialogTitle,
 } from "@ai-matrx/design-system";
 import { useAgentDuplicateFlow } from "../../hooks/useAgentDuplicateFlow";
-import { useAgentChangeReach } from "@host/features/mandates/admin/useAgentChangeReach";
+import { useAgentChangeReach } from "@ai-matrx/chat/host/ui-slots";
 
 /**
  * Shared save behaviour for an agent record.

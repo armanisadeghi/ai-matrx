@@ -18,7 +18,7 @@ import { selectLatestConversationId } from "../../agents/redux/execution-system/
 import { SmartAgentInput } from "../../agents/components/inputs/smart-input/SmartAgentInput";
 import { useComposerMode } from "../../agents/components/inputs/smart-input/composer/useComposerMode";
 import { setInputPlaceholder } from "../../agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
-import { pushAppHref, replaceAppHref } from "@host/lib/deployment/navigate";
+import { pushAppHref, replaceAppHref } from "@ai-matrx/chat/host/ui-slots";
 import { selectIsAuthenticated } from "../../host/identity";
 
 // ── Props ─────────────────────────────────────────────────────────────────────

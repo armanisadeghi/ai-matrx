@@ -29,7 +29,7 @@ import type {
   ModelTiers,
 } from "../../types/agent-definition.types";
 import type { MatrxDirectivesConfig } from "../../types/matrx-directives.types";
-import type { SkillConfig } from "@host/features/skills/types";
+import type { SkillConfig } from "@ai-matrx/chat/ui/skills-types";
 import { parseUiGates } from "../agent-settings/ui-gates";
 import { parseCustomTools } from "./parse-custom-tools";
 import {

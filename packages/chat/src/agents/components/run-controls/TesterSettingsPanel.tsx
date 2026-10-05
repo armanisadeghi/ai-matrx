@@ -12,7 +12,7 @@ import {
   type VariablesPanelStyle,
 } from "../inputs/variable-input-variations/variable-input-options";
 import type { ApiEndpointMode } from "../../types/instance.types";
-import { VoiceTextarea } from "@host/components/official/VoiceTextarea";
+import { VoiceTextarea } from "@ai-matrx/chat/host/ui-slots";
 import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 
 // =============================================================================

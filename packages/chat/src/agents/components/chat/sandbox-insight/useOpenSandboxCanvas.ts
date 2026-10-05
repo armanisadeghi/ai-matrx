@@ -23,8 +23,8 @@
 
 import type { ChatCanvasContent } from "../../../../host/contract";
 import { useChatCanvasOpeners } from "../../../../host/canvas";
-import { useCanvasOpenGuard } from "@host/features/canvas/hooks/useCanvasOpenGuard";
-import { keepLiveSourceReachable } from "@host/features/canvas/liveSourceReachability";
+import { useCanvasOpenGuard } from "@ai-matrx/chat/host/ui-slots";
+import { keepLiveSourceReachable } from "@ai-matrx/chat/agents/components/chat/sandbox-insight/liveSourceReachability";
 
 export interface OpenSandboxCanvasOptions {
   /** The box to show — `sandbox_instances.id`. */

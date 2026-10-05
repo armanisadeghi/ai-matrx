@@ -11,7 +11,7 @@
  */
 
 import { useEffect, useState } from "react";
-import { ShimmerText } from "@host/components/loaders/ShimmerText";
+import { ShimmerText } from "@ai-matrx/chat/ui/ShimmerText";
 import { useAppSelector } from "../../../store/hooks";
 import {
   selectRequestGenerationJob,

@@ -3,7 +3,7 @@
 import { cn } from "@ai-matrx/design-system";
 import {
   MOBILE_TABLE,
-} from "@host/components/official/mobile-table/mobileTable";
+} from "@ai-matrx/chat/ui/mobileTable";
 
 /**
  * Light read-only grid for a workbook sheet's raw cell values. Used by the

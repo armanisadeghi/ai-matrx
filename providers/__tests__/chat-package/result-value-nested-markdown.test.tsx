@@ -7,11 +7,16 @@ globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 // Next's client chunk boundary, as in XmlBlock's DOM regression suite.
 jest.mock("next/dynamic", () => ({
   __esModule: true,
-  default: () => jest.requireActual("@host/components/markdown-core/MarkdownCoreImpl").default,
+  default: () => jest.requireActual("@/components/markdown-core/MarkdownCoreImpl").default,
 }));
 
-import { ResultValue } from "../ResultValue";
-import { looksLikeMarkdown } from "../shape";
+import { ResultValue } from "@ai-matrx/chat/tool-call-visualization/result-fields/ResultValue";
+import { looksLikeMarkdown } from "@ai-matrx/chat/tool-call-visualization/result-fields/shape";
+import { registerChatUi } from "@ai-matrx/chat/host/ui-slots";
+import { BasicMarkdownContent } from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
+
+// The package draws markdown through the host slot; this suite proves it with the app's renderer.
+registerChatUi({ BasicMarkdownContent });
 
 describe("ResultValue nested Markdown", () => {
   let container: HTMLDivElement;

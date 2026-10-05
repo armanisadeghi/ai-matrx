@@ -27,7 +27,7 @@ import { cn } from "@ai-matrx/design-system";
 import { toast } from "../../../../../host/notify";
 import { announceAlreadyAnswering } from "./already-answering";
 import { QuickRunModelSelect } from "../../../run-controls/RunModelPicker";
-import { ModelListDropdown } from "@host/features/ai-models/components/lab/ModelListDropdown";
+import { ModelListDropdown } from "@ai-matrx/chat/host/ui-slots";
 import { seedOverrides } from "../../../../redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
 import { selectInstanceOverrideState } from "../../../../redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
 import {

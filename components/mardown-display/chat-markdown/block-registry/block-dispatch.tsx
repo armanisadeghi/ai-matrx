@@ -117,7 +117,7 @@ import { CodeBlockWithContextAttach } from "@/features/canvas/materialization/Co
 import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
-import { FENCE_META_KEY } from "@/components/markdown-core/fence-meta";
+import { FENCE_META_KEY } from "@ai-matrx/content-ir/source";
 import {
   detectImageMarkdown,
   detectVideoMarkdown,

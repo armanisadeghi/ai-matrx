@@ -29,14 +29,14 @@ import { toast } from "../../../../host/notify";
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { ContextDeltaData } from "@ai-matrx/agents/generated/stream-events";
 import { applyContextDeltaToContent } from "./contextDelta";
-import { studioDocumentContentChanged } from "@host/features/transcript-studio/redux/slice";
+import { studioDocumentContentChanged } from "@ai-matrx/chat/host/ui-slots";
 import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
-import { NotesAPI } from "@host/features/notes/service/notesApi";
+import { notesGetById } from "@ai-matrx/chat/host/ui-slots";
 import {
   refreshNoteContent,
   saveNoteField,
-} from "@host/features/notes/redux/thunks";
-import { generateLabelFromContent } from "@host/features/notes/hooks/useAutoLabel";
+} from "@ai-matrx/chat/host/ui-slots";
+import { generateLabelFromContent } from "@ai-matrx/chat/host/ui-slots";
 import {
   addAttachedScratchpad,
   removeAttachedScratchpad,
@@ -1049,7 +1049,7 @@ export const bindWorkingDocumentToNoteThunk = createAsyncThunk<
     { dispatch, getState },
   ) => {
     try {
-      const note = await NotesAPI.getById(noteId);
+      const note = await notesGetById(noteId);
       if (!note) {
         dispatch(
           markWorkingDocError({

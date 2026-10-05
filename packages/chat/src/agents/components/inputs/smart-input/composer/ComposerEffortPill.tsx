@@ -25,7 +25,7 @@ import {
   resetOverride,
   setOverrides,
 } from "../../../../redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
-import { useModelFull } from "@host/features/ai-models/hooks/useModels";
+import { useModelFull } from "@ai-matrx/chat/host/ui-slots";
 import { resolveModelControls } from "../../../../hooks/useModelControls";
 import {
   ComposerMenuDivider,

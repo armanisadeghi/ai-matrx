@@ -23,11 +23,10 @@ import { readVideoSecondPoints } from "../useVideoSecondPoints";
 
 // The points rate is the billing.points_per_usd knob; this suite runs with no
 // knob snapshot, so it pins the rate to a fixture (the platform default).
-jest.mock("@host/components/cost/pointsRate", () => ({
-  ...jest.requireActual("@host/components/cost/pointsRate"),
-  currentPointsRate: () => 20_000,
-  usePointsRate: () => 20_000,
-}));
+import { registerChatUi, resetChatUiForTests } from "../../../../host/ui-slots";
+beforeAll(() => registerChatUi({ currentPointsRate: () => 20_000 }));
+afterAll(() => resetChatUiForTests());
+
 
 test("a variable bound to the control wins over the literal setting", () => {
   const defs = [{ name: "clip_length", control: { key: "duration_seconds" } }];

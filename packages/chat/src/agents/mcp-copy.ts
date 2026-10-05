@@ -16,7 +16,7 @@
  * a spread is how a credential leaks the day the type grows a new field.
  */
 
-import { humanLines } from "@host/features/marketing/lib/copy-payloads";
+import { humanLines } from "@ai-matrx/chat/host/ui-slots";
 import type { McpCatalogEntry } from "./types/mcp.types";
 
 export function mcpLocation(surface: string): string {

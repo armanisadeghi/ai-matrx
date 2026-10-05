@@ -11,7 +11,7 @@ import {
 import { variableRunLabel } from "@ai-matrx/agents";
 import { VariableInputComponent } from "../../agents/components/inputs/input-components/VariableInputComponent";
 import type { VariableDefinition as PromptVariable } from "../../agents/types/agent-definition.types";
-import { enterSendsHere } from "@host/components/official/composer/composerSubmit";
+import { enterSendsHere } from "@ai-matrx/chat/ui/composer/composerSubmit";
 
 // ============================================================================
 // TYPES

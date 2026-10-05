@@ -11,7 +11,7 @@ import { usePathname, useSearchParams, useRouter } from "../../host/navigation";
 import { AgentPickerSheet } from "../../next/lazy/AgentPickerSheet";
 import { useAppSelector } from "../../store/hooks";
 import { selectAgentById } from "../../agents/redux/agent-definition/selectors";
-import { pushAppHref } from "@host/lib/deployment/navigate";
+import { pushAppHref } from "@ai-matrx/chat/host/ui-slots";
 
 export default function ChatMobileAgentName() {
   const router = useRouter();

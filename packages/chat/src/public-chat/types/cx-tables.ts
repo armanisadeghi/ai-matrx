@@ -14,7 +14,7 @@ import type {
   VideoMediaPart,
   YouTubeMediaPart,
 } from "@ai-matrx/agents/generated/stream-events";
-import type { PermissionLevel } from "@host/utils/permissions/levels";
+import type { PermissionLevel } from "@ai-matrx/chat/ui/permission-levels";
 
 type ChatSchema = Database["chat"];
 

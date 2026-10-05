@@ -1,7 +1,7 @@
 "use client";
 
 import { useAppDispatch, useAppSelector } from "../../../store/hooks";
-import { InputCapabilitiesEditor } from "@host/features/agents/components/settings-management/ui-gates/InputCapabilitiesEditor";
+import { InputCapabilitiesEditor } from "@ai-matrx/chat/host/ui-slots";
 import { selectInputCapabilitiesState } from "../../redux/execution-system/instance-input-capabilities/instance-input-capabilities.selectors";
 import {
   resetInputCapabilityOverride,

@@ -27,7 +27,7 @@ import type {
   UsageTotals,
 } from "@ai-matrx/agents/generated/stream-events";
 import { cn } from "@ai-matrx/design-system";
-import { currentCostUnit } from "@host/components/cost/costUnit";
+import { currentCostUnit } from "@ai-matrx/chat/host/ui-slots";
 
 // ── Selectors ──────────────────────────────────────────────────────────────
 

@@ -12,7 +12,7 @@
  */
 
 import React, { createContext, useContext } from "react";
-import { KindValueFrontDoor } from "@host/components/official/structured-value/KindValueFrontDoor";
+import { KindValueFrontDoor } from "@ai-matrx/chat/host/ui-slots";
 import { isPlainObject } from "./shape";
 import { ResultValue, type ResultDensity } from "./ResultValue";
 

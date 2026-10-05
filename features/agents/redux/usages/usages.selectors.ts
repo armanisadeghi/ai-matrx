@@ -138,13 +138,8 @@ export const makeSelectRowMutation = (usageType: string, usageId: string) =>
 export const makeSelectReport = (scope: UsageScope) =>
   createSelector(selectReportState, (report) => report[scope]);
 
-export type ReportSortKey =
-  | "agentName"
-  | "totalUsages"
-  | "breaking"
-  | "silent"
-  | "warning"
-  | "stalePins";
+export type { ReportSortKey } from "@ai-matrx/chat/ui/usages/usages.types";
+import type { ReportSortKey } from "@ai-matrx/chat/ui/usages/usages.types";
 
 /** The rollup shows one row per agent WITH drift (the RPCs return every
  *  in-scope agent, drifted or not — see agx_usage_report). An agent counts as

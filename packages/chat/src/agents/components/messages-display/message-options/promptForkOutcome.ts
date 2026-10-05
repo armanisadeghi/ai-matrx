@@ -24,7 +24,7 @@
  * without wiring local React state.
  */
 
-import { confirm } from "@host/components/dialogs/confirm/ConfirmDialogHost";
+import { confirm } from "@ai-matrx/chat/host/ui-slots";
 import type { ChatDispatch } from "../../../../store/root-state";
 import { requestSurfaceNavigation } from "../../../redux/surfaces/request-surface-navigation.thunk";
 

@@ -35,9 +35,9 @@ import {
   parseAgentSettings,
 } from "./parse-settings-context";
 import { sanitizeAgentToolIds } from "./sanitize-tool-ids";
-import { stripNullish } from "@host/utils/supabase/payload";
+import { stripNullish } from "@ai-matrx/chat/ui/payload";
 import { OrganizationContextError } from "@ai-matrx/agents/matrx";
-import type { SkillConfig } from "@host/features/skills/types";
+import type { SkillConfig } from "@ai-matrx/chat/ui/skills-types";
 import { parseUiGates } from "../agent-settings/ui-gates";
 import type { MatrxDirectivesConfig } from "../../types/matrx-directives.types";
 import { isJsonObject } from "@ai-matrx/chat/utils/json";

@@ -38,12 +38,12 @@ import {
   selectComposerHasSomethingToSend,
   selectIsExecuting,
 } from "../../../redux/execution-system/selectors/aggregate.selectors";
-import { useClipboardPaste } from "@host/components/ui/file-upload/useClipboardPaste";
+import { useClipboardPaste } from "@ai-matrx/chat/host/ui-slots";
 import { focusUnlessTypingElsewhere } from "@ai-matrx/chat/utils/dom/focus-guard";
 import {
   composerKeyIntent,
   intentTakesTheKey,
-} from "@host/components/official/composer/composerSubmit";
+} from "@ai-matrx/chat/ui/composer/composerSubmit";
 import { readVerticalChrome, snapToLineGrid } from "./textarea-line-grid";
 import { usePasteImageResource } from "../resources/usePasteImageResource";
 import { useInstanceInputUndoRedo } from "../../../hooks/useInstanceInputUndoRedo";

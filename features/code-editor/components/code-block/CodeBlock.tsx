@@ -24,7 +24,7 @@ import { Globe, Loader2 } from "lucide-react";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
 import { toast } from "@/lib/toast";
 import { ShikiCodeView } from "./highlight/ShikiCodeView";
-import { parseFenceMeta } from "@/components/markdown-core/fence-meta";
+import { parseFenceMeta } from "@ai-matrx/content-ir/source";
 import { codeLanguageToExtension } from "@/utils/file-operations/utils";
 import { agentForPromptKey } from "@/features/code-editor/agent-code-editor/agents";
 import { useOpenSmartCodeEditorWindow } from "@/features/overlays/openers/smartCodeEditorWindow";

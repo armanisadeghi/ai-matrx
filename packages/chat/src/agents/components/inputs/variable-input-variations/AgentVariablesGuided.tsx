@@ -27,7 +27,7 @@ import { BoundVariableChips } from "../BoundVariableChips";
 import { setUserVariableValue } from "../../../redux/execution-system/instance-variable-values/instance-variable-values.slice";
 import { selectShowVariablePanel } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { selectShouldShowVariables } from "../../../redux/execution-system/selectors/aggregate.selectors";
-import { ProTextarea } from "@host/components/official/ProTextarea";
+import { ProTextarea } from "@ai-matrx/chat/host/ui-slots";
 
 // ============================================================================
 // TYPES

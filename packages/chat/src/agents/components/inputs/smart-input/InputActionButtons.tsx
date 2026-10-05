@@ -27,7 +27,7 @@ import {
   TooltipTrigger,
 } from "@ai-matrx/design-system";
 import { useAppSelector, useAppDispatch } from "../../../../store/hooks";
-import { announceComingSoon } from "@host/lib/coming-soon/announce";
+import { announceComingSoon } from "@ai-matrx/chat/host/ui-slots";
 import { AgentMicrophoneButton } from "./AgentMicrophoneButton";
 import { RunControlsMenu } from "./RunControlsMenu";
 import { ContextDocsMenu } from "./ContextDocsMenu";

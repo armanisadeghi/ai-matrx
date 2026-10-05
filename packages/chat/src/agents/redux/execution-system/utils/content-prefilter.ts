@@ -11,7 +11,7 @@
  * If no candidates are found → the line is guaranteed to be plain text.
  */
 
-import { OUR_FILE_URL_MARKERS } from "@host/lib/media/our-file-sources";
+import { ourFileUrlMarkers } from "@ai-matrx/chat/host/ui-slots";
 
 // ============================================================================
 // CANDIDATE CATEGORIES
@@ -56,13 +56,14 @@ function isStandaloneAudioLink(trimmed: string): boolean {
 
 /**
  * Cheap substring gate: does the line carry one of our file-host markers?
- * Reuses `OUR_FILE_URL_MARKERS` (imported at top) so it can't drift from the
+ * Reuses the host's `OUR_FILE_URL_MARKERS` so it can't drift from the
  * real `recognizeOurFileUrl`. The gate only flags a CANDIDATE; the
  * splitter/accumulator confirm with the full recognizer.
  */
 function mightBeOurFile(trimmed: string): boolean {
-  for (let mi = 0; mi < OUR_FILE_URL_MARKERS.length; mi++) {
-    if (trimmed.includes(OUR_FILE_URL_MARKERS[mi])) return true;
+  const markers: readonly string[] = ourFileUrlMarkers();
+  for (let mi = 0; mi < markers.length; mi++) {
+    if (trimmed.includes(markers[mi])) return true;
   }
   return false;
 }

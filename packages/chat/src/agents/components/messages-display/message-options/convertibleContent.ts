@@ -11,8 +11,8 @@
  * Pure module — unit-tested in `__tests__/convertibleContent.test.ts`.
  */
 
-import { replaceFences } from "@host/lib/markdown/code-ranges";
-import { tableStartsAt } from "@host/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
+import { replaceFences } from "@ai-matrx/content-ir/source";
+import { tableStartsAt } from "@ai-matrx/content-ir/source";
 
 /** A bullet or ordered list item with real content. */
 const LIST_ITEM = /^\s*(?:[-*+]|\d{1,3}[.)])\s+\S/;

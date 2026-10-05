@@ -26,7 +26,7 @@ import { cn } from "@ai-matrx/design-system";
 import { selectBuilderAdvancedSettings } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { setBuilderAdvancedSettings } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { DEFAULT_BUILDER_ADVANCED_SETTINGS } from "../../../types/instance.types";
-import { useSkills } from "@host/features/skills/hooks/useSkills";
+import { useSkills } from "@ai-matrx/chat/host/ui-slots";
 import { SHAPE_CHIP_DEFS } from "./shape-chips";
 import { selectedOutputKinds, toggleOutputKind } from "./composer/output-selection";
 

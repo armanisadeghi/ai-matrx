@@ -1,7 +1,7 @@
 import React from "react";
 import { Checkbox } from "@ai-matrx/chat/ui/checkbox";
 import { calcCols } from "./useContainerColumns";
-import { ProTextarea } from "@host/components/official/ProTextarea";
+import { ProTextarea } from "@ai-matrx/chat/host/ui-slots";
 import { focusWithoutScroll } from "./focusWithoutScroll";
 
 interface CheckboxGroupInputProps {

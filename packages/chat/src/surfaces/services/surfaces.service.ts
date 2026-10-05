@@ -1,6 +1,6 @@
 "use client";
 
-import { publishedToWebPatch } from "@host/lib/row-access";
+import { publishedToWebPatch } from "@ai-matrx/chat/host/ui-slots";
 import { qualifyValueKey } from "@ai-matrx/alchemy/declare";
 import { createClient } from "../../host/db";
 import { readAllRows, writeOneRow } from "@ai-matrx/data/db";
@@ -9,14 +9,13 @@ import type {
   SurfaceDriftReport,
   SurfaceValue,
 } from "../types";
-import type { ApplyManifestSyncResult } from "@host/features/surfaces/services/manifest-sync.service";
 import { getManifest } from "../runtime/registry";
 import { associationsService } from "../../context/sources/scopes";
-import { resolveSystemOrgId } from "@host/lib/organizations/systemOrg";
+import { resolveSystemOrgId } from "@ai-matrx/chat/host/ui-slots";
 import {
   TOOL_BUNDLE,
   assocData,
-} from "@host/features/tool-registry/bundles/services/bundleMemberEdge";
+} from "./bundleMemberEdge";
 
 type UiTables = Database["ui"]["Tables"];
 type ToolTables = Database["tool"]["Tables"];
@@ -826,12 +825,16 @@ export async function getDriftReport(): Promise<SurfaceDriftReport> {
 }
 
 /** Calls the admin sync-manifests endpoint. Throws on non-2xx. */
-export async function syncManifests(
+/**
+ * `Result` is the host sync service's `ApplyManifestSyncResult` (the caller names it; the package
+ * only carries the server's JSON through).
+ */
+export async function syncManifests<Result = unknown>(
   opts: {
     deleteStale?: boolean;
     createMissingSurfaces?: boolean;
   } = {},
-): Promise<ApplyManifestSyncResult> {
+): Promise<Result> {
   const res = await fetch("/api/admin/surfaces/sync-manifests", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -841,10 +844,9 @@ export async function syncManifests(
     const text = await res.text().catch(() => "");
     throw new Error(text || `Sync manifests failed (${res.status})`);
   }
-  // The canonical result type, NOT a hand-mirror: the previous inline copy
-  // silently dropped every field added to the service (structural typing gives
-  // no error), which is how write-target sync counts became invisible.
-  const body = (await res.json()) as { result: ApplyManifestSyncResult };
+  // The caller names the canonical result type (the host service's `ApplyManifestSyncResult`) —
+  // never a hand-mirror, which silently drops every field added to the service.
+  const body = (await res.json()) as { result: Result };
   return body.result;
 }
 
@@ -905,7 +907,7 @@ export type MirrorTable =
 export {
   RECENT_ROW_REFUSAL_PREFIX,
   RECENT_ROW_WINDOW_HOURS,
-} from "@host/features/surfaces/services/mirror-recency";
+} from "@ai-matrx/chat/surfaces/services/mirror-recency";
 
 export interface DeleteMirrorRowResult {
   ok: true;

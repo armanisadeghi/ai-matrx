@@ -34,13 +34,13 @@ import {
   Trash2,
 } from "lucide-react";
 import { toast } from "../../../host/notify";
-import { renameIntentFallback } from "@host/components/official/item/renameIntentFallback";
+import { renameIntentFallback } from "@ai-matrx/chat/host/ui-slots";
 import type {
   ItemMenuConfig,
   ItemMenuSection,
-} from "@host/components/official/item/types";
+} from "@ai-matrx/chat/ui/item-types";
 import type { ChatDispatch } from "../../../store/root-state";
-import { confirm } from "@host/components/dialogs/confirm/ConfirmDialogHost";
+import { confirm } from "@ai-matrx/chat/host/ui-slots";
 import {
   copyConversationLink,
   displayConversationTitle,

@@ -29,10 +29,10 @@ import { ArrowDown } from "lucide-react";
 import { AgentConversationDisplay } from "../../../agents/components/messages-display/AgentConversationDisplay";
 import { SmartAgentInput } from "../../../agents/components/inputs/smart-input/SmartAgentInput";
 import { useComposerMode } from "../../../agents/components/inputs/smart-input/composer/useComposerMode";
-import { ProposedDirectivesZone } from "@host/features/matrx-envelope/components/ProposedDirectivesZone";
+import { ProposedDirectivesZone } from "@ai-matrx/chat/host/ui-slots";
 import { ServerOperationBanner } from "../../../agents/runtime-reconnect/ServerOperationBanner";
-import { pushAppHref } from "@host/lib/deployment/navigate";
-import { replaceAddressWithoutNavigating } from "@host/lib/url-state/addressWithoutNavigating";
+import { pushAppHref } from "@ai-matrx/chat/host/ui-slots";
+import { replaceAddressWithoutNavigating } from "@ai-matrx/chat/ui/addressWithoutNavigating";
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 

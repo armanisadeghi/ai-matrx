@@ -678,3 +678,29 @@ renderer converts them.
 - [ ] R9-open. A multi-line literal region that breaks into prose on a LATER line is still lifted live (the demotion
       covers a region opened on the breaking line only).
 
+## R10. Round 10 — the free-text boundary (2026-10-05)
+
+Owner ruling (supersedes the round 8–9 spelling rulings): free-text guessing caused harm — it dropped and reordered
+people's words — and real AI output emits JSON. **R8-1, R8-2 (non-JSON rows), R9 ruling (2), R9-4 and R9-5 are
+SUPERSEDED**: backslash-escaped quotes in prose, Python repr, JS literal, smart quotes and entities are no longer
+converted anywhere; they join the exotic forms as DETECTION ONLY.
+
+- [x] R10-1. Conversion boundary: `JSON_KIND_SPELLINGS` (literal, `\u005f`, markdown-escaped, zero-width in the key);
+      `scanKindSpellingRegions` returns JSON families only (`families: "all"` for detection/as-written display);
+      `normalizeKindSpellings`, `markdownCarriesKind`, the prose leaf (`spelledKindsAsOneLine`, now JSON regions that
+      broke in prose only, no tail hiding) follow it. `textCarriesKind` parses a whole JSON text and reads its strings
+      (string-held kinds in tool / workflow data). The prose leaf draws detection-only regions byte for byte
+      (`detectionOnlyKindsAsWritten` escapes markdown punctuation inside them). Judge: `domLeaksKind` fails only on a
+      real JSON kind on screen (`screenTextShowsJsonKind`); `domShowsDetectionOnlyKind` / `screenTextHoldsKind`
+      (sentinel) still report every spelling.
+- [x] R10-2. Grammar-bounded regions (C1): `findBrokenKindJsonRegions` (an opener owns a key only when its grammar
+      reaches it; to the end only while validly open), `findEmbeddedKindJsonRegions` unclosed owners, `inlineKindText`
+      fallback, `boundRegion` (malformed + unbalanced ends at its cut; balanced only when it parses minus trailing
+      commas), the accumulator's `proseKindObjectStart` (`ownsKindKey`) and every bare-JSON region (opening line,
+      later lines, fragment) demoted to text when its grammar breaks into prose (`regionBreaksIntoProse`, 16 KB
+      budget) — closes R9-open. A `__kind` whose value is an object (a pasted schema) is not a kind.
+- [x] R10-3. Guards: `kind-never-hides-text` round-10 tables (attacker inputs × prose leaf / inline / catalog /
+      snippet / export / label + reload / live char-by-char, prose never inside a code card; 60 red before);
+      `kind-spelling-matrix` detection-only tables (sentinel reports, judge passes, converters + labels + live +
+      reload byte for byte, self-test).
+

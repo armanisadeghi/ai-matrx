@@ -23,8 +23,8 @@
 import { SAMPLE_RATE_HZ } from "../constants";
 import { base64ToFloat32 } from "./pcmEncoding";
 import { writeAmplitude } from "./amplitudeBus";
-import { beginPlaybackSession } from "@host/features/audio/session/audioSessionRegistry";
-import type { PlaybackSessionHandle } from "@host/features/audio/session/types";
+import { beginPlaybackSession } from "@ai-matrx/chat/host/ui-slots";
+import type { PlaybackSessionHandle } from "@ai-matrx/chat/ui/audio-session-types";
 
 export interface AudioPlaybackHandle {
   warmupSync: () => void;

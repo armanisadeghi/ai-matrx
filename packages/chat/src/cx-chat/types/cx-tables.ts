@@ -6,7 +6,7 @@
  */
 
 import type { Database } from "../../host/db-types";
-import type { PermissionLevel } from "@host/utils/permissions/levels";
+import type { PermissionLevel } from "@ai-matrx/chat/ui/permission-levels";
 
 type ChatSchema = Database["chat"];
 

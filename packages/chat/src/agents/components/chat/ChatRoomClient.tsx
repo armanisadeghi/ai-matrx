@@ -1,5 +1,5 @@
 "use client";
-import { logFailure } from "@host/lib/errors/expectedRefusal";
+import { logFailure } from "@ai-matrx/chat/ui/expectedRefusal";
 import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 import { usePreparedResourceSeed } from "./usePreparedResourceSeed";
@@ -57,15 +57,15 @@ import {
 import { AgentConversationColumn } from "../shared/AgentConversationColumn";
 import type { TranscriptAudience } from "../shared/transcript-audience";
 import { ChatRoomSkeleton } from "./ChatRoomSkeleton";
-import { AccessGate } from "@host/features/access-gate/components/AccessGate";
+import { AccessGate } from "@ai-matrx/chat/host/ui-slots";
 import { SandboxCanvasOpener } from "./sandbox-insight/SandboxCanvasOpener";
-import { ToolResultCanvasOpener } from "@host/features/canvas/tool-results/ToolResultCanvasOpener";
+import { ToolResultCanvasOpener } from "@ai-matrx/chat/host/ui-slots";
 import { useConversationSandboxBindingSync } from "../../hooks/useConversationSandboxBindingSync";
 import type { ConversationSandboxBinding } from "../../../compute/targets";
 import { ChatConversationSurface } from "./ChatConversationSurface";
 import { selectUserInputEntryExists } from "../../redux/execution-system/instance-user-input/instance-user-input.selectors";
 import { useAttachResource } from "../inputs/resources/attach-resource";
-import { useRegisterChatAttachTarget } from "@host/features/knowledge/command-bar/useKnowledgeAttachTarget";
+import { useRegisterChatAttachTarget } from "@ai-matrx/chat/host/ui-slots";
 import { toast } from "../../../host/notify";
 import type { VariablesPanelStyle } from "../inputs/variable-input-variations/variable-input-options";
 import type { SourceFeature } from "@ai-matrx/agents/generated/source-attribution";

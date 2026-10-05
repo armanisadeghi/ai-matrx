@@ -19,8 +19,8 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@ai-matrx/design-system";
-import { ConfirmDialog } from "@host/components/ui/confirm-dialog";
-import { ReadFailure } from "@host/components/read-state/ReadFailure";
+import { ConfirmDialog } from "@ai-matrx/chat/host/ui-slots";
+import { ReadFailure } from "@ai-matrx/chat/host/ui-slots";
 import {
   DropdownMenu,
   DropdownMenuContent,

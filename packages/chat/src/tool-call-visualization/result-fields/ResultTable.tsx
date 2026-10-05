@@ -33,7 +33,7 @@ import {
   MOBILE_TABLE,
   MOBILE_TABLE_FROZEN_CELL,
   MOBILE_TABLE_FROZEN_HEAD,
-} from "@host/components/official/mobile-table/mobileTable";
+} from "@ai-matrx/chat/ui/mobileTable";
 
 export interface ResultTableProps {
     rows: Array<Record<string, unknown>>;

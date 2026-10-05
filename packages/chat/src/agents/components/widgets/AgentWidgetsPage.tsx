@@ -12,7 +12,7 @@
  * a display mode is clicked.
  */
 
-import { logFailure } from "@host/lib/errors/expectedRefusal";
+import { logFailure } from "@ai-matrx/chat/ui/expectedRefusal";
 import { useEffect, useRef, useState, type ComponentProps } from "react";
 import { Link } from "../../../host/navigation";
 import { DynamicIcon } from "@ai-matrx/icons";
@@ -42,7 +42,7 @@ import {
   type TesterSettingsController,
 } from "../run-controls/TesterSettingsPanel";
 import { WidgetVariableInputs } from "./WidgetVariableInputs";
-import { ReadFailure } from "@host/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/chat/host/ui-slots";
 import {
   buildWidgetLaunchDraft,
   sealWidgetLaunchOptions,
@@ -66,8 +66,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@ai-matrx/design-system";
-import { ProTextarea } from "@host/components/official/ProTextarea";
-import { afterCurrentLayerCloses } from "@host/components/dialogs/confirm/after-current-layer-closes";
+import { ProTextarea } from "@ai-matrx/chat/host/ui-slots";
+import { afterCurrentLayerCloses } from "@ai-matrx/chat/ui/after-current-layer-closes";
 
 const SURFACE_KEY_PREFIX = "agent-widgets-page";
 

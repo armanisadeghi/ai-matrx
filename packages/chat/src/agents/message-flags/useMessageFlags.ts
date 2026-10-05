@@ -12,7 +12,7 @@ import {
   selectAgentOfferingPin,
 } from "../redux/agent-definition/selectors";
 import { setAgentMessages } from "../redux/agent-definition/slice";
-import { useModelFull } from "@host/features/ai-models/hooks/useModels";
+import { useModelFull } from "@ai-matrx/chat/host/ui-slots";
 import { useSessionKnob } from "../../host/prefs-react";
 import type { AgentDefinitionMessage } from "../types/agent-message-types";
 import {

@@ -57,7 +57,7 @@ import {
   selectSourceFacetsStatus,
   selectSourceFacetsError,
 } from "../../redux/conversation-history/selectors";
-import { ReadFailure } from "@host/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/chat/host/ui-slots";
 import {
   EMPTY_SOURCE_KEY,
   FEATURE_GROUPS,

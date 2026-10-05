@@ -1,5 +1,6 @@
 "use client";
 
+import { convertMarkdownToHtml, createHtmlPage } from "../../../../host/ui-slots";
 import { durableRecordId } from "@ai-matrx/kit/ids";
 
 /**
@@ -34,17 +35,12 @@ export async function shareMessageAsWebpage({
   messageId,
   conversationId,
 }: ShareMessageAsWebpageArgs): Promise<{ url: string }> {
-  const [{ convertMarkdownToHtml }, { HTMLPageService }] = await Promise.all([
-    import("@host/features/html-pages/utils/html-preview-utils"),
-    import("@host/features/html-pages/services/htmlPageService"),
-  ]);
-
   const bodyHtml = convertMarkdownToHtml(content);
   if (!bodyHtml.trim()) {
     throw new Error("Nothing to publish — the message is empty.");
   }
 
-  const result = await HTMLPageService.createPage(
+  const result = await createHtmlPage(
     bodyHtml,
     title,
     "Shared from an AI Matrx conversation",

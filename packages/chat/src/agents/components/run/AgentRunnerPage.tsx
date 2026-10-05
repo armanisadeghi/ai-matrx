@@ -10,7 +10,7 @@
  * This page only renders the header strip, conversation area, and mobile drawers.
  */
 
-import { logFailure } from "@host/lib/errors/expectedRefusal";
+import { logFailure } from "@ai-matrx/chat/ui/expectedRefusal";
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "../../../host/navigation";
 import { useAppDispatch, useAppSelector, useAppStore } from "../../../store/hooks";

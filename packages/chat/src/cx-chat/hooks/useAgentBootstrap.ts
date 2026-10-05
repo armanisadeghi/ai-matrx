@@ -39,7 +39,9 @@ import {
   selectActiveChatAgent,
   type ActiveChatAgent,
 } from "../_legacy-stubs";
-import type { LLMParams } from "@host/lib/types/agent-chat";
+import type { components } from "@ai-matrx/agents/generated/api-types";
+
+type LLMParams = components["schemas"]["LLMParams"];
 import { DEFAULT_AGENTS } from "../components/agent/local-agents";
 import type { ChatRootState } from "../../store/root-state";
 

@@ -9,7 +9,7 @@ import { Checkbox } from "@ai-matrx/chat/ui/checkbox";
 import { Minus, Plus } from "lucide-react";
 import { variableRunLabel } from "@ai-matrx/agents";
 import type { VariableDefinition as PromptVariable } from "../../agents/types/agent-definition.types";
-import { enterSendsHere } from "@host/components/official/composer/composerSubmit";
+import { enterSendsHere } from "@ai-matrx/chat/ui/composer/composerSubmit";
 
 // ============================================================================
 // TYPES

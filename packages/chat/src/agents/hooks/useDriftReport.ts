@@ -6,14 +6,10 @@
 
 import { useEffect, useCallback, useMemo } from "react";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
-import { fetchAgentUsageReport } from "@host/features/agents/redux/usages/usages.thunks";
-import {
-  makeSelectReport,
-  makeSelectReportSorted,
-  makeSelectReportTotals,
-  type ReportSortKey,
-} from "@host/features/agents/redux/usages/usages.selectors";
-import type { UsageScope } from "@host/features/agents/redux/usages/usages.slice";
+import { fetchAgentUsageReport } from "@ai-matrx/chat/host/ui-slots";
+import { makeSelectReport, makeSelectReportSorted, makeSelectReportTotals } from "@ai-matrx/chat/host/ui-slots";
+import type { ReportSortKey } from "@ai-matrx/chat/ui/usages/usages.types";
+import type { UsageScope } from "@ai-matrx/chat/ui/usages/usages.slice";
 
 export function useDriftReport(
   scope: UsageScope,

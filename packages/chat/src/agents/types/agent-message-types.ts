@@ -78,7 +78,7 @@ import type {
 } from "@ai-matrx/agents/message-parts";
 import type { Enums } from "../../host/db-types";
 import type { MessagePart } from "@ai-matrx/agents/generated/stream-events";
-import type { DecisionQuestionsPart } from "@host/features/agents/decision-questions/types";
+import type { DecisionQuestionsPart } from "@ai-matrx/chat/agents/decision-questions/types";
 import type { MessageFlags } from "@ai-matrx/agents/generated/stream-events";
 
 // The canonical role union, sourced from the generated DB enum so it can never

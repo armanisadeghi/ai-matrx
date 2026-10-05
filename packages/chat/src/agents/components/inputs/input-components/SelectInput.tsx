@@ -8,11 +8,11 @@ import {
 } from "@ai-matrx/design-system";
 import { cn } from "@ai-matrx/design-system";
 import { calcCols } from "./useContainerColumns";
-import { ProTextarea } from "@host/components/official/ProTextarea";
+import { ProTextarea } from "@ai-matrx/chat/host/ui-slots";
 import { focusWithoutScroll } from "./focusWithoutScroll";
-import { afterCurrentLayerCloses } from "@host/components/dialogs/confirm/after-current-layer-closes";
-import { AspectRatioSelect } from "@host/components/official/aspect-ratio/AspectRatioSelect";
-import { OptionCombobox } from "@host/components/official/option-combobox/OptionCombobox";
+import { afterCurrentLayerCloses } from "@ai-matrx/chat/ui/after-current-layer-closes";
+import { AspectRatioSelect } from "@ai-matrx/chat/host/ui-slots";
+import { OptionCombobox } from "@ai-matrx/chat/host/ui-slots";
 import { choiceControlFor } from "../../../utils/choice-rule";
 
 /** Overrides base SelectTrigger nowrap/line-clamp so long values wrap in-panel. */

@@ -20,9 +20,9 @@
 
 import { durableRecordId } from "@ai-matrx/kit/ids";
 import { plainTitleFromMarkdown } from "@host/components/markdown-core/plain-title";
-import { cleanMarkdown } from "@host/utils/markdown-processors/clean-markdown-to-text";
+import { cleanMarkdown } from "@ai-matrx/content-ir/source";
 import { buildConversationMessageTitle } from "../../../utils/conversation-message-title";
-import type { PendingSource } from "@host/features/tasks/redux/taskUiSlice";
+import type { PendingSource } from "./pending-source";
 
 export interface TaskSeedFromMessageArgs {
   /** Answer-only flat text of the message (thinking already stripped). */

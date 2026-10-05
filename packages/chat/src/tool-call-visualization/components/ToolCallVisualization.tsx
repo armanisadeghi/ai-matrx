@@ -27,7 +27,7 @@ import { cn } from "@ai-matrx/design-system";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { smartExecute } from "../../agents/redux/execution-system/thunks/smart-execute.thunk";
 import { openOverlay, CHAT_WINDOWS } from "../../host/windows";
-import { ShimmerText } from "@host/components/loaders/ShimmerText";
+import { ShimmerText } from "@ai-matrx/chat/ui/ShimmerText";
 import type { ToolLifecycleEntry } from "../../agents/types/request.types";
 
 import {

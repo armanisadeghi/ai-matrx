@@ -12,7 +12,7 @@ import {
   selectConversationRequestIds,
 } from "../../redux/execution-system/active-requests/active-requests.selectors";
 import { cn } from "@ai-matrx/design-system";
-import { EntityRef } from "@host/components/official/entity-ref/EntityRef";
+import { EntityRef } from "@ai-matrx/chat/host/ui-slots";
 import { ScrollArea } from "@ai-matrx/design-system";
 import { Badge } from "@ai-matrx/design-system";
 import {

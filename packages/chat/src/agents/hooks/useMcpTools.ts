@@ -24,11 +24,11 @@ import {
   normalizeAttachable,
   type AttachableResource,
 } from "../connectors/attachable-resources";
-import { mcpConnectionRouteFor } from "@host/features/agent-connections/mcp-connection-route";
+import { mcpConnectionRouteFor } from "@ai-matrx/chat/agents/hooks/mcp-connection-route";
 import type { McpCatalogEntry } from "../types/mcp.types";
 import type { McpToolSchema } from "../services/mcp-client/tool-discovery";
 import { invokeMcpServerTool } from "../services/mcp-connections.service";
-import { useGitHubConnection } from "@host/features/github-integration/useGitHubConnection";
+import { useGitHubConnection } from "@ai-matrx/chat/host/ui-slots";
 import { selectOrganizationId } from "../../host/org";
 
 const EMPTY_MCP_TOOLS: McpToolSchema[] = [];

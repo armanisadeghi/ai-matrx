@@ -86,7 +86,7 @@ import {
   setSubmitOnEnter,
 } from "../../../../redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { setUserInputText } from "../../../../redux/execution-system/instance-user-input/instance-user-input.slice";
-import { prependTemplateToDraft } from "@host/features/message-templates/utils/prepend-template-to-draft";
+import { prependTemplateToDraft } from "@ai-matrx/chat/agents/components/inputs/smart-input/prepend-template-to-draft";
 import { SmartInputMessageTemplatePicker } from "../../../../../host/ui-slots";
 import { useOpenContextPreviewPanel } from "../../../../../host/window-openers";
 import { useOpenRunControlsWindow } from "../../../../../host/window-openers";
@@ -110,11 +110,11 @@ import {
   ComposerMenuSwitchRow,
   ComposerSubmenu,
 } from "./ComposerMenu";
-import { announceComingSoon } from "@host/lib/coming-soon/announce";
+import { announceComingSoon } from "@ai-matrx/chat/host/ui-slots";
 import { ComposerMenuSheet } from "./ComposerMenuSheet";
 import { composerShows } from "./composer-mode-visibility";
 import type { ComposerMode, ComposerSize } from "./composer-types";
-import { useTouchOnlyDevice } from "@host/components/official/composer/useTouchOnlyDevice";
+import { useTouchOnlyDevice } from "@ai-matrx/chat/ui/composer/useTouchOnlyDevice";
 import { QuickRunModelSelect } from "../../../run-controls/RunModelPicker";
 import { RunConfigOverrides } from "../../../run-controls/RunConfigOverrides";
 import { RunInputCapabilities } from "../../../run-controls/RunInputCapabilities";

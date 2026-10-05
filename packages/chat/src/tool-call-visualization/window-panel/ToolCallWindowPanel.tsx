@@ -26,7 +26,7 @@
  */
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { ReadFailure } from "@host/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/chat/host/ui-slots";
 import {
   AlertTriangle,
   CheckCircle,

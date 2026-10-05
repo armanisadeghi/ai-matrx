@@ -56,7 +56,7 @@ import {
   selectInstanceOverrideState,
   selectSettingsOverridesForApi,
 } from "../../redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
-import { ModelListDropdown } from "@host/features/ai-models/components/lab/ModelListDropdown";
+import { ModelListDropdown } from "@ai-matrx/chat/host/ui-slots";
 import { Label } from "@ai-matrx/design-system";
 import {
   DEFAULT_MODEL_EMPTY_CHOICE_LABEL,

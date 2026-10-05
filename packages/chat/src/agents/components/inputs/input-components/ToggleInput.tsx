@@ -1,6 +1,6 @@
 import React from "react";
 import { Switch } from "@ai-matrx/design-system";
-import LightSwitchToggle from "@host/components/matrx/LightSwitchToggle";
+import { LightSwitchToggle } from "@ai-matrx/chat/host/ui-slots";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 interface ToggleInputProps {

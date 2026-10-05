@@ -55,7 +55,7 @@ import {
     BookOpen,
 } from "lucide-react";
 import { cn } from "@ai-matrx/design-system";
-import { BasicMarkdownContent } from "@host/components/mardown-display/chat-markdown/BasicMarkdownContent";
+import { BasicMarkdownContent } from "../../../host/markdown-slots";
 import { useAppSelector } from "../../../store/hooks";
 import { useOpenScraperWindow } from "../../../host/window-openers";
 import { selectIsLatestToolActivity } from "../../../agents/redux/execution-system/active-requests/active-requests.selectors";

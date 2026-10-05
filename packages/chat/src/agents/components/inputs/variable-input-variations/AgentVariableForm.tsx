@@ -27,7 +27,7 @@ import {
   SelectValue,
 } from "@ai-matrx/design-system";
 import { ChevronDown } from "lucide-react";
-import { VoiceTextarea } from "@host/components/official/VoiceTextarea";
+import { VoiceTextarea } from "@ai-matrx/chat/host/ui-slots";
 import { formatText, humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { cn } from "@ai-matrx/design-system";
 import { motion } from "motion/react";

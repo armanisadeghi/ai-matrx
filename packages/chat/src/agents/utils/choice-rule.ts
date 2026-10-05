@@ -12,7 +12,7 @@
  * (a 23-option aspect-ratio pill row) render correctly without a migration.
  */
 
-import { isAspectRatioOptionSet } from "@host/components/official/aspect-ratio/aspect-ratio-options";
+import { isAspectRatioOptionSet } from "@ai-matrx/chat/ui/aspect-ratio-options";
 
 export const PILL_MAX_OPTIONS = 4;
 export const PILL_MAX_LABEL = 12;

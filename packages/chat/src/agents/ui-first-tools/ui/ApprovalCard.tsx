@@ -44,7 +44,7 @@ import { Checkbox } from "@ai-matrx/chat/ui/checkbox";
 import { Textarea } from "@ai-matrx/design-system";
 import { ChangeDiff } from "@ai-matrx/chat/host/ui-slots";
 import KindInstanceRender from "@host/features/content-ir/studio/components/KindInstanceRender";
-import { StructuredValueView } from "@host/components/official/structured-value/StructuredValueView";
+import { StructuredValueView } from "@ai-matrx/chat/host/ui-slots";
 import { cn } from "@ai-matrx/design-system";
 import { useAppDispatch } from "../../../store/hooks";
 import type { PendingAsk } from "../redux/pending-asks.slice";

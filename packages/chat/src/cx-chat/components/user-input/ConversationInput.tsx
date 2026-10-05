@@ -41,7 +41,7 @@ import { selectCurrentSettings } from "../../../agents/redux/execution-system/in
 import { setOverrides } from "../../../agents/redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
 import { setOfferingPin } from "../../../agents/redux/execution-system/instance-model-overrides/offering-pin";
 import { smartExecute } from "../../../agents/redux/execution-system/thunks/smart-execute.thunk";
-import { ModelListDropdown } from "@host/features/ai-models/components/lab/ModelListDropdown";
+import { ModelListDropdown } from "@ai-matrx/chat/host/ui-slots";
 import { selectIsDebugMode } from "../../../host/prefs";
 import { openOverlay, CHAT_WINDOWS } from "../../../host/windows";
 import { ResourceChips } from "../../../agents/resources/ResourceChips";
@@ -56,11 +56,11 @@ import type {
   ResourceBlockType,
 } from "../../../agents/types/instance.types";
 import type { Resource } from "../../../agents/resources/types";
-import { useTouchOnlyDevice } from "@host/components/official/composer/useTouchOnlyDevice";
+import { useTouchOnlyDevice } from "@ai-matrx/chat/ui/composer/useTouchOnlyDevice";
 import {
   composerKeyIntent,
   intentTakesTheKey,
-} from "@host/components/official/composer/composerSubmit";
+} from "@ai-matrx/chat/ui/composer/composerSubmit";
 
 /** Map user-upload MIME to API content-block type (see ResourceBlockType). */
 function uploadMimeToBlockType(mime: string): ResourceBlockType {

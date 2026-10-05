@@ -33,10 +33,7 @@ import {
   getUndoShortcutHint,
   getRedoShortcutHint,
 } from "../../hooks/useAgentUndoRedo";
-import {
-  AiModelRef,
-  AiToolRef,
-} from "@host/components/official/entity-ref/AiIdentityRef";
+import { AiModelRef, AiToolRef } from "@ai-matrx/chat/host/ui-slots";
 import { ModelTierIdentityList } from "../model-tiers/ModelTierIdentityList";
 
 const FIELD_LABELS: Partial<Record<string, string>> = {

@@ -34,7 +34,7 @@ jest.mock(
   }),
 );
 jest.mock("../../../host/windows", () => ({ ...jest.requireActual("../../../host/windows"), openOverlay: jest.fn() }));
-jest.mock("@host/components/loaders/ShimmerText", () => ({
+jest.mock("@ai-matrx/chat/ui/ShimmerText", () => ({
   ShimmerText: ({ text }: { text: string }) => <span data-testid="shimmer">{text}</span>,
 }));
 jest.mock(

@@ -27,7 +27,7 @@ import { Check, CircleAlert, Copy, FileCode2, Route, Settings2 } from "lucide-re
 import { Badge } from "@ai-matrx/design-system";
 import { cn } from "@ai-matrx/design-system";
 import { CopyButtons } from "@ai-matrx/chat/host/ui-slots";
-import { JsonInspector } from "@host/components/official-candidate/json-inspector/JsonInspector";
+import { JsonInspector } from "@ai-matrx/chat/host/ui-slots";
 
 import type { ToolLifecycleEntry } from "../../agents/types/request.types";
 

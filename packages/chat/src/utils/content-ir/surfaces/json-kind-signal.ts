@@ -709,9 +709,13 @@ function keyFamily(m: RegExpExecArray): { family: KindSpellingFamily; core: stri
  */
 export function scanKindSpellingRegions(
   text: string,
-  options: { families?: "json" | "all" } = {},
+  options: { families?: "json" | "all"; from?: number } = {},
 ): KindSpellingRegion[] {
   const jsonOnly = options.families !== "all";
+  // Resume point: a region end (or 0). Scanning from a region end is exactly
+  // what the full scan does after that region, so a caller holding the regions
+  // before it may rescan only the rest (streaming frames, round 10).
+  const from = options.from ?? 0;
   const regions: KindSpellingRegion[] = [];
   if (!mayHoldKindKey(text)) return regions;
   const zeroWidth = HAS_ZERO_WIDTH.test(text);
@@ -729,10 +733,13 @@ export function scanKindSpellingRegions(
     }
     return false;
   };
-  let cursor = 0;
-  let braceScan = 0;
+  let cursor = from;
+  let braceScan = from;
   let lastBrace = -1;
-  let hit = nextKindHit(text, 0, zeroWidth);
+  // A `{` whose grammar already ended before a key can own no later key: it is
+  // never re-read (round 10, linear time — one early brace, many mentions).
+  let deadBraceFloor = from;
+  let hit = nextKindHit(text, from, zeroWidth);
   while (hit >= 0 && regions.length < MAX_REGIONS_PER_CALL) {
     const windowStart = Math.max(cursor, hit - KEY_LOOKBEHIND);
     const windowEnd = Math.min(text.length, hit + KEY_LOOKBEHIND);
@@ -756,7 +763,7 @@ export function scanKindSpellingRegions(
       if (text.charCodeAt(braceScan) === 123 /* { */) lastBrace = braceScan;
       braceScan++;
     }
-    const brace = lastBrace >= cursor ? lastBrace : -1;
+    const brace = lastBrace >= Math.max(cursor, deadBraceFloor) ? lastBrace : -1;
     if (brace < 0 || inQuoted(keyAt) || inQuoted(brace)) {
       hit = next();
       continue;
@@ -771,6 +778,7 @@ export function scanKindSpellingRegions(
     const plan = decodePlan(family, levels, markdown);
     const region = boundRegion(text, brace, keyAt, plan);
     if (!region) {
+      deadBraceFloor = brace + 1;
       hit = next();
       continue;
     }

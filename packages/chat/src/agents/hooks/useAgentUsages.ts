@@ -8,14 +8,9 @@
 
 import { useEffect, useCallback } from "react";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
-import { fetchAgentUsages } from "@host/features/agents/redux/usages/usages.thunks";
-import {
-  makeSelectUsageCache,
-  makeSelectUsageGroups,
-  makeSelectUsageAggregates,
-  makeSelectRedFlagSummary,
-} from "@host/features/agents/redux/usages/usages.selectors";
-import type { UsageScope } from "@host/features/agents/redux/usages/usages.slice";
+import { fetchAgentUsages } from "@ai-matrx/chat/host/ui-slots";
+import { makeSelectUsageCache, makeSelectUsageGroups, makeSelectUsageAggregates, makeSelectRedFlagSummary } from "@ai-matrx/chat/host/ui-slots";
+import type { UsageScope } from "@ai-matrx/chat/ui/usages/usages.slice";
 import { useMemo } from "react";
 
 export function useAgentUsages(agentId: string | null, scope: UsageScope) {

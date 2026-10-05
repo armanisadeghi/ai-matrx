@@ -1,7 +1,7 @@
 import React from "react";
 import { RadioGroup, RadioGroupItem } from "@ai-matrx/design-system";
 import { calcCols } from "./useContainerColumns";
-import { ProTextarea } from "@host/components/official/ProTextarea";
+import { ProTextarea } from "@ai-matrx/chat/host/ui-slots";
 import { focusWithoutScroll } from "./focusWithoutScroll";
 
 interface RadioGroupInputProps {

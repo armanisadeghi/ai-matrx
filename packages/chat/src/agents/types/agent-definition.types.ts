@@ -6,9 +6,9 @@ import type {
 } from "./agent-api-types";
 import type { AgentDefinitionMessage } from "./agent-message-types";
 import type { OutputSchema } from "./json-schema";
-import type { DbRpcRow } from "@host/types/supabase-rpc";
+import type { DbRpcRow } from "@ai-matrx/chat/ui/supabase-rpc";
 import type { FieldFlags } from "@ai-matrx/agents/field-flags";
-import type { SkillConfig } from "@host/features/skills/types";
+import type { SkillConfig } from "@ai-matrx/chat/ui/skills-types";
 import type { UiGates } from "../redux/agent-settings/ui-gates";
 import type { MatrxDirectivesConfig } from "./matrx-directives.types";
 

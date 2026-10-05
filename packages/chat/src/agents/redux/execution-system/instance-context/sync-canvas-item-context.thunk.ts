@@ -13,12 +13,10 @@ import {
 } from "../../../utils/canvasItemContext";
 import { applyContextDeltaToContent } from "../instance-working-document/contextDelta";
 import type { ContextDeltaData } from "@ai-matrx/agents/generated/stream-events";
-import {
-  CANVAS_ITEM_UPDATED_EVENT,
-  invalidateCanvasItemCache,
-} from "@host/features/canvas/hooks/useCanvasItem";
-import { canvasArtifactService } from "@host/features/canvas/services/canvasArtifactService";
-import { isMaterializedArtifactId } from "@host/features/canvas/artifact-types/artifactId";
+import { CANVAS_ITEM_UPDATED_EVENT } from "../../../utils/canvas-item-event";
+import { invalidateCanvasItemCache } from "@ai-matrx/chat/host/ui-slots";
+import { canvasGetVersionHistory, canvasGetById } from "@ai-matrx/chat/host/ui-slots";
+import { isMaterializedArtifactId } from "@ai-matrx/chat/agents/utils/artifactId";
 import { recordUnavailable } from "../../../../host/diagnostics";
 
 interface ThunkApi {
@@ -117,14 +115,14 @@ export const syncCanvasItemContextFromAgentThunk = createAsyncThunk<
     }
 
     // Prefer latest in chain (agent edits create new version rows).
-    const history = await canvasArtifactService.getVersionHistory(artifactId);
+    const history = await canvasGetVersionHistory(artifactId);
     const latest =
       history.length > 0
         ? history.reduce(
             (max, r) => (r.version > max.version ? r : max),
             history[0]!,
           )
-        : await canvasArtifactService.getById(artifactId);
+        : await canvasGetById(artifactId);
 
     if (!latest) {
       return rejectWithValue({

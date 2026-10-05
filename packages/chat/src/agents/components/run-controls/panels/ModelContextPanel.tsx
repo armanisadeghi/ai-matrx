@@ -23,8 +23,8 @@
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import { useEffect, useMemo, useState } from "react";
 import { useAppDispatch, useAppSelector } from "../../../../store/hooks";
-import { useOrganizationRequired } from "@host/features/organizations/useOrganizationRequired";
-import { OrganizationContextNotice } from "@host/features/organizations/components/OrganizationRequiredNotice";
+import { useOrganizationRequired } from "@ai-matrx/chat/host/ui-slots";
+import { OrganizationContextNotice } from "@ai-matrx/chat/host/ui-slots";
 import { fetchContextState } from "../../../../host/server/context-api";
 import {
   selectContextState,
@@ -38,7 +38,7 @@ import {
 } from "../../../redux/execution-system/context-state/context-state.selectors";
 import { EmptyStats, StatRow, StatSection, fmtTokens } from "./shared";
 import { cn } from "@ai-matrx/design-system";
-import { ReadFailure } from "@host/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/chat/host/ui-slots";
 
 export interface ModelContextPanelProps {
   conversationId: string;

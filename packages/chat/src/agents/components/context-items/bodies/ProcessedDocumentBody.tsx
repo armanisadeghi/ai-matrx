@@ -15,7 +15,7 @@
  * the drawer on a document chip (Method A: conditional reveal).
  */
 
-import { LibraryPreviewPage } from "../../../../next/lazy/LibraryPreviewPage";
+import { LibraryPreviewPage } from "../../../../host/ui-slots";
 import { useEffect, useState } from "react";
 import { FileText, Loader2 } from "lucide-react";
 import type { ContextItemBodyProps } from "../types";

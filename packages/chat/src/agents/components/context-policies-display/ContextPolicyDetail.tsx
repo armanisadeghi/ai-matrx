@@ -15,7 +15,7 @@
  */
 
 import { useMemo } from "react";
-import { EntityRef } from "@host/components/official/entity-ref/EntityRef";
+import { EntityRef } from "@ai-matrx/chat/host/ui-slots";
 import { useAppSelector } from "../../../store/hooks";
 import type { ChatRootState } from "../../../store/root-state";
 import { selectAgentContextPolicies } from "../../redux/agent-definition/selectors";
@@ -28,7 +28,7 @@ import {
   FALLBACK_CONTEXT_ICON,
   CONTEXT_TYPE_CHIP_CLASS,
 } from "./contextPolicyIcons";
-import { AgentEditAccessBadge } from "@host/features/agents/components/context-policies-management/AgentEditAccessControl";
+import { AgentEditAccessBadge } from "@ai-matrx/chat/host/ui-slots";
 import {
   AGENT_EDIT_SAVE_SUMMARY,
   decodeAgentEditAccess,

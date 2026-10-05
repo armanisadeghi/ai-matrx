@@ -69,7 +69,7 @@ import {
 } from "../host/server/organization-admission";
 import type { components } from "@ai-matrx/agents/generated/api-types";
 import { toLlmParams } from "./llm-params";
-import { invalidateMandateCatalogueCache } from "@host/features/mandates/catalogue";
+import { invalidateMandateCatalogueCache } from "@ai-matrx/chat/host/ui-slots";
 import {
   missingRequiredVariables,
   missingVariablesMessage,

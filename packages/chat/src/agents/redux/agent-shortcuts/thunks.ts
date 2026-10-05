@@ -20,10 +20,10 @@
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { supabase } from "../../../host/db";
-import { requireAuthenticatedSupabaseSession } from "@host/utils/supabase/webDb";
+import { requireAuthenticatedSupabaseSession } from "@ai-matrx/chat/host/ui-slots";
 import { pgErrorToError } from "@ai-matrx/data";
-import { resolveSystemOrgId } from "@host/lib/organizations/systemOrg";
-import { toGlobalOwnershipRecord } from "@host/lib/organizations/globalOwnership";
+import { resolveSystemOrgId } from "@ai-matrx/chat/host/ui-slots";
+import { toGlobalOwnershipRecord } from "@ai-matrx/chat/host/ui-slots";
 import type { ChatDispatch, ChatRootState } from "../../../store/root-state";
 import { assignField } from "@ai-matrx/agents/field-flags";
 import type {
@@ -216,12 +216,12 @@ import {
   upsertCategories as upsertCategoriesAction,
   mergePartialCategory,
 } from "../agent-shortcut-categories/slice";
-import { sklActions } from "@host/features/agent-connections/redux/skl/slice";
+import { sklActions } from "@ai-matrx/chat/host/ui-slots";
 import type {
   SklRenderDefinition,
   RenderDefinitionBlockType,
   RenderDefinitionVisibility,
-} from "@host/features/agent-connections/redux/skl/types";
+} from "./skl-types";
 import { categoryRowToDef } from "../agent-shortcut-categories/converters";
 import type { CategoryApiRow } from "../agent-shortcut-categories/types";
 import { mergePartialAgent } from "../agent-definition/slice";

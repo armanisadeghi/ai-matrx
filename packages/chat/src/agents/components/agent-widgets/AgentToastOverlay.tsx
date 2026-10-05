@@ -11,7 +11,7 @@ import { useRetainLatestRequestForViewer } from "../../redux/execution-system/ac
 import { Button } from "@ai-matrx/design-system";
 import { Check, Loader2, Minimize2, X } from "lucide-react";
 import { AgentRunner } from "../smart/AgentRunner";
-import { AnswerTextPreview } from "@host/components/official/structured-value/AnswerTextPreview";
+import { AnswerTextPreview } from "@ai-matrx/chat/host/ui-slots";
 
 interface AgentToastOverlayProps {
   conversationId: string;

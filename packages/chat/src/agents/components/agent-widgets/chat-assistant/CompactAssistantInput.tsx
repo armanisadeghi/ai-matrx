@@ -45,14 +45,14 @@ import { SmartAgentResourceChips } from "../../inputs/resources/SmartAgentResour
 import { AttachedDocumentChips } from "../../inputs/resources/AttachedDocumentChips";
 import { usePasteImageResource } from "../../inputs/resources/usePasteImageResource";
 import { SmartInputFileDropTarget } from "../../inputs/smart-input/SmartInputFileDropTarget";
-import { useClipboardPaste } from "@host/components/ui/file-upload/useClipboardPaste";
+import { useClipboardPaste } from "@ai-matrx/chat/host/ui-slots";
 
 import { toast } from "../../../../host/notify";
-import { useTouchOnlyDevice } from "@host/components/official/composer/useTouchOnlyDevice";
+import { useTouchOnlyDevice } from "@ai-matrx/chat/ui/composer/useTouchOnlyDevice";
 import {
   composerKeyIntent,
   intentTakesTheKey,
-} from "@host/components/official/composer/composerSubmit";
+} from "@ai-matrx/chat/ui/composer/composerSubmit";
 
 interface CompactAssistantInputProps {
   conversationId: string;

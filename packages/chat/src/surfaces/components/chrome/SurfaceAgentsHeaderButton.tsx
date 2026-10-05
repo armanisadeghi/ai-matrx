@@ -37,7 +37,7 @@ import {
 } from "@ai-matrx/design-system";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { useOpenAuthGateDialog } from "../../../host/window-openers";
-import { GRID_COMPANION_ATTR } from "@host/features/data-tables/grid-companion";
+import { GRID_COMPANION_ATTR } from "@ai-matrx/chat/ui/grid-companion";
 
 /** What a guest is told when they reach for Agents — one copy for every door. */
 export const AGENTS_AUTH_GATE = {

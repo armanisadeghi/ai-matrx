@@ -18,7 +18,7 @@ import { Box, FolderTree, TerminalSquare, FileText } from "lucide-react";
 import { useAppSelector } from "../../../store/hooks";
 import { resolveAgentSandboxRef } from "../../../compute/targets";
 import { SandboxDiagnosticsPanel } from "../../../compute/targets";
-import { SimpleTerminal } from "@host/features/code/terminal/SimpleTerminal";
+import { SimpleTerminal } from "@ai-matrx/chat/host/ui-slots";
 import { SandboxFileViewer } from "./SandboxFileViewer";
 
 type View = "files" | "terminal" | "viewer";

@@ -80,7 +80,7 @@ jest.mock(
 
 
 import { resolveBlockDispatch, type BlockDispatchContext } from "../block-dispatch";
-import { FENCE_META_KEY } from "@/components/markdown-core/fence-meta";
+import { FENCE_META_KEY } from "@ai-matrx/content-ir/source";
 
 const GATEWAY_YAML = "routes:\n  - path: /pickups\n    upstream: dispatch:8080";
 

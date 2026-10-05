@@ -5,13 +5,13 @@ import { useEffect } from "react";
 import { FileChartColumn, Webhook } from "lucide-react";
 import { Button } from "@ai-matrx/design-system/controls";
 import { useDriftAlerts } from "../../hooks/useDriftAlerts";
-import { DriftSeverityBadge } from "@host/features/agents/components/usages/DriftSeverityBadge";
+import { DriftSeverityBadge } from "@ai-matrx/chat/ui/usages/DriftSeverityBadge";
 import {
   DRIFT_SEVERITY_META,
   sumSeverityCounts,
   worstSeverityFromCounts,
-} from "@host/features/agents/components/usages/severity";
-import type { DriftSeverity } from "@host/features/agents/redux/usages/usages.types";
+} from "@ai-matrx/chat/ui/usages/severity";
+import type { DriftSeverity } from "@ai-matrx/chat/ui/usages/usages.types";
 import { HeaderActionsSlot } from "../../../host/chrome";
 
 const INFO_ONLY = new Set<DriftSeverity>(["info"]);

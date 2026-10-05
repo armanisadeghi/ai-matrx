@@ -31,13 +31,13 @@
 import { toast } from "../../host/notify";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useAppDispatch, useAppSelector, useAppStore } from "../../store/hooks";
-import { saveNoteField } from "@host/features/notes/redux/thunks";
-import { useAutoLabel } from "@host/features/notes/hooks/useAutoLabel";
+import { saveNoteField } from "@ai-matrx/chat/host/ui-slots";
+import { useAutoLabel } from "@ai-matrx/chat/host/ui-slots";
 import {
   acquireDocumentBridge,
   releaseDocumentBridge,
 } from "./documentBridgeOwnership";
-import { useAccess } from "@host/utils/permissions/access";
+import { useAccess } from "@ai-matrx/chat/host/ui-slots";
 import {
   USER_SCRATCHPAD_CONTEXT_KEY,
   USER_SCRATCHPAD_LABEL,

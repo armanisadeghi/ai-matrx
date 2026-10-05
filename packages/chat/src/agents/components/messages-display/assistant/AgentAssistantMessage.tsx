@@ -38,7 +38,7 @@ import {
   useEffect,
   useRef,
 } from "react";
-import MarkdownStream from "@host/components/MarkdownStream";
+import { MarkdownStream } from "../../../../host/markdown-slots";
 import { RecordAnnotations } from "@host/features/rich-document/annotations/RecordAnnotations";
 import { annotationRecordOf } from "@host/features/rich-document/annotations/record-of-source";
 import type { AnnotationSource } from "@host/features/rich-document/annotations/types";
@@ -78,7 +78,7 @@ import {
   buildMessageCitationIndex,
   type MessageCitationSource,
 } from "../../../redux/execution-system/messages/message-citations";
-import { MessageCitationsProvider } from "@host/components/mardown-display/chat-markdown/citations/MessageCitationsContext";
+import { MessageCitationsProvider } from "../citations/MessageCitationsContext";
 import { MessageSourcesRow } from "../citations/MessageSourcesRow";
 import { AssistantError } from "../../run/AssistantError";
 import { friendlyStreamError } from "../../run/friendlyStreamError";

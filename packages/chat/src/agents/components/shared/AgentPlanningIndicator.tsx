@@ -8,7 +8,7 @@
  * and begin processing.
  */
 
-import { ShimmerText } from "@host/components/loaders/ShimmerText";
+import { ShimmerText } from "@ai-matrx/chat/ui/ShimmerText";
 
 interface AgentPlanningIndicatorProps {
   compact?: boolean;

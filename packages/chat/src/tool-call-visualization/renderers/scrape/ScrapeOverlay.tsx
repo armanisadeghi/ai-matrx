@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import { cn } from "@ai-matrx/design-system";
 import { InlineMediaRef } from "@ai-matrx/media/react";
-import { BasicMarkdownContent } from "@host/components/mardown-display/chat-markdown/BasicMarkdownContent";
+import { BasicMarkdownContent } from "../../../host/markdown-slots";
 import type { ToolRendererProps } from "../../types";
 import { getFaviconUrl } from "../search/parseSearch";
 import { parseScrape } from "./parseScrape";

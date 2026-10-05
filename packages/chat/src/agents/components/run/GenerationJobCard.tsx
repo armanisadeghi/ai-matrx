@@ -42,7 +42,7 @@ import { useVideoSecondPoints } from "./useVideoSecondPoints";
 import { formatCost, pointsToUsd, type CostUnit, formatDurationMs } from "@ai-matrx/kit/format";
 import { currentPointsRate } from "../../cost";
 import { useCostDisplay } from "../../cost";
-import { currentCostUnit } from "@host/components/cost/costUnit";
+import { currentCostUnit } from "@ai-matrx/chat/host/ui-slots";
 
 /** The value a control resolves to for this run: a variable bound to the
  *  control key wins (the run form's answer), else the literal setting. */

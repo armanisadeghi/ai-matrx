@@ -33,7 +33,7 @@ import {
   MOBILE_TABLE_CELL,
   MOBILE_TABLE_FROZEN_CELL,
   MOBILE_TABLE_FROZEN_HEAD,
-} from "@host/components/official/mobile-table/mobileTable";
+} from "@ai-matrx/chat/ui/mobileTable";
 import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 
 type MemoryCostByEventType = components["schemas"]["MemoryCostByEventType"];

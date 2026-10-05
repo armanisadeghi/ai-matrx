@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useRef } from "react";
-import { NoteEditorCore } from "@host/features/notes/components/NoteEditorCore";
+import { NoteEditorCore } from "@ai-matrx/chat/host/ui-slots";
 import type { ContentSource } from "@host/features/rich-document/types";
 import { buildApplicationScopeFromMenuContext } from "../../../context-menu/utils/build-application-scope";
 import type { WorkingDocumentKind } from "../../redux/execution-system/instance-working-document/instance-working-document.slice";

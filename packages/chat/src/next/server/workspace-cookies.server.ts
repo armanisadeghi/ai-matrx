@@ -1,7 +1,7 @@
 import "server-only";
 
 import { cookies } from "next/headers";
-import { parseSidePanelWidth, sidePanelWidthCookieName } from "@host/components/official/side-panel/side-panel-width";
+import { parseSidePanelWidth, sidePanelWidthCookieName } from "@ai-matrx/chat/ui/side-panel-width";
 import {
   CANVAS_CHAT_SIZES,
   CANVAS_PANEL_IDS,

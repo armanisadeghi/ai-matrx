@@ -13,7 +13,7 @@
  */
 import type React from "react";
 
-import { compileSlotComponent } from "@host/features/agent-apps/utils/compile-slot";
+import { compileSlotComponent } from "@ai-matrx/chat/host/ui-slots";
 import {
   INVALIDATION_KEYS,
   registerInvalidationCallback,

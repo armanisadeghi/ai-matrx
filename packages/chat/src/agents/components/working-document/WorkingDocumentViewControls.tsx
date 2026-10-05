@@ -20,7 +20,7 @@ import {
 } from "@ai-matrx/design-system";
 import { cn } from "@ai-matrx/design-system";
 import { Button } from "@ai-matrx/design-system/controls";
-import type { EditorMode } from "@host/features/notes/components/NoteEditorCore";
+import type { EditorMode } from "./editor-mode";
 import {
   setWorkingDocEditorMode,
   setWorkingDocMainView,

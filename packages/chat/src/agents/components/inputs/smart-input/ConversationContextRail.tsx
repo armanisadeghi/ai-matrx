@@ -58,7 +58,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@ai-matrx/design-system";
-import { openAfterCurrentLayerCloses } from "@host/components/dialogs/confirm/after-current-layer-closes";
+import { openAfterCurrentLayerCloses } from "@ai-matrx/chat/ui/after-current-layer-closes";
 import {
   Tooltip,
   TooltipContent,
@@ -73,8 +73,8 @@ import {
   useOpenScratchpadPanel,
   useOpenWorkingDocumentPanel,
 } from "../../../../host/window-openers";
-import { reportCanvasOpenDrop } from "@host/features/canvas/openRequest";
-import { selectCloudBrowserRunLive } from "@host/features/cloud-browser/redux/cloudBrowserSlice";
+import { reportCanvasOpenDrop } from "@ai-matrx/chat/host/ui-slots";
+import { selectCloudBrowserRunLive } from "@ai-matrx/chat/host/ui-slots";
 import {
   selectInstanceContextEntries,
   selectSurfaceContextKeys,
@@ -95,7 +95,7 @@ import {
   CONTEXT_TYPE_ICON,
   FALLBACK_CONTEXT_ICON,
 } from "../../context-policies-display/contextPolicyIcons";
-import { CloudBrowserHandoffCanvasOpener } from "@host/features/cloud-browser/components/CloudBrowserHandoffCanvasOpener";
+import { CloudBrowserHandoffCanvasOpener } from "@ai-matrx/chat/host/ui-slots";
 import {
   cloudBrowserCanvasSourceId,
   useOpenCloudBrowserCanvas,

@@ -32,7 +32,7 @@ import type { SourceFeature } from "../../types/instance.types";
 import {
   isProjectCreateFlow,
   logProjectCreateAiStage,
-} from "@host/features/projects/debug/projectCreateAiDebug";
+} from "@ai-matrx/chat/ui/projectCreateAiDebug";
 import { AgentRunWrapper } from "./AgentRunWrapper";
 
 export type CreateWithAiMode = string;

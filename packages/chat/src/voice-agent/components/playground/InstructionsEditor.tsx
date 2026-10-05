@@ -19,7 +19,7 @@ import { VOICE_INTRO_MANDATE_KEY } from "../../constants";
 import { useMandateAgentInstructions } from "../../agentInstructions";
 import { updateConfig } from "../../state/voiceAgentSlice";
 import { selectVoiceInstructions } from "../../state/selectors";
-import { ProTextarea } from "@host/components/official/ProTextarea";
+import { ProTextarea } from "@ai-matrx/chat/host/ui-slots";
 
 interface InstructionsEditorProps {
   instanceId: string;

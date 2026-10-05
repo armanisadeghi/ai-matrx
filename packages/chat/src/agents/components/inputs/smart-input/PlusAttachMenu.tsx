@@ -63,7 +63,7 @@ import type { Resource } from "../../../resources/types";
 import { SmartInputMessageTemplatePicker } from "../../../../host/ui-slots";
 import { selectUserInputText } from "../../../redux/execution-system/instance-user-input/instance-user-input.selectors";
 import { setUserInputText } from "../../../redux/execution-system/instance-user-input/instance-user-input.slice";
-import { prependTemplateToDraft } from "@host/features/message-templates/utils/prepend-template-to-draft";
+import { prependTemplateToDraft } from "@ai-matrx/chat/agents/components/inputs/smart-input/prepend-template-to-draft";
 
 const MANUAL_MODE_SETTINGS_HINT =
   "Per-run settings are edited in the builder panel during test runs";

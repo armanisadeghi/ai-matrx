@@ -49,7 +49,7 @@ import {
 } from "../../utils/table-variable";
 import { RowChoicesButton } from "./RowChoicesButton";
 import { isControlVariable } from "@ai-matrx/agents";
-import { enterSendsHere } from "@host/components/official/composer/composerSubmit";
+import { enterSendsHere } from "@ai-matrx/chat/ui/composer/composerSubmit";
 
 interface AgentVariablesInlineProps {
   conversationId: string;

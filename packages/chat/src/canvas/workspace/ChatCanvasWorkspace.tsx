@@ -49,8 +49,8 @@ import type { EntityTypeToken } from "@ai-matrx/associations";
 import { cn } from "@ai-matrx/design-system";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { useMediaQueryState } from "@ai-matrx/kit/media-query";
-import { MatrxFloatingFrame } from "@host/components/matrx/resizable/MatrxFloatingFrame";
-import { DockedSidePanel } from "@host/components/official/side-panel/DockedSidePanel";
+import { MatrxFloatingFrame } from "@ai-matrx/chat/host/ui-slots";
+import { DockedSidePanel } from "@ai-matrx/chat/host/ui-slots";
 import {
   Drawer,
   DrawerContent,
@@ -63,9 +63,10 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@ai-matrx/design-system";
-import { EntityCommentPopover } from "@host/components/comments/EntityCommentPopover";
+import { EntityCommentPopover } from "@ai-matrx/chat/host/ui-slots";
 import { ShareButton } from "../../host/ui-slots";
-import type { ResourceType } from "@host/utils/permissions/types";
+/** The shareable-resource entity token (the host owns the registry of tokens). */
+type ResourceType = string;
 import {
   HeaderControlSet,
   openShellMobileMenu,

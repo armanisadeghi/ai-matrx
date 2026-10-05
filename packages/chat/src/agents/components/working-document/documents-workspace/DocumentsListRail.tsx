@@ -26,7 +26,7 @@ import {
   Unlink,
 } from "lucide-react";
 import { cn } from "@ai-matrx/design-system";
-import { ItemRow } from "@host/components/official/item/ItemRow";
+import { ItemRow } from "@ai-matrx/chat/host/ui-slots";
 import {
   listRecentUserDocuments,
   updateCxWorkingDocumentTitle,

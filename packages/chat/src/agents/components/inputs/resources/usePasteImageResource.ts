@@ -22,7 +22,7 @@ import { toast } from "../../../../host/notify";
 import { useAppDispatch, useAppStore } from "../../../../store/hooks";
 import { useFileUpload } from "@ai-matrx/chat/host/ui-slots";
 import { composeUploadFolderPath } from "@ai-matrx/media/files";
-import { normalize } from "@host/features/files/handler/input/normalize";
+import { normalize } from "@ai-matrx/chat/host/ui-slots";
 import {
   addResource,
   removeResource,

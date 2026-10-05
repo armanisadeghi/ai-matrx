@@ -54,8 +54,8 @@ export function invalidateCanvasItemCache(artifactId: string): void {
   inflight.delete(`latest:${artifactId}`);
 }
 
-/** Window event editors dispatch after persisting — ref views listen + refetch. */
-export const CANVAS_ITEM_UPDATED_EVENT = "matrx:canvas-item-updated";
+import { CANVAS_ITEM_UPDATED_EVENT } from "@ai-matrx/chat/agents/utils/canvas-item-event";
+export { CANVAS_ITEM_UPDATED_EVENT };
 
 async function loadLatestInChain(id: string): Promise<CanvasArtifactRow | null> {
   const key = `latest:${id}`;

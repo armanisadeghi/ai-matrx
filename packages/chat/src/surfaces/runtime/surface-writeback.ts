@@ -75,7 +75,7 @@ import {
   validateCustomFieldsWrite,
 } from "./custom-field-targets";
 import { toast } from "../../host/notify";
-import { awaitEffectiveOrganizationId } from "@host/features/organizations/awaitWorkspace";
+import { awaitEffectiveOrganizationId } from "@ai-matrx/chat/host/ui-slots";
 
 import type {
   SurfaceWritePolicy,

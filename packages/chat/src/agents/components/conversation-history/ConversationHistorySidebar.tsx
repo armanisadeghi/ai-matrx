@@ -89,13 +89,13 @@ import {
   type ConversationMenuContext,
 } from "../conversation-actions/conversationActionRegistry";
 import { selectAgentById } from "../../redux/agent-definition/selectors";
-import { EntityDoorControls } from "@host/components/official/entity-ref/EntityDoorControls";
+import { EntityDoorControls } from "@ai-matrx/chat/host/ui-slots";
 import { ConversationSourceFilterTree } from "./ConversationSourceFilterTree";
 import { AllLanesOffNotice } from "./ConversationLaneToggles";
 import { ConversationTrashSection } from "./ConversationTrashSection";
 import { ArchivedDisclosure } from "@ai-matrx/design-system";
 import { SegmentedControl } from "@ai-matrx/design-system/controls";
-import { ItemRow } from "@host/components/official/item/ItemRow";
+import { ItemRow } from "@ai-matrx/chat/host/ui-slots";
 import { toast } from "../../../host/notify";
 import {
   LoadingTapButton,
@@ -104,7 +104,7 @@ import {
 import { useConversationServerSearch } from "./useConversationServerSearch";
 import { ConversationSearchStatus } from "./ConversationSearchStatus";
 import { countConversationSearchCorpus } from "../../redux/conversation-history/conversation-search";
-import { ReadFailure } from "@host/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/chat/host/ui-slots";
 
 export interface ConversationHistorySidebarProps {
   /** Unique scope key (same across mounts that should share state). */

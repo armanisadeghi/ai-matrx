@@ -18,11 +18,11 @@ import { parseDecisionOptionsFromBody } from "@ai-matrx/chat/utils/inline-decisi
 import { QuotedKindLift } from "@host/features/content-ir/surfaces/quoted-kind-lift";
 import { MarkdownEscapedKindJson } from "@ai-matrx/chat/utils/content-ir/surfaces/markdown-escaped-kind";
 import { KindImageAltUnwrap } from "@ai-matrx/chat/utils/content-ir/surfaces/kind-image-alt";
-import { FENCE_META_KEY, splitFenceInfo } from "@host/components/markdown-core/fence-meta";
+import { FENCE_META_KEY, splitFenceInfo } from "@ai-matrx/content-ir/source";
 import {
   hasUnclosedBacktickRun,
   indexOutsideInlineCode,
-} from "@host/components/mardown-display/markdown-classification/processors/utils/inline-code-span";
+} from "@ai-matrx/content-ir/source";
 import {
   hasKindKey,
   isJsonFenceLanguage,
@@ -34,7 +34,7 @@ import {
   findBalancedXmlClose,
   initialXmlBalance,
   type XmlBalanceState,
-} from "@host/components/mardown-display/markdown-classification/processors/utils/xml-tag-balance";
+} from "@ai-matrx/content-ir/source";
 import {
   classifyInnerFenceLine,
   fenceNestsInnerFences,
@@ -48,9 +48,9 @@ import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-event
 import {
   DIRECTIVE_CONTAINER_OPEN,
   DirectiveContainerTracker,
-} from "@host/components/markdown-core/directive-container";
-import { TITLED_IMAGE_LINE } from "@host/components/markdown-core/image-figure";
-import { continuesTable, lineIndent, startsPipelessTable } from "@host/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
+} from "@ai-matrx/content-ir/source";
+import { TITLED_IMAGE_LINE } from "@ai-matrx/content-ir/source";
+import { continuesTable, lineIndent, startsPipelessTable } from "@ai-matrx/content-ir/source";
 import {
   classifyLine,
   isPlainText,

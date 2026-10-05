@@ -59,9 +59,7 @@ import {
 import type {
   AgentSummary,
 } from "@ai-matrx/agents/catalog";
-import {
-  getAgentCatalog,
-} from "@host/lib/agents/catalog";
+import { getAgentCatalog } from "@ai-matrx/chat/host/ui-slots";
 import {
   runWithSessionRetry,
 } from "../../../host/session-retry";
@@ -86,7 +84,7 @@ import type {
 } from "../../../host/db-types";
 import type {
   DbRpcRow,
-} from "@host/types/supabase-rpc";
+} from "@ai-matrx/chat/ui/supabase-rpc";
 import {
   type AIModelRecord,
 } from "../../model-registry/modelRegistrySlice";

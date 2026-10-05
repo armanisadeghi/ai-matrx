@@ -22,8 +22,8 @@ import { useAppSelector } from "../../../store/hooks";
 import { selectInstanceVariableDefinitions } from "../../redux/execution-system/instance-variable-values/instance-variable-values.selectors";
 import { isCustomDataBinding } from "../../utils/variable-binding";
 import type { CustomDataBinding } from "../../types/agent-definition.types";
-import { CustomDataBindingSummary } from "@host/features/agents/components/variables-management/custom-data/CustomDataBindingSummary";
-import { CustomDataBindingPreview } from "@host/features/agents/components/variables-management/custom-data/CustomDataBindingPreview";
+import { CustomDataBindingSummary } from "@ai-matrx/chat/host/ui-slots";
+import { CustomDataBindingPreview } from "@ai-matrx/chat/host/ui-slots";
 
 export function DataBoundVariableChips({
   conversationId,

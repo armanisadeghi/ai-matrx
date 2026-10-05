@@ -31,8 +31,8 @@ import {
   Zap,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "../../../../store/hooks";
-import { TextInputDialog } from "@host/components/dialogs/text-input/TextInputDialog";
-import IconButton from "@host/components/official/IconButton";
+import { TextInputDialog } from "@ai-matrx/chat/host/ui-slots";
+import { IconButton } from "@ai-matrx/chat/host/ui-slots";
 import {
   Tooltip,
   TooltipContent,

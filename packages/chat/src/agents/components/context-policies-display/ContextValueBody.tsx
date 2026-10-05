@@ -22,7 +22,7 @@ import { cn } from "@ai-matrx/design-system";
 // JsonInspector in MORE dynamics was stacked-boundary fragmentation. Static
 // imports of the front doors keep exactly one boundary per heavy graph.
 import { RichContent } from "@ai-matrx/chat/host/ui-slots";
-import { JsonInspector } from "@host/components/official-candidate/json-inspector/JsonInspector";
+import { JsonInspector } from "@ai-matrx/chat/host/ui-slots";
 
 interface ContextValueBodyProps {
   type: ContextObjectType;

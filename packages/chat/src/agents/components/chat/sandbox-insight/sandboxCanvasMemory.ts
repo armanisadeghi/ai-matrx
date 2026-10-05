@@ -15,7 +15,7 @@
 import {
   createCanvasRevealMemory,
   type CanvasRevealMemory,
-} from "@host/features/canvas/revealMemory";
+} from "@ai-matrx/chat/agents/components/chat/sandbox-insight/revealMemory";
 
 export type SandboxCanvasMemory = CanvasRevealMemory;
 

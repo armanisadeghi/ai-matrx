@@ -21,7 +21,7 @@ import {
   type ReactNode,
   type MouseEvent,
 } from "react";
-import { MatrxDynamicPanelHost } from "@host/components/matrx/resizable/MatrxDynamicPanelHost";
+import { MatrxDynamicPanelHost } from "@ai-matrx/chat/host/ui-slots";
 import { Separator } from "@ai-matrx/design-system";
 import { useSurfaceWriteHandlers } from "../../../surfaces/runtime/SurfaceRuntimeContext";
 import { CHAT_VOICE_SURFACE } from "../../../surfaces/manifests/chat-voice.manifest";

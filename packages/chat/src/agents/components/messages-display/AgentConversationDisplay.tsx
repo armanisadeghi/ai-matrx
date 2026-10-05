@@ -24,7 +24,7 @@ import type { ChatDispatch, ChatRootState } from "../../../store/root-state";
 import { loadConversation } from "../../redux/execution-system/thunks/load-conversation.thunk";
 // The canonical "this read failed — try again" primitive (docs/reuse-first.md).
 // A transcript that could not be read is exactly its `hasData={false}` case.
-import { StaleDataNotice } from "@host/components/official/stale-data/StaleDataNotice";
+import { StaleDataNotice } from "@ai-matrx/chat/host/ui-slots";
 import {
   selectConversationMessages,
   selectMessagesHydrationFailure,
@@ -64,7 +64,7 @@ import {
 import { AssistantTurnGroup } from "./assistant/AssistantTurnGroup";
 import { AgentAssistantMessage } from "./assistant/AgentAssistantMessage";
 import { AgentEmptyMessageDisplay } from "./assistant/AgentEmptyMessageDisplay";
-import { ErrorBoundaryWithCapture } from "@host/lib/error-boundary/ErrorBoundaryWithCapture";
+import { ErrorBoundaryWithCapture } from "@ai-matrx/chat/host/ui-slots";
 import { ExampleTurnsGroup } from "../../message-flags/ExampleTurnsGroup";
 import { Pin } from "lucide-react";
 import {

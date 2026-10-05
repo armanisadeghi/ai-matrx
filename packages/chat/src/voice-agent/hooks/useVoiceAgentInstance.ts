@@ -56,7 +56,7 @@ import {
   useRealtimeSessionConfig,
 } from "../realtimeSession";
 import { useSessionKnob } from "../../host/prefs-react";
-import { LIVE_CONVERSATION_VOICES } from "@host/lib/voices/voiceSets";
+import { isLiveConversationVoice } from "@ai-matrx/chat/host/ui-slots";
 
 interface UseVoiceAgentInstanceOpts {
   preset: VoiceAgentPreset;
@@ -105,7 +105,7 @@ interface UseVoiceAgentInstanceOpts {
 export const LIVE_CONVERSATION_VOICE_KNOB = "media.conversation.voice";
 
 function isVoiceId(v: string): v is VoiceId {
-  return LIVE_CONVERSATION_VOICES.some((voice) => voice.id === v);
+  return isLiveConversationVoice(v);
 }
 
 function agentVoiceId(v: string | null | undefined): VoiceId {

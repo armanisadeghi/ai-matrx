@@ -25,7 +25,7 @@
  */
 
 import { useAppDispatch, useAppSelector } from "../../../store/hooks";
-import MarkdownStream from "@host/components/MarkdownStream";
+import { MarkdownStream } from "../../../host/markdown-slots";
 import { cn } from "@ai-matrx/design-system";
 
 import { LiveRunDisplay } from "./LiveRunDisplay";

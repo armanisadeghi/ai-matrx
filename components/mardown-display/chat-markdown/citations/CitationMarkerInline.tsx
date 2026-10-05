@@ -25,7 +25,7 @@ import {
   citationSourceDisplayKind,
   type MessageCitationSource,
 } from "@ai-matrx/chat/agents/redux/execution-system/messages/message-citations";
-import { useMessageCitationSources } from "./MessageCitationsContext";
+import { useMessageCitationSources } from "@ai-matrx/chat/agents/components/messages-display/citations/MessageCitationsContext";
 import { citationSourceIsOpenable } from "./citation-open-request";
 import { useOpenCitationSource } from "./useOpenCitationSource";
 

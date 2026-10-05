@@ -6,13 +6,13 @@ import {
   disposeFullScreenEditorCallbackGroup,
   emitFullScreenEditorSave,
 } from "../../host/ui-slots";
-import { useHtmlPreviewState } from "@host/features/html-pages/hooks/useHtmlPreviewState";
-import HtmlPreviewFullScreenEditor from "@host/features/html-pages/components/HtmlPreviewFullScreenEditor";
-import { fetchArtifactsForMessageThunk } from "@host/lib/redux/thunks/artifactThunks";
-import { selectHtmlPageArtifactForMessage } from "@host/lib/redux/selectors/artifactSelectors";
+import { useHtmlPreviewState } from "@ai-matrx/chat/host/ui-slots";
+import { HtmlPreviewFullScreenEditor } from "@ai-matrx/chat/host/ui-slots";
+import { fetchArtifactsForMessageThunk } from "@ai-matrx/chat/host/ui-slots";
+import { selectHtmlPageArtifactForMessage } from "@ai-matrx/chat/host/ui-slots";
 import { setActivePageId } from "../utils/html-pages-actions";
-import { updateArtifactThunk } from "@host/lib/redux/thunks/artifactThunks";
-import { registerArtifactThunk } from "@host/lib/redux/thunks/artifactThunks";
+import { updateArtifactThunk } from "@ai-matrx/chat/host/ui-slots";
+import { registerArtifactThunk } from "@ai-matrx/chat/host/ui-slots";
 import { selectTaskId } from "../../context/sources/scopes";
 import { toast } from "../../host/notify";
 import { presentOrganizationRefusal, selectOrganizationId } from "../../host/org";

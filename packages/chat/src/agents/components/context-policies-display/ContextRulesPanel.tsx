@@ -38,7 +38,7 @@ import {
   useSaveContextRule,
   useSaveContextRules,
 } from "../inputs/smart-input/ConversationContextChip";
-import { AgentEditAccessBadge } from "@host/features/agents/components/context-policies-management/AgentEditAccessControl";
+import { AgentEditAccessBadge } from "@ai-matrx/chat/host/ui-slots";
 import { decodeAgentEditAccess } from "../../utils/agent-edit-access";
 import { docKindForContextKey } from "../../utils/workingDocumentContext";
 import type { ContextObjectType } from "../../types/agent-api-types";

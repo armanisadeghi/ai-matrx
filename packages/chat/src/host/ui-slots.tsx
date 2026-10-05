@@ -15,6 +15,7 @@
  */
 
 import { createElement, Fragment, useRef, type ComponentType, type ReactNode } from "react";
+import { formatCost, usdToPoints } from "@ai-matrx/kit/format";
 import { announceOnce } from "./errors";
 import { reportUnregisteredHostSlot as reportUnregistered } from "./diagnostics";
 import { DefaultWebpageSnapshotView } from "./defaults/webpage-snapshot-view";
@@ -161,6 +162,77 @@ export interface ChatUiSlots {
   resolvePdfSurfaceIds: AnyFn;
   /** The host's list RPC reader (`{ data, error }`). */
   readListRpc: AnyFn;
+  currentPointsRate: AnyFn;
+  useCostDisplay: AnyFn;
+  ReadFailure: AnyComponent;
+  // Host features chat shows (canvas, notes, tasks, code, cloud browser, skills, html pages ...).
+  HtmlPreviewFullScreenEditor: AnyComponent;
+  AgentEditAccessBadge: AnyComponent;
+  DataRefPreviewContent: AnyComponent;
+  BlockHoverPreview: AnyComponent;
+  ConversationHoverPreview: AnyComponent;
+  NoteEditorCore: AnyComponent;
+  ToolResultCanvasOpener: AnyComponent;
+  CloudBrowserHandoffCanvasOpener: AnyComponent;
+  SimpleTerminal: AnyComponent;
+  useHtmlPreviewState: AnyFn;
+  fetchArtifactsForMessageThunk: AnyFn;
+  updateArtifactThunk: AnyFn;
+  registerArtifactThunk: AnyFn;
+  selectHtmlPageArtifactForMessage: AnyFn;
+  compileSlotComponent: AnyFn;
+  reportCanvasOpenDrop: AnyFn;
+  refreshNoteContent: AnyFn;
+  fetchNotesList: AnyFn;
+  saveNoteField: AnyFn;
+  loadProjectsWithTasks: AnyFn;
+  humanLines: AnyFn;
+  useCanvasOpenGuard: AnyFn;
+  useRegisterChatAttachTarget: AnyFn;
+  useSkills: AnyFn;
+  useAutoLabel: AnyFn;
+  generateLabelFromContent: AnyFn;
+  useStructuredListForSelection: AnyFn;
+  useGitHubConnection: AnyFn;
+  useOutputFeedback: AnyFn;
+  saveOutputFeedback: AnyFn;
+  precedingQuestion: AnyFn;
+  invalidateCanvasItemCache: AnyFn;
+  studioDocumentContentChanged: AnyFn;
+  selectEditorState: AnyFn;
+  selectActiveSandboxId: AnyFn;
+  selectActiveSandboxProxyUrl: AnyFn;
+  selectEditorMode: AnyFn;
+  receivedFsChange: AnyFn;
+  loadCodeEditHistoryThunk: AnyFn;
+  applySkillStreamEvent: AnyFn;
+  isSkillStreamEvent: AnyFn;
+  materializeMessageArtifacts: AnyFn;
+  reconcileMessagesArtifacts: AnyFn;
+  noteBrowserActivity: AnyFn;
+  selectCloudBrowserRunLive: AnyFn;
+  adoptCloudBrowserRunFromStream: AnyFn;
+  dispatchWarRoomTool: AnyFn;
+  dispatchWarRoomMasterTool: AnyFn;
+  resolveGmailSendConnection: AnyFn;
+  stripTurnTrust: AnyFn;
+  voiceDisplayName: AnyFn;
+  recognizeOurFileUrl: AnyFn;
+  canvasGetVersionHistory: AnyFn;
+  canvasGetById: AnyFn;
+  createSandboxFilesystemAdapter: AnyFn;
+  notesGetById: AnyFn;
+  isLiveConversationVoice: AnyFn;
+  ourFileUrlMarkers: AnyFn;
+  createHtmlPage: AnyFn;
+  convertMarkdownToHtml: AnyFn;
+  sklActions: AnyFn;
+  selectAllContentBlocksArray: AnyFn;
+  selectContentBlocksByScope: AnyFn;
+  selectContentBlocksByScopeRef: AnyFn;
+  selectActiveContentBlocks: AnyFn;
+  LibraryPreviewPage: AnyComponent;
+  NoteVersionHistoryPanel: AnyComponent;
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
@@ -431,3 +503,288 @@ export const renameFile = slotFn("renameFile");
 export const requestScribeAudioSeek = slotFn("requestScribeAudioSeek", () => undefined);
 export const resolvePdfSurfaceIds = slotFn("resolvePdfSurfaceIds");
 export const readListRpc = slotFn("readListRpc");
+
+export const ReadFailure = slotComponent("ReadFailure", unregisteredWidget("ReadFailure"));
+
+export const ItemRow = slotComponent("ItemRow", unregisteredWidget("ItemRow"));
+
+export const UntrustedCount = slotComponent("UntrustedCount", unregisteredWidget("UntrustedCount"));
+
+export const StaleDataNotice = slotComponent("StaleDataNotice", unregisteredWidget("StaleDataNotice"));
+
+export const WorkspaceGate = slotComponent("WorkspaceGate", unregisteredWidget("WorkspaceGate"));
+
+export const OrganizationContextNotice = slotComponent("OrganizationContextNotice", unregisteredWidget("OrganizationContextNotice"));
+
+export const JsonInspector = slotComponent("JsonInspector", unregisteredWidget("JsonInspector"));
+
+export const InlineCopyButton = slotComponent("InlineCopyButton", unregisteredWidget("InlineCopyButton"));
+
+export const ConfirmDialog = slotComponent("ConfirmDialog", unregisteredWidget("ConfirmDialog"));
+
+export const ModelListDropdown = slotComponent("ModelListDropdown", unregisteredWidget("ModelListDropdown"));
+
+export const TextWithDoors = slotComponent("TextWithDoors", unregisteredWidget("TextWithDoors"));
+
+export const EntityDoorControls = slotComponent("EntityDoorControls", unregisteredWidget("EntityDoorControls"));
+
+export const StructuredValueView = slotComponent("StructuredValueView", unregisteredWidget("StructuredValueView"));
+
+export const KindValueFrontDoor = slotComponent("KindValueFrontDoor", unregisteredWidget("KindValueFrontDoor"));
+
+export const KindDataGate = slotComponent("KindDataGate", unregisteredWidget("KindDataGate"));
+
+export const ServerNotes = slotComponent("ServerNotes", unregisteredWidget("ServerNotes"));
+
+export const OptionCombobox = slotComponent("OptionCombobox", unregisteredWidget("OptionCombobox"));
+
+export const NumberStepper = slotComponent("NumberStepper", unregisteredWidget("NumberStepper"));
+
+export const MatrxFloatingFrame = slotComponent("MatrxFloatingFrame", unregisteredWidget("MatrxFloatingFrame"));
+
+export const ItemMenu = slotComponent("ItemMenu", unregisteredWidget("ItemMenu"));
+
+export const ClampedNumberInput = slotComponent("ClampedNumberInput", unregisteredWidget("ClampedNumberInput"));
+
+export const AspectRatioSelect = slotComponent("AspectRatioSelect", unregisteredWidget("AspectRatioSelect"));
+
+export const AnswerTextPreview = slotComponent("AnswerTextPreview", unregisteredWidget("AnswerTextPreview"));
+
+export const AccessGate = slotComponent("AccessGate", unregisteredWidget("AccessGate"));
+
+export const ReferenceCopyMenuItem = slotComponent("ReferenceCopyMenuItem", unregisteredWidget("ReferenceCopyMenuItem"));
+
+export const ReferenceCopyButton = slotComponent("ReferenceCopyButton", unregisteredWidget("ReferenceCopyButton"));
+
+export const MandateNotesPanel = slotComponent("MandateNotesPanel", unregisteredWidget("MandateNotesPanel"));
+
+export const SurfaceBoundAgentsList = slotComponent("SurfaceBoundAgentsList", unregisteredWidget("SurfaceBoundAgentsList"));
+
+export const ProposedDirectivesZone = slotComponent("ProposedDirectivesZone", unregisteredWidget("ProposedDirectivesZone"));
+
+export const EntityCommentPopover = slotComponent("EntityCommentPopover", unregisteredWidget("EntityCommentPopover"));
+
+export const ProTextarea = slotComponent("ProTextarea", (props: any) => { const { onChange, value, className, placeholder, rows, id, ref, autoFocus, disabled } = props; return createElement("textarea", { ref, id, value, onChange, className, placeholder, rows, autoFocus, disabled, "data-chat-slot-fallback": "textarea" }); });
+
+export const VoiceTextarea = slotComponent("VoiceTextarea", (props: any) => { const { onChange, value, className, placeholder, rows, id, ref, autoFocus, disabled } = props; return createElement("textarea", { ref, id, value, onChange, className, placeholder, rows, autoFocus, disabled, "data-chat-slot-fallback": "textarea" }); });
+
+export const FloatingSheet = slotComponent("FloatingSheet", unregisteredWidget("FloatingSheet"));
+
+export const AppLink = slotComponent("AppLink", ({ href, children, className, ...rest }: any) => createElement("a", { href, className, ...rest }, children));
+
+export const IconButton = slotComponent("IconButton", unregisteredWidget("IconButton"));
+
+export const LightSwitchToggle = slotComponent("LightSwitchToggle", unregisteredWidget("LightSwitchToggle"));
+
+export const CitationChip = slotComponent("CitationChip", unregisteredWidget("CitationChip"));
+
+export const MatrxEnvelopeBlock = slotComponent("MatrxEnvelopeBlock", unregisteredWidget("MatrxEnvelopeBlock"));
+
+export const ErrorBoundaryWithCapture = slotComponent("ErrorBoundaryWithCapture", ({ children }: { children?: ReactNode }) => children ?? null);
+
+export const ConfigurationTable = slotComponent("ConfigurationTable", unregisteredWidget("ConfigurationTable"));
+export const ConfigurationTableRow = slotComponent("ConfigurationTableRow", unregisteredWidget("ConfigurationTableRow"));
+export const FieldHelp = slotComponent("FieldHelp", unregisteredWidget("FieldHelp"));
+
+// ── Host features chat shows ─────────────────────────────────────────────────
+export const HtmlPreviewFullScreenEditor = slotComponent("HtmlPreviewFullScreenEditor", unregisteredWidget("HtmlPreviewFullScreenEditor"));
+export const AgentEditAccessBadge = slotComponent("AgentEditAccessBadge", unregisteredWidget("AgentEditAccessBadge"));
+export const DataRefPreviewContent = slotComponent("DataRefPreviewContent", unregisteredWidget("DataRefPreviewContent"));
+export const BlockHoverPreview = slotComponent("BlockHoverPreview", ({ children }: { children?: ReactNode }) => children ?? null);
+export const ConversationHoverPreview = slotComponent("ConversationHoverPreview", ({ children }: { children?: ReactNode }) => children ?? null);
+export const NoteEditorCore = slotComponent("NoteEditorCore", unregisteredWidget("NoteEditorCore"));
+export const ToolResultCanvasOpener = slotComponent("ToolResultCanvasOpener");
+export const CloudBrowserHandoffCanvasOpener = slotComponent("CloudBrowserHandoffCanvasOpener");
+export const SimpleTerminal = slotComponent("SimpleTerminal", unregisteredWidget("SimpleTerminal"));
+export const useHtmlPreviewState = slotFn("useHtmlPreviewState");
+export const fetchArtifactsForMessageThunk = slotFn("fetchArtifactsForMessageThunk");
+export const updateArtifactThunk = slotFn("updateArtifactThunk");
+export const registerArtifactThunk = slotFn("registerArtifactThunk");
+export const selectHtmlPageArtifactForMessage = slotFn("selectHtmlPageArtifactForMessage");
+export const compileSlotComponent = slotFn("compileSlotComponent");
+export const reportCanvasOpenDrop = slotFn("reportCanvasOpenDrop", () => undefined);
+export const refreshNoteContent = slotFn("refreshNoteContent");
+export const fetchNotesList = slotFn("fetchNotesList");
+export const saveNoteField = slotFn("saveNoteField");
+export const loadProjectsWithTasks = slotFn("loadProjectsWithTasks");
+export const humanLines = slotFn("humanLines");
+export const useCanvasOpenGuard = slotFn("useCanvasOpenGuard");
+export const useRegisterChatAttachTarget = slotFn("useRegisterChatAttachTarget", () => undefined);
+export const useSkills = slotFn("useSkills");
+export const useAutoLabel = slotFn("useAutoLabel", () => undefined);
+export const generateLabelFromContent = slotFn("generateLabelFromContent");
+export const useStructuredListForSelection = slotFn("useStructuredListForSelection");
+export const useGitHubConnection = slotFn("useGitHubConnection");
+export const useOutputFeedback = slotFn("useOutputFeedback");
+export const saveOutputFeedback = slotFn("saveOutputFeedback");
+export const precedingQuestion = slotFn("precedingQuestion");
+export const invalidateCanvasItemCache = slotFn("invalidateCanvasItemCache", () => undefined);
+export const studioDocumentContentChanged = slotFn("studioDocumentContentChanged");
+export const selectEditorState = slotFn("selectEditorState");
+export const selectActiveSandboxId = slotFn("selectActiveSandboxId");
+export const selectActiveSandboxProxyUrl = slotFn("selectActiveSandboxProxyUrl");
+export const selectEditorMode = slotFn("selectEditorMode");
+export const receivedFsChange = slotFn("receivedFsChange");
+export const loadCodeEditHistoryThunk = slotFn("loadCodeEditHistoryThunk");
+export const applySkillStreamEvent = slotFn("applySkillStreamEvent");
+export const isSkillStreamEvent = slotFn("isSkillStreamEvent", () => false);
+export const materializeMessageArtifacts = slotFn("materializeMessageArtifacts");
+export const reconcileMessagesArtifacts = slotFn("reconcileMessagesArtifacts", () => undefined);
+export const noteBrowserActivity = slotFn("noteBrowserActivity");
+export const selectCloudBrowserRunLive = slotFn("selectCloudBrowserRunLive");
+export const adoptCloudBrowserRunFromStream = slotFn("adoptCloudBrowserRunFromStream");
+export const dispatchWarRoomTool = slotFn("dispatchWarRoomTool");
+export const dispatchWarRoomMasterTool = slotFn("dispatchWarRoomMasterTool");
+export const resolveGmailSendConnection = slotFn("resolveGmailSendConnection");
+export const stripTurnTrust = slotFn("stripTurnTrust", (s: string) => s);
+export const voiceDisplayName = slotFn("voiceDisplayName", (_set: string, id: string) => id);
+export const recognizeOurFileUrl = slotFn("recognizeOurFileUrl", () => null);
+export const canvasGetVersionHistory = slotFn("canvasGetVersionHistory");
+export const canvasGetById = slotFn("canvasGetById");
+export const createSandboxFilesystemAdapter = slotFn("createSandboxFilesystemAdapter");
+export const notesGetById = slotFn("notesGetById");
+export const isLiveConversationVoice = slotFn("isLiveConversationVoice", () => false);
+export const ourFileUrlMarkers = slotFn("ourFileUrlMarkers", () => []);
+export const createHtmlPage = slotFn("createHtmlPage");
+export const convertMarkdownToHtml = slotFn("convertMarkdownToHtml");
+/** The host's skill-library action creators (`sklActions.x(...)`); resolved at call time, a bare host throws naming the slot. */
+export const sklActions: Record<string, AnyFn> = new Proxy({}, { get: (_t, prop) => (...args: unknown[]) => { const impl = (slots.sklActions as Record<string, AnyFn> | undefined)?.[prop as string]; if (!impl) throw new Error(`The host registered no "sklActions.${String(prop)}" for the chat package (registerChatUi).`); return impl(...args); } });
+export const selectAllContentBlocksArray = slotFn("selectAllContentBlocksArray");
+export const selectContentBlocksByScope = slotFn("selectContentBlocksByScope");
+export const selectContentBlocksByScopeRef = slotFn("selectContentBlocksByScopeRef");
+export const selectActiveContentBlocks = slotFn("selectActiveContentBlocks");
+export const LibraryPreviewPage = slotComponent("LibraryPreviewPage", unregisteredWidget("LibraryPreviewPage"));
+export const NoteVersionHistoryPanel = slotComponent("NoteVersionHistoryPanel", unregisteredWidget("NoteVersionHistoryPanel"));
+
+export const useModelFull = slotFn("useModelFull");
+export const useModelOptions = slotFn("useModelOptions");
+
+export const useOrganizationRequired = slotFn("useOrganizationRequired");
+
+export const useAuthGuardedAction = slotFn("useAuthGuardedAction");
+
+export const readOf = slotFn("readOf");
+
+export const pushAppHref = slotFn("pushAppHref");
+export const replaceAppHref = slotFn("replaceAppHref");
+
+export const announceComingSoon = slotFn("announceComingSoon");
+
+export const normalize = slotFn("normalize");
+
+export const toMediaRef = slotFn("toMediaRef");
+
+export const peekSystemOrgId = slotFn("peekSystemOrgId");
+
+export const toGlobalOwnershipRecord = slotFn("toGlobalOwnershipRecord");
+export const fromGlobalOwnershipRecord = slotFn("fromGlobalOwnershipRecord");
+
+export const assertMappingsAreAnswerable = slotFn("assertMappingsAreAnswerable");
+export const parseMandateWave1 = slotFn("parseMandateWave1");
+
+export const peekMandateCatalogueEntry = slotFn("peekMandateCatalogueEntry");
+export const invalidateMandateCatalogueCache = slotFn("invalidateMandateCatalogueCache");
+
+export const mandateRefusalHeadline = slotFn("mandateRefusalHeadline");
+
+export const useLoginHref = slotFn("useLoginHref");
+
+export const useAgentChangeReach = slotFn("useAgentChangeReach");
+
+export const useAccess = slotFn("useAccess");
+
+export const selectShouldPromptForOrganization = slotFn("selectShouldPromptForOrganization");
+
+export const canActOn = slotFn("canActOn");
+
+export const resolveEntityToken = slotFn("resolveEntityToken");
+
+export const entityTitleFallback = slotFn("entityTitleFallback");
+export const fetchEntityTitles = slotFn("fetchEntityTitles");
+export const getCachedEntityTitle = slotFn("getCachedEntityTitle");
+
+export const bookmarksToReferenceDirectives = slotFn("bookmarksToReferenceDirectives");
+
+export const ensureOrgAvailability = slotFn("ensureOrgAvailability");
+
+export const createClient = slotFn("createClient");
+
+export const requireAuthenticatedSupabaseSession = slotFn("requireAuthenticatedSupabaseSession");
+
+export const notifyPrintOutcome = slotFn("notifyPrintOutcome");
+
+export const promptForValues = slotFn("promptForValues");
+
+export const awaitEffectiveOrganizationId = slotFn("awaitEffectiveOrganizationId");
+
+export const getAgentCatalog = slotFn("getAgentCatalog");
+
+export const getAgent = slotFn("getAgent");
+
+export const isBasicWorkMandate = slotFn("isBasicWorkMandate");
+export const resolvePreferredChatModel = slotFn("resolvePreferredChatModel");
+
+export const publishedToWebPatch = slotFn("publishedToWebPatch");
+
+export const isUuidValue = slotFn("isUuidValue");
+
+export const toastDoor = slotFn("toastDoor");
+
+export const dismissDriftAlert = slotFn("dismissDriftAlert");
+export const fetchDriftAlerts = slotFn("fetchDriftAlerts");
+export const markDriftAlertViewed = slotFn("markDriftAlertViewed");
+export const fetchAgentUsages = slotFn("fetchAgentUsages");
+export const fetchAgentUsageReport = slotFn("fetchAgentUsageReport");
+
+export const selectActiveBannerAlerts = slotFn("selectActiveBannerAlerts");
+export const selectDriftAlertsStatus = slotFn("selectDriftAlertsStatus");
+export const makeSelectUsageCache = slotFn("makeSelectUsageCache");
+export const makeSelectUsageGroups = slotFn("makeSelectUsageGroups");
+export const makeSelectUsageAggregates = slotFn("makeSelectUsageAggregates");
+export const makeSelectRedFlagSummary = slotFn("makeSelectRedFlagSummary");
+export const makeSelectReport = slotFn("makeSelectReport");
+export const makeSelectReportSorted = slotFn("makeSelectReportSorted");
+export const makeSelectReportTotals = slotFn("makeSelectReportTotals");
+
+export const AgentSettingsModal = slotComponent("AgentSettingsModal", unregisteredWidget("AgentSettingsModal"));
+
+export const AgentSettingsCore = slotComponent("AgentSettingsCore", unregisteredWidget("AgentSettingsCore"));
+
+export const SettingControlInput = slotComponent("SettingControlInput", unregisteredWidget("SettingControlInput"));
+
+export const InputCapabilitiesEditor = slotComponent("InputCapabilitiesEditor", unregisteredWidget("InputCapabilitiesEditor"));
+
+export const CustomDataBindingSummary = slotComponent("CustomDataBindingSummary", unregisteredWidget("CustomDataBindingSummary"));
+
+export const CustomDataBindingPreview = slotComponent("CustomDataBindingPreview", unregisteredWidget("CustomDataBindingPreview"));
+
+export const AiModelRef = slotComponent("AiModelRef", unregisteredWidget("AiModelRef"));
+export const AiToolRef = slotComponent("AiToolRef", unregisteredWidget("AiToolRef"));
+
+export const TextInputDialog = slotComponent("TextInputDialog", unregisteredWidget("TextInputDialog"));
+
+export const ProInput = slotComponent("ProInput", (props: any) => createElement("input", { ...props, "data-chat-slot-fallback": "input" }));
+
+export const MatrxDynamicPanelHost = slotComponent("MatrxDynamicPanelHost", unregisteredWidget("MatrxDynamicPanelHost"));
+
+export const renameIntentFallback = slotFn("renameIntentFallback");
+
+export const useClippedContentGuard = slotFn("useClippedContentGuard");
+
+export const answerPreviewText = slotFn("answerPreviewText");
+
+export const beginPlaybackSession = slotFn("beginPlaybackSession");
+
+export const promptForValues = slotFn("promptForValues");
+
+export const currentCostUnit = slotFn("currentCostUnit", () => "points");
+
+export const Cost = slotComponent("Cost", ({ usd, className, short, prefix, unknown }: any) => createElement("span", { className, "data-chat-slot-fallback": "Cost" }, (typeof usd === "number" && prefix ? prefix : "") + formatCost(usd, { short, unknown, unit: "points", rate: null })));
+export const currentPointsRate = slotFn("currentPointsRate", () => null);
+export const useCostDisplay = slotFn("useCostDisplay", () => ({
+  unit: "points",
+  canToggle: false,
+  rate: null,
+  format: (usd: number | null | undefined, options?: object) => formatCost(usd, { ...options, unit: "points", rate: null }),
+  toPoints: (usd: number | null | undefined) => usdToPoints(usd, { rate: null }),
+}));

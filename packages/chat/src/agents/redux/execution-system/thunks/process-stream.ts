@@ -101,11 +101,11 @@ import {
 } from "../active-requests/active-requests.slice";
 import { parseNormalizedCitation } from "../messages/message-citations";
 import { confirmServerSync } from "../conversations/conversations.slice";
-import { receivedFsChange } from "@host/features/code/redux/fsChangesSlice";
+import { receivedFsChange } from "@ai-matrx/chat/host/ui-slots";
 import {
   applySkillStreamEvent,
   isSkillStreamEvent,
-} from "@host/features/skills/service/skillsStreamHandler";
+} from "@ai-matrx/chat/host/ui-slots";
 import { invalidateActiveTools } from "../active-tools/active-tools.slice";
 import {
   applyContextState,
@@ -249,14 +249,14 @@ import {
   patchConversationInScopes,
   upsertConversationIntoScopes,
 } from "../../conversation-history/slice";
-import { StreamProfiler } from "@host/utils/stream-profiler";
+import { StreamProfiler } from "@ai-matrx/chat/ui/stream-profiler";
 import { makePartialKindStalenessGate } from "@ai-matrx/content-ir/wire";
 import { prepareInboundRenderBlock } from "../utils/inbound-render-block";
 import { progressDataRenderBlock } from "@host/features/content-ir/redux/progress-data-block";
 import { DECISION_ANSWERS_BLOCK_TYPE } from "@host/features/content-ir/kinds/decision-answers";
 import { recordContextReceipt } from "../context-rules/receipt-check";
 import { assembleMessageParts } from "../utils/assemble-cx-content-blocks";
-import { materializeMessageArtifacts } from "@host/features/canvas/materialization/materializeMessageArtifacts";
+import { materializeMessageArtifacts } from "@ai-matrx/chat/host/ui-slots";
 import type { CxContentBlock } from "../../../../public-chat/types/cx-tables";
 import { callbackManager } from "@ai-matrx/chat/utils/callbackManager";
 import { type WidgetHandle } from "../../../types/widget-handle.types";
@@ -269,9 +269,9 @@ import {
   type ReservedAssistantTurn,
 } from "../utils/handoff-stream-state";
 import { runToolStateEffects } from "../../../../tool-call-visualization/effects/toolStateEffects";
-import { noteBrowserActivity } from "@host/features/cloud-browser/redux/cloudBrowserSlice";
-import { adoptCloudBrowserRunFromStream } from "@host/features/cloud-browser/redux/adoptRunFromStream";
-import { readHumanRequiredSignal } from "@host/features/cloud-browser/redux/streamHandoffSignal";
+import { noteBrowserActivity } from "@ai-matrx/chat/host/ui-slots";
+import { adoptCloudBrowserRunFromStream } from "@ai-matrx/chat/host/ui-slots";
+import { readHumanRequiredSignal } from "@ai-matrx/chat/agents/redux/execution-system/utils/streamHandoffSignal";
 
 // =============================================================================
 // Types

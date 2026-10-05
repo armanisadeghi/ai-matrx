@@ -6,7 +6,7 @@ import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import { startNewConversation } from "../../redux/execution-system/thunks/create-instance.thunk";
 import { PlusTapButton } from "@ai-matrx/tap-target/buttons";
 import { selectFocusedConversation } from "../../redux/execution-system/conversation-focus/conversation-focus.selectors";
-import { pushAddressWithoutNavigating } from "@host/lib/url-state/addressWithoutNavigating";
+import { pushAddressWithoutNavigating } from "@ai-matrx/chat/ui/addressWithoutNavigating";
 
 interface AgentNewRunButtonProps {
   surfaceKey: string;

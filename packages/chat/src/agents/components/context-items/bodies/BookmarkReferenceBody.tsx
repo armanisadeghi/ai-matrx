@@ -12,8 +12,8 @@
  */
 
 import type { ContextItemBodyProps } from "../types";
-import { bookmarksToReferenceDirectives } from "@host/features/matrx-envelope/bookmarkToReference";
-import MatrxEnvelopeBlock from "@host/features/matrx-envelope/MatrxEnvelopeBlock";
+import { bookmarksToReferenceDirectives } from "@ai-matrx/chat/host/ui-slots";
+import { MatrxEnvelopeBlock } from "@ai-matrx/chat/host/ui-slots";
 
 export function BookmarkReferenceBody({ item }: ContextItemBodyProps) {
   const directives = bookmarksToReferenceDirectives(item.refs.bookmarks ?? []);

@@ -31,7 +31,7 @@ import { ResultTable } from "./ResultTable";
 import { ShortId, IdListChip } from "./ShortId";
 import { KindValueNode } from "./KindValueNode";
 import { ResultRecordRef } from "./ResultRecordRef";
-import { TextWithDoors } from "@host/components/official/entity-ref/TextWithDoors";
+import { TextWithDoors } from "@ai-matrx/chat/host/ui-slots";
 import { valueCarriesKind } from "@ai-matrx/chat/utils/content-ir/surfaces/json-kind-signal";
 import { useReportKindAtRawRenderer } from "@host/features/content-ir/surfaces/report-kind-at-raw-renderer";
 

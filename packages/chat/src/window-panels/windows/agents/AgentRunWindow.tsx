@@ -1,5 +1,5 @@
 "use client";
-import { logFailure } from "@host/lib/errors/expectedRefusal";
+import { logFailure } from "@ai-matrx/chat/ui/expectedRefusal";
 import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 /**

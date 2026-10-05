@@ -28,8 +28,8 @@ import { useRouter } from "../../host/navigation";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { getBuilderDoor, requireBuilderDoor } from "../../host/builder-door";
 import { selectAgentById } from "../redux/agent-definition/selectors";
-import { confirm } from "@host/components/dialogs/confirm/ConfirmDialogHost";
-import { buildAgentDeleteConfirm } from "@host/features/agents/deletion/agentDeleteConfirm";
+import { confirm } from "@ai-matrx/chat/host/ui-slots";
+import { buildAgentDeleteConfirm } from "@ai-matrx/chat/ui/agentDeleteConfirm";
 import { toast } from "../../host/notify";
 
 export interface AgentLifecycleActions {

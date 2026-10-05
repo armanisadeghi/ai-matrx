@@ -103,7 +103,7 @@ import {
   logProjectCreateAiSnapshot,
   logProjectCreateAiStage,
   warnProjectCreateAi,
-} from "@host/features/projects/debug/projectCreateAiDebug";
+} from "@ai-matrx/chat/ui/projectCreateAiDebug";
 import {
   applyLaunchWritePolicies,
   prepareLaunchMappings,

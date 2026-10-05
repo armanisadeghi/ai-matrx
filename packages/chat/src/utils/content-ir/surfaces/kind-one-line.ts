@@ -187,12 +187,36 @@ const MARKDOWN_PUNCTUATION = /[!-/:-@[-`{-~]/g;
  */
 export function detectionOnlyKindsAsWritten(text: string): string {
   if (!text || !mayHoldKindKey(text)) return text;
+  // Streaming frames extend the previous frame: everything up to its last
+  // COMPLETE region is final, so only the rest is rescanned (a hot-path budget).
+  let from = 0;
   let out = "";
-  let cursor = 0;
-  for (const region of scanKindSpellingRegions(text, { families: "all" })) {
-    if (region.family === "lifted" || region.family === "markdown") continue;
-    out += text.slice(cursor, region.start) + text.slice(region.start, region.end).replace(MARKDOWN_PUNCTUATION, "\\$&");
-    cursor = region.end;
+  const last = AS_WRITTEN_LAST;
+  if (last.text && text.length > last.text.length && text.startsWith(last.text)) {
+    from = last.stable;
+    out = last.stableOut;
   }
+  let cursor = from;
+  let stable = from;
+  let stableOut = out;
+  for (const region of scanKindSpellingRegions(text, { families: "all", from })) {
+    if (region.family !== "lifted" && region.family !== "markdown") {
+      out += text.slice(cursor, region.start) + text.slice(region.start, region.end).replace(MARKDOWN_PUNCTUATION, "\\$&");
+      cursor = region.end;
+    } else {
+      out += text.slice(cursor, region.end);
+      cursor = region.end;
+    }
+    if (region.status === "complete") {
+      stable = cursor;
+      stableOut = out;
+    }
+  }
+  AS_WRITTEN_LAST.text = text;
+  AS_WRITTEN_LAST.stable = stable;
+  AS_WRITTEN_LAST.stableOut = stableOut;
   return cursor === 0 ? text : out + text.slice(cursor);
 }
+
+/** The previous frame's final prefix (see `detectionOnlyKindsAsWritten`). */
+const AS_WRITTEN_LAST = { text: "", stable: 0, stableOut: "" };

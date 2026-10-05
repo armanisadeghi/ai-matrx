@@ -25,7 +25,7 @@ import { FileIcon } from "@ai-matrx/media/react";
 import { formatFileSize } from "@ai-matrx/kit/format";
 import { useFileActions } from "@ai-matrx/chat/host/ui-slots";
 import { useMediaResolution } from "@ai-matrx/media/core";
-import type { FileSource } from "@host/features/files/handler/types";
+import type { FileSource } from "@ai-matrx/chat/ui/file-source";
 import type { ResultFileRef } from "./shape";
 
 export interface ResultFileProps {

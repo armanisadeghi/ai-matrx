@@ -18,7 +18,7 @@ import { useAppSelector } from "../../../../store/hooks";
 import { selectActiveOrganizationName } from "../../../../context/sources/scopes";
 import { useScopeTree } from "../../../../context/sources/scopes";
 import { useContextValues } from "../../../../context/sources/scopes";
-import { ReadFailure } from "@host/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/chat/host/ui-slots";
 import { scopesService } from "../../../../context/sources/scopes";
 import { isScopesRpcErr } from "../../../../context/sources/scopes";
 import type { ContextValueType } from "../../../../context/sources/scopes";

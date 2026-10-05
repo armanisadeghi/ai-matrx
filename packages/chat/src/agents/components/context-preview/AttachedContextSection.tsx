@@ -53,7 +53,7 @@ import { setConversationDocumentEnabledThunk } from "../../redux/execution-syste
 import { setScratchpadGateThunk } from "../../redux/execution-system/instance-working-document/scratchpad.thunks";
 import { useActiveContextLayerItems } from "../context-items/useActiveContextLayerItems";
 import { docKindForContextKey } from "../../utils/workingDocumentContext";
-import { InlineCopyButton } from "@host/components/matrx/buttons/InlineCopyButton";
+import { InlineCopyButton } from "@ai-matrx/chat/host/ui-slots";
 import type {
   InstanceContextEntry,
   ManagedResource,

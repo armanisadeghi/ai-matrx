@@ -7,7 +7,7 @@
  */
 
 import { ChevronDown, ExternalLink, PencilLine, Plus } from "lucide-react";
-import AppLink from "@host/components/navigation/AppLink";
+import { AppLink } from "@ai-matrx/chat/host/ui-slots";
 import {
   DropdownMenu,
   DropdownMenuContent,

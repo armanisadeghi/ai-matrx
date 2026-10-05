@@ -33,10 +33,7 @@ import {
   getNamespaceHandler,
   listRegisteredNamespaces,
 } from "../config/namespace-registry";
-import {
-  peekSystemOrgId,
-  resolveSystemOrgId,
-} from "@host/lib/organizations/systemOrg";
+import { peekSystemOrgId, resolveSystemOrgId } from "@ai-matrx/chat/host/ui-slots";
 import { ensureOrgId } from "../../host/org";
 
 const sb = () => createClient();

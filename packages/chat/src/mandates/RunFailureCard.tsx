@@ -21,8 +21,8 @@
 import { AlertTriangle } from "lucide-react";
 
 import { Badge } from "@ai-matrx/design-system";
-import { ServerNotes } from "@host/components/official/ServerNotes";
-import { TextWithDoors } from "@host/components/official/entity-ref/TextWithDoors";
+import { ServerNotes } from "@ai-matrx/chat/host/ui-slots";
+import { TextWithDoors } from "@ai-matrx/chat/host/ui-slots";
 import {
   mandateRefusalHeadline,
   type MandateRunFailure,

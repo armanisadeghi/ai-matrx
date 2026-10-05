@@ -37,34 +37,8 @@ import {
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { humanizeIdentifier, displayLabel } from "@ai-matrx/kit/text-case";
 
-/**
- * One row in the binding form. Drives a single agent variable / context
- * slot through the four user-facing source choices:
- *
- *   Agent Default | Surface Value | Direct Value | Prompt User
- *
- * Internally these map to the existing DSL:
- *   Agent Default → { mapType: "unmapped" }
- *   Surface Value → { mapType: "surface_value", target }
- *   Direct Value  → { mapType: "direct_value", target }
- *   Prompt User   → { mapType: "prompt_user", prompt }
- *
- * The detail panel below the buttons reserves a fixed height so flipping
- * between modes never shifts the row above or below it.
- */
-
-export interface BindingTarget {
-  /** Variable / context-policy name as stored on the agent. */
-  name: string;
-  /** Optional pre-formatted label. Falls back to the prettified name. */
-  label?: string;
-  /** Optional natural-language description (shown on hover via tooltip). */
-  description?: string;
-  /** Whether the agent has the target marked as required. */
-  required?: boolean;
-  /** Agent-authored default for variables; omitted for context policies. */
-  defaultValue?: unknown;
-}
+import type { BindingTarget } from "@ai-matrx/chat/surfaces/host-surface-types";
+export type { BindingTarget };
 
 type FourWayMode =
   "agent_default" | "surface_value" | "direct_value" | "prompt_user";

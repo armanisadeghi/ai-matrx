@@ -22,7 +22,7 @@
  * id means.
  */
 
-import { isUuidValue } from "@host/components/official/entity-ref/doors";
+import { isUuidValue } from "@ai-matrx/chat/host/ui-slots";
 
 /**
  * Prefix → the canonical entity token its id refers to. Derived by reading

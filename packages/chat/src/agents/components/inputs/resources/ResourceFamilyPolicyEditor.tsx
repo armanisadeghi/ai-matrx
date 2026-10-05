@@ -30,7 +30,7 @@ import {
   familyWords,
   PRIMARY_FORM_CHOICES,
 } from "./resource-family-words";
-import { ClampedNumberInput } from "@host/components/official/ClampedNumberInput";
+import { ClampedNumberInput } from "@ai-matrx/chat/host/ui-slots";
 
 interface ResourceFamilyPolicyEditorProps {
   fileId: string | null;

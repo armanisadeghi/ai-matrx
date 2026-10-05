@@ -28,7 +28,7 @@ import {
     CollapsibleContent,
     CollapsibleTrigger,
 } from "@ai-matrx/design-system";
-import { BasicMarkdownContent } from "@host/components/mardown-display/chat-markdown/BasicMarkdownContent";
+import { BasicMarkdownContent } from "../../../host/markdown-slots";
 
 import type { ToolRendererProps } from "../../types";
 import { getArg, isTerminal, resultAsObject } from "../_shared";

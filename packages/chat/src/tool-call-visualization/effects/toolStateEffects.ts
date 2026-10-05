@@ -37,8 +37,8 @@ import type { ChatRootState } from "../../store/root-state";
 import {
   refreshNoteContent,
   fetchNotesList,
-} from "@host/features/notes/redux/thunks";
-import { loadProjectsWithTasks } from "@host/features/tasks/redux/thunks";
+} from "@ai-matrx/chat/host/ui-slots";
+import { loadProjectsWithTasks } from "@ai-matrx/chat/host/ui-slots";
 import {
   INVALIDATION_KEYS,
   fireInvalidation,

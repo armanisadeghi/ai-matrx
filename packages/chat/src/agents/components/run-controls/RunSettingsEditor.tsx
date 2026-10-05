@@ -18,8 +18,8 @@ import { cn } from "@ai-matrx/design-system";
 import { Button } from "@ai-matrx/design-system";
 import { Switch } from "@ai-matrx/chat/ui/switch";
 import { Label } from "@ai-matrx/design-system";
-import { ProInput } from "@host/components/official/ProInput";
-import { ProTextarea } from "@host/components/official/ProTextarea";
+import { ProInput } from "@ai-matrx/chat/host/ui-slots";
+import { ProTextarea } from "@ai-matrx/chat/host/ui-slots";
 import { Separator } from "@ai-matrx/design-system";
 import {
   Select,
@@ -58,7 +58,7 @@ import { parseRequestOverrides } from "../../redux/execution-system/utils/reques
 import { SurfaceSimulatorSelect } from "./SurfaceSimulatorSelect";
 import { SystemInstructionModal } from "@ai-matrx/chat/host/ui-slots";
 import { useOpenSystemInstructionWindow } from "../../../host/window-openers";
-import { NumberStepper } from "@host/components/official-candidate/NumberStepper";
+import { NumberStepper } from "@ai-matrx/chat/host/ui-slots";
 import { openOverlay, CHAT_WINDOWS } from "../../../host/windows";
 import {
   selectIsMemoryEnabledForConversation,

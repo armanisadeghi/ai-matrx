@@ -12,7 +12,7 @@
 // prose with the formula's opener and corrupted the answer (verify-RC-B10 F2);
 // never add one back.
 
-import { unwrapKindEnvelopes } from "@host/lib/markdown/plain-text";
+import { unwrapKindEnvelopes } from "@ai-matrx/content-ir/source";
 import { kindTextToMarkdown } from "@ai-matrx/chat/utils/content-ir/surfaces/kind-text-to-markdown";
 
 /** A `__kind` region prints as its kind's markdown, never its JSON. */

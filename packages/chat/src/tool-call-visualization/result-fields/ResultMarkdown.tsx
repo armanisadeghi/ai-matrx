@@ -12,7 +12,7 @@
 
 import React from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
-import { BasicMarkdownContent } from "@host/components/mardown-display/chat-markdown/BasicMarkdownContent";
+import { BasicMarkdownContent } from "../../host/markdown-slots";
 import { Collapsible, CollapsibleContent } from "@ai-matrx/design-system";
 import { cn } from "@ai-matrx/design-system";
 

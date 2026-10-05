@@ -11,7 +11,7 @@
  */
 
 import type { ContextItemBodyProps } from "../types";
-import { AnswerValueView } from "@host/components/official/structured-value/AnswerValueView";
+import { AnswerValueView } from "@ai-matrx/chat/host/ui-slots";
 import { hasKindKeyAnySpelling, valueCarriesKind } from "@ai-matrx/chat/utils/content-ir/surfaces/json-kind-signal";
 
 function carriesKind(value: unknown): boolean {

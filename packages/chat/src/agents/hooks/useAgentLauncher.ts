@@ -49,7 +49,7 @@ import {
   isProjectCreateFlow,
   logProjectCreateAiStage,
   warnProjectCreateAi,
-} from "@host/features/projects/debug/projectCreateAiDebug";
+} from "@ai-matrx/chat/ui/projectCreateAiDebug";
 import { toast } from "../../host/notify";
 import { isNotAuthenticatedError } from "../../host/identity";
 

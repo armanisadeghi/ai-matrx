@@ -31,7 +31,7 @@ import { createManualInstance } from "../../../agents/redux/execution-system/thu
 import type { ChatRootState } from "../../../store/root-state";
 import { useAppStore } from "../../../store/hooks";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
-import { ItemRow } from "@host/components/official/item/ItemRow";
+import { ItemRow } from "@ai-matrx/chat/host/ui-slots";
 import { buildConversationMenu } from "../../../agents/components/conversation-actions/conversationActionRegistry";
 import { renameConversation } from "../../../agents/redux/conversation-list/conversation-row-actions.thunks";
 import { SurfaceRuntimeProvider } from "../../../surfaces/runtime/SurfaceRuntimeContext";

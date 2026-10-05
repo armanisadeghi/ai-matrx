@@ -34,7 +34,7 @@ import { Button } from "@ai-matrx/design-system";
 import { Chip } from "@ai-matrx/design-system/controls";
 import { cn } from "@ai-matrx/design-system";
 import { toast } from "../../../host/notify";
-import { confirm } from "@host/components/dialogs/confirm/ConfirmDialogHost";
+import { confirm } from "@ai-matrx/chat/host/ui-slots";
 import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 // Surface A: the "Select {ScopeType}" prompt sets the globally-active scope so a
 // globally-triggered agent run resolves its bound variables (the server fills them

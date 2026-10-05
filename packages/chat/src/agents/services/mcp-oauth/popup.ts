@@ -22,7 +22,7 @@
  * settles. (D128)
  */
 
-import { startOAuthPopup } from "@host/utils/oauth-popup";
+import { startOAuthPopup } from "@ai-matrx/chat/ui/oauth-popup";
 import { peekSelectedOrganizationId } from "../../../host/server/organization-admission";
 
 export type McpOAuthOutcome =

@@ -14,16 +14,16 @@ import {
   type UiSurfaceScopeEntry,
   type UiSurfacesFilterScope,
   type UiSurfacesRegistryCounts,
-} from "@host/features/surfaces/manifests/admin-ui-surfaces.manifest";
+} from "@ai-matrx/chat/surfaces/manifests/admin-ui-surfaces.manifest";
 import {
   readinessBucketOf,
   tierFor,
   type SurfaceWithStats,
 } from "../services/surfaces.service";
 import { surfaceCheckState } from "../utils/surface-check-ledger";
-import type { SurfacesFilterState } from "@host/features/surfaces/components/SurfacesFilterBar";
+import type { SurfacesFilterState } from "@ai-matrx/chat/surfaces/host-surface-types";
 import { xmlElement, xmlList } from "../runtime/context-bundle";
-import type { NewSurfaceDraftScope } from "@host/features/surfaces/components/NewSurfaceDialog";
+import type { NewSurfaceDraftScope } from "@ai-matrx/chat/surfaces/host-surface-types";
 
 /** How many rows `surface_list` carries up front (~4,000 chars). */
 export const SURFACE_LIST_MAX_ROWS = 40;

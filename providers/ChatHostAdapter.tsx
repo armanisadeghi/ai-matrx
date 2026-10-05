@@ -190,6 +190,8 @@ import {
 import { useOpenConversationDocuments } from "@/features/canvas/host/conversation/documentsKind";
 import { useOpenScratchpadPanel } from "@/features/quick-actions/canvas/scratchpadKind";
 import "@/providers/chatUiRegistration";
+// The rich-document rendering engine (P14).
+import "@/providers/chatMarkdownRegistration";
 // Scopes (context sources) and compute targets (P21).
 import "@/providers/chatContextSources";
 

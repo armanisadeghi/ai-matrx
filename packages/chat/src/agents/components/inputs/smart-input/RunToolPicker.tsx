@@ -26,12 +26,12 @@
  * reachable) and the surface says so in one line.
  */
 
-import { UntrustedCount } from "@host/components/official/stale-data/UntrustedCount";
-import { readOf } from "@host/components/read-state/ReadGate";
+import { UntrustedCount } from "@ai-matrx/chat/host/ui-slots";
+import { readOf } from "@ai-matrx/chat/host/ui-slots";
 import { useEffect } from "react";
 import { AlertTriangle, Code2, Undo2, Wrench, X } from "lucide-react";
 import { PickerRow } from "@ai-matrx/chat/utils/resource-picker/ResourcePickerSubViewHeader";
-import type { DatabaseTool } from "@host/utils/supabase/tools-service";
+import type { DatabaseTool } from "@ai-matrx/chat/ui/database-tool";
 import { useAppDispatch, useAppSelector } from "../../../../store/hooks";
 import { PickerEmpty } from "@ai-matrx/chat/utils/resource-picker/ResourcePickerSubViewHeader";
 import {
@@ -47,7 +47,7 @@ import {
   selectToolsStatus,
   selectToolsError,
 } from "../../../redux/tools/tools.selectors";
-import { ReadFailure } from "@host/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/chat/host/ui-slots";
 import { fetchAvailableTools } from "../../../redux/tools/tools.thunks";
 import {
   selectAgentError,

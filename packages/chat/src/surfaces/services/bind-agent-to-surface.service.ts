@@ -40,10 +40,10 @@ import type {
 import type { Json, Tables } from "../../host/db-types";
 import { createClient } from "../../host/db";
 import { recordUnavailable } from "../../host/diagnostics";
-import { ensureOrgAvailability } from "@host/utils/permissions/service";
+import { ensureOrgAvailability } from "@ai-matrx/chat/host/ui-slots";
 // THE ONE PRE-FLIGHT (FIX-11) — one function decides what a person is allowed
 // to store in a mapping, for every system that stores one.
-import { assertMappingsAreAnswerable } from "@host/features/mandates/provision-shapes";
+import { assertMappingsAreAnswerable } from "@ai-matrx/chat/host/ui-slots";
 import { ensureOrgId } from "../../host/org";
 import { readProjectScopeOrganizationId } from "../../host/ui-slots";
 

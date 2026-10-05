@@ -20,7 +20,7 @@ import { PendingSendMessage } from "../messages-display/user/PendingSendMessage"
 import { TranscriptIntegrityCopyButton } from "../messages-display/TranscriptIntegrityCopyButton";
 import { PendingAsksZone } from "../../ui-first-tools/ui/PendingAsksZone";
 import { ServerOperationBanner } from "../../runtime-reconnect/ServerOperationBanner";
-import { ProposedDirectivesZone } from "@host/features/matrx-envelope/components/ProposedDirectivesZone";
+import { ProposedDirectivesZone } from "@ai-matrx/chat/host/ui-slots";
 import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import { selectMessageCount } from "../../redux/execution-system/messages/messages.selectors";
 import {

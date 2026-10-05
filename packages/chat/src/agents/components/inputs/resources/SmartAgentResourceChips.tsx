@@ -23,7 +23,7 @@ import { isEditableCapableBlockType } from "../../../redux/execution-system/inst
 import { selectShowAttachments } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import type { ManagedResource } from "../../../types/instance.types";
 import type { ResourceEditableState } from "../../messages-display/user/ResourceAttachmentTile";
-import { BlockHoverPreview } from "@host/features/agents/components/previews/BlockHoverPreview";
+import { BlockHoverPreview } from "@ai-matrx/chat/host/ui-slots";
 import { ResourceAttachmentTile } from "../../messages-display/user/ResourceAttachmentTile";
 import { useContextItemsTab } from "../../context-items/contextItemsTab";
 import { normalizeResource } from "../../context-items/normalize";

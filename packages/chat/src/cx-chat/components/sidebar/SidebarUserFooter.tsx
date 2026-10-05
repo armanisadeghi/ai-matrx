@@ -9,7 +9,7 @@ import {
 } from "../../../host/identity";
 import { Avatar, AvatarFallback, AvatarImage } from "@ai-matrx/design-system";
 import { LogIn, UserPlus, ChevronRight } from "lucide-react";
-import { useLoginHref } from "@host/hooks/auth/useLoginHref";
+import { useLoginHref } from "@ai-matrx/chat/host/ui-slots";
 // THE package initials formatter (`@ai-matrx/kit/format`, census H1
 // 2026-09-07). Recorded display decision: a multi-part name takes FIRST +
 // LAST, so "Ana Maria Rivera" is AR — this surface previously took first +

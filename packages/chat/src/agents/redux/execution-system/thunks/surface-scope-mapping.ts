@@ -19,10 +19,7 @@
  *     names what it ran without. Never silent, never refused.
  */
 
-import {
-  promptForValues,
-  type ValuePromptField,
-} from "@host/components/dialogs/value-prompts/ValuePromptsDialogHost";
+import { promptForValues, type ValuePromptField } from "../../../../ui/valuePromptsOpener";
 import { toast } from "../../../../host/notify";
 import {
   readSurfaceScopeValue,

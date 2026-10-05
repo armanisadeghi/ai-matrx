@@ -20,27 +20,27 @@ import type { ApproveSpendRender } from "../../render-types";
 
 
 // The points rate is the billing.points_per_usd knob; this suite runs with no
-// knob snapshot, so it pins the rate to a fixture (the platform default).
-jest.mock("@host/components/cost/pointsRate", () => ({
-  ...jest.requireActual("@host/components/cost/pointsRate"),
-  currentPointsRate: () => 20_000,
-  usePointsRate: () => 20_000,
-}));
-// The host's cost display (`components/cost/useCostDisplay`) at that same rate, for a member
-// (points, no toggle): what the app hands the form once the knob has landed.
-jest.mock("@host/components/cost/useCostDisplay", () => {
-  const { formatCost, usdToPoints } = jest.requireActual("@ai-matrx/kit/format");
-  const rate = 20_000;
-  return {
+// knob snapshot, so it pins the rate to a fixture (the platform default) and registers the
+// host's cost display at that same rate, for a member (points, no toggle): what the app hands
+// the form once the knob has landed.
+import { registerChatUi, resetChatUiForTests } from "../../../host/ui-slots";
+import { formatCost, usdToPoints } from "@ai-matrx/kit/format";
+
+const FIXTURE_RATE = 20_000;
+beforeAll(() => {
+  registerChatUi({
+    currentPointsRate: () => FIXTURE_RATE,
     useCostDisplay: () => ({
       unit: "points",
       canToggle: false,
-      rate,
-      format: (usd: number | null | undefined, options?: object) => formatCost(usd, { ...options, unit: "points", rate }),
-      toPoints: (usd: number | null | undefined) => usdToPoints(usd, { rate }),
+      rate: FIXTURE_RATE,
+      format: (usd: number | null | undefined, options?: object) =>
+        formatCost(usd, { ...options, unit: "points", rate: FIXTURE_RATE }),
+      toPoints: (usd: number | null | undefined) => usdToPoints(usd, { rate: FIXTURE_RATE }),
     }),
-  };
+  });
 });
+afterAll(() => resetChatUiForTests());
 
 const RENDER: ApproveSpendRender = {
   __kind: "action_request.render",

@@ -13,7 +13,7 @@ import {
 } from "../../runtime/intelligence";
 import { useLiveSurfaceMandates } from "../../runtime/surface-mandates";
 import { fetchMandateIdentities, type MandateIdentity } from "../../../mandates/service";
-import { mandateDisplayName } from "@host/features/mandates/mandate-words";
+import { mandateDisplayName } from "@ai-matrx/chat/ui/mandate-words";
 import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 import { useOpenMandateWindow } from "../../../host/window-openers";

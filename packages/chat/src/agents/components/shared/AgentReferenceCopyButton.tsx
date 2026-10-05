@@ -1,6 +1,6 @@
 "use client";
 
-import { ReferenceCopyButton } from "@host/features/matrx-envelope/components/ReferenceCopyButton";
+import { ReferenceCopyButton } from "@ai-matrx/chat/host/ui-slots";
 
 export function AgentReferenceCopyButton({
   agentId,

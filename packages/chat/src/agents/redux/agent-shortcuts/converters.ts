@@ -49,7 +49,7 @@ import {
 } from "@host/lib/supabase/shortcutStorage";
 // THE ONE PRE-FLIGHT (FIX-11) — one function decides what a person is allowed
 // to store in a mapping, for every system that stores one.
-import { assertMappingsAreAnswerable } from "@host/features/mandates/provision-shapes";
+import { assertMappingsAreAnswerable } from "@ai-matrx/chat/host/ui-slots";
 
 // ---------------------------------------------------------------------------
 // Supabase row types

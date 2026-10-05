@@ -34,7 +34,7 @@ import BasicMarkdownContent from "@/components/mardown-display/chat-markdown/Bas
 import { InlineCodeSnippet } from "@/components/mardown-display/chat-markdown/InlineCodeSnippet";
 import XmlBlock from "@/components/mardown-display/blocks/xml/XmlBlock";
 import MarkdownPreviewBlock from "@/components/mardown-display/blocks/markdown-preview/MarkdownPreviewBlock";
-import { FENCE_META_KEY } from "@/components/markdown-core/fence-meta";
+import { FENCE_META_KEY } from "@ai-matrx/content-ir/source";
 // Static (not lazy): a CSV table must be in the server HTML of a share page too.
 import CsvBlock from "@/components/mardown-display/blocks/csv/CsvBlock";
 import { fenceNestsInnerFences } from "@ai-matrx/content-ir/source";

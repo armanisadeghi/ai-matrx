@@ -15,7 +15,7 @@
 
 import { printMarkdown, printMarkdownWhenReady } from "@ai-matrx/print/markdown";
 import type { PrintOutcome } from "@ai-matrx/print/core";
-import { notifyPrintOutcome } from "@host/lib/print/print-outcome-toast";
+import { notifyPrintOutcome } from "@ai-matrx/chat/host/ui-slots";
 
 const HAS_MERMAID = /^\s*(?:`{3,}|~{3,})\s*mermaid\b/m;
 

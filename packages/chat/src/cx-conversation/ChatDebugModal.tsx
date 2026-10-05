@@ -22,7 +22,7 @@ import { Label } from "@ai-matrx/design-system";
 import { Switch } from "@ai-matrx/chat/ui/switch";
 import { Separator } from "@ai-matrx/design-system";
 import { Badge } from "@ai-matrx/design-system";
-import { EntityRef } from "@host/components/official/entity-ref/EntityRef";
+import { EntityRef } from "@ai-matrx/chat/host/ui-slots";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { selectIsSuperAdminDebugger } from "../host/prefs";
 import { toggleDebugMode, selectIsDebugMode } from "../host/prefs";

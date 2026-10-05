@@ -8,7 +8,7 @@
 import { motion } from "motion/react";
 import { cn } from "@ai-matrx/design-system";
 import type { VoiceTurn } from "../types";
-import { answerPreviewText } from "@host/components/official/structured-value/AnswerTextPreview";
+import { answerPreviewText } from "@ai-matrx/chat/host/ui-slots";
 
 interface VoiceTranscriptTurnProps {
   turn: VoiceTurn;

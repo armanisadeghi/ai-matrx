@@ -500,6 +500,6 @@ export {
   selectContentBlocksByScope,
   selectContentBlocksByScopeRef,
   selectActiveContentBlocks,
-} from "@host/features/agent-connections/redux/skl/content-block-compat";
+} from "@ai-matrx/chat/host/ui-slots";
 
 export type { CategoryTree } from "../agent-shortcut-categories/selectors";

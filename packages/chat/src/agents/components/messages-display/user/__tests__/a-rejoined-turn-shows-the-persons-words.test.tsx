@@ -67,9 +67,9 @@ jest.mock("../../../../../store/hooks", () => ({
   useAppStore: () => ({ getState: () => mockState }),
 }));
 
-jest.mock("@host/components/MarkdownStream", () => ({
+jest.mock("../../../../../host/markdown-slots", () => ({
   __esModule: true,
-  default: ({ content }: { content: string }) => <div>{content}</div>,
+  MarkdownStream: ({ content }: { content: string }) => <div>{content}</div>,
 }));
 jest.mock("../UserActionBar", () => ({ UserActionBar: () => null }));
 jest.mock("../../MessageAttachmentStrip", () => ({

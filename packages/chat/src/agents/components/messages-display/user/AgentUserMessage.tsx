@@ -49,7 +49,7 @@ import {
 } from "../../../redux/execution-system/instance-variable-values/instance-variable-values.selectors";
 import { MessageAttachmentStrip } from "../MessageAttachmentStrip";
 import { isAttachmentMessagePart } from "../../context-items/normalize";
-import MarkdownStream from "@host/components/MarkdownStream";
+import { MarkdownStream } from "../../../../host/markdown-slots";
 import { literalUserText } from "./literal-user-text";
 import type { InstanceContextEntry } from "../../../types/instance.types";
 import type { ChatRootState } from "../../../../store/root-state";

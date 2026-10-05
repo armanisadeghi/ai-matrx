@@ -20,7 +20,7 @@ import { useState, useEffect, useCallback } from "react";
 import { kindTextToMarkdown } from "@ai-matrx/chat/utils/content-ir/surfaces/kind-text-to-markdown";
 import { useAppSelector } from "../../../store/hooks";
 import { selectAgentName } from "../../redux/agent-definition/selectors";
-import { EntityDoorControls } from "@host/components/official/entity-ref/EntityDoorControls";
+import { EntityDoorControls } from "@ai-matrx/chat/host/ui-slots";
 import { useAgentLauncher } from "../../hooks/useAgentLauncher";
 import { useWidgetHandle } from "../../hooks/useWidgetHandle";
 import {
@@ -53,7 +53,7 @@ import {
 import type { VariablesPanelStyle } from "../../types/instance.types";
 import type { ApiEndpointMode } from "../../types/instance.types";
 import { toast } from "../../../host/notify";
-import { AnswerValueView } from "@host/components/official/structured-value/AnswerValueView";
+import { AnswerValueView } from "@ai-matrx/chat/host/ui-slots";
 
 interface AgentExecutionTestModalProps {
   surfaceKey: string;

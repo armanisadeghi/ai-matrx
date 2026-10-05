@@ -15,7 +15,7 @@
 
 import { datetimeLocalValue } from "@ai-matrx/kit/dates";
 import { Input } from "@ai-matrx/design-system";
-import { ProTextarea } from "@host/components/official/ProTextarea";
+import { ProTextarea } from "@ai-matrx/chat/host/ui-slots";
 import { cn } from "@ai-matrx/design-system";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 

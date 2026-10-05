@@ -34,8 +34,8 @@ import { parseDecisionOptionsFromBody } from "@/components/mardown-display/block
 import {
   DIRECTIVE_CONTAINER_OPEN,
   DirectiveContainerTracker,
-} from "@/components/markdown-core/directive-container";
-import { TITLED_IMAGE_LINE } from "@/components/markdown-core/image-figure";
+} from "@ai-matrx/content-ir/source";
+import { TITLED_IMAGE_LINE } from "@ai-matrx/content-ir/source";
 import { continuesTable, isGfmDelimiterRow, opensTable, tableContainerIndent, tableStartsAt } from "./gfm-table-lines";
 import type {
   TypedRenderBlock,
@@ -69,18 +69,18 @@ import { IR_ENVELOPE_KEY, type CanonicalBlockIR } from "@ai-matrx/content-ir";
 import { ALLOWED_RAW_HTML_TAGS } from "@/components/mardown-display/chat-markdown/rehypeSafeRawHtml";
 import { isPageBreakLine } from "@ai-matrx/print/directives";
 import { readXmlTag } from "@/components/mardown-display/blocks/xml/readXmlTag";
-import { FENCE_META_KEY, splitFenceInfo } from "@/components/markdown-core/fence-meta";
+import { FENCE_META_KEY, splitFenceInfo } from "@ai-matrx/content-ir/source";
 import {
   closeFence,
   fenceOpenerOf,
   isHtmlBlockTagName,
   XmlContainerTracker,
 } from "@ai-matrx/content-ir/source";
-import { indexOutsideInlineCode } from "./inline-code-span";
+import { indexOutsideInlineCode } from "@ai-matrx/content-ir/source";
 import {
   findBalancedXmlClose,
   initialXmlBalance,
-} from "./xml-tag-balance";
+} from "@ai-matrx/content-ir/source";
 
 /**
  * All block type strings this splitter can emit — the union of:

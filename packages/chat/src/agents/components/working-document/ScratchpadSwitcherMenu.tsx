@@ -18,7 +18,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@ai-matrx/design-system";
-import { ConfirmDialog } from "@host/components/ui/confirm-dialog";
+import { ConfirmDialog } from "@ai-matrx/chat/host/ui-slots";
 import { cn } from "@ai-matrx/design-system";
 import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import { scratchScopeId } from "../../redux/execution-system/instance-working-document/instance-working-document.slice";
@@ -35,7 +35,7 @@ import {
   listUserDocuments,
   type CxWorkingDocument,
 } from "../../redux/execution-system/instance-working-document/cx-working-document.service";
-import { ReadFailure } from "@host/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/chat/host/ui-slots";
 
 /** A spinner that says what is loading (announced as a live status). */
 export function LoadingLine({ message, small = false }: { message: string; small?: boolean }) {

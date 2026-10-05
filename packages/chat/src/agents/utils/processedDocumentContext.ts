@@ -13,12 +13,14 @@
  */
 
 import type { DocumentRepresentation } from "../types/instance.types";
-import type { UseFileDocumentState } from "@host/features/files/hooks/useFileDocument";
 
-type FileDocumentLookup = Extract<
-  UseFileDocumentState,
-  { status: "found" }
->["doc"];
+/** What the host's file→document lookup resolves to (only these fields are read here). */
+interface FileDocumentLookup {
+  processed_document_id: string;
+  derivation_kind: string;
+  total_pages: number | null;
+  has_clean_content: boolean;
+}
 
 /** The `source` value describing an attached processed document. */
 export interface ProcessedDocumentSource {

@@ -15,11 +15,11 @@ import { makeSelectAgentConversations } from "../../../redux/conversation-list/c
 import type { ConversationListItem } from "../../../redux/conversation-list/conversation-list.types";
 import { AgentLauncherSidebarTester } from "../../run-controls/AgentLauncherSidebarTester";
 import { SidebarHeader } from "./SidebarHeader";
-import { ConversationHoverPreview } from "@host/features/agents/components/previews/ConversationHoverPreview";
-import { ItemRow } from "@host/components/official/item/ItemRow";
+import { ConversationHoverPreview } from "@ai-matrx/chat/host/ui-slots";
+import { ItemRow } from "@ai-matrx/chat/host/ui-slots";
 import { buildConversationMenu } from "../../conversation-actions/conversationActionRegistry";
 import { renameConversation } from "../../../redux/conversation-list/conversation-row-actions.thunks";
-import { pushAddressWithoutNavigating } from "@host/lib/url-state/addressWithoutNavigating";
+import { pushAddressWithoutNavigating } from "@ai-matrx/chat/ui/addressWithoutNavigating";
 import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 
 interface AgentRunsSidebarProps {

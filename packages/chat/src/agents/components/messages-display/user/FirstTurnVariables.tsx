@@ -31,9 +31,9 @@ import {
   selectOwnSubmittedFirstTurnValues,
 } from "../../../redux/execution-system/instance-variable-values/instance-variable-values.selectors";
 import { buildVariableDisplayLines } from "../../../utils/variable-display-lines";
-import { EntityRef } from "@host/components/official/entity-ref/EntityRef";
+import { EntityRef } from "@ai-matrx/chat/host/ui-slots";
 import { useEntityTitles } from "../../../../host/ui-slots";
-import { AnswerValueView } from "@host/components/official/structured-value/AnswerValueView";
+import { AnswerValueView } from "@ai-matrx/chat/host/ui-slots";
 import { isKindJsonText, valueCarriesKind } from "@ai-matrx/chat/utils/content-ir/surfaces/json-kind-signal";
 
 /**

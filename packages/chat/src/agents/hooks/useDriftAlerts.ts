@@ -7,16 +7,9 @@
 
 import { useEffect, useCallback } from "react";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
-import {
-  dismissDriftAlert,
-  fetchDriftAlerts,
-  markDriftAlertViewed,
-} from "@host/features/agents/redux/usages/usages.thunks";
-import {
-  selectActiveBannerAlerts,
-  selectDriftAlertsStatus,
-} from "@host/features/agents/redux/usages/usages.selectors";
-import type { DriftAlertRow } from "@host/features/agents/redux/usages/usages.types";
+import { dismissDriftAlert, fetchDriftAlerts, markDriftAlertViewed } from "@ai-matrx/chat/host/ui-slots";
+import { selectActiveBannerAlerts, selectDriftAlertsStatus } from "@ai-matrx/chat/host/ui-slots";
+import type { DriftAlertRow } from "@ai-matrx/chat/ui/usages/usages.types";
 import { selectAccessToken, selectAuthReady, selectUserId } from "../../host/identity";
 
 export function useDriftAlerts() {

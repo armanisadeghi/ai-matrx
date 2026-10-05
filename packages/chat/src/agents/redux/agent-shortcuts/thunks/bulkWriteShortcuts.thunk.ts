@@ -7,10 +7,7 @@ import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import type { AgentShortcut } from "../types";
 import type { ShortcutFormData } from "../types";
 import { agentShortcutToInsert, dbRowToAgentShortcut } from "../converters";
-import {
-  fromGlobalOwnershipRecord,
-  toGlobalOwnershipRecord,
-} from "@host/lib/organizations/globalOwnership";
+import { fromGlobalOwnershipRecord, toGlobalOwnershipRecord } from "@ai-matrx/chat/host/ui-slots";
 import { upsertShortcuts } from "../slice";
 import { selectCategoryById } from "../../agent-shortcut-categories/selectors";
 import { resolveShortcutWriteScope } from "../../../shortcuts/resolveShortcutWriteScope";

@@ -20,7 +20,7 @@ import { toast } from "../../../host/notify";
 import { useActivePageSurface } from "../../runtime/useActivePageSurface";
 import { getRelatedSurfaces } from "../../runtime/fetchRelatedSurfaces";
 import { getSurfaceDisplayLabel } from "../../utils/surface-display";
-import { SurfaceBoundAgentsList } from "@host/features/surfaces/components/bind/SurfaceBoundAgentsList";
+import { SurfaceBoundAgentsList } from "@ai-matrx/chat/host/ui-slots";
 import { surfaceAcceptsAgentBindings } from "../../runtime/registry";
 import { SurfaceMandatesSection } from "./SurfaceMandatesSection";
 import { SurfaceConversationsSection } from "./SurfaceConversationsSection";
