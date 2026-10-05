@@ -7,6 +7,32 @@ import {
 } from "./scheduledChange";
 import type Stripe from "stripe";
 
+type ScheduledChangeStripe = Parameters<
+  typeof createScheduledPersonalChange
+>[0]["stripe"];
+type ScheduleGateway = ScheduledChangeStripe["subscriptionSchedules"];
+
+const vatTaxRate: Stripe.TaxRate = {
+  id: "txr_harbor_dental_vat",
+  object: "tax_rate",
+  active: true,
+  country: "US",
+  created: 1_790_000_000,
+  description: "Harbor Dental subscription tax",
+  display_name: "Sales tax",
+  effective_percentage: null,
+  flat_amount: null,
+  inclusive: false,
+  jurisdiction: "California",
+  jurisdiction_level: "state",
+  livemode: false,
+  metadata: null,
+  percentage: 7.25,
+  rate_type: "percentage",
+  state: "CA",
+  tax_type: "sales_tax",
+};
+
 const subscription: SchedulableSubscription = {
   id: "sub_personal",
   customer: "cus_personal",
@@ -36,7 +62,7 @@ const phase: Stripe.SubscriptionSchedule.Phase = {
   collection_method: "charge_automatically",
   currency: "usd",
   default_payment_method: null,
-  default_tax_rates: ["txr_vat"],
+  default_tax_rates: [vatTaxRate],
   description: null,
   discounts: [{ discount: "di_contract", coupon: null, promotion_code: null }],
   end_date: subscription.items.data[0].current_period_end,
@@ -49,7 +75,7 @@ const phase: Stripe.SubscriptionSchedule.Phase = {
       billing_thresholds: null,
       discounts: [],
       metadata: null,
-      tax_rates: ["txr_vat"],
+      tax_rates: [vatTaxRate],
     },
   ],
   metadata: null,
@@ -70,6 +96,22 @@ const preview = {
   effectiveAt: phase.end_date,
   quantity: 2,
 };
+
+function scheduledGateway(
+  overrides: Partial<ScheduleGateway>,
+): ScheduleGateway {
+  return {
+    create: async () => ({ id: "sub_sched_default", phases: [phase] }),
+    update: async () => ({}),
+    retrieve: async () => ({
+      customer: "cus_personal",
+      subscription: "sub_personal",
+      metadata: null,
+    }),
+    release: async () => ({}),
+    ...overrides,
+  };
+}
 
 describe("scheduled personal plan changes", () => {
   it("refuses unsupported subscription shapes before creating a Stripe schedule", () => {
@@ -105,7 +147,14 @@ describe("scheduled personal plan changes", () => {
       metadata: null,
     }));
     await createScheduledPersonalChange({
-      stripe: { subscriptionSchedules: { create, update, retrieve, release } },
+      stripe: {
+        subscriptionSchedules: scheduledGateway({
+          create,
+          update,
+          retrieve,
+          release,
+        }),
+      },
       preview,
       subscription,
       customerId: "cus_personal",
@@ -129,7 +178,7 @@ describe("scheduled personal plan changes", () => {
               expect.objectContaining({
                 price: "price_entry_month",
                 quantity: 2,
-                tax_rates: ["txr_vat"],
+                tax_rates: [vatTaxRate.id],
               }),
             ],
             discounts: [{ discount: "di_contract" }],
@@ -150,7 +199,7 @@ describe("scheduled personal plan changes", () => {
     await expect(
       createScheduledPersonalChange({
         stripe: {
-          subscriptionSchedules: {
+          subscriptionSchedules: scheduledGateway({
             create: jest.fn(async () => ({
               id: "sub_sched_ours",
               phases: [phase],
@@ -160,7 +209,7 @@ describe("scheduled personal plan changes", () => {
             }),
             retrieve,
             release,
-          },
+          }),
         },
         preview,
         subscription,
@@ -172,22 +221,31 @@ describe("scheduled personal plan changes", () => {
 
   it("creates a fresh operation after its own scheduled change is undone", async () => {
     let sequence = 0;
-    const create = jest.fn(async () => ({
-      id: `sub_sched_operation_${++sequence}`,
-      phases: [phase],
-    }));
-    const update = jest.fn(async () => ({}));
-    const release = jest.fn(async () => ({}));
-    const retrieve = jest.fn(async (scheduleId: string) => ({
+    const createCalls: Parameters<ScheduleGateway["create"]>[] = [];
+    const releasedScheduleIds: string[] = [];
+    const create: ScheduleGateway["create"] = async (...args) => {
+      createCalls.push(args);
+      return { id: `sub_sched_operation_${++sequence}`, phases: [phase] };
+    };
+    const update: ScheduleGateway["update"] = async () => ({});
+    const release: ScheduleGateway["release"] = async (scheduleId) => {
+      releasedScheduleIds.push(scheduleId);
+    };
+    const retrieve: ScheduleGateway["retrieve"] = async (scheduleId) => ({
       customer: "cus_personal",
       subscription: "sub_personal",
       metadata:
         scheduleId === "sub_sched_operation_1"
           ? { purpose: "matrx_personal_plan_change" }
           : { purpose: "other" },
-    }));
+    });
     const stripe = {
-      subscriptionSchedules: { create, update, retrieve, release },
+      subscriptionSchedules: scheduledGateway({
+        create,
+        update,
+        retrieve,
+        release,
+      }),
     };
 
     const first = await createScheduledPersonalChange({
@@ -210,9 +268,9 @@ describe("scheduled personal plan changes", () => {
 
     expect(first.scheduleId).toBe("sub_sched_operation_1");
     expect(second.scheduleId).toBe("sub_sched_operation_2");
-    expect(release).toHaveBeenCalledWith(first.scheduleId);
-    const [, firstOptions] = create.mock.calls[0];
-    const [, secondOptions] = create.mock.calls[1];
+    expect(releasedScheduleIds).toEqual([first.scheduleId]);
+    const [, firstOptions] = createCalls[0];
+    const [, secondOptions] = createCalls[1];
     expect(firstOptions?.idempotencyKey).not.toBe(
       secondOptions?.idempotencyKey,
     );
@@ -222,14 +280,14 @@ describe("scheduled personal plan changes", () => {
     const release = jest.fn(async () => ({}));
     await undoScheduledPersonalChange({
       stripe: {
-        subscriptionSchedules: {
+        subscriptionSchedules: scheduledGateway({
           retrieve: jest.fn(async () => ({
             customer: "cus_personal",
             subscription: "sub_personal",
             metadata: { purpose: "matrx_personal_plan_change" },
           })),
           release,
-        },
+        }),
       },
       subscription: { ...subscription, schedule: "sub_sched_ours" },
       customerId: "cus_personal",
@@ -238,14 +296,14 @@ describe("scheduled personal plan changes", () => {
     await expect(
       undoScheduledPersonalChange({
         stripe: {
-          subscriptionSchedules: {
+          subscriptionSchedules: scheduledGateway({
             retrieve: jest.fn(async () => ({
               customer: "cus_personal",
               subscription: "sub_personal",
               metadata: { purpose: "other" },
             })),
             release,
-          },
+          }),
         },
         subscription: { ...subscription, schedule: "sub_sched_other" },
         customerId: "cus_personal",
