@@ -57,6 +57,9 @@ export const BOARD_FINDABLE_ITEM_KEYS = [
   "project",
   "fc_set",
   "scope",
+  "meeting",
+  "workflow-run",
+  "study-kit",
 ] as const;
 
 /** Most entries one `board_add_items` call places. */
@@ -142,7 +145,7 @@ export const BOARD_CLIENT_TOOLS: SurfaceClientTool[] = [
     name: "board_find_records",
     label: "Find records",
     description:
-      "Finds the person's own records by name across every organization they belong to — notes, files, chats, documents, tables, picklists, tasks, War Rooms, research topics, projects, flashcard decks, scopes — so you can put them on the board. Returns candidates `{type, id, title, updated_at, snippet?}`; pass `type` and `id` straight to board_add_items. Trashed and archived records are left out. Matches names (titles), not body text: search the topic's distinctive words (\"Harborview\", not \"move\"), and try a second wording if the first finds little. knowledge_search finds by content too; its note, file, task, project and conversation ids work in board_add_items as well (a conversation is type `chat`). For a topic: find, add the relevant ones (leave out what is not about the topic), then board_group them in a frame named for the topic.",
+      "Finds the person's own records by name across every organization they belong to — notes, files, chats, documents, tables, picklists, tasks, War Rooms, research topics, projects, flashcard decks, scopes, meetings, workflow runs, study kits — so you can put them on the board. Data records and meeting notes cannot be searched (the person brings those in from the Add menu, or you place one by id). Returns candidates `{type, id, title, updated_at, snippet?}`; pass `type` and `id` straight to board_add_items. Trashed and archived records are left out. Matches names (titles), not body text: search the topic's distinctive words (\"Harborview\", not \"move\"), and try a second wording if the first finds little. knowledge_search finds by content too; its note, file, task, project and conversation ids work in board_add_items as well (a conversation is type `chat`). For a topic: find, add the relevant ones (leave out what is not about the topic), then board_group them in a frame named for the topic.",
     inputSchema: {
       type: "object",
       properties: {

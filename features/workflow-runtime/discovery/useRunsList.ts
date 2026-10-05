@@ -16,16 +16,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { callApi } from "@/lib/api/call-api";
 
-import { applyAnnouncement, parseRunListRows, type RunListRow } from "./runs";
+import { fetchRuns } from "./fetchRuns";
+import { applyAnnouncement, type RunListRow } from "./runs";
 import { useRunAnnouncements } from "./useRunAnnouncements";
-
-/**
- * One page, bounded. These lists are a screen a person reads, not an export;
- * the server caps `/runs` at 500 and this asks for a page well inside it.
- */
-const PAGE_SIZE = 100;
 
 export interface RunsListState {
   rows: RunListRow[];
@@ -57,31 +51,13 @@ export function useRunsList({ definitionId }: UseRunsListOptions = {}): RunsList
   useEffect(() => {
     let live = true;
     void (async () => {
-      const result = definitionId
-        ? await dispatch(
-            callApi({
-              path: "/workflows/{definition_id}/runs",
-              method: "GET",
-              pathParams: { definition_id: definitionId },
-              queryParams: { limit: PAGE_SIZE },
-            }),
-          )
-        : await dispatch(
-            callApi({
-              path: "/runs",
-              method: "GET",
-              // Child runs are listed too: a fan-out item that failed is a run
-              // somebody has to be able to find, and hiding it here would make
-              // this list quietly incomplete.
-              queryParams: { limit: PAGE_SIZE, include_children: true },
-            }),
-          );
+      const result = await fetchRuns(dispatch, definitionId);
       if (!live) return;
-      if (result.error) {
-        setError(result.error.message || "Could not load runs.");
+      if (!result.ok) {
+        setError(result.message);
       } else {
         setError(null);
-        setRows(parseRunListRows(result.data));
+        setRows(result.rows);
       }
       setLoading(false);
     })();

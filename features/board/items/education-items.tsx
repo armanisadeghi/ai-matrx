@@ -32,6 +32,7 @@ import { EDUCATION_KITS_SURFACE_NAME } from "@/features/surfaces/manifests/educa
 import { entityComments, type BoardItemType, type ItemBodyProps, type PickerProps } from "./types";
 import { RecordList } from "./feature-items";
 import { titleToAdopt } from "./feature-items.logic";
+import { findKits } from "./record-finders";
 import {
   FLASHCARD_ITEM_KEY,
   KIT_ITEM_KEY,
@@ -232,6 +233,14 @@ export const EDUCATION_ITEMS: readonly BoardItemType[] = [
     Body: KitBody,
     startNew: { label: "New study kit", create: () => ({ title: "New study kit", source: kitSource(null, null) }) },
     bringIn: { label: "Study kit", Picker: KitPicker },
+    // Not in the search projection: the kit picker's own list, matched on the name.
+    record: {
+      place: (id, title) => {
+        const [sourceType, sourceId] = id.includes(":") ? (id.split(":", 2) as [string, string]) : ["file", id];
+        return { title: title?.trim() || "Study kit", source: kitSource(sourceType, sourceId) };
+      },
+      find: (query, limit) => findKits(KIT_ITEM_KEY, query, limit, listKits),
+    },
     href: (s) => {
       const kit = kitFromSource(s);
       return kit ? kitHref(kit.sourceType, kit.sourceId) : null;

@@ -196,3 +196,47 @@ describe("board_find_records — a topic across the person's records", () => {
     expect(out.unsearched).toEqual([{ types: ["note"], why: "projection down" }]);
   });
 });
+
+describe("board_find_records — meetings, workflow runs and study kits (no search projection: their pickers' own lists)", () => {
+  it("each is findable and the tool names what stays unsearchable", () => {
+    expect([...BOARD_FINDABLE_ITEM_KEYS]).toEqual(expect.arrayContaining(["meeting", "workflow-run", "study-kit"]));
+    const find = BOARD_CLIENT_TOOLS.find((t) => t.name === "board_find_records")!;
+    expect(find.description).toMatch(/meetings, workflow runs, study kits/);
+    expect(find.description).toMatch(/data records .*cannot be searched/i);
+  });
+
+  it("names match, archived meetings are left out, kit ids carry their anchor type, and a failing list is named", async () => {
+    const { findMeetings, findWorkflowRuns, findKits } = jest.requireActual("../items/record-finders");
+    const meet = (id: string, title: string, deletedAt: string | null) => ({ id, title, deletedAt, scheduledFor: "2026-10-05T10:00:00Z", startedAt: null, endedAt: null });
+    const meetings = await findMeetings("meeting", "board review", 10, async () => ({
+      meetings: [meet("m1", "Board review Q4", null), meet("m2", "Board review old", "2026-09-01T00:00:00Z"), meet("m3", "Standup", null)],
+    }));
+    expect(meetings.map((m: { id: string }) => m.id)).toEqual(["m1"]);
+
+    const runs = await findWorkflowRuns(
+      "workflow-run",
+      "invoice",
+      10,
+      async () => ({ ok: true, rows: [
+        { runId: "r1", definitionId: "d1", status: "completed", startedAt: "2026-10-04T10:00:00Z" },
+        { runId: "r2", definitionId: "d2", status: "failed", startedAt: "2026-10-03T10:00:00Z" },
+      ] }),
+      async () => new Map([["d1", { name: "Invoice intake" }], ["d2", { name: "Weekly digest" }]]),
+    );
+    expect(runs.map((r: { id: string }) => r.id)).toEqual(["r1"]);
+
+    const kits = await findKits("study-kit", "biology", 10, async () => [
+      { sourceType: "file", sourceId: "f1", title: "Biology ch 3", artifacts: [{}, {}], createdAt: "2026-10-01T00:00:00Z" },
+      { sourceType: "udt_document", sourceId: "d9", title: "Biology notes", artifacts: [{}], createdAt: "2026-10-02T00:00:00Z" },
+      { sourceType: "file", sourceId: "f2", title: "History", artifacts: [{}], createdAt: "2026-10-02T00:00:00Z" },
+    ]);
+    expect(kits.map((k: { id: string }) => k.id)).toEqual(["udt_document:d9", "f1"]);
+    await expect(findKits("study-kit", "x", 5, async () => { throw new Error("down"); })).rejects.toThrow("down");
+  });
+
+  it("a kit id placed by an agent opens the same source the picker places", () => {
+    const kit = itemTypeFor({ kind: "entity", entity: "study-kit", id: "f1" })!;
+    expect(kit.record!.place("f1").source).toEqual({ kind: "entity", entity: "study-kit", id: "f1" });
+    expect(kit.record!.place("udt_document:d9").source).toEqual({ kind: "entity", entity: "study-kit", id: "d9", meta: { from: "udt_document" } });
+  });
+});

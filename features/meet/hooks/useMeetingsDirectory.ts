@@ -51,6 +51,65 @@ export interface MeetingsDirectory {
   reload(): void;
 }
 
+/**
+ * The reader's own meetings (hosting or invited), newest first, with their role on each. The
+ * one read the directory hook and the board's agent finder share; no organization is passed.
+ */
+export async function readMyMeetings(
+  repository: ReturnType<typeof createMeetRepository>,
+  userId: string,
+): Promise<{ meetings: MeetingRecord[]; roles: Map<string, "host" | "cohost" | "invitee"> }> {
+  const db = supabase.schema("communication");
+  const [hosting, invitedRows] = await Promise.all([
+    db
+      .from("meet_meetings")
+      .select(MEETING_COLUMNS)
+      .eq("host_user_id", userId)
+      .order("scheduled_for", { ascending: false, nullsFirst: true })
+      .limit(MEETINGS_LIMIT),
+    db
+      .from("meet_invitees")
+      .select("meeting_id,role")
+      .eq("invitee_user_id", userId)
+      .is("deleted_at", null)
+      .limit(MEETINGS_LIMIT),
+  ]);
+  if (hosting.error) throw new Error(hosting.error.message);
+  if (invitedRows.error) throw new Error(invitedRows.error.message);
+
+  const roles = new Map<string, "host" | "cohost" | "invitee">();
+  for (const row of invitedRows.data ?? []) {
+    roles.set(row.meeting_id, row.role === "cohost" ? "cohost" : "invitee");
+  }
+  const invitedIds = [...roles.keys()];
+  let invited: Record<string, unknown>[] = [];
+  if (invitedIds.length > 0) {
+    const response = await db
+      .from("meet_meetings")
+      .select(MEETING_COLUMNS)
+      .in("id", invitedIds);
+    if (response.error) throw new Error(response.error.message);
+    invited = (response.data ?? []) as unknown as Record<string, unknown>[];
+  }
+  const hostingRows = (hosting.data ?? []) as unknown as Record<
+    string,
+    unknown
+  >[];
+  for (const row of hostingRows) roles.set(String(row.id), "host");
+
+  const byId = new Map<string, MeetingRecord>();
+  for (const row of [...hostingRows, ...invited]) {
+    const meeting = repository.projectMeeting(row);
+    byId.set(meeting.id, meeting);
+  }
+  const meetings = [...byId.values()].sort(
+    (a, b) =>
+      new Date(b.scheduledFor ?? b.startedAt ?? 0).getTime() -
+      new Date(a.scheduledFor ?? a.startedAt ?? 0).getTime(),
+  );
+  return { meetings, roles };
+}
+
 export function useMeetingsDirectory(): MeetingsDirectory {
   const host = useMeetHost();
   // READING needs no organization — access is personal, never the active org.
@@ -87,60 +146,16 @@ export function useMeetingsDirectory(): MeetingsDirectory {
     ).toISOString();
 
     const load = async () => {
-      const db = supabase.schema("communication");
-      const [occurrences, hosting, invitedRows] = await Promise.all([
+      const [occurrences, mine] = await Promise.all([
         repository.occurrencesBetween({
           from,
           to,
           organizationId: null,
           limit: 1000,
         }),
-        db
-          .from("meet_meetings")
-          .select(MEETING_COLUMNS)
-          .eq("host_user_id", userId)
-          .order("scheduled_for", { ascending: false, nullsFirst: true })
-          .limit(MEETINGS_LIMIT),
-        db
-          .from("meet_invitees")
-          .select("meeting_id,role")
-          .eq("invitee_user_id", userId)
-          .is("deleted_at", null)
-          .limit(MEETINGS_LIMIT),
+        readMyMeetings(repository, userId),
       ]);
-      if (hosting.error) throw new Error(hosting.error.message);
-      if (invitedRows.error) throw new Error(invitedRows.error.message);
-
-      const roles = new Map<string, "host" | "cohost" | "invitee">();
-      for (const row of invitedRows.data ?? []) {
-        roles.set(row.meeting_id, row.role === "cohost" ? "cohost" : "invitee");
-      }
-      const invitedIds = [...roles.keys()];
-      let invited: Record<string, unknown>[] = [];
-      if (invitedIds.length > 0) {
-        const response = await db
-          .from("meet_meetings")
-          .select(MEETING_COLUMNS)
-          .in("id", invitedIds);
-        if (response.error) throw new Error(response.error.message);
-        invited = (response.data ?? []) as unknown as Record<string, unknown>[];
-      }
-      const hostingRows = (hosting.data ?? []) as unknown as Record<
-        string,
-        unknown
-      >[];
-      for (const row of hostingRows) roles.set(String(row.id), "host");
-
-      const byId = new Map<string, MeetingRecord>();
-      for (const row of [...hostingRows, ...invited]) {
-        const meeting = repository.projectMeeting(row);
-        byId.set(meeting.id, meeting);
-      }
-      const meetings = [...byId.values()].sort(
-        (a, b) =>
-          new Date(b.scheduledFor ?? b.startedAt ?? 0).getTime() -
-          new Date(a.scheduledFor ?? a.startedAt ?? 0).getTime(),
-      );
+      const { meetings, roles } = mine;
       return { occurrences, meetings, roles };
     };
 

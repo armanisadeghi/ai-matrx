@@ -53,7 +53,14 @@ import { roomColorOf, roomIconOf } from "@/features/war-room/components/room/roo
 import type { WarRoomSession } from "@/features/war-room/types";
 import { useWarRoomView } from "@/features/war-room/hooks/useWarRoomView";
 // Meeting
-import { useMeetingsDirectory } from "@/features/meet/hooks/useMeetingsDirectory";
+import { readMyMeetings, useMeetingsDirectory } from "@/features/meet/hooks/useMeetingsDirectory";
+import { createMeetRepository } from "@ai-matrx/meet/react";
+import { supabase } from "@/utils/supabase/client";
+import { getStore } from "@/lib/redux/store-singleton";
+import type { AppDispatch } from "@/lib/redux/store";
+import { fetchRuns } from "@/features/workflow-runtime/discovery/fetchRuns";
+import { fetchWorkflowFacts } from "@/features/workflow-runtime/discovery/service";
+import { findMeetings, findWorkflowRuns } from "./record-finders";
 import { MeetingHomeAndRoom } from "@/features/meet/components/MeetingHomeAndRoom";
 import { useMeetingLive } from "@/features/meet/hooks/useMeetingLive";
 import { useBoardCameraStore } from "../engine/react";
@@ -1054,8 +1061,16 @@ export const FEATURE_ITEMS: BoardItemType[] = [
     Keep: MeetingKeep,
     startNew: { label: "New meeting", Dialog: MeetingCreateDialog },
     bringIn: { label: "Meeting", Picker: MeetingPicker },
-    // Not in the search projection and no finder yet: an agent places one by id.
-    record: { place: existing(FEATURE_ENTITY.meeting, "Meeting") },
+    // Not in the search projection: the meeting picker's own read (hosted or invited, every organization).
+    record: {
+      place: existing(FEATURE_ENTITY.meeting, "Meeting"),
+      find: (query, limit) =>
+        findMeetings(FEATURE_ENTITY.meeting, query, limit, async () => {
+          const { data } = await supabase.auth.getUser();
+          if (!data.user) throw new Error("You are not signed in.");
+          return readMyMeetings(createMeetRepository({ client: supabase }), data.user.id);
+        }),
+    },
     // The meeting's home (before, during, after); "Join" in the tile enters the room.
     href: hrefFor(FEATURE_ENTITY.meeting, (id) => `/meetings/${encodeURIComponent(id)}`),
     kindLabel: "meeting",
@@ -1076,7 +1091,15 @@ export const FEATURE_ITEMS: BoardItemType[] = [
     Keep: WorkflowRunKeep,
     startNew: { label: "Run a workflow", Picker: WorkflowRunStartPicker },
     bringIn: { label: "Workflow run", Picker: WorkflowRunPicker },
-    record: { place: existing(FEATURE_ENTITY.workflowRun, "Workflow run") },
+    // Not in the search projection: the run picker's own list (`GET /runs`, every organization), named by workflow.
+    record: {
+      place: existing(FEATURE_ENTITY.workflowRun, "Workflow run"),
+      find: (query, limit) => {
+        const store = getStore();
+        if (!store) return Promise.reject(new Error("The app is still starting."));
+        return findWorkflowRuns(FEATURE_ENTITY.workflowRun, query, limit, () => fetchRuns(store.dispatch as AppDispatch), fetchWorkflowFacts);
+      },
+    },
     href: hrefFor(FEATURE_ENTITY.workflowRun, runHref),
     kindLabel: "workflow run",
     // Checked 2026-10-02: hide/show and remove+undo reattach the same adoption, never re-read the

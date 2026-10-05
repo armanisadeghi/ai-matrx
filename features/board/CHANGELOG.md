@@ -1,5 +1,10 @@
 # CHANGELOG — Board (`features/board`)
 
+## 2026-10-04 — `board_find_records` finds meetings, workflow runs and study kits
+
+- Gap: topic-gathering missed these three (not in `platform.search_items`). Each type now has `record.find` over its bring-in picker's own list, every organization, never the active one: meetings (`readMyMeetings`, extracted from `useMeetingsDirectory` so hook and finder share one read; archived left out), workflow runs (`fetchRuns`, extracted from `useRunsList`; names from `fetchWorkflowFacts`), study kits (`listKits`; `record.place` added, non-file kit id = `<sourceType>:<anchorId>`). Data records and meeting notes remain unsearchable; the tool description says so.
+- Guard: `board-add-items.test.tsx` (enum + description, name match, archived meeting out, kit ids and place, failing list named); red before the finders existed.
+
 ## 2026-10-04 — The Board's agent puts the person's real records on the board, and gathers a topic
 
 - Owner: "I should be able to tell the agent that I'm working on a topic and then tell it to get all of my notes, files, chat … about that topic on the board." New tools `board_add_items` (existing records by `{type, id}` or new ones by `{type, new: true}`, batch, one undo step, per-entry `added` / `already_on_board` / `duplicate` / `needs_person` / `refused`) and `board_find_records` (topic → `{type, id, title, updated_at, snippet}` across every organization). Manifest intro teaches find → add → group.
