@@ -63,15 +63,38 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 /** The sandbox document. Same origin; the `sandbox` attribute opaques it. */
 export const KIND_SANDBOX_ROUTE = "/kind-sandbox";
 
+/** The frame URL for one attempt — a retry is always a new request. */
+export function sandboxFrameSrc(attempt: number): string {
+    return attempt > 0 ? `${KIND_SANDBOX_ROUTE}?attempt=${attempt}` : KIND_SANDBOX_ROUTE;
+}
+
 /** What an un-measured frame occupies until it reports its own height. */
 const INITIAL_HEIGHT = 320;
 
 /**
- * A frame that has said nothing this long after mount never loaded (a blocked
- * subframe, a failed bundle): the reader is told, with a retry — never a blank
- * box that looks like an empty result.
+ * A frame whose document LOADED but that has said nothing this long never
+ * started (a failed bundle, a lost handshake): the reader is told, with a retry
+ * — never a blank box that looks like an empty result. Counted from the frame's
+ * `load`, not from mount: a frame mounted in a hidden tab, or behind a cold dev
+ * compile, has not had a chance to speak yet, and saying it "did not load" then
+ * is a false sentence. A late answer clears the notice.
  */
 const SILENT_FRAME_MS = 8_000;
+
+/** A frame whose document never even loaded (a blocked subframe) is reported after this, from mount. */
+const NEVER_LOADED_MS = 30_000;
+
+/**
+ * THE HANDSHAKE IS RETRIED, NEVER ASSUMED. `init` is posted on the frame's
+ * `load`; if that one message is lost (the frame's listener raced its own
+ * bundle, the load fired before this component could post), nothing ever asks
+ * again and a live frame sits silent forever. So until the frame answers, init
+ * is re-posted on a fresh channel this often, this many times. Every channel
+ * stays open until the frame answers on one, which is then adopted and the
+ * rest closed — a slow answer on the FIRST channel is never orphaned by a retry.
+ */
+const INIT_RETRY_MS = 1_000;
+const INIT_RETRIES = 6;
 
 /**
  * THE FRAME'S ACCESSIBLE NAME (S3). An iframe with no name is announced as
@@ -264,16 +287,35 @@ export const KindSandboxFrame: React.FC<KindSandboxFrameProps> = ({
     const answered = React.useRef<Set<string>>(new Set());
     const inFlight = React.useRef<Set<string>>(new Set());
     const [height, setHeight] = React.useState(INITIAL_HEIGHT);
-    // Did the frame ever speak? Until it does, after SILENT_FRAME_MS, say so.
+    // Did the frame ever speak? Until it does, say so — SILENT_FRAME_MS after
+    // its document loaded, or NEVER_LOADED_MS after mount if it never loaded.
     const [heard, setHeard] = React.useState(false);
+    const heardRef = React.useRef(false);
+    const [loaded, setLoaded] = React.useState(false);
     const [silent, setSilent] = React.useState(false);
     const [frameAttempt, setFrameAttempt] = React.useState(0);
     React.useEffect(() => {
         if (heard) return;
         setSilent(false);
-        const timer = window.setTimeout(() => setSilent(true), SILENT_FRAME_MS);
+        const timer = window.setTimeout(
+            () => setSilent(true),
+            loaded ? SILENT_FRAME_MS : NEVER_LOADED_MS,
+        );
         return () => window.clearTimeout(timer);
-    }, [heard, frameAttempt]);
+    }, [heard, loaded, frameAttempt]);
+    /** Channels offered to the frame and not yet answered on (see INIT_RETRY_MS). */
+    const offeredPorts = React.useRef<MessagePort[]>([]);
+    const initRetryTimer = React.useRef<number | null>(null);
+    function stopHandshake(keep: MessagePort | null): void {
+        if (initRetryTimer.current !== null) {
+            window.clearInterval(initRetryTimer.current);
+            initRetryTimer.current = null;
+        }
+        for (const offered of offeredPorts.current) {
+            if (offered !== keep) offered.close();
+        }
+        offeredPorts.current = [];
+    }
     const [contentHeight, setContentHeight] = React.useState(INITIAL_HEIGHT);
     const [expanded, setExpanded] = React.useState(false);
     const [oversize, setOversize] = React.useState<string | null>(null);
@@ -297,6 +339,11 @@ export const KindSandboxFrame: React.FC<KindSandboxFrameProps> = ({
         config,
         uiOptions: uiOptions ?? null,
     };
+
+    const latestProps = React.useRef(props);
+    React.useLayoutEffect(() => {
+        latestProps.current = props;
+    });
 
     // The port handler outlives any one render, so it reads the CURRENT props
     // and callbacks through this ref instead of re-subscribing.
@@ -340,6 +387,13 @@ export const KindSandboxFrame: React.FC<KindSandboxFrameProps> = ({
     }
 
     function onPortMessage(event: MessageEvent): void {
+        // ANY message on this private channel proves the frame is alive and
+        // talking — even one the protocol check below refuses (that refusal is
+        // said out loud on its own). A live frame must never read as "did not load".
+        if (!heardRef.current) {
+            heardRef.current = true;
+            setHeard(true);
+        }
         const checked = checkFrameMessage(
             event.data,
             instanceId,
@@ -350,7 +404,6 @@ export const KindSandboxFrame: React.FC<KindSandboxFrameProps> = ({
             return;
         }
         const message = checked.message;
-        setHeard(true);
         switch (message.type) {
             case "matrx:sandbox:ready":
                 break;
@@ -488,14 +541,49 @@ export const KindSandboxFrame: React.FC<KindSandboxFrameProps> = ({
         const frame = frameRef.current;
         if (!frame?.contentWindow || !payload) return;
 
+        // A load is a NEW frame document: every channel to the old one is dead.
+        stopHandshake(null);
         portRef.current?.close();
+        portRef.current = null;
         answered.current.clear();
         inFlight.current.clear();
+        heardRef.current = false;
+        setHeard(false);
+        setLoaded(true);
 
+        offerInit();
+        let retries = 0;
+        initRetryTimer.current = window.setInterval(() => {
+            retries += 1;
+            if (heardRef.current || retries > INIT_RETRIES) {
+                if (initRetryTimer.current !== null) window.clearInterval(initRetryTimer.current);
+                initRetryTimer.current = null;
+                return;
+            }
+            offerInit();
+        }, INIT_RETRY_MS);
+    }
+
+    /** Offer the frame one init on a fresh channel; the first channel it answers on is adopted. */
+    function offerInit(): void {
+        const frame = frameRef.current;
+        if (!frame?.contentWindow || !payload) return;
         const channel = new MessageChannel();
-        portRef.current = channel.port1;
-        channel.port1.onmessage = onPortMessage;
-        channel.port1.start();
+        const port = channel.port1;
+        offeredPorts.current.push(port);
+        port.onmessage = (event: MessageEvent) => {
+            if (portRef.current !== port) {
+                portRef.current = port;
+                stopHandshake(port);
+                port.onmessage = onPortMessage;
+                // A props change sent while the handshake was open may have gone
+                // down a channel the frame did not adopt; resend the current ones.
+                post({ type: "matrx:sandbox:props", instanceId, props: latestProps.current });
+            }
+            onPortMessage(event);
+        };
+        port.start();
+        if (!portRef.current) portRef.current = port;
 
         frame.contentWindow.postMessage(
             {
@@ -562,6 +650,7 @@ export const KindSandboxFrame: React.FC<KindSandboxFrameProps> = ({
     /** Tell the frame to tear its React root down, then close the channel. */
     React.useEffect(() => {
         return () => {
+            stopHandshake(portRef.current);
             const port = portRef.current;
             if (!port) return;
             try {
@@ -617,7 +706,9 @@ export const KindSandboxFrame: React.FC<KindSandboxFrameProps> = ({
                 <iframe
                     key={frameAttempt}
                     ref={frameRef}
-                    src={KIND_SANDBOX_ROUTE}
+                    // A retry is a fresh navigation, never a reused document:
+                    // the attempt rides the URL so it is a new request.
+                    src={sandboxFrameSrc(frameAttempt)}
                     // NEVER allow-same-origin: with it the frame could script this
                     // page and read the signed-in session.
                     sandbox="allow-scripts"
@@ -664,7 +755,15 @@ export const KindSandboxFrame: React.FC<KindSandboxFrameProps> = ({
                     actions={
                         <button
                             type="button"
-                            onClick={() => setFrameAttempt((n) => n + 1)}
+                            onClick={() => {
+                                stopHandshake(null);
+                                portRef.current?.close();
+                                portRef.current = null;
+                                heardRef.current = false;
+                                setHeard(false);
+                                setLoaded(false);
+                                setFrameAttempt((n) => n + 1);
+                            }}
                             className="rounded-md border border-border px-2 py-1 font-medium text-foreground hover:bg-accent"
                         >
                             Try again

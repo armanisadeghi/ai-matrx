@@ -33,6 +33,7 @@ import {
     invalidateKindSandboxTransforms,
     kindSandboxRefusals,
     resetKindSandboxRefusals,
+    sandboxFrameSrc,
 } from "@/features/content-ir/react/db-component/KindSandboxFrame";
 import {
     deliverInit,
@@ -222,6 +223,46 @@ async function stand(
 function refusalText(): string {
     return [...kindSandboxRefusals().keys()].join(" | ");
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+describe("a lost init is offered again, and the answered channel is adopted", () => {
+    // The live Fact Check repro (2026-10-05): the Claims tab's frame loaded, its
+    // one init was never adopted, and nothing ever asked again — a live frame
+    // showed "This view did not load" forever. The host now re-offers init on a
+    // fresh channel until the frame answers.
+    it("re-posts init while the frame is silent, and talks on the channel the frame answered", async () => {
+        const h = await stand({ connect: false });
+        expect(h.posted).toHaveLength(1);
+        await act(async () => {
+            await new Promise((resolve) => setTimeout(resolve, 1_300));
+        });
+        // The first init was LOST (never delivered); a second one was offered.
+        expect(h.posted.length).toBeGreaterThanOrEqual(2);
+        await act(async () => {
+            deliverInit(h.posted[1]);
+            await settle();
+        });
+        expect(h.record.calls).toBe(1);
+        // The host now speaks on the adopted channel: a props change reaches the frame.
+        await h.rerender({ title: "after the retry" });
+        expect(
+            h.record.props.some((p) => (p.data as { title?: string })?.title === "after the retry"),
+        ).toBe(true);
+        // And the offers stop once the frame has answered.
+        const offered = h.posted.length;
+        await act(async () => {
+            await new Promise((resolve) => setTimeout(resolve, 1_300));
+        });
+        expect(h.posted).toHaveLength(offered);
+        expect(h.hostEl.textContent ?? "").not.toContain("did not load");
+    });
+
+    it("a Try again is a fresh navigation: each attempt has its own frame URL", () => {
+        expect(sandboxFrameSrc(0)).toBe("/kind-sandbox");
+        expect(sandboxFrameSrc(1)).toBe("/kind-sandbox?attempt=1");
+        expect(sandboxFrameSrc(2)).not.toBe(sandboxFrameSrc(1));
+    });
+});
 
 // ─────────────────────────────────────────────────────────────────────────────
 describe("the handshake: one init, one port, adopted once", () => {
