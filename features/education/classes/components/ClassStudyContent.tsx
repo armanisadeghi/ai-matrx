@@ -34,8 +34,15 @@ import { toast } from "@/lib/toast";
 import { cn } from "@/utils/cn";
 import type { StudyClass, ClassContentItem } from "../types";
 import type { UseClassContentReturn } from "../hooks/useClassContent";
-import { useClassParts } from "../hooks/useClassParts";
-import { itemKey, sourceFilingTargets, type ClassPart } from "../classParts";
+import {
+  useClassParts,
+  type UseClassPartsReturn,
+} from "../hooks/useClassParts";
+import {
+  groupsInPart,
+  sourceFilingTargets,
+  type ClassPart,
+} from "../classParts";
 import {
   keepSource,
   sourceRefusalSentence,
@@ -56,8 +63,6 @@ export function ClassStudyContent({
   cls: StudyClass;
   content: UseClassContentReturn;
 }) {
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
   const parts = useClassParts(cls, content);
 
   const [sourcesOpen, setSourcesOpen] = useState(false);
@@ -65,32 +70,13 @@ export function ClassStudyContent({
   const [namingPart, setNamingPart] = useState<"new" | ClassPart | null>(null);
   const [naming, setNaming] = useState(false);
 
-  const wantedPartId = searchParams.get(PART_PARAM);
-  const selected = parts.parts.find((p) => p.id === wantedPartId) ?? null;
-
-  function selectPart(partId: string | null) {
-    // Query state only — never a navigation (no `?_rsc=` round trip, no remount).
-    const next = new URLSearchParams(searchParams.toString());
-    if (partId) next.set(PART_PARAM, partId);
-    else next.delete(PART_PARAM);
-    const query = next.toString();
-    replaceAddressWithoutNavigating(query ? `${pathname}?${query}` : pathname);
-  }
+  const { selected, selectPart } = useSelectedClassPart(parts.parts);
 
   const target = selected ?? { id: cls.id, name: cls.name };
   const selectedKeys = selected
     ? (parts.membership.get(selected.id) ?? new Set<string>())
     : null;
-  const groups = selectedKeys
-    ? content.groups
-        .map((g) => ({
-          ...g,
-          items: g.items.filter((i) =>
-            selectedKeys.has(itemKey(i.token, i.entityId)),
-          ),
-        }))
-        .filter((g) => g.items.length > 0)
-    : content.groups;
+  const groups = groupsInPart(content.groups, selectedKeys);
   const shownCount = groups.reduce((n, g) => n + g.items.length, 0);
 
   /** File one item under the class, and under the selected part when there is one. */
@@ -247,30 +233,11 @@ export function ClassStudyContent({
 
       {/* Parts: All · Unit 1 · Unit 2 · + Unit */}
       <div className="flex items-center gap-1.5">
-        <div
-          className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto pb-0.5"
-          role="tablist"
-          aria-label={parts.nounPlural}
-        >
-          <PartChip
-            label="All"
-            active={!selected}
-            onClick={() => selectPart(null)}
-          />
-          {parts.parts.map((p) => (
-            <PartChip
-              key={p.id}
-              label={p.name}
-              count={
-                parts.membershipError
-                  ? undefined
-                  : parts.membership.get(p.id)?.size
-              }
-              active={selected?.id === p.id}
-              onClick={() => selectPart(p.id)}
-            />
-          ))}
-        </div>
+        <ClassPartChips
+          parts={parts}
+          selectedId={selected?.id ?? null}
+          onSelect={selectPart}
+        />
         <Button
           size="sm"
           variant="ghost"
@@ -425,6 +392,71 @@ export function ClassStudyContent({
         onConfirm={(name) => savePartName(name)}
       />
     </section>
+  );
+}
+
+/**
+ * Which part the URL selects (`?unit=<id>`) and how to select another. Query
+ * state only — never a navigation (no `?_rsc=` round trip, no remount).
+ */
+export function useSelectedClassPart(parts: readonly ClassPart[]): {
+  selected: ClassPart | null;
+  selectPart: (partId: string | null) => void;
+} {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const wantedPartId = searchParams.get(PART_PARAM);
+  const selected = parts.find((p) => p.id === wantedPartId) ?? null;
+
+  function selectPart(partId: string | null) {
+    const next = new URLSearchParams(searchParams.toString());
+    if (partId) next.set(PART_PARAM, partId);
+    else next.delete(PART_PARAM);
+    const query = next.toString();
+    replaceAddressWithoutNavigating(query ? `${pathname}?${query}` : pathname);
+  }
+
+  return { selected, selectPart };
+}
+
+/** The part filter row: All · Unit 1 · Unit 2 … (owner and member hubs). */
+export function ClassPartChips({
+  parts,
+  selectedId,
+  onSelect,
+}: {
+  parts: Pick<
+    UseClassPartsReturn,
+    "parts" | "nounPlural" | "membership" | "membershipError"
+  >;
+  selectedId: string | null;
+  onSelect: (partId: string | null) => void;
+}) {
+  return (
+    <div
+      className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto pb-0.5"
+      role="tablist"
+      aria-label={parts.nounPlural}
+    >
+      <PartChip
+        label="All"
+        active={!selectedId}
+        onClick={() => onSelect(null)}
+      />
+      {parts.parts.map((p) => (
+        <PartChip
+          key={p.id}
+          label={p.name}
+          count={
+            parts.membershipError
+              ? undefined
+              : parts.membership.get(p.id)?.size
+          }
+          active={selectedId === p.id}
+          onClick={() => onSelect(p.id)}
+        />
+      ))}
+    </div>
   );
 }
 

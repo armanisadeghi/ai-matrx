@@ -167,3 +167,21 @@ export function sourceFilingTargets(
     signal: true,
   }));
 }
+
+/**
+ * The content groups a selected part (`?unit=<id>`) shows: only the items that
+ * part holds, empty groups dropped. No part selected (`partKeys` null) → every
+ * group unchanged. The owner hub and a member's view filter with the same rule.
+ */
+export function groupsInPart<
+  I extends { token: string; entityId: string },
+  G extends { items: readonly I[] },
+>(groups: readonly G[], partKeys: ReadonlySet<string> | null): G[] {
+  if (!partKeys) return [...groups];
+  return groups
+    .map((g) => ({
+      ...g,
+      items: g.items.filter((i) => partKeys.has(itemKey(i.token, i.entityId))),
+    }))
+    .filter((g) => g.items.length > 0);
+}

@@ -18,7 +18,7 @@ This is the "massive win" from the spec: a class hub is **not a new data model**
 | **Class metadata** (teacher, term, period, **exam dates**) | the scope's **`settings` JSONB** | Parsed/serialized in `settings.ts`. No columns, no table. |
 | **Content ↔ class** | a **`platform.associations`** edge `source=(token,id) → target=('scope', classId)` | The exact scope-tag edge. Written by `EntityScopeTagger` / the association picker; read as the class scope's INCOMING edges. |
 | **Hub aggregation** | `useContainerLinks({ containerType: 'scope', containerId })` + `useEntityTitles` | The same edge War Room / org-home cards read. Grouped + routed by `data/entityRoutes.ts`. |
-| **A part of a class** (unit, lesson, section) | a **scope** under the per-org **"Unit" scope type** (`slug='class-part'`, label renameable) + a `scope → scope` edge **role `part_of`** (part → class) | Data Doctrine R7: a tree is a self-relation, never `parent_scope_id` (dead, 0 rows). Registry rows `scope→scope` + its record-store twin `scope→record`, both `container_side='none'` (a part conveys no access). `classParts.ts` + `hooks/useClassParts.ts`. |
+| **A part of a class** (unit, lesson, section) | a **scope** under the per-org **"Unit" scope type** (`slug='class-part'`, label renameable) + a `scope → scope` edge **role `part_of`** (part → class) | Data Doctrine R7: a tree is a self-relation, never `parent_scope_id` (dead, 0 rows). Registry rows `scope→scope` + its record-store twin `scope→record`, both `container_side='target'` since 2026-10-05 (whoever can see the class sees its units and what is filed in them; editing stays with whoever can edit the class). `classParts.ts` + `hooks/useClassParts.ts`. |
 | **Content ↔ part** | a plain `content → part scope` edge, written BESIDE the `content → class` edge | So the class view always lists everything; a part is a filter (`?unit=<id>`). Removing from a part archives only that edge; removing from the class archives the class edge and every part edge for it (`assoc_remove` tombstones — archive, never destroy). |
 | **Access gating** | scope RLS + per-item `useAccess` | A non-owner resolves the class scope to nothing (RLS) → not-found; tagged items they can't access don't resolve. No bespoke gate. |
 | **Access mode** (open/closed/paid) | the scope's **`settings.access_mode`** | `open`/`closed`/`paid`. Read/written via `settings.ts` + the `edu_class_set_access` RPC. Missing → `closed` (private personal classes). |
@@ -152,6 +152,17 @@ These filled genuine open product questions. **Flagged for Arman** — reasonabl
 
 ## Change log
 
+- **2026-10-05 (members see units)** — Arman "units yes": anyone who can see a class sees its units
+  and what is filed in them; editing stays with whoever can edit the class. `MemberClassView` shows
+  the unit chips + `?unit=` filter read-only (`ClassPartChips`, `useSelectedClassPart` and
+  `groupsInPart` shared with the owner hub). Live DB: `scope→scope`/`scope→record` rules
+  `container_side='target'` + reachability refreshed for existing `part_of` edges;
+  `assoc_for_entity`/`assoc_for_targets` let an active class member read the class's and its units'
+  edges (`public._edu_scope_member_reads_edges`); record-store scopes resolve their organization in
+  `private.association_container_organization_id`, `platform.entity_organization_id`,
+  `public._library_entity_owner` (Add content had failed for every new class with "access-conveying
+  container has no organization"). Test: `__tests__/classParts.test.ts` (unit filter).
+
 - **2026-10-02 (keep adding + parts of a class)** — After a class exists the owner keeps adding to it
   and files things into its parts. `ClassStudyContent` replaces the hub's inline "Study content":
   **Add sources** (`AddClassSourcesDialog` — THE Source input, Use existing + Add new, no `attachTo`; filed on Add, see 2026-10-03)
@@ -167,8 +178,7 @@ These filled genuine open product questions. **Flagged for Arman** — reasonabl
   `__tests__/classParts.test.ts` (13). Verified on the clone preview as admin@admin.com, 1440 and
   375: two units created, a paste + web page + transcript + file added into Unit 1, a deck into
   Unit 2 via Add content, filed across units, taken out of a unit, removed from the class, renamed.
-  Known gap: members (students) do not see units yet — part scopes are not covered by the
-  class-membership read branch.
+  (Members now see units: 2026-10-05 entry.)
 - **2026-10-03 (Add sources files through the server door again)** — aidream `5d3458e7da` made
   scope endpoints resolve through the record store (the engine refused every scope after
   `b9cf9424d7`). "Add sources" files each picked Source (`processed_document`) through

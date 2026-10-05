@@ -8,6 +8,8 @@ import {
   attachableSourceRef,
   classContentLinks,
   classPartIds,
+  groupsInPart,
+  itemKey,
   partMembership,
   partScopeSlug,
   sortParts,
@@ -181,5 +183,38 @@ describe("where Add sources files a Source (the server door's attach_to)", () =>
 
   it("never names a display name as the edge label", () => {
     for (const t of sourceFilingTargets(CLASS, UNIT_2)) expect(t.label).toBeNull();
+  });
+});
+
+describe("what a selected unit shows (owner hub and a member's view alike)", () => {
+  const groups = [
+    {
+      group: "Notes",
+      items: [
+        { token: "note", entityId: DECK, title: "Cell membrane transport — study guide" },
+        { token: "note", entityId: WEB_PAGE, title: "Cellular respiration — three stages" },
+      ],
+    },
+    {
+      group: "Sources",
+      items: [{ token: "transcript", entityId: TRANSCRIPT, title: "Lecture 4" }],
+    },
+  ];
+
+  it("shows only the items the unit holds and drops groups it holds nothing in", () => {
+    const unit1 = new Set([itemKey("note", DECK)]);
+    const shown = groupsInPart(groups, unit1);
+    expect(shown.map((g) => g.group)).toEqual(["Notes"]);
+    expect(shown[0].items.map((i) => i.title)).toEqual([
+      "Cell membrane transport — study guide",
+    ]);
+  });
+
+  it("shows everything with no unit selected", () => {
+    expect(groupsInPart(groups, null)).toEqual(groups);
+  });
+
+  it("shows nothing for a unit that holds nothing", () => {
+    expect(groupsInPart(groups, new Set())).toEqual([]);
   });
 });

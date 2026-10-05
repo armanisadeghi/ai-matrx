@@ -63,7 +63,13 @@ import {
   type ClassHubView,
 } from "@/features/surfaces/manifests/education-class.manifest";
 import { ClassFormDialog, type ClassFormValue } from "./ClassFormDialog";
-import { ClassStudyContent } from "./ClassStudyContent";
+import {
+  ClassPartChips,
+  ClassStudyContent,
+  useSelectedClassPart,
+} from "./ClassStudyContent";
+import { useClassParts } from "../hooks/useClassParts";
+import { groupsInPart } from "../classParts";
 import { AccessModeBadge } from "./AccessModeBadge";
 import { ClassAccessPanel } from "./ClassAccessPanel";
 import { ClassRosterPanel } from "./ClassRosterPanel";
@@ -606,6 +612,21 @@ function MemberClassView({
   const roster = useClassRoster(state.classId, isActive);
   const assignments = useClassAssignments(state.classId, isActive);
   const myProgress = useMyClassProgress(state.classId, isActive);
+  // Units are read-only here: a member sees them and what is filed in each
+  // (anyone who can see the class sees its units); editing stays with the owner.
+  const parts = useClassParts(
+    { id: state.classId, organizationId: state.organizationId },
+    content,
+  );
+  const { selected: selectedPart, selectPart } = useSelectedClassPart(
+    parts.parts,
+  );
+  const shownGroups = groupsInPart(
+    content.groups,
+    selectedPart
+      ? (parts.membership.get(selectedPart.id) ?? new Set<string>())
+      : null,
+  );
 
   const getScope = () =>
     buildClassHubMemberScope({
@@ -682,7 +703,31 @@ function MemberClassView({
                 Nothing shared to this class yet.
               </p>
             ) : (
-              <ContentGroups content={content} />
+              <>
+                {parts.parts.length > 0 && (
+                  <ClassPartChips
+                    parts={parts}
+                    selectedId={selectedPart?.id ?? null}
+                    onSelect={selectPart}
+                  />
+                )}
+                {selectedPart && parts.membershipError ? (
+                  <ReadFailure
+                    error={parts.membershipError}
+                    what={`what ${selectedPart.name} holds`}
+                    onRetry={() => void parts.reloadMembership()}
+                    className="m-0"
+                  />
+                ) : selectedPart && parts.membershipLoading ? (
+                  <Skeleton className="h-12 w-full" />
+                ) : shownGroups.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    Nothing in {selectedPart?.name ?? "this class"} yet.
+                  </p>
+                ) : (
+                  <ContentGroups groups={shownGroups} />
+                )}
+              </>
             )}
           </section>
         </>
@@ -694,13 +739,13 @@ function MemberClassView({
 
 /** Shared content-group renderer for both the owner and member hubs. */
 function ContentGroups({
-  content,
+  groups,
 }: {
-  content: ReturnType<typeof useClassContent>;
+  groups: ReturnType<typeof useClassContent>["groups"];
 }) {
   return (
     <div className="space-y-4">
-      {content.groups.map((group) => (
+      {groups.map((group) => (
         <div key={group.group} className="space-y-1.5">
           <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
             {group.group}
