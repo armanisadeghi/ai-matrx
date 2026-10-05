@@ -24273,6 +24273,16 @@ export type Database = {
           node_outcome_payload: number
         }[]
       }
+      kind_instance_display_title: {
+        Args: {
+          p_created_at: string
+          p_data: Json
+          p_kind_label: string
+          p_title: string
+          p_title_key: string
+        }
+        Returns: string
+      }
       kind_instances_everywhere: {
         Args: {
           p_include_archived?: boolean
@@ -31605,6 +31615,73 @@ export type Database = {
           conveys_max: Database["public"]["Enums"]["permission_level"] | null
           item_id: string | null
           item_type: string | null
+        }
+        Relationships: []
+      }
+      context_scope_types: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          deleted_at: string | null
+          id: string | null
+          label_plural: string | null
+          label_singular: string | null
+          organization_id: string | null
+          slug: string | null
+          sort_order: number | null
+          updated_at: string | null
+          updated_by: string | null
+          version: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string | null
+          label_plural?: never
+          label_singular?: never
+          organization_id?: string | null
+          slug?: never
+          sort_order?: never
+          updated_at?: string | null
+          updated_by?: string | null
+          version?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string | null
+          label_plural?: never
+          label_singular?: never
+          organization_id?: string | null
+          slug?: never
+          sort_order?: never
+          updated_at?: string | null
+          updated_by?: string | null
+          version?: number | null
+        }
+        Relationships: []
+      }
+      context_scopes: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          deleted_at: string | null
+          id: string | null
+          name: string | null
+          organization_id: string | null
+          parent_scope_id: string | null
+          published_to_web: boolean | null
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          scope_type_id: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          slug: string | null
+          sort_order: number | null
+          updated_at: string | null
+          updated_by: string | null
+          version: number | null
         }
         Relationships: []
       }
@@ -84191,6 +84268,7 @@ export type Database = {
           client_read_only: boolean
           client_read_only_columns: string[] | null
           component_anon_read_via_public_parent: boolean
+          component_signed_in_read_via_public_parent: boolean
           confirmation_enabled: boolean
           content_role: string | null
           custom_fields_enabled: boolean
@@ -84259,6 +84337,7 @@ export type Database = {
           client_read_only?: boolean
           client_read_only_columns?: string[] | null
           component_anon_read_via_public_parent?: boolean
+          component_signed_in_read_via_public_parent?: boolean
           confirmation_enabled?: boolean
           content_role?: string | null
           custom_fields_enabled?: boolean
@@ -84331,6 +84410,7 @@ export type Database = {
           client_read_only?: boolean
           client_read_only_columns?: string[] | null
           component_anon_read_via_public_parent?: boolean
+          component_signed_in_read_via_public_parent?: boolean
           confirmation_enabled?: boolean
           content_role?: string | null
           custom_fields_enabled?: boolean
@@ -90501,6 +90581,13 @@ export type Database = {
       entity_organization_id: {
         Args: { p_id: string; p_token: string }
         Returns: string
+      }
+      entity_read_source: {
+        Args: { p_token: string }
+        Returns: {
+          schema_name: string
+          table_name: string
+        }[]
       }
       entity_row_access_attrs: {
         Args: { p_id: string; p_schema: string; p_table: string }

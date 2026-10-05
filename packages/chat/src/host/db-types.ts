@@ -18309,6 +18309,7 @@ export type ChatDatabase = {
           client_read_only: boolean
           client_read_only_columns: string[] | null
           component_anon_read_via_public_parent: boolean
+          component_signed_in_read_via_public_parent: boolean
           confirmation_enabled: boolean
           content_role: string | null
           custom_fields_enabled: boolean
@@ -18377,6 +18378,7 @@ export type ChatDatabase = {
           client_read_only?: boolean
           client_read_only_columns?: string[] | null
           component_anon_read_via_public_parent?: boolean
+          component_signed_in_read_via_public_parent?: boolean
           confirmation_enabled?: boolean
           content_role?: string | null
           custom_fields_enabled?: boolean
@@ -18449,6 +18451,7 @@ export type ChatDatabase = {
           client_read_only?: boolean
           client_read_only_columns?: string[] | null
           component_anon_read_via_public_parent?: boolean
+          component_signed_in_read_via_public_parent?: boolean
           confirmation_enabled?: boolean
           content_role?: string | null
           custom_fields_enabled?: boolean
@@ -24619,6 +24622,13 @@ export type ChatDatabase = {
       entity_organization_id: {
         Args: { p_id: string; p_token: string }
         Returns: string
+      }
+      entity_read_source: {
+        Args: { p_token: string }
+        Returns: {
+          schema_name: string
+          table_name: string
+        }[]
       }
       entity_row_access_attrs: {
         Args: { p_id: string; p_schema: string; p_table: string }
