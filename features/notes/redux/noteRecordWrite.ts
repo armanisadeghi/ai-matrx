@@ -25,6 +25,7 @@ import {
 import { toastNoteWriteBlocked, clearNoteWriteBlockedToast, reportNoteSaveFailure } from "../utils/writeErrors";
 import { noteEditBaseFromRecord } from "../utils/saveVerification";
 import type { Note, UpdateNoteInput } from "../types";
+import { NOTE_SAVE_FAILED_DRAFT_REASON, captureNoteDraftFor } from "../utils/notesDrafts";
 import type { NoteRecord, NoteUndoableField } from "./notes.types";
 import {
   upsertNoteFromServer,
@@ -85,6 +86,13 @@ function failNoteSave(
   message: string,
 ): void {
   dispatch(markNoteSaveError({ id: noteId, error: message }));
+  // The buffer may now be the only copy: keep it in the local draft store from
+  // the FIRST failure, so a reload or a closed tab never loses it.
+  try {
+    captureNoteDraftFor(noteId, NOTE_SAVE_FAILED_DRAFT_REASON);
+  } catch (error) {
+    console.error("[Notes] the unsaved draft could not be kept on this device:", error);
+  }
   toastNoteWriteBlocked(noteId, message);
   const record = (getState() as RootState).notes?.notes?.[noteId];
   reportNoteSaveFailure({

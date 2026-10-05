@@ -352,7 +352,8 @@ export async function materializeNote(input: Note): Promise<Note> {
       folder_id: input.folder_id,
       organization_id: organizationId,
       tags: input.tags,
-      metadata: input.metadata,
+      // NOT NULL with a '{}' default: an absent value is the default, never null.
+      metadata: input.metadata ?? {},
       position: input.position,
       shown_to: input.shown_to,
       published_to_web: input.published_to_web,

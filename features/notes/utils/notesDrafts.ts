@@ -26,6 +26,8 @@ export const NOTES_DRAFT_NAMESPACE = "note";
  * sentence the user reads; `deleteNote` is the only writer.
  */
 export const NOTE_DELETED_DRAFT_REASON = "note-deleted";
+/** A save the database refused: the buffer is kept from the first failure. */
+export const NOTE_SAVE_FAILED_DRAFT_REASON = "note-save-failed";
 
 type StateWithNotes = {
   notes?: NotesSliceState;
