@@ -40,6 +40,44 @@ anything below.
 - **Not this skill:** Claude Code subagents and `.claude/agents` files, or aidream's
   in-process code-runner lane (that lane is aidream's `matrx-agents` skill).
 
+## 🚨 THE SYSTEM-PROMPT LAW — the rule most often broken
+
+**Arman, 2026-08-22.** The system prompt carries the agent's core, static instructions —
+role, rules, definitions, output format, earned examples: the HOW. The specifics of THIS
+run — the ids, the object being worked on, the task: the WHAT — go in the **first user
+message**, as variables embedded in a natural human request, or in **context** (anything
+that can change during the conversation). The only legitimate system-prompt variable is a
+**behavior switch** (verbose/terse, strict/exploratory, audience) — never the task — and it
+sits LOW, after the core guidelines.
+
+The authored user message is one of the most important factors in our whole system: a
+real person asking for the result, never a bare `{{variable}}` and never a `key: value`
+dump. Models were trained on a static system prompt plus specific user turns; breaking that
+shape degrades every result, and a "current snapshot" interpolated into the system prompt is
+stale by message two.
+
+| ❌ Broken | ✅ Correct |
+|---|---|
+| System: "You are the chief editor. The document: `{{document}}`. Audit: `{{audit}}`." No user message. | System: "You are the chief editor. Correct the work against every rule; report what changed and why." User: "Please edit my draft against this audit and tell me what changed. `{{document}}` … Audit: `{{audit}}`" |
+
+**Every agent with variables has a user message.** The only system-only shape is the
+deliberate conversational agent: zero variables, because the person's typed text IS turn 1.
+
+**How it gets broken (census 2026-10-05):** almost never by the trained builder. It comes
+from code or a session that creates through the builder and then REPLACES `messages` with
+one system message holding every variable (the Masterwork build did exactly this to every
+agent it authored), or that hand-writes `messages` in an `update`. When you send `messages`
+in an `update`, you own this law for the whole array.
+
+**What catches it:** every `agent_author` create and update now returns `warnings` naming
+each breach (no user message, variables only in the system prompt, declared-but-unused,
+used-but-undeclared) — read them before you call the agent done; a code path saving
+through `update_agent` logs the same sentences. The full census of every live agent:
+`uv run python scripts/audit_agent_contracts.py` in aidream. The canonical first offender
+was the Plan Steward, whose system prompt opened with `{{plan_id}}`, `{{definition_id}}`
+and a `{{plan_snapshot}}` block — converted 2026-08-22 (ids → opening user message,
+snapshot → a `plan_snapshot` context policy the client re-delivers each turn).
+
 **The gold standard to study before you build anything:** `agent_catalog get_agent` on
 `80e453a0-68e0-4750-868d-3198d3a33639` ("Keyword Analysis Master"). A builder-made family
 that followed this skill end to end (kinds first, workflow-bound, first run green): the
@@ -108,19 +146,9 @@ deliverable and DONE exactly, you are not ready to create an agent.
 - A **conversational agent** is a deliberate shape: zero variables, system prompt only,
   because the user's typed text IS the first turn. Run and test it with `user_message`,
   never `variables`.
-- **THE SYSTEM-PROMPT LAW (Arman, 2026-08-22).** The system prompt carries the agent's
-  core, static instructions — role, rules, definitions, output format, earned examples.
-  The specifics of THIS run — ids, the object being worked on, the task — go in the
-  **first user message** (immutable values as variables embedded in conversational human
-  language) or in **context** (anything that can change during the conversation). Models
-  were trained on a static system prompt + specific user turns; breaking that shape
-  degrades every result, and interpolating a "current snapshot" into the system prompt
-  guarantees it is stale by message two. The only legitimate system-prompt variable is a
-  **behavior switch** (verbose/terse, strict/exploratory, audience) — never the task — and
-  it sits LOW in the prompt, after the core guidelines. Canonical offender: the Plan
-  Steward opened its system prompt with `{{plan_id}}`, `{{definition_id}}` and a
-  `{{plan_snapshot}}` block — converted 2026-08-22 (ids → opening user message, snapshot →
-  a `plan_snapshot` context policy the client re-delivers each turn).
+- **Where the inputs go is [THE SYSTEM-PROMPT LAW](#-the-system-prompt-law--the-rule-most-often-broken)**
+  at the top of this skill: the run's specifics ride the first user message, never the
+  system prompt.
 
 ### 3. Decide tools and skills — minimal by design
 
@@ -397,5 +425,5 @@ system prompt · every tool taught in service of the goal · deliverable stated 
 mandatory/optional marked · kind(s) registered and component rendering · agent created
 via the builder with a pretty name, teaching description and help text, conversational
 embedded user message · model overridden and settings tuned · tools exact and minimal ·
-run at least twice on real sample data and judged against the deliverable · `agent_id` +
+run at least twice on real sample data and judged against the deliverable · the save returns no contract `warnings` · `agent_id` +
 pinned `version_id` recorded for any code caller.
