@@ -148,7 +148,9 @@ import {
   selectCardDetailLayers,
 } from "../../data/cardDetailLayers";
 import { useAiComplianceGate } from "@/features/education/compliance/useAiComplianceGate";
-import { useAppDispatch, useAppStore, useDispatchThunk } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore, useDispatchThunk } from "@/lib/redux/hooks";
+import { clearWizardDraft, selectWizardDraft } from "@/lib/redux/slices/wizardDraftSlice";
+import { MADE_DECK_DRAFT_ID, readMadeDeck } from "../../data/madeDeckMarker";
 import { refreshStoreRead } from "@/lib/redux/slices/storeReadsSlice";
 import { useStoreRead } from "@/lib/redux/store-reads/useStoreRead";
 import {
@@ -883,6 +885,12 @@ export function SetDetailView({
   // already carry layers are skipped and SAID so — never re-billed.
   const dispatch = useAppDispatch();
   const store = useAppStore();
+  // The new-deck page recorded this deck as made-but-not-yet-opened: it is open now.
+  // (Read live: after a full page load the record arrives with the rehydrate.)
+  const madeHere = readMadeDeck(useAppSelector(selectWizardDraft(MADE_DECK_DRAFT_ID))?.data)?.setId === setId;
+  useEffect(() => {
+    if (madeHere) dispatch(clearWizardDraft(MADE_DECK_DRAFT_ID));
+  }, [dispatch, madeHere]);
   const enrichGuard = useEntitlementGuard("education.card_enrichment");
   const coppa = useAiComplianceGate();
   const {

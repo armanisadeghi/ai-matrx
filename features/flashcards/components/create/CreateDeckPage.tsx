@@ -107,6 +107,12 @@ import { WizardDraftRestored } from "@/lib/wizard-draft/WizardDraftRestored";
 import { useTabBoundRun } from "@/lib/wizard-draft/useTabBoundRun";
 import { RunStoppedNotice } from "@/lib/wizard-draft/RunStoppedNotice";
 import {
+  clearWizardDraft,
+  patchWizardDraft,
+  selectWizardDraft,
+} from "@/lib/redux/slices/wizardDraftSlice";
+import { MADE_DECK_DRAFT_ID, readMadeDeck } from "../../data/madeDeckMarker";
+import {
   CREATE_DECK_RUN_KEY,
   cardRunRequest,
   restoreCardRunRequest,
@@ -116,6 +122,8 @@ import { LiveGenerationPreview } from "./LiveGenerationPreview";
 import { DeckFileImport } from "./DeckFileImport";
 
 const EDU_BASE = "/education/flashcards";
+/** Past this, "Opening your deck…" also offers the deck's own link. */
+const SLOW_OPEN_MS = 8_000;
 /** The Source input's key on this page — picks are held and kept under it. */
 export const CREATE_DECK_SURFACE_KEY = "flashcards:new";
 
@@ -183,6 +191,20 @@ export function CreateDeckPage({
   const coppa = useAiComplianceGate();
   const [isNavigating, startNavigation] = useTransition();
   const [isLeaving, startLeaving] = useTransition();
+  // The deck this page made, kept until the deck page opens it: a reload or a
+  // navigation that never lands still says the deck exists, with its link.
+  const madeEntry = useAppSelector(selectWizardDraft(MADE_DECK_DRAFT_ID));
+  const madeDeck = readMadeDeck(madeEntry?.data);
+  // Opening the deck is taking long: offer its link instead of only waiting.
+  const [slowOpen, setSlowOpen] = useState(false);
+  useEffect(() => {
+    if (!isNavigating) {
+      setSlowOpen(false);
+      return;
+    }
+    const t = setTimeout(() => setSlowOpen(true), SLOW_OPEN_MS);
+    return () => clearTimeout(t);
+  }, [isNavigating]);
   // A form page: the floating ask-anything bar sat on top of Deck name and
   // Grade (verify-1, 2026-09-28). The page keeps it away, as FastFire does.
   useSuppressAmbientAssistant(true);
@@ -381,6 +403,15 @@ export function CreateDeckPage({
       onMade(setId, name);
       return;
     }
+    // Recorded BEFORE the draft-less page navigates: if the opening never
+    // lands, this page still names the deck (the deck page clears it).
+    dispatch(clearWizardDraft(MADE_DECK_DRAFT_ID));
+    dispatch(
+      patchWizardDraft({
+        wizardId: MADE_DECK_DRAFT_ID,
+        patch: { setId, name, madeAt: Date.now() },
+      }),
+    );
     startNavigation(() => router.push(`${EDU_BASE}/${setId}`));
   };
 
@@ -813,6 +844,18 @@ export function CreateDeckPage({
                         </p>
                       </div>
                     </div>
+                    {isNavigating && slowOpen && madeDeck ? (
+                      // A full page load: the in-app navigation is what is stuck.
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="self-start"
+                        icon={<ArrowRight />}
+                        onClick={() => window.location.assign(`${EDU_BASE}/${madeDeck.setId}`)}
+                      >
+                        Open “{madeDeck.name}”
+                      </Button>
+                    ) : null}
                     {notes.length ? (
                       <ul className="space-y-1 text-xs text-muted-foreground">
                         {notes.map((n) => (
@@ -853,6 +896,17 @@ export function CreateDeckPage({
                   </div>
                 ) : (
                   <div className="flex flex-col gap-3">
+                    {madeDeck && !embedded ? (
+                      // The deck was made but its page never opened (a reload,
+                      // a navigation that did not land): never a silent blank form.
+                      <RunStoppedNotice
+                        message={`Your deck “${madeDeck.name}” was made. It did not open.`}
+                        redoLabel="Open the deck"
+                        redoIcon={ArrowRight}
+                        onRedo={() => startLeaving(() => router.push(`${EDU_BASE}/${madeDeck.setId}`))}
+                        onDismiss={() => dispatch(clearWizardDraft(MADE_DECK_DRAFT_ID))}
+                      />
+                    ) : null}
                     {stoppedRun?.whileSaving ? (
                       // The save had been sent and may have landed: never redo it blind.
                       <RunStoppedNotice
