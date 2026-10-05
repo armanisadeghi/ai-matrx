@@ -66,7 +66,7 @@ import {
 import { toast } from "../../host/notify";
 import { cn } from "@ai-matrx/design-system";
 import type { AgentDefinitionMessage } from "../types/agent-message-types";
-import { RichDocument } from "@host/features/rich-document/RichDocument";
+import { RichDocument } from "@ai-matrx/chat/host/ui-slots";
 import type { ContentSource } from "@host/features/rich-document/types";
 import { JsonInspector } from "@host/components/official-candidate/json-inspector/JsonInspector";
 import {
@@ -76,7 +76,7 @@ import {
 import { EntityRef } from "@host/components/official/entity-ref/EntityRef";
 import { RichContent } from "@ai-matrx/chat/host/ui-slots";
 import { AccessSummaryPanel } from "@host/features/sharing/components/AccessSummaryPanel";
-import { CopyButtons } from "@host/components/agent-copy/CopyButtons";
+import { CopyButtons } from "@ai-matrx/chat/host/ui-slots";
 import { agentDefinitionSummary } from "../format";
 import { agentHref } from "@host/features/agents/browse/agentPaths";
 import { buildSystemAgentAiPayload } from "./buildSystemAgentAiPayload";

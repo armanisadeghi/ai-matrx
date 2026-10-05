@@ -1,3 +1,4 @@
+import { registerChatUi } from "@ai-matrx/chat/host/ui-slots";
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
@@ -11,9 +12,7 @@ jest.mock("@ai-matrx/media/react", () => ({
   InlineMediaRef: () => <div data-testid="inline-media" />,
 }));
 
-jest.mock("@host/features/cloud-browser/hooks/useOpenCloudBrowserCanvas", () => ({
-  useOpenCloudBrowserCanvas: () => jest.fn(),
-}));
+registerChatUi({ useOpenCloudBrowserCanvas: () => jest.fn() });
 
 import { CloudBrowserRunCard } from "./CloudBrowserRunCard";
 

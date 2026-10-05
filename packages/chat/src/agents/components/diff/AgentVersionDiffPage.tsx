@@ -48,7 +48,7 @@ import { useDiffEnrichment } from "../../hooks/useDiffEnrichment";
 import { DefaultFieldAdapter } from "@ai-matrx/diff/react";
 import { formatChangeType } from "@ai-matrx/diff/structural";
 import type { DiffNode, DiffResult } from "@ai-matrx/diff/structural";
-import { CopyButtons } from "@host/components/agent-copy/CopyButtons";
+import { CopyButtons } from "@ai-matrx/chat/host/ui-slots";
 import { csvExportItem, jsonExportItem } from "@host/components/agent-copy/export";
 import {
   agentVersionDiffKpis,

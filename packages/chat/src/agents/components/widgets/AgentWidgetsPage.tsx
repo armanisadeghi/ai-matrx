@@ -48,7 +48,7 @@ import {
   sealWidgetLaunchOptions,
   type WidgetLaunchState,
 } from "./build-widget-launch";
-import { CopyButtons } from "@host/components/agent-copy/CopyButtons";
+import { CopyButtons } from "@ai-matrx/chat/host/ui-slots";
 import { csvExportItem, jsonExportItem } from "@host/components/agent-copy/export";
 import {
   agentWidgetTesterKpis,

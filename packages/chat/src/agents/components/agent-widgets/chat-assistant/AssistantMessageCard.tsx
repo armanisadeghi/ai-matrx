@@ -1,7 +1,7 @@
 "use client";
 
 import { Webhook } from "lucide-react";
-import { RichDocument } from "@host/features/rich-document/RichDocument";
+import { RichDocument } from "@ai-matrx/chat/host/ui-slots";
 import type { ContentSource } from "@host/features/rich-document/types";
 
 interface AssistantMessageCardProps {

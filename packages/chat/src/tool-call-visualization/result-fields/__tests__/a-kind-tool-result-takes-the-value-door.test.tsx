@@ -12,6 +12,7 @@
  * RED BEFORE GREEN: before the fix both renders reported `ResultValue`, and the
  * census found `<ResultValue value={entry.result}` in the renderers.
  */
+import { registerChatUi } from "@ai-matrx/chat/host/ui-slots";
 import fs from "node:fs";
 import path from "node:path";
 import React, { act } from "react";
@@ -35,9 +36,7 @@ jest.mock("@host/components/MarkdownStream", () => ({
   __esModule: true,
   default: () => <div data-markdown-stream="1" />,
 }));
-jest.mock("@host/components/agent-copy/CopyButtons", () => ({
-  CopyButtons: () => null,
-}));
+registerChatUi({ CopyButtons: () => null });
 jest.mock("@ai-matrx/media/react", () => ({ InlineMediaRef: () => null }));
 const mockCaptureError = jest.fn();
 jest.mock("../../../host/diagnostics", () => ({
