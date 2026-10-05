@@ -35,7 +35,10 @@ export interface UseRunsListOptions {
   organizationId?: string | null;
 }
 
-export function useRunsList({ definitionId, organizationId }: UseRunsListOptions = {}): RunsListState {
+export function useRunsList({
+  definitionId,
+  organizationId,
+}: UseRunsListOptions = {}): RunsListState {
   const dispatch = useAppDispatch();
   // 🚨 A LIST IS DECIDED BY ACCESS, NEVER BY THE SELECTED ORGANIZATION
   // (common-docs/policies/access-ladder.md). `GET /runs` answers

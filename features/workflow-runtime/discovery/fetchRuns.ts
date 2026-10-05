@@ -41,6 +41,10 @@ export async function fetchRuns(
           },
         }),
       );
-  if (result.error) return { ok: false, message: result.error.message || "Could not load runs." };
+  if (result.error)
+    return {
+      ok: false,
+      message: result.error.message || "Could not load runs.",
+    };
   return { ok: true, rows: parseRunListRows(result.data) };
 }

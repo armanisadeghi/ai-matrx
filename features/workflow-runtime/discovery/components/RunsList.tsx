@@ -90,7 +90,6 @@ export function RunsList({ definitionId }: { definitionId?: string }) {
   const facts = useWorkflowFacts(rows.map((row) => row.definitionId));
   const [clickedRow, setClickedRow] = useState<RunRowView | null>(null);
 
-
   // The list spans every organization the person belongs to; name each row's.
   const { organizations } = useUserOrganizations();
   const orgName = new Map(organizations.map((o) => [o.id, o.name]));
@@ -135,7 +134,9 @@ export function RunsList({ definitionId }: { definitionId?: string }) {
               row.organizationId ? "organization" : undefined,
             entityId: (row: RunRowView) => row.organizationId ?? undefined,
             cell: (row: RunRowView) =>
-              (row.organizationId && orgName.get(row.organizationId)) ?? <Muted>—</Muted>,
+              (row.organizationId && orgName.get(row.organizationId)) ?? (
+                <Muted>—</Muted>
+              ),
           } satisfies MatrxColumnDef<RunRowView>,
         ]
       : []),
@@ -159,7 +160,10 @@ export function RunsList({ definitionId }: { definitionId?: string }) {
       href: (row) => runHref(row),
       cell: (row) =>
         row.startedAt ? (
-          <span className="tabular-nums" title={new Date(row.startedAt).toLocaleString()}>
+          <span
+            className="tabular-nums"
+            title={new Date(row.startedAt).toLocaleString()}
+          >
             {formatRelativeTime(row.startedAt)}
           </span>
         ) : (
@@ -179,7 +183,9 @@ export function RunsList({ definitionId }: { definitionId?: string }) {
         return ms === null ? (
           <Muted>—</Muted>
         ) : (
-          <span className="tabular-nums text-muted-foreground">{formatElapsed(ms)}</span>
+          <span className="tabular-nums text-muted-foreground">
+            {formatElapsed(ms)}
+          </span>
         );
       },
     },
@@ -227,61 +233,73 @@ export function RunsList({ definitionId }: { definitionId?: string }) {
           onRetry={refresh}
         />
       ) : (
-      <>
-      {definitionId ? null : (
-        <div className="flex items-center gap-2 px-3 pb-2" data-runs-org-filter="">
-          <EntityOrgFilter orgId={orgFilter} onChange={setOrgFilter} />
-          {orgFilter && !loading && view.length === 0 ? (
-            <Button size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => setOrgFilter(null)}>
-              View all organizations
-            </Button>
-          ) : null}
-        </div>
-      )}
-      <NonEditableContextMenu
-        sourceFeature="workflow_run"
-        contentSource={{ type: "raw" }}
-        contextData={{ content: "" }}
-        resolveContextOnOpen={(target) => {
-          const id = target
-            ?.closest("[data-row-id]")
-            ?.getAttribute("data-row-id");
-          const row = (id && view.find((r) => r.runId === id)) || null;
-          setClickedRow(row);
-          if (!row) return null;
-          return {
-            [CONTEXT_MENU_ENTITY_KEY]: runEntityRef(row),
-            content: [
-              runMenuContent(row),
-              `Status: ${runStatusLabel(row.status)}`,
-              row.startedAt ? `Started: ${new Date(row.startedAt).toLocaleString()}` : null,
-              row.declaredKind ? `Delivers: ${row.declaredKind}` : null,
-            ]
-              .filter(Boolean)
-              .join("\n"),
-          };
-        }}
-        extraSections={[runMenuSection]}
-      >
-        <div className="flex h-full min-h-0 flex-col">
-          <MatrxDataTable<RunRowView>
-            data={view}
-            columns={columns}
-            getRowId={(row) => row.runId}
-            isLoading={loading}
-            urlState={{ id: definitionId ? "workflow-runs" : "runs" }}
-            onRowOpen={(row) => {
-              startTransition(() => router.push(runHref(row)));
+        <>
+          {definitionId ? null : (
+            <div
+              className="flex items-center gap-2 px-3 pb-2"
+              data-runs-org-filter=""
+            >
+              <EntityOrgFilter orgId={orgFilter} onChange={setOrgFilter} />
+              {orgFilter && !loading && view.length === 0 ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 px-2 text-xs"
+                  onClick={() => setOrgFilter(null)}
+                >
+                  View all organizations
+                </Button>
+              ) : null}
+            </div>
+          )}
+          <NonEditableContextMenu
+            sourceFeature="workflow_run"
+            contentSource={{ type: "raw" }}
+            contextData={{ content: "" }}
+            resolveContextOnOpen={(target) => {
+              const id = target
+                ?.closest("[data-row-id]")
+                ?.getAttribute("data-row-id");
+              const row = (id && view.find((r) => r.runId === id)) || null;
+              setClickedRow(row);
+              if (!row) return null;
+              return {
+                [CONTEXT_MENU_ENTITY_KEY]: runEntityRef(row),
+                content: [
+                  runMenuContent(row),
+                  `Status: ${runStatusLabel(row.status)}`,
+                  row.startedAt
+                    ? `Started: ${new Date(row.startedAt).toLocaleString()}`
+                    : null,
+                  row.declaredKind ? `Delivers: ${row.declaredKind}` : null,
+                ]
+                  .filter(Boolean)
+                  .join("\n"),
+              };
             }}
-            emptyState={{
-              icon: <ListX className="h-5 w-5" />,
-              title: definitionId ? "This workflow hasn't run yet" : "No runs yet",
-              description: "A run appears here the moment it starts.",
-            }}
-          />
-        </div>
-      </NonEditableContextMenu>
-      </>
+            extraSections={[runMenuSection]}
+          >
+            <div className="flex h-full min-h-0 flex-col">
+              <MatrxDataTable<RunRowView>
+                data={view}
+                columns={columns}
+                getRowId={(row) => row.runId}
+                isLoading={loading}
+                urlState={{ id: definitionId ? "workflow-runs" : "runs" }}
+                onRowOpen={(row) => {
+                  startTransition(() => router.push(runHref(row)));
+                }}
+                emptyState={{
+                  icon: <ListX className="h-5 w-5" />,
+                  title: definitionId
+                    ? "This workflow hasn't run yet"
+                    : "No runs yet",
+                  description: "A run appears here the moment it starts.",
+                }}
+              />
+            </div>
+          </NonEditableContextMenu>
+        </>
       )}
     </div>
   );
