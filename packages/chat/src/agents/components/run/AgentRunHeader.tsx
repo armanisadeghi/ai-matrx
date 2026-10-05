@@ -50,9 +50,11 @@ export function AgentRunHeader({
           showVersion={false}
           showBuiltin={true}
         />
-        <div className="pl-2">
-          <AgentNewRunButton surfaceKey={surfaceKey} />
-        </div>
+        {/* The agent name is text beside a tap button: it adds the half-gap
+            on the side facing the button (tap placement rule 3); the button's
+            own box carries the other half. Never padding around the button. */}
+        <span aria-hidden className="w-[calc(var(--matrx-tap-gap)/2)] shrink-0" />
+        <AgentNewRunButton surfaceKey={surfaceKey} />
       </div>
       <div>
         <AgentModeController
