@@ -22,7 +22,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 import { fenceLineKinds } from "@ai-matrx/content-ir/source";
-import { hasKindKeyAnySpelling } from "../content-ir/surfaces/json-kind-signal";
+import { hasJsonKindKey } from "../content-ir/surfaces/json-kind-signal";
 import { kindTextLabel } from "../content-ir/surfaces/kind-text-label";
 
 /** The first line of content that can name it (front matter / fences skipped). */
@@ -92,7 +92,8 @@ export function plainTitleFromMarkdown(
   // A kind names the record by its label ("Flashcard set · Cell biology"),
   // never by its JSON (KIND_NEVER_RAW) — the stored content is untouched.
   const text = source ?? "";
-  const holdsKind = hasKindKeyAnySpelling(text);
+  // Only a real JSON kind (round 10): any other spelling is a title as written.
+  const holdsKind = hasJsonKindKey(text);
   const title =
     plainTextOfMarkdownLine(holdsKind ? kindTextLabel(text, 200) : firstContentLine(text)) ||
     // A kind always names its record (an `<artifact>`-wrapped kind used to

@@ -58,7 +58,8 @@ const JSON5_KIND_SLUG = /(?:^|[{,]\s*|\n\s*)(?:__kind|'__kind'|"__kind")\s*:\s*(
  * The key as MARKDOWN may spell it (P8, round 4): `"\_\_kind"` — the renderer
  * un-escapes it to `"__kind"` on screen. Text contexts only.
  */
-const MARKDOWN_KIND_KEY = /(?<!\\)"\\_\\_kind"\s*:/;
+// Half-escaped (`"\__kind"`, `"_\_kind"`) draws as the literal key too (round 10).
+const MARKDOWN_KIND_KEY = /(?<!\\)"(?:\\_\\_|\\__|_\\_)kind"\s*:/;
 
 /**
  * The key as a STRING-HELD kind spells it once serialized again (R3, round 6):

@@ -414,8 +414,10 @@ const AS_WRITTEN_LABELS: ReadonlyArray<readonly [string, Converter]> = [
 function asWrittenCellFails(convert: Converter, text: string, label: boolean): string | null {
   const out = convert(text);
   if (label) {
-    const clipped = out.replace(/…$/, "");
-    return clipped.length > 0 && text.replace(/\s+/g, " ").startsWith(clipped) ? null : `rewritten: ${out.slice(0, 160)}`;
+    // A label formats text (clip, title cleanup); a detection-only kind must get
+    // exactly the treatment of the same text with no kind in it.
+    const kindless = convert(text.replaceAll("kind", "kinx")).replaceAll("kinx", "kind");
+    return out === kindless ? null : `rewritten: ${out.slice(0, 160)} ≠ ${kindless.slice(0, 160)}`;
   }
   return out.includes(text) ? null : `rewritten: ${out.slice(0, 160)}`;
 }

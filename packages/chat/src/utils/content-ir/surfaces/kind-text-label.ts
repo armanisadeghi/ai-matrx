@@ -12,7 +12,7 @@
 
 import { humanizeKind } from "../kinds/kind-markdown-utils";
 import { deriveInstanceTitle } from "../instance-title";
-import { firstKindSlug, hasKindKey, hasKindKeyAnySpelling, normalizeKindSpellings } from "./json-kind-signal";
+import { firstKindSlug, hasJsonKindKey, hasKindKey, normalizeKindSpellings } from "./json-kind-signal";
 import { kindTextToMarkdown } from "./kind-text-to-markdown";
 
 function clip(text: string, max: number): string {
@@ -54,7 +54,7 @@ function firstReadableLine(markdown: string): string {
 /** One line, at most `max` characters, never containing a `__kind` key. */
 export function kindTextLabel(raw: string | null | undefined, max = 90): string {
   if (!raw) return "";
-  // Every spelling of the key (escaped, entities, smart quotes, repr, zero-width) reads as one (round 8).
+  // A real JSON spelling (zero-width / markdown-escaped key) reads as the literal one (round 10).
   const text = normalizeKindSpellings(raw);
   if (!hasKindKey(text)) return clip(text.replace(/\s+/g, " ").trim(), max);
   const whole = wholeKindLabel(text);
@@ -75,5 +75,5 @@ export function kindTextLabel(raw: string | null | undefined, max = 90): string 
  */
 export function conversationTitleText(title: string | null | undefined): string | null {
   if (title == null) return null;
-  return hasKindKeyAnySpelling(title) ? kindTextLabel(title, 200) : title;
+  return hasJsonKindKey(title) ? kindTextLabel(title, 200) : title;
 }
