@@ -129,6 +129,16 @@ function PagesList({ dataSource }: { dataSource: RecordsDataSource }) {
       door: { column: "name", hrefFor: (row) => row.href },
       useRowActions: usePageRowActions,
       supportsArchived: false,
+      facetSections: [
+        {
+          facet: "organization",
+          filterId: "organization",
+          label: "Organization",
+          noneLabel: "None",
+          countInLabel: false,
+          formatValue: (id) => corpus.meta.names.get(id) ?? id,
+        },
+      ],
       searchPlaceholder: "Search pages",
       searchDebounceMs: 0,
       emptyState: { title: "No pages yet", description: "On a table, open Dashboards and press New page." },

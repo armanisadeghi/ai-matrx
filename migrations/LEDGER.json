@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-05T03:33:15.345Z",
+  "generated_at": "2026-10-05T03:42:18.850Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -97,6 +97,12 @@
       "filename": "apprvtail_the_queue_holds_a_delete_and_a_new_table.sql",
       "checksum": "b7ccb50ec072bbc3f8ea09e792768ee7fb52d5cc5a4f7130ee383e69e3cf8bf0",
       "applied_at": "2026-09-20 06:40:00.419117+00"
+    },
+    "migrations/campaign/appsondata_a_the_data_home_knows_a_page_from_a_dashboard.sql": {
+      "source": "matrx-frontend",
+      "filename": "appsondata_a_the_data_home_knows_a_page_from_a_dashboard.sql",
+      "checksum": "ae95116b8cc09f8f6ad17c0f12a34857c84ba6dbfb82609832858551196e5ed7",
+      "applied_at": "2026-10-05 03:42:17.476034+00"
     },
     "migrations/campaign/archorgwork_an_archived_organization_takes_its_waiting_work_with_it.sql": {
       "source": "campaign",
