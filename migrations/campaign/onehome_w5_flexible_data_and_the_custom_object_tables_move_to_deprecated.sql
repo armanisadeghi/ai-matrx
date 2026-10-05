@@ -1,6 +1,6 @@
 -- draft: apply after 2026-10-05T08:50Z (the 48 h zero-read clock of FLEXIBLE-DATA-RETIREMENT-PLAN.md ends then) and only once pg_stat shows no read of the three tables beyond the named sweepers
 -- chair-step: lane FINISH-THE-SWITCH sublane FTS-3, ONE-HOME wave 5: platform.flexible_data, platform.custom_entity_definition and platform.custom_record move to `deprecated` (old gone, never dropped; every row kept).
--- One transaction: the two doors, the search projection (trigger, function, 33 search rows) leave, the foreign keys out of the three tables into live schemas drop,
+-- One transaction: the two doors leave, the search projection (33 search rows) is removed and its trigger disabled, the foreign keys out of the three tables into live schemas drop,
 -- the three registry rows are retired, and the tables move and lose their client grants. Plan: common-docs projects/data-doctrine-adoption/v6/FLEXIBLE-DATA-RETIREMENT-PLAN.md §4.
 -- Preconditions are checked here and refused by name: no table gained a row since the census; no foreign key from a live table points into the three (lane 7's two are gone).
 -- Not re-bodied (the plan's step 2 tail): platform.search_item_backfill / search_item_parity / platform._t13_allowlist keep their flexible_data branch; it errors only when called with that token.
@@ -25,10 +25,10 @@ begin
 end
 $pre$;
 
--- 1. the search projection and the doors
-drop trigger if exists _search_item_sync on platform.flexible_data;
+-- 1. the search projection (33 rows; its trigger is disabled, not dropped) and the doors
+-- DROP TRIGGER takes ACCESS EXCLUSIVE on 23 auth/storage/realtime relations (a sign-in freeze); DISABLE takes none. The trigger and its function stay with the moved table, inert.
+alter table platform.flexible_data disable trigger _search_item_sync;
 select platform._search_item_drop('flexible_data', id) from platform.flexible_data;
-drop function if exists platform._search_item_sync_flexible_data();
 delete from platform.client_callable_door where function_name in ('flexible_data_write', 'flexible_data_archive');
 drop function if exists public.flexible_data_write(uuid, jsonb, uuid);
 drop function if exists public.flexible_data_archive(uuid, uuid);
@@ -55,8 +55,9 @@ update platform.shareable_resource_registry set is_active = false
  where resource_type in ('flexible_data', 'custom_entity_definition', 'custom_record') and is_active;
 
 -- 4. the move
-alter table platform.custom_record            set schema deprecated;
+-- the definition moves first: the deprecated boundary refuses a retired table whose foreign key points at a live one
 alter table platform.custom_entity_definition set schema deprecated;
+alter table platform.custom_record            set schema deprecated;
 alter table platform.flexible_data            set schema deprecated;
 revoke all on table deprecated.custom_entity_definition, deprecated.custom_record, deprecated.flexible_data from anon, authenticated;
 

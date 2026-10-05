@@ -1,10 +1,13 @@
 -- INVERSE of campaign/onehome_w5_flexible_data_and_the_custom_object_tables_move_to_deprecated.sql (lane FINISH-THE-SWITCH FTS-3). Captured from production 2026-10-05 before the up file ran.
+-- NOT PROVEN end to end: the up file was applied and ledgered on the clone (rehearsal 2026-10-05 04:53Z); this inverse was run there and stopped at the registration check (a table moved back into platform must be registered in platform.entity_types in the same transaction, and the provisioning guard refuses a hand-registered entity table). Re-register through the provisioner (or as audit_class machinery with a reason) if the tables are ever needed back.
 -- The 33 search projection rows are not restored one by one: platform._search_item_sync_flexible_data re-projects on the next write, or run platform.search_item_backfill('flexible_data').
 set local lock_timeout = '3s';
+-- The two foreign keys into auth.users are not restored: the sign-in table guard refuses any new one (iam.users is the only table allowed one). Their iam.users twins (..._fkey_p) are restored.
+-- platform.entity_types rows (flexible_data, custom_entity_definition, custom_record) are not re-activated: the provisioning guard refuses a hand-registered entity table. Re-register through the provisioner if the tables are ever needed back.
 set local statement_timeout = '120s';
 alter table deprecated.flexible_data            set schema platform;
-alter table deprecated.custom_entity_definition set schema platform;
 alter table deprecated.custom_record            set schema platform;
+alter table deprecated.custom_entity_definition set schema platform;
 grant select on table platform.flexible_data, platform.custom_entity_definition, platform.custom_record to authenticated;
 alter table platform.custom_entity_definition add constraint custom_entity_definition_created_by_fkey FOREIGN KEY (created_by) REFERENCES iam.users(id) not valid;
 alter table platform.custom_entity_definition validate constraint custom_entity_definition_created_by_fkey;
@@ -20,19 +23,12 @@ alter table platform.custom_record add constraint custom_record_updated_by_fkey 
 alter table platform.custom_record validate constraint custom_record_updated_by_fkey;
 alter table platform.flexible_data add constraint flexible_data_category_id_fkey FOREIGN KEY (category_id) REFERENCES platform.categories(id) not valid;
 alter table platform.flexible_data validate constraint flexible_data_category_id_fkey;
-alter table platform.flexible_data add constraint flexible_data_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id) not valid;
-alter table platform.flexible_data validate constraint flexible_data_created_by_fkey;
 alter table platform.flexible_data add constraint flexible_data_created_by_fkey_p FOREIGN KEY (created_by) REFERENCES iam.users(id) not valid;
 alter table platform.flexible_data validate constraint flexible_data_created_by_fkey_p;
 alter table platform.flexible_data add constraint flexible_data_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES iam.organizations(id) not valid;
 alter table platform.flexible_data validate constraint flexible_data_organization_id_fkey;
-alter table platform.flexible_data add constraint flexible_data_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES auth.users(id) not valid;
-alter table platform.flexible_data validate constraint flexible_data_updated_by_fkey;
 alter table platform.flexible_data add constraint flexible_data_updated_by_fkey_p FOREIGN KEY (updated_by) REFERENCES iam.users(id) not valid;
 alter table platform.flexible_data validate constraint flexible_data_updated_by_fkey_p;
-update platform.entity_types set is_active = true, custom_fields_enabled = true, type = 'entity', reference_pickable = true where token = 'flexible_data';
-update platform.entity_types set is_active = true, custom_fields_enabled = true, type = 'entity', reference_pickable = false where token = 'custom_entity_definition';
-update platform.entity_types set is_active = true, custom_fields_enabled = true, type = 'detail', reference_pickable = false where token = 'custom_record';
 update platform.shareable_resource_registry set is_active = true where resource_type in ('flexible_data', 'custom_entity_definition', 'custom_record');
 update platform.deprecated_relations set archived_as = null where old_ref in ('platform.custom_entity_definition', 'platform.custom_record');
 delete from platform.deprecated_relations where old_ref = 'platform.flexible_data' and archived_as = 'deprecated.flexible_data';
@@ -140,31 +136,4 @@ $function$;
 revoke all on function flexible_data_archive(uuid,uuid) from public;
 grant execute on function flexible_data_archive(uuid,uuid) to authenticated, service_role;
 
-CREATE OR REPLACE FUNCTION platform._search_item_sync_flexible_data()
- RETURNS trigger
- LANGUAGE plpgsql
- SECURITY DEFINER
- SET search_path TO 'pg_catalog', 'public'
-AS $function$
-begin
-  if tg_op = 'DELETE' then
-    perform platform._search_item_drop('flexible_data', old.id);
-    return null;
-  end if;
-  if tg_op = 'UPDATE'
-     and (old.label, old.organization_id, old.created_by, old.visibility, old.deleted_at) is not distinct from (new.label, new.organization_id, new.created_by, new.visibility, new.deleted_at)
-       and date_trunc('hour', new.updated_at) = date_trunc('hour', old.updated_at) then
-    return null;
-  end if;
-  if tg_op = 'UPDATE' and new.id is distinct from old.id then
-    perform platform._search_item_drop('flexible_data', old.id);
-  end if;
-  if new.organization_id is not null and new.deleted_at is null then
-    perform platform._search_item_put('flexible_data', new.id, new.organization_id, new.created_by, new.visibility, coalesce(nullif(btrim(new.label::text), ''), 'Untitled flexible data' || coalesce(' ' || to_char(new.created_at, 'YYYY-MM-DD'), '')), null::text, '{}'::text[], new.updated_at, null::text, null::text);
-  else
-    perform platform._search_item_drop('flexible_data', new.id);
-  end if;
-  return null;
-end
-$function$;
-CREATE TRIGGER _search_item_sync AFTER INSERT OR DELETE OR UPDATE ON platform.flexible_data FOR EACH ROW EXECUTE FUNCTION platform._search_item_sync_flexible_data();
+alter table platform.flexible_data enable trigger _search_item_sync;
