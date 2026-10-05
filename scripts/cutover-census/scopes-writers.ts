@@ -267,7 +267,7 @@ export const WRITERS: Row[] = [
     id: "S10",
     what: "A template applied from a definition (and every catalogue template)",
     status: "proven",
-    plain: "custom.context_template_define applies a template's scope types and fields through custom.context_type_write / custom.context_item_write (the store's doors, store first where the store writes); the catalogue's scope templates are installed through the template family (custom.template_install; custom.context_template_apply was retired, lane TEMPLATES RETIRE-1), and public.apply_template_definition is a SECURITY INVOKER wrapper over it that writes nothing itself (no caller, no client grant). Suite scopestails_templates_through_the_doors A1–A6 (red before scopestails_a_template_is_applied_through_the_store_doors.sql).",
+    plain: "custom.context_template_define applies a template's scope types and fields through custom.context_type_write / custom.context_item_write (the store's doors, store first where the store writes); the catalogue's scope templates are installed through the template family (custom.template_install; the old scope-template apply door was dropped, lane TEMPLATES RETIRE-1), and public.apply_template_definition is a SECURITY INVOKER wrapper over it that writes nothing itself (no caller, no client grant). Suite scopestails_templates_through_the_doors A1–A6 (red before scopestails_a_template_is_applied_through_the_store_doors.sql).",
     functions: ["custom.context_template_define", "public.apply_template_definition"],
     writesNothingItself: ["custom.context_template_define", "public.apply_template_definition"],
   },
