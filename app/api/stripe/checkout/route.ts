@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
     if (
       !amount ||
       amount < 0 ||
-      !["personal", "company"].includes(plan.audience)
+      (plan.audience !== "personal" && plan.audience !== "company")
     )
       return NextResponse.json(
         { error: "This plan does not require checkout." },

@@ -77,6 +77,10 @@ export async function POST(request: NextRequest) {
       })
     )
       return response("pending");
+    if (!planKey || (cycle !== "monthly" && cycle !== "annual"))
+      return response("pending");
+    const sessionSubscription = session.subscription;
+    if (!sessionSubscription) return response("pending");
 
     const { data: plan, error: planError } = await admin
       .schema("billing")
@@ -87,7 +91,10 @@ export async function POST(request: NextRequest) {
       .is("deleted_at", null)
       .maybeSingle();
     if (planError) throw planError;
-    if (!plan || !["personal", "company"].includes(plan.audience)) {
+    if (
+      !plan ||
+      (plan.audience !== "personal" && plan.audience !== "company")
+    ) {
       return NextResponse.json(
         { error: "This plan is unavailable." },
         { status: 404 },
@@ -141,9 +148,9 @@ export async function POST(request: NextRequest) {
       return response("pending");
 
     const subscriptionId =
-      typeof session.subscription === "string"
-        ? session.subscription
-        : session.subscription.id;
+      typeof sessionSubscription === "string"
+        ? sessionSubscription
+        : sessionSubscription.id;
     const subscription = await stripe.subscriptions.retrieve(
       subscriptionId,
       {
