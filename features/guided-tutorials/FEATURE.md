@@ -1,6 +1,6 @@
 # FEATURE.md — Guided tutorials
 
-**Status:** `active` (built 2026-10-04; end-to-end browser walk not yet completed — see Open items)
+**Status:** `active` (built and walked end to end 2026-10-04)
 **Tier:** `2`
 **Working label:** "guided tutorial" — Arman's word ("little user tutorials"). The vocabulary
 (`common-docs/systems/platform/vocabulary/FEATURE.md`) has no term for this yet; do not rename.
@@ -62,12 +62,10 @@ reports its own outcome; a failed email never hides a sent DM.
 
 ## Open items
 
-- End-to-end browser walk (admin send → DM as test@test.com → tour to the end) not completed:
-  the shared preview's concurrent-walk cap kept parking the session (2026-10-04).
 - Email delivery unverified (no send was made to the third-party test.com mailbox).
-- The four `data-tour` attributes live in `BringYourWorkPage.tsx`, which another session was
-  redesigning uncommitted; they land with that session's commit.
 
 ## Change log
+
+- `2026-10-04` — walked end to end on the local preview: admin sent "Connect your AI" to test@test.com by message → the card showed in their DM → Show me how opened /bring-your-work with the tour → each step advanced on its action → "You're all set".
 
 - `2026-10-04` — claude: built the primitive, admin send, DM card, seeded `connect-your-ai`.
