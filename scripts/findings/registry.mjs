@@ -189,7 +189,7 @@ export const FINDINGS_CHECKS = [
     ...fromRules("one-control"),
   },
   {
-    // A secret filled with a bare .fill( echoes in Playwright's timeout error (2026-10-05, test admin
+    // A secret filled with a bare fill call echoes in Playwright's timeout error (2026-10-05, test admin
     // password in a transcript). scripts/lib/seat-browser.mjs fillSecret scrubs it.
     id: "bare-secret-fill",
     watch: /^(scripts|e2e)\/.*\.(m?js|cjs|tsx?)$/,
