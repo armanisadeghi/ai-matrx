@@ -28,7 +28,7 @@ import React, { useCallback, useEffect, useRef } from "react";
 import { useAppDispatch, useAppSelector } from "../../../../store/hooks";
 import { MicrophoneIconButton } from "@ai-matrx/chat/host/ui-slots";
 /** The host microphone's variants (its `MicrophoneIconButton` prop). */
-type MicVariant = "icon-only" | "inline-expand" | "modal-controls";
+type MicVariant = "icon-only" | "inline-expand" | "modal-controls" | "control";
 import { selectUserInputText } from "../../../redux/execution-system/instance-user-input/instance-user-input.selectors";
 import { selectUserVariableValues } from "../../../redux/execution-system/instance-variable-values/instance-variable-values.selectors";
 import { setUserInputText } from "../../../redux/execution-system/instance-user-input/instance-user-input.slice";

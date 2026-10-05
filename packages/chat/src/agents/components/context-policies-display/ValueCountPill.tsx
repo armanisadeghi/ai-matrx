@@ -2,7 +2,7 @@
 
 /**
  * ValueCountPill — the compact face of a sent message's value group: icon +
- * count ("5 sent"). Same height and shape as the composer's row pills.
+ * count ("5 sent"). The one 28px control (Button outline).
  *
  * It carries NO generic word: never "Context" (Arman, 2026-10-01: "If the best
  * word you can come up with is context, then you should not have any text at
@@ -10,7 +10,7 @@
  */
 
 import { forwardRef, type ComponentType } from "react";
-import { cn } from "@ai-matrx/design-system";
+import { Button } from "@ai-matrx/design-system/controls";
 
 export interface ValueCountPillProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -28,22 +28,17 @@ export const ValueCountPill = forwardRef<HTMLButtonElement, ValueCountPillProps>
     ref,
   ) {
     return (
-      <button
+      <Button
         ref={ref}
         type={type}
-        className={cn(
-          "inline-flex h-6 max-w-[12rem] shrink-0 items-center gap-1 rounded-md border bg-card px-1.5",
-          "text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground",
-          "pointer-coarse:relative pointer-coarse:after:absolute pointer-coarse:after:-inset-y-2.5 pointer-coarse:after:inset-x-0 pointer-coarse:after:content-['']",
-          warn ? "border-warning/60 text-warning" : "border-border",
-          className,
-        )}
+        variant="outline"
+        tone={warn ? "warning" : undefined}
+        icon={<Icon />}
+        className={className}
         {...props}
       >
-        <Icon className="h-3 w-3 shrink-0" />
-        {name ? <span className="min-w-0 truncate text-foreground">{name}</span> : null}
-        <span className="shrink-0 tabular-nums">{text}</span>
-      </button>
+        {name ? `${name} · ${text}` : text}
+      </Button>
     );
   },
 );

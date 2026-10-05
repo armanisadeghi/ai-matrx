@@ -27,10 +27,11 @@ import { RecordingIndicator } from "./RecordingIndicator";
 import { TranscriptionLoader } from "./TranscriptionLoader";
 import { VoiceTroubleshootingModal } from "./VoiceTroubleshootingModal";
 import { MicrophoneRecordingModal } from "./MicrophoneRecordingModal";
-import { Button } from "@/components/ui/button";
+import { Button as UiButton } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system/controls";
 import { showVoiceInputErrorToast } from "@/features/audio/services/voiceInputErrorToast";
 
-export type MicVariant = "icon-only" | "inline-expand" | "modal-controls";
+export type MicVariant = "icon-only" | "inline-expand" | "modal-controls" | "control";
 
 export interface MicrophoneIconButtonCoreHandle {
   stopForTranscriptOnly: () => void;
@@ -279,6 +280,37 @@ const MicrophoneIconButtonCore = forwardRef<
   // Audio-reactive rings are rendered outside the glass layer so they can
   // breathe past the glass edge without being clipped.
   // ══════════════════════════════════════════════════════════════════════════
+  // ══════════════════════════════════════════════════════════════════════════
+  // VARIANT: control — the one 28px control (a toolbar / composer row). On while
+  // recording (pressed, destructive tint), busy while transcribing.
+  // ══════════════════════════════════════════════════════════════════════════
+  if (variant === "control") {
+    const label = isRecording ? "Stop recording" : isTranscribing ? "Processing…" : "Record audio";
+    return (
+      <>
+        <Button
+          id={id}
+          variant="quiet"
+          pressed={isRecording || isTranscribing}
+          tone={isRecording ? "destructive" : undefined}
+          badge={isRecording ? true : undefined}
+          icon={<Mic />}
+          onClick={handleClick}
+          disabled={disabled || (isTranscribing && !isRecording)}
+          aria-label={label}
+          title={label}
+          className={className}
+        />
+        <VoiceTroubleshootingModal
+          isOpen={showTroubleshooting}
+          onClose={() => setShowTroubleshooting(false)}
+          error={lastError?.message}
+          errorCode={lastError?.code}
+        />
+      </>
+    );
+  }
+
   if (variant === "icon-only") {
     const isActive = isRecording || isTranscribing;
 
@@ -378,7 +410,7 @@ const MicrophoneIconButtonCore = forwardRef<
                 size={statusSize}
                 color="blue"
               />
-              <Button
+              <UiButton
                 type="button"
                 variant="quiet"
                 onClick={() => {
@@ -387,7 +419,7 @@ const MicrophoneIconButtonCore = forwardRef<
                 }}
               >
                 Stop
-              </Button>
+              </UiButton>
             </div>
             {liveTranscript && (
               <p className="text-xs text-muted-foreground leading-relaxed truncate max-w-[200px]">

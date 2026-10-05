@@ -50,7 +50,7 @@ import {
 } from "../../../redux/execution-system/thunks/smart-execute.thunk";
 import { MicDeviceMenu } from "@ai-matrx/chat/host/ui-slots";
 import type { ComposerMode, ComposerSize } from "./composer/composer-types";
-import { Button } from "@ai-matrx/design-system/controls";
+import { Button, SplitButton } from "@ai-matrx/design-system/controls";
 import { cn } from "@ai-matrx/design-system";
 
 // ── Inline button primitive ──────────────────────────────────────────────────
@@ -242,17 +242,15 @@ export function InputActionButtons({
   // mic half records, the chevron half picks the device. The halves carry
   // no background of their own, so it never reads as two buttons.
   const micGroup = showMicrophone ? (
-    <span className="inline-flex h-7 shrink-0 items-center rounded-full text-muted-foreground/60 transition-colors hover:bg-muted/60">
+    <SplitButton className="shrink-0">
       <AgentMicrophoneButton
         conversationId={conversationId}
-        size="sm"
+        variant="control"
         label="Record audio"
-        className="w-7 justify-end rounded-l-full rounded-r-none pr-0.5 text-muted-foreground/60 hover:bg-transparent hover:text-foreground"
-        iconClassName="h-4 w-4"
         onRecordingStateChange={handleVoiceBusyChange}
       />
-      <MicDeviceMenu className="h-7 w-5 justify-start rounded-l-none rounded-r-full pl-0.5 text-muted-foreground/60 hover:bg-transparent hover:text-foreground" />
-    </span>
+      <MicDeviceMenu />
+    </SplitButton>
   ) : null;
   const sendControls = showSendButton ? (
     <ComposerSendSlot conversationId={conversationId}>

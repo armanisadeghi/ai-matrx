@@ -6,12 +6,12 @@
 // `MicWithDeviceMenu` when you also need a record toggle in the same control.
 
 import { ChevronDown } from "lucide-react";
+import { Button } from "@ai-matrx/design-system/controls";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@ai-matrx/design-system";
-import { cn } from "@/lib/utils";
 import {
   MicDeviceMenuPanel,
   useMicDevicePicker,
@@ -36,17 +36,13 @@ export function MicDeviceMenu({
   return (
     <Popover onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
-        <button
-          type="button"
+        <Button
+          variant="quiet"
           disabled={disabled}
           aria-label={ariaLabel}
-          className={cn(
-            "inline-flex h-5 w-4 items-center justify-center rounded text-muted-foreground transition-colors hover:text-foreground disabled:pointer-events-none disabled:opacity-40",
-            className,
-          )}
-        >
-          <ChevronDown className="h-3 w-3" />
-        </button>
+          icon={<ChevronDown />}
+          className={className}
+        />
       </PopoverTrigger>
       <PopoverContent
         sizing="content"

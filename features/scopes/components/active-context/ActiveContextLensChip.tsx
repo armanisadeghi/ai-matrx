@@ -64,6 +64,8 @@ import { LensChip, type LensChipNode } from "./LensChip";
 export interface ActiveContextLensChipProps {
   align?: "start" | "center" | "end";
   className?: string;
+  /** The chip's skin: `outline` (default) or `quiet` (a composer row). */
+  variant?: "outline" | "quiet";
   conversationId?: string;
   /** Square 28px trigger with a count badge. */
   iconOnly?: boolean;
@@ -80,6 +82,7 @@ export interface ActiveContextLensChipProps {
 export function ActiveContextLensChip({
   align = "start",
   className,
+  variant,
   conversationId,
   iconOnly = false,
   attention = false,
@@ -188,11 +191,8 @@ export function ActiveContextLensChip({
         iconOnly={iconOnly}
         attention={attention}
         fill={fill}
-        className={cn(
-          withPreview &&
-            "h-5 rounded-full border-0 bg-transparent px-1.5 text-xs hover:bg-muted/60 group-hover:bg-primary/5",
-          !withPreview && className,
-        )}
+        variant={withPreview ? "quiet" : variant}
+        className={withPreview ? undefined : className}
       />
     </span>
   );

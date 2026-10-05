@@ -46,10 +46,9 @@ export function ComposerValueGroupChip({ conversationId }: { conversationId: str
  * The Scope chip's two faces under comparison (Arman, 2026-10-03):
  * `plain` = the Output pill's own face; `pill` = bordered, round like the card.
  */
-const SCOPE_CHIP_CLASS: Record<"plain" | "pill", string> = {
-  plain:
-    "h-6 rounded-md border-transparent bg-transparent px-2 text-muted-foreground hover:bg-accent hover:text-foreground",
-  pill: "h-6 rounded-full px-2.5",
+const SCOPE_CHIP_VARIANT: Record<"plain" | "pill", "quiet" | "outline"> = {
+  plain: "quiet",
+  pill: "outline",
 };
 
 /** Agent · (Output) · (Effort) — the right cluster, shared by the meta row and the compact toolbar. */
@@ -71,7 +70,7 @@ export function ComposerScopeCluster({
       {folded ? null : (
         <ActiveContextLensChip
           conversationId={conversationId}
-          className={SCOPE_CHIP_CLASS[composer.scopeChipStyle ?? "plain"]}
+          variant={SCOPE_CHIP_VARIANT[composer.scopeChipStyle ?? "plain"]}
         />
       )}
       <ComposerValueGroupChip conversationId={conversationId} />

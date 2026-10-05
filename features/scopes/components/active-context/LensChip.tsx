@@ -13,6 +13,7 @@ import React from "react";
 import { Layers } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SelectChevron } from "@ai-matrx/design-system";
+import { Button } from "@ai-matrx/design-system/controls";
 
 /** Kind ladder shared with the reimagine picker engine. */
 export type LensChipKind =
@@ -39,6 +40,9 @@ export interface LensChipProps {
   attention?: boolean;
   /** Stretch to the row's width (sidebars, list headers). */
   fill?: boolean;
+  /** `outline` (default): the bordered control. `quiet`: no frame until hover (a composer row). */
+  variant?: "outline" | "quiet";
+  /** Placement only. */
   className?: string;
 }
 
@@ -103,6 +107,7 @@ export function LensChip({
   iconOnly = false,
   attention = false,
   fill = false,
+  variant = "outline",
   className,
 }: LensChipProps) {
   const dots = swatches(nodes);
@@ -110,80 +115,35 @@ export function LensChip({
   const summary = summarizeLensSelection(nodes);
   const name = empty ? "Set scopes" : `Scopes: ${summary}`;
   return (
-    <button
+    <Button
       ref={buttonRef}
-      type="button"
+      variant={variant}
+      tone={attention ? "warning" : undefined}
       onClick={onClick}
       aria-label={name}
       title={empty ? "Set scopes" : summary}
-      className={cn(
-        "inline-flex h-7 min-w-0 max-w-full items-center gap-1.5 whitespace-nowrap rounded-full border border-border bg-card px-2.5 text-xs text-foreground hover:bg-muted",
-        fill && "w-full",
-        iconOnly && "relative w-7 shrink-0 justify-center px-0",
-        attention &&
-          "border-amber-500/60 text-amber-600 hover:bg-amber-500/10 dark:text-amber-400",
-        // Icon-only on a phone (below): a round 28px button that never shrinks away.
-        empty && "max-[480px]:w-7 max-[480px]:shrink-0 max-[480px]:justify-center max-[480px]:px-0",
-        // The same fold inside a narrow composer meta row (container query).
-        empty && "@max-[20rem]/composer-meta:w-7 @max-[20rem]/composer-meta:shrink-0 @max-[20rem]/composer-meta:justify-center @max-[20rem]/composer-meta:px-0",
-        className,
-      )}
-    >
-      {iconOnly ? (
-        <>
-          <Layers
-            className={cn(
-              "h-3.5 w-3.5 shrink-0",
-              attention ? "text-amber-500" : "text-muted-foreground",
-            )}
-          />
-          {!empty && (
-            <span className="absolute -right-1 -top-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-primary px-0.5 text-[9px] font-semibold leading-none text-primary-foreground">
-              {nodes.length}
-            </span>
-          )}
-          {attention && empty && (
-            <span className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-amber-500" />
-          )}
-        </>
-      ) : empty ? (
-        <>
-          <Layers
-            className={cn(
-              "h-3.5 w-3.5 shrink-0",
-              attention ? "text-amber-500" : "text-muted-foreground",
-            )}
-          />
-          {/* A phone header has no room for the words: the chip goes
-              icon-only (named by its aria-label), never a clipped "Se". */}
-          <span
-            className={cn(
-              "min-w-0 truncate max-[480px]:hidden @max-[20rem]/composer-meta:hidden",
-              !attention && "text-muted-foreground",
-            )}
-          >
-            Set scopes
-          </span>
-        </>
-      ) : (
-        <>
+      icon={
+        empty || iconOnly ? (
+          <Layers />
+        ) : (
           <span className="flex shrink-0 items-center -space-x-0.5">
             {dots.map((s) => (
-              <span
-                key={s}
-                className={cn("h-2 w-2 rounded-full ring-1 ring-card", s)}
-              />
+              <span key={s} className={cn("h-2 w-2 rounded-full ring-1 ring-card", s)} />
             ))}
           </span>
-          <span className="min-w-0 truncate">{summary}</span>
-        </>
+        )
+      }
+      iconEnd={iconOnly ? undefined : <SelectChevron size="sm" />}
+      badge={iconOnly ? (empty ? attention : nodes.length) : undefined}
+      className={cn("min-w-0", fill && "w-full", className)}
+    >
+      {iconOnly ? undefined : empty ? (
+        // A phone header has no room for the words: the chip goes icon-only
+        // (named by its aria-label), never a clipped "Se".
+        <span className="max-[480px]:hidden @max-[20rem]/composer-meta:hidden">Set scopes</span>
+      ) : (
+        <span className="min-w-0 truncate">{summary}</span>
       )}
-      {!iconOnly && (
-        <SelectChevron
-          size="sm"
-          className={cn(fill && "ml-auto", empty && "max-[480px]:hidden")}
-        />
-      )}
-    </button>
+    </Button>
   );
 }
