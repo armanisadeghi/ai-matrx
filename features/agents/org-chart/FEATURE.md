@@ -57,10 +57,21 @@ fill — vocabulary row ruled 2026-10-04). Box ids are `type:entityId` (`constan
   it closes and labelled; an agent only reachable inside a loop still gets a tree.
 - `useAgentOrgChart.ts` loads level by level: Orchestra list → every reachable Orchestra's members →
   manual links of every reachable agent, until nothing new appears.
+- `useOrgChartActivity.ts` — live activity on every agent box: running (×N), stalled, or how its last
+  run ended and when. Read from `chat.user_request` (row security decides which runs a viewer sees),
+  kept live by one realtime channel (the table is in the `supabase_realtime` publication), re-read on
+  reconnect. Knobs: `agents.org_chart.activity_window_hours`, `agents.org_chart.stalled_after_minutes`.
+  Cards read it through context, so a status tick never re-lays the chart.
 - The drawing is the shared `components/official/org-chart/OrgChart.tsx` — THE org chart primitive for
   any hierarchy (layout adapted from Paperclip, MIT, credited in `layout.ts`). Never a second one.
 
 ## Change log
+
+- 2026-10-05 — Live activity across the whole chart (any run the viewer may see, from any surface).
+  Second review fixed: a cancelled drag never unplaces; a touch hold no longer also opens the menu;
+  remembered view per chart; removed or re-typed links are not undone by an older read; a failed
+  placement keeps the pair's hand-off; directory failures shown with Retry; fill picker scoped to
+  the position's organization.
 
 - 2026-10-04 — Link types as a registry (directs / reports to / hands off to / dotted line);
   drag to move with Undo, multi-select, right-click, "+", keyboard, branch focus, deep links,

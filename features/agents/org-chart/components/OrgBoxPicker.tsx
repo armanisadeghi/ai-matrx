@@ -43,7 +43,10 @@ function Row({
       onClick={onPick}
       className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left transition-colors hover:bg-muted"
     >
-      <span className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted text-foreground/70">
+      <span
+        data-matrx-pill="off" // an avatar circle, not a label capsule
+        className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted text-foreground/70"
+      >
         {icon}
       </span>
       <span className="min-w-0 flex-1">

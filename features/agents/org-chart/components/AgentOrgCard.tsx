@@ -152,6 +152,7 @@ export function AgentOrgCard({
           <img src={who.avatarUrl} alt="" className="h-9 w-9 shrink-0 rounded-full object-cover" />
         ) : (
           <div
+            data-matrx-pill="off" // an avatar circle, not a label capsule
             className={cn(
               "flex h-9 w-9 shrink-0 items-center justify-center",
               d.boxType === "membership" ? "rounded-full" : "rounded-lg",
