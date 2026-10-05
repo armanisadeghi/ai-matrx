@@ -97,8 +97,19 @@ const PART_HOVER: Record<ComposerChipTone, string> = {
   warning: "hover:bg-amber-500/20",
 };
 
-const PART_CONTENT =
-  "inline-flex h-full min-w-0 items-center gap-1.5 px-2 [&>svg]:size-3.5 [&>svg]:shrink-0 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring";
+// A 24px chip is too small to hit on a phone: on a coarse pointer every press
+// target grows an unseen 44px-tall hit box without adding a pixel of height.
+const TOUCH_HIT_BOX =
+  "pointer-coarse:relative pointer-coarse:after:absolute pointer-coarse:after:-inset-y-2.5 pointer-coarse:after:inset-x-0 pointer-coarse:after:content-['']";
+
+const PART_CONTENT = cn(
+  "inline-flex h-full min-w-0 items-center gap-1.5 px-2 [&>svg]:size-3.5 [&>svg]:shrink-0",
+  "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring",
+  TOUCH_HIT_BOX,
+);
+
+/** A segment's own corners inside a split chip (the shell's 6px minus its border). */
+const PART_CORNERS = "first:rounded-l-[5px] last:rounded-r-[5px]";
 
 function chipFace({
   tone,
@@ -237,6 +248,7 @@ export function ComposerChip({
       className={cn(
         PART_CONTENT,
         PART_HOVER[tone],
+        split && PART_CORNERS,
         !split && chipFace({ tone, pressed, open, error }),
         !split && !remove && wrapperClassName,
         className,
@@ -256,7 +268,7 @@ export function ComposerChip({
       data-composer-chip=""
       className={cn(
         chipFace({ tone, pressed, open, error }),
-        "items-stretch overflow-hidden",
+        "items-stretch",
         !remove && wrapperClassName,
       )}
     >
@@ -320,6 +332,7 @@ export function ComposerChipPart({
       data-composer-chip="part"
       className={cn(
         PART_CONTENT,
+        PART_CORNERS,
         "shrink-0 border-l border-border",
         lit ? "bg-primary/10 text-primary hover:bg-primary/20" : PART_HOVER[tone],
         className,
