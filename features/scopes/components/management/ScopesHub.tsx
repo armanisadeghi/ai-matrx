@@ -162,7 +162,10 @@ export function ScopesHub() {
     </SurfaceRuntimeProvider>
   );
 
-  if (status === "loading" && organizations.length === 0) {
+  // "idle" is the instant before the whole-tree fetch starts: the person's organizations are not
+  // known yet, so it paints the skeleton, never the "No organizations yet" card (that card is
+  // for a tree that finished loading and found none).
+  if ((status === "loading" || status === "idle") && organizations.length === 0) {
     return wrap(<HubSkeleton />);
   }
 
