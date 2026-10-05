@@ -356,3 +356,30 @@ accumulator), read through `isQuotedSourceXmlBlock` (`json-kind-signal.ts`) by X
 - [x] X8. Front-matter kind: DECIDED hidden (document properties). `frontMatterEnd` moved into `json-kind-signal.ts`;
       `markdownCarriesKind` ignores front matter, and the accumulator holds an OPEN front matter instead of drawing
       its `---` as a rule and its values as prose. Judge and renderer agree.
+
+## R4. Round 4 — the class guards and the leaks they exposed (2026-10-05)
+
+- [x] G1. LEAK SENTINEL. `surfaces/kind-leak-scan.ts` (ONE DOM scan: `__kind` key in rendered text outside
+      `data-kind-source`; puts back the underscores markdown emphasis ate) + `surfaces/kind-leak-sentinel.ts`
+      (MutationObserver + initial scan, debounced, char-capped, never throws; `captureError` source "content-ir"
+      once per DOM path, ≤20 per page; dev console.error), mounted once in `app/DeferredSingletonCore.tsx` (idle,
+      `ssr:false` edge — nothing on the main chunk). Marked `data-kind-source="explicit"`: `KindSourceView`,
+      `KindDataGate` with `showSource` (JsonInspector / JsonTreeViewer / RawJsonExplorer / JsonViewer / ResultJson),
+      `CodeBlock` non-JSON language or settled `showSource`, `InlineCodeSnippet` quoted, inline code spans
+      (`prose-inline-elements`), debug `<pre>` panes (AgentExecutionDebugPanel, ExecutionInstanceInspector,
+      ErrorInspectorWindow). Guard `kind-leak-sentinel.test.ts`.
+- [x] G2. DOM FRAME JUDGE. `render-paths/__tests__/dom-frame-judge.tsx` draws a frame through the real BlockRenderer in
+      jsdom and asks the same scan. Midstream (every stream the file drives) and the render matrix (every streaming
+      path × archetype) judge sampled frames: each block's first `__kind` frame, its last frame, every 8th between.
+- [x] P2. Kind right after inline markup on its line (`<b>…</b>:`, `` `x` ``, `~~`, `<!-- -->`, `<img>`):
+      `startsStructuralLine` now means fence (3+) / table row / directive / bare JSON / line-owning tag. Guard midstream P2.
+- [x] P3. Content-fed streams: the static splitter makes an unbalanced object whose first key is (or may still be)
+      `__kind` a json code block — loader live, broken state settled. Guard `content-fed-stream-never-raw.test.tsx` (unmocked).
+- [x] P6. Inline level: `surfaces/kind-one-line.ts` (`inlineKindText`, `kindOneLine`) in `RichContentInline` and
+      `RichContentPreview` (before the cut); `ExtractionCellDisplay` kind cells. Guard `inline-level-never-raw-kind.test.tsx`.
+- [ ] P7. Tables mid-stream. PARTIAL: cells render through the inline level, so a kind in a header/body cell now reads
+      as its one-line form (DOM judge: 0 raw frames on header-row, cell-after-prose and cell-only streams). Not done: a
+      dedicated midstream P7 guard; live lifting of the kind OUT of the table (the reload splitter does, V2).
+- [ ] P8. Markdown-escaped `{"\_\_kind":…}` and double-encoded kind strings — NOT STARTED.
+- [ ] P9. `![{kind}](url)` stray "!"/"(url)" blocks — NOT STARTED. Truncated kind settled at message end: no raw frame
+      after P3 (explored), but loader-vs-broken state on the settled frame not asserted.
