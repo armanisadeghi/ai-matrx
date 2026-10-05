@@ -232,9 +232,25 @@ it("does not let a fence marker inside a multiline XML comment suppress a follow
   ).toEqual([expect.objectContaining({ content: FLASHCARDS })]);
 });
 
+// Ruling (b), round 3 (X1): an XML TAG is structure — a JSON fence inside it is
+// DATA. The kind leaves the card (its fence lines are chrome); the text around
+// it stays XML, the same bytes live and on reload.
 it.each([
   ["backtick fence", `\`\`\`json\n${FLASHCARDS}\n\`\`\``],
   ["tilde fence", `~~~json\n${FLASHCARDS}\n~~~`],
+])("lifts a %s kind out of generic XML across static and Redux inputs", (_name, example) => {
+  const source = `<custom>\n**Nested result**\n${example}\n</custom>`;
+  const expected = [
+    { type: "code", language: "xml", content: "<custom>\n**Nested result**\n", kind: null },
+    { type: "code", language: "json", content: FLASHCARDS, kind: "flashcard_set" },
+    { type: "code", language: "xml", content: "\n</custom>", kind: null },
+  ];
+  expect(splitterBlocks(source)).toEqual(expected);
+  for (const seed of [1, 17, 90211])
+    expect(reduxBlocks(source, seed).filter((b) => b.content)).toEqual(expected);
+});
+
+it.each([
   ["inline code", `\`${FLASHCARDS}\``],
   ["comment", `<!--\n${FLASHCARDS}\n-->`],
   ["CDATA", `<![CDATA[\n${FLASHCARDS}\n]]>`],

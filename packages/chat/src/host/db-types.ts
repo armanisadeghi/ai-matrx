@@ -41595,7 +41595,7 @@ export type ChatDatabase = {
         Row: {
           biggest_obstacle: string | null
           company: string
-          created_at: string | null
+          created_at: string
           created_by: string | null
           current_ai_systems: string | null
           custom_fields: Json
@@ -41605,7 +41605,7 @@ export type ChatDatabase = {
           id: string
           metadata: Json
           notes: string | null
-          organization_id: string | null
+          organization_id: string
           phone: string | null
           published_to_web: boolean
           published_to_web_at: string | null
@@ -41617,7 +41617,7 @@ export type ChatDatabase = {
           shown_to: Database["platform"]["Enums"]["shown_to"] | null
           status: string
           step_completed: number
-          updated_at: string | null
+          updated_at: string
           updated_by: string | null
           use_case: string
           user_type: string
@@ -41628,7 +41628,7 @@ export type ChatDatabase = {
         Insert: {
           biggest_obstacle?: string | null
           company: string
-          created_at?: string | null
+          created_at?: string
           created_by?: string | null
           current_ai_systems?: string | null
           custom_fields?: Json
@@ -41638,7 +41638,7 @@ export type ChatDatabase = {
           id?: string
           metadata?: Json
           notes?: string | null
-          organization_id?: string | null
+          organization_id: string
           phone?: string | null
           published_to_web?: boolean
           published_to_web_at?: string | null
@@ -41650,7 +41650,7 @@ export type ChatDatabase = {
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           status?: string
           step_completed?: number
-          updated_at?: string | null
+          updated_at?: string
           updated_by?: string | null
           use_case: string
           user_type: string
@@ -41661,7 +41661,7 @@ export type ChatDatabase = {
         Update: {
           biggest_obstacle?: string | null
           company?: string
-          created_at?: string | null
+          created_at?: string
           created_by?: string | null
           current_ai_systems?: string | null
           custom_fields?: Json
@@ -41671,7 +41671,7 @@ export type ChatDatabase = {
           id?: string
           metadata?: Json
           notes?: string | null
-          organization_id?: string | null
+          organization_id?: string
           phone?: string | null
           published_to_web?: boolean
           published_to_web_at?: string | null
@@ -41683,7 +41683,7 @@ export type ChatDatabase = {
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           status?: string
           step_completed?: number
-          updated_at?: string | null
+          updated_at?: string
           updated_by?: string | null
           use_case?: string
           user_type?: string
@@ -43737,26 +43737,32 @@ export type ChatDatabase = {
       }
       schema_templates: {
         Row: {
-          created_at: string | null
+          created_at: string
+          deleted_at: string | null
           description: string | null
           fields: Json
           id: string
+          metadata: Json
           template_name: string
           version: number
         }
         Insert: {
-          created_at?: string | null
+          created_at?: string
+          deleted_at?: string | null
           description?: string | null
           fields: Json
           id?: string
+          metadata?: Json
           template_name: string
           version?: number
         }
         Update: {
-          created_at?: string | null
+          created_at?: string
+          deleted_at?: string | null
           description?: string | null
           fields?: Json
           id?: string
+          metadata?: Json
           template_name?: string
           version?: number
         }

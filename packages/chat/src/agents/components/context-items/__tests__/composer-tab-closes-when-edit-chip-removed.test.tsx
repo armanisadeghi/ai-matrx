@@ -1,0 +1,75 @@
+/**
+ * @jest-environment jsdom
+ *
+ * WIRING: the composer's chips row closes the canvas tab when the item in
+ * front is gone — real store, real edit stager. Live walk 2026-10-05: reverting
+ * an edit removed its chip but left the diff open beside the chat.
+ *
+ * Use case: Priya opens the diff chip for her edit to the caching answer, then
+ * reverts the edit.
+ */
+import React, { act } from "react";
+import { createRoot } from "react-dom/client";
+import { Provider } from "react-redux";
+import { TooltipProvider } from "@radix-ui/react-tooltip";
+import { configureStore } from "@reduxjs/toolkit";
+import { createSlimRootReducer } from "@host/lib/redux/rootReducer";
+import { stageAnswerEditRemark } from "../../../redux/execution-system/instance-resources/answer-edit-remark";
+import { selectInstanceResources } from "../../../redux/execution-system/instance-resources/instance-resources.selectors";
+
+(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+
+const toggle = jest.fn();
+let selected: string | null = null;
+jest.mock("../../../../host/canvas", () => ({
+  useChatCanvasTab: () => ({ isAvailable: true, isVisible: selected !== null, selected, toggle }),
+}));
+jest.mock("@host/features/files/components/preview/FileResourceChip", () => ({ FileResourceChip: () => null }));
+
+import { SmartAgentResourceChips } from "../../inputs/resources/SmartAgentResourceChips";
+
+const CID = "5e1d2c3b-4a59-4687-9a1b-2c3d4e5f6a7b";
+const MID = "7f6e5d4c-3b2a-4190-8f7e-6d5c4b3a2f10";
+
+test("removing the edit chip whose diff is in front closes the tab", () => {
+  toggle.mockReset();
+  selected = null;
+  const store = configureStore({
+    reducer: createSlimRootReducer(),
+    middleware: (d) => d({ serializableCheck: false }),
+  });
+  const host = document.createElement("div");
+  const root = createRoot(host);
+  const mount = () =>
+    act(() =>
+      root.render(
+        <Provider store={store}>
+          <TooltipProvider>
+            <SmartAgentResourceChips conversationId={CID} />
+          </TooltipProvider>
+        </Provider>,
+      ),
+    );
+  act(() => {
+    store.dispatch(
+      stageAnswerEditRemark({ conversationId: CID, messageId: MID, beforeText: "Use Redis.", afterText: "Use SQLite." }),
+    );
+  });
+  mount();
+  const resources = selectInstanceResources(CID)(store.getState());
+  expect(resources).toHaveLength(1);
+  // The person opened that chip's diff: the tab shows its item.
+  selected = `${resources[0].resourceId}:remark`;
+  mount();
+  // Reverting the edit removes the chip.
+  act(() => {
+    store.dispatch(
+      stageAnswerEditRemark({ conversationId: CID, messageId: MID, beforeText: "Use Redis.", afterText: "Use Redis." }),
+    );
+  });
+  mount();
+  expect(selectInstanceResources(CID)(store.getState())).toHaveLength(0);
+  expect(toggle).toHaveBeenCalledTimes(1);
+  expect(toggle.mock.calls[0][0]).toMatchObject({ selected: `${resources[0].resourceId}:remark` });
+  act(() => root.unmount());
+});

@@ -57,7 +57,7 @@ test("kindless tool arguments still copy as pretty JSON", () => {
 test("an image result carrying a kind copies as markdown for a person", () => {
   const result = { ...KIND, media: [{ file_id: "f-1", mime_type: "image/png" }] };
   const entry = { callId: "c2", toolName: "make_image", result, arguments: {} };
-  act(() => root.render(<ImageGenerationResult {...({ entry } as never)} />));
+  act(() => root.render(<ImageGenerationResult {...({ entry } as unknown as React.ComponentProps<typeof ImageGenerationResult>)} />));
   const human = copyProps.find((p) => p.label === "Image")!.human();
   expect(human).not.toContain("__kind");
   expect(human).toContain("Passport");
