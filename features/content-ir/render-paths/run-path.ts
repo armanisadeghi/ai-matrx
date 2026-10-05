@@ -44,6 +44,11 @@ export interface RenderPathRun {
   /** The wire text this path put on the stream (null when it streams nothing). */
   wire: string | null;
   verdict: RenderPathVerdict;
+  /**
+   * Every upserted frame with the MESSAGE's stream state it is drawn under —
+   * what the DOM frame judge (G2) renders. Streaming paths only.
+   */
+  frames?: Array<{ block: RenderBlockPayload; isStreamActive: boolean }>;
 }
 
 function envelopeOf(block: RenderBlockPayload): CanonicalBlockIR | null {
@@ -136,6 +141,7 @@ export function runStreamingPath(
   const latest = new Map<string, RenderBlockPayload>();
   const order: string[] = [];
   const records: StreamTickRecord[] = [];
+  const frames: Array<{ block: RenderBlockPayload; isStreamActive: boolean }> = [];
   let chunkNo = 0;
 
   const accumulator = new StreamBlockAccumulator(`render-path-${pathId}`, ((
@@ -165,6 +171,7 @@ export function runStreamingPath(
       isStreamActive: !finalizing,
     });
     records.push(record);
+    frames.push({ block, isStreamActive: !finalizing });
     return action;
   };
 
@@ -187,6 +194,7 @@ export function runStreamingPath(
     records,
     wire,
     verdict: verdictFor(blocks, kind, []),
+    frames,
   };
 }
 

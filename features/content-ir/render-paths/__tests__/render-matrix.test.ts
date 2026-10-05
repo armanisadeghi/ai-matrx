@@ -22,6 +22,8 @@
  * in front of a user a day later.
  */
 
+// G2: the DOM judge first — its mocks must register before BlockRenderer loads.
+import { domFrameVerdict, sampleKindFrames } from "./dom-frame-judge";
 import { componentRegistry } from "@/features/content-ir/registry/component-registry";
 import { kindRegistry } from "@/features/content-ir/registry/kind-registry";
 import { kindSchemaFromJsonSchema } from "@ai-matrx/content-ir";
@@ -302,6 +304,20 @@ describe("THE RENDER MATRIX — a valid payload always reaches its component", (
           const raw = run.records.filter((r) => r.drawsKindAsRawJson);
           expect(raw.map((r) => `chunk ${r.chunk} (${r.type})`)).toEqual([]);
         });
+
+        // G2: the same frames DRAWN through the real BlockRenderer in jsdom —
+        // a `__kind` key on screen outside a source container fails.
+        it(`never puts a __kind key on screen mid-stream on "${pathId}" (DOM)`, async () => {
+          const kind = register(archetype);
+          const run = runRenderPath(pathId, kind, archetype.value);
+          if (!run?.frames) throw new Error(`${pathId} produced no frames`);
+          const leaks: string[] = [];
+          for (const frame of sampleKindFrames(run.frames)) {
+            const verdict = await domFrameVerdict(frame.block, { isStreamActive: frame.isStreamActive });
+            if (verdict.raw) leaks.push(`${frame.block.type}: ${verdict.text.replace(/\s+/g, " ").slice(0, 100)}`);
+          }
+          expect(leaks).toEqual([]);
+        }, 120_000);
       }
 
       it("keeps the payload intact end to end (zero loss)", () => {

@@ -19,6 +19,8 @@
  * line never completed and `__kind` was never seen until the fence closed.
  */
 
+// G2: the DOM judge first — its mocks must register before BlockRenderer loads.
+import { domFrameVerdict, sampleKindFrames } from "../render-paths/__tests__/dom-frame-judge";
 import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
 import { StreamBlockAccumulator } from "@ai-matrx/chat/agents/redux/execution-system/utils/stream-block-accumulator";
 import { renderBlockToContentBlock } from "@/components/mardown-display/chat-markdown/render-block-to-content-block";
@@ -84,8 +86,12 @@ const KINDLESS_ONE_LINE = JSON.stringify({
   rows: Array.from({ length: 30 }, (_, i) => ({ id: i, name: `row ${i}` })),
 });
 
+/** Every stream this file drives — the DOM judge (G2, last describe) draws them all. */
+const STREAMS_SEEN = new Set<string>();
+
 /** Stream one character at a time; return every upsert in order. */
 function streamCharByChar(stream: string, requestId: string): Upsert[] {
+  STREAMS_SEEN.add(stream);
   const upserts: Upsert[] = [];
   const accumulator = new StreamBlockAccumulator(requestId, (payload) => {
     upserts.push(payload as Upsert);
@@ -101,6 +107,7 @@ const rendersRawJson = (block: RenderBlockPayload) => drawsRawJsonCard(block);
 
 /** Stream one character at a time, FINALIZE, return the last frame per block. */
 function finalBlocks(stream: string, requestId: string): RenderBlockPayload[] {
+  STREAMS_SEEN.add(stream);
   const upserts: Upsert[] = [];
   const accumulator = new StreamBlockAccumulator(requestId, (payload) => {
     upserts.push(payload as Upsert);
@@ -639,4 +646,44 @@ describe("never raw: every frame judged with the MESSAGE's stream state (V5a)", 
     const raw = frames.filter((b) => drawsKindAsRawJson(b, { isStreamActive: true }));
     expect(raw.map((b) => `${b.type}/${b.status}: ${(b.content ?? "").slice(0, 40)}`)).toEqual([]);
   });
+});
+
+/**
+ * G2 — THE DOM JUDGE. Every stream this file drove above, replayed one
+ * character at a time through the real accumulator (then finalized), and its
+ * frames DRAWN through the real BlockRenderer in jsdom: a `__kind` key in the
+ * rendered text outside a `data-kind-source` container fails. Sampled — every
+ * frame where a block's `__kind` first appears, every block's last frame, and
+ * every 8th kind frame between. Runs last: it reads the streams the tests
+ * above registered.
+ */
+describe("never raw ON SCREEN: every stream above, drawn through BlockRenderer (G2)", () => {
+  it("no sampled frame of any stream puts a __kind key on screen", async () => {
+    expect(STREAMS_SEEN.size).toBeGreaterThan(10);
+    const leaks: string[] = [];
+    for (const stream of STREAMS_SEEN) {
+      const frames: Array<{ block: RenderBlockPayload; live: boolean }> = [];
+      const accumulator = new StreamBlockAccumulator("dom-judge", (payload) => {
+        frames.push({ block: (payload as Upsert).block, live: true });
+        return { type: "test/upsert", payload };
+      });
+      const dispatch = (action: unknown) => action;
+      for (const ch of stream) accumulator.ingest(ch, dispatch);
+      const liveCount = frames.length;
+      accumulator.finalize(dispatch);
+      frames.forEach((frame, i) => {
+        frame.live = i < liveCount;
+      });
+      for (const frame of sampleKindFrames(frames)) {
+        const verdict = await domFrameVerdict(frame.block, { isStreamActive: frame.live });
+        if (verdict.raw) {
+          leaks.push(
+            `${JSON.stringify(stream.slice(0, 60))} ${frame.live ? "live" : "final"} ${frame.block.type}: ${JSON.stringify(verdict.text.replace(/\s+/g, " ").slice(0, 100))}`,
+          );
+          break;
+        }
+      }
+    }
+    expect(leaks).toEqual([]);
+  }, 600_000);
 });
