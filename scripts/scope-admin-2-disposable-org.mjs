@@ -28,9 +28,11 @@ if (cmd === "setup") {
   const { data: org, error } = await sb.rpc("org_create", { p_name: NAME, p_slug: slug, p_description: "Residential pool cleaning and repair, north county" });
   if (error) throw error;
   const orgId = org.id ?? org.organization_id ?? org;
-  const { data: type, error: e2 } = await sb.rpc("create_scope_type", { p_org_id: orgId, p_label_singular: "Service Route", p_label_plural: "Service Routes", p_description: "Weekly cleaning routes" });
+  // The scope store doors (FTS-1g: the old create_scope_type / create_scope RPCs were dropped 2026-10-05).
+  const { data: typeAnswer, error: e2 } = await sb.schema("custom").rpc("context_type_write", { p_organization_id: orgId, p_type_id: null, p_spec: { label_singular: "Service Route", label_plural: "Service Routes", description: "Weekly cleaning routes" } });
   if (e2) throw e2;
-  const { error: e3 } = await sb.rpc("create_scope", { p_org_id: orgId, p_type_id: type.id, p_name: "Carlsbad Tuesday", p_description: "Twelve homes, Tuesday mornings" });
+  const type = typeAnswer.row;
+  const { error: e3 } = await sb.schema("custom").rpc("context_scope_write", { p_organization_id: orgId, p_scope_id: null, p_type_id: type.id, p_spec: { name: "Carlsbad Tuesday", description: "Twelve homes, Tuesday mornings" } });
   if (e3) throw e3;
   console.log(JSON.stringify({ orgId, slug, typeId: type.id }));
 } else if (cmd === "archive") {
@@ -38,7 +40,7 @@ if (cmd === "setup") {
   if (error) throw error;
   console.log(JSON.stringify(data));
 } else if (cmd === "archive-own-type") {
-  const { data, error } = await sb.rpc("delete_scope_type", { p_type_id: arg });
+  const { data, error } = await sb.schema("custom").rpc("context_type_archive", { p_type_id: arg });
   if (error) throw error;
   console.log(JSON.stringify(data));
 } else throw new Error("setup | archive <orgId> | archive-own-type <typeId>");

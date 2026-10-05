@@ -98,10 +98,11 @@ check("disposable war room created", !!wr?.id, wrErr?.message ?? WR_TITLE);
 const warRoomId = wr?.id;
 
 const ST_PLURAL = `Service areas ${stamp}`;
-const st = await rpc("create_scope_type", { p_org_id: ORG, p_label_singular: `Service area ${stamp}`, p_label_plural: ST_PLURAL, p_slug: `service-areas-${tag}` });
-const scopeTypeId = st?.id ?? st;
-const ci = await rpc("create_context_item", { p_scope_type_id: scopeTypeId, p_key: "crew_size", p_display_name: "Crew size", p_value_type: "number" });
-const fieldId = ci?.id ?? ci;
+// The scope store doors (FTS-1g: the old create_scope_type / create_context_item RPCs were dropped 2026-10-05).
+const st = await rpc("context_type_write", { p_organization_id: ORG, p_type_id: null, p_spec: { label_singular: `Service area ${stamp}`, label_plural: ST_PLURAL, slug: `service-areas-${tag}` } }, "custom");
+const scopeTypeId = st?.row?.id;
+const ci = await rpc("context_item_write", { p_item_id: null, p_scope_type_id: scopeTypeId, p_spec: { key: "crew_size", display_name: "Crew size", value_type: "number" } }, "custom");
+const fieldId = ci?.row?.id;
 check("disposable scope type with its Field created", !!scopeTypeId && !!fieldId, `${ST_PLURAL} / Crew size`);
 writeFileSync(`${OUT}/walk-state.json`, JSON.stringify({ rulebookId, parentId, leafId, orgParentId, orgLeafId, warRoomId, scopeTypeId, fieldId }, null, 2));
 
@@ -111,7 +112,7 @@ await rpc("soft_delete_folder", { p_folder_id: parentId });
 await rpc("soft_delete_folder", { p_folder_id: orgParentId });
 { const { error } = await sb.schema("projects").from("war_rooms").update({ deleted_at: new Date().toISOString() }).eq("id", warRoomId);
   check("war room archived the way its page does", !error, error?.message); }
-await rpc("delete_scope_type", { p_type_id: scopeTypeId });
+await rpc("context_type_archive", { p_type_id: scopeTypeId }, "custom");
 
 const childRow = await inTrash("folder", leafId);
 check("the inner folder is in Trash as '2026 Q3 (in Supplier invoices …)'", childRow?.title === `2026 Q3 (in ${PARENT})`, childRow?.title ?? "(absent)");
@@ -183,7 +184,7 @@ await rpc("rulebook_archive", { p_rulebook_id: rulebookId });
 await rpc("soft_delete_folder", { p_folder_id: parentId });
 await rpc("soft_delete_folder", { p_folder_id: orgParentId });
 await sb.schema("projects").from("war_rooms").update({ deleted_at: new Date().toISOString() }).eq("id", warRoomId);
-await rpc("delete_scope_type", { p_type_id: scopeTypeId });
+await rpc("context_type_archive", { p_type_id: scopeTypeId }, "custom");
 const endChecks = await Promise.all([
   inTrash("rulebook", rulebookId), inTrash("folder", parentId), inTrash("folder", orgParentId),
   inTrash("war_room", warRoomId), inTrash("scope_type", scopeTypeId)]);
