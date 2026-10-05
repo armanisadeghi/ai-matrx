@@ -13,7 +13,7 @@ export function describeSubject(subject: FeedbackSubject): string {
     const invoice = subject.invoiceId
       ? `\nInvoice: ${subject.invoiceId}${subject.invoiceStatus ? ` (${subject.invoiceStatus})` : ""}`
       : subject.invoiceStatus
-        ? `\nLatest invoice status: ${subject.invoiceStatus}`
+        ? `\nInvoice status: ${subject.invoiceStatus}`
         : "";
     return `Billing support request\nAccount: ${subject.billingScope}\nSubscription: ${subject.subscriptionId ?? "Not available"}\nPlan: ${subject.planKey ?? "Not available"}\nSubscription status: ${subject.subscriptionStatus ?? "Not available"}${invoice}`;
   }

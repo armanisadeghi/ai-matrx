@@ -1392,7 +1392,7 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
             </p>
             {form.subject.invoiceStatus ? (
               <p className="mt-1 text-muted-foreground">
-                Latest invoice · {form.subject.invoiceStatus}
+                Invoice · {form.subject.invoiceStatus}
               </p>
             ) : null}
           </div>
