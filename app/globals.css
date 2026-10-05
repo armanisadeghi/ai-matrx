@@ -2626,8 +2626,12 @@
    only hang into the space past the text, never push the line. Not in flex /
    grid parents, where a negative margin would let the next item cover it,
    and not in truncating cells, which hold it at the right end already. */
-:not(.flex, .inline-flex, .grid, .inline-grid) > [data-error-alchemy-menu]:not([data-placement="truncated"]) {
-  margin-right: calc(-1lh - 0.25rem);
+/* …but ONLY when nothing follows it: a zero net width let the next words of the
+   line slide under the 38px tap box ("Try again" on the sign-in error card,
+   2026-10-05). Followed by an element, the menu keeps its full slot — the tap
+   box plus its two 3px half-gaps (ErrorAlchemyMenu). */
+:not(.flex, .inline-flex, .grid, .inline-grid) > [data-error-alchemy-menu]:not([data-placement="truncated"]):last-child {
+  margin-right: calc(-1 * (var(--matrx-tap-box, 2.375rem) + var(--matrx-tap-gap, 0.375rem)));
 }
 /* In a truncating cell the menu holds the cell's right end (absolute). There it
    keeps its full tap-target width so the icon sits INSIDE the cell — a 1lh-wide
