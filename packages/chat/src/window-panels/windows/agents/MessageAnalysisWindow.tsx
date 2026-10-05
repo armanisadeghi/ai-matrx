@@ -21,6 +21,7 @@ import { ClientMetricsPanel } from "../../../agents/components/run-controls/pane
 import { cn } from "@ai-matrx/design-system";
 import { NonEditableContextMenu } from "../../../host/ui-slots";
 import { CHAT_WINDOWS } from "../../../host/windows";
+import { Button } from "@ai-matrx/design-system/controls";
 
 type TabId = "request" | "client" | "session";
 
@@ -165,19 +166,7 @@ function MessageAnalysisTabBar({
   return (
     <div className="flex items-center gap-0.5 rounded-md border border-border bg-muted/40 p-0.5">
       {TABS.map((tab) => (
-        <button
-          key={tab.id}
-          type="button"
-          onClick={() => onSelectTab(tab.id)}
-          className={cn(
-            "rounded px-2 py-0.5 text-[11px] font-medium transition-colors whitespace-nowrap",
-            activeTab === tab.id
-              ? "bg-background text-foreground shadow-sm"
-              : "text-muted-foreground hover:text-foreground",
-          )}
-        >
-          {tab.label}
-        </button>
+        <Button variant="quiet" pressed={!!(activeTab === tab.id)} key={tab.id} onClick={() => onSelectTab(tab.id)}>{tab.label}</Button>
       ))}
     </div>
   );

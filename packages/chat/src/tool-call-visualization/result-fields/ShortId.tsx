@@ -13,6 +13,7 @@
 import React from "react";
 import { Check, Copy } from "lucide-react";
 import { cn } from "@ai-matrx/design-system";
+import { Button } from "@ai-matrx/design-system/controls";
 
 export interface ShortIdProps {
   value: string;
@@ -95,17 +96,7 @@ export const ShortId: React.FC<ShortIdProps> = ({
       title={variant === "compact" ? value : undefined}
     >
       {display}
-      <button
-        type="button"
-        onClick={onCopy}
-        aria-label={copied ? "Copied" : "Copy ID"}
-        className={cn(
-          "inline-flex h-4 w-4 flex-shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:text-foreground focus:outline-none",
-          copied && "text-primary",
-        )}
-      >
-        {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-      </button>
+      <Button variant="quiet" icon={copied ? <Check /> : <Copy />} onClick={onCopy} aria-label={copied ? "Copied" : "Copy ID"} />
     </span>
   );
 };
@@ -150,18 +141,7 @@ export const IdListChip: React.FC<{ ids: string[]; className?: string }> = ({
       )}
     >
       {ids.length} {ids.length === 1 ? "id" : "ids"}
-      <button
-        type="button"
-        onClick={onCopy}
-        aria-label={copied ? "Copied" : "Copy ids"}
-        title="Copy all ids"
-        className={cn(
-          "inline-flex h-4 w-4 flex-shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:text-foreground focus:outline-none",
-          copied && "text-primary",
-        )}
-      >
-        {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-      </button>
+      <Button variant="quiet" icon={copied ? <Check /> : <Copy />} onClick={onCopy} aria-label={copied ? "Copied" : "Copy ids"} title="Copy all ids" />
     </span>
   );
 };

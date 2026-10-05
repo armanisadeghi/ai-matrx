@@ -44,6 +44,7 @@ import {
   toolEntryBundleToHuman,
 } from "../utils/toolEntryBundle";
 import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
+import { Button } from "@ai-matrx/design-system/controls";
 
 // ─── Copy payload helpers ──────────────────────────────────────────────────
 
@@ -86,20 +87,7 @@ export const CopyButton: React.FC<{ text: string; className?: string }> = ({
   };
 
   return (
-    <button
-      onClick={handleCopy}
-      className={cn(
-        "flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-all",
-        copied
-          ? "bg-accent text-foreground"
-          : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground",
-        className,
-      )}
-      title={copied ? "Copied!" : "Copy to clipboard"}
-    >
-      {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-      <span>{copied ? "Copied" : "Copy"}</span>
-    </button>
+    <Button variant="quiet" icon={copied ? <Check /> : <Copy />} onClick={handleCopy} title={copied ? "Copied!" : "Copy to clipboard"} className={className}>{copied ? "Copied" : "Copy"}</Button>
   );
 };
 

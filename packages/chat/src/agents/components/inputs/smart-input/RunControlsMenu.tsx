@@ -331,25 +331,7 @@ export function RunControlsMenu({
             const Icon = t.icon;
             const on = activeTab === t.id;
             return (
-              <button
-                key={t.id}
-                type="button"
-                role="tab"
-                id={`runctl-tab-${t.id}-${conversationId}`}
-                aria-selected={on}
-                aria-controls={`runctl-panel-${conversationId}`}
-                onClick={() => setTab(t.id)}
-                className={cn(
-                  "-mb-px flex shrink-0 items-center justify-center gap-1 whitespace-nowrap border-b px-2 py-1.5 text-[11px] font-medium transition-colors sm:gap-1.5 sm:px-2.5 sm:py-2 sm:text-xs",
-                  on
-                    ? "border-primary text-foreground"
-                    : "border-transparent text-muted-foreground hover:text-foreground",
-                )}
-              >
-                <Icon className="h-3.5 w-3.5 shrink-0" />
-                <span className="truncate">{t.label}</span>
-                {rc.tabTrailing(t.id)}
-              </button>
+              <Button variant="quiet" pressed={!!(on)} icon={<Icon />} key={t.id} role="tab" id={`runctl-tab-${t.id}-${conversationId}`} aria-selected={on} aria-controls={`runctl-panel-${conversationId}`} onClick={() => setTab(t.id)} className="-mb-px shrink-0">{t.label} {rc.tabTrailing(t.id)}</Button>
             );
           })}
           <Button variant="outline" icon={fullscreen ? <Minimize2 /> : <Maximize2 />} onClick={() => setFullscreen((v) => !v)} aria-label={

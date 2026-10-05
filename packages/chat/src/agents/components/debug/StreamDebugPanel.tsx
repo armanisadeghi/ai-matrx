@@ -1795,20 +1795,7 @@ function InstanceDebugView({
 
       <div className="flex shrink-0 border-b border-border/50 bg-muted/10 overflow-x-auto scrollbar-none">
         {TAB_DEFS.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            onClick={() => setActiveTab(tab.id)}
-            className={cn(
-              "inline-flex items-center gap-1 px-3 py-1.5 text-[11px] whitespace-nowrap border-b-2 transition-colors cursor-pointer",
-              activeTab === tab.id
-                ? "border-primary text-primary bg-primary/5"
-                : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/20",
-            )}
-          >
-            {tab.icon}
-            {tab.label}
-          </button>
+          <Button variant="quiet" pressed={!!(activeTab === tab.id)} key={tab.id} onClick={() => setActiveTab(tab.id)}>{tab.icon}{tab.label}</Button>
         ))}
       </div>
 

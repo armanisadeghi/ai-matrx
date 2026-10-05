@@ -23,7 +23,7 @@
  * toggle becomes an "update" instead of a "set".
  */
 
-import { Badge } from "@ai-matrx/design-system/controls";
+import { Badge, Button } from "@ai-matrx/design-system/controls";
 import React, { useCallback } from "react";
 import { Beaker } from "lucide-react";
 import { Label } from "@ai-matrx/design-system";
@@ -211,17 +211,6 @@ function ScopeButton({
   children: React.ReactNode;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        "px-2 py-0.5 text-[11px] font-mono transition-colors",
-        active
-          ? "bg-primary text-primary-foreground"
-          : "text-muted-foreground hover:text-foreground hover:bg-accent",
-      )}
-    >
-      {children}
-    </button>
+    <Button variant="quiet" pressed={!!(active)} onClick={onClick}>{children}</Button>
   );
 }

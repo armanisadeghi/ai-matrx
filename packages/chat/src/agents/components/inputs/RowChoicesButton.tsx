@@ -25,6 +25,7 @@ import {
 } from "@ai-matrx/design-system";
 import { cn } from "@ai-matrx/design-system";
 import { toggleMultiValue, type RowChoices } from "./collapsed-row";
+import { Button } from "@ai-matrx/design-system/controls";
 
 interface RowChoicesButtonProps extends RowChoices {
   value: string;
@@ -57,20 +58,7 @@ export function RowChoicesButton({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <button
-          type="button"
-          aria-label={`Choose ${label}`}
-          title="Show choices"
-          data-row-choices
-          className={cn(
-            "shrink-0 h-6 w-6 inline-flex items-center justify-center rounded-full transition-colors",
-            open
-              ? "text-foreground bg-muted/60"
-              : "text-muted-foreground/70 hover:text-foreground hover:bg-muted/60",
-          )}
-        >
-          <ChevronDown className="w-3.5 h-3.5" />
-        </button>
+        <Button variant="quiet" pressed={!!(open)} icon={<ChevronDown />} aria-label={`Choose ${label}`} title="Show choices" data-row-choices className="shrink-0" />
       </PopoverTrigger>
       <PopoverContent align="end" sizing="content" className="p-0">
         <Command>

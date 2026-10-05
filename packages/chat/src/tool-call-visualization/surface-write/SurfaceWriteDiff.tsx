@@ -27,7 +27,7 @@
  * computes, and the package engine caps its quadratic paths.
  */
 
-import { Badge } from "@ai-matrx/design-system/controls";
+import { Badge, Button } from "@ai-matrx/design-system/controls";
 import { useDeferredValue, useState } from "react";
 
 import {
@@ -102,17 +102,7 @@ export function SurfaceWriteDiff({
         </Badge>
       ) : null}
       {canPreview ? (
-        <button
-          type="button"
-          onClick={() => setPreview((p) => !p)}
-          aria-pressed={preview}
-          className={cn(
-            "rounded px-1.5 py-0.5 font-medium hover:bg-muted hover:text-foreground",
-            preview && "bg-muted text-foreground",
-          )}
-        >
-          Preview
-        </button>
+        <Button variant="quiet" pressed={!!(preview)} onClick={() => setPreview((p) => !p)} aria-pressed={preview}>Preview</Button>
       ) : null}
     </span>
   );

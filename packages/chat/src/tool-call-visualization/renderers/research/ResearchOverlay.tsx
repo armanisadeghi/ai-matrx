@@ -283,20 +283,7 @@ export const ResearchFullTextTab: React.FC<ToolRendererProps> = ({ entry }) => {
 
     return (
         <div className="relative overflow-hidden rounded-lg border border-border bg-card">
-            <button
-                type="button"
-                onClick={handleCopyAll}
-                aria-label={copied ? "Copied" : "Copy all"}
-                title={copied ? "Copied" : "Copy all"}
-                className={cn(
-                    "absolute right-2 top-2 z-10 inline-flex h-7 w-7 items-center justify-center rounded-md border border-border shadow-sm backdrop-blur-sm transition-colors",
-                    copied
-                        ? "bg-primary/10 text-primary"
-                        : "bg-background/80 text-muted-foreground hover:bg-muted",
-                )}
-            >
-                {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-            </button>
+            <Button variant="outline" icon={copied ? <Check /> : <Copy />} onClick={handleCopyAll} aria-label={copied ? "Copied" : "Copy all"} title={copied ? "Copied" : "Copy all"} className="absolute right-2 top-2 z-10" />
             <div className="p-5">
                 <RichContent level="full" imagePolicy="ai" source={fullText} hideCopyButton className="text-sm" />
             </div>

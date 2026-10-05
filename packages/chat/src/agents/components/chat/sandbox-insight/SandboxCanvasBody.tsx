@@ -51,6 +51,7 @@ import { selectLiveToolLifecycleByConversation } from "../../../redux/execution-
 import { SandboxActivityFeed } from "./SandboxActivityFeed";
 import { isSandboxTool } from "./sandbox-activity";
 import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
+import { Button } from "@ai-matrx/design-system/controls";
 
 /** The agent's working directory in every sandbox image. */
 const AGENT_HOME = "/home/agent";
@@ -244,21 +245,7 @@ export function SandboxCanvasBody({
       {/* Tabs */}
       <div className="flex items-center gap-0.5 border-b border-border px-2 pb-1">
         {TABS.map(({ id, label, icon: Icon }) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => setTab(id)}
-            aria-pressed={tab === id}
-            className={cn(
-              "flex items-center gap-1 rounded px-2 py-1 text-[11px] transition-colors",
-              tab === id
-                ? "bg-accent text-foreground"
-                : "text-muted-foreground hover:bg-accent/50",
-            )}
-          >
-            <Icon className="size-3.5" />
-            {label}
-          </button>
+          <Button variant="quiet" pressed={!!(tab === id)} icon={<Icon />} key={id} onClick={() => setTab(id)} aria-pressed={tab === id}>{label}</Button>
         ))}
       </div>
 

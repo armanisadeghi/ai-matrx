@@ -53,6 +53,7 @@ import {
   entryHasError,
   toolEntriesSummaryToHuman,
 } from "../utils/toolEntryBundle";
+import { Button } from "@ai-matrx/design-system/controls";
 
 // ─── Multi-tool entry selector (only rendered when entries.length > 1) ────────
 
@@ -71,19 +72,7 @@ const EntrySelector: React.FC<{
         const label = getToolDisplayName(entry.toolName);
         const isActive = entry.callId === selectedCallId;
         return (
-          <button
-            key={entry.callId}
-            onClick={() => onSelect(entry.callId)}
-            className={cn(
-              "flex-shrink-0 rounded-md border border-border px-2.5 py-1 text-xs font-medium transition-colors",
-              isActive
-                ? "border-primary bg-primary text-primary-foreground"
-                : "bg-background text-muted-foreground hover:bg-muted hover:text-foreground",
-            )}
-          >
-            <span className="mr-1 opacity-60">{idx + 1}.</span>
-            {label}
-          </button>
+          <Button variant="outline" pressed={!!(isActive)} key={entry.callId} onClick={() => onSelect(entry.callId)}>{idx + 1}. {label}</Button>
         );
       })}
       <div className="ml-auto flex-shrink-0">

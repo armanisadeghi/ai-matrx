@@ -1,6 +1,6 @@
 "use client";
 
-import { Badge } from "@ai-matrx/design-system/controls";
+import { Badge, Button } from "@ai-matrx/design-system/controls";
 import { useState } from "react";
 import { Save, Loader2, AlertTriangle, Eye } from "lucide-react";
 import { useChatCanvasTab } from "../../../host/canvas";
@@ -100,16 +100,7 @@ export function AgentSaveStatus({
         )}
 
         {isEditMode && (
-          <button
-            onClick={handleSave}
-            disabled={!canSave}
-            className={cn(
-              "flex items-center justify-center w-6 h-6 rounded-md transition-colors",
-              canSave
-                ? "text-primary hover:bg-primary/10 active:bg-primary/20"
-                : "text-muted-foreground/40 cursor-not-allowed",
-            )}
-            title={
+          <Button variant="quiet" icon={isLoading ? <Loader2 className="animate-spin" /> : <Save />} onClick={handleSave} disabled={!canSave} title={
               isReadOnlySave
                 ? "View only — create your copy to save changes"
                 : isNewRoute
@@ -118,14 +109,16 @@ export function AgentSaveStatus({
                     ? "Save changes"
                     // read-gate-exempt: save-button tooltip from local dirty-state tracking, not a read's empty answer
                     : "No unsaved changes"
-            }
-          >
-            {isLoading ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <Save className="w-3.5 h-3.5" />
-            )}
-          </button>
+            } aria-label={
+              isReadOnlySave
+                ? "View only — create your copy to save changes"
+                : isNewRoute
+                  ? "Save new agent"
+                  : isDirty
+                    ? "Save changes"
+                    // read-gate-exempt: save-button tooltip from local dirty-state tracking, not a read's empty answer
+                    : "No unsaved changes"
+            } />
         )}
 
         {isEditMode && reachBadge}
