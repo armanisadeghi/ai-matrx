@@ -53,6 +53,7 @@ import {
   ConversationHistorySection,
   ConversationHistorySidebar,
 } from "../../../agents/components/conversation-history/ConversationHistorySidebar";
+import { selectHasMessages } from "../../../agents/redux/execution-system/messages/messages.selectors";
 import { selectConversationListItemById } from "../../../agents/redux/conversation-list/conversation-list.selectors";
 import { selectLatestConversationId } from "../../../agents/redux/execution-system/selectors/aggregate.selectors";
 import { selectFocusedConversation } from "../../../agents/redux/execution-system/conversation-focus/conversation-focus.selectors";
@@ -83,6 +84,7 @@ import type { Resource } from "../../../agents/resources/types";
 import {
   AGENT_RUN_WINDOW_AGENT_ARG,
   AGENT_RUN_WINDOW_CONVERSATION_ARG,
+  addressableConversationId,
   AGENT_RUN_WINDOW_URL_MODE,
 } from "./agentRunWindowAddress";
 import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
@@ -840,6 +842,18 @@ function AgentRunWindowInner({
     : null;
   const liveConversationId = useLiveConversationId(surfaceKey);
   const activeConversationId = selectedConversationId ?? liveConversationId;
+  const liveConversationHasMessages = useAppSelector((state: ChatRootState) =>
+    liveConversationId
+      ? selectHasMessages(liveConversationId)(state)
+      : false,
+  );
+  // Only a conversation the server can hold goes in the address — see
+  // `addressableConversationId`. An unsent window restores as a new empty chat.
+  const addressedConversationId = addressableConversationId({
+    selectedConversationId,
+    liveConversationId,
+    liveConversationHasMessages,
+  });
 
   // Every conversation this window has run or opened, newest first, with the
   // agent it ran under — survives agent switches so nothing started here is
@@ -935,8 +949,8 @@ function AgentRunWindowInner({
       urlSyncArgs={{
         m: AGENT_RUN_WINDOW_URL_MODE,
         ...(agentId ? { [AGENT_RUN_WINDOW_AGENT_ARG]: agentId } : {}),
-        ...(activeConversationId
-          ? { [AGENT_RUN_WINDOW_CONVERSATION_ARG]: activeConversationId }
+        ...(addressedConversationId
+          ? { [AGENT_RUN_WINDOW_CONVERSATION_ARG]: addressedConversationId }
           : {}),
       }}
       onCollectData={collectData}
