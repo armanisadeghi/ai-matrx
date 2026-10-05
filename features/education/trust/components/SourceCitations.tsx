@@ -27,6 +27,8 @@ import { openSourceLabel, plainLocator } from "../plainWords";
 import { sourceRefFromCitation } from "../sourceRef";
 import { useCitationPlace } from "../useCitationPlace";
 import { recordCitationTarget } from "../recordCitation";
+import { useDocumentPassage } from "../useDocumentPassage";
+import { headingLabel } from "../documentPassage";
 import { useOpenCitation } from "@/features/rag/components/source-inspector/useOpenCitation";
 
 const KIND_ICON = {
@@ -75,17 +77,28 @@ function TrustCitationChip({
   // names the place and the door opens AT it.
   const record = recordCitationTarget(c);
   const openCitation = useOpenCitation();
+  // A markdown document names its place by the section the quote sits in.
+  const docPlace = useDocumentPassage(
+    record?.kind === "document" ? record.recordId : null,
+    c.excerpt,
+  );
+  const recordLabel =
+    record?.kind === "document"
+      ? docPlace.passage
+        ? headingLabel(docPlace.passage.headings)
+        : null
+      : (record?.label ?? null);
   const openRecord = record
     ? () => {
-        if (record.kind === "conversation") {
+        if (record.kind === "conversation" || record.kind === "document") {
           openCitation({
-            sourceKind: "conversation",
+            sourceKind: record.kind,
             sourceId: record.recordId,
             href: record.href,
             chunkId: record.part,
             snippet: c.excerpt ?? null,
             fileName: c.title ?? null,
-            placeLabel: record.label,
+            placeLabel: recordLabel,
           });
         } else if (typeof window !== "undefined") {
           window.open(record.href, "_blank", "noopener,noreferrer");
@@ -93,7 +106,7 @@ function TrustCitationChip({
       }
     : undefined;
   const locator = record
-    ? record.label
+    ? recordLabel
     : ref
       ? (place?.label ?? null)
       : (place?.label ?? plainLocator(c.locator));

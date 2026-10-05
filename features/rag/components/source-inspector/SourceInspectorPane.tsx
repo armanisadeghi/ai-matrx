@@ -19,7 +19,7 @@
  * `usePageBundle`, `ChunksOnPage`, `ExtractionsPane` — never forks them.
  */
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import {
   BookMarked,
@@ -65,6 +65,7 @@ import {
 import { OriginalPane } from "@/features/source-studio/components/OriginalPane";
 import { ConversationEmbed } from "@/features/knowledge/hub/embeds/ConversationEmbed";
 import { messageRangeOfPart } from "@/features/education/trust/recordCitation";
+import { useDocumentPassage } from "@/features/education/trust/useDocumentPassage";
 
 // react-pdf is heavy — keep it out of the inspector chunk until a PDF is shown.
 const PdfPreview = dynamic(
@@ -121,8 +122,61 @@ function ConversationCitationBody(props: SourceInspectorPaneProps) {
   );
 }
 
+/** A markdown-document citation: its text, the cited passage marked and scrolled to. */
+function DocumentCitationBody(props: SourceInspectorPaneProps) {
+  const { loading, doc, passage } = useDocumentPassage(props.sourceId, props.snippet ?? null);
+  const markRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    markRef.current?.scrollIntoView({ block: "start", behavior: "smooth" });
+  }, [passage, doc]);
+  if (loading) {
+    return (
+      <div className="flex h-full items-center justify-center text-muted-foreground">
+        <Loader2 className="h-4 w-4 animate-spin" />
+      </div>
+    );
+  }
+  if (!doc) {
+    return (
+      <div role="alert" className="p-3 text-sm text-muted-foreground">
+        This document could not be opened.
+      </div>
+    );
+  }
+  const lines = doc.body.split("\n");
+  const before = passage ? lines.slice(0, passage.startLine).join("\n") : doc.body;
+  const cited = passage ? lines.slice(passage.startLine, passage.endLine).join("\n") : "";
+  const after = passage ? lines.slice(passage.endLine).join("\n") : "";
+  return (
+    <div className="flex h-full min-h-0 flex-col" data-testid="source-inspector-document">
+      {props.placeLabel ? (
+        <div className="shrink-0 border-b border-border px-3 py-1.5 text-xs font-medium">
+          {props.placeLabel}
+        </div>
+      ) : null}
+      <ScrollArea className="min-h-0 flex-1">
+        <div className="p-3">
+          {before.trim() ? <BasicMarkdownContent imagePolicy="other" content={before} /> : null}
+          {passage ? (
+            <div
+              ref={markRef}
+              data-testid="cited-passage"
+              className="my-2 rounded-md border border-primary/50 bg-primary/[0.06] p-2.5 ring-1 ring-primary/20"
+            >
+              <Badge className="mb-1.5 text-[10px]">Cited</Badge>
+              <BasicMarkdownContent imagePolicy="other" content={cited} />
+            </div>
+          ) : null}
+          {after.trim() ? <BasicMarkdownContent imagePolicy="other" content={after} /> : null}
+        </div>
+      </ScrollArea>
+    </div>
+  );
+}
+
 export function SourceInspectorPane(props: SourceInspectorPaneProps) {
   if (props.sourceKind === "conversation") return <ConversationCitationBody {...props} />;
+  if (props.sourceKind === "document") return <DocumentCitationBody {...props} />;
   return <PageSourceInspector {...props} />;
 }
 
