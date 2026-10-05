@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import {
   Tooltip,
   TooltipContent,
@@ -12,9 +11,9 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { BasicTextarea } from "@/components/ui/textarea";
 import { ArrowUp, Paperclip, Mic, FileText } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { enterSendsHere } from "@/components/official/composer/composerSubmit";
 
+import { Tile } from "@ai-matrx/design-system/controls";
 interface PromptInputWithActionsProps {
   onSend: (message: string) => void;
 }
@@ -56,15 +55,13 @@ const PromptInputWithActions: React.FC<PromptInputWithActionsProps> = ({
         <ScrollArea className="w-full">
           <div className="flex gap-2 pb-2">
             {ideas.map(({ title, description }, index) => (
-              <SurfaceButton
+              <Tile
                 key={index}
-                className="flex h-14 flex-col items-start gap-0 flex-shrink-0"
-                variant="outline"
+                className="w-auto shrink-0"
+                title={title}
+                line={description}
                 onClick={() => setPrompt(title)}
-              >
-                <p className="text-sm font-medium">{title}</p>
-                <p className="text-xs text-muted-foreground">{description}</p>
-              </SurfaceButton>
+              />
             ))}
           </div>
         </ScrollArea>

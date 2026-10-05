@@ -34,7 +34,7 @@ import {
 } from "@/features/tasks/redux/thunks";
 import { invalidateAndRefetchFullContext } from "@/features/agent-context/redux/hierarchyThunks";
 import * as taskService from "@/features/tasks/services/taskService";
-import { Input, Button as SurfaceButton } from "@ai-matrx/design-system";
+import { Input, } from "@ai-matrx/design-system";
 import { ProInput } from "@/components/official/ProInput";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { Button } from "@/components/ui/button";
@@ -479,9 +479,7 @@ export default function TaskDetailsPanel({
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <SurfaceButton variant="ghost" size="icon" className="h-7 w-7 rounded-full">
-            <MoreVertical size={14} />
-          </SurfaceButton>
+          <Button icon={<MoreVertical size={14} />} aria-label="More actions" variant="quiet" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem
@@ -530,14 +528,12 @@ export default function TaskDetailsPanel({
         {useStackedTitle ? (
           <div className="flex flex-col gap-2">
             <div className="flex items-center gap-2 min-w-0">
-              <SurfaceButton
-                variant="ghost"
-                size="icon"
+              <Button
+                icon={<ChevronLeft size={18} />} aria-label="Close"
+                variant="quiet"
                 onClick={onClose}
-                className="shrink-0 h-7 w-7 rounded-full"
-              >
-                <ChevronLeft size={18} />
-              </SurfaceButton>
+                className="shrink-0"
+              />
 
               <Checkbox
                 checked={task.completed}
@@ -597,14 +593,12 @@ export default function TaskDetailsPanel({
           </div>
         ) : (
           <div className="flex items-start gap-3 mb-3">
-            <SurfaceButton
-              variant="ghost"
-              size="icon"
+            <Button
+              icon={<ChevronLeft size={18} />} aria-label="Close"
+              variant="quiet"
               onClick={onClose}
-              className="flex-shrink-0 h-7 w-7 rounded-full"
-            >
-              <ChevronLeft size={18} />
-            </SurfaceButton>
+              className="flex-shrink-0"
+            />
 
             <Checkbox
               checked={task.completed}
@@ -851,14 +845,12 @@ export default function TaskDetailsPanel({
                 >
                   {subtask.title}
                 </span>
-                <SurfaceButton
-                  size="icon"
-                  variant="ghost"
+                <Button
+                  icon={<X size={14} />} aria-label="Delete subtask"
+                  variant="quiet"
                   onClick={() => handleDeleteSubtask(subtask.id)}
-                  className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <X size={14} />
-                </SurfaceButton>
+                  className="opacity-0 group-hover:opacity-100 transition-opacity"
+                />
               </div>
             ))}
             <ProInput

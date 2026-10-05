@@ -4,7 +4,6 @@ import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs';
 import {Dialog, DialogContent, DialogHeader, DialogTitle} from '@/components/ui/dialog';
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select';
 import {Button} from '@/components/ui/button';
-import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import {Cuboid, Code, Copy, Download, FileJson, Image, Loader2} from 'lucide-react';
 import type {AIHelpContext} from '@/types/contextCollection';
 import type {ImageQuality} from '@/types/screenshot';
@@ -241,10 +240,9 @@ export function AIHelpDialog(
                                                 />
                                             </div>
                                         )}
-                                        <SurfaceButton className="w-auto" onClick={() => onSaveImage('full')}>
-                                            <Image className="h-4 w-4 mr-2"/>
+                                        <Button icon={<Image/>} variant="primary" className="w-auto" onClick={() => onSaveImage('full')}>
                                             Save Full Resolution Screenshot
-                                        </SurfaceButton>
+                                        </Button>
                                         <Button icon={<FileJson/>} variant="primary" className="w-auto" onClick={onSaveContext}>
                                             Save Context Data
                                         </Button>

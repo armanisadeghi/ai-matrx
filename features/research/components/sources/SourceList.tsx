@@ -34,7 +34,6 @@ import { cn } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
-import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -747,14 +746,11 @@ function SourceRow({
             ) : (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <SurfaceButton
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6 rounded-full"
+                  <Button
+                    icon={<MoreVertical />} aria-label="More actions"
+                    variant="quiet"
                     disabled={anyNavigating}
-                  >
-                    <MoreVertical className="h-3.5 w-3.5" />
-                  </SurfaceButton>
+                  />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem

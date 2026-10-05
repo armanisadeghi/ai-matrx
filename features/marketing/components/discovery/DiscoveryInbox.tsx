@@ -45,7 +45,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import { Input } from "@ai-matrx/design-system/controls";
 import {
   Select,
@@ -1189,11 +1188,11 @@ function DiscoveryRow({
         <CopyButtons size="icon" {...itemCopy} />
       </span>
       {item.url ? (
-        <SurfaceButton
+        <Button
+          icon={<ExternalLink />} aria-label="Open in new tab"
           asChild
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 shrink-0 text-muted-foreground hover:text-primary"
+          variant="quiet"
+          className="shrink-0"
         >
           <a
             href={item.url}
@@ -1201,10 +1200,8 @@ function DiscoveryRow({
             rel="noopener noreferrer"
             aria-label={`Open ${socialPreview?.providerLabel ?? "discovered link"} in a new tab`}
             title="Open in new tab"
-          >
-            <ExternalLink className="h-3.5 w-3.5" />
-          </a>
-        </SurfaceButton>
+          />
+        </Button>
       ) : null}
 
       {readOnly ? (

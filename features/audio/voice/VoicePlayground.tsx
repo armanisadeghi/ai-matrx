@@ -6,7 +6,6 @@ import { motion } from "motion/react";
 import { useCartesia } from "@/hooks/tts/useCartesia";
 import { availableVoices } from "@/lib/cartesia/voices";
 import { Button } from "@/components/ui/button";
-import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import { Input } from "@ai-matrx/design-system/controls";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
@@ -149,9 +148,7 @@ export default function PlaygroundPage() {
                                     ))}
                                 </SelectContent>
                             </Select>
-                            <SurfaceButton variant="outline" size="icon" className="ml-2">
-                                <RefreshCw className="h-4 w-4" />
-                            </SurfaceButton>
+                            <Button icon={<RefreshCw />} aria-label="Refresh" type="submit" variant="outline" className="ml-2" />
                         </div>
                     </div>
                 </div>
@@ -236,9 +233,7 @@ export default function PlaygroundPage() {
                                 <Play className="h-4 w-4" />
                             )}
                         </Button>
-                        <Button variant="primary" onClick={handleStop} disabled={!isConnected}>
-                            <Square className="h-4 w-4" />
-                        </Button>
+                        <Button icon={<Square />} aria-label="Stop" variant="primary" onClick={handleStop} disabled={!isConnected} />
                     </div>
                 </div>
                 {error && <p className="text-red-500">{error.message} <ErrorAlchemyMenu error={error.message} /></p>}

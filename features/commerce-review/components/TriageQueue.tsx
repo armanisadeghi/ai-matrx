@@ -25,7 +25,6 @@ import {
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
-import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import { Badge } from "@/components/ui/badge";
 import { CaptureThumb } from "@/features/media-capture/components/CaptureThumb";
 import { OrganizationTag } from "./OrganizationTag";
@@ -37,6 +36,7 @@ import { decideValueBucket, listTriageQueue } from "../service";
 import { ConfidenceChip } from "./ConfidenceChip";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
+import { Tile } from "@ai-matrx/design-system/controls";
 const BUCKET_LABELS: Record<ValueBucket, string> = {
   definite_value: "Definite value",
   conditional_value: "Conditional",
@@ -223,19 +223,15 @@ export function TriageQueue() {
 
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
         {VALUE_BUCKETS.map((bucket, i) => (
-          <SurfaceButton
+          <Tile
             key={bucket}
-            variant={item.aiBucket === bucket ? "default" : "outline"}
+            selected={item.aiBucket === bucket}
             disabled={busy}
-            className="h-12 flex-col gap-0.5"
+            icon={item.aiBucket === bucket ? <Check /> : undefined}
+            title={BUCKET_LABELS[bucket]}
+            end={`key ${i + 1}`}
             onClick={() => void decide(bucket)}
-          >
-            <span className="flex items-center gap-1 text-sm">
-              {item.aiBucket === bucket && <Check className="h-3.5 w-3.5" />}
-              {BUCKET_LABELS[bucket]}
-            </span>
-            <span className="text-[10px] opacity-70">key {i + 1}</span>
-          </SurfaceButton>
+          />
         ))}
       </div>
       <p className="text-center text-[11px] text-muted-foreground">

@@ -5,7 +5,6 @@ import { TabBase } from './TabBase';
 import { usePromptBuilder } from './PromptBuilderContext';
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import { PlusIcon, XIcon } from "lucide-react";
 import { promptTemplateSource } from './constants';
 import { ProTextarea } from "@/components/official/ProTextarea";
@@ -79,15 +78,13 @@ const EmphasisContent: React.FC<EmphasisContentProps> = ({ updateContent }) => {
               placeholder={`Metric ${index + 1}`}
               className="w-full min-h-[60px] bg-white dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400"
             />
-            <SurfaceButton
+            <Button
+              icon={<XIcon />} aria-label="Remove metric"
               type="button"
-              variant="ghost"
-              size="icon"
+              variant="quiet"
               onClick={() => removeMetric(index)}
-              className="flex-shrink-0 h-9 w-9 text-gray-500 dark:text-gray-400 hover:bg-red-50 dark:hover:bg-red-950 hover:text-red-600 dark:hover:text-red-400"
-            >
-              <XIcon className="h-4 w-4" />
-            </SurfaceButton>
+              className="flex-shrink-0"
+            />
           </div>
         ))}
         

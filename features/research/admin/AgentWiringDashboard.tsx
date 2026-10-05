@@ -8,7 +8,6 @@ import {
     Loader2, AlertCircle, CheckCircle2, Edit2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
@@ -347,14 +346,12 @@ export function AgentWiringDashboard() {
                                                             )}
                                                         </div>
                                                         {!isEditing && (
-                                                            <SurfaceButton
-                                                                size="icon"
-                                                                variant="ghost"
-                                                                className="h-7 w-7 shrink-0"
+                                                            <Button
+                                                                icon={<Edit2 />} aria-label="Edit"
+                                                                variant="quiet"
+                                                                className="shrink-0"
                                                                 onClick={() => setEditingCell({ templateId: template.id, key })}
-                                                            >
-                                                                <Edit2 className="h-3 w-3" />
-                                                            </SurfaceButton>
+                                                            />
                                                         )}
                                                     </div>
                                                 );

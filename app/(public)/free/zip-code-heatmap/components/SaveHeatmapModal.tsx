@@ -4,7 +4,6 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Share2, Loader2, Copy, Check, Globe2, Lock, LogIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Button as SurfaceButton } from '@ai-matrx/design-system';
 import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
@@ -308,14 +307,12 @@ export default function SaveHeatmapModal({
                 <Label>Share Link</Label>
                 <div className="flex gap-2">
                   <Input mono value={shareUrl} readOnly />
-                  <SurfaceButton
+                  <Button
+                    icon={copied ? <Check /> : <Copy />} aria-label="Copy url"
                     variant="outline"
-                    size="icon"
                     onClick={handleCopyUrl}
                     className="flex-shrink-0"
-                  >
-                    {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                  </SurfaceButton>
+                  />
                 </div>
               </div>
 

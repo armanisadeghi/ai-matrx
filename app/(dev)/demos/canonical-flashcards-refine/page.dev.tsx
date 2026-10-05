@@ -376,44 +376,36 @@ function CanonicalFlashcardPlayer({ deck, style }: CanonicalPlayerProps) {
         </div>
 
         <div className="mt-2 grid grid-cols-4 border-t border-border">
-          <SurfaceButton
+          <Button
+            icon={<ChevronLeft />}
             type="button"
-            variant="ghost"
-            className="h-14 rounded-none"
+            variant="quiet"
             onClick={() => goTo(index - 1)}
             disabled={index === 0}
             aria-label="Previous card"
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </SurfaceButton>
-          <SurfaceButton
+          />
+          <Button
+            icon={<RotateCcw />}
             type="button"
-            variant="ghost"
-            className="h-14 rounded-none"
+            variant="quiet"
             onClick={() => setFlipped((value) => !value)}
             aria-label="Flip card"
-          >
-            <RotateCcw className="h-5 w-5" />
-          </SurfaceButton>
-          <SurfaceButton
+          />
+          <Button
+            icon={<Shuffle className={cn("h-5 w-5", shuffled && "text-primary")} />}
             type="button"
-            variant="ghost"
-            className="h-14 rounded-none"
+            variant="quiet"
             onClick={() => setShuffled((value) => !value)}
             aria-label="Reverse card order"
-          >
-            <Shuffle className={cn("h-5 w-5", shuffled && "text-primary")} />
-          </SurfaceButton>
-          <SurfaceButton
+          />
+          <Button
+            icon={<ChevronRight />}
             type="button"
-            variant="ghost"
-            className="h-14 rounded-none"
+            variant="quiet"
             onClick={() => goTo(index + 1)}
             disabled={index === cards.length - 1}
             aria-label="Next card"
-          >
-            <ChevronRight className="h-5 w-5" />
-          </SurfaceButton>
+          />
         </div>
 
         <button

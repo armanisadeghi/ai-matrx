@@ -2,7 +2,6 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import { ArrowLeft, ArrowRight, Minus, Plus, Shuffle } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import AiChatModal from "@/app/(transitional)/_flash-cards/ai/AiChatModal";
@@ -88,23 +87,17 @@ const FlashcardControls: React.FC<{ flashcardHook: ReturnType<typeof useFlashcar
                     Give me an example
                 </Button>
                 <div className="flex items-center justify-between w-full px-3 py-1 rounded-md border bg-card hover:scale-105 transition-transform">
-                    <SurfaceButton
+                    <Button
+                        icon={<Minus/>} aria-label="Decrease font size"
                         onClick={() => setFontSize((prev) => Math.max(18, prev - 2))}
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 p-0"
-                    >
-                        <Minus className="h-4 w-4"/>
-                    </SurfaceButton>
+                        variant="quiet"
+                    />
                     <span className="text-sm whitespace-nowrap">Font Size</span>
-                    <SurfaceButton
+                    <Button
+                        icon={<Plus/>} aria-label="Increase font size"
                         onClick={() => setFontSize((prev) => Math.min(36, prev + 2))}
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 p-0"
-                    >
-                        <Plus className="h-4 w-4"/>
-                    </SurfaceButton>
+                        variant="quiet"
+                    />
                 </div>
                 <Button
                     onClick={() => openAiAssistModal('split')}

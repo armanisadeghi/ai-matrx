@@ -15,7 +15,6 @@ import {
   Search,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import { ProInput } from "@/components/official/ProInput";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import {
@@ -312,22 +311,16 @@ export default function TagManager() {
                   title="Consolidate this tag (paid AI synthesis)"
                   onClick={() => handleConsolidate(tag)}
                 />
-                <SurfaceButton
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 rounded-full"
+                <Button
+                  icon={<Pencil />} aria-label="Edit"
+                  variant="quiet"
                   onClick={() => openEdit(tag)}
-                >
-                  <Pencil className="h-3.5 w-3.5" />
-                </SurfaceButton>
-                <SurfaceButton
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 rounded-full text-destructive"
+                />
+                <Button
+                  icon={<Trash2 />} aria-label="Delete"
+                  variant="quiet"
                   onClick={() => setTagToDelete(tag)}
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </SurfaceButton>
+                />
               </div>
             </div>
           ))}

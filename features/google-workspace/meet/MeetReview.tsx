@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Skeleton, Button as SurfaceButton } from "@ai-matrx/design-system";
-import { Input } from "@ai-matrx/design-system/controls";
+import { Skeleton, } from "@ai-matrx/design-system";
+import { Input, Tile } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 import { GoogleAccountSelect } from "@/features/google-workspace/GoogleAccountSelect";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
@@ -476,16 +476,12 @@ function MeetReviewBodyInner({
                 </p>
               ) : null}
               {conference.transcripts.names?.map((name) => (
-                <SurfaceButton
+                <Tile
                   key={name}
-                  type="button"
-                  variant="outline"
-                  className="h-auto min-h-11 w-full min-w-0 justify-start whitespace-normal py-2 text-left [overflow-wrap:anywhere]"
+                  title={name}
                   disabled={busy !== null}
                   onClick={() => void loadTranscript(name)}
-                >
-                  {name}
-                </SurfaceButton>
+                />
               )) ?? null}
               {conference.transcripts.state === "available" &&
               !conference.transcripts.names?.length ? (

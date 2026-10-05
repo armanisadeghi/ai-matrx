@@ -12,7 +12,6 @@ import {
   Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -116,15 +115,13 @@ export function BulkActionBar({
       >
         Stale
       </Button>
-      <SurfaceButton
-        variant="ghost"
-        size="icon"
+      <Button
+        icon={<X />} aria-label="Clear"
+        variant="quiet"
         onClick={onClear}
         disabled={busy}
-        className="h-6 w-6 rounded-full ml-1"
-      >
-        <X className="h-3 w-3" />
-      </SurfaceButton>
+        className="ml-1"
+      />
     </div>
   );
 }

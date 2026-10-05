@@ -5,7 +5,6 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useAppSelector, useAppDispatch } from '@/lib/redux/hooks';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import { TextareaLegacy as Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ArrowUp } from 'lucide-react';
@@ -267,14 +266,12 @@ const AiChatModal: React.FC<AiChatModalProps> = ({ isOpen, onClose }) => {
                                         ))}
                                 </SelectContent>
                             </Select>
-                            <SurfaceButton
+                            <Button
+                                icon={<ArrowUp />} aria-label="Submit"
+                                variant="primary"
                                 onClick={() => handleSubmit()}
                                 disabled={isLoading || !message.trim()}
-                                className="rounded-full p-2"
-                                size="icon"
-                            >
-                                <ArrowUp className="h-4 w-4" />
-                            </SurfaceButton>
+                            />
                         </div>
                     </div>
                 </div>

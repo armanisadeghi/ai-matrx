@@ -8,7 +8,6 @@ import AnimatedSelect from "@/components/matrx/AnimatedForm/AnimatedSelect";
 import { FormField } from "@/types/AnimatedFormTypes";
 import { Copy, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
@@ -425,12 +424,12 @@ export const TextCleanerComponent: React.FC = () => {
                   : "Paste your text here"
               }
             />
-            <SurfaceButton
-              className="absolute right-2 bottom-2 p-2 h-[40px] min-h-[40px]"
+            <Button
+              icon={<Copy size={20} />} aria-label="Copy text"
+              variant="primary"
+              className="absolute right-2 bottom-2"
               onClick={() => copyText(inputText)}
-            >
-              <Copy size={20} />
-            </SurfaceButton>
+            />
           </div>
           <Card className="border bg-muted">
             <CardContent className="p-3">
@@ -456,12 +455,12 @@ export const TextCleanerComponent: React.FC = () => {
                   : "Your cleaned text will appear here"
               }
             />
-            <SurfaceButton
-              className="absolute right-2 bottom-2 p-2 h-[40px] min-h-[40px]"
+            <Button
+              icon={<Copy size={20} />} aria-label="Copy text"
+              variant="primary"
+              className="absolute right-2 bottom-2"
               onClick={() => copyText(cleanedText)}
-            >
-              <Copy size={20} />
-            </SurfaceButton>
+            />
           </div>
           <Card className="border bg-muted">
             <CardContent className="p-3">
@@ -561,12 +560,12 @@ export const TextCleanerComponent: React.FC = () => {
                 hideLabel={true}
                 className="flex-grow h-[40px] min-h-[40px]"
               />
-              <SurfaceButton
+              <Button
+                icon={<Copy size={20} />} aria-label="Copy"
+                variant="primary"
                 onClick={() => handleCopyTextWithPrefixSuffix(index)}
-                className="p-2 flex-shrink-0 flex items-center justify-center h-[40px] min-h-[40px]"
-              >
-                <Copy size={20} />
-              </SurfaceButton>
+                className="flex-shrink-0 flex justify-center"
+              />
             </div>
             <Textarea
               value={prefixes[index] || ""}

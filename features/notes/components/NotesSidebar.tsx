@@ -22,9 +22,9 @@ import {
     XCircle,
 } from 'lucide-react';
 import AdvancedMenu, { MenuItem } from '@/components/official/AdvancedMenu';
-import { Button as SurfaceButton } from '@ai-matrx/design-system';
 import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from '@/components/ui/button';
+import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { 
@@ -521,17 +521,15 @@ export function NotesSidebar({
                                                             </span>
                                                         </SurfaceButton>
                                                         
-                                                        <SurfaceButton
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            className="h-5 w-5 p-0 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                        <Button
+                                                            icon={<Trash2 className="text-destructive" />} aria-label="Delete"
+                                                            variant="quiet"
+                                                            className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
                                                                 onDeleteNote(note.id);
                                                             }}
-                                                        >
-                                                            <Trash2 className="h-2.5 w-2.5 text-destructive" />
-                                                        </SurfaceButton>
+                                                        />
                                                     </div>
                                                 );
                                             })}

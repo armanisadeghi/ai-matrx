@@ -4,7 +4,6 @@ import { useState, useCallback } from "react";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import {
   Select,
   SelectContent,
@@ -81,14 +80,12 @@ function EditorHeader({
     <RouteHeader
       left={
         <div className="flex items-center gap-1.5 w-full px-1">
-          <SurfaceButton
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 flex-shrink-0"
+          <Button
+            icon={<ArrowLeft />} aria-label="Back"
+            variant="quiet"
+            className="flex-shrink-0"
             onClick={onBack}
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </SurfaceButton>
+          />
           <div className="flex items-center gap-1.5 flex-1 min-w-0">
             <FileText className="h-4 w-4 text-primary flex-shrink-0" />
             <span className="text-sm font-semibold truncate">

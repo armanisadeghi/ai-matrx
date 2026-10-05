@@ -4,7 +4,6 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { motion } from 'motion/react';
 import { Play, Square, Loader2, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Button as SurfaceButton } from '@ai-matrx/design-system';
 import { Input } from "@ai-matrx/design-system/controls";
 import { Badge } from '@/components/ui/badge';
 import { CardContent, CardHeader } from "@/components/ui/card";
@@ -188,14 +187,11 @@ export function VoiceSelectionModal({
                                 Browse and test available voices
                             </p>
                         </div>
-                        <SurfaceButton
-                            variant="ghost"
-                            size="icon"
+                        <Button
+                            icon={<X />} aria-label="Close"
+                            variant="quiet"
                             onClick={handleClose}
-                            className="h-9 w-9"
-                        >
-                            <X className="h-5 w-5" />
-                        </SurfaceButton>
+                        />
                     </div>
 
                     {/* Content */}

@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight, Copy, Check, ExternalLink, ChevronDown, Chev
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { Skeleton, Button as SurfaceButton } from "@ai-matrx/design-system";
+import { Skeleton, } from "@ai-matrx/design-system";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 
@@ -141,24 +141,18 @@ export function SEOImageViewer({
           
           {/* Navigation controls */}
           <div className="absolute bottom-0 left-0 right-0 flex justify-between p-2">
-            <SurfaceButton 
-              variant="secondary" 
-              size="icon" 
-              onClick={goToPreviousImage} 
-              className="rounded-full opacity-80 hover:opacity-100"
+            <Button
+              icon={<ChevronLeft />} aria-label="Go to previous image" 
+              variant="outline" 
+              onClick={goToPreviousImage}
               disabled={images.length <= 1}
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </SurfaceButton>
-            <SurfaceButton 
-              variant="secondary" 
-              size="icon" 
-              onClick={goToNextImage} 
-              className="rounded-full opacity-80 hover:opacity-100"
+            />
+            <Button
+              icon={<ChevronRight />} aria-label="Go to next image" 
+              variant="outline" 
+              onClick={goToNextImage}
               disabled={images.length <= 1}
-            >
-              <ChevronRight className="h-5 w-5" />
-            </SurfaceButton>
+            />
           </div>
           
           {/* Image count indicator */}
@@ -175,26 +169,20 @@ export function SEOImageViewer({
                 {currentImageUrl.split('/').pop()}
               </div>
               <div className="flex gap-1">
-                <SurfaceButton 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8" 
-                  onClick={() => copyToClipboard(currentImageUrl, 'URL')}
-                >
-                  {isCopied === 'URL' ? (
-                    <Check className="h-4 w-4 text-green-500" />
+                <Button
+                  icon={isCopied === 'URL' ? (
+                    <Check className="text-green-500" />
                   ) : (
-                    <Copy className="h-4 w-4" />
-                  )}
-                </SurfaceButton>
-                <SurfaceButton 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8" 
+                    <Copy />
+                  )} aria-label="Copy to clipboard" 
+                  variant="quiet" 
+                  onClick={() => copyToClipboard(currentImageUrl, 'URL')}
+                />
+                <Button
+                  icon={<ExternalLink />} aria-label="Open" 
+                  variant="quiet" 
                   onClick={() => window.open(currentImageUrl, '_blank')}
-                >
-                  <ExternalLink className="h-4 w-4" />
-                </SurfaceButton>
+                />
               </div>
             </div>
           </CardContent>
@@ -224,18 +212,15 @@ export function SEOImageViewer({
                 <div className="mb-6">
                   <div className="flex justify-between items-center">
                     <h3 className="text-lg font-semibold mb-1">Meta Title</h3>
-                    <SurfaceButton 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-8 w-8" 
-                      onClick={() => copyToClipboard(currentMetadata.metaTitle || '', 'Meta Title')}
-                    >
-                      {isCopied === 'Meta Title' ? (
-                        <Check className="h-4 w-4 text-green-500" />
+                    <Button
+                      icon={isCopied === 'Meta Title' ? (
+                        <Check className="text-green-500" />
                       ) : (
-                        <Copy className="h-4 w-4" />
-                      )}
-                    </SurfaceButton>
+                        <Copy />
+                      )} aria-label="Copy to clipboard" 
+                      variant="quiet" 
+                      onClick={() => copyToClipboard(currentMetadata.metaTitle || '', 'Meta Title')}
+                    />
                   </div>
                   <p className="text-muted-foreground">
                     {currentMetadata.metaTitle || "No meta title available"}
@@ -260,18 +245,15 @@ export function SEOImageViewer({
                       <div>
                         <div className="flex justify-between items-center">
                           <h4 className="font-medium mb-2">Description:</h4>
-                          <SurfaceButton 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-8 w-8" 
-                            onClick={() => copyToClipboard(currentMetadata.description || '', 'Description')}
-                          >
-                            {isCopied === 'Description' ? (
-                              <Check className="h-4 w-4 text-green-500" />
+                          <Button
+                            icon={isCopied === 'Description' ? (
+                              <Check className="text-green-500" />
                             ) : (
-                              <Copy className="h-4 w-4" />
-                            )}
-                          </SurfaceButton>
+                              <Copy />
+                            )} aria-label="Copy to clipboard" 
+                            variant="quiet" 
+                            onClick={() => copyToClipboard(currentMetadata.description || '', 'Description')}
+                          />
                         </div>
                         <p className="text-sm text-muted-foreground">{currentMetadata.description}</p>
                       </div>
@@ -286,18 +268,16 @@ export function SEOImageViewer({
                             <li key={index} className="bg-secondary/50 p-3 rounded-md">
                               <div className="flex justify-between items-start gap-2">
                                 <span className="text-sm">{title}</span>
-                                <SurfaceButton 
-                                  variant="ghost" 
-                                  size="icon" 
-                                  className="h-6 w-6 shrink-0 mt-0" 
-                                  onClick={() => copyToClipboard(title, `Suggestion ${index + 1}`)}
-                                >
-                                  {isCopied === `Suggestion ${index + 1}` ? (
-                                    <Check className="h-3 w-3 text-green-500" />
+                                <Button
+                                  icon={isCopied === `Suggestion ${index + 1}` ? (
+                                    <Check className="text-green-500" />
                                   ) : (
-                                    <Copy className="h-3 w-3" />
-                                  )}
-                                </SurfaceButton>
+                                    <Copy />
+                                  )} aria-label="Copy to clipboard" 
+                                  variant="quiet" 
+                                  className="shrink-0 mt-0" 
+                                  onClick={() => copyToClipboard(title, `Suggestion ${index + 1}`)}
+                                />
                               </div>
                             </li>
                           ))}

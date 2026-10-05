@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Input, Button as SurfaceButton } from "@ai-matrx/design-system";
+import { Input, Button as SurfaceButton, } from "@ai-matrx/design-system";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
@@ -642,19 +642,17 @@ export default function LSIMarkdownGenerator({
                                     }}
                                   />
                                   <Button
+                                    icon={<Check />} aria-label="Save edit"
                                     type="submit"
                                     variant="quiet"
                                     onClick={() => saveEdit(category, index)}
-                                  >
-                                    <Check className="w-3 h-3" />
-                                  </Button>
+                                  />
                                   <Button
+                                    icon={<X />} aria-label="Cancel edit"
                                     type="submit"
                                     variant="quiet"
                                     onClick={() => cancelEdit(category, index)}
-                                  >
-                                    <X className="w-3 h-3" />
-                                  </Button>
+                                  />
                                 </>
                               ) : (
                                 <>

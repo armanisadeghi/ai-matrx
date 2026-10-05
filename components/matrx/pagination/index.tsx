@@ -2,7 +2,6 @@ import React from 'react';
 import {ArrowLeftToLine, ArrowRightToLine, MoveLeft, MoveRight} from 'lucide-react';
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
 import {Button} from "@/components/ui/button";
-import { Button as SurfaceButton } from "@ai-matrx/design-system";
 
 interface MatrixPaginationProps {
     totalCount: number;
@@ -43,15 +42,14 @@ export const MatrixPagination: React.FC<MatrixPaginationProps> = (
 
         for (let i = startPage; i <= endPage; i++) {
             pageNumbers.push(
-                <SurfaceButton
+                <Button
                     key={i}
-                    variant={currentPage === i ? "default" : "outline"}
-                    size="icon"
+                    variant={currentPage === i ? "primary" : "outline"}
+                    aria-current={currentPage === i ? "page" : undefined}
                     onClick={() => goToPage(i)}
-                    className="w-8 h-8 mx-1"
                 >
                     {i}
-                </SurfaceButton>
+                </Button>
             );
         }
 
@@ -61,15 +59,14 @@ export const MatrixPagination: React.FC<MatrixPaginationProps> = (
 
         if (endPage < totalPages) {
             pageNumbers.push(
-                <SurfaceButton
+                <Button
                     key={totalPages}
-                    variant={currentPage === totalPages ? "default" : "outline"}
-                    size="icon"
+                    variant={currentPage === totalPages ? "primary" : "outline"}
+                    aria-current={currentPage === totalPages ? "page" : undefined}
                     onClick={() => goToPage(totalPages)}
-                    className="w-8 h-8 mx-1"
                 >
                     {totalPages}
-                </SurfaceButton>
+                </Button>
             );
         }
 

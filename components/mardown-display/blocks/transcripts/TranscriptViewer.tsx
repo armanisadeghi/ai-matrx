@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { Input, Button as SurfaceButton } from '@ai-matrx/design-system';
+import { Input, } from '@ai-matrx/design-system';
 import { Separator } from '@/components/ui/separator';
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { formatDurationSeconds } from '@ai-matrx/kit/format';
@@ -323,24 +323,18 @@ const TranscriptViewer = ({
                       `${currentSearchIndex + 1}/${searchResults.length}` : 
                       '0/0'}
                   </Badge>
-                  <SurfaceButton 
-                    size="icon" 
-                    variant="ghost" 
-                    className="h-7 w-7" 
+                  <Button
+                    icon={<ArrowUp />} aria-label="Previous result"
+                    variant="quiet" 
                     onClick={goToPrevSearchResult}
                     disabled={searchResults.length === 0}
-                  >
-                    <ArrowUp className="h-4 w-4" />
-                  </SurfaceButton>
-                  <SurfaceButton 
-                    size="icon" 
-                    variant="ghost" 
-                    className="h-7 w-7" 
+                  />
+                  <Button
+                    icon={<ArrowDown />} aria-label="Next result"
+                    variant="quiet"
                     onClick={goToNextSearchResult}
                     disabled={searchResults.length === 0}
-                  >
-                    <ArrowDown className="h-4 w-4" />
-                  </SurfaceButton>
+                  />
                 </div>
               )}
             </div>

@@ -17,7 +17,6 @@ import {
 import { useSetting } from "@/features/settings/hooks/useSetting";
 import type { SiteWorkbenchUserBookmark } from "@/lib/redux/preferences/userPreferencesSlice";
 import { Button } from "@/components/ui/button";
-import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import { Input } from "@ai-matrx/design-system/controls";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
@@ -129,16 +128,14 @@ function BookmarkSection({
               </span>
             </button>
             {removable && onRemove ? (
-              <SurfaceButton
+              <Button
+                icon={<X />}
                 type="button"
-                variant="ghost"
-                size="sm"
-                className="h-auto w-7 shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
+                variant="quiet"
+                className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
                 onClick={() => onRemove(b.id)}
                 aria-label={`Remove ${b.label}`}
-              >
-                <X className="h-3 w-3" />
-              </SurfaceButton>
+              />
             ) : null}
           </li>
         ))}

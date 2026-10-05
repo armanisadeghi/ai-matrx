@@ -13,7 +13,6 @@ import {
   ScanText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { ApiTestConfigPanel } from "@/components/api-test-config/ApiTestConfigPanel";
@@ -167,20 +166,18 @@ export default function PdfExtractClient() {
                     <span className="text-xs text-muted-foreground">
                       {formatFileSize(selectedFile.size)}
                     </span>
-                    <SurfaceButton
+                    <Button
+                      icon={<X />} aria-label="Close"
                       type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6 flex-shrink-0"
+                      variant="quiet"
+                      className="flex-shrink-0"
                       onClick={() => {
                         setSelectedFile(null);
                         if (fileInputRef.current)
                           fileInputRef.current.value = "";
                       }}
                       disabled={isLoading}
-                    >
-                      <X className="w-3 h-3" />
-                    </SurfaceButton>
+                    />
                   </div>
                 ) : (
                   <Button

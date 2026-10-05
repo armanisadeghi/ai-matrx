@@ -41,7 +41,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import { Badge } from "@/components/ui/badge";
 import {
   Tooltip,
@@ -1117,24 +1116,18 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
                 <span className="text-xs text-muted-foreground tabular-nums">
                   {currentIndex + 1}/{sourceIds.length}
                 </span>
-                <SurfaceButton
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6 rounded-full"
+                <Button
+                  icon={<ChevronLeft />} aria-label="Previous"
+                  variant="quiet"
                   disabled={!prevSourceId || isNavigating}
                   onClick={() => prevSourceId && navigateToSource(prevSourceId)}
-                >
-                  <ChevronLeft className="h-3.5 w-3.5" />
-                </SurfaceButton>
-                <SurfaceButton
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6 rounded-full"
+                />
+                <Button
+                  icon={<ChevronRight />} aria-label="Next"
+                  variant="quiet"
                   disabled={!nextSourceId || isNavigating}
                   onClick={() => nextSourceId && navigateToSource(nextSourceId)}
-                >
-                  <ChevronRight className="h-3.5 w-3.5" />
-                </SurfaceButton>
+                />
               </div>
             )}
           </div>

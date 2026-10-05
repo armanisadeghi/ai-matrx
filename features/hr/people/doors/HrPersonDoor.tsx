@@ -39,8 +39,7 @@ import { Button } from "@/components/ui/button";
 import {
   Popover,
   PopoverContent,
-  PopoverTrigger, Button as SurfaceButton,
-} from "@ai-matrx/design-system";
+  PopoverTrigger, } from "@ai-matrx/design-system";
 import { DataRowWindow } from "@/components/official/MatrxDataTableHost";
 import { cn } from "@/lib/utils";
 
@@ -219,11 +218,10 @@ export function HrPersonDoor({
           </Popover>
 
           {openInNewTab ? null : (
-            <SurfaceButton
+            <Button
+              icon={<ExternalLink aria-hidden />} aria-label="Open in new tab"
               asChild
-              variant="ghost"
-              size="icon"
-              className="h-11 w-11 lg:h-5 lg:w-5"
+              variant="quiet"
             >
               <Link
                 href={href}
@@ -232,10 +230,8 @@ export function HrPersonDoor({
                 aria-label={`Open ${person.displayName} in a new tab`}
                 title={`Open ${person.displayName} in a new tab`}
                 onClick={(event) => event.stopPropagation()}
-              >
-                <ExternalLink className="h-3.5 w-3.5" aria-hidden />
-              </Link>
-            </SurfaceButton>
+              />
+            </Button>
           )}
 
           <Button

@@ -29,7 +29,6 @@ import {
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
-import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -368,15 +367,9 @@ function FeaturedRow({
         </div>
       </div>
       <div className="flex shrink-0 items-center gap-0.5">
-        <SurfaceButton variant="ghost" size="icon" className="h-7 w-7" disabled={isFirst} onClick={onUp}>
-          <ChevronUp className="h-4 w-4" />
-        </SurfaceButton>
-        <SurfaceButton variant="ghost" size="icon" className="h-7 w-7" disabled={isLast} onClick={onDown}>
-          <ChevronDown className="h-4 w-4" />
-        </SurfaceButton>
-        <SurfaceButton variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={onRemove}>
-          <Trash2 className="h-4 w-4" />
-        </SurfaceButton>
+        <Button icon={<ChevronUp />} aria-label="Move up" variant="quiet" disabled={isFirst} onClick={onUp} />
+        <Button icon={<ChevronDown />} aria-label="Move down" variant="quiet" disabled={isLast} onClick={onDown} />
+        <Button icon={<Trash2 />} aria-label="Remove" variant="quiet" onClick={onRemove} />
       </div>
     </div>
   );
@@ -596,9 +589,7 @@ function Editor({ initial }: { initial: CreatorProfileMine }) {
                   onChange={(e) => setLinks((p) => p.map((x, idx) => (idx === i ? { ...x, url: e.target.value } : x)))}
                   placeholder="https://youtube.com/@you"
                 />
-                <SurfaceButton variant="ghost" size="icon" className="h-9 w-9 shrink-0 text-destructive" onClick={() => setLinks((p) => p.filter((_, idx) => idx !== i))}>
-                  <Trash2 className="h-4 w-4" />
-                </SurfaceButton>
+                <Button icon={<Trash2 />} aria-label="Delete" variant="quiet" className="shrink-0" onClick={() => setLinks((p) => p.filter((_, idx) => idx !== i))} />
               </div>
             ))}
             <Button icon={<Plus />} variant="outline" onClick={() => setLinks((p) => [...p, { label: "", url: "" }])}>

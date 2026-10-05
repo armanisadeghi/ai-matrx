@@ -43,8 +43,7 @@ import {
   SegmentedControl,
   selectTriggerVariants,
   Slider,
-  Switch, Button as SurfaceButton,
-} from "@ai-matrx/design-system";
+  Switch, Button as SurfaceButton, } from "@ai-matrx/design-system";
 import { Input } from "@ai-matrx/design-system/controls";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

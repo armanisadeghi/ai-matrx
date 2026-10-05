@@ -14,7 +14,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Input, Button as SurfaceButton } from "@ai-matrx/design-system";
+import { Input, Button as SurfaceButton, } from "@ai-matrx/design-system";
 import { formatFileSize } from "@ai-matrx/kit/format";
 import {
   storageUsageBarWidth,
@@ -882,13 +882,11 @@ const StorageManager = ({
                             <Edit3 className="h-4 w-4" />
                           )}
                         </SurfaceButton>
-                        <SurfaceButton
-                          variant="destructive"
-                          size="icon"
+                        <Button
+                          icon={<Trash2 />} aria-label="Delete item"
+                          variant="danger"
                           onClick={() => handleDeleteItem(module, feature, key)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </SurfaceButton>
+                        />
                       </div>
                     </div>
                   </Alert>
@@ -1289,13 +1287,11 @@ const CookieManager = ({ storage }: { storage: UseLocalStorageManager }) => {
                       }}
                     />
                   </div>
-                  <SurfaceButton
-                    variant="destructive"
-                    size="icon"
+                  <Button
+                    icon={<Trash2 />} aria-label="Remove cookie"
+                    variant="danger"
                     onClick={() => handleRemoveCookie(name)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </SurfaceButton>
+                  />
                 </div>
               </Alert>
             </motion.div>

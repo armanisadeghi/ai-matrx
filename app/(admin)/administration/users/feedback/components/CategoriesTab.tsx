@@ -21,7 +21,6 @@ import {
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Button as SurfaceButton } from '@ai-matrx/design-system';
 import { Input } from "@ai-matrx/design-system/controls";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -656,10 +655,9 @@ export default function CategoriesTab() {
                                             >
                                                 {cat.is_active ? 'Active' : 'Inactive'}
                                             </Button>
-                                            <SurfaceButton
-                                                variant="ghost"
-                                                size="icon"
-                                                className="h-7 w-7"
+                                            <Button
+                                                icon={<Pencil />} aria-label="Edit"
+                                                variant="quiet"
                                                 onClick={() => setEditing({
                                                     id: cat.id,
                                                     name: cat.name,
@@ -667,17 +665,12 @@ export default function CategoriesTab() {
                                                     description: cat.description ?? '',
                                                     color: cat.color,
                                                 })}
-                                            >
-                                                <Pencil className="w-3.5 h-3.5" />
-                                            </SurfaceButton>
-                                            <SurfaceButton
-                                                variant="ghost"
-                                                size="icon"
-                                                className="h-7 w-7 text-destructive hover:text-destructive"
+                                            />
+                                            <Button
+                                                icon={<Trash2 />} aria-label="Delete"
+                                                variant="quiet"
                                                 onClick={() => setDeleteTarget(cat)}
-                                            >
-                                                <Trash2 className="w-3.5 h-3.5" />
-                                            </SurfaceButton>
+                                            />
                                         </div>
                                     </Card>
                                 );

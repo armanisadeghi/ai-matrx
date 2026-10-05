@@ -10,7 +10,7 @@ import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input, Button as SurfaceButton } from '@ai-matrx/design-system';
+import { Input, } from '@ai-matrx/design-system';
 import { Label } from '@/components/ui/label';
 import { Printer, FileDown, Crosshair, Trash2 } from 'lucide-react';
 import Papa from 'papaparse';
@@ -267,14 +267,12 @@ const QRLabelsPage = () => {
                             <p key={i} className="text-xs text-muted-foreground truncate">{text}</p>
                           ))}
                         </div>
-                        <SurfaceButton
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6 shrink-0"
+                        <Button
+                          icon={<Trash2 />} aria-label="Delete"
+                          variant="quiet"
+                          className="shrink-0"
                           onClick={() => setLabels((prev) => prev.filter((_, i) => i !== index))}
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </SurfaceButton>
+                        />
                       </div>
                     ))}
                     {!labels.length && (

@@ -4,7 +4,6 @@ import React, { useState } from "react";
 import { SqlFunction } from "@/types/sql-functions";
 import { parseArguments } from "../utils/parseArguments";
 import { Button } from "@/components/ui/button";
-import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import { Badge } from "@/components/ui/badge";
 import {
   X,
@@ -151,14 +150,11 @@ export default function SqlFunctionDetail({
           >
             Delete
           </Button>
-          <SurfaceButton
-            variant="ghost"
-            size="icon"
+          <Button
+            icon={<X />} aria-label="Close"
+            variant="quiet"
             onClick={onClose}
-            className="h-6 w-6 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
-          >
-            <X className="h-3.5 w-3.5" />
-          </SurfaceButton>
+          />
         </div>
       </div>
 

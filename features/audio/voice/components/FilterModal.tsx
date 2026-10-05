@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { MobileOverlayWrapper } from "@/components/official/MobileOverlayWrapper";
@@ -127,14 +126,11 @@ export function FilterModal({
                                 Sort and filter voice options
                             </p>
                         </div>
-                        <SurfaceButton
-                            variant="ghost"
-                            size="icon"
+                        <Button
+                            icon={<X />} aria-label="Close"
+                            variant="quiet"
                             onClick={onClose}
-                            className="h-8 w-8"
-                        >
-                            <X className="h-5 w-5" />
-                        </SurfaceButton>
+                        />
                     </div>
 
                     {/* Content */}

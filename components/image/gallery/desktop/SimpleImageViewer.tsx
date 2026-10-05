@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { wrap } from "popmotion";
 import { Button } from "@/components/ui/button";
-import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import {
   Tooltip,
   TooltipTrigger,
@@ -249,69 +248,54 @@ export function SimpleImageViewer({
             </AnimatePresence>
           </div>
 
-          <SurfaceButton
+          <Button
+            icon={<X />} aria-label="Close"
             className="absolute top-2 right-2 z-10"
-            variant="ghost"
-            size="icon"
+            variant="quiet"
             onClick={onClose}
-          >
-            <X className="h-4 w-4" />
-          </SurfaceButton>
-          <SurfaceButton
+          />
+          <Button
             className="absolute top-2 right-10 z-10"
-            variant="ghost"
-            size="icon"
+            variant="quiet"
+            icon={isFullScreen ? <Minimize2 /> : <Maximize2 />}
+            aria-label={isFullScreen ? "Exit full screen" : "Full screen"}
             onClick={toggleFullScreen}
-          >
-            {isFullScreen ? (
-              <Minimize2 className="h-4 w-4" />
-            ) : (
-              <Maximize2 className="h-4 w-4" />
-            )}
-          </SurfaceButton>
+          />
           {isFullScreen && (
             <>
-              <SurfaceButton
+              <Button
+                icon={<ZoomIn />} aria-label="Zoom in"
                 className="absolute bottom-2 right-10 z-10"
-                variant="ghost"
-                size="icon"
+                variant="quiet"
                 onClick={() => handleZoom(true)}
-              >
-                <ZoomIn className="h-4 w-4" />
-              </SurfaceButton>
-              <SurfaceButton
+              />
+              <Button
+                icon={<ZoomOut />} aria-label="Zoom out"
                 className="absolute bottom-2 right-2 z-10"
-                variant="ghost"
-                size="icon"
+                variant="quiet"
                 onClick={() => handleZoom(false)}
-              >
-                <ZoomOut className="h-4 w-4" />
-              </SurfaceButton>
+              />
             </>
           )}
         </div>
-        <SurfaceButton
-          className="absolute left-2 top-1/2 transform -translate-y-1/2 z-10 opacity-75 hover:opacity-100 transition-opacity"
-          variant="secondary"
-          size="icon"
+        <Button
+          icon={<ChevronLeft />} aria-label="Previous"
+          className="absolute left-2 top-1/2 -translate-y-1/2 z-10 transition-opacity"
+          variant="outline"
           onClick={(e) => {
             e.stopPropagation();
             paginate(-1);
           }}
-        >
-          <ChevronLeft className="h-6 w-6" />
-        </SurfaceButton>
-        <SurfaceButton
-          className="absolute right-2 top-1/2 transform -translate-y-1/2 z-10 opacity-75 hover:opacity-100 transition-opacity"
-          variant="secondary"
-          size="icon"
+        />
+        <Button
+          icon={<ChevronRight />} aria-label="Next"
+          className="absolute right-2 top-1/2 -translate-y-1/2 z-10 transition-opacity"
+          variant="outline"
           onClick={(e) => {
             e.stopPropagation();
             paginate(1);
           }}
-        >
-          <ChevronRight className="h-6 w-6" />
-        </SurfaceButton>
+        />
         {!isFullScreen && (
           <>
             <div className="p-4 bg-card/80 backdrop-blur-sm text-card-foreground">

@@ -3,12 +3,12 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
-import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import { Input } from "@ai-matrx/design-system/controls";
 import { AlertCircle, Edit3, Maximize2, Minimize2, Type } from 'lucide-react';
 import { useComponentRef, useRefManager } from '@/lib/refs';

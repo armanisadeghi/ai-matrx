@@ -70,7 +70,7 @@ import { toast } from "@/lib/toast";
 import { archiveRecord, restoreFromTrash } from "@/features/trash/service";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { Button } from "@/components/ui/button";
-import { Skeleton, Button as SurfaceButton } from "@ai-matrx/design-system";
+import { Skeleton, Button as SurfaceButton, } from "@ai-matrx/design-system";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -197,6 +197,7 @@ import {
   filterEducationCollection,
 } from "@/features/education/components/EducationCollectionSearch";
 
+import { Tile } from "@ai-matrx/design-system/controls";
 const EDU_BASE = "/education/flashcards";
 
 /** Every way to study a deck besides classic Study — the Study button's menu
@@ -1883,20 +1884,14 @@ export function SetDetailView({
                 </DrawerHeader>
                 <div className="grid gap-2 overflow-y-auto px-4 pb-safe">
                   {STUDY_MODES.map((mode) => (
-                    <SurfaceButton
+                    <Tile
                       key={mode.key}
-                      variant="ghost"
-                      className="h-auto min-h-14 justify-start px-3 py-2 text-left"
+                      variant="quiet"
+                      icon={<mode.icon />}
+                      title={mode.label}
+                      line={mode.description}
                       onClick={() => navigate(mode.key, mode.href(setId))}
-                    >
-                      <mode.icon className="mr-3 h-5 w-5 shrink-0 text-primary" />
-                      <span className="min-w-0">
-                        <span className="block font-medium">{mode.label}</span>
-                        <span className="block whitespace-normal text-xs font-normal text-muted-foreground">
-                          {mode.description}
-                        </span>
-                      </span>
-                    </SurfaceButton>
+                    />
                   ))}
                 </div>
               </DrawerContent>

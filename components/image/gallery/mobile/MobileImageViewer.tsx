@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { wrap } from "popmotion";
-import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { X, Download, Heart, Share2, Check } from "lucide-react";
 
@@ -164,12 +163,11 @@ export function MobileImageViewer({
 
         {/* Close button - repositioned to top right */}
         <Button
+          icon={<X />} aria-label="Close"
           variant="primary"
           className="absolute top-safe right-4 z-10"
           onClick={onClose}
-        >
-          <X className="h-6 w-6" />
-        </Button>
+        />
       </div>
 
       {/* Bottom control bar */}
@@ -179,38 +177,29 @@ export function MobileImageViewer({
         </p>
 
         <div className="flex justify-around">
-          <SurfaceButton
-            variant="ghost"
-            size="icon"
-            className="rounded-full h-12 w-12"
+          <Button
+            icon={<Download />} aria-label="Download"
+            variant="quiet"
             onClick={() => onDownload(photos[imageIndex])}
-          >
-            <Download className="h-6 w-6" />
-          </SurfaceButton>
+          />
 
-          <SurfaceButton
-            variant="ghost"
-            size="icon"
-            className="rounded-full h-12 w-12"
-            onClick={() => onFavorite(photos[imageIndex])}
-          >
-            <Heart
+          <Button
+            icon={<Heart
               className={`h-6 w-6 ${isFavorite(photos[imageIndex]) ? "fill-current text-red-500" : ""}`}
-            />
-          </SurfaceButton>
+            />} aria-label="Favorite"
+            variant="quiet"
+            onClick={() => onFavorite(photos[imageIndex])}
+          />
 
-          <SurfaceButton
-            variant="ghost"
-            size="icon"
-            className="rounded-full h-12 w-12"
-            onClick={handleShare}
-          >
-            {isSharing ? (
-              <Check className="h-6 w-6 text-green-500" />
+          <Button
+            icon={isSharing ? (
+              <Check className="text-green-500" />
             ) : (
-              <Share2 className="h-6 w-6" />
-            )}
-          </SurfaceButton>
+              <Share2 />
+            )} aria-label="Share"
+            variant="quiet"
+            onClick={handleShare}
+          />
         </div>
       </div>
     </motion.div>

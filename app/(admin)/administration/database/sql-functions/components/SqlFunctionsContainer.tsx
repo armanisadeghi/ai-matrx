@@ -3,7 +3,6 @@
 import React, { useEffect, useMemo } from "react";
 import { useSqlFunctions } from "@/lib/hooks/useSqlFunctions";
 import { SqlFunction } from "@/types/sql-functions";
-import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -274,32 +273,29 @@ export default function SqlFunctionsContainer({
                     className="w-52"
                   />
                 </div>
-                <SurfaceButton
+                <Button
+                  icon={<Search />} aria-label="Search"
+                  variant="primary"
                   type="submit"
-                  size="icon"
-                  className="h-8 w-8 bg-slate-700 hover:bg-slate-600 text-white shrink-0"
-                >
-                  <Search className="h-3.5 w-3.5" />
-                </SurfaceButton>
-                <SurfaceButton
+                  className="shrink-0"
+                />
+                <Button
+                  icon={<Plus />} aria-label="New function"
+                  variant="primary"
                   type="button"
                   onClick={handleNewFunction}
-                  size="icon"
-                  className="h-8 w-8 bg-slate-700 hover:bg-slate-600 text-white shrink-0"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                </SurfaceButton>
-                <SurfaceButton
+                  className="shrink-0"
+                />
+                <Button
+                  icon={<RefreshCw
+                    className={`h-3.5 w-3.5 ${isRefreshing ? "animate-spin" : ""}`}
+                  />} aria-label="Refresh functions"
+                  variant="primary"
                   type="button"
                   onClick={refreshFunctions}
                   disabled={isRefreshing || loading}
-                  size="icon"
-                  className="h-8 w-8 bg-slate-700 hover:bg-slate-600 text-white shrink-0"
-                >
-                  <RefreshCw
-                    className={`h-3.5 w-3.5 ${isRefreshing ? "animate-spin" : ""}`}
-                  />
-                </SurfaceButton>
+                  className="shrink-0"
+                />
               </form>
 
               <div className="flex items-center gap-4 ml-auto flex-wrap">
@@ -318,15 +314,13 @@ export default function SqlFunctionsContainer({
                             updateUrlFilter({ schema: e.target.value })
                           }
                         />
-                        <SurfaceButton
+                        <Button
+                          icon={<X />} aria-label="Close"
                           type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="absolute right-0 top-0 h-full px-2 text-slate-400 hover:text-slate-700"
+                          variant="quiet"
+                          className="absolute right-0 top-0"
                           onClick={() => setCustomSchemaSearch(false)}
-                        >
-                          <X className="h-3.5 w-3.5" />
-                        </SurfaceButton>
+                        />
                       </div>
                     ) : (
                       <Select

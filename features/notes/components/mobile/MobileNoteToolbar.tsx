@@ -3,7 +3,6 @@
 import React, { useState } from "react";
 import { FolderOpen, FolderPlus, Tag as TagIcon, X, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import { Input } from "@ai-matrx/design-system/controls";
 import { Badge } from "@/components/ui/badge";
 import type { FolderReference } from "../../types";
@@ -158,14 +157,13 @@ export default function MobileNoteToolbar({
                   onKeyPress={(e) => e.key === "Enter" && handleAddTag()}
                   className="flex-1"
                 />
-                <SurfaceButton
-                  size="icon"
+                <Button
+                  icon={<Plus size={18} />} aria-label="Add tag"
+                  variant="primary"
                   onClick={handleAddTag}
                   disabled={!newTag.trim() || tags.includes(newTag.trim())}
                   className="flex-shrink-0"
-                >
-                  <Plus size={18} />
-                </SurfaceButton>
+                />
               </div>
             </div>
           </div>

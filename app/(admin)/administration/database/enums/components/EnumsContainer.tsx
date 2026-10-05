@@ -8,7 +8,6 @@ import {
   UpdateEnumRequest,
 } from "@/types/enum-types";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -333,15 +332,13 @@ export default function EnumsContainer({
                             updateUrlFilter({ schema: e.target.value })
                           }
                         />
-                        <SurfaceButton
+                        <Button
+                          icon={<X />} aria-label="Close"
                           type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="absolute right-0 top-0 h-full px-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
+                          variant="quiet"
+                          className="absolute right-0 top-0"
                           onClick={() => setCustomSchemaSearch(false)}
-                        >
-                          <X className="h-4 w-4" />
-                        </SurfaceButton>
+                        />
                       </div>
                     ) : (
                       <Select
