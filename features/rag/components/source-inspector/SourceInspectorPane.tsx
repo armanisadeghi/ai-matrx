@@ -107,7 +107,7 @@ function ConversationCitationBody(props: SourceInspectorPaneProps) {
   return (
     <div className="flex h-full min-h-0 flex-col" data-testid="source-inspector-conversation">
       {props.placeLabel ? (
-        <div className="shrink-0 border-b border-border px-3 py-1.5 text-xs font-medium">
+        <div className="shrink-0 border-b border-border px-3 py-1.5 type-secondary font-medium">
           {props.placeLabel}
         </div>
       ) : null}
@@ -142,7 +142,7 @@ function DocumentCitationBody(props: SourceInspectorPaneProps) {
   }
   if (!doc) {
     return (
-      <div role="alert" className="p-3 text-sm text-muted-foreground">
+      <div role="alert" className="p-3 type-body text-muted-foreground">
         This document could not be opened.
       </div>
     );
@@ -154,7 +154,7 @@ function DocumentCitationBody(props: SourceInspectorPaneProps) {
   return (
     <div className="flex h-full min-h-0 flex-col" data-testid="source-inspector-document">
       {props.placeLabel ? (
-        <div className="shrink-0 border-b border-border px-3 py-1.5 text-xs font-medium">
+        <div className="shrink-0 border-b border-border px-3 py-1.5 type-secondary font-medium">
           {props.placeLabel}
         </div>
       ) : null}
@@ -359,7 +359,7 @@ function PageSourceInspector({
         {tab === "match" ? (
           <div className="flex h-full min-h-0 flex-col">
             {(score != null || query) && (
-              <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-border px-3 py-1.5 text-xs">
+              <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-border px-3 py-1.5 type-secondary">
                 {score != null ? (
                   <span className="rounded-md bg-muted px-1.5 py-0.5 font-semibold tabular-nums text-foreground">
                     score {score.toFixed(3)}
@@ -383,7 +383,7 @@ function PageSourceInspector({
                 <ScrollArea className="h-full">
                   <div className="space-y-3 p-3">
                     {snippet ? (
-                      <div className="rounded-md border border-primary/50 bg-primary/[0.06] p-2.5 text-xs leading-relaxed text-foreground ring-1 ring-primary/20">
+                      <div className="rounded-md border border-primary/50 bg-primary/[0.06] p-2.5 type-secondary leading-relaxed text-foreground ring-1 ring-primary/20">
                         <Badge className="mb-1.5 text-[10px]">{query ? "Matched" : "Cited"}</Badge>
                         <p className="whitespace-pre-wrap break-words">{snippet}</p>
                       </div>
@@ -396,7 +396,7 @@ function PageSourceInspector({
               ) : hasDoc && processedDocumentId ? (
                 <div className="flex h-full min-h-0 flex-col">
                   {cited.error && !citationHasPage ? (
-                    <p role="alert" className="shrink-0 border-b border-border px-3 py-1.5 text-xs text-warning">
+                    <p role="alert" className="shrink-0 border-b border-border px-3 py-1.5 type-secondary text-warning">
                       {cited.error}
                     </p>
                   ) : null}
@@ -415,18 +415,18 @@ function PageSourceInspector({
                 <ScrollArea className="h-full">
                   <div className="p-3">
                     {snippet ? (
-                      <div className="rounded-md border border-primary/50 bg-primary/[0.06] p-2.5 text-xs leading-relaxed text-foreground ring-1 ring-primary/20">
+                      <div className="rounded-md border border-primary/50 bg-primary/[0.06] p-2.5 type-secondary leading-relaxed text-foreground ring-1 ring-primary/20">
                         <Badge className="mb-1.5 text-[10px]">Matched</Badge>
                         <p className="whitespace-pre-wrap break-words">
                           {snippet}
                         </p>
                       </div>
                     ) : (
-                      <p className="text-sm text-muted-foreground">
+                      <p className="type-body text-muted-foreground">
                         No preview available for this source.
                       </p>
                     )}
-                    <p className="mt-2 text-[11px] text-muted-foreground">
+                    <p className="mt-2 type-meta text-muted-foreground">
                       Full page extraction isn&apos;t available for this source
                       type.
                     </p>
@@ -451,7 +451,7 @@ function PageSourceInspector({
           <ScrollArea className="h-full">
             <div className="p-3">
               <PageTextState loading={pageLoading} empty={!page?.rawText}>
-                <pre className="whitespace-pre-wrap break-words font-mono text-xs leading-relaxed text-foreground">
+                <pre className="whitespace-pre-wrap break-words font-mono type-secondary leading-relaxed text-foreground">
                   {page?.rawText}
                 </pre>
               </PageTextState>
@@ -478,12 +478,12 @@ function PageSourceInspector({
   const toolbar = (
     <div className="flex shrink-0 items-center gap-2 border-b border-border bg-card px-3 py-1.5">
       <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
-      <span className="truncate text-sm font-medium text-foreground">
+      <span className="truncate type-title text-foreground">
         {fileName ?? "Source"}
       </span>
       {provenanceLabelText ? (
         <span
-          className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary/10 px-1.5 py-0.5 text-[11px] font-medium text-primary"
+          className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary/10 px-1.5 py-0.5 type-meta font-medium text-primary"
           title="You can read this source through a shared-knowledge grant"
         >
           <BookMarked className="h-3 w-3" />
@@ -493,7 +493,7 @@ function PageSourceInspector({
       {spanLabel ? (
         <span
           className={cn(
-            "shrink-0 rounded-md px-1.5 py-0.5 text-[11px] font-medium tabular-nums",
+            "shrink-0 rounded-md px-1.5 py-0.5 type-meta font-medium tabular-nums",
             onMatchPage
               ? "bg-primary/10 text-primary"
               : "bg-muted text-muted-foreground",
@@ -519,7 +519,7 @@ function PageSourceInspector({
             href={href}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 type-meta font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           >
             <ExternalLink className="h-3.5 w-3.5" />
             Open source
@@ -605,7 +605,7 @@ function PageTextState({
 }) {
   if (loading) {
     return (
-      <div className="flex items-center gap-2 py-6 text-sm text-muted-foreground">
+      <div className="flex items-center gap-2 py-6 type-body text-muted-foreground">
         <Loader2 className="h-4 w-4 animate-spin" />
         Loading page…
       </div>
@@ -613,7 +613,7 @@ function PageTextState({
   }
   if (empty) {
     return (
-      <div className="flex items-center gap-2 py-6 text-sm text-muted-foreground">
+      <div className="flex items-center gap-2 py-6 type-body text-muted-foreground">
         <FileText className="h-4 w-4" />
         Nothing extracted for this page.
       </div>

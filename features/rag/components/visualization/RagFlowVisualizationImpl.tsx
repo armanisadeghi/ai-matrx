@@ -645,7 +645,7 @@ export function RagFlowVisualization({
       </ReactFlow>
 
       {/* Floating legend */}
-      <div className="pointer-events-none absolute left-4 top-4 flex flex-col gap-1.5 rounded-lg border bg-background/85 px-3 py-2 text-[11px] backdrop-blur">
+      <div className="pointer-events-none absolute left-4 top-4 flex flex-col gap-1.5 rounded-lg border bg-background/85 px-3 py-2 type-meta backdrop-blur">
         <div className="flex items-center gap-2">
           <span className="h-2 w-2 rounded-full bg-violet-500 shadow-[0_0_8px_rgb(167_139_250)]" />
           <span className="text-muted-foreground">Read path</span>

@@ -551,23 +551,23 @@ export function IngestFlowAnimation({
       <header className="shrink-0 border-b bg-card/40 px-4 py-3">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <div className="type-meta font-semibold uppercase tracking-wider text-muted-foreground">
               Processing for Knowledge
             </div>
             <div
-              className="mt-0.5 text-sm font-medium truncate"
+              className="mt-0.5 type-title truncate"
               title={fileName}
             >
               {fileName}
             </div>
           </div>
           <div className="text-right shrink-0">
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <div className="type-meta font-semibold uppercase tracking-wider text-muted-foreground">
               {stageLabel}
             </div>
             <div className="mt-0.5 text-xl font-bold tabular-nums leading-none">
               {overallPercent}
-              <span className="text-xs font-medium text-muted-foreground">
+              <span className="type-secondary font-medium text-muted-foreground">
                 %
               </span>
             </div>
@@ -630,11 +630,11 @@ export function IngestFlowAnimation({
               <div className="flex items-start gap-2.5">
                 <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
                 <div className="min-w-0 flex-1">
-                  <div className="text-sm font-semibold text-destructive">
+                  <div className="type-title text-destructive">
                     Processing failed
                     <ErrorAlchemyMenu />
                   </div>
-                  <div className="mt-0.5 text-xs text-muted-foreground break-words">
+                  <div className="mt-0.5 type-secondary text-muted-foreground break-words">
                     {ingest.error ?? "The server returned an error."}
                   </div>
                   <div className="mt-2.5 flex items-center gap-1.5">
@@ -664,10 +664,10 @@ export function IngestFlowAnimation({
               <div className="flex items-start gap-2.5">
                 <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
                 <div className="min-w-0 flex-1">
-                  <div className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                  <div className="type-title text-emerald-600 dark:text-emerald-400">
                     Indexed and ready
                   </div>
-                  <div className="mt-0.5 text-xs text-muted-foreground break-words">
+                  <div className="mt-0.5 type-secondary text-muted-foreground break-words">
                     {formatResultSummary(ingest.result)}
                   </div>
                 </div>
@@ -691,7 +691,7 @@ export function IngestFlowAnimation({
               <AlertCircle className="h-3 w-3 shrink-0 text-destructive" />
             )}
             <span
-              className="truncate text-xs text-muted-foreground"
+              className="truncate type-secondary text-muted-foreground"
               title={ingest.progress?.message ?? ""}
             >
               {ingest.status === "complete"
@@ -704,7 +704,7 @@ export function IngestFlowAnimation({
           </div>
           <div className="flex items-center gap-2 shrink-0">
             {hasProgress && (ingest.progress?.total ?? 0) > 0 && (
-              <span className="text-[11px] tabular-nums text-muted-foreground">
+              <span className="type-meta tabular-nums text-muted-foreground">
                 {(ingest.progress?.current ?? 0).toLocaleString()} /{" "}
                 {(ingest.progress?.total ?? 0).toLocaleString()}
               </span>

@@ -156,7 +156,7 @@ function DataStoreNodeImpl({ data }: NodeProps) {
           <span
             className={cn(
               "font-bold tracking-[0.2em] text-foreground/85 uppercase",
-              compact ? "text-[10px]" : "text-[11px]",
+              compact ? "type-meta" : "type-meta",
             )}
           >
             Data Store
@@ -164,7 +164,7 @@ function DataStoreNodeImpl({ data }: NodeProps) {
           <span
             className={cn(
               "text-muted-foreground tracking-wide",
-              compact ? "text-[9px]" : "text-[10px]",
+              compact ? "text-[9px]" : "type-meta",
             )}
           >
             {isDone ? "indexed" : "vector index"}

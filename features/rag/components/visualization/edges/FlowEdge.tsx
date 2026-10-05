@@ -270,7 +270,7 @@ function PillLabel({
   return (
     <div
       className={cn(
-        "rounded-full border px-2 py-0.5 text-[10px] font-medium tracking-wide",
+        "rounded-full border px-2 py-0.5 type-meta font-medium tracking-wide",
         "bg-background/85 backdrop-blur",
         "transition-[color,border-color,box-shadow] duration-300",
         isActive
@@ -366,7 +366,7 @@ function LeftDescriptiveCard({
         />
         <span
           className={cn(
-            "text-sm font-bold uppercase tracking-wider truncate",
+            "type-body font-bold uppercase tracking-wider truncate",
             accent.text,
           )}
         >
@@ -375,11 +375,11 @@ function LeftDescriptiveCard({
       </div>
       <div className={cn("mt-1.5 h-px w-8", accent.bar)} />
       {stats.message ? (
-        <div className="mt-1.5 text-[12px] leading-snug text-muted-foreground line-clamp-4">
+        <div className="mt-1.5 type-secondary leading-snug text-muted-foreground line-clamp-4">
           {stats.message}
         </div>
       ) : (
-        <div className="mt-1.5 text-[12px] italic leading-snug text-muted-foreground/70">
+        <div className="mt-1.5 type-secondary italic leading-snug text-muted-foreground/70">
           waiting on the next update…
         </div>
       )}
@@ -419,7 +419,7 @@ function RightProgressCard({
       <div className="flex items-center justify-between gap-2">
         <span
           className={cn(
-            "text-[11px] font-bold uppercase tracking-[0.12em] truncate",
+            "type-meta font-bold uppercase tracking-[0.12em] truncate",
             accent.text,
           )}
         >
@@ -444,12 +444,12 @@ function RightProgressCard({
           <div className="text-2xl font-bold tabular-nums leading-none">
             {current!.toLocaleString()}
           </div>
-          <div className="mt-0.5 text-[12px] tabular-nums text-muted-foreground">
+          <div className="mt-0.5 type-secondary tabular-nums text-muted-foreground">
             / {total!.toLocaleString()}
           </div>
         </div>
       ) : (
-        <div className="mt-1.5 text-[12px] italic text-muted-foreground/70">
+        <div className="mt-1.5 type-secondary italic text-muted-foreground/70">
           counters not yet reported
         </div>
       )}

@@ -140,7 +140,7 @@ function PipelineNodeImpl({ data }: NodeProps) {
         <span
           className={cn(
             "font-medium text-foreground truncate",
-            compact ? "text-[12.5px]" : "text-sm",
+            compact ? "text-[12.5px]" : "type-body",
           )}
         >
           {d.title}

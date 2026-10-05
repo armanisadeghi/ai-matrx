@@ -47,7 +47,7 @@ function OutputNodeImpl({ data }: NodeProps) {
       </div>
 
       <div className="flex flex-col gap-0.5 leading-tight">
-        <span className="text-sm font-semibold text-foreground">
+        <span className="type-title text-foreground">
           Agent completes task
         </span>
         <span className="text-[10.5px] text-muted-foreground tracking-wide uppercase">

@@ -93,7 +93,7 @@ export function SelectedPdfPages({
       <div
         className={cn("flex h-full items-center justify-center p-6", className)}
       >
-        <p className="max-w-sm text-center text-xs text-destructive">
+        <p className="max-w-sm text-center type-secondary text-destructive">
           {current.error}
           <ErrorAlchemyMenu error={current.error} />
         </p>
@@ -104,7 +104,7 @@ export function SelectedPdfPages({
     return (
       <div
         className={cn(
-          "flex h-full min-h-48 items-center justify-center gap-2 text-xs text-muted-foreground",
+          "flex h-full min-h-48 items-center justify-center gap-2 type-secondary text-muted-foreground",
           className,
         )}
       >
@@ -124,7 +124,7 @@ export function SelectedPdfPages({
     <div className={cn("flex h-full min-h-0 flex-col", className)}>
       {showPagePicker ? (
         <div className="flex shrink-0 items-center gap-1 overflow-x-auto px-2 py-2">
-          <span className="mr-1 shrink-0 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+          <span className="mr-1 shrink-0 type-meta font-medium uppercase tracking-wide text-muted-foreground">
             Source page
           </span>
           {selection.output_page_map.map((entry) => {
@@ -152,7 +152,7 @@ export function SelectedPdfPages({
           onPageChange={setDerivativePage}
         />
       </div>
-      <div className="shrink-0 px-3 py-1.5 text-[10px] text-muted-foreground">
+      <div className="shrink-0 px-3 py-1.5 type-meta text-muted-foreground">
         Viewing source page {activeSourcePage ?? "—"} · derivative page{" "}
         {derivativePage} of {selection.output_page_map.length}
         {selection.cache_hit ? " · cached" : " · newly extracted"}

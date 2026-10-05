@@ -61,8 +61,8 @@ export function QueryTermCoverage({ query, hits }: { query: string; hits: { snip
   if (!coverage) return null;
   const missing = coverage.filter((c) => c.count === 0);
   return (
-    <div className="flex items-center gap-1.5 flex-wrap text-[11px]">
-      <span className="text-muted-foreground uppercase tracking-wide text-[10px]">Terms in results</span>
+    <div className="flex items-center gap-1.5 flex-wrap type-meta">
+      <span className="text-muted-foreground uppercase tracking-wide type-meta">Terms in results</span>
       {coverage.map((c) => (
         <Badge
           key={c.term}
@@ -133,7 +133,7 @@ export function WhyMatched({ hit, query }: { hit: WhyMatchedInput; query: string
   const f = whyMatched(hit, query);
   return (
     <dl
-      className="space-y-0.5 rounded-md bg-muted/40 px-2.5 py-2 text-[11px] text-muted-foreground"
+      className="space-y-0.5 rounded-md bg-muted/40 px-2.5 py-2 type-meta text-muted-foreground"
       data-testid="why-matched"
     >
       {f.found.length || f.absent.length ? (

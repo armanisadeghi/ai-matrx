@@ -89,7 +89,7 @@ export function RagSearchHits({
     return (
       <div
         className={cn(
-          "rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground",
+          "rounded-lg border border-dashed border-border p-6 text-center type-body text-muted-foreground",
           className,
         )}
       >
@@ -103,7 +103,7 @@ export function RagSearchHits({
   return (
     <div className={cn("flex flex-col gap-2", className)}>
       {(query !== undefined || latencyMs !== undefined) && (
-        <div className="flex items-center justify-between px-1 text-[11px] text-muted-foreground">
+        <div className="flex items-center justify-between px-1 type-meta text-muted-foreground">
           <span>
             {hits.length}
             {totalCandidates ? ` of ${totalCandidates}` : ""} hit
@@ -133,7 +133,7 @@ export function RagSearchHits({
         ))}
       </ol>
       {maxRows && hits.length > maxRows ? (
-        <div className="px-1 text-[11px] text-muted-foreground">
+        <div className="px-1 type-meta text-muted-foreground">
           +{hits.length - maxRows} more hits not shown.
         </div>
       ) : null}
