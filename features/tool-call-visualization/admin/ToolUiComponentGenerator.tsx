@@ -46,7 +46,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { supabase } from "@/utils/supabase/client";
 import { formatDistanceToNow } from "date-fns";
-import MarkdownStream from "@/components/MarkdownStream";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { useToolComponentAgent } from "./hooks/useToolComponentAgent";
 
 import type {
@@ -1531,9 +1531,9 @@ export function ToolUiComponentGenerator({
             </div>
             <div className="p-4 min-h-[200px] max-h-full overflow-y-auto">
               {agent.accumulatedText || rawResponse ? (
-                <MarkdownStream imagePolicy="ai"
-                  content={agent.accumulatedText || rawResponse}
-                  isStreamActive={agent.isStreaming}
+                <RichContent level="full" imagePolicy="ai"
+                  source={agent.accumulatedText || rawResponse}
+                  isStreaming={agent.isStreaming}
                 />
               ) : (
                 <p className="text-xs text-muted-foreground italic">

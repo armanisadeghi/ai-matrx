@@ -37,7 +37,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/utils/supabase/client";
 import { operationFailed, extractErrorMessage } from "@/utils/errors";
 import { formatDistanceToNow } from "date-fns";
-import MarkdownStream from "@/components/MarkdownStream";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { useToolComponentAgent } from "@/features/tool-call-visualization/admin/hooks/useToolComponentAgent";
 import type {
   ToolLifecycleEntry,
@@ -710,9 +710,9 @@ export function ToolComponentPreview({
               </div>
               <div className="p-4 max-h-[500px] overflow-y-auto">
                 {agent.accumulatedText ? (
-                  <MarkdownStream imagePolicy="ai"
-                    content={agent.accumulatedText}
-                    isStreamActive={agent.isStreaming}
+                  <RichContent level="full" imagePolicy="ai"
+                    source={agent.accumulatedText}
+                    isStreaming={agent.isStreaming}
                   />
                 ) : null}
               </div>
