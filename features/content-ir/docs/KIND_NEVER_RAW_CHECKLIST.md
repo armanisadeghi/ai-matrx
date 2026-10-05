@@ -574,9 +574,14 @@ $fn$;
       inside the key: `hasKindKey` / `firstKindSlug` strip zero-width characters, a `python` option reads the repr;
       `markdownCarriesKind` and the screen scan use it; `normalizeKindSpellings` makes the markdown
       (`kindTextToMarkdown` / `kindTextPreview`), one-line (`inlineKindText`) and search-snippet (`snippetKindText`)
-      converters convert both. Guard `python-repr-and-zero-width-kind.test.ts` (13 of 15 red before). Not done: the
-      block splitter/accumulator does not LIFT a Python-repr region into a kind block — a repr in a chat answer is now
-      flagged by the sentinel and converted by the text converters, but the live pipeline still draws it as prose.
+      converters convert both. Guard `python-repr-and-zero-width-kind.test.ts` (13 of 15 red before).
+- [x] K4b. A Python repr INSIDE a chat answer. Ruling: not lifted into a kind block (the stream parser speaks JSON; a
+      speculative repr rewrite mid-stream would split live from reload) — it reads as its one-line label at the one
+      prose leaf both paths use (`BasicMarkdownContent` → `pythonKindsAsOneLine`; unfinished → the kind's name;
+      `KindTextGate` no longer reroutes repr-only text). Guard `python-repr-kind-in-prose-live-equals-reload.test.tsx`:
+      every frame of the real accumulator stream judged (char-by-char + chunked), settled live = reload (3 red before).
+- [x] K8. Search / fetch result cards: the collapsed preview line (`snippet` / `content`) goes through
+      `snippetKindText` — JSON, prose-held and Python-repr kinds read as their one-line label (6 red before).
 - [x] K5. Render matrix path `chat_artifact_materialized`: prose + the real id-bearing tag (`wrapArtifactText`, the
       kind's canvas type, UUID id, version) through `ArtifactRefBlock`, every frame of every archetype judged with the
       saved row loading / loaded / missing (canvas row source mocked; the cell proves it read the id). Full sequence
