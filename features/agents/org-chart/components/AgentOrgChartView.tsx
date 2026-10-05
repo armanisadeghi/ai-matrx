@@ -18,7 +18,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowDownToLine,
   ArrowRightLeft,
@@ -92,6 +92,7 @@ import type { OrgPosition } from "../positionsService";
 import { AgentOrgCard, boxHref } from "./AgentOrgCard";
 import { OrgBoxPicker } from "./OrgBoxPicker";
 import { DefineSeatJobDialog } from "./DefineSeatJobDialog";
+import { MakeOrchestraDialog, type MakeOrchestraRequest } from "./MakeOrchestraDialog";
 import { selectSeatJobs } from "@/features/agents/redux/orchestras/selectors";
 import { useOpenMandateWindow } from "@/features/overlays/openers/mandateWindow";
 import { storedMandateKey } from "@ai-matrx/agents/mandates";
@@ -143,6 +144,7 @@ export function AgentOrgChartView({
   const dispatch = useAppDispatch();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const pathname = usePathname();
   const agents = useAppSelector(selectAllAgents);
   // "Show only this branch" narrows the chart to one box and what hangs under it.
   const [branchRoot, setBranchRoot] = useState<string | null>(null);
@@ -154,6 +156,20 @@ export function AgentOrgChartView({
   const [pick, setPick] = useState<PickMode | null>(null);
   const [renaming, setRenaming] = useState<OrgPosition | null>(null);
   const [defining, setDefining] = useState<OrgPosition | null>(null);
+  const [making, setMaking] = useState<MakeOrchestraRequest | null>(null);
+  /** Form A: these agent nodes become a new Orchestra, taking their shared recorded place. */
+  const makeOrchestraOf = (nodes: Node[]) => {
+    const agentsOnly = nodes.filter((x) => x.data.boxType === "agent");
+    const parents = new Set(agentsOnly.map((x) => (x.data.edgeKind === "reports_to" ? x.data.parentId : null)));
+    const shared = parents.size === 1 ? [...parents][0] : null;
+    setMaking({
+      memberIds: [...new Set(agentsOnly.map((x) => x.data.entityId))],
+      underBoxId: shared,
+      leaving: shared ? agentsOnly.map((x) => ({ managerId: shared, reportId: x.data.boxId })) : [],
+      suggestedName: shared ? `${nameOf(shared)} team lead` : "Team lead",
+      underName: shared ? nameOf(shared) : null,
+    });
+  };
   const seatJobs = useAppSelector(selectSeatJobs);
   const openMandateWindow = useOpenMandateWindow();
   /** The seat's job, in place: goal writer, building its agent and testing all live there. */
@@ -556,6 +572,12 @@ export function AgentOrgChartView({
               <ArrowUpToLine className="mr-2 h-4 w-4" />
               Place all under…
             </Item>
+            {selection.every((k) => byKey.get(k)?.data.boxType === "agent") && (
+              <Item onSelect={() => makeOrchestraOf(selection.map((k) => byKey.get(k)).filter((x): x is Node => Boolean(x)))}>
+                <Network className="mr-2 h-4 w-4" />
+                Make an Orchestra of these…
+              </Item>
+            )}
             <Item onSelect={() => onDelete(selection)}>
               <Unlink className="mr-2 h-4 w-4" />
               Remove these placements
@@ -577,6 +599,22 @@ export function AgentOrgChartView({
           <LinkIcon className="mr-2 h-4 w-4" />
           Copy link to this box
         </Item>
+        {d.boxType === "membership" && (
+          <Item
+            onSelect={() =>
+              setMaking({
+                memberIds: [],
+                underBoxId: d.boxId,
+                leaving: [],
+                suggestedName: `${nameOf(d.boxId)}'s lead agent`,
+                underName: nameOf(d.boxId),
+              })
+            }
+          >
+            <Network className="mr-2 h-4 w-4" />
+            Add a leader agent…
+          </Item>
+        )}
         {position && (
           <>
             <Sep />
@@ -592,6 +630,20 @@ export function AgentOrgChartView({
                 Define the job…
               </Item>
             )}
+            <Item
+              onSelect={() =>
+                setMaking({
+                  memberIds: [],
+                  underBoxId: d.boxId,
+                  leaving: [],
+                  suggestedName: `${position.name} lead`,
+                  underName: position.name,
+                })
+              }
+            >
+              <Network className="mr-2 h-4 w-4" />
+              Add a leader agent…
+            </Item>
             <Item onSelect={() => setRenaming(position)}>
               <PencilLine className="mr-2 h-4 w-4" />
               Rename…
@@ -927,6 +979,20 @@ export function AgentOrgChartView({
           )}
         </DialogContent>
       </Dialog>
+
+      <MakeOrchestraDialog
+        request={making}
+        onClose={() => setMaking(null)}
+        onMade={(conductorId, warnings) => {
+          setMaking(null);
+          if (warnings.length) toast.warning(warnings.join(" "));
+          else toast.success("Orchestra made.");
+          setSelection([]);
+          const params = new URLSearchParams(searchParams.toString());
+          params.set("focus", boxId("agent", conductorId));
+          router.replace(`${pathname}?${params.toString()}`);
+        }}
+      />
 
       <DefineSeatJobDialog
         position={defining}
