@@ -334,7 +334,9 @@ function buildOverview(
   const listed = rows.slice(0, limits.listed);
   const tail = rows.slice(limits.listed, limits.listed + limits.tail);
   // Selected but not live: its FULL values travel here (its surface is dormant, so nothing else carries them).
-  const sharing = listed.filter((row, i) => !row.live && row.surface && index && !(reads[i] && row.selected)).length;
+  // Only a LONE selection: with several selected each is just marked `selected` and keeps its basics.
+  const fullFor = (row: BoardItemRow) => !!row.selected && rows.filter((r) => r.selected).length === 1;
+  const sharing = listed.filter((row, i) => !row.live && row.surface && index && !(reads[i] && fullFor(row))).length;
   const allowance = Math.max(
     ITEM_BASICS_FLOOR_CHARS,
     Math.min(ITEM_BASICS_CEILING_CHARS, Math.floor(limits.budget / Math.max(1, sharing))),
@@ -372,7 +374,7 @@ function buildOverview(
       };
     }
     const read = reads[i];
-    if (read && row.selected) {
+    if (read && fullFor(row)) {
       const full = declaredValues(read.manifest, read.scope, limits.full);
       if (Object.keys(full).length > 0) return { ...base, full_values: full };
     }
