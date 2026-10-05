@@ -45,6 +45,11 @@ import {
   setUserInputText,
   setUserInputMessageParts,
 } from "../instance-user-input/instance-user-input.slice";
+import {
+  messagePartToUserInputPart,
+  selectResourcePayloads,
+} from "../instance-resources/instance-resources.selectors";
+import { dedupeUserInputParts } from "../thunks/frozen-submission";
 import { executeInstance } from "../thunks/execute-instance.thunk";
 
 interface RetryConversationTurnArgs {
@@ -135,7 +140,17 @@ export const retryConversationTurn = createAsyncThunk<
     }
 
     // Never reached the server → re-send the message as a fresh turn.
-    const { text, parts } = splitUserContent(lastUserMessage.content);
+    const split = splitUserContent(lastUserMessage.content);
+    const text = split.text;
+    // A refused send leaves its resources attached; restoring the same parts
+    // beside them would show (and send) every attachment twice. Keep only the
+    // parts no attached resource already carries.
+    const attached = selectResourcePayloads(conversationId)(state);
+    const parts = split.parts.filter(
+      (p) =>
+        dedupeUserInputParts([...attached, messagePartToUserInputPart(p)])
+          .length > attached.length,
+    );
     if (!text && parts.length === 0) {
       return rejectWithValue({
         message:

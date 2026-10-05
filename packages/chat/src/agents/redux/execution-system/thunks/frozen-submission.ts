@@ -73,6 +73,42 @@ export function isEmptySubmission(submission: FrozenSubmission): boolean {
   );
 }
 
+/** Stable JSON: object keys sorted so key order never changes identity. */
+function stableKey(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(stableKey).join(",")}]`;
+  if (value && typeof value === "object") {
+    const o = value as Record<string, unknown>;
+    return `{${Object.keys(o)
+      .sort()
+      .map((k) => `${JSON.stringify(k)}:${stableKey(o[k])}`)
+      .join(",")}}`;
+  }
+  return JSON.stringify(value) ?? "null";
+}
+
+/**
+ * One resource, once. A refused send restores its parts to the composer while
+ * the attached resources stay attached, so a re-send (Retry) carries each
+ * attachment twice — once as a restored message part, once as the live
+ * resource. Identity = the part's content with `metadata` set aside (display
+ * labels never make two distinct resources). First occurrence wins.
+ */
+export function dedupeUserInputParts(parts: UserInputPart[]): UserInputPart[] {
+  const seen = new Set<string>();
+  const out: UserInputPart[] = [];
+  for (const part of parts) {
+    const { metadata: _metadata, ...identity } = part as unknown as Record<
+      string,
+      unknown
+    >;
+    const key = stableKey(identity);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(part);
+  }
+  return out;
+}
+
 /** `user_input` for the agent path, exactly as the request carries it. */
 export function agentUserInputFromSubmission(
   submission: FrozenSubmission,
@@ -88,7 +124,7 @@ export function agentUserInputFromSubmission(
   if (resources.length > 0 || messageParts.length > 0) {
     const parts: UserInputPart[] = [];
     if (textInput) parts.push({ type: "text", text: textInput });
-    parts.push(...messageParts, ...resources);
+    parts.push(...dedupeUserInputParts([...messageParts, ...resources]));
     return parts;
   }
   return textInput || undefined;
