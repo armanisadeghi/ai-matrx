@@ -88,7 +88,7 @@ export async function updateCxConversation(
   updates: CxConversationUpdate,
 ): Promise<CxConversation | null> {
   const supabase = await createClient();
-  const { data, error } = await writeOneRow(
+  const { data, error } = await writeOneRow<CxConversation>(
     supabase
       .schema("chat")
       .from("conversation")

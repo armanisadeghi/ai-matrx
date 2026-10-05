@@ -30,6 +30,7 @@ import type { AgentUsagesState, UsageScope } from "../ui/usages/usages.slice";
 import type { AgentDriftReportAdminRow, AgentDriftReportRow, AgentUsageAggregate, AgentUsageRow, DriftAlertRow, DriftSeverity, ReportSortKey } from "../ui/usages/usages.types";
 import type { AgentCatalog } from "@ai-matrx/agents/catalog";
 import type { DecodedDirective } from "@ai-matrx/content-ir";
+import type { AudioSessionControls, AudioSessionSource, PlaybackSessionHandle } from "../ui/audio-session-types";
 import type { ItemRowProps } from "../ui/item-types";
 import type { ResourcePickerViewId } from "../agents/resources/picker-view-id";
 import type { CxContentBlock } from "../public-chat/types/cx-tables";
@@ -358,7 +359,10 @@ export interface ChatUiSlots {
   ensureOrgAvailability: AnyFn;
   requireAuthenticatedSupabaseSession: AnyFn;
   notifyPrintOutcome: AnyFn;
-  awaitEffectiveOrganizationId: AnyFn;
+  awaitEffectiveOrganizationId: () => Promise<
+    | { status: "ready"; organizationId: string }
+    | { status: "unavailable"; reason: string; cause: "no-selection" | "unreadable" }
+  >;
   getAgentCatalog: () => AgentCatalog;
   resolvePreferredChatModel: AnyFn;
   publishedToWebPatch: AnyFn;
@@ -390,7 +394,12 @@ export interface ChatUiSlots {
   MatrxDynamicPanelHost: AnyComponent;
   useClippedContentGuard: AnyFn;
   answerPreviewText: AnyFn;
-  beginPlaybackSession: AnyFn;
+  beginPlaybackSession: (input: {
+    source: AudioSessionSource;
+    label: string;
+    text?: string;
+    controls: AudioSessionControls & { stop: () => void };
+  }) => PlaybackSessionHandle;
   currentCostUnit: AnyFn;
   Cost: AnyComponent;
 }

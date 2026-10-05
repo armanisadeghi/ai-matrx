@@ -22,7 +22,7 @@ it("keeps loaded sample objects and arrays intact through variable state and req
     undefined,
     initInstanceVariables({
       conversationId,
-      definitions: Object.keys(values).map((name) => ({ name })),
+      definitions: Object.keys(values).map((name) => ({ name, defaultValue: null })),
     }),
   );
   state = reducer(state, setUserVariableValues({ conversationId, values }));

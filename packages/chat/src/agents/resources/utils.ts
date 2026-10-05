@@ -57,7 +57,7 @@ export const RESOURCE_FORMAT_CONFIG = {
       "This is a task from the user's task list. You can reference it, check its status, or suggest updates. To modify tasks, use the task management tools.",
     extractMetadata: (data: TaskResourceData) => ({
       title: data.title,
-      status: data.status,
+      ...(data.status && { status: data.status }),
       ...(data.priority && { priority: data.priority }),
       ...(data.due_date && { due_date: data.due_date }),
       ...(data.project_id && { project: data.project_id }),

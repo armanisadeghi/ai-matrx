@@ -25,7 +25,7 @@ import {
   setGlobalListError,
 } from "./conversation-list.slice";
 import { CONVERSATION_LIST_PAGE_SIZE } from "./conversation-list.types";
-import { HIDDEN_CONVERSATION_LANE } from "../conversation-history/lanes";
+import { excludeHiddenLane } from "../conversation-history/history-filters";
 import { getUserId, hasBrowserSession } from "../../../host/identity";
 import { conversationTitleText } from "../../../utils/content-ir/surfaces/kind-text-label";
 
@@ -264,15 +264,15 @@ export const fetchGlobalConversations = createAsyncThunk<
       dispatch(setGlobalListSuccess({ items: [], hasMore: false, replace }));
       return { items: [], hasMore: false };
     }
-    let listQuery = supabase
-      .schema("chat").from("conversation")
-      .select(
-        "id, title, description, status, message_count, initial_agent_id, last_model_id, source_app, source_feature, created_at, updated_at, exclude_from_kg",
-      )
-      .is("deleted_at", null)
-      .eq("is_ephemeral", false)
-      // A mandate candidate's shadow leg is never listed (lanes.ts).
-      .neq("lane", HIDDEN_CONVERSATION_LANE)
+    let listQuery = excludeHiddenLane( // a mandate candidate's shadow leg is never listed (lanes.ts)
+      supabase
+        .schema("chat").from("conversation")
+        .select(
+          "id, title, description, status, message_count, initial_agent_id, last_model_id, source_app, source_feature, created_at, updated_at, exclude_from_kg",
+        )
+        .is("deleted_at", null)
+        .eq("is_ephemeral", false),
+    )
       .order("updated_at", { ascending: false })
       .range(offset, offset + limit - 1);
     if (viewerId) {

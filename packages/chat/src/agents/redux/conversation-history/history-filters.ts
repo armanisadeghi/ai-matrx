@@ -27,6 +27,15 @@ export interface HistoryFilterable<Q> {
 }
 
 /**
+ * A list that applies no lane gate still never lists the HIDDEN lane. `lane` is a computed
+ * field (`chat.lane(chat.conversation)`), absent from the generated column types, so the one
+ * `.neq("lane", …)` lives here, against the structural builder, for every list that needs it.
+ */
+export function excludeHiddenLane<Q extends HistoryFilterable<Q>>(query: Q): Q {
+  return query.neq("lane", HIDDEN_CONVERSATION_LANE);
+}
+
+/**
  * Applies a scope's provenance filters to the list query — the ONE place they
  * are composed, so the gate order is provable in a unit test.
  *
@@ -51,7 +60,7 @@ export function applyHistoryFilters<Q extends HistoryFilterable<Q>>(
     // No gate still never means the HIDDEN lane: a mandate candidate's shadow
     // leg (`chat.conversation_lane` → 'hidden') is persisted only so its pair
     // can open it, and is listed nowhere. A gate cannot name it (normalizeLanes).
-    q = q.neq("lane", HIDDEN_CONVERSATION_LANE);
+    q = excludeHiddenLane(q);
   }
 
   // Per-scope blacklist on `source_feature`. Each value gets its own `.neq`

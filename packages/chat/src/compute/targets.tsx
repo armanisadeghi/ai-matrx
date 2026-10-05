@@ -83,7 +83,7 @@ export interface SandboxInstance {
   status: string;
   name?: string | null;
   sandbox_id?: string | null;
-  tier?: string | null;
+  tier?: "ec2" | "hosted" | null;
   expires_at?: string | null;
   proxy_url?: string | null;
   [field: string]: any;
