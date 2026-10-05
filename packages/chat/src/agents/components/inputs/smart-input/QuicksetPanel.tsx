@@ -44,17 +44,17 @@ import {
   selectConversationSandboxBinding,
 } from "../../../redux/execution-system/conversations/conversations.selectors";
 import {
-  selectAgentCustomTools,
+  selectAgentCustomToolNames,
   selectAgentMcpServers,
   selectAgentTools,
-  selectAgentReadyForCustomExecution,
+  selectAgentRunControlsReady,
 } from "../../../redux/agent-definition/selectors";
 import {
   selectAllTools,
   selectToolsStatus,
 } from "../../../redux/tools/tools.selectors";
 import { fetchAvailableTools } from "../../../redux/tools/tools.thunks";
-import { fetchAgentExecutionFull } from "../../../redux/agent-definition/thunks";
+import { fetchAgentRunControls } from "../../../redux/agent-definition/thunks";
 import { AiToolRef } from "@host/components/official/entity-ref/AiIdentityRef";
 import { useTouchOnlyDevice } from "@host/components/official/composer/useTouchOnlyDevice";
 import { selectSandboxBySurface } from "../../../../host/prefs";
@@ -198,7 +198,7 @@ export function QuicksetPanel({
     agentId ? selectAgentTools(state, agentId) : EMPTY_LIST,
   );
   const customTools = useAppSelector((state) =>
-    agentId ? selectAgentCustomTools(state, agentId) : EMPTY_LIST,
+    agentId ? selectAgentCustomToolNames(state, agentId) : EMPTY_LIST,
   );
   const mcpServers = useAppSelector((state) =>
     agentId ? selectAgentMcpServers(state, agentId) : EMPTY_LIST,
@@ -206,7 +206,7 @@ export function QuicksetPanel({
   const toolCatalog = useAppSelector(selectAllTools);
   const toolsStatus = useAppSelector(selectToolsStatus);
   const agentReady = useAppSelector((state) =>
-    agentId ? selectAgentReadyForCustomExecution(state, agentId) : true,
+    agentId ? selectAgentRunControlsReady(state, agentId) : true,
   );
   const surfaceTools = useAppSelector(
     selectInstanceClientTools(conversationId),
@@ -234,7 +234,7 @@ export function QuicksetPanel({
 
   useEffect(() => {
     if (agentId && !agentReady) {
-      void dispatch(fetchAgentExecutionFull(agentId));
+      void dispatch(fetchAgentRunControls(agentId));
     }
   }, [agentId, agentReady, dispatch]);
 
@@ -253,9 +253,9 @@ export function QuicksetPanel({
         }))
       : []),
     ...(Array.isArray(customTools)
-      ? customTools.map((tool) => ({
-          key: `custom:${tool.name}`,
-          content: tool.name,
+      ? customTools.map((name) => ({
+          key: `custom:${name}`,
+          content: name,
         }))
       : []),
     ...(Array.isArray(mcpServers)

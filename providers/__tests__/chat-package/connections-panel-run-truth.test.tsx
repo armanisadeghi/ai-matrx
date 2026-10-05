@@ -22,9 +22,9 @@ jest.mock("@ai-matrx/chat/agents/hooks/useMcpTools", () => ({
   }),
 }));
 jest.mock("@ai-matrx/chat/agents/redux/agent-definition/selectors", () => ({
-  selectAgentMcpServers: () => [], selectAgentReadyForCustomExecution: () => true,
+  selectAgentMcpServers: () => [], selectAgentRunControlsReady: () => true,
 }));
-jest.mock("@ai-matrx/chat/agents/redux/agent-definition/thunks", () => ({ fetchAgentExecutionFull: jest.fn() }));
+jest.mock("@ai-matrx/chat/agents/redux/agent-definition/thunks", () => ({ fetchAgentRunControls: jest.fn() }));
 jest.mock("@ai-matrx/chat/agents/redux/mcp/mcp.slice", () => ({ fetchCatalog: jest.fn() }));
 jest.mock("@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.selectors", () => ({
   selectAgentIdFromInstance: () => () => "agent",

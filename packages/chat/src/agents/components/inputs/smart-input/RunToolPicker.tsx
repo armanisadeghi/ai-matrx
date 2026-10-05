@@ -52,11 +52,11 @@ import { fetchAvailableTools } from "../../../redux/tools/tools.thunks";
 import {
   selectAgentError,
   selectAgentTools,
-  selectAgentCustomTools,
+  selectAgentCustomToolNames,
   selectAgentAutoToolsDisabled,
-  selectAgentReadyForCustomExecution,
+  selectAgentRunControlsReady,
 } from "../../../redux/agent-definition/selectors";
-import { fetchAgentExecutionFull } from "../../../redux/agent-definition/thunks";
+import { fetchAgentRunControls } from "../../../redux/agent-definition/thunks";
 import { selectAgentIdFromInstance } from "../../../redux/execution-system/conversations/conversations.selectors";
 import {
   selectAllModels,
@@ -88,7 +88,7 @@ export function RunToolPicker({ conversationId }: { conversationId: string }) {
     agentId ? selectAgentTools(s, agentId) : undefined,
   );
   const agentCustomTools = useAppSelector((s) =>
-    agentId ? selectAgentCustomTools(s, agentId) : undefined,
+    agentId ? selectAgentCustomToolNames(s, agentId) : undefined,
   );
   const autoToolsDisabled = useAppSelector((s) =>
     agentId ? selectAgentAutoToolsDisabled(s, agentId) : false,
@@ -97,7 +97,7 @@ export function RunToolPicker({ conversationId }: { conversationId: string }) {
     agentId ? selectAgentError(s, agentId) : null,
   );
   const agentReady = useAppSelector((s) =>
-    agentId ? selectAgentReadyForCustomExecution(s, agentId) : false,
+    agentId ? selectAgentRunControlsReady(s, agentId) : false,
   );
 
   // Tool support is a MODEL capability — read the effective (override ??
@@ -153,7 +153,7 @@ export function RunToolPicker({ conversationId }: { conversationId: string }) {
   // path may not have fetched. Pull it so the agent's set isn't silently empty.
   useEffect(() => {
     if (agentId && !agentReady) {
-      void dispatch(fetchAgentExecutionFull(agentId));
+      void dispatch(fetchAgentRunControls(agentId));
     }
   }, [agentId, agentReady, dispatch]);
 
@@ -236,7 +236,7 @@ export function RunToolPicker({ conversationId }: { conversationId: string }) {
       what="this agent's tools"
       size="compact"
       className="m-1.5"
-      onRetry={() => void dispatch(fetchAgentExecutionFull(agentId))}
+      onRetry={() => void dispatch(fetchAgentRunControls(agentId))}
     />
   ) : agentLoading || (catalogLoading && builtInIds.length > 0) ? (
     // Names come from the catalog: hold the skeleton until it lands, never
@@ -273,15 +273,15 @@ export function RunToolPicker({ conversationId }: { conversationId: string }) {
           />
         );
       })}
-      {customList.map((t) => {
-        const isRemoved = removed.has(t.name);
+      {customList.map((toolName) => {
+        const isRemoved = removed.has(toolName);
         return (
           <PickerRow
-            key={t.name}
+            key={toolName}
             icon={Code2}
             label={
               <span className={isRemoved ? "text-muted-foreground line-through" : undefined}>
-                {getToolDisplayName(t.name)}
+                {getToolDisplayName(toolName)}
               </span>
             }
             title={isRemoved ? "Restore for this chat" : "Remove for this chat"}
@@ -293,7 +293,7 @@ export function RunToolPicker({ conversationId }: { conversationId: string }) {
                 <X className="h-4 w-4 shrink-0 text-muted-foreground" />
               )
             }
-            onClick={() => toggleRemoved(t.name)}
+            onClick={() => toggleRemoved(toolName)}
           />
         );
       })}

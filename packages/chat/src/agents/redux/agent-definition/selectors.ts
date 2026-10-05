@@ -428,6 +428,36 @@ export const selectAgentCustomTools = createSelector(
   (record) => record?.customTools,
 );
 
+/**
+ * True when the run-control pickers have what they show (P25): the run
+ * controls read (`fetchAgentRunControls`) landed, or the builder already
+ * loaded the whole definition.
+ */
+export const selectAgentRunControlsReady = createSelector(
+  [selectAgentById],
+  (record): boolean =>
+    !!record &&
+    (record.runControls !== undefined ||
+      record._fetchStatus === "full" ||
+      record._fetchStatus === "versionSnapshot"),
+);
+
+const EMPTY_NAMES: string[] = [];
+
+/**
+ * The agent's custom tool NAMES for run controls: from the loaded definition
+ * when the builder has it, else from the run-controls read. Never the bodies.
+ */
+export const selectAgentCustomToolNames = createSelector(
+  [selectAgentById],
+  (record): string[] => {
+    if (!record) return EMPTY_NAMES;
+    if (hasField(record._loadedFields, "customTools") && Array.isArray(record.customTools))
+      return record.customTools.map((t) => t.name);
+    return record.runControls?.customToolNames ?? EMPTY_NAMES;
+  },
+);
+
 export const selectAgentMcpServers = createSelector(
   [selectAgentById],
   (record) => record?.mcpServers,

@@ -471,6 +471,14 @@ export interface AgentDefinition {
   runCounts?: AgentRunCounts;
 
   /**
+   * What the run-control pickers show (`agx_get_run_controls`, P25): custom
+   * tool NAMES only — never the bodies, which are builder-tier. Absent until
+   * a picker opens. The other run-control values (tool ids, skill config,
+   * connections, auto-tools switch) land in their own fields.
+   */
+  runControls?: AgentRunControls;
+
+  /**
    * The agent's CLASS pin as a LIST read reports it (`offering_id` on
    * agx_get_list / agx_get_list_full / agx_search / agx_list_scoped): a uuid,
    * null (no pin — the preferred class runs), or absent when the read did not
@@ -661,6 +669,11 @@ export interface AgentRunCounts {
   customTools: number;
   skills: number;
   connections: number;
+}
+
+/** The run-control pickers' extra values (`agx_get_run_controls`, P25). */
+export interface AgentRunControls {
+  customToolNames: string[];
 }
 
 /** Returned by `agx_get_execution_full(agent_id)`. */

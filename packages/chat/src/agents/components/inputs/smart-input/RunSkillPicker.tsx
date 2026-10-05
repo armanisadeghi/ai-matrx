@@ -27,9 +27,9 @@ import { selectAgentIdFromInstance } from "../../../redux/execution-system/conve
 import {
   selectAgentError,
   selectAgentSkillConfig,
-  selectAgentReadyForCustomExecution,
+  selectAgentRunControlsReady,
 } from "../../../redux/agent-definition/selectors";
-import { fetchAgentExecutionFull } from "../../../redux/agent-definition/thunks";
+import { fetchAgentRunControls } from "../../../redux/agent-definition/thunks";
 import { selectBuilderAdvancedSettings } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { setBuilderAdvancedSettings } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { DEFAULT_BUILDER_ADVANCED_SETTINGS } from "../../../types/instance.types";
@@ -90,7 +90,7 @@ export function RunSkillPicker({ conversationId }: { conversationId: string }) {
     agentId ? selectAgentError(s, agentId) : null,
   );
   const agentReady = useAppSelector((s) =>
-    agentId ? selectAgentReadyForCustomExecution(s, agentId) : false,
+    agentId ? selectAgentRunControlsReady(s, agentId) : false,
   );
 
   const settings =
@@ -101,7 +101,7 @@ export function RunSkillPicker({ conversationId }: { conversationId: string }) {
 
   useEffect(() => {
     if (agentId && !agentReady) {
-      void dispatch(fetchAgentExecutionFull(agentId));
+      void dispatch(fetchAgentRunControls(agentId));
     }
   }, [agentId, agentReady, dispatch]);
 
@@ -165,7 +165,7 @@ export function RunSkillPicker({ conversationId }: { conversationId: string }) {
       what="this agent's skills"
       size="compact"
       className="m-1.5"
-      onRetry={() => void dispatch(fetchAgentExecutionFull(agentId))}
+      onRetry={() => void dispatch(fetchAgentRunControls(agentId))}
     />
   ) : agentLoading ? (
     <PicksSkeletons />

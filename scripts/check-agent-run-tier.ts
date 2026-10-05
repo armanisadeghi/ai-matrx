@@ -48,14 +48,9 @@ const BUILDER_TIER = new Set<string>([
  * standing, with why. Never raise a number; lower it when a site moves.
  */
 const BASELINE: Record<string, number> = {
-  // Run controls that show the agent's configured tools / skills / connectors /
-  // settings: they need custom tool names, skill config and MCP servers, which
-  // the run tier does not carry. They fetch only when the panel is OPENED,
-  // never when a run starts.
-  [`${PKG}agents/components/inputs/smart-input/QuicksetPanel.tsx`]: 1,
-  [`${PKG}agents/components/inputs/smart-input/RunSkillPicker.tsx`]: 2,
-  [`${PKG}agents/components/inputs/smart-input/RunToolPicker.tsx`]: 2,
-  [`${PKG}agents/components/inputs/smart-input/composer/ComposerConnectorsPanel.tsx`]: 1,
+  // (P25, 2026-10-05: the Quickset / Tools / Skills / Connections pickers
+  // moved to `fetchAgentRunControls` → `agx_get_run_controls`; their 6 fetches
+  // are gone.)
   // Voice: a client-held realtime session needs the instructions. Reaches 0 at
   // P24v when aidream mints the session server-side.
   [`${PKG}voice-agent/realtimeModel.ts`]: 1,

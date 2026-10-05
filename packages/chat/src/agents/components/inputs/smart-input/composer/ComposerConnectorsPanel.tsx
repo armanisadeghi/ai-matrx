@@ -29,7 +29,7 @@ import { ConnectorMark } from "@ai-matrx/chat/host/ui-slots";
 import { connectorDefinitionFromMcp } from "@ai-matrx/chat/host/ui-slots";
 import { useAppDispatch, useAppSelector } from "../../../../../store/hooks";
 import { useMcpCatalog, type McpServerState } from "../../../../hooks/useMcpTools";
-import { selectAgentReadyForCustomExecution, selectAgentMcpServers } from "../../../../redux/agent-definition/selectors";
+import { selectAgentRunControlsReady, selectAgentMcpServers } from "../../../../redux/agent-definition/selectors";
 import { selectAgentIdFromInstance } from "../../../../redux/execution-system/conversations/conversations.selectors";
 import { selectBuilderAdvancedSettings } from "../../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { setBuilderAdvancedSettings } from "../../../../redux/execution-system/instance-ui-state/instance-ui-state.slice";
@@ -38,7 +38,7 @@ import { attachActionLabel, type DisplayedAttachment } from "../../../../connect
 import { useAttachResourcePicker } from "../../../../../host/ui-slots";
 import { useConversationAttachments } from "../../../../../host/ui-slots";
 import { useOpenLiveIntegrationsWindow } from "../../../../../host/window-openers";
-import { fetchAgentExecutionFull } from "../../../../redux/agent-definition/thunks";
+import { fetchAgentRunControls } from "../../../../redux/agent-definition/thunks";
 import { fetchCatalog } from "../../../../redux/mcp/mcp.slice";
 import { ComposerMenuLabel, ComposerMenuRow } from "./ComposerMenu";
 
@@ -60,9 +60,9 @@ export function ComposerConnectorsPanel({
   const runAttachments = indexRunMcpAttachments(readRunMcpAttachments(primaryRequest?.infoEvents, primaryRequest?.warnings));
   const agentId = useAppSelector(selectAgentIdFromInstance(conversationId));
   const agentServers = useAppSelector((state) => (agentId ? selectAgentMcpServers(state, agentId) : undefined));
-  const agentReady = useAppSelector((state) => agentId ? selectAgentReadyForCustomExecution(state, agentId) : false);
+  const agentReady = useAppSelector((state) => agentId ? selectAgentRunControlsReady(state, agentId) : false);
   useEffect(() => {
-    if (agentId && !agentReady) void dispatch(fetchAgentExecutionFull(agentId));
+    if (agentId && !agentReady) void dispatch(fetchAgentRunControls(agentId));
   }, [agentId, agentReady, dispatch]);
   const settings = useAppSelector(selectBuilderAdvancedSettings(conversationId));
   const added = settings?.addedMcpServers ?? [];

@@ -109,12 +109,14 @@ import {
   selectAgentExecutionPayload,
   selectAgentCustomExecutionPayload,
   selectAgentReadyForExecution,
+  selectAgentRunControlsReady,
 } from "./selectors";
 import {
   dbRowToAgentDefinition,
   agentDefinitionToInsert,
   agentDefinitionToUpdate,
   versionSnapshotRowToAgentDefinition,
+  parseSkillConfigJson,
 } from "./converters";
 import {
   selectUserId,
@@ -624,6 +626,56 @@ export const fetchAgentRunTier = createAsyncThunk<
  * read — `agx_get_execution_minimal` is no longer called by anyone here.
  */
 export const fetchAgentExecutionMinimal = fetchAgentRunTier;
+
+/**
+ * RUN CONTROLS (P25). What the run-control pickers (Quickset, Tools, Skills,
+ * Connections) show about the agent — tool ids, custom tool NAMES, the
+ * auto-tools switch, skill config and connections — from ONE small read,
+ * `agx_get_run_controls`. Never the definition: the pickers used to fetch
+ * `agx_get_execution_full` (settings + custom tool bodies), which is
+ * builder-tier. Fetched only when a picker opens. A value the record already
+ * holds (the builder loaded it, or a person is editing it) is never replaced.
+ */
+export const fetchAgentRunControls = createAsyncThunk<void, string, ThunkApi>(
+  "agentDefinition/fetchRunControls",
+  async (agentId, { dispatch, getState }) => {
+    if (selectAgentRunControlsReady(getState(), agentId)) return;
+    if (await isSignedOutVisitor()) throw new NotAuthenticatedError();
+
+    const { data, error } = await supabase.rpc("agx_get_run_controls", {
+      p_agent_id: agentId,
+    });
+
+    if (error) {
+      dispatch(setAgentError({ id: agentId, error: error.message }));
+      throw pgErrorToError(error);
+    }
+    const row = Array.isArray(data) ? data[0] : data;
+    if (!row) {
+      const refusal = agentNotReadableError(agentId);
+      dispatch(setAgentError({ id: agentId, error: refusal.message }));
+      throw refusal;
+    }
+
+    const loaded = getState().agentDefinition.agents?.[agentId]?._loadedFields;
+    const missing = (field: keyof AgentDefinition) =>
+      !loaded || !hasField(loaded, field);
+    dispatch(
+      mergePartialAgent({
+        id: row.id,
+        runControls: { customToolNames: row.custom_tool_names ?? [] },
+        ...(missing("tools") ? { tools: row.tool_ids ?? [] } : {}),
+        ...(missing("autoToolsDisabled")
+          ? { autoToolsDisabled: row.auto_tools_disabled === true }
+          : {}),
+        ...(missing("skillConfig")
+          ? { skillConfig: parseSkillConfigJson(row.skill_config) }
+          : {}),
+        ...(missing("mcpServers") ? { mcpServers: row.mcp_servers ?? [] } : {}),
+      }),
+    );
+  },
+);
 
 /**
  * Fetches the full execution payload: adds settings, tools, customTools, modelId.
