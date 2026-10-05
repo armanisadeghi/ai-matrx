@@ -10,17 +10,17 @@
  * injection into the request body.
  */
 
-import type { ChatRootState } from "../../store/root-state";
+import type { ChatRootState } from "@ai-matrx/chat/store/root-state";
 
 jest.mock("@ai-matrx/agents/matrx", () => ({
   // The host's `buildRequestBody` runs on the shared request core (P9b).
   ...jest.requireActual("@ai-matrx/agents/matrx"),
   startAgentRun: jest.fn(),
 }));
-jest.mock("../../host/server/matrx-transport", () => ({
+jest.mock("@ai-matrx/chat/host/server/matrx-transport", () => ({
   createMatrxTransport: jest.fn(() => ({ fetch: jest.fn() })),
 }));
-jest.mock("../../host/server/call-api", () => {
+jest.mock("@ai-matrx/chat/host/server/call-api", () => {
   // The scope injection under test is the host's own `buildRequestBody` (behind the server port).
   const actual = jest.requireActual("@host/lib/api/call-api");
   return {
@@ -35,7 +35,7 @@ jest.mock("../../host/server/call-api", () => {
 });
 
 import { startAgentRun } from "@ai-matrx/agents/matrx";
-import { runAgentViaMatrxClient } from "./useRunAgent";
+import { runAgentViaMatrxClient } from "@ai-matrx/chat/agents/run/useRunAgent";
 
 const mockedStart = startAgentRun as jest.Mock;
 const dispatch = jest.fn();

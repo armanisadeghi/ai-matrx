@@ -79,7 +79,7 @@ import {
 import {
   parseMandateWave1,
   type MandateWave1Fields,
-} from "@host/features/mandates/provision-shapes";
+} from "@ai-matrx/chat/ui/mandates-storage/provision-shapes";
 import type { JsonObject } from "@ai-matrx/chat/utils/json";
 import {
   MANDATE_HOLDER_COLUMNS,
@@ -88,13 +88,13 @@ import {
   isFloatingMandate,
   mandateDefinitions,
   mandateTreatments,
-} from "@host/lib/supabase/mandateStorage";
+} from "@ai-matrx/chat/ui/mandates-storage/mandateStorage";
 import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 import {
   TREATMENT_TIER_WIDGET,
   parseTreatmentConfig,
   type BindingPresentation,
-} from "@host/features/bindings/treatment-shape";
+} from "@ai-matrx/chat/ui/treatment-shape";
 import { storedMandateKey } from "@ai-matrx/agents/mandates";
 
 export interface ResolvedMandate {

@@ -23,22 +23,13 @@
 // only the person's own picks — so Search agents → Select from the default
 // chat never runs a named agent on this model.
 
-import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import {
   resolvePreferredModelChoice,
   type PreferredModelChoice,
 } from "@/features/ai-models/preferredModelChoice";
 
-export const CHAT_DEFAULT_MODEL_KNOB = "agents.model_prefs.chat_default_model";
-
-/** The mandate doors whose "no model picked" answer is this preference. */
-const BASIC_WORK_MANDATE_KEYS: ReadonlySet<string> = new Set([
-  MANDATE_KEYS.chat__default_new_chat,
-]);
-
-export function isBasicWorkMandate(mandateKey: string | undefined): boolean {
-  return Boolean(mandateKey && BASIC_WORK_MANDATE_KEYS.has(mandateKey));
-}
+import { CHAT_DEFAULT_MODEL_KNOB, isBasicWorkMandate } from "@ai-matrx/chat/ui/chat-default-model-knob";
+export { CHAT_DEFAULT_MODEL_KNOB, isBasicWorkMandate };
 
 /**
  * The person's preferred model (and its class) for basic work, or null when they (and

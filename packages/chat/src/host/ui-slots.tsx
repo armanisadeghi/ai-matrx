@@ -253,6 +253,109 @@ export interface ChatUiSlots {
   selectActiveContentBlocks: AnyFn;
   LibraryPreviewPage: AnyComponent;
   NoteVersionHistoryPanel: AnyComponent;
+  ItemRow: AnyComponent;
+  UntrustedCount: AnyComponent;
+  StaleDataNotice: AnyComponent;
+  WorkspaceGate: AnyComponent;
+  OrganizationContextNotice: AnyComponent;
+  JsonInspector: AnyComponent;
+  InlineCopyButton: AnyComponent;
+  ConfirmDialog: AnyComponent;
+  ModelListDropdown: AnyComponent;
+  TextWithDoors: AnyComponent;
+  EntityDoorControls: AnyComponent;
+  StructuredValueView: AnyComponent;
+  KindValueFrontDoor: AnyComponent;
+  KindDataGate: AnyComponent;
+  ServerNotes: AnyComponent;
+  OptionCombobox: AnyComponent;
+  NumberStepper: AnyComponent;
+  MatrxFloatingFrame: AnyComponent;
+  ItemMenu: AnyComponent;
+  ClampedNumberInput: AnyComponent;
+  AspectRatioSelect: AnyComponent;
+  AnswerTextPreview: AnyComponent;
+  AccessGate: AnyComponent;
+  ReferenceCopyMenuItem: AnyComponent;
+  ReferenceCopyButton: AnyComponent;
+  MandateNotesPanel: AnyComponent;
+  SurfaceBoundAgentsList: AnyComponent;
+  ProposedDirectivesZone: AnyComponent;
+  EntityCommentPopover: AnyComponent;
+  ProTextarea: AnyComponent;
+  VoiceTextarea: AnyComponent;
+  FloatingSheet: AnyComponent;
+  AppLink: AnyComponent;
+  IconButton: AnyComponent;
+  LightSwitchToggle: AnyComponent;
+  CitationChip: AnyComponent;
+  MatrxEnvelopeBlock: AnyComponent;
+  ErrorBoundaryWithCapture: AnyComponent;
+  ConfigurationTable: AnyComponent;
+  ConfigurationTableRow: AnyComponent;
+  FieldHelp: AnyComponent;
+  useModelFull: AnyFn;
+  useModelOptions: AnyFn;
+  useOrganizationRequired: AnyFn;
+  useAuthGuardedAction: AnyFn;
+  readOf: AnyFn;
+  pushAppHref: AnyFn;
+  replaceAppHref: AnyFn;
+  announceComingSoon: AnyFn;
+  normalize: AnyFn;
+  toMediaRef: AnyFn;
+  peekSystemOrgId: AnyFn;
+  toGlobalOwnershipRecord: AnyFn;
+  fromGlobalOwnershipRecord: AnyFn;
+  peekMandateCatalogueEntry: AnyFn;
+  invalidateMandateCatalogueCache: AnyFn;
+  useLoginHref: AnyFn;
+  useAgentChangeReach: AnyFn;
+  useAccess: AnyFn;
+  selectShouldPromptForOrganization: AnyFn;
+  resolveEntityToken: AnyFn;
+  entityTitleFallback: AnyFn;
+  fetchEntityTitles: AnyFn;
+  getCachedEntityTitle: AnyFn;
+  bookmarksToReferenceDirectives: AnyFn;
+  ensureOrgAvailability: AnyFn;
+  requireAuthenticatedSupabaseSession: AnyFn;
+  notifyPrintOutcome: AnyFn;
+  awaitEffectiveOrganizationId: AnyFn;
+  getAgentCatalog: AnyFn;
+  resolvePreferredChatModel: AnyFn;
+  publishedToWebPatch: AnyFn;
+  isUuidValue: AnyFn;
+  dismissDriftAlert: AnyFn;
+  fetchDriftAlerts: AnyFn;
+  markDriftAlertViewed: AnyFn;
+  fetchAgentUsages: AnyFn;
+  fetchAgentUsageReport: AnyFn;
+  selectActiveBannerAlerts: AnyFn;
+  selectDriftAlertsStatus: AnyFn;
+  makeSelectUsageCache: AnyFn;
+  makeSelectUsageGroups: AnyFn;
+  makeSelectUsageAggregates: AnyFn;
+  makeSelectRedFlagSummary: AnyFn;
+  makeSelectReport: AnyFn;
+  makeSelectReportSorted: AnyFn;
+  makeSelectReportTotals: AnyFn;
+  AgentSettingsModal: AnyComponent;
+  AgentSettingsCore: AnyComponent;
+  SettingControlInput: AnyComponent;
+  InputCapabilitiesEditor: AnyComponent;
+  CustomDataBindingSummary: AnyComponent;
+  CustomDataBindingPreview: AnyComponent;
+  AiModelRef: AnyComponent;
+  AiToolRef: AnyComponent;
+  TextInputDialog: AnyComponent;
+  ProInput: AnyComponent;
+  MatrxDynamicPanelHost: AnyComponent;
+  useClippedContentGuard: AnyFn;
+  answerPreviewText: AnyFn;
+  beginPlaybackSession: AnyFn;
+  currentCostUnit: AnyFn;
+  Cost: AnyComponent;
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
@@ -413,7 +516,7 @@ export const copyRichContent = slotFn("copyRichContent");
 export const copyToClipboard = slotFn("copyToClipboard");
 export const useTablesEverywhere = slotFn("useTablesEverywhere");
 export const useTextareaFormatting = slotFn("useTextareaFormatting", () => undefined);
-export const useClipboardPaste = slotFn("useClipboardPaste");
+export const useClipboardPaste = slotFn("useClipboardPaste", () => undefined);
 export const useCenterControlFit = slotFn("useCenterControlFit");
 export const useInPlaceTrigger = slotFn("useInPlaceTrigger", () => ({ readProps: {} }));
 export const connectorDefinitionFromMcp = slotFn("connectorDefinitionFromMcp");
@@ -706,13 +809,10 @@ export const peekSystemOrgId = slotFn("peekSystemOrgId");
 export const toGlobalOwnershipRecord = slotFn("toGlobalOwnershipRecord");
 export const fromGlobalOwnershipRecord = slotFn("fromGlobalOwnershipRecord");
 
-export const assertMappingsAreAnswerable = slotFn("assertMappingsAreAnswerable");
-export const parseMandateWave1 = slotFn("parseMandateWave1");
 
 export const peekMandateCatalogueEntry = slotFn("peekMandateCatalogueEntry");
 export const invalidateMandateCatalogueCache = slotFn("invalidateMandateCatalogueCache");
 
-export const mandateRefusalHeadline = slotFn("mandateRefusalHeadline");
 
 export const useLoginHref = slotFn("useLoginHref");
 
@@ -722,7 +822,6 @@ export const useAccess = slotFn("useAccess");
 
 export const selectShouldPromptForOrganization = slotFn("selectShouldPromptForOrganization");
 
-export const canActOn = slotFn("canActOn");
 
 export const resolveEntityToken = slotFn("resolveEntityToken");
 
@@ -734,7 +833,6 @@ export const bookmarksToReferenceDirectives = slotFn("bookmarksToReferenceDirect
 
 export const ensureOrgAvailability = slotFn("ensureOrgAvailability");
 
-export const createClient = slotFn("createClient");
 
 export const requireAuthenticatedSupabaseSession = slotFn("requireAuthenticatedSupabaseSession");
 
@@ -745,10 +843,8 @@ export const awaitEffectiveOrganizationId = slotFn("awaitEffectiveOrganizationId
 
 export const getAgentCatalog = slotFn("getAgentCatalog");
 
-export const getAgent = slotFn("getAgent");
 
-export const isBasicWorkMandate = slotFn("isBasicWorkMandate");
-export const resolvePreferredChatModel = slotFn("resolvePreferredChatModel");
+export const resolvePreferredChatModel = slotFn("resolvePreferredChatModel", async () => null);
 
 export const publishedToWebPatch = slotFn("publishedToWebPatch");
 
@@ -792,7 +888,6 @@ export const ProInput = slotComponent("ProInput", (props: any) => createElement(
 
 export const MatrxDynamicPanelHost = slotComponent("MatrxDynamicPanelHost", unregisteredWidget("MatrxDynamicPanelHost"));
 
-export const renameIntentFallback = slotFn("renameIntentFallback");
 
 export const useClippedContentGuard = slotFn("useClippedContentGuard");
 

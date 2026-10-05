@@ -18,9 +18,10 @@ let mockOrganizationId: string | null = "org-1";
 
 // "None yet" waits for boot's answer; the test scripts that answer.
 const mockAwaitOrganization = jest.fn();
-jest.mock("@host/features/organizations/awaitWorkspace", () => ({
+import { registerChatUi } from "../../../host/ui-slots";
+registerChatUi({
   awaitEffectiveOrganizationId: () => mockAwaitOrganization(),
-}));
+});
 jest.mock("../../../host/notify", () => ({
   toast: { error: mockToastError, success: mockToastSuccess },
 }));

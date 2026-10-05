@@ -73,9 +73,10 @@ jest.mock(
   "../../../../agents/components/inputs/smart-input/SmartAgentInput",
   () => ({ SmartAgentInput: () => null }),
 );
-jest.mock("@host/features/matrx-envelope/components/ProposedDirectivesZone", () => ({
+import { registerChatUi } from "../../../../host/ui-slots";
+registerChatUi({
   ProposedDirectivesZone: () => null,
-}));
+});
 jest.mock("../../../../agents/ui-first-tools/redux/pending-asks.slice", () => ({
   selectActivePendingAsksForConversation: () => () => [],
 }));

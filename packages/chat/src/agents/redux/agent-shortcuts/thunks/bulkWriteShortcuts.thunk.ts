@@ -15,7 +15,7 @@ import { resolveSystemOrgId } from "../../../../host/ui-slots";
 import {
   SHORTCUT_STORAGE_CUTOVER,
   shortcutTable,
-} from "@host/lib/supabase/shortcutStorage";
+} from "@ai-matrx/chat/ui/mandates-storage/shortcutStorage";
 import { selectUserId } from "../../../../host/identity";
 
 type ThunkApi = { dispatch: ChatDispatch; state: ChatRootState };

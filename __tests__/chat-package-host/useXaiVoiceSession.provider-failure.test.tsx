@@ -22,11 +22,11 @@ import { renderHook, settle } from "@ai-matrx/chat/host/__tests__/render-hook";
 import voiceAgentReducer, {
   applyAgentConfig,
   initInstance,
-} from "../state/voiceAgentSlice";
-import type { XaiClient, XaiClientError } from "../transport/xaiClient";
-import type { AudioCaptureHandle } from "../audio/audioCapture";
-import type { AudioPlaybackHandle } from "../audio/audioPlayback";
-import type { TokenManager } from "../transport/tokenManager";
+} from "@ai-matrx/chat/voice-agent/state/voiceAgentSlice";
+import type { XaiClient, XaiClientError } from "@ai-matrx/chat/voice-agent/transport/xaiClient";
+import type { AudioCaptureHandle } from "@ai-matrx/chat/voice-agent/audio/audioCapture";
+import type { AudioPlaybackHandle } from "@ai-matrx/chat/voice-agent/audio/audioPlayback";
+import type { TokenManager } from "@ai-matrx/chat/voice-agent/transport/tokenManager";
 
 const fetchMock = jest.fn<Promise<Response>, [string, { body?: string }]>();
 
@@ -43,7 +43,7 @@ jest.mock("@/lib/api/call-api", () => ({
 const socket = {
   onError: [] as ((err: XaiClientError) => void)[],
 };
-jest.mock("../transport/xaiClient", () => ({
+jest.mock("@ai-matrx/chat/voice-agent/transport/xaiClient", () => ({
   createXaiClient: (): XaiClient => ({
     connect: async () => undefined,
     sendInputAudio: () => undefined,
@@ -62,7 +62,7 @@ jest.mock("../transport/xaiClient", () => ({
     isOpen: () => false,
   }),
 }));
-jest.mock("../audio/audioCapture", () => ({
+jest.mock("@ai-matrx/chat/voice-agent/audio/audioCapture", () => ({
   createAudioCapture: (): AudioCaptureHandle => ({
     warmupSync: () => undefined,
     start: async () => undefined,
@@ -84,7 +84,7 @@ jest.mock("../audio/audioCapture", () => ({
     isMuted: () => false,
   }),
 }));
-jest.mock("../audio/audioPlayback", () => ({
+jest.mock("@ai-matrx/chat/voice-agent/audio/audioPlayback", () => ({
   createAudioPlayback: (): AudioPlaybackHandle => ({
     warmupSync: () => undefined,
     enqueue: () => undefined,
@@ -95,7 +95,7 @@ jest.mock("../audio/audioPlayback", () => ({
     stop: async () => undefined,
   }),
 }));
-jest.mock("../transport/tokenManager", () => ({
+jest.mock("@ai-matrx/chat/voice-agent/transport/tokenManager", () => ({
   createTokenManager: (): TokenManager => ({
     prime: async () => undefined,
     getCurrent: async () => "xai-ephemeral-secret",
@@ -111,8 +111,8 @@ jest.mock("../transport/tokenManager", () => ({
   }),
 }));
 
-import { useXaiVoiceSession } from "./useXaiVoiceSession";
-import { configureServerForTest } from "../../host/__tests__/server-test-host";
+import { useXaiVoiceSession } from "@ai-matrx/chat/voice-agent/hooks/useXaiVoiceSession";
+import { configureServerForTest } from "@ai-matrx/chat/host/__tests__/server-test-host";
 
 // Server calls reach the host's server client through the server port (P9).
 beforeAll(() => {

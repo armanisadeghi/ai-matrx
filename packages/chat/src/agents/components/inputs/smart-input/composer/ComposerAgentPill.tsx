@@ -36,7 +36,7 @@ import {
 } from "../../../../redux/execution-system/instance-model-overrides/offering-pin";
 import { useSessionKnob } from "../../../../../host/prefs-react";
 import { knobRefusalSentence, setKnobOverride } from "../../../../../host/prefs";
-import { CHAT_DEFAULT_MODEL_KNOB } from "@host/features/ai-models/preferredChatModel";
+import { CHAT_DEFAULT_MODEL_KNOB } from "@ai-matrx/chat/ui/chat-default-model-knob";
 import { selectModelLabelWithClass } from "../../../../model-registry/modelRegistrySlice";
 import {
   ComposerMenuDivider,

@@ -67,7 +67,9 @@ export function edgeToBundleMemberRow(e: BundleMemberEdge): BundleMemberRow {
  * throwing contract (they `throw` on error; the service returns a result). Mirror
  * of the same helper in `features/research/service.ts`.
  */
-export function assocData<T>(r: ScopesRpcResult<T>): T {
-  if (!r.ok) throw new Error(r.error.message);
-  return r.data;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- the host's association service answers untyped across the package boundary
+export function assocData<T = any>(r: unknown): T {
+  const res = r as ScopesRpcResult<T>;
+  if (!res.ok) throw new Error(res.error.message);
+  return res.data;
 }

@@ -9,9 +9,10 @@ import { createRoot, type Root } from "react-dom/client";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-jest.mock("@host/components/official/structured-value/AnswerValueView", () => ({
+import { registerChatUi } from "../../../../host/ui-slots";
+registerChatUi({
   AnswerValueView: () => <div data-testid="answer-value-view" />,
-}));
+});
 
 import { ContextInputBody } from "../bodies/ContextInputBody";
 

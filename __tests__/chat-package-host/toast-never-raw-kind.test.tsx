@@ -11,24 +11,27 @@ import { createRoot, type Root } from "react-dom/client";
 
 let answer = "";
 let executing = false;
-jest.mock("../../../../store/hooks", () => ({
+jest.mock("@ai-matrx/chat/store/hooks", () => ({
   useAppSelector: (sel: () => unknown) => sel(),
 }));
 // The host code this test renders reads the app's own hooks (P3): one double covers both.
 
-jest.mock("../../../redux/execution-system/selectors/aggregate.selectors", () => ({
+jest.mock("@ai-matrx/chat/agents/redux/execution-system/selectors/aggregate.selectors", () => ({
   selectLatestAccumulatedText: () => () => answer,
   selectIsExecuting: () => () => executing,
 }));
-jest.mock("../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors", () => ({
+jest.mock("@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors", () => ({
   selectInstanceDisplayTitle: () => () => "Study helper",
 }));
-jest.mock("../../../redux/execution-system/active-requests/useRetainRequestForViewer", () => ({
+jest.mock("@ai-matrx/chat/agents/redux/execution-system/active-requests/useRetainRequestForViewer", () => ({
   useRetainLatestRequestForViewer: () => undefined,
 }));
-jest.mock("../../smart/AgentRunner", () => ({ AgentRunner: () => null }));
+jest.mock("@ai-matrx/chat/agents/components/smart/AgentRunner", () => ({ AgentRunner: () => null }));
 
-import { AgentToastOverlay } from "../AgentToastOverlay";
+import { AgentToastOverlay } from "@ai-matrx/chat/agents/components/agent-widgets/AgentToastOverlay";
+import { registerChatUi } from "@ai-matrx/chat/host/ui-slots";
+import { AnswerTextPreview as Host_AnswerTextPreview } from "@/components/official/structured-value/AnswerTextPreview";
+registerChatUi({ AnswerTextPreview: Host_AnswerTextPreview });
 
 const SET_JSON = JSON.stringify({
   __kind: "flashcard_set",

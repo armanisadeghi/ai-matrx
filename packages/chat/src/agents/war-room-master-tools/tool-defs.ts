@@ -23,7 +23,7 @@ import type { ToolSpecInline } from "@ai-matrx/chat/agents/types/tool-injection.
 import {
   WAR_ROOM_MASTER_TOOL_NAMES,
   type WarRoomMasterToolName,
-} from "@host/features/agents/war-room-master-tools/tools/names";
+} from "./names";
 
 const MESSAGE_MODE = ["fresh", "fork"] as const;
 

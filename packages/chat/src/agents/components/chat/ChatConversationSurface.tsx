@@ -19,6 +19,7 @@ import type { ReactNode } from "react";
 import { useAppDispatch, useAppSelector, useAppStore } from "../../../store/hooks";
 import { useCanvasLauncherEntry } from "@ai-matrx/canvas/react";
 import { CONVERSATION_DOCUMENTS_KIND } from "../../../host/canvas-tabs";
+import { useCanvasScopedToConversation } from "./useCanvasScopedToConversation";
 import { waitForConversationPersisted } from "../../redux/execution-system/conversations/conversation-persistence";
 import { setUserInputText } from "../../redux/execution-system/instance-user-input/instance-user-input.slice";
 import {
@@ -121,6 +122,7 @@ export function ChatConversationSurface({
   // The entry (and so the tab it opens) names its chat: two chats' Documents
   // tabs never share a title.
   const chatTitle = useAppSelector(selectConversationTitle(conversationId))?.trim();
+  useCanvasScopedToConversation(conversationId);
   useCanvasLauncherEntry({
     kind: CONVERSATION_DOCUMENTS_KIND,
     key: conversationId,

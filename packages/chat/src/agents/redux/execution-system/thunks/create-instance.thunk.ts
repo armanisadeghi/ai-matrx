@@ -28,7 +28,7 @@ import type {
   ContextAnchor,
 } from "../../../types/instance.types";
 import { getShortcutRecordFromState } from "../../agent-shortcuts/selectors";
-import { fetchShortcutMandateKey } from "@host/lib/supabase/shortcutStorage";
+import { fetchShortcutMandateKey } from "@ai-matrx/chat/ui/mandates-storage/shortcutStorage";
 import { supabase } from "../../../../host/db";
 import { hasField } from "@ai-matrx/agents/field-flags";
 import { fetchAgentRunTier } from "../../agent-definition/thunks";

@@ -34,7 +34,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { toast } from "../../../host/notify";
-import { renameIntentFallback } from "@ai-matrx/chat/host/ui-slots";
+import { renameIntentFallback } from "@ai-matrx/chat/ui/renameIntentFallback";
 import type {
   ItemMenuConfig,
   ItemMenuSection,

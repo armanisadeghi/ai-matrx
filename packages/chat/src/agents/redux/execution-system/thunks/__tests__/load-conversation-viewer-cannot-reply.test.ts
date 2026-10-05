@@ -41,9 +41,7 @@ jest.mock("../../../../../host/db", () => ({
   }),
 }));
 // canActOn (an app module) still reads the app's own client: same fake.
-jest.mock("@host/utils/supabase/client", () =>
-  jest.requireMock("../../../../../host/db"),
-);
+
 jest.mock("../conversation-bundle", () => {
   const actual = jest.requireActual("../conversation-bundle");
   return {

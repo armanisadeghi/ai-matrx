@@ -25,13 +25,16 @@ import { configureStore } from "@reduxjs/toolkit";
 
 import messages, {
   setMessagesHydrationFailure,
-} from "../../redux/execution-system/messages/messages.slice";
-import conversations from "../../redux/execution-system/conversations/conversations.slice";
-import { loadConversation } from "../../redux/execution-system/thunks/load-conversation.thunk";
-import { AgentConversationDisplay } from "./AgentConversationDisplay";
+} from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.slice";
+import conversations from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.slice";
+import { loadConversation } from "@ai-matrx/chat/agents/redux/execution-system/thunks/load-conversation.thunk";
+import { AgentConversationDisplay } from "@ai-matrx/chat/agents/components/messages-display/AgentConversationDisplay";
+import { registerChatUi } from "@ai-matrx/chat/host/ui-slots";
+import { StaleDataNotice as Host_StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+registerChatUi({ StaleDataNotice: Host_StaleDataNotice });
 
 jest.mock(
-  "../../redux/execution-system/thunks/load-conversation.thunk",
+  "@ai-matrx/chat/agents/redux/execution-system/thunks/load-conversation.thunk",
   () => ({
     loadConversation: jest.fn((args: { conversationId: string }) => ({
       type: "test/loadConversation",
@@ -41,7 +44,7 @@ jest.mock(
 );
 
 // The two leaves of the empty branch. Neither owns the decision under test.
-jest.mock("./assistant/AgentEmptyMessageDisplay", () => ({
+jest.mock("@ai-matrx/chat/agents/components/messages-display/assistant/AgentEmptyMessageDisplay", () => ({
   AgentEmptyMessageDisplay: () => <div />,
 }));
 

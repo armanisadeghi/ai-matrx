@@ -1,7 +1,10 @@
 import {
   refineBlockType,
   resourceDataToSource,
-} from "./resource-source";
+} from "@ai-matrx/chat/agents/redux/execution-system/instance-resources/resource-source";
+import { registerChatUi } from "@ai-matrx/chat/host/ui-slots";
+import { normalize as Host_normalize } from "@/features/files/handler/input/normalize";
+registerChatUi({ normalize: Host_normalize });
 
 const FILE_ID = "11111111-1111-4111-8111-111111111111";
 const SHARE_URL =

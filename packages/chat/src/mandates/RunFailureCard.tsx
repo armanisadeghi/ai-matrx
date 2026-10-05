@@ -26,7 +26,7 @@ import { TextWithDoors } from "@ai-matrx/chat/host/ui-slots";
 import {
   mandateRefusalHeadline,
   type MandateRunFailure,
-} from "@host/features/mandates/test-run";
+} from "@ai-matrx/chat/mandates/test-run-core";
 import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 
 export function RunFailureCard({

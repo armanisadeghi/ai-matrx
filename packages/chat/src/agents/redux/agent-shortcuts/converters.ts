@@ -46,10 +46,10 @@ import {
   mandateKeyOfShortcutRow,
   writePoliciesOfShortcutRow,
   SHORTCUT_WRITE_POLICIES_ON_TREATMENT,
-} from "@host/lib/supabase/shortcutStorage";
+} from "@ai-matrx/chat/ui/mandates-storage/shortcutStorage";
 // THE ONE PRE-FLIGHT (FIX-11) — one function decides what a person is allowed
 // to store in a mapping, for every system that stores one.
-import { assertMappingsAreAnswerable } from "@ai-matrx/chat/host/ui-slots";
+import { assertMappingsAreAnswerable } from "@ai-matrx/chat/ui/mandates-storage/provision-shapes";
 
 // ---------------------------------------------------------------------------
 // Supabase row types

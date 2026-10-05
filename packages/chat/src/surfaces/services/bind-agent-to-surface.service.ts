@@ -43,7 +43,7 @@ import { recordUnavailable } from "../../host/diagnostics";
 import { ensureOrgAvailability } from "@ai-matrx/chat/host/ui-slots";
 // THE ONE PRE-FLIGHT (FIX-11) — one function decides what a person is allowed
 // to store in a mapping, for every system that stores one.
-import { assertMappingsAreAnswerable } from "@ai-matrx/chat/host/ui-slots";
+import { assertMappingsAreAnswerable } from "@ai-matrx/chat/ui/mandates-storage/provision-shapes";
 import { ensureOrgId } from "../../host/org";
 import { readProjectScopeOrganizationId } from "../../host/ui-slots";
 

@@ -13,9 +13,13 @@ import { TooltipProvider } from "@ai-matrx/design-system";
 import inboxReducer, {
   addInboxItem,
   type ConversationInboxItem,
-} from "../../../../redux/execution-system/inbox/inbox.slice";
-import { InboxQueueStrip } from "../InboxQueueStrip";
-import { promoteQueuedToSteer } from "../../../../redux/execution-system/inbox/inbox.thunks";
+} from "@ai-matrx/chat/agents/redux/execution-system/inbox/inbox.slice";
+import { InboxQueueStrip } from "@ai-matrx/chat/agents/components/inputs/smart-input/InboxQueueStrip";
+import { promoteQueuedToSteer } from "@ai-matrx/chat/agents/redux/execution-system/inbox/inbox.thunks";
+import { registerChatUi } from "@ai-matrx/chat/host/ui-slots";
+import Host_IconButton from "@/components/official/IconButton";
+import { TextInputDialog as Host_TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
+registerChatUi({ IconButton: Host_IconButton, TextInputDialog: Host_TextInputDialog });
 
 // Editing itself has separate dialog coverage; this strip test exercises the
 // availability of its entry point without depending on jsdom media queries.
@@ -24,7 +28,7 @@ import { promoteQueuedToSteer } from "../../../../redux/execution-system/inbox/i
 // The real promotion does a DELETE followed by a POST. Keep that boundary
 // pending: this is the interval in which a second click used to be possible.
 jest.mock(
-  "../../../../redux/execution-system/inbox/inbox.thunks",
+  "@ai-matrx/chat/agents/redux/execution-system/inbox/inbox.thunks",
   () => ({
     promoteQueuedToSteer: jest.fn(
       () => () => new Promise<void>(() => undefined),

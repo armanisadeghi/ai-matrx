@@ -61,12 +61,8 @@ export interface ServerNotesProps {
   folded?: boolean;
 }
 
-/** The sentences worth printing — the server's words, minus anything blank. */
-export function usableServerNotes(notes: readonly unknown[]): string[] {
-  return notes.filter(
-    (note): note is string => typeof note === "string" && note.trim().length > 0,
-  );
-}
+import { usableServerNotes } from "@ai-matrx/chat/ui/usable-server-notes";
+export { usableServerNotes };
 
 export function ServerNotes({
   heading,

@@ -97,7 +97,7 @@ import {
 } from "./conversation-bundle";
 
 import { getClaimsUser } from "../../../../host/db";
-import { canActOn } from "@ai-matrx/chat/host/ui-slots";
+import { canActOn } from "@ai-matrx/chat/ui/canActOn";
 // =============================================================================
 // Thunk
 // =============================================================================

@@ -13,7 +13,7 @@
  */
 
 const mockPromptForValues = jest.fn();
-jest.mock("@host/components/dialogs/value-prompts/ValuePromptsDialogHost", () => ({
+jest.mock("../../../../../ui/valuePromptsOpener", () => ({
   promptForValues: (...args: unknown[]) => mockPromptForValues(...args),
 }));
 

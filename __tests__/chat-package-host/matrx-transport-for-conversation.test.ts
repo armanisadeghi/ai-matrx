@@ -6,7 +6,7 @@
  * (conversation org, app-selection fallback) and passes through untouched.
  */
 
-import type { ChatRootState } from "../../../../../store/root-state";
+import type { ChatRootState } from "@ai-matrx/chat/store/root-state";
 
 jest.mock("@ai-matrx/data/net", () => ({
   resilientFetch: jest.fn(),
@@ -16,7 +16,7 @@ jest.mock("@ai-matrx/data/net", () => ({
 
 // The host's own transport (behind the server port) reads these.
 
-jest.mock("../resolve-base-url", () => ({
+jest.mock("@ai-matrx/chat/agents/redux/execution-system/thunks/resolve-base-url", () => ({
   resolveBackendForConversation: jest.fn(),
 }));
 
@@ -28,9 +28,9 @@ jest.mock("../resolve-base-url", () => ({
 jest.resetModules();
 /* eslint-disable @typescript-eslint/no-require-imports */
 const { resilientFetch } = require("@ai-matrx/data/net") as typeof import("@ai-matrx/data/net");
-const { configureServerForTest } = require("../../../../../host/__tests__/server-test-host") as typeof import("../../../../../host/__tests__/server-test-host");
-const { resolveBackendForConversation } = require("../resolve-base-url") as typeof import("../resolve-base-url");
-const { createMatrxTransportForConversation } = require("../matrx-transport-for-conversation") as typeof import("../matrx-transport-for-conversation");
+const { configureServerForTest } = require("@ai-matrx/chat/host/__tests__/server-test-host") as typeof import("@ai-matrx/chat/host/__tests__/server-test-host");
+const { resolveBackendForConversation } = require("@ai-matrx/chat/agents/redux/execution-system/thunks/resolve-base-url") as typeof import("@ai-matrx/chat/agents/redux/execution-system/thunks/resolve-base-url");
+const { createMatrxTransportForConversation } = require("@ai-matrx/chat/agents/redux/execution-system/thunks/matrx-transport-for-conversation") as typeof import("@ai-matrx/chat/agents/redux/execution-system/thunks/matrx-transport-for-conversation");
 /* eslint-enable @typescript-eslint/no-require-imports */
 
 const mockedFetch = resilientFetch as jest.MockedFunction<

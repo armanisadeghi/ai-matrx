@@ -5,7 +5,7 @@
  * Client components should call these through API routes.
  */
 
-import { createClient } from "@ai-matrx/chat/host/ui-slots";
+import { createClient } from "@ai-matrx/chat/host/server-deps";
 import type {
   CxConversation,
   CxConversationInsert,

@@ -62,12 +62,10 @@ jest.mock("../../messages-display/AgentConversationDisplay", () => ({
   AgentConversationDisplay: () => <div data-testid="conversation" />,
 }));
 
-jest.mock(
-  "@host/features/matrx-envelope/components/ProposedDirectivesZone",
-  () => ({
+import { registerChatUi } from "../../../../host/ui-slots";
+registerChatUi({
     ProposedDirectivesZone: () => <div data-testid="directives" />,
-  }),
-);
+  });
 
 jest.mock("../../../ui-first-tools/ui/PendingAsksZone", () => ({
   PendingAsksZone: ({ conversationId }: { conversationId: string }) => (

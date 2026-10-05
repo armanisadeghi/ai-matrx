@@ -40,7 +40,7 @@ import { isScopesRpcErr } from "../../../../context/sources/scopes";
 import {
   resolveResourceAccess,
   type ResourceAccess,
-} from "@host/utils/permissions/access-core";
+} from "@ai-matrx/chat/ui/access-core";
 import type { Json } from "../../../../host/db-types";
 
 import { getClaimsUser } from "../../../../host/db";

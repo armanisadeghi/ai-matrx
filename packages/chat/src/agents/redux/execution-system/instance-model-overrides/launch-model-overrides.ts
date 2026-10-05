@@ -12,7 +12,8 @@
 
 import type { ChatDispatch } from "../../../../store/root-state";
 import type { FeLlmParams } from "../../../types/agent-api-types";
-import { isBasicWorkMandate, resolvePreferredChatModel } from "@ai-matrx/chat/host/ui-slots";
+import { resolvePreferredChatModel } from "@ai-matrx/chat/host/ui-slots";
+import { isBasicWorkMandate } from "@ai-matrx/chat/ui/chat-default-model-knob";
 import { seedOverrides } from "./instance-model-overrides.slice";
 
 export async function applyLaunchModelOverrides(

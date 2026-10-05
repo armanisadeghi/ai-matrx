@@ -13,11 +13,12 @@ jest.mock("../../../../../store/hooks", () => ({ useAppSelector: () => ({}) }));
 // The host code this test renders reads the app's own hooks (P3): one double covers both.
 
 
-jest.mock("@host/components/official/structured-value/AnswerValueView", () => ({
+import { registerChatUi } from "../../../../../host/ui-slots";
+registerChatUi({
   AnswerValueView: ({ value }: { value?: unknown }) => (
     <div data-testid="answer-value-view" data-kind={(value as { __kind?: string })?.__kind ?? ""} />
   ),
-}));
+});
 
 import { UserMessageVariables } from "../FirstTurnVariables";
 

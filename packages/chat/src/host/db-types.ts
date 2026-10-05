@@ -6,7 +6,7 @@
  * The host's `db` is a `SupabaseClient<ChatDatabase>`; a host typed with the
  * full platform `Database` passes its client unchanged.
  *
- * Schemas (16): admin, agent, ai, canvas, chat, context, dictionary, education, iam, platform, public, scheduler, tool, ui, users, workbench
+ * Schemas (17): admin, agent, ai, canvas, chat, context, dictionary, education, iam, mandate, platform, public, scheduler, tool, ui, users, workbench
  */
 
 /* eslint-disable */
@@ -15114,6 +15114,1922 @@ export type ChatDatabase = {
         Returns: Json
       }
       world_publish_gap_notice: { Args: never; Returns: string }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+  mandate: {
+    Tables: {
+      advance_batch_row: {
+        Row: {
+          action: string
+          applied_at: string | null
+          batch_id: string
+          batch_label: string | null
+          created_at: string
+          created_by: string | null
+          expected_pinned_version_id: string | null
+          holder_kind: string
+          id: string
+          mandate_key: string
+          metadata: Json
+          new_pinned_version_id: string | null
+          organization_id: string
+          prior_pinned_version_id: string | null
+          reason: string | null
+          reverts_batch_id: string | null
+          reverts_row_id: string | null
+          row_id: string
+          status: string
+          target_version_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          action: string
+          applied_at?: string | null
+          batch_id: string
+          batch_label?: string | null
+          created_at?: string
+          created_by?: string | null
+          expected_pinned_version_id?: string | null
+          holder_kind: string
+          id?: string
+          mandate_key: string
+          metadata?: Json
+          new_pinned_version_id?: string | null
+          organization_id: string
+          prior_pinned_version_id?: string | null
+          reason?: string | null
+          reverts_batch_id?: string | null
+          reverts_row_id?: string | null
+          row_id: string
+          status: string
+          target_version_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          action?: string
+          applied_at?: string | null
+          batch_id?: string
+          batch_label?: string | null
+          created_at?: string
+          created_by?: string | null
+          expected_pinned_version_id?: string | null
+          holder_kind?: string
+          id?: string
+          mandate_key?: string
+          metadata?: Json
+          new_pinned_version_id?: string | null
+          organization_id?: string
+          prior_pinned_version_id?: string | null
+          reason?: string | null
+          reverts_batch_id?: string | null
+          reverts_row_id?: string | null
+          row_id?: string
+          status?: string
+          target_version_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
+      binding: {
+        Row: {
+          auto_run: boolean | null
+          config_overrides: Json | null
+          consumption_map: Json | null
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          deleted_at: string | null
+          holder_id: string | null
+          holder_type: string
+          holder_version_id: string | null
+          id: string
+          is_enabled: boolean
+          mandate_id: string
+          metadata: Json
+          organization_id: string
+          principal_type: string
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          subject_user_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          auto_run?: boolean | null
+          config_overrides?: Json | null
+          consumption_map?: Json | null
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          holder_id?: string | null
+          holder_type: string
+          holder_version_id?: string | null
+          id?: string
+          is_enabled?: boolean
+          mandate_id: string
+          metadata?: Json
+          organization_id: string
+          principal_type: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          subject_user_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          auto_run?: boolean | null
+          config_overrides?: Json | null
+          consumption_map?: Json | null
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          holder_id?: string | null
+          holder_type?: string
+          holder_version_id?: string | null
+          id?: string
+          is_enabled?: boolean
+          mandate_id?: string
+          metadata?: Json
+          organization_id?: string
+          principal_type?: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          subject_user_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "binding_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "definition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "binding_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "shortcut_key_map"
+            referencedColumns: ["mandate_id"]
+          },
+          {
+            foreignKeyName: "binding_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "vw_shortcut"
+            referencedColumns: ["mandate_id"]
+          },
+        ]
+      }
+      candidate: {
+        Row: {
+          baseline_holder_id: string | null
+          baseline_holder_type: string | null
+          baseline_holder_version_id: string | null
+          created_at: string
+          created_by: string | null
+          decided_at: string | null
+          decided_by: string | null
+          decision_note: string | null
+          holder_id: string
+          holder_type: string
+          holder_version_id: string | null
+          id: string
+          mandate_id: string
+          mandate_key: string
+          metadata: Json
+          organization_id: string
+          promotion_ref: Json | null
+          recommendation: string | null
+          recommendation_reason: string | null
+          rung: string
+          rung_principal_id: string | null
+          runs_claimed: number
+          runs_wanted: number
+          set_by: string
+          skips: Json
+          status: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          baseline_holder_id?: string | null
+          baseline_holder_type?: string | null
+          baseline_holder_version_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
+          holder_id: string
+          holder_type: string
+          holder_version_id?: string | null
+          id?: string
+          mandate_id: string
+          mandate_key: string
+          metadata?: Json
+          organization_id: string
+          promotion_ref?: Json | null
+          recommendation?: string | null
+          recommendation_reason?: string | null
+          rung: string
+          rung_principal_id?: string | null
+          runs_claimed?: number
+          runs_wanted: number
+          set_by: string
+          skips?: Json
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          baseline_holder_id?: string | null
+          baseline_holder_type?: string | null
+          baseline_holder_version_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
+          holder_id?: string
+          holder_type?: string
+          holder_version_id?: string | null
+          id?: string
+          mandate_id?: string
+          mandate_key?: string
+          metadata?: Json
+          organization_id?: string
+          promotion_ref?: Json | null
+          recommendation?: string | null
+          recommendation_reason?: string | null
+          rung?: string
+          rung_principal_id?: string | null
+          runs_claimed?: number
+          runs_wanted?: number
+          set_by?: string
+          skips?: Json
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "candidate_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "definition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "candidate_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "shortcut_key_map"
+            referencedColumns: ["mandate_id"]
+          },
+          {
+            foreignKeyName: "candidate_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "vw_shortcut"
+            referencedColumns: ["mandate_id"]
+          },
+        ]
+      }
+      candidate_run: {
+        Row: {
+          attempts: number
+          candidate_conversation_id: string | null
+          candidate_error_code: string | null
+          candidate_execution_id: string | null
+          candidate_id: string
+          candidate_metrics: Json | null
+          candidate_request_id: string | null
+          candidate_resolved_holder_id: string | null
+          candidate_resolved_version_id: string | null
+          candidate_wf_run_id: string | null
+          created_at: string
+          created_by: string | null
+          door: string
+          human_agreement: string | null
+          id: string
+          input_differences: Json | null
+          judge_verdict_id: string | null
+          lease_expires_at: string | null
+          live_conversation_id: string | null
+          live_error_code: string | null
+          live_execution_id: string | null
+          live_metrics: Json | null
+          live_organization_id: string | null
+          live_request_id: string
+          live_user_id: string | null
+          live_wf_run_id: string | null
+          metadata: Json
+          notified_at: string | null
+          organization_id: string
+          status: string
+          stop_match: string | null
+          tool_dispositions: Json
+          updated_at: string
+          updated_by: string | null
+          verdict: string | null
+          version: number
+        }
+        Insert: {
+          attempts?: number
+          candidate_conversation_id?: string | null
+          candidate_error_code?: string | null
+          candidate_execution_id?: string | null
+          candidate_id: string
+          candidate_metrics?: Json | null
+          candidate_request_id?: string | null
+          candidate_resolved_holder_id?: string | null
+          candidate_resolved_version_id?: string | null
+          candidate_wf_run_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          door: string
+          human_agreement?: string | null
+          id?: string
+          input_differences?: Json | null
+          judge_verdict_id?: string | null
+          lease_expires_at?: string | null
+          live_conversation_id?: string | null
+          live_error_code?: string | null
+          live_execution_id?: string | null
+          live_metrics?: Json | null
+          live_organization_id?: string | null
+          live_request_id: string
+          live_user_id?: string | null
+          live_wf_run_id?: string | null
+          metadata?: Json
+          notified_at?: string | null
+          organization_id: string
+          status?: string
+          stop_match?: string | null
+          tool_dispositions?: Json
+          updated_at?: string
+          updated_by?: string | null
+          verdict?: string | null
+          version?: number
+        }
+        Update: {
+          attempts?: number
+          candidate_conversation_id?: string | null
+          candidate_error_code?: string | null
+          candidate_execution_id?: string | null
+          candidate_id?: string
+          candidate_metrics?: Json | null
+          candidate_request_id?: string | null
+          candidate_resolved_holder_id?: string | null
+          candidate_resolved_version_id?: string | null
+          candidate_wf_run_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          door?: string
+          human_agreement?: string | null
+          id?: string
+          input_differences?: Json | null
+          judge_verdict_id?: string | null
+          lease_expires_at?: string | null
+          live_conversation_id?: string | null
+          live_error_code?: string | null
+          live_execution_id?: string | null
+          live_metrics?: Json | null
+          live_organization_id?: string | null
+          live_request_id?: string
+          live_user_id?: string | null
+          live_wf_run_id?: string | null
+          metadata?: Json
+          notified_at?: string | null
+          organization_id?: string
+          status?: string
+          stop_match?: string | null
+          tool_dispositions?: Json
+          updated_at?: string
+          updated_by?: string | null
+          verdict?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "candidate_run_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "candidate"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      candidate_run_payload: {
+        Row: {
+          candidate_error: Json | null
+          candidate_input_digest: Json | null
+          candidate_output: Json | null
+          candidate_run_id: string
+          created_at: string
+          created_by: string | null
+          door_args: Json
+          id: string
+          judge: Json | null
+          live_conversation_id: string
+          live_error: Json | null
+          live_input_digest: Json | null
+          live_output: Json | null
+          live_tool_results: Json | null
+          metadata: Json
+          organization_id: string
+          stopped_at: Json | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          candidate_error?: Json | null
+          candidate_input_digest?: Json | null
+          candidate_output?: Json | null
+          candidate_run_id: string
+          created_at?: string
+          created_by?: string | null
+          door_args: Json
+          id?: string
+          judge?: Json | null
+          live_conversation_id: string
+          live_error?: Json | null
+          live_input_digest?: Json | null
+          live_output?: Json | null
+          live_tool_results?: Json | null
+          metadata?: Json
+          organization_id: string
+          stopped_at?: Json | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          candidate_error?: Json | null
+          candidate_input_digest?: Json | null
+          candidate_output?: Json | null
+          candidate_run_id?: string
+          created_at?: string
+          created_by?: string | null
+          door_args?: Json
+          id?: string
+          judge?: Json | null
+          live_conversation_id?: string
+          live_error?: Json | null
+          live_input_digest?: Json | null
+          live_output?: Json | null
+          live_tool_results?: Json | null
+          metadata?: Json
+          organization_id?: string
+          stopped_at?: Json | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "candidate_run_payload_candidate_run_id_fkey"
+            columns: ["candidate_run_id"]
+            isOneToOne: true
+            referencedRelation: "candidate_run"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      definition: {
+        Row: {
+          accepts_user_input: boolean
+          auto_context_disabled: boolean
+          code_path: string | null
+          created_at: string
+          created_by: string | null
+          default_auto_run: boolean | null
+          default_config_overrides: Json | null
+          default_consumption_map: Json | null
+          default_holder_id: string | null
+          default_holder_type: string
+          default_holder_version_id: string | null
+          deleted_at: string | null
+          description: string | null
+          draft_inputs: Json
+          fallback_mandate_key: string | null
+          goal: string
+          goal_grounding: string
+          id: string
+          input_source: string | null
+          input_waiver: string | null
+          is_enabled: boolean
+          label: string
+          mandate_key: string
+          metadata: Json
+          organization_id: string
+          origin: string
+          output_kind: string | null
+          output_waiver: string | null
+          pinned_context: Json
+          pins: Json
+          provision_key: string | null
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          renamed_from_key: string | null
+          required_context_policies: string[]
+          required_output_keys: string[]
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          source_mandate_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          accepts_user_input?: boolean
+          auto_context_disabled?: boolean
+          code_path?: string | null
+          created_at?: string
+          created_by?: string | null
+          default_auto_run?: boolean | null
+          default_config_overrides?: Json | null
+          default_consumption_map?: Json | null
+          default_holder_id?: string | null
+          default_holder_type: string
+          default_holder_version_id?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          draft_inputs?: Json
+          fallback_mandate_key?: string | null
+          goal: string
+          goal_grounding?: string
+          id?: string
+          input_source?: string | null
+          input_waiver?: string | null
+          is_enabled?: boolean
+          label: string
+          mandate_key: string
+          metadata?: Json
+          organization_id: string
+          origin?: string
+          output_kind?: string | null
+          output_waiver?: string | null
+          pinned_context?: Json
+          pins?: Json
+          provision_key?: string | null
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          renamed_from_key?: string | null
+          required_context_policies?: string[]
+          required_output_keys?: string[]
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          source_mandate_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          accepts_user_input?: boolean
+          auto_context_disabled?: boolean
+          code_path?: string | null
+          created_at?: string
+          created_by?: string | null
+          default_auto_run?: boolean | null
+          default_config_overrides?: Json | null
+          default_consumption_map?: Json | null
+          default_holder_id?: string | null
+          default_holder_type?: string
+          default_holder_version_id?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          draft_inputs?: Json
+          fallback_mandate_key?: string | null
+          goal?: string
+          goal_grounding?: string
+          id?: string
+          input_source?: string | null
+          input_waiver?: string | null
+          is_enabled?: boolean
+          label?: string
+          mandate_key?: string
+          metadata?: Json
+          organization_id?: string
+          origin?: string
+          output_kind?: string | null
+          output_waiver?: string | null
+          pinned_context?: Json
+          pins?: Json
+          provision_key?: string | null
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          renamed_from_key?: string | null
+          required_context_policies?: string[]
+          required_output_keys?: string[]
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          source_mandate_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "definition_source_mandate_id_fkey"
+            columns: ["source_mandate_id"]
+            isOneToOne: false
+            referencedRelation: "definition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "definition_source_mandate_id_fkey"
+            columns: ["source_mandate_id"]
+            isOneToOne: false
+            referencedRelation: "shortcut_key_map"
+            referencedColumns: ["mandate_id"]
+          },
+          {
+            foreignKeyName: "definition_source_mandate_id_fkey"
+            columns: ["source_mandate_id"]
+            isOneToOne: false
+            referencedRelation: "vw_shortcut"
+            referencedColumns: ["mandate_id"]
+          },
+        ]
+      }
+      goal_clauses: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          extracted_at: string | null
+          extracted_by_holder: string | null
+          goal_grounding: string
+          goal_hash: string
+          goal_text: string
+          id: string
+          job_sentence: string | null
+          judgeable: boolean | null
+          judgeable_reason: string | null
+          mandate_key: string
+          metadata: Json
+          never_clauses: Json
+          organization_id: string
+          ratified_at: string | null
+          ratified_by: string | null
+          ratified_note: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          extracted_at?: string | null
+          extracted_by_holder?: string | null
+          goal_grounding?: string
+          goal_hash: string
+          goal_text: string
+          id?: string
+          job_sentence?: string | null
+          judgeable?: boolean | null
+          judgeable_reason?: string | null
+          mandate_key: string
+          metadata?: Json
+          never_clauses?: Json
+          organization_id: string
+          ratified_at?: string | null
+          ratified_by?: string | null
+          ratified_note?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          extracted_at?: string | null
+          extracted_by_holder?: string | null
+          goal_grounding?: string
+          goal_hash?: string
+          goal_text?: string
+          id?: string
+          job_sentence?: string | null
+          judgeable?: boolean | null
+          judgeable_reason?: string | null
+          mandate_key?: string
+          metadata?: Json
+          never_clauses?: Json
+          organization_id?: string
+          ratified_at?: string | null
+          ratified_by?: string | null
+          ratified_note?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
+      observation: {
+        Row: {
+          attempted_count: number
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          deployed_revision: string | null
+          executed_count: number
+          first_observed_at: string
+          id: string
+          last_observed_at: string
+          mandate_id: string
+          mandate_key: string
+          metadata: Json
+          organization_id: string
+          repo_slug: string | null
+          resolved_count: number
+          site_identity_hash: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          attempted_count?: number
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deployed_revision?: string | null
+          executed_count?: number
+          first_observed_at?: string
+          id?: string
+          last_observed_at?: string
+          mandate_id: string
+          mandate_key: string
+          metadata?: Json
+          organization_id: string
+          repo_slug?: string | null
+          resolved_count?: number
+          site_identity_hash?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          attempted_count?: number
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deployed_revision?: string | null
+          executed_count?: number
+          first_observed_at?: string
+          id?: string
+          last_observed_at?: string
+          mandate_id?: string
+          mandate_key?: string
+          metadata?: Json
+          organization_id?: string
+          repo_slug?: string | null
+          resolved_count?: number
+          site_identity_hash?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "observation_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "definition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "observation_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "shortcut_key_map"
+            referencedColumns: ["mandate_id"]
+          },
+          {
+            foreignKeyName: "observation_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "vw_shortcut"
+            referencedColumns: ["mandate_id"]
+          },
+        ]
+      }
+      provision: {
+        Row: {
+          code_path: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          derived_input_kind: string | null
+          description: string | null
+          id: string
+          is_enabled: boolean
+          label: string
+          metadata: Json
+          offered_values: Json
+          organization_id: string
+          provision_key: string
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          code_path?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          derived_input_kind?: string | null
+          description?: string | null
+          id?: string
+          is_enabled?: boolean
+          label: string
+          metadata?: Json
+          offered_values?: Json
+          organization_id: string
+          provision_key: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          code_path?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          derived_input_kind?: string | null
+          description?: string | null
+          id?: string
+          is_enabled?: boolean
+          label?: string
+          metadata?: Json
+          offered_values?: Json
+          organization_id?: string
+          provision_key?: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      reference: {
+        Row: {
+          caller_identity_hash: string | null
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          deleted_at: string | null
+          file_path: string | null
+          flag: string
+          gone_at: string | null
+          gone_revision: string | null
+          gone_scan_id: string | null
+          id: string
+          identity_hash: string
+          is_head: boolean
+          language: string | null
+          last_seen_at: string | null
+          last_seen_revision: string | null
+          last_seen_scan_id: string | null
+          line: number | null
+          mandate_id: string | null
+          mandate_key: string
+          metadata: Json
+          occurrence_n: number | null
+          organization_id: string
+          package_name: string | null
+          package_path: string | null
+          presence: string
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          reference_type_id: string
+          repo_slug: string | null
+          revision: string
+          revision_kind: string
+          scan_id: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          symbol: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          caller_identity_hash?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          file_path?: string | null
+          flag?: string
+          gone_at?: string | null
+          gone_revision?: string | null
+          gone_scan_id?: string | null
+          id?: string
+          identity_hash: string
+          is_head?: boolean
+          language?: string | null
+          last_seen_at?: string | null
+          last_seen_revision?: string | null
+          last_seen_scan_id?: string | null
+          line?: number | null
+          mandate_id?: string | null
+          mandate_key: string
+          metadata?: Json
+          occurrence_n?: number | null
+          organization_id: string
+          package_name?: string | null
+          package_path?: string | null
+          presence?: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          reference_type_id: string
+          repo_slug?: string | null
+          revision: string
+          revision_kind: string
+          scan_id?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          symbol?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          caller_identity_hash?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          file_path?: string | null
+          flag?: string
+          gone_at?: string | null
+          gone_revision?: string | null
+          gone_scan_id?: string | null
+          id?: string
+          identity_hash?: string
+          is_head?: boolean
+          language?: string | null
+          last_seen_at?: string | null
+          last_seen_revision?: string | null
+          last_seen_scan_id?: string | null
+          line?: number | null
+          mandate_id?: string | null
+          mandate_key?: string
+          metadata?: Json
+          occurrence_n?: number | null
+          organization_id?: string
+          package_name?: string | null
+          package_path?: string | null
+          presence?: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          reference_type_id?: string
+          repo_slug?: string | null
+          revision?: string
+          revision_kind?: string
+          scan_id?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          symbol?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reference_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "definition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reference_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "shortcut_key_map"
+            referencedColumns: ["mandate_id"]
+          },
+          {
+            foreignKeyName: "reference_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "vw_shortcut"
+            referencedColumns: ["mandate_id"]
+          },
+          {
+            foreignKeyName: "reference_scan_id_fkey"
+            columns: ["scan_id"]
+            isOneToOne: false
+            referencedRelation: "scan"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scan: {
+        Row: {
+          absent_against_revision: string | null
+          content_digest: string | null
+          coverage: Json
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          deleted_at: string | null
+          expected_chunk_count: number | null
+          finding_counts: Json
+          finished_at: string | null
+          id: string
+          languages: string[]
+          metadata: Json
+          observer: string | null
+          organization_id: string
+          package_name: string | null
+          package_path: string
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          received_chunks: number[]
+          repo_slug: string
+          revision: string
+          revision_kind: string
+          scanner_version: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          started_at: string | null
+          unchanged_from_revision: string | null
+          updated_at: string
+          updated_by: string | null
+          verification_status: string
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          absent_against_revision?: string | null
+          content_digest?: string | null
+          coverage?: Json
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          expected_chunk_count?: number | null
+          finding_counts?: Json
+          finished_at?: string | null
+          id?: string
+          languages?: string[]
+          metadata?: Json
+          observer?: string | null
+          organization_id: string
+          package_name?: string | null
+          package_path: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          received_chunks?: number[]
+          repo_slug: string
+          revision: string
+          revision_kind: string
+          scanner_version: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          started_at?: string | null
+          unchanged_from_revision?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          verification_status: string
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          absent_against_revision?: string | null
+          content_digest?: string | null
+          coverage?: Json
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          expected_chunk_count?: number | null
+          finding_counts?: Json
+          finished_at?: string | null
+          id?: string
+          languages?: string[]
+          metadata?: Json
+          observer?: string | null
+          organization_id?: string
+          package_name?: string | null
+          package_path?: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          received_chunks?: number[]
+          repo_slug?: string
+          revision?: string
+          revision_kind?: string
+          scanner_version?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          started_at?: string | null
+          unchanged_from_revision?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          verification_status?: string
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      treatment: {
+        Row: {
+          audience: string | null
+          config: Json
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          deleted_at: string | null
+          holder_version_id: string | null
+          id: string
+          is_default: boolean
+          is_enabled: boolean
+          mandate_id: string
+          metadata: Json
+          name: string
+          organization_id: string
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          tier: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          audience?: string | null
+          config?: Json
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          holder_version_id?: string | null
+          id?: string
+          is_default?: boolean
+          is_enabled?: boolean
+          mandate_id: string
+          metadata?: Json
+          name: string
+          organization_id: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          tier: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          audience?: string | null
+          config?: Json
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          holder_version_id?: string | null
+          id?: string
+          is_default?: boolean
+          is_enabled?: boolean
+          mandate_id?: string
+          metadata?: Json
+          name?: string
+          organization_id?: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          tier?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "treatment_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "definition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "treatment_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "shortcut_key_map"
+            referencedColumns: ["mandate_id"]
+          },
+          {
+            foreignKeyName: "treatment_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "vw_shortcut"
+            referencedColumns: ["mandate_id"]
+          },
+        ]
+      }
+    }
+    Views: {
+      context_menu_view: {
+        Row: {
+          categories_flat: Json | null
+          placement_type: string | null
+        }
+        Relationships: []
+      }
+      reference_latest_deployed: {
+        Row: {
+          caller_identity_hash: string | null
+          created_at: string | null
+          created_by: string | null
+          deleted_at: string | null
+          file_path: string | null
+          flag: string | null
+          id: string | null
+          identity_hash: string | null
+          language: string | null
+          line: number | null
+          mandate_id: string | null
+          mandate_key: string | null
+          metadata: Json | null
+          occurrence_n: number | null
+          organization_id: string | null
+          package_name: string | null
+          package_path: string | null
+          presence: string | null
+          reference_type_id: string | null
+          repo_slug: string | null
+          revision: string | null
+          revision_kind: string | null
+          scan_id: string | null
+          symbol: string | null
+          updated_at: string | null
+          updated_by: string | null
+          version: number | null
+          visibility: Database["platform"]["Enums"]["visibility"] | null
+        }
+        Insert: {
+          caller_identity_hash?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          deleted_at?: string | null
+          file_path?: string | null
+          flag?: string | null
+          id?: string | null
+          identity_hash?: string | null
+          language?: string | null
+          line?: number | null
+          mandate_id?: string | null
+          mandate_key?: string | null
+          metadata?: Json | null
+          occurrence_n?: number | null
+          organization_id?: string | null
+          package_name?: string | null
+          package_path?: string | null
+          presence?: string | null
+          reference_type_id?: string | null
+          repo_slug?: string | null
+          revision?: never
+          revision_kind?: string | null
+          scan_id?: never
+          symbol?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+          version?: number | null
+          visibility?: Database["platform"]["Enums"]["visibility"] | null
+        }
+        Update: {
+          caller_identity_hash?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          deleted_at?: string | null
+          file_path?: string | null
+          flag?: string | null
+          id?: string | null
+          identity_hash?: string | null
+          language?: string | null
+          line?: number | null
+          mandate_id?: string | null
+          mandate_key?: string | null
+          metadata?: Json | null
+          occurrence_n?: number | null
+          organization_id?: string | null
+          package_name?: string | null
+          package_path?: string | null
+          presence?: string | null
+          reference_type_id?: string | null
+          repo_slug?: string | null
+          revision?: never
+          revision_kind?: string | null
+          scan_id?: never
+          symbol?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+          version?: number | null
+          visibility?: Database["platform"]["Enums"]["visibility"] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reference_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "definition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reference_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "shortcut_key_map"
+            referencedColumns: ["mandate_id"]
+          },
+          {
+            foreignKeyName: "reference_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "vw_shortcut"
+            referencedColumns: ["mandate_id"]
+          },
+        ]
+      }
+      shortcut_key_map: {
+        Row: {
+          legacy_id: string | null
+          mandate_id: string | null
+          mandate_key: string | null
+        }
+        Insert: {
+          legacy_id?: never
+          mandate_id?: string | null
+          mandate_key?: string | null
+        }
+        Update: {
+          legacy_id?: never
+          mandate_id?: string | null
+          mandate_key?: string | null
+        }
+        Relationships: []
+      }
+      v_reference_latest: {
+        Row: {
+          caller_identity_hash: string | null
+          created_at: string | null
+          file_path: string | null
+          first_seen_at: string | null
+          first_seen_revision: string | null
+          flag: string | null
+          id: string | null
+          identity_hash: string | null
+          language: string | null
+          last_seen_at: string | null
+          line: number | null
+          mandate_id: string | null
+          mandate_key: string | null
+          occurrence_n: number | null
+          organization_id: string | null
+          package_name: string | null
+          package_path: string | null
+          presence: string | null
+          reference_type_id: string | null
+          repo_slug: string | null
+          revision: string | null
+          revision_kind: string | null
+          scan_id: string | null
+          symbol: string | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reference_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "definition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reference_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "shortcut_key_map"
+            referencedColumns: ["mandate_id"]
+          },
+          {
+            foreignKeyName: "reference_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "vw_shortcut"
+            referencedColumns: ["mandate_id"]
+          },
+        ]
+      }
+      vw_shortcut: {
+        Row: {
+          agent_id: string | null
+          agent_version_id: string | null
+          allow_chat: boolean | null
+          auto_run: boolean | null
+          bypass_gate_seconds: number | null
+          category_id: string | null
+          context_mappings: Json | null
+          context_overrides: Json | null
+          created_at: string | null
+          created_by: string | null
+          default_user_input: string | null
+          default_variables: Json | null
+          deleted_at: string | null
+          description: string | null
+          display_mode: string | null
+          enabled_features: Json | null
+          hide_reasoning: boolean | null
+          hide_tool_results: boolean | null
+          icon_name: string | null
+          id: string | null
+          is_active: boolean | null
+          json_extraction: Json | null
+          keyboard_shortcut: string | null
+          label: string | null
+          llm_overrides: Json | null
+          mandate_id: string | null
+          mandate_key: string | null
+          metadata: Json | null
+          organization_id: string | null
+          pre_execution_message: string | null
+          response_density: string | null
+          scope_mappings: Json | null
+          show_definition_message_content: boolean | null
+          show_definition_messages: boolean | null
+          show_pre_execution_gate: boolean | null
+          show_variable_panel: boolean | null
+          sort_order: number | null
+          surface_name: string | null
+          updated_at: string | null
+          updated_by: string | null
+          use_latest: boolean | null
+          value_mappings: Json | null
+          variables_panel_style: string | null
+          version: number | null
+          visibility: Database["platform"]["Enums"]["visibility"] | null
+          write_policies: Json | null
+        }
+        Relationships: []
+      }
+    }
+    Functions: {
+      _admin_list_candidate: { Args: { p_mandate_id: string }; Returns: Json }
+      _admin_list_match: {
+        Args: { p_filters: Json; p_skip?: string; p_vals: Json }
+        Returns: boolean
+      }
+      _admin_list_pretty: { Args: { p_segment: string }; Returns: string }
+      _admin_list_read: {
+        Args: {
+          p_dir: string
+          p_facts: Json
+          p_filters: Json
+          p_lane: string
+          p_limit: number
+          p_mode: string
+          p_offset: number
+          p_org_id: string
+          p_scope: string
+          p_search: string
+          p_sort: string
+        }
+        Returns: Json
+      }
+      _admin_list_rows: {
+        Args: { p_facts: Json; p_q: string }
+        Returns: {
+          backs_count: number
+          created_at: string
+          created_by: string
+          customized_by: string[]
+          description: string
+          feature_label: string
+          goal: string
+          h_agent_id: string
+          h_agent_name: string
+          home_label: string
+          id: string
+          is_system: boolean
+          mandate_key: string
+          name: string
+          organization_id: string
+          score: number
+          serves: string[]
+          serves_detail: string[]
+          sortv: Json
+          updated_at: string
+          vals: Json
+        }[]
+      }
+      _admin_owner_label: {
+        Args: { p_is_system: boolean; p_org: string }
+        Returns: string
+      }
+      _admin_owner_level: {
+        Args: { p_is_system: boolean; p_org: string }
+        Returns: string
+      }
+      _member_list_rows:
+        | {
+            Args: {
+              p_level: string
+              p_q: string
+              p_res_org: string
+              p_res_user: string
+            }
+            Returns: {
+              created_at: string
+              created_by: string
+              customized_by: string[]
+              decided_by: string
+              decided_rung: string
+              feature_label: string
+              goal: string
+              health: string
+              holder_id: string
+              holder_name: string
+              holder_type: string
+              home_label: string
+              id: string
+              is_enabled: boolean
+              is_personal_home: boolean
+              is_system: boolean
+              mandate_key: string
+              name: string
+              organization_id: string
+              origin: string
+              pin_text: string
+              score: number
+              sortv: Json
+              updated_at: string
+              vals: Json
+              visibility: string
+            }[]
+          }
+        | {
+            Args: {
+              p_keys: string[]
+              p_level: string
+              p_q: string
+              p_res_org: string
+              p_res_user: string
+            }
+            Returns: {
+              created_at: string
+              created_by: string
+              customized_by: string[]
+              decided_by: string
+              decided_rung: string
+              feature_label: string
+              goal: string
+              health: string
+              holder_id: string
+              holder_name: string
+              holder_type: string
+              home_label: string
+              id: string
+              is_enabled: boolean
+              is_personal_home: boolean
+              is_system: boolean
+              mandate_key: string
+              name: string
+              organization_id: string
+              origin: string
+              pin_text: string
+              score: number
+              sortv: Json
+              updated_at: string
+              vals: Json
+              visibility: string
+            }[]
+          }
+        | {
+            Args: {
+              p_keys: string[]
+              p_level: string
+              p_light: boolean
+              p_q: string
+              p_res_org: string
+              p_res_user: string
+            }
+            Returns: {
+              created_at: string
+              created_by: string
+              customized_by: string[]
+              decided_by: string
+              decided_rung: string
+              feature_label: string
+              goal: string
+              health: string
+              holder_id: string
+              holder_name: string
+              holder_type: string
+              home_label: string
+              id: string
+              is_enabled: boolean
+              is_system: boolean
+              mandate_key: string
+              name: string
+              organization_id: string
+              origin: string
+              pin_text: string
+              score: number
+              sortv: Json
+              updated_at: string
+              vals: Json
+              visibility: string
+            }[]
+          }
+      _member_list_seat: {
+        Args: {
+          p_keys: string[]
+          p_level: string
+          p_my_orgs: string[]
+          p_org_id: string
+          p_res_org: string
+          p_res_user: string
+          p_uid: string
+        }
+        Returns: {
+          created_by: string
+          id: string
+          in_mine: boolean
+          in_orgs: boolean
+          in_public: boolean
+          in_shared: boolean
+          is_system: boolean
+          mandate_key: string
+          name: string
+          organization_id: string
+          shared_org_ids: string[]
+          sortv: Json
+          vals: Json
+          visibility: string
+        }[]
+      }
+      _member_scope_ok: {
+        Args: {
+          p_level: string
+          p_org_id: string
+          p_scope: string
+          p_uid: string
+          r_created_by: string
+          r_id: string
+          r_is_system: boolean
+          r_org: string
+          r_personal_home: boolean
+          r_visibility: string
+        }
+        Returns: boolean
+      }
+      _member_shared_org_ids: {
+        Args: { p_id: string; p_level: string; p_org_id: string }
+        Returns: string[]
+      }
+      _reference_absent_leg: {
+        Args: {
+          p_org: string
+          p_pkg: string
+          p_repo: string
+          p_revision: string
+          p_scan_id: string
+        }
+        Returns: Record<string, unknown>
+      }
+      _reference_record_states: {
+        Args: {
+          p_kind: string
+          p_org: string
+          p_revision: string
+          p_rows: Json
+          p_scan_id: string
+        }
+        Returns: Record<string, unknown>
+      }
+      _rungs: {
+        Args: {
+          p_mandate_ids: string[]
+          p_organization_id: string
+          p_user_id: string
+        }
+        Returns: {
+          auto_run: boolean
+          binding_id: string
+          chose_holder: boolean
+          config_overrides: Json
+          consumption_map: Json
+          definition_enabled: boolean
+          definition_id: string
+          dropped_code: string
+          dropped_reason: string
+          fallback_mandate_key: string
+          holder_id: string
+          holder_live: boolean
+          holder_type: string
+          holder_version_id: string
+          is_enabled: boolean
+          mandate_id: string
+          mandate_key: string
+          organization_id: string
+          output_missing_keys: string[]
+          output_warning: string
+          rung: string
+          rung_order: number
+          subject_user_id: string
+          version_live: boolean
+        }[]
+      }
+      binding_holder_runnable: {
+        Args: {
+          p_holder_id: string
+          p_holder_type: string
+          p_holder_version_id: string
+          p_organization_id: string
+          p_principal_type: string
+          p_subject_user_id: string
+        }
+        Returns: boolean
+      }
+      definition_restore: { Args: { p_mandate_id: string }; Returns: boolean }
+      duplicate_mandate: {
+        Args: {
+          p_as_system?: boolean
+          p_mandate_id: string
+          p_organization_id?: string
+        }
+        Returns: string
+      }
+      generate_app_mandate_key: {
+        Args: { p_name: string; p_slug: string }
+        Returns: string
+      }
+      generate_copy_mandate_key: {
+        Args: { p_source_key: string }
+        Returns: string
+      }
+      generate_shortcut_mandate_key: {
+        Args: { p_label: string; p_surface: string }
+        Returns: string
+      }
+      latest_references: {
+        Args: {
+          p_exclude_type_ids?: string[]
+          p_keys?: string[]
+          p_problems_only?: boolean
+          p_type_ids?: string[]
+        }
+        Returns: Json
+      }
+      mandate_references: { Args: { p_mandate_key: string }; Returns: Json }
+      missing_output_keys: {
+        Args: { p_output_schema: Json; p_required_output_keys: string[] }
+        Returns: string[]
+      }
+      output_schema_keys: { Args: { p_output_schema: Json }; Returns: string[] }
+      reference_head: {
+        Args: never
+        Returns: {
+          identity_hash: string
+          reference_id: string
+        }[]
+      }
+      resolve: {
+        Args: { p_mandate_key: string; p_organization_id?: string }
+        Returns: {
+          auto_run: boolean
+          binding_id: string
+          chose_holder: boolean
+          config_overrides: Json
+          consumption_map: Json
+          definition_enabled: boolean
+          definition_id: string
+          dropped_code: string
+          dropped_reason: string
+          fallback_mandate_key: string
+          holder_id: string
+          holder_live: boolean
+          holder_type: string
+          holder_version_id: string
+          is_enabled: boolean
+          organization_id: string
+          output_missing_keys: string[]
+          output_warning: string
+          rung: string
+          subject_user_id: string
+          version_live: boolean
+        }[]
+      }
+      resolve_for: {
+        Args: {
+          p_mandate_key: string
+          p_organization_id: string
+          p_user_id: string
+        }
+        Returns: {
+          auto_run: boolean
+          binding_id: string
+          chose_holder: boolean
+          config_overrides: Json
+          consumption_map: Json
+          definition_enabled: boolean
+          definition_id: string
+          dropped_code: string
+          dropped_reason: string
+          fallback_mandate_key: string
+          holder_id: string
+          holder_live: boolean
+          holder_type: string
+          holder_version_id: string
+          is_enabled: boolean
+          organization_id: string
+          output_missing_keys: string[]
+          output_warning: string
+          rung: string
+          subject_user_id: string
+          version_live: boolean
+        }[]
+      }
+      sanitize_app_segment: { Args: { p_seg: string }; Returns: string }
+      sanitize_shortcut_segment: { Args: { p_seg: string }; Returns: string }
+      shortcut_slug: { Args: { p_text: string }; Returns: string }
+      shortcut_treatment_config: { Args: { p_row: Json }; Returns: Json }
+      submit_scan_report: { Args: { p_report: Json }; Returns: Json }
+      validate_treatment_config: {
+        Args: { p_config: Json; p_tier: string }
+        Returns: boolean
+      }
+      workflow_holder_runnable: {
+        Args: {
+          p_organization_id: string
+          p_principal_type: string
+          p_subject_user_id: string
+          p_workflow_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never

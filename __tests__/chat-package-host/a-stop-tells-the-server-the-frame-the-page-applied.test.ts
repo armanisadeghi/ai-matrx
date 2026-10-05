@@ -26,8 +26,8 @@ if (typeof g.TextEncoder !== "function") g.TextEncoder = NodeTextEncoder;
 if (typeof g.TextDecoder !== "function") g.TextDecoder = NodeTextDecoder;
 
 const cancelCalls: unknown[][] = [];
-jest.mock("../../../../../host/server/matrx-transport", () => {
-  const actual = jest.requireActual("../../../../../host/server/matrx-transport");
+jest.mock("@ai-matrx/chat/host/server/matrx-transport", () => {
+  const actual = jest.requireActual("@ai-matrx/chat/host/server/matrx-transport");
   return {
     ...actual,
     cancelAgentRunRequest: (...args: unknown[]) => {
@@ -36,12 +36,12 @@ jest.mock("../../../../../host/server/matrx-transport", () => {
     },
   };
 });
-jest.mock("../settle-after-stop.thunk", () => ({
+jest.mock("@ai-matrx/chat/agents/redux/execution-system/thunks/settle-after-stop.thunk", () => ({
   settleAfterStop: () => () => Promise.resolve("reloaded"),
 }));
 
-import { configureServerForTest } from "../../../../../host/__tests__/server-test-host";
-import { processStream } from "../process-stream";
+import { configureServerForTest } from "@ai-matrx/chat/host/__tests__/server-test-host";
+import { processStream } from "@ai-matrx/chat/agents/redux/execution-system/thunks/process-stream";
 
 // The stream is read by the host's parser behind the server port (P9): this app's own.
 beforeAll(() => {
@@ -49,9 +49,9 @@ beforeAll(() => {
     parseNdjsonStream: jest.requireActual("@host/lib/api/stream-parser").parseNdjsonStream,
   });
 });
-import { cancelExecution } from "../smart-execute.thunk";
-import { registerAbortController } from "../abort-registry";
-import type { ChatRootState } from "../../../../../store/root-state";
+import { cancelExecution } from "@ai-matrx/chat/agents/redux/execution-system/thunks/smart-execute.thunk";
+import { registerAbortController } from "@ai-matrx/chat/agents/redux/execution-system/thunks/abort-registry";
+import type { ChatRootState } from "@ai-matrx/chat/store/root-state";
 
 jest.useFakeTimers();
 

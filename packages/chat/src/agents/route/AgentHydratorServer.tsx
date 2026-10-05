@@ -1,4 +1,4 @@
-import { getAgent } from "@ai-matrx/chat/host/ui-slots";
+import { getAgent } from "@ai-matrx/chat/host/server-deps";
 import { AgentHydrator } from "./AgentHydrator";
 
 /**

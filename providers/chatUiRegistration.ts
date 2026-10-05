@@ -657,12 +657,6 @@ registerChatUi({
   fromGlobalOwnershipRecord: Host_fromGlobalOwnershipRecord,
 });
 
-import { assertMappingsAreAnswerable as Host_assertMappingsAreAnswerable } from "@/features/mandates/provision-shapes";
-import { parseMandateWave1 as Host_parseMandateWave1 } from "@/features/mandates/provision-shapes";
-registerChatUi({
-  assertMappingsAreAnswerable: Host_assertMappingsAreAnswerable,
-  parseMandateWave1: Host_parseMandateWave1,
-});
 
 import { peekMandateCatalogueEntry as Host_peekMandateCatalogueEntry } from "@/features/mandates/catalogue";
 import { invalidateMandateCatalogueCache as Host_invalidateMandateCatalogueCache } from "@/features/mandates/catalogue";
@@ -671,10 +665,6 @@ registerChatUi({
   invalidateMandateCatalogueCache: Host_invalidateMandateCatalogueCache,
 });
 
-import { mandateRefusalHeadline as Host_mandateRefusalHeadline } from "@/features/mandates/test-run";
-registerChatUi({
-  mandateRefusalHeadline: Host_mandateRefusalHeadline,
-});
 
 import { useLoginHref as Host_useLoginHref } from "@/hooks/auth/useLoginHref";
 registerChatUi({
@@ -696,10 +686,6 @@ registerChatUi({
   selectShouldPromptForOrganization: Host_selectShouldPromptForOrganization,
 });
 
-import { canActOn as Host_canActOn } from "@/features/access-gate/service/canActOn";
-registerChatUi({
-  canActOn: Host_canActOn,
-});
 
 import { resolveEntityToken as Host_resolveEntityToken } from "@/features/scopes/registry/entityRegistry";
 registerChatUi({
@@ -725,10 +711,6 @@ registerChatUi({
   ensureOrgAvailability: Host_ensureOrgAvailability,
 });
 
-import { createClient as Host_createClient } from "@/utils/supabase/server";
-registerChatUi({
-  createClient: Host_createClient,
-});
 
 import { requireAuthenticatedSupabaseSession as Host_requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 registerChatUi({
@@ -751,15 +733,9 @@ registerChatUi({
   getAgentCatalog: Host_getAgentCatalog,
 });
 
-import { getAgent as Host_getAgent } from "@/lib/agents/data";
-registerChatUi({
-  getAgent: Host_getAgent,
-});
 
-import { isBasicWorkMandate as Host_isBasicWorkMandate } from "@/features/ai-models/preferredChatModel";
 import { resolvePreferredChatModel as Host_resolvePreferredChatModel } from "@/features/ai-models/preferredChatModel";
 registerChatUi({
-  isBasicWorkMandate: Host_isBasicWorkMandate,
   resolvePreferredChatModel: Host_resolvePreferredChatModel,
 });
 
@@ -864,10 +840,6 @@ registerChatUi({
   MatrxDynamicPanelHost: Host_MatrxDynamicPanelHost,
 });
 
-import { renameIntentFallback as Host_renameIntentFallback } from "@/components/official/item/renameIntentFallback";
-registerChatUi({
-  renameIntentFallback: Host_renameIntentFallback,
-});
 
 import { useClippedContentGuard as Host_useClippedContentGuard } from "@/lib/layout/useClippedContentGuard";
 registerChatUi({
@@ -902,5 +874,3 @@ registerChatUi({
   useCostDisplay: Host_useCostDisplay,
 });
 
-import { toastDoor as Host_toastDoor } from "@/components/official/entity-ref/toastDoor";
-registerChatUi({ toastDoor: Host_toastDoor });

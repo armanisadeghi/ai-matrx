@@ -33,9 +33,10 @@ jest.mock("@ai-matrx/design-system", () => ({
   ScrollArea: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }),
 }));
-jest.mock("@host/components/official/structured-value/AnswerValueView", () => ({
+import { registerChatUi } from "../../../../host/ui-slots";
+registerChatUi({
   AnswerValueView: () => <div data-testid="answer-value-view" />,
-}));
+});
 
 import { DirectTestMode, InlineTestMode } from "../AgentExecutionTestModal";
 
