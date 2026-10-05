@@ -39,6 +39,12 @@ jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({
   ...jest.requireActual("@/lib/diagnostics/errorCaptureStore"),
   captureError: (input: unknown) => mockCaptureError(input),
 }));
+// The kind-at-raw-renderer report goes through the chat package's diagnostics seam; both sinks
+// share one mock so no capture escapes the assertions.
+jest.mock("@ai-matrx/chat/host/diagnostics", () => ({
+  ...jest.requireActual("@ai-matrx/chat/host/diagnostics"),
+  captureError: (input: unknown) => mockCaptureError(input),
+}));
 
 const mockStreamCalls: string[] = [];
 jest.mock("@/components/MarkdownStream", () => ({
