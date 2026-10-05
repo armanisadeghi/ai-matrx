@@ -29,6 +29,7 @@ import IconButton from "@/components/official/IconButton";
 import type { MenuItem } from "@/components/official/AdvancedMenu";
 import { useCanvasPresentation } from "@ai-matrx/canvas/react";
 import { timelineAxis } from "@/components/mardown-display/blocks/canvas-adaptive";
+import { Button } from "@ai-matrx/design-system/controls";
 
 interface TimelinePeriod {
   period: string;
@@ -267,14 +268,9 @@ const TimelineBlock: React.FC<TimelineBlockProps> = ({
         )}
 
         {completedCount > 0 && (
-          <button
-            onClick={resetProgress}
-            aria-label="Reset timeline progress"
-            className="flex min-h-11 min-w-11 items-center justify-center gap-1 rounded-md border border-border bg-background px-2 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted sm:min-h-0 sm:min-w-0"
-          >
-            <RotateCcw className="h-3 w-3" />
+          <Button variant="outline" icon={<RotateCcw />} onClick={resetProgress} aria-label="Reset timeline progress" className="sm:min-w-0">
             <span className="hidden sm:inline">Reset</span>
-          </button>
+          </Button>
         )}
       </div>
     </div>
@@ -469,12 +465,9 @@ const TimelineBlock: React.FC<TimelineBlockProps> = ({
                   All events in {timeline.title} have been completed!
                 </p>
               </div>
-              <button
-                onClick={resetProgress}
-                className="mt-1 px-3 py-1.5 bg-green-500 dark:bg-green-600 hover:bg-green-600 dark:hover:bg-green-700 text-white rounded-lg font-medium text-xs shadow-sm hover:shadow-md transform hover:scale-105 transition-all"
-              >
+              <Button variant="success" onClick={resetProgress} className="mt-1">
                 Start Again
-              </button>
+              </Button>
             </div>
           </div>
         )}

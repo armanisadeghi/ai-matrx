@@ -21,6 +21,7 @@ import { toast } from "@/lib/toast";
 import { Skeleton } from "@ai-matrx/design-system";
 import SandboxedHtml from "@/components/mardown-display/blocks/common/SandboxedHtml";
 import { cn } from "@/lib/utils";
+import { Button } from "@ai-matrx/design-system/controls";
 
 export interface SvgBlockProps {
   content?: string;
@@ -131,15 +132,9 @@ export const SvgBlock: React.FC<SvgBlockProps> = ({ content = "", isStreamActive
 
 function IconBtn({ label, onClick, children }: { label: string; onClick: () => void; children: React.ReactNode }) {
   return (
-    <button
-      type="button"
-      aria-label={label}
-      title={label}
-      onClick={onClick}
-      className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
-    >
+    <Button variant="quiet" aria-label={label} title={label} onClick={onClick}>
       {children}
-    </button>
+    </Button>
   );
 }
 
@@ -168,15 +163,7 @@ function SvgFullscreen({ srcDoc, title, onClose }: { srcDoc: string; title: stri
     >
       <div className="flex items-center justify-between border-b border-border px-4 py-2 pt-safe">
         <span className="truncate text-sm font-medium text-foreground">{title ?? "Illustration"}</span>
-        <button
-          type="button"
-          aria-label="Exit fullscreen"
-          title="Exit fullscreen (Esc)"
-          onClick={onClose}
-          className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-        >
-          <X className="h-4 w-4" />
-        </button>
+        <Button variant="quiet" icon={<X />} aria-label="Exit fullscreen" title="Exit fullscreen (Esc)" onClick={onClose} />
       </div>
       <div className="min-h-0 flex-1 p-4" onClick={(e) => e.target === e.currentTarget && onClose()}>
         <SandboxedHtml html={srcDoc} title={title ?? "SVG illustration"} height="100%" />

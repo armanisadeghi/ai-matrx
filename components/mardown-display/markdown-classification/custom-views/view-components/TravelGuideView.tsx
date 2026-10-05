@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import DefaultErrorFallback from "@/components/mardown-display/markdown-classification/custom-views/common/DefaultErrorFallback";
+import { Button } from "@ai-matrx/design-system/controls";
 
 // Type definitions
 interface ListItem {
@@ -181,16 +182,11 @@ const ListItemComponent = ({ item }: { item: ListItem }) => {
       <div className="flex items-start">
         <div className="min-w-6 mt-1 mr-2">
           {hasSubItems ? (
-            <button
-              onClick={() => setIsOpen(!isOpen)}
-              className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
-            >
-              {isOpen ? (
-                <ChevronDown className="w-4 h-4 text-blue-500 dark:text-blue-400" />
+            <Button variant="quiet" icon={isOpen ? (
+                <ChevronDown />
               ) : (
-                <ChevronRight className="w-4 h-4 text-blue-500 dark:text-blue-400" />
-              )}
-            </button>
+                <ChevronRight />
+              )} onClick={() => setIsOpen(!isOpen)} aria-label={isOpen ? "Collapse" : "Expand"} aria-expanded={isOpen} />
           ) : (
             <div className="w-4 h-4 rounded-full border-2 border-blue-500 dark:border-blue-400 mt-1"></div>
           )}
@@ -434,26 +430,14 @@ const TravelGuide: React.FC<TravelGuideProps> = ({
             </div>
 
             <div className="flex items-center space-x-4">
-              <button
-                onClick={() => setShowTableOfContents(!showTableOfContents)}
-                className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
-                aria-label="Toggle table of contents"
-              >
-                <BookOpen className="h-5 w-5 text-gray-600 dark:text-gray-300" />
-              </button>
+              <Button variant="quiet" icon={<BookOpen />} onClick={() => setShowTableOfContents(!showTableOfContents)} aria-label="Toggle table of contents" />
 
               {toggleDarkMode && (
-                <button
-                  onClick={toggleDarkMode}
-                  className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
-                  aria-label="Toggle dark mode"
-                >
-                  {darkMode ? (
-                    <Sun className="h-5 w-5 text-gray-600 dark:text-gray-300" />
+                <Button variant="quiet" icon={darkMode ? (
+                    <Sun />
                   ) : (
-                    <Moon className="h-5 w-5 text-gray-600 dark:text-gray-300" />
-                  )}
-                </button>
+                    <Moon />
+                  )} onClick={toggleDarkMode} aria-label="Toggle dark mode" />
               )}
             </div>
           </div>
@@ -468,12 +452,7 @@ const TravelGuide: React.FC<TravelGuideProps> = ({
                   <h2 className="text-lg font-bold text-gray-800 dark:text-white">
                     Contents
                   </h2>
-                  <button
-                    onClick={() => setShowTableOfContents(false)}
-                    className="md:hidden p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
-                  >
-                    <X className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-                  </button>
+                  <Button variant="quiet" icon={<X />} onClick={() => setShowTableOfContents(false)} aria-label="Close" className="md:hidden" />
                 </div>
 
                 <nav>

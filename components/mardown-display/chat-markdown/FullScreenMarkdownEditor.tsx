@@ -1,6 +1,6 @@
 "use client";
 import type { EditorPrimaryAction } from "@ai-matrx/chat/host/window-openers";
-import { Button as ControlButton, Chip } from "@ai-matrx/design-system/controls";
+import { Button, Chip } from "@ai-matrx/design-system/controls";
 import React, {
   useState,
   useEffect,
@@ -43,7 +43,6 @@ import {
   Check,
   FileCode,
 } from "lucide-react";
-import { Button } from "@ai-matrx/design-system";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -186,18 +185,13 @@ function CopyIconButton({
 }) {
   const { copied, copy } = useCopyButton();
   return (
-    <button
-      onClick={() => copy(text)}
-      title={label}
-      className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium border border-border bg-card hover:bg-accent transition-colors text-foreground"
-    >
-      {copied ? (
-        <Check className="h-3.5 w-3.5 text-green-500" />
+    <Button variant="outline" icon={copied ? (
+        <Check />
       ) : (
-        <Icon className="h-3.5 w-3.5" />
-      )}
+        <Icon />
+      )} glyphTone="success" onClick={() => copy(text)} title={label}>
       {copied ? "Copied!" : label}
-    </button>
+    </Button>
   );
 }
 
@@ -677,12 +671,7 @@ function TabErrorFallback({
             </p>
           </div>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onRetry}
-          className="rounded-full px-6 text-sm shadow-sm"
-        >
+        <Button variant="outline" onClick={onRetry}>
           Try again
         </Button>
       </div>
@@ -713,14 +702,14 @@ function TabErrorFallback({
                 label="Copy with content"
                 icon={FileCode}
               />
-              <ControlButton
+              <Button
                 variant="quiet"
                 className="ml-1"
                 onClick={onToggleDetails}
                 iconEnd={showDetails ? <ChevronDown /> : <ChevronRight />}
               >
                 {showDetails ? "Collapse" : "Expand"}
-              </ControlButton>
+              </Button>
             </div>
           </div>
 
@@ -923,7 +912,7 @@ function AdminTabOpener({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <ControlButton
+        <Button
           variant="outline"
           tone="primary"
           aria-label="Dev Tabs"
@@ -932,7 +921,7 @@ function AdminTabOpener({
           iconEnd={compact ? undefined : <ChevronDown />}
         >
           {compact ? undefined : "Dev Tabs"}
-        </ControlButton>
+        </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel className="text-xs flex items-center gap-1.5 text-primary">
@@ -1569,7 +1558,17 @@ const FullScreenMarkdownEditor: React.FC<FullScreenMarkdownEditorProps> = ({
       {(primaryActions ?? []).map((action) => (
         <Button
           key={action.id}
-          variant={action.variant ?? "default"}
+          variant={
+            action.variant === "destructive"
+              ? "danger"
+              : action.variant === "ghost"
+                ? "quiet"
+                : action.variant === "outline" || action.variant === "secondary"
+                  ? "outline"
+                  : action.variant === "link"
+                    ? "link"
+                    : "primary"
+          }
           onClick={() => onPrimaryAction && void settleSave(() => onPrimaryAction(action.id, currentText()))}
           disabled={isSaving}
         >
@@ -1691,14 +1690,14 @@ function UnavailableDataNotice({
                 label="Copy with content"
                 icon={FileCode}
               />
-              <ControlButton
+              <Button
                 variant="quiet"
                 className="ml-1"
                 onClick={() => setShowDetails((v) => !v)}
                 iconEnd={showDetails ? <ChevronDown /> : <ChevronRight />}
               >
                 {showDetails ? "Collapse" : "Expand"}
-              </ControlButton>
+              </Button>
             </div>
           </div>
 

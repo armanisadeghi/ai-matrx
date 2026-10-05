@@ -10,6 +10,7 @@ import {
   isValidString
 } from './viewer-utilities';
 import { rowCells, unescapeCellPipes } from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
+import { Button } from "@ai-matrx/design-system/controls";
 
 export interface SectionData {
   section: string;
@@ -342,17 +343,11 @@ const SectionViewerV2 = ({ data }: { data: unknown }) => {
                   {getSectionTypeLabel(selectedSection?.section || 'Unknown Section')}
                 </h3>
               </div>
-              <button
-                onClick={handleCopy}
-                className="p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors group"
-                title="Copy section content"
-              >
-                {copied ? (
-                  <Check size={16} className="text-green-500" />
+              <Button variant="quiet" icon={copied ? (
+                  <Check  size={16} />
                 ) : (
-                  <Copy size={16} className="text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300" />
-                )}
-              </button>
+                  <Copy  size={16} />
+                )} glyphTone="success" onClick={handleCopy} title="Copy section content" aria-label="Copy section content" />
             </div>
           </div>
           

@@ -98,7 +98,7 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { Input } from "@ai-matrx/design-system/controls";
+import { Button, Input } from "@ai-matrx/design-system/controls";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -410,15 +410,7 @@ export function DataTableBlock({ serverData, className }: DataTableBlockProps) {
         </div>
 
         <div className="flex shrink-0 items-center gap-1">
-          <button
-            type="button"
-            onClick={copyMarkdown}
-            title="Copy as a markdown table"
-            aria-label="Copy as a markdown table"
-            className="rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-          >
-            <Copy className="h-3.5 w-3.5" />
-          </button>
+          <Button variant="quiet" icon={<Copy />} onClick={copyMarkdown} title="Copy as a markdown table" aria-label="Copy as a markdown table" />
           <button
             type="button"
             onClick={copyForAi}
@@ -431,9 +423,7 @@ export function DataTableBlock({ serverData, className }: DataTableBlockProps) {
           {/* THE ONE "Save to a table" (SAVE-AS-TABLE-EVERYWHERE): a new table, or these rows added
               to one the person has — the `saveToTable` overlay. */}
           {openSaveToTable ? (
-          <button
-            type="button"
-            onClick={() =>
+          <Button variant="quiet" icon={<Database />} onClick={() =>
               openSaveToTable({
                 grid: {
                   headers: columns.map((column) => column.name),
@@ -443,24 +433,11 @@ export function DataTableBlock({ serverData, className }: DataTableBlockProps) {
                 },
                 title: title ?? null,
               })
-            }
-            title="Save to a table"
-            aria-label="Save to a table"
-            className="rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-          >
-            <Database className="h-3.5 w-3.5" />
-          </button>
+            } title="Save to a table" aria-label="Save to a table" />
           ) : null}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button
-                type="button"
-                title="Export"
-                aria-label="Export"
-                className="rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-              >
-                <Download className="h-3.5 w-3.5" />
-              </button>
+              <Button variant="quiet" icon={<Download />} title="Export" aria-label="Export" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem
@@ -494,17 +471,9 @@ export function DataTableBlock({ serverData, className }: DataTableBlockProps) {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <button
-            type="button"
-            onClick={() =>
+          <Button variant="quiet" icon={<Maximize2 />} onClick={() =>
               openTableWindow({ content: asMarkdown(), title: title ?? "Table" })
-            }
-            title="Open in a window"
-            aria-label="Open in a window"
-            className="rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-          >
-            <Maximize2 className="h-3.5 w-3.5" />
-          </button>
+            } title="Open in a window" aria-label="Open in a window" />
         </div>
       </div>
 
@@ -754,17 +723,13 @@ export function DataTableBlock({ serverData, className }: DataTableBlockProps) {
           "We are not showing you all of what we have" and "we do not HAVE all
           of it" are different facts and must never read the same. */}
       {hiddenByUi > 0 && (
-        <button
-          type="button"
-          onClick={(event) => {
+        <Button variant="quiet" onClick={(event) => {
             event.stopPropagation();
             setShowAll(true);
-          }}
-          className="w-full border-t border-border/40 px-3 py-1.5 text-left text-xs font-medium text-primary hover:bg-muted/30"
-        >
+          }} className="w-full">
           Show {hiddenByUi.toLocaleString()} more{" "}
           {hiddenByUi === 1 ? "row" : "rows"} on this page
-        </button>
+        </Button>
       )}
     </div>
   );

@@ -4,6 +4,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { MarkdownAnalysisData } from "./types";
 import AnalysisTab from "./AnalysisTab";
 import SectionGroupTab from "./analyzer-options/SectionGroupTab";
+import { Button } from "@ai-matrx/design-system/controls";
 
 interface MarkdownAnalyzerProps {
   messageId?: string;
@@ -40,28 +41,13 @@ const MarkdownAnalyzer: React.FC<MarkdownAnalyzerProps> = ({ messageId }) => {
       {/* Tab Navigation */}
       <div className="flex border-b border-border">
         {markdownAnalysis.section_groups.map((_, index) => (
-          <button
-            key={index}
-            className={`px-4 py-2 text-sm font-medium ${
-              activeTab === index
-                ? "border-b-2 border-blue-500 text-blue-600 dark:text-blue-400"
-                : "text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
-            }`}
-            onClick={() => setActiveTab(index)}
-          >
+          <Button variant="quiet" pressed={activeTab === index} key={index} onClick={() => setActiveTab(index)}>
             Group {index + 1}
-          </button>
+          </Button>
         ))}
-        <button
-          className={`px-4 py-2 text-sm font-medium ${
-            activeTab === markdownAnalysis.section_groups.length
-              ? "border-b-2 border-blue-500 text-blue-600 dark:text-blue-400"
-              : "text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
-          }`}
-          onClick={() => setActiveTab(markdownAnalysis.section_groups.length)}
-        >
+        <Button variant="quiet" pressed={activeTab === markdownAnalysis.section_groups.length} onClick={() => setActiveTab(markdownAnalysis.section_groups.length)}>
           Analysis
-        </button>
+        </Button>
       </div>
 
       {/* Tab Content */}

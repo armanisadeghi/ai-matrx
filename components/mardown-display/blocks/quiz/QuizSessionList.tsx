@@ -1,6 +1,6 @@
 'use client';
 
-import { Chip } from "@ai-matrx/design-system/controls";
+import { Button, Chip } from "@ai-matrx/design-system/controls";
 import React, { useEffect, useState } from 'react';
 import { Trash2, Play, Clock, Trophy, CheckCircle, AlertCircle } from 'lucide-react';
 import { getUserQuizSessions, deleteQuizSession, type QuizSession } from '@/actions/quiz.actions';
@@ -154,21 +154,9 @@ export const QuizSessionList: React.FC<QuizSessionListProps> = ({
 
               <div className="flex items-center gap-2">
                 {onLoadSession && (
-                  <button
-                    onClick={() => onLoadSession(session.id)}
-                    className="p-2 rounded-md bg-blue-500 dark:bg-blue-600 text-white hover:bg-blue-600 dark:hover:bg-blue-700 transition-all shadow-sm"
-                    title={session.is_completed ? 'View results' : 'Resume quiz'}
-                  >
-                    <Play className="h-4 w-4" />
-                  </button>
+                  <Button variant="quiet" icon={<Play />} onClick={() => onLoadSession(session.id)} title={session.is_completed ? 'View results' : 'Resume quiz'} aria-label={session.is_completed ? 'View results' : 'Resume quiz'} />
                 )}
-                <button
-                  onClick={() => handleDelete(session.id)}
-                  className="p-2 rounded-md bg-red-500 dark:bg-red-600 text-white hover:bg-red-600 dark:hover:bg-red-700 transition-all shadow-sm"
-                  title="Delete quiz"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
+                <Button variant="danger" icon={<Trash2 />} onClick={() => handleDelete(session.id)} title="Delete quiz" aria-label="Delete quiz" />
               </div>
             </div>
           </div>

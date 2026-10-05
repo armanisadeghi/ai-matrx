@@ -1,6 +1,7 @@
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import React, { useState } from 'react';
 import { Copy, Check, FileText, Hash, Type, List, Minus } from 'lucide-react';
+import { Button } from "@ai-matrx/design-system/controls";
 
 export interface ContentItem {
   type: string;
@@ -72,17 +73,11 @@ const JsonFallback = ({ data, onCopy }: { data: unknown; onCopy: () => void }) =
                   Unexpected Format
                 </span>
               </div>
-              <button
-                onClick={handleCopy}
-                className="p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors group"
-                title="Copy JSON data"
-              >
-                {copied ? (
-                  <Check size={16} className="text-green-500" />
+              <Button variant="quiet" icon={copied ? (
+                  <Check  size={16} />
                 ) : (
-                  <Copy size={16} className="text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300" />
-                )}
-              </button>
+                  <Copy  size={16} />
+                )} glyphTone="success" onClick={handleCopy} title="Copy JSON data" aria-label="Copy JSON data" />
             </div>
           </div>
           
@@ -395,17 +390,11 @@ const SectionsViewer = ({ data }: { data: unknown }) => {
                   Section {selectedSectionIndex + 1}
                 </h3>
               </div>
-              <button
-                onClick={copyToClipboard}
-                className="p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors group"
-                title="Copy section content"
-              >
-                {copiedData ? (
-                  <Check size={16} className="text-green-500" />
+              <Button variant="quiet" icon={copiedData ? (
+                  <Check  size={16} />
                 ) : (
-                  <Copy size={16} className="text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300" />
-                )}
-              </button>
+                  <Copy  size={16} />
+                )} glyphTone="success" onClick={copyToClipboard} title="Copy section content" aria-label="Copy section content" />
             </div>
           </div>
           

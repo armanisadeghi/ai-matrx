@@ -25,6 +25,7 @@ import type {
   VideoPromptVariationData,
 } from "@/features/content-ir/kinds/video-prompt-options";
 import type { LLMParams } from "@ai-matrx/chat/agents/types/agent-api-types";
+import { Button } from "@ai-matrx/design-system/controls";
 
 export interface VideoPromptOptionsBlockProps {
   serverData?: unknown;
@@ -111,15 +112,9 @@ function CopyPromptButton({ prompt }: { prompt: string }) {
     });
   }, [prompt]);
   return (
-    <button
-      type="button"
-      onClick={handleCopy}
-      className="inline-flex min-h-11 items-center gap-1 rounded-md border border-border px-3 py-2 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-      aria-label="Copy prompt"
-    >
-      {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+    <Button variant="outline" icon={copied ? <Check /> : <Copy />} onClick={handleCopy} aria-label="Copy prompt">
       {copied ? "Copied" : "Copy"}
-    </button>
+    </Button>
   );
 }
 

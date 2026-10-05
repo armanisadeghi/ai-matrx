@@ -50,6 +50,7 @@ import {
   sourceRefHref,
   sourceRefLabel,
 } from "./rag-kind-shared";
+import { Button } from "@ai-matrx/design-system/controls";
 
 export type SourceRefVariant = "card" | "inline";
 
@@ -227,14 +228,9 @@ export function SourceRefBlock({
             </RagChip>
           )}
           {href && onOpen && (
-            <button
-              type="button"
-              onClick={onOpen}
-              className="ml-auto inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline"
-            >
-              <ArrowUpRight className="h-3 w-3" aria-hidden />
+            <Button variant="link" icon={<ArrowUpRight aria-hidden />} onClick={onOpen} className="ml-auto">
               Open source
-            </button>
+            </Button>
           )}
         </div>
       )}

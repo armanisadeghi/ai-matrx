@@ -436,17 +436,12 @@ const KeywordHierarchyDisplay = ({ data }: { data: unknown }) => {
                                                 className="text-slate-500 dark:text-slate-400"
                                               />
                                             </button>
-                                            <button
-                                              onClick={() =>
-                                                removeKeyword(section, index)
-                                              }
-                                              className="p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-all"
-                                            >
-                                              <X
+                                            <Button variant="quiet" icon={<X
                                                 size={12}
-                                                className="text-red-500 dark:text-red-400"
-                                              />
-                                            </button>
+                                               
+                                              />} glyphTone="destructive" onClick={() =>
+                                                removeKeyword(section, index)
+                                              } aria-label="Close" />
                                           </div>
                                         </div>
                                       )}
@@ -489,13 +484,9 @@ const KeywordHierarchyDisplay = ({ data }: { data: unknown }) => {
           {/* Feedback Section */}
           <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
             {!showFeedback ? (
-              <button
-                onClick={() => setShowFeedback(true)}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/30 dark:hover:bg-blue-800/40 text-blue-700 dark:text-blue-300 text-sm font-medium transition-colors"
-              >
-                <MessageSquare size={16} />
+              <Button variant="quiet" icon={<MessageSquare size={16} />} onClick={() => setShowFeedback(true)}>
                 Add Feedback
-              </button>
+              </Button>
             ) : (
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
@@ -503,12 +494,7 @@ const KeywordHierarchyDisplay = ({ data }: { data: unknown }) => {
                     <MessageSquare size={16} className="text-blue-500" />
                     Feedback
                   </h3>
-                  <button
-                    onClick={() => setShowFeedback(false)}
-                    className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
-                  >
-                    <X size={16} />
-                  </button>
+                  <Button variant="quiet" icon={<X size={16} />} onClick={() => setShowFeedback(false)} aria-label="Close" />
                 </div>
                 <textarea
                   value={feedbackText}
@@ -517,16 +503,13 @@ const KeywordHierarchyDisplay = ({ data }: { data: unknown }) => {
                   className="w-full h-24 p-3 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800/50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                 />
                 <div className="flex justify-end">
-                  <button
-                    onClick={() => {
+                  <Button variant="quiet" onClick={() => {
                       // Here you would typically save the feedback
                       toast.success("Feedback saved!");
                       setFeedbackText("");
-                    }}
-                    className="px-4 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors"
-                  >
+                    }}>
                     Submit
-                  </button>
+                  </Button>
                 </div>
               </div>
             )}

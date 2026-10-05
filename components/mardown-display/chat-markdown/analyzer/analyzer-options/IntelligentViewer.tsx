@@ -1,4 +1,4 @@
-import { Badge, Chip } from "@ai-matrx/design-system/controls";
+import { Button, Badge, Chip } from "@ai-matrx/design-system/controls";
 import React, { useState } from "react";
 import { AlertTriangle, Lightbulb, Eye, FileJson, Copy, Check } from "lucide-react";
 import {
@@ -367,27 +367,15 @@ const IntelligentViewer = ({ data, bookmark }: IntelligentViewerProps) => {
                                 </p>
                             </div>
                             <div className="flex items-center gap-1">
-                                <button
-                                    onClick={() => setShowJsonExplorer(!showJsonExplorer)}
-                                    className="p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors group"
-                                    title={showJsonExplorer ? "Show content sections" : "View raw JSON data"}
-                                >
-                                    <FileJson
+                                <Button variant="quiet" icon={<FileJson
                                         size={16}
                                         className={`${
                                             showJsonExplorer
                                                 ? "text-blue-500"
                                                 : "text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300"
                                         }`}
-                                    />
-                                </button>
-                                <button
-                                    onClick={analyzeAndRecommend}
-                                    className="p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors group"
-                                    title="Analyze data structure and get viewer recommendations"
-                                >
-                                    <Lightbulb size={16} className="text-yellow-500 group-hover:text-yellow-600" />
-                                </button>
+                                    />} onClick={() => setShowJsonExplorer(!showJsonExplorer)} title={showJsonExplorer ? "Show content sections" : "View raw JSON data"} aria-label={showJsonExplorer ? "Show content sections" : "View raw JSON data"} />
+                                <Button variant="quiet" icon={<Lightbulb size={16} />} glyphTone="warning" onClick={analyzeAndRecommend} title="Analyze data structure and get viewer recommendations" aria-label="Analyze data structure and get viewer recommendations" />
                             </div>
                         </div>
                     </div>
@@ -454,31 +442,19 @@ const IntelligentViewer = ({ data, bookmark }: IntelligentViewerProps) => {
                                 {selectedSection?.bookmarkPath && (
                                     <div className="mt-1 flex items-center gap-2">
                                         <Chip label={selectedSection.bookmarkPath} />
-                                        <button
-                                            onClick={handleBookmarkCopy}
-                                            className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-                                            title="Copy bookmark path"
-                                        >
-                                            {bookmarkCopied ? (
-                                                <Check size={12} className="text-green-500" />
+                                        <Button variant="quiet" icon={bookmarkCopied ? (
+                                                <Check  size={12} />
                                             ) : (
-                                                <Copy size={12} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
-                                            )}
-                                        </button>
+                                                <Copy  size={12} />
+                                            )} glyphTone="success" onClick={handleBookmarkCopy} title="Copy bookmark path" aria-label="Copy bookmark path" />
                                     </div>
                                 )}
                             </div>
-                            <button
-                                onClick={handleCopy}
-                                className="p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors group"
-                                title="Copy section content"
-                            >
-                                {copied ? (
-                                    <Check size={16} className="text-green-500" />
+                            <Button variant="quiet" icon={copied ? (
+                                    <Check  size={16} />
                                 ) : (
-                                    <Copy size={16} className="text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300" />
-                                )}
-                            </button>
+                                    <Copy  size={16} />
+                                )} glyphTone="success" onClick={handleCopy} title="Copy section content" aria-label="Copy section content" />
                         </div>
                     </div>
 
@@ -516,12 +492,9 @@ const IntelligentViewer = ({ data, bookmark }: IntelligentViewerProps) => {
                                                     </span>
                                                 )}
                                             </div>
-                                            <button
-                                                onClick={() => setShowRecommendation(false)}
-                                                className="mt-3 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 underline"
-                                            >
+                                            <Button variant="link" onClick={() => setShowRecommendation(false)} className="mt-3">
                                                 Hide recommendation
-                                            </button>
+                                            </Button>
                                         </div>
                                     </div>
                                 </div>
@@ -536,16 +509,10 @@ const IntelligentViewer = ({ data, bookmark }: IntelligentViewerProps) => {
                                                 <span className="text-xs text-gray-800 dark:text-gray-200 font-mono bg-textured px-2 py-1 rounded border">
                                                     {bookmark}
                                                 </span>
-                                                <button
-                                                    onClick={() => navigator.clipboard.writeText(bookmark)}
-                                                    className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                                                    title="Copy root bookmark path"
-                                                >
-                                                    <Copy
+                                                <Button variant="quiet" icon={<Copy
                                                         size={12}
-                                                        className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                                                    />
-                                                </button>
+                                                       
+                                                    />} onClick={() => navigator.clipboard.writeText(bookmark)} title="Copy root bookmark path" aria-label="Copy root bookmark path" />
                                             </div>
                                         </div>
                                     )}

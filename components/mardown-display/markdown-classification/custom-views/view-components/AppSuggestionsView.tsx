@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Image, Rocket, ArrowRight, ExternalLink, Lightbulb, Loader2 } from 'lucide-react';
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import DefaultErrorFallback from "@/components/mardown-display/markdown-classification/custom-views/common/DefaultErrorFallback";
+import { Button } from "@ai-matrx/design-system/controls";
 
 interface AppSuggestion {
     app_name?: string;
@@ -104,19 +105,12 @@ const AppSuggestionsDisplay = ({ data, handleGenerate, handleSelect, imageUrls =
                                             >
                                                 {suggestion.app_name || "Untitled App"}
                                             </h2>
-                                            <button
-                                                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                                                    selectedSuggestion === index
-                                                        ? "bg-indigo-100 dark:bg-indigo-800 text-indigo-600 dark:text-indigo-100"
-                                                        : "bg-slate-100 dark:bg-indigo-600 text-slate-600 dark:text-slate-300"
-                                                }`}
-                                                onClick={(e) => {
+                                            <Button variant="quiet" pressed={selectedSuggestion === index} onClick={(e) => {
                                                     e.stopPropagation();
                                                     handleSelectSuggestion(index);
-                                                }}
-                                            >
+                                                }}>
                                                 {selectedSuggestion === index ? "Selected" : "Select"}
-                                            </button>
+                                            </Button>
                                         </div>
 
                                         <p
@@ -182,16 +176,12 @@ const AppSuggestionsDisplay = ({ data, handleGenerate, handleSelect, imageUrls =
 
                                             {/* Only show generate button if handleGenerate is provided */}
                                             {handleGenerate && suggestion.image_description && (
-                                                <button
-                                                    onClick={(e) => {
+                                                <Button variant="quiet" icon={<Rocket size={16} />} onClick={(e) => {
                                                         e.stopPropagation();
                                                         generateImage(index, suggestion.image_description);
-                                                    }}
-                                                    className="w-full flex items-center justify-center gap-2 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg transition-colors text-sm font-medium"
-                                                >
-                                                    <Rocket size={16} />
+                                                    }} className="w-full">
                                                     Generate Image
-                                                </button>
+                                                </Button>
                                             )}
 
                                             {/* Display image if URL exists for this suggestion */}

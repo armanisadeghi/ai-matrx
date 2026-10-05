@@ -5,6 +5,7 @@ import { cn } from "@/styles/themes/utils";
 import { Copy, Check } from "lucide-react";
 import { useCanvasPresentation } from "@ai-matrx/canvas/react";
 import { treeWrapsLines } from "@/components/mardown-display/blocks/canvas-adaptive";
+import { Button } from "@ai-matrx/design-system/controls";
 
 interface TreeBlockProps {
   content: string;
@@ -137,16 +138,11 @@ const TreeBlock: React.FC<TreeBlockProps> = ({ content, className }) => {
         <span className="text-xs font-mono font-semibold text-teal-600 dark:text-teal-400">
           Tree
         </span>
-        <button
-          onClick={handleCopy}
-          className="p-1 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-        >
-          {copied ? (
-            <Check className="w-3.5 h-3.5 text-green-500" />
+        <Button variant="quiet" icon={copied ? (
+            <Check />
           ) : (
-            <Copy className="w-3.5 h-3.5" />
-          )}
-        </button>
+            <Copy />
+          )} glyphTone="success" onClick={handleCopy} aria-label="Copy" />
       </div>
       <div
         data-tree-wrap={wrap ? "wrap" : "scroll"}

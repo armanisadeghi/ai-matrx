@@ -7,6 +7,7 @@ import { KindSourceView } from "@/components/mardown-display/chat-markdown/KindT
 import { cn } from "@/styles/themes/utils";
 import { tokenizeXml } from "./xml-tokenize";
 import { useMarkdownStreaming } from "@/components/markdown-core/streaming-context";
+import { Button } from "@ai-matrx/design-system/controls";
 
 interface XmlBlockProps {
   content: string;
@@ -141,19 +142,13 @@ const XmlBlock: React.FC<XmlBlockProps> = ({
           </span>
           {rootTagName ? (
             hasCardBody ? (
-              <button
-                aria-label={`${cardCollapsed ? "Expand" : "Collapse"} ${rootTagName}`}
-                aria-expanded={!cardCollapsed}
-                onClick={() => setCardCollapsed((previous) => !previous)}
-                className="size-11 flex min-w-0 items-center gap-1 rounded px-1 py-0.5 font-mono text-sm text-blue-600 transition-colors hover:bg-muted hover:text-foreground dark:text-blue-400 lg:size-auto lg:p-0"
-              >
-                {cardCollapsed ? (
-                  <ChevronRight className="size-3.5 shrink-0" />
+              <Button variant="quiet" icon={cardCollapsed ? (
+                  <ChevronRight />
                 ) : (
-                  <ChevronDown className="size-3.5 shrink-0" />
-                )}
+                  <ChevronDown />
+                )} aria-label={`${cardCollapsed ? "Expand" : "Collapse"} ${rootTagName}`} aria-expanded={!cardCollapsed} onClick={() => setCardCollapsed((previous) => !previous)} className="min-w-0">
                 <span className="truncate">{rootTagName}</span>
-              </button>
+              </Button>
             ) : (
               <span
                 data-xml-root-name
@@ -164,17 +159,11 @@ const XmlBlock: React.FC<XmlBlockProps> = ({
             )
           ) : null}
         </div>
-        <button
-          aria-label="Copy XML"
-          onClick={handleCopy}
-          className="size-11 flex items-center justify-center rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground lg:size-auto lg:p-1"
-        >
-          {copied ? (
-            <Check className="w-3.5 h-3.5 text-green-500" />
+        <Button variant="quiet" icon={copied ? (
+            <Check />
           ) : (
-            <Copy className="w-3.5 h-3.5" />
-          )}
-        </button>
+            <Copy />
+          )} glyphTone="success" aria-label="Copy XML" onClick={handleCopy} />
       </div>
       {!cardCollapsed && (
         <div
@@ -274,17 +263,11 @@ const XmlBlock: React.FC<XmlBlockProps> = ({
                 style={style}
               >
                 {hasChildren ? (
-                  <button
-                    aria-label={`${isCollapsed ? "Expand" : "Collapse"} ${token.tagName}`}
-                    onClick={() => toggleCollapse(idx)}
-                    className="size-11 mr-1 flex flex-shrink-0 items-center justify-center text-muted-foreground hover:text-foreground transition-colors lg:size-auto lg:mt-0.5 lg:p-0"
-                  >
-                    {isCollapsed ? (
-                      <ChevronRight className="w-3.5 h-3.5" />
+                  <Button variant="quiet" icon={isCollapsed ? (
+                      <ChevronRight />
                     ) : (
-                      <ChevronDown className="w-3.5 h-3.5" />
-                    )}
-                  </button>
+                      <ChevronDown />
+                    )} aria-label={`${isCollapsed ? "Expand" : "Collapse"} ${token.tagName}`} onClick={() => toggleCollapse(idx)} className="mr-1 lg:mt-0.5" />
                 ) : (
                   <span className="w-[18px] flex-shrink-0" />
                 )}

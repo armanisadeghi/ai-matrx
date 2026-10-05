@@ -2,7 +2,7 @@
 
 // THE SHAPES COME FROM THE REGISTRY, via the parser that produces them —
 // this renderer never re-declares them (`check:kind-type-twins`).
-import { Badge, Chip } from "@ai-matrx/design-system/controls";
+import { Button, Badge, Chip } from "@ai-matrx/design-system/controls";
 import type {
   ResearchFinding,
   ResearchSection,
@@ -258,13 +258,9 @@ const ResearchBlock: React.FC<ResearchBlockProps> = ({
                 <BookOpen className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
                 <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200">Research Analysis</h3>
               </div>
-              <button
-                onClick={() => setIsFullScreen(false)}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-textured hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium transition-all shadow-sm"
-              >
-                <Minimize2 className="h-4 w-4" />
+              <Button variant="quiet" icon={<Minimize2 />} onClick={() => setIsFullScreen(false)}>
                 <span>Exit</span>
-              </button>
+              </Button>
             </div>
           )}
 
@@ -296,27 +292,15 @@ const ResearchBlock: React.FC<ResearchBlockProps> = ({
 
                   {!isFullScreen && (
                     <div className="flex flex-wrap items-center gap-2">
-                      <button
-                        onClick={handleOpenCanvas}
-                        className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-purple-500 dark:bg-purple-600 text-white text-sm font-semibold shadow-md hover:bg-purple-600 dark:hover:bg-purple-700 hover:shadow-lg transform hover:scale-105 transition-all"
-                      >
-                        <ArrowUpRight className="h-4 w-4" />
+                      <Button variant="quiet" icon={<ArrowUpRight />} onClick={handleOpenCanvas}>
                         <span>Canvas</span>
-                      </button>
-                      <button
-                        onClick={handlePrint}
-                        className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-slate-500 dark:bg-slate-600 text-white text-sm font-semibold shadow-md hover:bg-slate-600 dark:hover:bg-slate-700 hover:shadow-lg transform hover:scale-105 transition-all"
-                      >
-                        <Printer className="h-4 w-4" />
+                      </Button>
+                      <Button variant="quiet" icon={<Printer />} onClick={handlePrint}>
                         <span>Print</span>
-                      </button>
-                      <button
-                        onClick={() => setIsFullScreen(true)}
-                        className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-emerald-500 dark:bg-emerald-600 text-white text-sm font-semibold shadow-md hover:bg-emerald-600 dark:hover:bg-emerald-700 hover:shadow-lg transform hover:scale-105 transition-all"
-                      >
-                        <Maximize2 className="h-4 w-4" />
+                      </Button>
+                      <Button variant="success" icon={<Maximize2 />} onClick={() => setIsFullScreen(true)}>
                         <span>Research View</span>
-                      </button>
+                      </Button>
                     </div>
                   )}
                 </div>

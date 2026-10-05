@@ -11,6 +11,7 @@ import {
   countValidItems
 } from './viewer-utilities';
 import RawJsonExplorer from "@/components/official/json-explorer/RawJsonExplorer";
+import { Button } from "@ai-matrx/design-system/controls";
 
 
 
@@ -191,13 +192,7 @@ const SectionViewerWithSidebar = ({ data }: { data: unknown }) => {
                     </p>
                   )}
                 </div>
-                <button
-                  onClick={() => setShowJsonExplorer(!showJsonExplorer)}
-                  className="p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors group"
-                  title={showJsonExplorer ? "Back to normal view" : "View JSON data explorer"}
-                >
-                  <Braces size={16} className={showJsonExplorer ? "text-blue-500 dark:text-blue-400" : "text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300"} />
-                </button>
+                <Button variant="quiet" icon={<Braces size={16} className={showJsonExplorer ? "text-blue-500 dark:text-blue-400" : "text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300"} />} onClick={() => setShowJsonExplorer(!showJsonExplorer)} title={showJsonExplorer ? "Back to normal view" : "View JSON data explorer"} aria-label={showJsonExplorer ? "Back to normal view" : "View JSON data explorer"} />
               </div>
             </div>
           
@@ -276,17 +271,11 @@ const SectionViewerWithSidebar = ({ data }: { data: unknown }) => {
                     </h3>
                   </div>
                   {shouldShowSidebar && (
-                    <button
-                      onClick={copyToClipboard}
-                      className="p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors group"
-                      title="Copy section content"
-                    >
-                      {copied ? (
-                        <Check size={16} className="text-green-500" />
+                    <Button variant="quiet" icon={copied ? (
+                        <Check  size={16} />
                       ) : (
-                        <Copy size={16} className="text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300" />
-                      )}
-                    </button>
+                        <Copy  size={16} />
+                      )} glyphTone="success" onClick={copyToClipboard} title="Copy section content" aria-label="Copy section content" />
                   )}
                 </div>
               </div>

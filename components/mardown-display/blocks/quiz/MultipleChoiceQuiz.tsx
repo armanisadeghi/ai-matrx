@@ -54,7 +54,7 @@ import { parseQuizJSON, type RawQuizJSON } from "./quiz-parser";
 import { InlineLatexRenderer } from "@/features/math/components/InlineLatexRenderer";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useCanvasFit } from "../canvas-fit";
-import { Button as ControlButton } from "@ai-matrx/design-system/controls";
+import { Button } from "@ai-matrx/design-system/controls";
 
 // Legacy type for backwards compatibility
 export type Question = OriginalQuestion;
@@ -120,17 +120,11 @@ const QuestionText: React.FC<{ question: string; isFullScreen: boolean }> = ({
         <InlineLatexRenderer content={question} />
       </h2>
       {isOverflowing && (
-        <button
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="mt-1 flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
-          title={isExpanded ? "Show less" : "Show full question"}
-        >
-          {isExpanded ? (
-            <ChevronUp className="h-3 w-3" />
+        <Button variant="quiet" icon={isExpanded ? (
+            <ChevronUp />
           ) : (
-            <ChevronDown className="h-3 w-3" />
-          )}
-        </button>
+            <ChevronDown />
+          )} onClick={() => setIsExpanded(!isExpanded)} title={isExpanded ? "Show less" : "Show full question"} aria-label={isExpanded ? "Show less" : "Show full question"} className="mt-1" />
       )}
     </div>
   );
@@ -901,60 +895,37 @@ const MultipleChoiceQuiz: React.FC<MultipleChoiceQuizProps> = ({
 
             <div className="flex flex-col gap-2">
               <div className={`flex flex-col gap-2 ${narrowPane ? "" : "sm:flex-row"}`}>
-                <button
-                  onClick={handleReviewAnswers}
-                  className="flex-1 px-3 py-2 rounded-lg font-semibold text-sm bg-blue-500 dark:bg-blue-600 hover:bg-blue-600 dark:hover:bg-blue-700 text-white shadow-sm hover:shadow-md transform hover:scale-105 transition-all duration-200"
-                >
+                <Button variant="quiet" onClick={handleReviewAnswers}>
                   Review Answers
-                </button>
-                <button
-                  onClick={handleRetry}
-                  className="flex-1 px-3 py-2 rounded-lg font-semibold text-sm bg-purple-500 dark:bg-purple-600 hover:bg-purple-600 dark:hover:bg-purple-700 text-white shadow-sm hover:shadow-md transform hover:scale-105 transition-all duration-200 flex items-center justify-center gap-1"
-                >
-                  <RotateCcw className="h-4 w-4" />
+                </Button>
+                <Button variant="quiet" icon={<RotateCcw />} onClick={handleRetry}>
                   Retry Quiz
-                </button>
+                </Button>
               </div>
 
               {quizState.mode !== "retake" &&
                 (hasIncorrectAnswers || hasSkippedQuestions) && (
                   <div className={`flex flex-col gap-2 ${narrowPane ? "" : "sm:flex-row"}`}>
                     {hasIncorrectAnswers && (
-                      <button
-                        onClick={handleRetakeMissed}
-                        className="flex-1 px-3 py-2 rounded-lg font-semibold text-sm bg-orange-500 dark:bg-orange-600 hover:bg-orange-600 dark:hover:bg-orange-700 text-white shadow-sm hover:shadow-md transform hover:scale-105 transition-all duration-200 flex items-center justify-center gap-1"
-                      >
-                        <RefreshCw className="h-4 w-4" />
+                      <Button variant="quiet" icon={<RefreshCw />} onClick={handleRetakeMissed}>
                         Retake Missed ({incorrectCount})
-                      </button>
+                      </Button>
                     )}
                     {hasSkippedQuestions && (
-                      <button
-                        onClick={handleRetakeSkipped}
-                        className="flex-1 px-3 py-2 rounded-lg font-semibold text-sm bg-yellow-500 dark:bg-yellow-600 hover:bg-yellow-600 dark:hover:bg-yellow-700 text-white shadow-sm hover:shadow-md transform hover:scale-105 transition-all duration-200 flex items-center justify-center gap-1"
-                      >
-                        <RefreshCw className="h-4 w-4" />
+                      <Button variant="quiet" icon={<RefreshCw />} onClick={handleRetakeSkipped}>
                         Retake Skipped ({results.skippedCount})
-                      </button>
+                      </Button>
                     )}
                   </div>
                 )}
 
               <div className={`flex flex-col gap-2 pt-2 border-t border-border ${narrowPane ? "" : "sm:flex-row"}`}>
-                <button
-                  onClick={handleDownloadQuiz}
-                  className="flex-1 px-3 py-2 rounded-lg font-semibold text-sm bg-gray-600 dark:bg-gray-700 hover:bg-gray-700 dark:hover:bg-gray-600 text-white shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-center gap-1"
-                >
-                  <Download className="h-4 w-4" />
+                <Button variant="quiet" icon={<Download />} onClick={handleDownloadQuiz}>
                   Download Progress
-                </button>
-                <button
-                  onClick={handleDownloadResults}
-                  className="flex-1 px-3 py-2 rounded-lg font-semibold text-sm bg-gray-600 dark:bg-gray-700 hover:bg-gray-700 dark:hover:bg-gray-600 text-white shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-center gap-1"
-                >
-                  <Download className="h-4 w-4" />
+                </Button>
+                <Button variant="quiet" icon={<Download />} onClick={handleDownloadResults}>
                   Download Results
-                </button>
+                </Button>
               </div>
             </div>
           </div>
@@ -989,7 +960,7 @@ const MultipleChoiceQuiz: React.FC<MultipleChoiceQuizProps> = ({
           )}
         </div>
       )}
-      <ControlButton
+      <Button
         variant="quiet"
         icon={<Printer />}
         aria-label="Print quiz"
@@ -1000,7 +971,7 @@ const MultipleChoiceQuiz: React.FC<MultipleChoiceQuizProps> = ({
         }}
       />
       {showCanvasButton && (
-        <ControlButton
+        <Button
           variant="quiet"
           icon={<ArrowUpRight />}
           aria-label="Open in Canvas"
@@ -1011,7 +982,7 @@ const MultipleChoiceQuiz: React.FC<MultipleChoiceQuizProps> = ({
           }}
         />
       )}
-      <ControlButton
+      <Button
         variant="quiet"
         icon={<Maximize2 />}
         aria-label="Focus mode"

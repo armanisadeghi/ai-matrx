@@ -16,6 +16,7 @@ import FlexibleLoadingComponent from "@/components/mardown-display/markdown-clas
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import DefaultErrorFallback from "@/components/mardown-display/markdown-classification/custom-views/common/DefaultErrorFallback";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { Button } from "@ai-matrx/design-system/controls";
 
 interface CandidateExperience {
   company?: string;
@@ -235,13 +236,9 @@ const ModernOneColumnProfileDisplay = ({ data }: { data: CandidateProfileData })
         {/* Feedback Section */}
         <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-700">
           {!showFeedback ? (
-            <button
-              onClick={() => setShowFeedback(true)}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-900/30 dark:hover:bg-indigo-800/40 text-indigo-700 dark:text-indigo-300 font-medium transition-colors duration-200"
-            >
-              <MessageSquare size={18} />
+            <Button variant="quiet" icon={<MessageSquare size={18} />} onClick={() => setShowFeedback(true)}>
               Add Feedback
-            </button>
+            </Button>
           ) : (
             <div className="space-y-3 animate-fadeIn">
               <div className="flex items-center justify-between">
@@ -249,12 +246,7 @@ const ModernOneColumnProfileDisplay = ({ data }: { data: CandidateProfileData })
                   <MessageSquare size={18} className="text-indigo-500" />
                   Candidate Feedback
                 </h3>
-                <button
-                  onClick={() => setShowFeedback(false)}
-                  className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
-                >
-                  <Minus size={18} />
-                </button>
+                <Button variant="quiet" icon={<Minus size={18} />} onClick={() => setShowFeedback(false)} aria-label="Remove" />
               </div>
               <textarea
                 value={feedbackText}
@@ -263,16 +255,13 @@ const ModernOneColumnProfileDisplay = ({ data }: { data: CandidateProfileData })
                 className="w-full h-32 p-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800/50 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all duration-200"
               />
               <div className="flex justify-end">
-                <button
-                  onClick={() => {
+                <Button variant="quiet" onClick={() => {
                     // Here you would typically save the feedback
                     toast.success("Feedback saved!");
                     setFeedbackText("");
-                  }}
-                  className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-medium transition-colors duration-200"
-                >
+                  }}>
                   Submit Feedback
-                </button>
+                </Button>
               </div>
             </div>
           )}

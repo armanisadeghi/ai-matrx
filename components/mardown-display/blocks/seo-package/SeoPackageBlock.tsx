@@ -26,7 +26,7 @@
  * Consumes the bridge serverData from `features/content-ir/kinds/seo-package.ts`.
  */
 
-import { Chip, ChipSet } from "@ai-matrx/design-system/controls";
+import { Button, Chip, ChipSet } from "@ai-matrx/design-system/controls";
 import { useState, type ReactNode } from "react";
 import {
   Check,
@@ -218,14 +218,9 @@ export function SeoPackageMeta({
       )}
       {slug !== null && (
         <Field label="Slug">
-          <button
-            type="button"
-            onClick={() => copyText(slug, "Slug")}
-            className="inline-flex items-center gap-1 rounded bg-muted/60 px-1.5 py-0.5 font-mono text-[11px] transition-colors hover:bg-muted" data-identifier
-          >
-            <Link2 className="h-3 w-3" />
+          <Button variant="quiet" icon={<Link2 />} onClick={() => copyText(slug, "Slug")} data-identifier>
             {slug}
-          </button>
+          </Button>
         </Field>
       )}
     </>
@@ -304,21 +299,12 @@ export function SeoPackageMarkup({
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-2 pt-1">
-        <button
-          type="button"
-          onClick={() => setShowRaw((value) => !value)}
-          className="text-[11px] text-muted-foreground transition-colors hover:text-foreground"
-        >
+        <Button variant="quiet" onClick={() => setShowRaw((value) => !value)}>
           {showRaw ? "Hide" : "Show"} schema.org + OpenGraph
-        </button>
-        <button
-          type="button"
-          onClick={() => copyText(jsonLd, "JSON-LD")}
-          className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline"
-        >
-          <Copy className="h-3 w-3" />
+        </Button>
+        <Button variant="link" icon={<Copy />} onClick={() => copyText(jsonLd, "JSON-LD")}>
           Copy JSON-LD
-        </button>
+        </Button>
       </div>
       {showRaw && (
         <pre className="max-h-60 overflow-x-auto overflow-y-auto rounded-lg bg-muted/50 p-2.5 text-[10px] leading-relaxed">

@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { cn } from "@/styles/themes/utils";
 import { ChevronRight, ChevronDown, Copy, Check } from "lucide-react";
+import { Button } from "@ai-matrx/design-system/controls";
 
 interface YamlBlockProps {
   content: string;
@@ -164,16 +165,11 @@ const YamlBlock: React.FC<YamlBlockProps> = ({ content, className }) => {
         <span className="text-xs font-mono font-semibold text-amber-600 dark:text-amber-400">
           YAML
         </span>
-        <button
-          onClick={handleCopy}
-          className="p-1 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-        >
-          {copied ? (
-            <Check className="w-3.5 h-3.5 text-green-500" />
+        <Button variant="quiet" icon={copied ? (
+            <Check />
           ) : (
-            <Copy className="w-3.5 h-3.5" />
-          )}
-        </button>
+            <Copy />
+          )} glyphTone="success" onClick={handleCopy} aria-label="Copy" />
       </div>
       <div className="px-3 py-2 font-mono text-sm leading-relaxed overflow-x-auto">
         {visibleLines.map((idx) => {
@@ -222,16 +218,11 @@ const YamlBlock: React.FC<YamlBlockProps> = ({ content, className }) => {
               style={{ paddingLeft: line.indent * 8 }}
             >
               {hasChildren ? (
-                <button
-                  onClick={() => toggleCollapse(idx)}
-                  className="mr-1 mt-0.5 p-0 flex-shrink-0 text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  {isCollapsed ? (
-                    <ChevronRight className="w-3.5 h-3.5" />
+                <Button variant="quiet" icon={isCollapsed ? (
+                    <ChevronRight />
                   ) : (
-                    <ChevronDown className="w-3.5 h-3.5" />
-                  )}
-                </button>
+                    <ChevronDown />
+                  )} onClick={() => toggleCollapse(idx)} aria-label={isCollapsed ? "Expand" : "Collapse"} aria-expanded={!(isCollapsed)} className="mr-1 mt-0.5" />
               ) : (
                 <span className="w-[18px] flex-shrink-0" />
               )}

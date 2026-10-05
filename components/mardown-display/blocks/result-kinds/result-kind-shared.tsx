@@ -39,6 +39,7 @@ import { KIND_KEY, reconstructRegionValue } from "@ai-matrx/content-ir";
 import { useClipboard } from "@/hooks/useClipboard";
 import { ResultValue } from "@ai-matrx/chat/tool-call-visualization/result-fields/ResultValue";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
+import { Button } from "@ai-matrx/design-system/controls";
 
 /** Props every runtime-result block takes — the resolver-only route shape. */
 export interface ResultKindBlockProps {
@@ -352,24 +353,16 @@ export const CopyValueButton: React.FC<{ text: string; what: string }> = ({
   const { copyText } = useClipboard();
   const [copied, setCopied] = React.useState(false);
   return (
-    <button
-      type="button"
-      aria-label={`Copy ${what}`}
-      title={`Copy ${what}`}
-      onClick={(event) => {
+    <Button variant="quiet" icon={copied ? (
+        <Check />
+      ) : (
+        <Copy />
+      )} glyphTone="success" aria-label={`Copy ${what}`} title={`Copy ${what}`} onClick={(event) => {
         event.stopPropagation();
         void copyText(text, `${what} copied`);
         setCopied(true);
         window.setTimeout(() => setCopied(false), 1200);
-      }}
-      className="inline-flex shrink-0 items-center rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-    >
-      {copied ? (
-        <Check className="h-3.5 w-3.5 text-success" />
-      ) : (
-        <Copy className="h-3.5 w-3.5" />
-      )}
-    </button>
+      }} className="shrink-0" />
   );
 };
 

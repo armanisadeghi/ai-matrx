@@ -16,6 +16,7 @@ import FlexibleLoadingComponent from "@/components/mardown-display/markdown-clas
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import DefaultErrorFallback from "@/components/mardown-display/markdown-classification/custom-views/common/DefaultErrorFallback";
 import type { OutputNode } from "@/components/mardown-display/markdown-classification/processors/combined-processor-config-system/combined-processor";
+import { Button } from "@ai-matrx/design-system/controls";
 
 interface KeywordSections {
   primaryKeyword: string;
@@ -211,13 +212,9 @@ const ModernKeywordAnalyzerDisplay = ({ data }: { data: KeywordAnalyzerData | Ou
               <Brain size={20} className="text-blue-500" />
               Keyword Intelligence Analysis
             </h2>
-            <button
-              onClick={() => setIsEditing(!isEditing)}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/30 dark:hover:bg-blue-800/40 text-blue-700 dark:text-blue-300 font-medium transition-colors duration-200"
-            >
-              <Edit3 size={16} />
+            <Button variant="quiet" icon={<Edit3 size={16} />} onClick={() => setIsEditing(!isEditing)}>
               {isEditing ? "Done Editing" : "Edit Keywords"}
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -313,14 +310,9 @@ const ModernKeywordAnalyzerDisplay = ({ data }: { data: KeywordAnalyzerData | Ou
                                     >
                                       <Edit3 className="h-3 w-3 text-slate-600 dark:text-slate-400" />
                                     </button>
-                                    <button
-                                      onClick={() =>
+                                    <Button variant="quiet" icon={<X />} glyphTone="destructive" onClick={() =>
                                         removeKeyword(section, index)
-                                      }
-                                      className="p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 transition-all"
-                                    >
-                                      <X className="h-3 w-3 text-red-600 dark:text-red-400" />
-                                    </button>
+                                      } aria-label="Close" />
                                   </div>
                                 )}
                               </div>
@@ -340,13 +332,9 @@ const ModernKeywordAnalyzerDisplay = ({ data }: { data: KeywordAnalyzerData | Ou
                               placeholder="Add new keyword..."
                               className="flex-1 px-4 py-3 text-sm bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 text-slate-900 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400"
                             />
-                            <button
-                              onClick={() => addKeyword(section)}
-                              className="p-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors flex items-center gap-2"
-                            >
-                              <Plus size={16} />
+                            <Button variant="quiet" icon={<Plus size={16} />} onClick={() => addKeyword(section)}>
                               Add
-                            </button>
+                            </Button>
                           </div>
                         )}
                       </div>
@@ -407,13 +395,9 @@ const ModernKeywordAnalyzerDisplay = ({ data }: { data: KeywordAnalyzerData | Ou
         {/* Feedback Section */}
         <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-700">
           {!showFeedback ? (
-            <button
-              onClick={() => setShowFeedback(true)}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/30 dark:hover:bg-blue-800/40 text-blue-700 dark:text-blue-300 font-medium transition-colors duration-200"
-            >
-              <MessageSquare size={18} />
+            <Button variant="quiet" icon={<MessageSquare size={18} />} onClick={() => setShowFeedback(true)}>
               Add Feedback
-            </button>
+            </Button>
           ) : (
             <div className="space-y-3 animate-fadeIn">
               <div className="flex items-center justify-between">
@@ -421,12 +405,7 @@ const ModernKeywordAnalyzerDisplay = ({ data }: { data: KeywordAnalyzerData | Ou
                   <MessageSquare size={18} className="text-blue-500" />
                   Keyword Analysis Feedback
                 </h3>
-                <button
-                  onClick={() => setShowFeedback(false)}
-                  className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
-                >
-                  <Minus size={18} />
-                </button>
+                <Button variant="quiet" icon={<Minus size={18} />} onClick={() => setShowFeedback(false)} aria-label="Remove" />
               </div>
               <textarea
                 value={feedbackText}
@@ -435,16 +414,13 @@ const ModernKeywordAnalyzerDisplay = ({ data }: { data: KeywordAnalyzerData | Ou
                 className="w-full h-32 p-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800/50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all duration-200"
               />
               <div className="flex justify-end">
-                <button
-                  onClick={() => {
+                <Button variant="quiet" onClick={() => {
                     // Here you would typically save the feedback
                     toast.success("Feedback saved!");
                     setFeedbackText("");
-                  }}
-                  className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors duration-200"
-                >
+                  }}>
                   Submit Feedback
-                </button>
+                </Button>
               </div>
             </div>
           )}

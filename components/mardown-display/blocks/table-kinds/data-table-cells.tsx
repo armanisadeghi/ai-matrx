@@ -51,7 +51,7 @@
  * a list says how many things are in it, and a record shows its fields.
  */
 
-import { Badge } from "@ai-matrx/design-system/controls";
+import { Button, Badge } from "@ai-matrx/design-system/controls";
 import React from "react";
 import {
   ChevronDown,
@@ -230,38 +230,24 @@ const NestedCell: React.FC<{
   return (
     <div className="flex min-w-0 flex-col gap-0.5">
       <div className="flex min-w-0 items-center gap-1">
-        <button
-          type="button"
-          onClick={(event) => {
+        <Button variant="quiet" icon={open ? (
+            <ChevronDown />
+          ) : (
+            <ChevronRight />
+          )} onClick={(event) => {
             event.stopPropagation();
             setOpen((v) => !v);
-          }}
-          title={open ? "Hide the details" : "Show the details"}
-          className="flex min-w-0 items-center gap-1 text-left text-xs text-muted-foreground transition-colors hover:text-foreground"
-        >
-          {open ? (
-            <ChevronDown className="h-3 w-3 shrink-0" />
-          ) : (
-            <ChevronRight className="h-3 w-3 shrink-0" />
-          )}
+          }} title={open ? "Hide the details" : "Show the details"} className="min-w-0">
           <span className="truncate">{summary}</span>
-        </button>
-        <button
-          type="button"
-          onClick={(event) => {
+        </Button>
+        <Button variant="quiet" icon={<Maximize2 />} onClick={(event) => {
             event.stopPropagation();
             openWindow({
               value,
               title: label?.trim() ? label : "Details",
               subtitle: origin ?? null,
             });
-          }}
-          title="Open this in a window — movable, and your table stays where it is"
-          aria-label="Open in a window"
-          className="shrink-0 rounded p-0.5 text-muted-foreground/70 transition-colors hover:bg-muted hover:text-foreground"
-        >
-          <Maximize2 className="h-3 w-3" />
-        </button>
+          }} title="Open this in a window — movable, and your table stays where it is" aria-label="Open in a window" className="shrink-0" />
       </div>
       {open && (
         <div className="max-h-64 min-w-0 overflow-auto border-l border-border/60 pl-2 text-xs">
@@ -369,18 +355,10 @@ const BinaryCell: React.FC<{ value: string }> = ({ value }) => {
         {open || !truncated ? value : `${value.slice(0, BINARY_PREVIEW_CHARS)}…`}
       </button>
       {truncated && (
-        <button
-          type="button"
-          onClick={(event) => {
+        <Button variant="quiet" icon={<CopyIcon />} onClick={(event) => {
             event.stopPropagation();
             void copyText(value, "Binary value copied — all of it");
-          }}
-          title="Copy the whole value — a cut-off binary string is useless"
-          aria-label="Copy the whole binary value"
-          className="shrink-0 rounded p-0.5 text-muted-foreground/70 transition-colors hover:bg-muted hover:text-foreground"
-        >
-          <CopyIcon className="h-3 w-3" />
-        </button>
+          }} title="Copy the whole value — a cut-off binary string is useless" aria-label="Copy the whole binary value" className="shrink-0" />
       )}
     </span>
   );
@@ -392,17 +370,12 @@ const LONG_CELL_CHARS = 90;
 const LongTextCell: React.FC<{ value: string }> = ({ value }) => {
   const [open, setOpen] = React.useState(false);
   return (
-    <button
-      type="button"
-      onClick={(event) => {
+    <Button variant="quiet" onClick={(event) => {
         event.stopPropagation();
         setOpen((v) => !v);
-      }}
-      title={open ? "Show less" : "Show all of it"}
-      className={cn("block max-w-md break-words text-left", !open && "line-clamp-2")}
-    >
+      }} title={open ? "Show less" : "Show all of it"} className="break-words">
       {value}
-    </button>
+    </Button>
   );
 };
 

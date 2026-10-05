@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { extractErrorMessage } from "@/utils/errors";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { Button } from "@ai-matrx/design-system/controls";
 
 type JsonDifference = {
   path: string;
@@ -263,13 +264,9 @@ export default function JsonComparator() {
       </div>
 
       <div className="border-t p-4">
-        <button
-          onClick={handleCompare}
-          disabled={!leftParsed || !rightParsed}
-          className="px-4 py-2 bg-blue-600 text-white rounded disabled:bg-gray-400 disabled:cursor-not-allowed"
-        >
+        <Button variant="quiet" onClick={handleCompare} disabled={!leftParsed || !rightParsed}>
           Compare
-        </button>
+        </Button>
 
         {comparison && (
           <div className="mt-4">

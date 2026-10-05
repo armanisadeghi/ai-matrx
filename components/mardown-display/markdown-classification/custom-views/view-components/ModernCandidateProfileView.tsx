@@ -6,6 +6,7 @@ import { useIsMobile } from '@ai-matrx/kit/media-query';
 import DefaultErrorFallback from '@/components/mardown-display/markdown-classification/custom-views/common/DefaultErrorFallback';
 import FlexibleLoadingComponent from '@/components/mardown-display/markdown-classification/custom-views/common/DefaultLoadingComponent';
 import { NonEditableContextMenu } from '@/features/context-menu-v3/NonEditableContextMenu';
+import { Button } from "@ai-matrx/design-system/controls";
 
 interface CandidateExperience {
   company?: string;
@@ -194,13 +195,9 @@ const CandidateProfileWithCollapseDisplay = ({ data }: { data: CandidateProfileD
         {/* Feedback Section */}
         <div className="mt-8 pt-4 border-t border-slate-200 dark:border-slate-700">
           {!showFeedback ? (
-            <button 
-              onClick={() => setShowFeedback(true)} 
-              className="flex items-center gap-2 text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-300 font-medium transition-colors duration-200"
-            >
-              <MessageSquare size={18} />
+            <Button variant="quiet" icon={<MessageSquare size={18} />} onClick={() => setShowFeedback(true)}>
               Add Feedback
-            </button>
+            </Button>
           ) : (
             <div className="space-y-3 animate-fadeIn">
               <div className="flex items-center justify-between">
@@ -208,12 +205,7 @@ const CandidateProfileWithCollapseDisplay = ({ data }: { data: CandidateProfileD
                   <MessageSquare size={18} className="text-indigo-500" />
                   Candidate Feedback
                 </h3>
-                <button 
-                  onClick={() => setShowFeedback(false)} 
-                  className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300"
-                >
-                  <Minus size={18} />
-                </button>
+                <Button variant="quiet" icon={<Minus size={18} />} onClick={() => setShowFeedback(false)} aria-label="Remove" />
               </div>
               <textarea 
                 value={feedbackText}
@@ -222,18 +214,14 @@ const CandidateProfileWithCollapseDisplay = ({ data }: { data: CandidateProfileD
                 className="w-full h-32 p-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800/50 text-slate-800 dark:text-slate-200 resize-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all duration-200"
               />
               <div className="flex justify-end">
-                <button 
-                  onClick={() => {
+                <Button variant="quiet" onClick={() => {
                     // Handle feedback submission logic here
                     toast.success('Feedback submitted: ' + feedbackText);
                     setFeedbackText('');
                     setShowFeedback(false);
-                  }}
-                  className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white font-medium rounded-lg shadow-sm hover:shadow transition-all duration-200"
-                  disabled={!feedbackText.trim()}
-                >
+                  }} disabled={!feedbackText.trim()}>
                   Submit Feedback
-                </button>
+                </Button>
               </div>
             </div>
           )}

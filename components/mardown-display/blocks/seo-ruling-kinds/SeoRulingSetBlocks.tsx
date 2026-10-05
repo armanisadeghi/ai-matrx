@@ -40,6 +40,7 @@ import {
   type SeoRulingCollectionKind,
   type SeoRulingItemKind,
 } from "./seo-ruling-shared";
+import { Button } from "@ai-matrx/design-system/controls";
 
 /** How many rows show before "Show all". Enough to read, few enough to scan. */
 export const SEO_RULING_VISIBLE_ROWS = 25;
@@ -189,13 +190,9 @@ export const SeoRulingSetBlock: React.FC<
             <SeoRulingKindNested key={index} kind={spec.item} value={item} />
           ))}
           {hidden > 0 ? (
-            <button
-              type="button"
-              onClick={() => setShowAll(true)}
-              className="w-full px-2.5 py-1.5 text-left text-xs font-medium text-primary transition-colors hover:bg-muted/60"
-            >
+            <Button variant="quiet" onClick={() => setShowAll(true)} className="w-full">
               Show all {items.length} {noun} ({hidden} more)
-            </button>
+            </Button>
           ) : null}
         </div>
       )}

@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { cn } from "@/styles/themes/utils";
 import { Copy, Check, ChevronRight, ChevronDown } from "lucide-react";
+import { Button } from "@ai-matrx/design-system/controls";
 
 interface TomlBlockProps {
   content: string;
@@ -155,16 +156,11 @@ const TomlBlock: React.FC<TomlBlockProps> = ({ content, className }) => {
         <span className="text-xs font-mono font-semibold text-violet-600 dark:text-violet-400">
           TOML
         </span>
-        <button
-          onClick={handleCopy}
-          className="p-1 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-        >
-          {copied ? (
-            <Check className="w-3.5 h-3.5 text-green-500" />
+        <Button variant="quiet" icon={copied ? (
+            <Check />
           ) : (
-            <Copy className="w-3.5 h-3.5" />
-          )}
-        </button>
+            <Copy />
+          )} glyphTone="success" onClick={handleCopy} aria-label="Copy" />
       </div>
       <div className="px-3 py-2 font-mono text-sm leading-relaxed overflow-x-auto">
         {lines.map((line, idx) => {
@@ -192,16 +188,11 @@ const TomlBlock: React.FC<TomlBlockProps> = ({ content, className }) => {
                 key={idx}
                 className="flex items-center group/section hover:bg-muted/30 rounded-sm -mx-1 px-1 mt-2 first:mt-0"
               >
-                <button
-                  onClick={() => toggleSection(idx)}
-                  className="mr-1 p-0 flex-shrink-0 text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  {isCollapsed ? (
-                    <ChevronRight className="w-3.5 h-3.5" />
+                <Button variant="quiet" icon={isCollapsed ? (
+                    <ChevronRight />
                   ) : (
-                    <ChevronDown className="w-3.5 h-3.5" />
-                  )}
-                </button>
+                    <ChevronDown />
+                  )} onClick={() => toggleSection(idx)} aria-label={isCollapsed ? "Expand" : "Collapse"} aria-expanded={!(isCollapsed)} className="mr-1" />
                 <span>
                   <span className="text-muted-foreground">{bracket}</span>
                   <span className="text-blue-600 dark:text-blue-400 font-semibold">

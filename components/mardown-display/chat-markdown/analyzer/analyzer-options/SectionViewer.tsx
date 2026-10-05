@@ -6,6 +6,7 @@ import {
   getSectionTypeLabel, 
   useCopyToClipboard 
 } from './viewer-utilities';
+import { Button } from "@ai-matrx/design-system/controls";
 
 export type SectionType =
     | "intro_text"
@@ -207,17 +208,11 @@ const SectionViewer = ({ data }: { data: unknown }) => {
                         {getSectionTypeLabel(section.section)}
                       </span>
                     </div>
-                    <button
-                      onClick={() => copyToClipboard(section.content, index)}
-                      className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group"
-                      title="Copy to clipboard"
-                    >
-                      {copiedIndex === index ? (
-                        <Check size={14} className="text-green-500" />
+                    <Button variant="quiet" icon={copiedIndex === index ? (
+                        <Check  size={14} />
                       ) : (
-                        <Copy size={14} className="text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300" />
-                      )}
-                    </button>
+                        <Copy  size={14} />
+                      )} glyphTone="success" onClick={() => copyToClipboard(section.content, index)} title="Copy to clipboard" aria-label="Copy to clipboard" />
                   </div>
                   
                   <div className="pl-1">

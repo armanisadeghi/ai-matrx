@@ -16,6 +16,7 @@ import React, { useState, ReactNode } from 'react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ChevronRight, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Button } from "@ai-matrx/design-system/controls";
 
 interface DiffCollapsibleProps {
   icon: ReactNode;
@@ -112,15 +113,7 @@ export const DiffCollapsible: React.FC<DiffCollapsibleProps> = ({
             {/* Fade effect at bottom with expand button */}
             <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-white dark:from-zinc-900 via-white/80 dark:via-zinc-900/80 to-transparent pointer-events-none">
               {/* Expand button - clickable overlay */}
-              <button
-                onClick={() => setIsOpen(true)}
-                className="absolute bottom-1 left-1/2 -translate-x-1/2 pointer-events-auto
-                  flex items-center justify-center w-full h-3.5
-                  bg-transparent transition-colors group"
-                aria-label="Expand diff"
-              >
-                <ChevronDown className="h-3.5 w-3.5 text-muted-foreground group-hover:text-foreground transition-colors" />
-              </button>
+              <Button variant="quiet" icon={<ChevronDown />} onClick={() => setIsOpen(true)} aria-label="Expand diff" className="absolute bottom-1 left-1/2 pointer-events-auto w-full" />
             </div>
           </div>
         ) : null}

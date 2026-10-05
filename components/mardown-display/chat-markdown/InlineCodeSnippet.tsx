@@ -13,6 +13,7 @@ import { Copy, Check } from "lucide-react";
 import { useThemeMode } from "@/styles/themes/useThemeMode";
 import { ShikiCodeView } from "@/features/code-editor/components/code-block/highlight/ShikiCodeView";
 import { MatrxVariableInline } from "@/components/mardown-display/chat-markdown/matrx-variables/MatrxVariableInline";
+import { Button } from "@ai-matrx/design-system/controls";
 
 interface InlineCodeSnippetProps {
   code: string;
@@ -165,18 +166,11 @@ export const InlineCodeSnippet: React.FC<InlineCodeSnippetProps> = ({
         >
           {language || "code"}
         </span>
-        <button
-          onClick={handleCopy}
-          // 44px under touch without growing the header row (negative margin).
-          className="flex items-center justify-center p-0.5 rounded hover:bg-accent/50 text-muted-foreground hover:text-foreground transition-colors pointer-coarse:-my-3 pointer-coarse:-mr-2 pointer-coarse:min-h-11 pointer-coarse:min-w-11"
-          aria-label="Copy code"
-        >
-          {copied ? (
-            <Check className="h-3.5 w-3.5" />
+        <Button variant="quiet" icon={copied ? (
+            <Check />
           ) : (
-            <Copy className="h-3.5 w-3.5" />
-          )}
-        </button>
+            <Copy />
+          )} onClick={handleCopy} aria-label="Copy code" className="pointer-coarse:-my-3 pointer-coarse:-mr-2" />
       </div>
       {highlight ? (
         <ShikiCodeView

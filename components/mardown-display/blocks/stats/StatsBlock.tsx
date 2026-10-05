@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import { soleFence } from "@/lib/markdown/code-ranges";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useCanvasFit } from "../canvas-fit";
+import { Button } from "@ai-matrx/design-system/controls";
 
 interface StatItem {
   label: string;
@@ -109,15 +110,7 @@ export const StatsBlock: React.FC<StatsBlockProps> = ({ content = "", isStreamAc
           {isStreamActive && <span className="shrink-0 animate-pulse text-xs text-muted-foreground">…</span>}
         </div>
         {!isStreamActive && spec && (
-          <button
-            type="button"
-            aria-label={copied ? "Copied" : "Copy source"}
-            title={copied ? "Copied" : "Copy source"}
-            onClick={handleCopy}
-            className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
-          >
-            {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-          </button>
+          <Button variant="quiet" icon={copied ? <Check /> : <Copy />} aria-label={copied ? "Copied" : "Copy source"} title={copied ? "Copied" : "Copy source"} onClick={handleCopy} />
         )}
       </div>
       <div className="p-3">

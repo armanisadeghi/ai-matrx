@@ -32,6 +32,7 @@ import {
   citationSourceLocator,
 } from "@ai-matrx/chat/agents/components/messages-display/citations/citation-source";
 import { useOpenCitationSource } from "./useOpenCitationSource";
+import { Button } from "@ai-matrx/design-system/controls";
 
 interface CitationMarkerInlineProps {
   "data-n"?: string | number;
@@ -77,17 +78,9 @@ export function CitationMarkerInline(props: CitationMarkerInlineProps) {
     <Popover>
       <PopoverTrigger asChild>
         <sup className="mx-px inline align-super">
-          <button
-            type="button"
-            title={label}
-            className={cn(
-              "inline-flex h-[1.15rem] min-w-[1.15rem] items-center justify-center rounded-full border border-border",
-              "bg-muted/60 px-1 text-[0.68rem] font-medium leading-none text-muted-foreground",
-              "transition-colors hover:bg-accent hover:text-foreground",
-            )}
-          >
+          <Button variant="outline" title={label}>
             {source.number}
-          </button>
+          </Button>
         </sup>
       </PopoverTrigger>
       <PopoverContent sizing="content" align="start" side="top" sideOffset={6} className="p-3">

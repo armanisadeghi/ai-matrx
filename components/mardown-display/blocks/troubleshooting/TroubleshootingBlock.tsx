@@ -2,7 +2,7 @@
 
 // THE SHAPES COME FROM THE REGISTRY, via the parser that produces them —
 // this renderer never re-declares them (`check:kind-type-twins`).
-import { Chip } from "@ai-matrx/design-system/controls";
+import { Button, Chip } from "@ai-matrx/design-system/controls";
 import type {
   TroubleshootingStep,
   TroubleshootingSolution,
@@ -375,13 +375,9 @@ const TroubleshootingBlock: React.FC<TroubleshootingBlockProps> = ({
                   Troubleshooting Guide
                 </h3>
               </div>
-              <button
-                onClick={() => setIsFullScreen(false)}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-textured hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium transition-all shadow-sm"
-              >
-                <Minimize2 className="h-4 w-4" />
+              <Button variant="quiet" icon={<Minimize2 />} onClick={() => setIsFullScreen(false)}>
                 <span>Exit</span>
-              </button>
+              </Button>
             </div>
           )}
 
@@ -409,34 +405,18 @@ const TroubleshootingBlock: React.FC<TroubleshootingBlockProps> = ({
 
                   {!isFullScreen && (
                     <div className="flex w-full flex-col items-stretch gap-2 @4xl:w-auto @4xl:flex-row @4xl:items-center">
-                      <button
-                        onClick={() => setIsImportModalOpen(true)}
-                        className="flex min-h-11 w-full items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-green-500 dark:bg-green-600 text-white text-sm font-semibold shadow-md hover:bg-green-600 dark:hover:bg-green-700 hover:shadow-lg transition-all @4xl:min-h-0 @4xl:w-auto @4xl:flex-none"
-                      >
-                        <Upload className="h-4 w-4" />
+                      <Button variant="success" icon={<Upload />} onClick={() => setIsImportModalOpen(true)} className="w-full @4xl:w-auto">
                         <span>Import to Tasks</span>
-                      </button>
-                      <button
-                        onClick={handleOpenCanvas}
-                        className="flex min-h-11 w-full items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-purple-500 dark:bg-purple-600 text-white text-sm font-semibold shadow-md hover:bg-purple-600 dark:hover:bg-purple-700 hover:shadow-lg transition-all @4xl:min-h-0 @4xl:w-auto @4xl:flex-none"
-                      >
-                        <ArrowUpRight className="h-4 w-4" />
+                      </Button>
+                      <Button variant="quiet" icon={<ArrowUpRight />} onClick={handleOpenCanvas} className="w-full @4xl:w-auto">
                         <span>Canvas</span>
-                      </button>
-                      <button
-                        onClick={handlePrint}
-                        className="flex min-h-11 w-full items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-slate-500 dark:bg-slate-600 text-white text-sm font-semibold shadow-md hover:bg-slate-600 dark:hover:bg-slate-700 hover:shadow-lg transition-all @4xl:min-h-0 @4xl:w-auto @4xl:flex-none"
-                      >
-                        <Printer className="h-4 w-4" />
+                      </Button>
+                      <Button variant="quiet" icon={<Printer />} onClick={handlePrint} className="w-full @4xl:w-auto">
                         <span>Print</span>
-                      </button>
-                      <button
-                        onClick={() => setIsFullScreen(true)}
-                        className="flex min-h-11 w-full items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-red-500 dark:bg-red-600 text-white text-sm font-semibold shadow-md hover:bg-red-600 dark:hover:bg-red-700 hover:shadow-lg transition-all @4xl:min-h-0 @4xl:w-auto @4xl:flex-none"
-                      >
-                        <Maximize2 className="h-4 w-4" />
+                      </Button>
+                      <Button variant="danger" icon={<Maximize2 />} onClick={() => setIsFullScreen(true)} className="w-full @4xl:w-auto">
                         <span>Debug Mode</span>
-                      </button>
+                      </Button>
                     </div>
                   )}
                 </div>
@@ -678,18 +658,13 @@ const TroubleshootingBlock: React.FC<TroubleshootingBlockProps> = ({
                                                           {stepIndex + 1}.{" "}
                                                           {step.title}
                                                         </h5>
-                                                        <button
-                                                          onClick={() =>
-                                                            toggleStep(step.id)
-                                                          }
-                                                          className="ml-2 p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
-                                                        >
-                                                          {isStepExpanded ? (
-                                                            <ChevronDown className="h-4 w-4 text-gray-400" />
+                                                        <Button variant="quiet" icon={isStepExpanded ? (
+                                                            <ChevronDown />
                                                           ) : (
-                                                            <ChevronRight className="h-4 w-4 text-gray-400" />
-                                                          )}
-                                                        </button>
+                                                            <ChevronRight />
+                                                          )} onClick={() =>
+                                                            toggleStep(step.id)
+                                                          } aria-label={isStepExpanded ? "Collapse" : "Expand"} aria-expanded={isStepExpanded} className="ml-2" />
                                                       </div>
 
                                                       <p
@@ -755,21 +730,16 @@ const TroubleshootingBlock: React.FC<TroubleshootingBlockProps> = ({
                                                                               }
                                                                             </code>
                                                                           </pre>
-                                                                          <button
-                                                                            onClick={() =>
+                                                                          <Button variant="quiet" icon={isCopied ? (
+                                                                              <Check />
+                                                                            ) : (
+                                                                              <Copy />
+                                                                            )} glyphTone="success" onClick={() =>
                                                                               copyCommand(
                                                                                 command,
                                                                                 commandId,
                                                                               )
-                                                                            }
-                                                                            className="absolute top-2 right-2 p-1 bg-gray-800 dark:bg-gray-900 hover:bg-gray-700 dark:hover:bg-gray-800 rounded transition-colors"
-                                                                          >
-                                                                            {isCopied ? (
-                                                                              <Check className="h-3 w-3 text-green-400" />
-                                                                            ) : (
-                                                                              <Copy className="h-3 w-3 text-gray-400" />
-                                                                            )}
-                                                                          </button>
+                                                                            } aria-label="Copy" className="absolute top-2 right-2" />
                                                                         </div>
                                                                       );
                                                                     },

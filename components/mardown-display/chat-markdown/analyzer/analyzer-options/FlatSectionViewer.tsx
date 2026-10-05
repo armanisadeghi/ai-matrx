@@ -166,32 +166,20 @@ const FlatSectionViewer = ({ data, bookmark }: FlatSectionViewerProps) => {
                     <span className="text-xs text-gray-500 dark:text-gray-400 font-mono bg-gray-100 dark:bg-gray-700 px-2 py-1 border border-blue-500 truncate max-w-2xl">
                       {selectedSection.bookmarkPath}
                     </span>
-                    <button
-                      onClick={handleBookmarkCopy}
-                      className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-                      title="Copy bookmark path"
-                    >
-                      {bookmarkCopied ? (
-                        <Check size={12} className="text-green-500" />
+                    <Button variant="quiet" icon={bookmarkCopied ? (
+                        <Check  size={12} />
                       ) : (
-                        <Copy size={12} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
-                      )}
-                    </button>
+                        <Copy  size={12} />
+                      )} glyphTone="success" onClick={handleBookmarkCopy} title="Copy bookmark path" aria-label="Copy bookmark path" />
                   </div>
                 )}
               </div>
               
-              <button
-                onClick={handleCopy}
-                className="p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors group"
-                title="Copy section content"
-              >
-                {copied ? (
-                  <Check size={16} className="text-green-500" />
+              <Button variant="quiet" icon={copied ? (
+                  <Check  size={16} />
                 ) : (
-                  <Copy size={16} className="text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300" />
-                )}
-              </button>
+                  <Copy  size={16} />
+                )} glyphTone="success" onClick={handleCopy} title="Copy section content" aria-label="Copy section content" />
             </div>
           </div>
           
