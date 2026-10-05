@@ -54,7 +54,7 @@ function stored(type: string, props: Record<string, unknown>): SpacesPartialBloc
 
 function databaseBlock(src: PickedSource, view: SpaceDbView, linked: boolean): SpacesPartialBlock {
   return stored("database", {
-    source: { kind: "table", tableId: src.tableId },
+    source: src.entity ? { kind: "entity", token: src.entity } : { kind: "table", tableId: src.tableId },
     inline: true,
     title: src.name,
     ...(src.sample ? { sample: src.sample } : {}),

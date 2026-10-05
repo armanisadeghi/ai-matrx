@@ -59,7 +59,8 @@ export interface SpaceDbView {
   groupField?: string | null;
   dateField?: string | null;
   sorts?: Array<{ field: string; direction: "asc" | "desc" }>;
-  filters?: Record<string, string | number | boolean | null>;
+  /** Field key → value: a scalar is "is", a list is "is any of" (the store's own filter shape). */
+  filters?: Record<string, string | number | boolean | null | string[]>;
   /** Property keys this view hides (F4 show/hide). */
   hiddenFields?: string[];
   chart?: ChartSettings;
@@ -100,3 +101,14 @@ export function readDatabaseProps(p: Record<string, unknown>): DatabaseBlockProp
 export { AGENCY_SAMPLE_ID };
 
 export const newViewId = () => `view-${crypto.randomUUID().slice(0, 8)}`;
+
+/**
+ * Built-in sources: the platform's own modules, read through the drill doors as the person
+ * (`{kind: "entity", token}`). The database decides which rows a person sees.
+ */
+export const BUILT_IN_SOURCES: ReadonlyArray<{ token: string; name: string; icon: "task" | "project" | "deal" | "employee" }> = [
+  { token: "task", name: "Tasks", icon: "task" },
+  { token: "project", name: "Projects", icon: "project" },
+  { token: "crm_deal", name: "Deals", icon: "deal" },
+  { token: "hr_employee", name: "Employees", icon: "employee" },
+];

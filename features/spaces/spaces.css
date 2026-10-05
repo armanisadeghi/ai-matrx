@@ -1266,3 +1266,22 @@
   .spaces-db-frame { padding: 10px 10px 8px; }
   .spaces-db-bar { flex-wrap: wrap; }
 }
+
+/* Built-in sources (data/EntityDatabase.tsx) */
+.spaces-entity-pill { display: inline-flex; align-items: center; max-width: 100%; height: 20px; padding: 0 6px; border-radius: 3px; background: var(--spaces-hover-strong); color: hsl(var(--foreground)); font-size: 13px; line-height: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.spaces-entity-count { display: flex; align-items: center; gap: 8px; min-height: 32px; padding: 0 2px; }
+.spaces-entity-board { display: flex; gap: 12px; overflow-x: auto; padding: 4px 0 8px; }
+.spaces-entity-lane { flex: 0 0 260px; display: flex; flex-direction: column; gap: 6px; }
+.spaces-entity-lanehead { display: flex; align-items: center; gap: 8px; height: 28px; }
+.spaces-entity-card { display: flex; flex-direction: column; gap: 2px; text-align: left; padding: 8px 10px; border-radius: 6px; background: hsl(var(--card)); border: 1px solid var(--spaces-rule); box-shadow: 0 1px 2px rgb(0 0 0 / 0.04); min-width: 0; }
+.spaces-entity-card:hover { background: var(--spaces-hover); }
+.spaces-entity-cardtitle { font-weight: 500; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.spaces-entity-peek { padding: 8px 24px 32px; }
+.spaces-entity-peektitle { font-size: 32px; font-weight: 700; line-height: 1.2; margin: 12px 0 16px; }
+.spaces-entity-props { display: flex; flex-direction: column; gap: 2px; }
+.spaces-entity-prop { display: grid; grid-template-columns: 160px minmax(0, 1fr); align-items: center; min-height: 34px; gap: 8px; }
+.spaces-entity-propname { color: hsl(var(--muted-foreground)); font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.spaces-entity-propvalue { display: flex; align-items: center; min-height: 30px; padding: 0 6px; border-radius: 4px; width: 100%; text-align: left; }
+.spaces-entity-propvalue:hover { background: var(--spaces-hover); }
+.spaces-entity-propvalue-wrap { min-width: 0; font-size: 14px; }
+@media (max-width: 640px) { .spaces-entity-prop { grid-template-columns: 110px minmax(0, 1fr); } .spaces-entity-peek { padding: 8px 16px 24px; } }
