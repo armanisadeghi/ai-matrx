@@ -77,9 +77,10 @@ interface QuestionnaireRendererProps {
 }
 
 // Helper function to check if an option is an "Other" option
-const isOtherOption = (option: unknown): boolean => {
+// Takes the option OBJECT ({ name }) — a bare string is a type error, not a silent false.
+const isOtherOption = (option: QuestionOption): boolean => {
   if (!option || typeof option !== "object") return false;
-  const name = (option as QuestionOption).name;
+  const name = option.name;
   if (!name || typeof name !== "string") return false;
   const lowerName = name.toLowerCase();
   // Match "Other" exactly or anything starting with "other:"
@@ -108,6 +109,12 @@ const normalizeOptions = (
 
   // Always add "Other" for CHECKBOX and DROPDOWN types (default behavior)
   if (normalizedType === "CHECKBOX" || normalizedType === "DROPDOWN") {
+    filteredOptions.push({ name: "Other" });
+  } else if (
+    normalizedType === "RADIO" &&
+    (options.some((o) => isOtherOption(o)) || supportsOtherOption(intro))
+  ) {
+    // Radio keeps an Other the model offered (or "with other" asked for) — its free-text field needs it.
     filteredOptions.push({ name: "Other" });
   }
 
@@ -538,7 +545,7 @@ const RadioQuestion = ({
       className="space-y-2"
     >
       {options.map((option, index) => {
-        const isOther = isOtherOption(option.name);
+        const isOther = isOtherOption(option);
         return (
           <div key={index} className="space-y-2">
             <div className="flex items-center space-x-2">
