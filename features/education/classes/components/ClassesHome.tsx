@@ -277,8 +277,7 @@ export function ClassesHome() {
     <EducationToolHeader title="My Classes" />
     <div className="matrx-touch-targets mx-auto w-full max-w-3xl space-y-5 px-4 pb-4">
       <div className="flex items-center justify-end">
-        <Button size="sm" className="gap-1.5" onClick={() => setDialogOpen(true)}>
-          <Plus className="h-4 w-4" />
+        <Button icon={<Plus />} variant="primary" onClick={() => setDialogOpen(true)}>
           New class
         </Button>
       </div>
@@ -297,8 +296,7 @@ export function ClassesHome() {
             No classes yet. Add the courses you&apos;re taking — then tag your
             study material to them.
           </p>
-          <Button size="sm" className="gap-1.5" onClick={() => setDialogOpen(true)}>
-            <Plus className="h-4 w-4" />
+          <Button icon={<Plus />} variant="primary" onClick={() => setDialogOpen(true)}>
             Add your first class
           </Button>
         </div>
@@ -333,13 +331,12 @@ export function ClassesHome() {
                   {cls.name}
                 </span>
                 <Button
+                  icon={<ArchiveRestore />}
                   variant="outline"
-                  size="sm"
-                  className="h-7 shrink-0 gap-1.5 text-xs"
+                  className="shrink-0"
                   disabled={restoringId === cls.id}
                   onClick={() => void handleRestore(cls)}
                 >
-                  <ArchiveRestore className="h-3.5 w-3.5" />
                   Restore
                 </Button>
               </li>

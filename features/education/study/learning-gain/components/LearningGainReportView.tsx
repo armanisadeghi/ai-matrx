@@ -84,22 +84,18 @@ export function LearningGainReportView({
       <div className="mx-auto max-w-3xl px-4 sm:px-6 py-6 sm:py-8 print:py-0">
         <div className="mb-4 flex items-center justify-between gap-2 print:hidden">
           <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 px-2 text-xs text-muted-foreground"
+            icon={<ArrowLeft />}
+            variant="quiet"
             onClick={() => (backHref ? router.push(backHref) : router.back())}
           >
-            <ArrowLeft className="mr-1 h-4 w-4" />
             Back
           </Button>
           {report && report.pairs.length > 0 && (
             <Button
-              size="sm"
+              icon={<Printer />}
               variant="outline"
-              className="gap-1.5"
               onClick={() => void printLivePage()}
             >
-              <Printer className="h-4 w-4" />
               Print / Save as PDF
             </Button>
           )}

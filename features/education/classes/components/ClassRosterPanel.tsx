@@ -104,11 +104,10 @@ export function ClassRosterPanel({
         </h2>
         {isOwner && (
           <Button
-            size="sm"
-            className="h-7 gap-1.5 text-xs"
+            icon={<UserPlus />}
+            variant="primary"
             onClick={() => setInviteOpen(true)}
           >
-            <UserPlus className="h-3.5 w-3.5" />
             Invite students
           </Button>
         )}
@@ -140,24 +139,20 @@ export function ClassRosterPanel({
                     </span>
                     <div className="flex shrink-0 items-center gap-1">
                       <Button
-                        size="sm"
-                        className="h-7 gap-1 text-xs"
+                        icon={<Check />}
+                        variant="primary"
                         disabled={roster.acting}
                         onClick={() => approve(m)}
                       >
-                        <Check className="h-3.5 w-3.5" />
                         Approve
                       </Button>
                       <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                        icon={<X />}
+                        variant="quiet"
                         disabled={roster.acting}
                         onClick={() => decline(m)}
                         aria-label="Decline request"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
+                      />
                     </div>
                   </li>
                 ))}
@@ -179,15 +174,12 @@ export function ClassRosterPanel({
                   <StatusChip member={m} />
                   {isOwner && m.role !== "owner" && (
                     <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                      icon={<UserMinus />}
+                      variant="quiet"
                       disabled={roster.acting}
                       onClick={() => remove(m)}
                       aria-label="Remove member"
-                    >
-                      <UserMinus className="h-4 w-4" />
-                    </Button>
+                    />
                   )}
                 </div>
               </li>

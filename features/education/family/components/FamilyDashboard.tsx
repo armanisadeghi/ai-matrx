@@ -217,26 +217,25 @@ export function FamilyDashboard() {
                 </div>
                 <div className="flex shrink-0 items-center gap-1.5">
                   <Button
-                    size="sm"
-                    className="h-8 gap-1"
+                    icon={busy === `respond-${link.id}` ? (
+                      <Loader2 className="animate-spin" />
+                    ) : (
+                      <Check />
+                    )}
+                    type="submit"
+                    variant="primary"
                     disabled={busy === `respond-${link.id}`}
                     onClick={() => respond(link, true)}
                   >
-                    {busy === `respond-${link.id}` ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <Check className="h-3.5 w-3.5" />
-                    )}
                     Approve
                   </Button>
                   <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-8 gap-1 text-muted-foreground"
+                    icon={<X />}
+                    type="submit"
+                    variant="quiet"
                     disabled={busy === `respond-${link.id}`}
                     onClick={() => respond(link, false)}
                   >
-                    <X className="h-3.5 w-3.5" />
                     Decline
                   </Button>
                 </div>
@@ -303,9 +302,8 @@ export function FamilyDashboard() {
                       </span>
                     )}
                     <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-8 px-2 text-xs text-muted-foreground"
+                      type="submit"
+                      variant="quiet"
                       disabled={busy === `remove-${link.id}`}
                       onClick={() => removeLink(link, isVerified)}
                     >
@@ -323,11 +321,12 @@ export function FamilyDashboard() {
                         </span>
                       </p>
                       <Button
-                        size="sm"
-                        className="h-8 shrink-0 gap-1.5"
+                        icon={<ShieldCheck />}
+                        type="submit"
+                        variant="primary"
+                        className="shrink-0"
                         onClick={() => setVerifyTarget(link)}
                       >
-                        <ShieldCheck className="h-3.5 w-3.5" />
                         Verify consent
                       </Button>
                     </div>
@@ -368,15 +367,16 @@ export function FamilyDashboard() {
             className="text-base sm:text-sm"
           />
           <Button
+            icon={busy === "request" ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <UserPlus />
+            )}
+            variant="primary"
             type="submit"
-            className="shrink-0 gap-1.5"
+            className="shrink-0"
             disabled={busy === "request"}
           >
-            {busy === "request" ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <UserPlus className="h-4 w-4" />
-            )}
             Send request
           </Button>
         </form>
@@ -392,9 +392,8 @@ export function FamilyDashboard() {
                   Awaiting approval from {link.counterpart_email}
                 </span>
                 <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-7 px-2 text-xs"
+                  type="submit"
+                  variant="quiet"
                   disabled={busy === `remove-${link.id}`}
                   onClick={() => removeLink(link)}
                 >
@@ -428,16 +427,16 @@ export function FamilyDashboard() {
             className="text-base sm:text-sm"
           />
           <Button
+            icon={busy === "grant" ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <ShieldCheck />
+            )}
             type="submit"
             variant="outline"
-            className="shrink-0 gap-1.5"
+            className="shrink-0"
             disabled={busy === "grant"}
           >
-            {busy === "grant" ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <ShieldCheck className="h-4 w-4" />
-            )}
             Grant access
           </Button>
         </form>

@@ -84,7 +84,7 @@ export function StudyTodayBlock({ snapshot }: { snapshot: EducationSnapshot }) {
               Nothing due right now — get ahead with a new set or a practice quiz.
             </p>
           </div>
-          <Button asChild size="sm" variant="outline">
+          <Button asChild variant="outline">
             <Link href="/education/library">Study something</Link>
           </Button>
         </div>

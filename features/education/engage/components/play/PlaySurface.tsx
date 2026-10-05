@@ -84,16 +84,14 @@ export function PlaySurface({ game }: { game: UseGamePlayResult }) {
           const affordable = currency >= pu.cost && !armed && !usedFifty;
           return (
             <Button
+              icon={<Zap />}
               key={pu.key}
               type="button"
-              size="sm"
-              variant={armed ? "default" : "outline"}
+              variant={armed ? "primary" : "outline"}
               disabled={!affordable}
               onClick={() => buyPowerUp(pu.key)}
               title={pu.description}
-              className="gap-1"
             >
-              <Zap className="h-3.5 w-3.5" />
               {pu.label}
               <span className="ml-1 inline-flex items-center gap-0.5 text-xs opacity-70">
                 <Coins className="h-3 w-3" />
