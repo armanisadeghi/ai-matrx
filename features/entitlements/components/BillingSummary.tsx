@@ -123,7 +123,7 @@ export function BillingSummary({ scope }: { scope: BillingScope }) {
       {recovering ? <p className="mt-2 text-sm text-destructive">Payment needs attention.</p> : null}
       {recoveryError?.scope === scopeKey ? <ErrorNotice size="inline" message={recoveryError.reason} actions={<Button size="sm" variant="outline" onClick={retry}>Retry</Button>} /> : null}
       <div className="mt-4 flex flex-wrap gap-2">
-        {invoiceScope === scopeKey && invoice?.url ? <Button size="sm" onClick={() => window.location.assign(invoice.url)}>{invoice.requiresAction ? "Complete payment" : "Pay invoice"}</Button> : null}
+        {recovering && invoiceScope === scopeKey && invoice?.url ? <Button size="sm" onClick={() => window.location.assign(invoice.url)}>{invoice.requiresAction ? "Complete payment" : "Pay invoice"}</Button> : null}
         <SubscriptionControls livemode={livemode} scope={scope.kind === "personal" ? { kind: "personal" } : { kind: "organization", organizationId: scope.organizationId }} label="Manage billing" />
       </div>
     </section>
