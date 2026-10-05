@@ -414,7 +414,8 @@ function FileCell({
       );
     case "context":
       return (
-        <td className="px-4 py-2 whitespace-nowrap">
+        {/* No side padding: the context button is a tap button and carries its own 3px. */}
+        <td className="py-2 whitespace-nowrap">
           <FileContextCell fileId={file.id} fileName={file.fileName} />
         </td>
       );
