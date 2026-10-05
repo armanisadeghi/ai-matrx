@@ -265,7 +265,14 @@ export function plainBlankFaces(
   PLAIN_BLANK_RE.lastIndex = 0;
   return {
     front,
-    back: front.replace(PLAIN_BLANK_RE, () => `**${answer.replace(/[.\s]+$/, "")}**`),
+    // "[___]%" with answer "80%": the unit is on both sides — drop the one
+    // after the blank so it never reads "80%%".
+    back: front
+      .replace(PLAIN_BLANK_RE, (_m, offset: number) => {
+        const filled = answer.replace(/[.\s]+$/, "");
+        const next = front[offset + _m.length];
+        return `**${next === "%" && filled.endsWith("%") ? filled.slice(0, -1) : filled}**`;
+      }),
   };
 }
 

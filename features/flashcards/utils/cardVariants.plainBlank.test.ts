@@ -18,6 +18,12 @@ describe("cloze card with a plain blank", () => {
     expect(faces.back).not.toContain("___");
   });
 
+  it("does not double a % that is on both the blank's tail and the answer", () => {
+    expect(
+      cloze("Guardian pays [___]% on any subsequent fillings.", "80%").back,
+    ).toBe("Guardian pays **80**% on any subsequent fillings.");
+  });
+
   it("fills [blank] and [____] forms", () => {
     expect(cloze("It forms the foundation of the ecosystem's [blank].", "food web").back).toBe(
       "It forms the foundation of the ecosystem's **food web**.",
