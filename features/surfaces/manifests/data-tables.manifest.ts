@@ -1,27 +1,24 @@
 /**
  * Surface manifest — Data tables (`matrx-user/data-tables`).
  *
- * User-generated tables / spreadsheet views (route `/data/[id]`). The user
- * browses and edits rows in a custom table they created, with sorting,
- * pagination, search, per-column filters, and per-cell editing.
+ * A person's table in the record store (route `/data/[tableId]`). The user
+ * browses and edits records in a table, with sorting, pagination, search,
+ * per-column filters, and per-cell editing.
  *
  * Agents bound here operate on a cell (clean / reformat this value), a row
  * (enrich this record), a column (classify all values), or the whole table
  * (summarize, find anomalies). The table is a natural persistence target for
  * agent output, so `table_id` + schema are first-class.
  *
- * MOUNT (added 2026-08-11 — this surface's FIRST live emitter): the values
- * below are emitted by `UserTableViewer`, which owns every one of them
- * (table row, field defs, the loaded page of rows, search, selection). That
- * component is ALSO mounted inside overlays that belong to OTHER surfaces
- * (`DatasetOverlay` in tool-call visualisation, `ViewTableModal` in markdown
- * display, the `UserTableWindow` panel), and the runtime registry resolves
- * deepest-first — an ungated provider there would shadow the host surface and
- * offer THIS surface's write targets on someone else's page. So the provider
- * is opt-in via `emitSurfaceScope`, which only `/data/[id]`'s
- * `DataTableDetailClient` passes. The `/data` LIST route deliberately mounts
- * NOTHING: it renders table cards, has no authored state, and nothing here is
- * writable from it.
+ * MOUNT (2026-10-04, lane CHAIR-ONE-GRID): the values are emitted by
+ * `RecordStoreTableSurface` (features/unified-data/grid-agent-context) over the
+ * ONE table page — `UnifiedTableBody`, the component /data/[tableId] renders and
+ * every other host mounts too (the table window, the chat "view table" modal, a
+ * canvas table, the Quick Data sheet, a Board tile). The merged grid tells it
+ * where the person is (`onGridContext`); its one write lands through
+ * `@ai-matrx/records`. Inside a window the runtime registry resolves
+ * deepest-first, so while a table is open the agent sees THIS table. The `/data`
+ * home deliberately mounts NOTHING: it lists tables, has no authored state.
  *
  * The write half (`writeTargets`, below) is deliberately narrow: a description
  * and ONE cell at a time. See the docblock above `writeTargets` for what was
@@ -400,11 +397,11 @@ export const dataTablesManifest: SurfaceManifest = {
     "Tables and spreadsheet views",
   readiness: "partial",
   readinessNote:
-    "Emitter + write handlers live on the /data/[id] mount (UserTableViewer, gated by emitSurfaceScope); the grid mounts the v3 right-click menu (cell / row / column sections) and Locate anchors for its rendered controls, headers, selected rows/cells, and selection state. full_table_json deliberately has no Locate target: it can be emitted after a background fetch, but the grid renders only the current page and must not claim otherwise. This remains partial until the complete live binding and surface-certification checks run. The /data LIST route emits nothing by design because it has no authored table state.",
+    "Emitter + write handler: RecordStoreTableSurface over the one table page (UnifiedTableBody) — /data/[tableId] and every host that mounts it (table window, chat view-table modal, canvas table, Quick Data, Board tile), enabled with the merged grid (data_tables.merged_grid knob, platform default On). The merged grid reports cell / block / ticked rows / rows on screen through onGridContext; one confirmed cell write goes through @ai-matrx/records. full_table_json has no Locate target: the grid renders only the current page. Partial until surface certification runs. The /data home emits nothing by design (no authored table state).",
   label: "Data Tables",
-  urlPattern: "/data/[id]",
+  urlPattern: "/data/[tableId]",
   intro: `<surface_intro>
-You are on the Data Tables surface: the user is looking at one table they created, at /data/[id] — a paginated grid with search, per-column filters, sorting, inline per-cell editing and per-row history.
+You are on the Data Tables surface: the user is looking at one of their tables, at /data/[tableId] or opened in a window — a paginated grid with search, per-column filters, sorting, inline per-cell editing and per-row history.
 table_id / table_name / table_description identify the table; row_label_rule says how the user names a row (a column, or a merge formula) — refer to rows by that name, never by id, and current_row_label carries it for the current row. row_actions lists the owner's one-click buttons on a row; you cannot press one. table_schema and column_list are its columns; column_list's \`name\` is the MACHINE field name every write uses, and \`display_name\` is the header the user reads — never send a display name where a field name is wanted.
 The row bodies are visible_data_csv (the page on screen, whose first CSV column is row_id) and, when the viewer has already loaded it, full_table_json. row_count is the total after the user's search. search_term is the user's own filter — read it to know why rows are missing.
 current_cell_value / current_column_name / current_row_id / current_row_json describe the cell the user has SELECTED on the grid (one click, or the arrow keys) or the cell / row whose editor is open, and are empty when nothing is selected or open. "This cell" or "the cell I'm on" means that selection. When the user selected a BLOCK of cells (shift-click, drag, a row, a column), selected_range_tsv carries it with a header line of machine field names and selected_range_cell_count says how big it is — "these cells" means that block. selected_rows_json carries the rows ticked with the row checkboxes — "these rows" / "the selected rows" means those.

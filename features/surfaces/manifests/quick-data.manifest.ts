@@ -9,19 +9,13 @@
  * losing their place on the current page.
  *
  * SCOPE OF THIS SURFACE vs `matrx-user/data-tables`: the window renders
- * `QuickDataSheet` (table picker + `UserTableViewer`). `UserTableViewer`
- * already owns a FAR richer surface — `matrx-user/data-tables` — covering
- * schema, the visible page of rows, search, per-column filters, and the open
- * cell/row editor, but its `SurfaceRuntimeProvider` is opt-in
- * (`emitSurfaceScope`) specifically so it does not shadow a HOST surface when
- * `UserTableViewer` is mounted inside someone else's overlay (see the
- * docblock in `data-tables.manifest.ts`). Quick Data is exactly that case —
- * `QuickDataWindow` deliberately does NOT pass `emitSurfaceScope`, so this
- * manifest declares only what `QuickDataSheet` itself actually holds: the
- * table picker (list + selection) and its load state. It does NOT duplicate
- * `data-tables`' row/cell/search/filter values, because `QuickDataSheet`
- * has no access to that state — it lives, un-lifted, inside the nested
- * `UserTableViewer` instance. See `readinessNote`.
+ * `QuickDataSheet` (table picker + the one table page, `LocatedTableViewer` →
+ * `UnifiedTableBody`). That table page mounts the far richer
+ * `matrx-user/data-tables` surface (schema, rows on screen, selection, one
+ * cell write) itself, and the runtime registry resolves deepest-first — so
+ * while a table is open the agent reads THAT surface, and this one covers only
+ * what `QuickDataSheet` itself holds: the table picker (list + selection) and
+ * its load state. See `readinessNote`.
  *
  * Emitter: `<SurfaceRuntimeProvider>` mounted inside `QuickDataSheet.tsx` —
  * the component that actually owns the table-picker state. It renders inside
@@ -126,11 +120,11 @@ export const quickDataManifest: SurfaceManifest = {
     "Quick data table browser overlay",
   readiness: "partial",
   readinessNote:
-    "Emitter wired in QuickDataSheet and reflects its real state (table picker + selection). Gap (COMPLETENESS LAW, not fabricated here): the deep table state — schema, visible rows, search, column filters, and the open cell/row editor — belongs to the `matrx-user/data-tables` surface and is only emitted by `UserTableViewer` when its host passes `emitSurfaceScope`, which `QuickDataWindow` deliberately does not (that provider is opt-in precisely to avoid shadowing a host surface — see `data-tables.manifest.ts`). QuickDataSheet has no lifted access to that nested state today, so it cannot be declared here without fabricating a value the component doesn't hold. If deep table editing inside this window becomes a real use case, the fix is either (a) accept the deepest-wins nesting and pass `emitSurfaceScope` through, degrading quick-data's own scope to invisible while a table is open, or (b) lift UserTableViewer's search/filter/edit state out so QuickDataSheet can re-emit it under this surface's own vocabulary.",
+    "Emitter wired in QuickDataSheet and reflects its real state (table picker + selection). The open table's deep state (schema, rows on screen, selection, the one cell write) is the `matrx-user/data-tables` surface, mounted by the one table page inside this window; deepest-first resolution hands the agent that surface while a table is open, so nothing is duplicated here.",
   overlayId: "quickDataWindow",
   label: "Quick Data",
   intro: `<surface_intro>
-You are in the floating Quick Data window — a portable table picker a caller opened to browse the user's data tables (from a markdown table/csv/json block, the data-review "send to" menu, or the user's own quick actions) without leaving what they were doing. tables_summary lists every table available; selected_table_id / selected_table_name identify the one currently shown. This surface only covers the PICKER — schema, rows, and cell edits belong to the Data Tables surface and are not available here while embedded in this window.
+You are in the floating Quick Data window — a portable table picker a caller opened to browse the user's data tables (from a markdown table/csv/json block, the data-review "send to" menu, or the user's own quick actions) without leaving what they were doing. tables_summary lists every table available; selected_table_id / selected_table_name identify the one currently shown. This surface only covers the PICKER — schema, rows, and cell edits belong to the Data Tables surface, which the open table mounts inside this window.
 </surface_intro>`,
   groups,
   values: surfaceSpecific,
