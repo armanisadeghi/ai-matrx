@@ -42,6 +42,8 @@ import { buildRows, StatusIcon, type RowStatus } from "./FactoryBuildPage";
 import { formatDuration } from "./factory-shared";
 
 const POLL_MS = 3000;
+/** A proof case's result, from the new agent's side. */
+const CASE_WORD: Record<string, string> = { candidate: "won", baseline: "lost", tie: "tie", both_fail: "both failed" };
 const ADMIN_BUILD_PATH = "/administration/agents/factory";
 
 export interface BuildProgressProps {
@@ -149,7 +151,7 @@ function OutcomePanel({
           {cases.map((c, i) => (
             <StateChip
               key={c.case_id}
-              label={`Case ${i + 1} · ${c.preferred === "candidate" ? "won" : c.preferred === "baseline" ? "lost" : c.preferred}`}
+              label={`Case ${i + 1} · ${CASE_WORD[c.preferred ?? ""] ?? c.preferred}`}
               tone={c.preferred === "candidate" ? "good" : c.preferred === "baseline" || c.preferred === "both_fail" ? "bad" : "neutral"}
             />
           ))}
