@@ -2,7 +2,7 @@
 // every sub-page through the store, so the sample is a real saved Space like any other.
 
 import type { RichSpan, SpaceBlock, SpaceDoc, SpaceId, SpacesStore } from "../contract";
-import { SEED_ROOT_ID, sampleClientsDatabase, sampleRings, seedSpaces } from "./seed";
+import { SAMPLE_CLIENT_HIDDEN, SEED_ROOT_ID, sampleClientsDatabase, sampleRings, seedSpaces } from "./seed";
 
 export const SAMPLE_TITLE = "The Traveling SMM™ OS";
 
@@ -30,6 +30,11 @@ function upgradeSlots(blocks: SpaceBlock[]): { blocks: SpaceBlock[]; changed: bo
       const label = typeof blk.props?.label === "string" ? blk.props.label : "";
       if (blk.type === "slot" && label.startsWith("Charts:")) return ((changed = true), sampleRings());
       if (blk.type === "slot" && label.startsWith("Clients database:")) return ((changed = true), sampleClientsDatabase());
+      const views = blk.type === "database" ? (blk.props?.views as Array<{ hiddenFields?: string[] }> | undefined) : undefined;
+      if (views?.[0]?.hiddenFields?.includes("surveys")) {
+        changed = true;
+        return { ...blk, props: { ...blk.props, views: views.map((v, i) => (i === 0 ? { ...v, hiddenFields: SAMPLE_CLIENT_HIDDEN } : v)) } };
+      }
       return blk.children ? { ...blk, children: walk(blk.children) } : blk;
     });
   return { blocks: walk(blocks), changed };

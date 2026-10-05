@@ -141,12 +141,14 @@ export function useChartData(tableId: string, settings: ChartSettings): { data: 
   }
   if (!answered && byRows && read.error) return { data: null, error: read.error.message, fields };
   if (!answered) return { data: null, error: state.error, fields };
+  const groupCount = answered.rows.length;
   const points = answered.rows.map((row, i) => {
     const raw = group ? (row.groups[group] ?? null) : null;
     const choice = choices.find((c) => c.value === raw || choiceSlug(c.value) === raw);
     const label = raw === null ? (group ? "No value" : "All") : (choice?.value ?? raw);
     const value = typeof row.measures[mKey] === "number" ? (row.measures[mKey] as number) : 0;
-    const color = (choice?.color && CHOICE_HEX[choice.color]) || PALETTE[i % PALETTE.length];
+    // Past a couple dozen groups Notion draws one color in many thin slices.
+    const color = (choice?.color && CHOICE_HEX[choice.color]) || (groupCount > 24 ? "#4dab9a" : PALETTE[i % PALETTE.length]);
     return { key: raw ?? `none-${i}`, label, value, color };
   });
   if (settings.sort === "asc") points.sort((a, b) => a.value - b.value);

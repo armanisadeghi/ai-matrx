@@ -69,9 +69,12 @@ export function sampleRings(): SpaceBlock {
     );
 }
 
+/** The screenshot's client database shows five properties; the reverse links (surveys, wins, tasks) are hidden. */
+export const SAMPLE_CLIENT_HIDDEN = ["linked:nps_survey__client", "linked:client_win__client", "linked:task__client"];
+
 /** The linked client database of the acceptance page. */
 export function sampleClientsDatabase(): SpaceBlock {
-  return b.database("client", [{ id: "view-all", name: "All", icon: "Users", layout: "grid", hiddenFields: ["surveys", "wins", "tasks"] }]);
+  return b.database("client", [{ id: "view-all", name: "All", icon: "Users", layout: "grid", hiddenFields: SAMPLE_CLIENT_HIDDEN }]);
 }
 
 interface PageSeed {

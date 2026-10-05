@@ -168,7 +168,9 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
       } else {
         pending.current = true;
         setSaveState("failed");
-        const message = err instanceof Error ? err.message : "We couldn't save this page.";
+        // The database's refusal (22023 "not a valid snapshot: …") can arrive as a plain error object.
+        const raw = err instanceof Error ? err.message : err && typeof err === "object" && "message" in err ? String((err as { message: unknown }).message) : "";
+        const message = raw || "We couldn't save this page.";
         // A snapshot the database refuses (22023) will be refused again: say it once, retry on the next edit.
         refused.current = /not a valid snapshot/i.test(message) ? message : null;
         toast.error(message);
@@ -375,8 +377,7 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
                     if (latest) adopt(latest);
                   })
                   .catch((e: unknown) => toast.error(e instanceof Error ? e.message : "We couldn't restore this page."))
-              }
-            >
+              }>
               Restore page
             </button>
           </div>
