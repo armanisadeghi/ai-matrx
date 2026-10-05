@@ -185,6 +185,22 @@ export const STATUS_LABEL: Record<FactCheckClaimStatus, string> = {
   missing_source: "Missing source",
 };
 
+/**
+ * The stat row's Verdict tile. A run that FAILED says so — it never keeps
+ * reading "Checking…" over a dead run (seen 2026-10-05 when the account's AI
+ * allowance ran out mid-walk).
+ */
+export function verdictStatLabel(state: {
+  verdict: FactCheckVerdict | null | undefined;
+  hasAnswer: boolean;
+  failed: boolean;
+}): string {
+  if (state.verdict) return VERDICT_LABEL[state.verdict];
+  if (state.hasAnswer) return "Not stated";
+  if (state.failed) return "Failed";
+  return "Checking…";
+}
+
 /** The fenced block the canonical markdown pipeline routes to the kind component. */
 export function reportAsKindBlock(report: FactCheckReport): string {
   return "```json\n" + JSON.stringify(report, null, 2) + "\n```";

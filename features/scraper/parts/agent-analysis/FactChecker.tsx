@@ -32,6 +32,7 @@ import {
   STATUS_LABEL,
   VERDICT_LABEL,
   parseFactCheck,
+  verdictStatLabel,
   reportAsKindBlock,
   type FactCheckVerdict,
 } from "./fact-check-parsing-util";
@@ -91,6 +92,8 @@ const FactCheckerPage: React.FC<FactCheckerPageProps> = ({
   } = useLiveAgentRun();
   /** The settled answer text — the ONLY thing this tab parses. */
   const [answerText, setAnswerText] = useState<string>("");
+  /** The run rejected — the Verdict tile says Failed instead of "Checking…". */
+  const [runFailed, setRunFailed] = useState(false);
   // Gate: the tab runs only once its mandate resolves; unresolved renders the
   // unbound state (picker + door), never a hardcoded agent.
   const {
@@ -136,13 +139,17 @@ const FactCheckerPage: React.FC<FactCheckerPageProps> = ({
       // Stale text from the previous run must never survive into this one.
       // Cleared here (a callback fired by the run, before the stream) rather
       // than in the effect body, which would cascade a render.
-      onConversationCreated: () => setAnswerText(""),
+      onConversationCreated: () => {
+        setAnswerText("");
+        setRunFailed(false);
+      },
     })
       .then((text) => {
         if (!controller.signal.aborted) setAnswerText(text ?? "");
       })
       .catch((err) => {
         console.error("[FactChecker] Agent run failed:", err);
+        if (!controller.signal.aborted) setRunFailed(true);
       });
 
     return () => {
@@ -329,11 +336,11 @@ const FactCheckerPage: React.FC<FactCheckerPageProps> = ({
     { label: "Character Count", value: characterCount || "N/A" },
     {
       label: "Verdict",
-      value: parsed?.verdict
-        ? VERDICT_LABEL[parsed.verdict]
-        : answerText
-          ? "Not stated"
-          : "Checking…",
+      value: verdictStatLabel({
+        verdict: parsed?.verdict,
+        hasAnswer: Boolean(answerText),
+        failed: runFailed || (!isRunning && Boolean(error)),
+      }),
     },
     ...(counts
       ? FACT_CHECK_STATUSES.map((status) => ({

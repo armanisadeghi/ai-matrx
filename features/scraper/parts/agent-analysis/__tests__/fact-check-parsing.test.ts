@@ -12,7 +12,7 @@
  */
 import { readFileSync } from "fs";
 import { join } from "path";
-import { parseFactCheck } from "../fact-check-parsing-util";
+import { parseFactCheck, verdictStatLabel } from "../fact-check-parsing-util";
 
 const REAL_ANSWER = readFileSync(
   join(__dirname, "fixtures", "fact-check-answer-2026-09-29.md"),
@@ -133,5 +133,18 @@ describe("parseFactCheck — the extracted artifact is the source of the fields"
     const parsed = parseFactCheck(WITHOUT_JSON, undefined);
     expect(parsed.reportSource).toBeNull();
     expect(parsed.report).toBeNull();
+  });
+});
+
+describe("verdictStatLabel — the Verdict tile never lies about a dead run", () => {
+  it("says Failed when the run failed with no answer", () => {
+    expect(verdictStatLabel({ verdict: null, hasAnswer: false, failed: true })).toBe("Failed");
+  });
+  it("says Checking… only while the run is still alive", () => {
+    expect(verdictStatLabel({ verdict: null, hasAnswer: false, failed: false })).toBe("Checking…");
+  });
+  it("names the verdict once there is one, and admits a verdict-less answer", () => {
+    expect(verdictStatLabel({ verdict: "risky", hasAnswer: true, failed: false })).toBe("Risky");
+    expect(verdictStatLabel({ verdict: null, hasAnswer: true, failed: false })).toBe("Not stated");
   });
 });
