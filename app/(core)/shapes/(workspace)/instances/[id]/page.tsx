@@ -40,6 +40,7 @@ import { createClient } from "@/utils/supabase/server";
 
 interface PageProps {
   params: Promise<{ id: string }>;
+  searchParams?: Promise<{ field?: string }>;
 }
 
 export async function generateMetadata({
@@ -55,6 +56,7 @@ export async function generateMetadata({
 
 export default async function ShapeInstancePermalinkPage({
   params,
+  searchParams,
 }: PageProps) {
   // The App Router already decodes dynamic segment params — decoding again
   // double-decodes a literal `%` in the instance id.
@@ -113,5 +115,12 @@ export default async function ShapeInstancePermalinkPage({
     );
   }
 
-  redirect(`${shapeInstancesHref(record.kind)}?i=${encodeURIComponent(id)}`);
+  // `?field=` is a citation's place inside the instance — the Instances tab
+  // scrolls to it and rings it.
+  const field = (await searchParams)?.field;
+  redirect(
+    `${shapeInstancesHref(record.kind)}?i=${encodeURIComponent(id)}${
+      field ? `&field=${encodeURIComponent(field)}` : ""
+    }`,
+  );
 }

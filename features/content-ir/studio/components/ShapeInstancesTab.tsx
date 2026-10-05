@@ -40,6 +40,7 @@ import {
 import { toast } from "@/lib/toast";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
+import CitedFieldHighlight from "@/features/content-ir/studio/components/CitedFieldHighlight";
 import KindInputForm from "@/features/content-ir/input/KindInputForm";
 import KindInstanceRender, {
   isRecordValue,
@@ -135,6 +136,8 @@ export default function ShapeInstancesTab({
 }: ShapeInstancesTabProps) {
   const searchParams = useSearchParams();
   const requestedId = searchParams.get("i");
+  // A citation's place inside the instance (`summary` / `<list>-<n>`).
+  const citedField = searchParams.get("field");
 
   const [list, setList] = useState<ListState>({ status: "loading" });
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -635,7 +638,12 @@ export default function ShapeInstancesTab({
                   />
                 </div>
               ) : selectedData !== null ? (
-                <KindInstanceRender kind={kind} value={selectedData} />
+                <CitedFieldHighlight
+                  field={selected?.id === requestedId ? citedField : null}
+                  data={selectedData}
+                >
+                  <KindInstanceRender kind={kind} value={selectedData} />
+                </CitedFieldHighlight>
               ) : (
                 <div className="flex items-start gap-2 rounded-md border border-red-500/30 bg-red-500/5 px-3 py-2 text-xs text-red-700 dark:text-red-300">
                   <CircleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
