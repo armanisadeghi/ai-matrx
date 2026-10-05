@@ -108,11 +108,6 @@ const clientResourceTypes = new Set(
  * are ready; every other catalog key needs a product row.
  */
 const NOT_SURFACED: Record<string, { reason: string }> = {
-  // Both landed server-side in 0f0050f953 as internal reviewer HTTP previews: consent_requestable=False.
-  chat_messages: {
-    reason:
-      "Internal reviewer HTTP preview of Google Chat messages; the server offers no consent request for it, so no product row can ask for it.",
-  },
   business_profile: {
     reason:
       "Internal reviewer HTTP preview of Google Business Profile; the server offers no consent request for it, so no product row can ask for it.",
@@ -228,6 +223,35 @@ const hasServer = existsSync(CAPABILITIES);
       }
       expect(gate).toContain('capability.rollout_phase === "internal_test"');
       expect(gate).toContain("capability.eligible");
+    });
+
+    it("gives internal Chat preview its own bounded consent row", () => {
+      const product = GOOGLE_CONNECTOR_PROVIDER.products.find(
+        (item) => item.key === "chat_messages",
+      );
+      expect(product).toMatchObject({
+        capabilityKeys: ["chat_messages"],
+        scopes: [
+          ...GOOGLE_CONNECTOR_PROVIDER.identityScopes,
+          GOOGLE_SCOPE.chatMessagesReadonly,
+        ],
+        attachableResourceTypes: [],
+        firstAction: {
+          kind: "overlay",
+          label: "Preview Google Chat messages",
+          overlayId: "googleConnectWindow",
+          data: { mode: "overview" },
+        },
+      });
+      expect(userOwnedGoogleProductNames(["chat_messages"])).toEqual([
+        "Google Chat messages",
+      ]);
+      expect(scopeLanguage(GOOGLE_CONNECTOR_PROVIDER, GOOGLE_SCOPE.chatMessagesReadonly)).toContain(
+        "Google permits reading messages in Chat spaces you can access",
+      );
+      expect(scopeLanguage(GOOGLE_CONNECTOR_PROVIDER, GOOGLE_SCOPE.chatMessagesReadonly)).toContain(
+        "no browsing, sync, saving, or AI use",
+      );
     });
 
     it("carries no key the server has stopped declaring", () => {

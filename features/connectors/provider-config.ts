@@ -33,6 +33,7 @@ import {
   FileSpreadsheet,
   ListChecks,
   Mail,
+  MessageSquare,
   Search,
   Tag,
   MonitorPlay,
@@ -116,9 +117,15 @@ export type ConnectorFirstAction =
           data?: Partial<GoogleContactsImportWindowLaunchData>;
         }
       | {
+          overlayId: "googleConnectWindow";
+          data?: { mode: "overview" };
+        }
+      | {
           overlayId: Exclude<
             OverlayId,
-            "googleAgendaWindow" | "googleContactsImportWindow"
+            | "googleAgendaWindow"
+            | "googleContactsImportWindow"
+            | "googleConnectWindow"
           >;
           data?: never;
         }
@@ -163,6 +170,7 @@ export interface ConnectorProduct {
 
 const USER_OWNED_GOOGLE_PRODUCTS: Readonly<Record<string, string>> = {
   directory: "Workspace Directory",
+  chat_messages: "Google Chat messages",
   gmail_modify: "Gmail changes",
   meet: "Google Meet review",
 };
@@ -248,6 +256,8 @@ const GOOGLE_SCOPE_LANGUAGE: Record<string, string> = {
     "Read Meet conference details and selected transcript entries. No recording downloads or meeting changes",
   [GOOGLE_SCOPE.directoryReadonly]:
     "Google permits reading your organization's Workspace directory. AI Matrx previews one shared page; no saving or model transfer",
+  [GOOGLE_SCOPE.chatMessagesReadonly]:
+    "Google permits reading messages in Chat spaces you can access. AI Matrx previews one text page from a member space you choose; no browsing, sync, saving, or AI use",
   [GOOGLE_SCOPE.tasksReadonly]: "Read your Google Tasks lists",
   [GOOGLE_SCOPE.tasksWrite]:
     "Google permits creating, editing, organizing and deleting your tasks. AI Matrx currently offers reviewed task creation and selected complete or reopen changes",
@@ -573,6 +583,24 @@ export const GOOGLE_CONNECTOR_PROVIDER: ConnectorProviderConfig = {
         overlayId: "googleContactsImportWindow",
         data: { initialView: "directory" },
         needs: ["organizationId"],
+      },
+    },
+    {
+      key: "chat_messages",
+      name: "Google Chat messages",
+      promise:
+        "Preview one page of text messages from a member space you choose. Nothing is saved, synced, or sent to an AI model.",
+      group: WORKSPACE_GROUP,
+      icon: MessageSquare,
+      capabilityKeys: ["chat_messages"],
+      scopes: [...GOOGLE_IDENTITY_SCOPES, GOOGLE_SCOPE.chatMessagesReadonly],
+      attachableResourceTypes: [],
+      stopsOnRevoke: "previewing text messages from your selected member space",
+      firstAction: {
+        kind: "overlay",
+        label: "Preview Google Chat messages",
+        overlayId: "googleConnectWindow",
+        data: { mode: "overview" },
       },
     },
     {
