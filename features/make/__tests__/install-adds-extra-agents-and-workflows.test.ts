@@ -98,7 +98,7 @@ describe("a template install adds its extra agents and workflows", () => {
 
   it("names a row the install did not make instead of binding nothing", async () => {
     const p = ports();
-    const broken = { ...ANSWER, host: { ...ANSWER.host, ids: { "tables.company_profile": "tbl-1" } } } as InstallAnswer;
+    const broken = { ...ANSWER, host: { ...(ANSWER["host"] as object), ids: { "tables.company_profile": "tbl-1" } } } as InstallAnswer;
     const r = await addInstalledAgent(broken, "org-1", p);
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.why).toMatch(/row "r1" of "company_profile", which was not created/);
