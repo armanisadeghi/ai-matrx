@@ -176,19 +176,7 @@ export function AssistantError({
         )}
 
         {retry && (
-          <button
-            type="button"
-            disabled={retrying}
-            onClick={retry}
-            className="inline-flex items-center gap-1 rounded-md border border-border px-1.5 py-0.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-60"
-          >
-            {retrying ? (
-              <Loader2 className="h-3 w-3 animate-spin" />
-            ) : (
-              <RotateCw className="h-3 w-3" />
-            )}
-            {retrying ? "Retrying…" : "Retry"}
-          </button>
+          <Button variant="outline" icon={retrying ? <Loader2 className="animate-spin" /> : <RotateCw />} disabled={retrying} onClick={retry}>{retrying ? "Retrying…" : "Retry"}</Button>
         )}
 
         {hasDetails && (

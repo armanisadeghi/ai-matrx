@@ -580,21 +580,8 @@ export function DocumentsWorkspace({
                             : "text-muted-foreground hover:bg-accent/60 hover:text-foreground",
                         )}
                       >
-                        <button
-                          type="button"
-                          onClick={() => setActiveKey(key)}
-                          className="flex items-center gap-1"
-                        >
-                          {isScratch ? (
-                            <Lock className="h-3 w-3 shrink-0" />
-                          ) : (
-                            <FileText className="h-3 w-3 shrink-0" />
-                          )}
-                          <span className="max-w-[140px] truncate">
-                            {t.label ??
-                              (isScratch ? "Scratchpad" : "Working document")}
-                          </span>
-                        </button>
+                        <Button variant="quiet" icon={isScratch ? <Lock /> : <FileText />} onClick={() => setActiveKey(key)}>{t.label ??
+                              (isScratch ? "Scratchpad" : "Working document")}</Button>
                         {t.closable && (
                           <Button variant="quiet" icon={<X />} onClick={() => closeTab(key)} aria-label="Close tab" className="opacity-0 group-hover:opacity-100" />
                         )}

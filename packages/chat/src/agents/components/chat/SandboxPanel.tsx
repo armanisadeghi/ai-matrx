@@ -564,18 +564,7 @@ export function SandboxPanel({ conversationId }: SandboxPanelProps) {
 
         {/* Actions */}
         <div className="border-t border-border p-2 space-y-1.5">
-          <button
-            onClick={handleClaimNew}
-            disabled={creating}
-            className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs font-medium text-foreground hover:bg-accent/60 transition-colors disabled:opacity-60"
-          >
-            {creating ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Plus className="h-3.5 w-3.5" />
-            )}
-            {creating ? "Creating sandbox…" : "New sandbox"}
-          </button>
+          <Button variant="quiet" icon={creating ? <Loader2 className="animate-spin" /> : <Plus />} onClick={handleClaimNew} disabled={creating} className="w-full">{creating ? "Creating sandbox…" : "New sandbox"}</Button>
 
           {canShareAcrossSurface && (
             <label className="flex cursor-pointer items-center gap-2 px-2 py-1 text-[11px] text-muted-foreground">

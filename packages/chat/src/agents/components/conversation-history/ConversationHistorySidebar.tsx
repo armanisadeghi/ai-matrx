@@ -1311,28 +1311,11 @@ const Row: React.FC<RowProps> = ({
   );
 
   const star = onToggleFavorite ? (
-    <button
-      type="button"
-      onClick={(e) => {
+    <Button variant="quiet" icon={isFavorite ? <Star fill="currentColor" /> : <StarOff />} onClick={(e) => {
         e.stopPropagation();
         e.preventDefault();
         onToggleFavorite(conv);
-      }}
-      className={cn(
-        "flex h-4 w-4 items-center justify-center rounded-sm",
-        isFavorite
-          ? "opacity-100"
-          : "opacity-0 group-hover/item:opacity-100 [@media(pointer:coarse)]:opacity-100",
-      )}
-      aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
-      title={isFavorite ? "Remove from favorites" : "Add to favorites"}
-    >
-      {isFavorite ? (
-        <Star size={11} className="text-amber-500" fill="currentColor" />
-      ) : (
-        <StarOff size={11} className="text-muted-foreground" />
-      )}
-    </button>
+      }} aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"} title={isFavorite ? "Remove from favorites" : "Add to favorites"} />
   ) : null;
 
   const meta = formatRelative(conv.updatedAt);

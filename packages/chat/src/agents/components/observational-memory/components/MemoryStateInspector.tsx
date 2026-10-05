@@ -33,6 +33,7 @@ import { supabase } from "../../../../host/db";
 import type { Tables } from "../../../../host/db-types";
 import { formatDateTime, formatRelativeTime, formatTokens } from "./format";
 import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
+import { Button } from "@ai-matrx/design-system/controls";
 
 type MemoryRow = Tables<{ schema: "chat" }, "observational_memory">;
 
@@ -119,19 +120,7 @@ export function MemoryStateInspector({
         <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex-1">
           Observational memory
         </span>
-        <button
-          type="button"
-          onClick={fetchRow}
-          disabled={state.status === "loading"}
-          className="flex items-center gap-1 h-6 px-1.5 rounded text-[11px] text-muted-foreground hover:text-foreground hover:bg-accent transition-colors disabled:opacity-50"
-        >
-          {state.status === "loading" ? (
-            <Loader2 className="w-3 h-3 animate-spin" />
-          ) : (
-            <RefreshCw className="w-3 h-3" />
-          )}
-          Refresh
-        </button>
+        <Button variant="quiet" icon={state.status === "loading" ? <Loader2 className="animate-spin" /> : <RefreshCw />} onClick={fetchRow} disabled={state.status === "loading"}>Refresh</Button>
       </div>
 
       <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-3">
@@ -453,18 +442,7 @@ function BufferedObservationCard({
           </div>
         </button>
         {hasText && (
-          <button
-            type="button"
-            onClick={handleCopy}
-            className="w-5 h-5 mt-0.5 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors shrink-0"
-            title="Copy observations"
-          >
-            {copied ? (
-              <Check className="w-3 h-3 text-emerald-500" />
-            ) : (
-              <Copy className="w-3 h-3" />
-            )}
-          </button>
+          <Button variant="quiet" icon={copied ? <Check /> : <Copy />} onClick={handleCopy} title="Copy observations" aria-label="Copy observations" className="mt-0.5 shrink-0" />
         )}
       </div>
 
@@ -730,18 +708,7 @@ function TextPayload({
             <span className="text-[10px] font-mono text-muted-foreground shrink-0">
               {text.length.toLocaleString()} chars
             </span>
-            <button
-              type="button"
-              onClick={handleCopy}
-              className="w-5 h-5 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors shrink-0"
-              title="Copy"
-            >
-              {copied ? (
-                <Check className="w-3 h-3 text-emerald-500" />
-              ) : (
-                <Copy className="w-3 h-3" />
-              )}
-            </button>
+            <Button variant="quiet" icon={copied ? <Check /> : <Copy />} onClick={handleCopy} title="Copy" aria-label="Copy" className="shrink-0" />
           </>
         )}
       </div>

@@ -443,22 +443,8 @@ export function ChatCanvasWorkspace({
         <header className="flex h-11 shrink-0 items-center gap-1.5 px-3">
           {/* Compact (< 1024px) and wide controls are BOTH rendered and chosen by
               CSS, so a phone's first paint is right before JavaScript measures. */}
-          <button
-            type="button"
-            aria-label="Open navigation"
-            onClick={openShellMobileMenu}
-            className={cn(ICON_BUTTON, "h-11 w-11 lg:hidden")}
-          >
-            <Menu className="h-5 w-5" />
-          </button>
-          <button
-            type="button"
-            aria-label="Chat"
-            onClick={openMobileChat}
-            className={cn(ICON_BUTTON, "h-11 w-11 lg:hidden")}
-          >
-            <MessageSquare className="h-5 w-5" />
-          </button>
+          <Button variant="quiet" icon={<Menu />} aria-label="Open navigation" onClick={openShellMobileMenu} className="lg:hidden" />
+          <Button variant="quiet" icon={<MessageSquare />} aria-label="Chat" onClick={openMobileChat} className="lg:hidden" />
           {/* The way back to a hidden chat sits where the chat opens — on the left. */}
           {!chatShown ? (
             <Button variant="quiet" icon={<MessageSquare />} onClick={openChat} aria-label="Show chat" title="Show chat (Ctrl/Cmd + \)" className="shrink-0 max-lg:hidden">Chat</Button>
@@ -475,14 +461,7 @@ export function ChatCanvasWorkspace({
 
           <div className="flex shrink-0 items-center lg:hidden">
             {properties && properties.tabs.length > 0 ? (
-              <button
-                type="button"
-                aria-label="Properties"
-                onClick={() => setMobileSheet("properties")}
-                className={cn(ICON_BUTTON, "h-11 w-11")}
-              >
-                <PanelRightOpen className="h-5 w-5" />
-              </button>
+              <Button variant="quiet" icon={<PanelRightOpen />} aria-label="Properties" onClick={() => setMobileSheet("properties")} />
             ) : null}
           </div>
           <div className="flex shrink-0 items-center gap-1.5 max-lg:hidden">
@@ -531,14 +510,7 @@ export function ChatCanvasWorkspace({
             )}
           </button>
           {onClose ? (
-            <button
-              type="button"
-              aria-label="Close"
-              onClick={onClose}
-              className={cn(ICON_BUTTON, "max-lg:h-11 max-lg:w-11")}
-            >
-              <X className="h-4 w-4" />
-            </button>
+            <Button variant="quiet" icon={<X />} aria-label="Close" onClick={onClose} />
           ) : null}
           {/* THE HEADER CONTROL SET sits at the right edge, the page's own
               controls to its left — the same order as the shell header. On a

@@ -58,6 +58,7 @@ import {
   interruptAndSend,
 } from "../../../redux/execution-system/thunks/smart-execute.thunk";
 import { selectUserVariableValues } from "../../../redux/execution-system/instance-variable-values/instance-variable-values.selectors";
+import { Button } from "@ai-matrx/design-system/controls";
 
 // ── Props ────────────────────────────────────────────────────────────────────
 
@@ -530,18 +531,7 @@ export function AgentTextarea({
           />
         </ComposerTextMenuFrame>
         {showExpand && (
-          <button
-            type="button"
-            onClick={() => setIsExpanded((v) => !v)}
-            className="absolute top-1 right-1 p-1 rounded-full hover:bg-muted/80 opacity-50 hover:opacity-100 transition-all"
-            title={isExpanded ? "Collapse input" : "Expand input"}
-          >
-            {isExpanded ? (
-              <Minimize2 className="w-3.5 h-3.5 text-muted-foreground" />
-            ) : (
-              <Maximize2 className="w-3.5 h-3.5 text-muted-foreground" />
-            )}
-          </button>
+          <Button variant="quiet" icon={isExpanded ? <Minimize2 /> : <Maximize2 />} onClick={() => setIsExpanded((v) => !v)} title={isExpanded ? "Collapse input" : "Expand input"} aria-label={isExpanded ? "Collapse input" : "Expand input"} className="absolute top-1 right-1 hover:opacity-100" />
         )}
       </div>
     </div>

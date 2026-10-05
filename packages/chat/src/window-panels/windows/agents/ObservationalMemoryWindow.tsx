@@ -53,6 +53,7 @@ import {
   createObservationalMemoryScope,
 } from "../../../surfaces/manifests/observational-memory.manifest";
 import { CHAT_WINDOWS } from "../../../host/windows";
+import { Button } from "@ai-matrx/design-system/controls";
 
 // =============================================================================
 // Sidebar
@@ -136,21 +137,10 @@ function SidebarRow({
           >
             {row.label}
           </span>
-          <button
-            type="button"
-            onClick={(e) => {
+          <Button variant="quiet" icon={copied ? <Check /> : <Copy />} onClick={(e) => {
               e.stopPropagation();
               copy();
-            }}
-            className="opacity-0 group-hover:opacity-100 h-4 w-4 flex items-center justify-center rounded text-muted-foreground hover:text-foreground transition-all shrink-0"
-            title="Copy conversation id"
-          >
-            {copied ? (
-              <Check className="h-3 w-3 text-emerald-500" />
-            ) : (
-              <Copy className="h-3 w-3" />
-            )}
-          </button>
+            }} title="Copy conversation id" aria-label="Copy conversation id" className="opacity-0 group-hover:opacity-100 shrink-0" />
           {/* THE DOOR LAW: the label IS a conversation id, and copying it was
               the only thing you could do with it. Doors are SIBLINGS, never an
               anchor around the label — the row is a `role="button"` selector, so

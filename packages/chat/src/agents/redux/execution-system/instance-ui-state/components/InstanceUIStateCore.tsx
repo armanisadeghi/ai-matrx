@@ -1,6 +1,6 @@
 "use client";
 
-import { Badge } from "@ai-matrx/design-system/controls";
+import { Badge, Button } from "@ai-matrx/design-system/controls";
 import React, { useState } from "react";
 import { cn } from "@ai-matrx/design-system";
 import {
@@ -58,18 +58,7 @@ function UuidField({ value, label }: { value: string; label: string }) {
         <span className="text-[11px] font-mono text-foreground break-all">
           {value}
         </span>
-        <button
-          type="button"
-          onClick={copy}
-          className="shrink-0 h-5 w-5 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-          title="Copy UUID"
-        >
-          {copied ? (
-            <Check className="h-3 w-3 text-emerald-500" />
-          ) : (
-            <Copy className="h-3 w-3" />
-          )}
-        </button>
+        <Button variant="quiet" icon={copied ? <Check /> : <Copy />} onClick={copy} title="Copy UUID" aria-label="Copy UUID" className="shrink-0" />
       </span>
     </div>
   );
@@ -177,21 +166,10 @@ function SectionHeader({
         </span>
       )}
       {copyValue && (
-        <button
-          type="button"
-          onClick={(e) => {
+        <Button variant="quiet" icon={copied ? <Check /> : <Copy />} onClick={(e) => {
             e.stopPropagation();
             copy();
-          }}
-          className="opacity-0 group-hover:opacity-100 h-5 w-5 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-all shrink-0"
-          title="Copy section as JSON"
-        >
-          {copied ? (
-            <Check className="h-3 w-3 text-emerald-500" />
-          ) : (
-            <Copy className="h-3 w-3" />
-          )}
-        </button>
+          }} title="Copy section as JSON" aria-label="Copy section as JSON" className="opacity-0 group-hover:opacity-100 shrink-0" />
       )}
     </div>
   );
@@ -273,18 +251,7 @@ function RawJsonSection({ data }: { data: InstanceUIState }) {
             Raw JSON
           </span>
         </button>
-        <button
-          type="button"
-          onClick={copy}
-          className="h-5 w-5 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors shrink-0"
-          title="Copy full JSON"
-        >
-          {copied ? (
-            <Check className="h-3 w-3 text-emerald-500" />
-          ) : (
-            <Copy className="h-3 w-3" />
-          )}
-        </button>
+        <Button variant="quiet" icon={copied ? <Check /> : <Copy />} onClick={copy} title="Copy full JSON" aria-label="Copy full JSON" className="shrink-0" />
         {open ? (
           <EyeOff className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
         ) : (
@@ -617,17 +584,6 @@ export function InstanceUIStateCore({
 function CopyEntireButton({ json }: { json: string }) {
   const { copied, copy } = useCopyText(json);
   return (
-    <button
-      type="button"
-      onClick={copy}
-      className="h-6 w-6 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-      title="Copy full state as JSON"
-    >
-      {copied ? (
-        <Check className="h-3.5 w-3.5 text-emerald-500" />
-      ) : (
-        <Copy className="h-3.5 w-3.5" />
-      )}
-    </button>
+    <Button variant="quiet" icon={copied ? <Check /> : <Copy />} onClick={copy} title="Copy full state as JSON" aria-label="Copy full state as JSON" />
   );
 }

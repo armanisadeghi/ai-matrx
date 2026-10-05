@@ -147,23 +147,11 @@ export function ComposerQuickActions({
             const agentId = state?.mandate?.agentId ?? null;
             const unavailable = Boolean(state && !state.loading && state.error);
             return (
-              <button
-                key={`${action.mandateKey}:${action.label}`}
-                type="button"
-                disabled={!agentId}
-                title={
+              <Button variant="outline" key={`${action.mandateKey}:${action.label}`} disabled={!agentId} title={
                   unavailable
                     ? `"${action.label}" is not available yet — its agent has not been assigned (${action.mandateKey}).`
                     : undefined
-                }
-                onClick={() => agentId && onLaunchAgent(agentId)}
-                className={cn(
-                  "inline-flex h-[34px] shrink-0 items-center whitespace-nowrap rounded-lg border border-border bg-card px-3 text-sm text-foreground/80 transition-colors hover:bg-accent hover:text-foreground disabled:cursor-not-allowed",
-                  unavailable && "opacity-50",
-                )}
-              >
-                {action.label}
-              </button>
+                } onClick={() => agentId && onLaunchAgent(agentId)} className="shrink-0">{action.label}</Button>
             );
           })}
         </div>

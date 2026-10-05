@@ -18,6 +18,7 @@ import {
   selectInstanceTitle,
 } from "../instance-ui-state.selectors";
 import type { InstanceAgentGroup } from "../instance-ui-state.selectors";
+import { Button } from "@ai-matrx/design-system/controls";
 
 // ─── Copy helper ──────────────────────────────────────────────────────────────
 
@@ -83,21 +84,10 @@ function InstanceRow({
           {shortId}
         </span>
       )}
-      <button
-        type="button"
-        onClick={(e) => {
+      <Button variant="quiet" icon={copied ? <Check /> : <Copy />} onClick={(e) => {
           e.stopPropagation();
           copy();
-        }}
-        className="opacity-0 group-hover:opacity-100 h-4 w-4 flex items-center justify-center rounded text-muted-foreground hover:text-foreground transition-all shrink-0"
-        title="Copy conversation ID"
-      >
-        {copied ? (
-          <Check className="h-3 w-3 text-emerald-500" />
-        ) : (
-          <Copy className="h-3 w-3" />
-        )}
-      </button>
+        }} title="Copy conversation ID" aria-label="Copy conversation ID" className="opacity-0 group-hover:opacity-100 shrink-0" />
     </div>
   );
 }
@@ -167,21 +157,10 @@ function AgentGroup({
           {group.conversationIds.length}
         </span>
         {group.agentId && (
-          <button
-            type="button"
-            onClick={(e) => {
+          <Button variant="quiet" icon={copied ? <Check /> : <Copy />} onClick={(e) => {
               e.stopPropagation();
               copy();
-            }}
-            className="opacity-0 group-hover:opacity-100 h-4 w-4 flex items-center justify-center rounded text-muted-foreground hover:text-foreground transition-all shrink-0 ml-0.5"
-            title="Copy agent ID"
-          >
-            {copied ? (
-              <Check className="h-3 w-3 text-emerald-500" />
-            ) : (
-              <Copy className="h-3 w-3" />
-            )}
-          </button>
+            }} title="Copy agent ID" aria-label="Copy agent ID" className="opacity-0 group-hover:opacity-100 shrink-0 ml-0.5" />
         )}
       </div>
 

@@ -133,18 +133,7 @@ const ReadCard: React.FC<{ read: SearchRead; index: number; copied: number | nul
                 >
                     {getDomain(read.url)}
                 </a>
-                <button
-                    type="button"
-                    onClick={() => onCopy(read, index)}
-                    className="ml-auto flex-shrink-0 rounded p-1.5 transition-colors hover:bg-muted"
-                    title="Copy this source"
-                >
-                    {copied === index ? (
-                        <Check className="h-4 w-4 text-primary" />
-                    ) : (
-                        <Copy className="h-4 w-4 text-muted-foreground" />
-                    )}
-                </button>
+                <Button variant="quiet" icon={copied === index ? <Check /> : <Copy />} onClick={() => onCopy(read, index)} title="Copy this source" aria-label="Copy this source" className="ml-auto" />
             </div>
             <div className="space-y-3 p-5">
                 <a

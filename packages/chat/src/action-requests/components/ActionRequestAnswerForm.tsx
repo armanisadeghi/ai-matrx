@@ -531,15 +531,7 @@ function Credential({ render, busy, idPrefix, onSubmit }: FormProps<CredentialRe
               onChange={(event) => setAuthenticator(event.target.value)}
               placeholder="The long code shown beside the QR when you set up two-factor."
             />
-            <button
-              type="button"
-              className="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-muted-foreground hover:text-foreground"
-              aria-label={showAuthenticator ? "Hide setup key" : "Show setup key"}
-              aria-pressed={showAuthenticator}
-              onClick={() => setShowAuthenticator((shown) => !shown)}
-            >
-              {showAuthenticator ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-            </button>
+            <Button variant="quiet" icon={showAuthenticator ? <EyeOff /> : <Eye />} aria-label={showAuthenticator ? "Hide setup key" : "Show setup key"} aria-pressed={showAuthenticator} onClick={() => setShowAuthenticator((shown) => !shown)} className="absolute inset-y-0 right-0" />
           </div>
         </div>
       ) : null}

@@ -52,6 +52,7 @@ import {
   setResourcePreview,
 } from "../../../redux/execution-system/instance-resources/instance-resources.slice";
 import { initInstanceUIState } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.slice";
+import { Button } from "@ai-matrx/design-system/controls";
 
 const ATTACHMENT_ICONS: Record<
   string,
@@ -162,20 +163,7 @@ function DemoAttachmentChip({ spec }: { spec: DemoAttachmentSpec }) {
   const Icon = ATTACHMENT_ICONS[spec.id] ?? FileText;
   return (
     <div className="space-y-1">
-      <button
-        type="button"
-        className={cn(
-          "inline-flex items-center gap-1 px-1.5 py-0.5 rounded border text-[10px] font-medium leading-none",
-          "cursor-default",
-          spec.chipBg,
-          spec.chipBorder,
-          spec.iconColor,
-        )}
-        title={spec.title}
-      >
-        <Icon className="w-2.5 h-2.5 flex-shrink-0" />
-        <span className="max-w-[120px] truncate">{spec.title}</span>
-      </button>
+      <Button variant="outline" icon={<Icon />} title={spec.title}>{spec.title}</Button>
       {spec.note ? (
         <p className="text-[10px] text-muted-foreground">{spec.note}</p>
       ) : null}

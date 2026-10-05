@@ -16,6 +16,7 @@ import {
   webpageUrl,
 } from "../../../resources/webpage-snapshot";
 import type { ContextItemBodyProps } from "../types";
+import { Button } from "@ai-matrx/design-system/controls";
 
 function firstWebpage(item: ContextItemBodyProps["item"]) {
   return item.refs.webpages?.[0] ?? null;
@@ -80,18 +81,7 @@ export function WebpageFooter({ item }: ContextItemBodyProps) {
       </span>
       <Tooltip>
         <TooltipTrigger asChild>
-          <button
-            type="button"
-            onClick={copy}
-            aria-label="Copy webpage URL"
-            className="ml-auto inline-flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
-          >
-            {copied ? (
-              <Check className="h-3.5 w-3.5 text-success" />
-            ) : (
-              <Copy className="h-3.5 w-3.5" />
-            )}
-          </button>
+          <Button variant="quiet" icon={copied ? <Check /> : <Copy />} onClick={copy} aria-label="Copy webpage URL" className="ml-auto" />
         </TooltipTrigger>
         <TooltipContent>Copy URL</TooltipContent>
       </Tooltip>

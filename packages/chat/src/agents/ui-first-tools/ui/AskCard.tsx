@@ -721,14 +721,7 @@ function TextBody({
             }}
             className="pr-8 text-base"
           />
-          <button
-            type="button"
-            onClick={() => setShow((s) => !s)}
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground"
-            aria-label={show ? "Hide value" : "Show value"}
-          >
-            {show ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-          </button>
+          <Button variant="quiet" icon={show ? <EyeOff /> : <Eye />} onClick={() => setShow((s) => !s)} aria-label={show ? "Hide value" : "Show value"} className="absolute right-2 top-1/2" />
         </div>
       ) : (
         <Textarea

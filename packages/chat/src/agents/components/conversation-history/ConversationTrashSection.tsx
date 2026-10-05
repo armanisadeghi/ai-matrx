@@ -29,6 +29,7 @@ import {
   restoreConversation,
 } from "../../redux/conversation-list/conversation-trash.thunks";
 import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
+import { Button } from "@ai-matrx/design-system/controls";
 
 interface ConversationTrashSectionProps {
   /** `"consumer"` matches the comfortable /chat sidebar; `"dense"` the rest. */
@@ -145,20 +146,7 @@ export function ConversationTrashSection({
                 >
                   {title}
                 </span>
-                <button
-                  type="button"
-                  onClick={() => void handleRestore(id)}
-                  disabled={restoringId === id}
-                  className="flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-60"
-                  aria-label={`Restore ${title}`}
-                >
-                  {restoringId === id ? (
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                  ) : (
-                    <Undo2 className="h-3 w-3" />
-                  )}
-                  Restore
-                </button>
+                <Button variant="quiet" icon={restoringId === id ? <Loader2 className="animate-spin" /> : <Undo2 />} onClick={() => void handleRestore(id)} disabled={restoringId === id} aria-label={`Restore ${title}`} className="shrink-0">Restore</Button>
               </div>
             );
           })}

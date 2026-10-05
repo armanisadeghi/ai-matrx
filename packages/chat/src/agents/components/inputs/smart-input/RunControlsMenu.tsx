@@ -66,6 +66,7 @@ import { useAppDispatch, useAppSelector } from "../../../../store/hooks";
 import { selectUserInputText } from "../../../redux/execution-system/instance-user-input/instance-user-input.selectors";
 import { setUserInputText } from "../../../redux/execution-system/instance-user-input/instance-user-input.slice";
 import { prependTemplateToDraft } from "@ai-matrx/chat/agents/components/inputs/smart-input/prepend-template-to-draft";
+import { Button } from "@ai-matrx/design-system/controls";
 
 export interface RunControlsMenuProps {
   conversationId: string;
@@ -362,21 +363,9 @@ export function RunControlsMenu({
               </button>
             );
           })}
-          <button
-            type="button"
-            onClick={() => setFullscreen((v) => !v)}
-            aria-label={
+          <Button variant="outline" icon={fullscreen ? <Minimize2 /> : <Maximize2 />} onClick={() => setFullscreen((v) => !v)} aria-label={
               fullscreen ? "Exit full screen" : "Expand to full screen"
-            }
-            title={fullscreen ? "Exit full screen" : "Expand to full screen"}
-            className="sticky right-0 ml-auto flex shrink-0 items-center justify-center border-l border-border bg-background px-2.5 text-muted-foreground transition-colors hover:text-foreground"
-          >
-            {fullscreen ? (
-              <Minimize2 className="h-3.5 w-3.5" />
-            ) : (
-              <Maximize2 className="h-3.5 w-3.5" />
-            )}
-          </button>
+            } title={fullscreen ? "Exit full screen" : "Expand to full screen"} className="sticky right-0 ml-auto shrink-0" />
         </div>
 
         <div

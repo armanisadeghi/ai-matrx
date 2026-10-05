@@ -237,24 +237,7 @@ export function ComputeLensBar({
     >
       <Tooltip>
         <TooltipTrigger asChild>
-          <button
-            type="button"
-            onClick={onOpenPanel}
-            disabled={disabled && !loading}
-            className={cn(
-              "inline-flex h-5 shrink-0 items-center gap-1 rounded-full px-1.5 transition-colors",
-              "text-secondary/90 group-hover:bg-secondary/10 group-hover:text-secondary",
-              disabled && !loading && "cursor-not-allowed opacity-50",
-            )}
-            aria-label="Open sandbox and computer settings"
-          >
-            {loading ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Monitor className="h-3.5 w-3.5" />
-            )}
-            <span className="font-medium">Compute</span>
-          </button>
+          <Button variant="quiet" icon={loading ? <Loader2 className="animate-spin" /> : <Monitor />} onClick={onOpenPanel} disabled={disabled && !loading} aria-label="Open sandbox and computer settings" className="shrink-0">Compute</Button>
         </TooltipTrigger>
         <TooltipContent side="top">
           {loading

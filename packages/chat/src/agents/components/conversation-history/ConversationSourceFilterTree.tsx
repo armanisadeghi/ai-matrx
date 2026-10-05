@@ -833,18 +833,7 @@ const AppRow: React.FC<AppRowProps> = ({
   return (
     <div className="px-1">
       <div className="group/srcrow flex items-center gap-1.5 rounded-md px-1.5 py-1 hover:bg-accent/50">
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          className="flex h-4 w-4 items-center justify-center text-muted-foreground"
-          aria-label={open ? "Collapse" : "Expand"}
-        >
-          {open ? (
-            <ChevronDown className="h-3 w-3" />
-          ) : (
-            <ChevronRight className="h-3 w-3" />
-          )}
-        </button>
+        <Button variant="quiet" icon={open ? <ChevronDown /> : <ChevronRight />} onClick={() => setOpen((v) => !v)} aria-label={open ? "Collapse" : "Expand"} />
         <TriCheckbox
           state={tri}
           onClick={() => onToggleKeys(keys)}
@@ -917,18 +906,7 @@ const GroupRow: React.FC<GroupRowProps> = ({
   return (
     <div>
       <div className="group/srcrow flex items-center gap-1.5 rounded-md px-1.5 py-1 hover:bg-accent/50">
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          className="flex h-4 w-4 items-center justify-center text-muted-foreground"
-          aria-label={open ? "Collapse" : "Expand"}
-        >
-          {open ? (
-            <ChevronDown className="h-3 w-3" />
-          ) : (
-            <ChevronRight className="h-3 w-3" />
-          )}
-        </button>
+        <Button variant="quiet" icon={open ? <ChevronDown /> : <ChevronRight />} onClick={() => setOpen((v) => !v)} aria-label={open ? "Collapse" : "Expand"} />
         <TriCheckbox
           state={tri}
           onClick={() => onToggleKeys(keys)}

@@ -147,19 +147,7 @@ export function ServerOperationBanner({
         </Button>
       )}
       {waiting && !hasQuestion && !continuing && !waitingOnPerson && (
-        <button
-          type="button"
-          onClick={continueAgent}
-          disabled={actionBusy}
-          className="flex shrink-0 items-center gap-1 rounded-md bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
-        >
-          {actionBusy ? (
-            <Loader2 className="size-3 animate-spin" />
-          ) : (
-            <Play className="size-3" />
-          )}
-          {shouldRecheck ? "Check again" : "Continue agent"}
-        </button>
+        <Button variant="primary" icon={actionBusy ? <Loader2 className="animate-spin" /> : <Play />} onClick={continueAgent} disabled={actionBusy} className="shrink-0">{shouldRecheck ? "Check again" : "Continue agent"}</Button>
       )}
     </div>
   );

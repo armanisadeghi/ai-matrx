@@ -119,17 +119,7 @@ export function SandboxFileViewer({
           {lockPath ? initialPath : content != null ? path : ""}
         </span>
         {content != null && (
-          <button
-            onClick={handleCopy}
-            className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground shrink-0"
-          >
-            {copied ? (
-              <Check className="h-3 w-3 text-emerald-500" />
-            ) : (
-              <Copy className="h-3 w-3" />
-            )}
-            Copy
-          </button>
+          <Button variant="quiet" icon={copied ? <Check /> : <Copy />} onClick={handleCopy} className="shrink-0">Copy</Button>
         )}
       </div>
 

@@ -831,22 +831,15 @@ export function ConversationInput({
             />
           )}
           {hasVariables && (
-            <button
-              type="button"
-              onClick={() => router.push(toggleUrl)}
-              className="p-2 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition-colors flex-shrink-0"
-              title={
+            <Button variant="outline" icon={useGuidedVars ? <List /> : <Layers />} onClick={() => router.push(toggleUrl)} title={
                 useGuidedVars
                   ? "Switch to classic variable view"
                   : "Switch to guided variable view"
-              }
-            >
-              {useGuidedVars ? (
-                <List className="w-4 h-4" />
-              ) : (
-                <Layers className="w-4 h-4" />
-              )}
-            </button>
+              } aria-label={
+                useGuidedVars
+                  ? "Switch to classic variable view"
+                  : "Switch to guided variable view"
+              } />
           )}
         </div>
       )}

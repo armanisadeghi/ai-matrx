@@ -27,6 +27,7 @@ import { useFileActions } from "@ai-matrx/chat/host/ui-slots";
 import { useMediaResolution } from "@ai-matrx/media/core";
 import type { FileSource } from "@ai-matrx/chat/ui/file-source";
 import type { ResultFileRef } from "./shape";
+import { Button } from "@ai-matrx/design-system/controls";
 
 export interface ResultFileProps {
     file: ResultFileRef;
@@ -153,24 +154,7 @@ export const ResultFile: React.FC<ResultFileProps> = ({ file, density = "inline"
                         <ExternalLink className="h-4 w-4" aria-hidden="true" />
                     </a>
                 ) : null}
-                <button
-                    type="button"
-                    onClick={handleDownload}
-                    disabled={busy}
-                    aria-label="Download"
-                    title="Download"
-                    className={cn(
-                        "flex h-7 items-center gap-1.5 rounded-md bg-primary px-2.5 text-xs font-medium text-primary-foreground",
-                        "hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60",
-                    )}
-                >
-                    {busy ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
-                    ) : (
-                        <Download className="h-3.5 w-3.5" aria-hidden="true" />
-                    )}
-                    <span>Download</span>
-                </button>
+                <Button variant="primary" icon={busy ? <Loader2 className="animate-spin" /> : <Download />} onClick={handleDownload} disabled={busy} aria-label="Download" title="Download">Download</Button>
             </div>
         </div>
     );

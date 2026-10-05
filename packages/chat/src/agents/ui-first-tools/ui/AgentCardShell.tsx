@@ -36,6 +36,7 @@ import { X } from "lucide-react";
 import { cn } from "@ai-matrx/design-system";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { useScrollFade } from "@ai-matrx/chat/ui/scroll-fade";
+import { Button } from "@ai-matrx/design-system/controls";
 
 export type AccentTone =
   "neutral" | "primary" | "info" | "success" | "warning" | "danger" | "violet";
@@ -196,18 +197,7 @@ export function AgentCardShell({
         )}
         {headerAction}
         {onDismiss && (
-          <button
-            type="button"
-            onClick={onDismiss}
-            className={cn(
-              "-mr-1 grid min-h-11 min-w-11 shrink-0 place-items-center rounded-md text-muted-foreground/70 transition-colors hover:bg-muted hover:text-foreground sm:min-h-6 sm:min-w-6",
-              !eyebrow && !badge && !title && "ml-auto",
-            )}
-            title={dismissLabel}
-            aria-label={dismissLabel}
-          >
-            <X className="size-4" />
-          </button>
+          <Button variant="quiet" icon={<X />} onClick={onDismiss} title={dismissLabel} aria-label={dismissLabel} className="-mr-1 shrink-0" />
         )}
       </div>
 

@@ -9,6 +9,7 @@ import {
 } from "./_legacy-stubs";
 import { editMessage } from "./_legacy-stubs";
 import { buildContentBlocksForSave } from "./utils/buildContentBlocksForSave";
+import { Button } from "@ai-matrx/design-system/controls";
 
 interface UnsavedChangesIndicatorProps {
   sessionId: string;
@@ -63,19 +64,7 @@ export function UnsavedChangesIndicator({
           Unsaved changes
         </span>
       </div>
-      <button
-        type="button"
-        onClick={handleSaveAll}
-        disabled={saving}
-        className="flex items-center gap-1 px-2.5 py-1.5 pr-3 text-[11px] font-medium text-primary hover:text-primary/80 transition-colors disabled:opacity-50"
-      >
-        {saving ? (
-          <Loader2 className="w-3 h-3 animate-spin" />
-        ) : (
-          <Save className="w-3 h-3" />
-        )}
-        {saving ? "Saving…" : "Save"}
-      </button>
+      <Button variant="quiet" tone="primary" icon={saving ? <Loader2 className="animate-spin" /> : <Save />} onClick={handleSaveAll} disabled={saving}>{saving ? "Saving…" : "Save"}</Button>
     </div>
   );
 }

@@ -38,6 +38,7 @@ import {
 } from "@ai-matrx/chat/host/ui-slots";
 import { cn } from "@ai-matrx/design-system";
 import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
+import { Button } from "@ai-matrx/design-system/controls";
 
 interface BackendTargetPanelProps {
   conversationId: string;
@@ -70,18 +71,7 @@ function CopyableValue({
       >
         {value}
       </span>
-      <button
-        type="button"
-        onClick={handleCopy}
-        className="shrink-0 h-5 w-5 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-        title="Copy"
-      >
-        {copied ? (
-          <Check className="h-3 w-3 text-emerald-500" />
-        ) : (
-          <Copy className="h-3 w-3" />
-        )}
-      </button>
+      <Button variant="quiet" icon={copied ? <Check /> : <Copy />} onClick={handleCopy} title="Copy" aria-label="Copy" className="shrink-0" />
     </span>
   );
 }

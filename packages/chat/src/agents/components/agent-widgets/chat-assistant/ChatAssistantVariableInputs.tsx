@@ -17,9 +17,9 @@ import {
 } from "../../../redux/execution-system/instance-variable-values/instance-variable-values.selectors";
 import type { VariableDefinition } from "../../../types/agent-definition.types";
 import { ChevronDown, ChevronRight, Minus, Plus, Play } from "lucide-react";
-import { Button } from "@ai-matrx/design-system";
 import type { ChatDispatch } from "../../../../store/root-state";
 import { variableRunLabel } from "@ai-matrx/agents";
+import { Button } from "@ai-matrx/design-system/controls";
 
 interface ChatAssistantVariableInputsProps {
   conversationId: string;
@@ -46,22 +46,8 @@ export function ChatAssistantVariableInputs({
 
   return (
     <div className="border-b border-border/40">
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center gap-1.5 px-3 py-1.5 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
-      >
-        {isExpanded ? (
-          <ChevronDown className="w-3 h-3 shrink-0" />
-        ) : (
-          <ChevronRight className="w-3 h-3 shrink-0" />
-        )}
-        <span className="font-medium uppercase tracking-wider">
-          Quick Questions
-        </span>
-        <span className="text-muted-foreground/60 ml-auto">
-          {filledCount}/{variableDefs.length}
-        </span>
-      </button>
+      <Button variant="quiet" icon={isExpanded ? <ChevronDown /> : <ChevronRight />} onClick={() => setIsExpanded(!isExpanded)} className="w-full">Quick Questions
+         {filledCount}/{variableDefs.length}</Button>
 
       {isExpanded && (
         <div className="px-3 pb-2 space-y-1.5">
