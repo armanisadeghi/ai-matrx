@@ -104,7 +104,7 @@ export function MatrixBattlePage({ setId = null }: { setId?: string | null }) {
       {(runError || readError) && (
         <div
           role="alert"
-          className="flex items-start gap-2 px-3 py-2 border-b border-destructive/40 bg-destructive/10 text-sm shrink-0"
+          className="flex items-start gap-2 px-3 py-2 border-b border-destructive/40 bg-destructive/10 type-body shrink-0"
         >
           <AlertTriangle className="w-4 h-4 mt-0.5 text-destructive shrink-0" />
           <span className="min-w-0 flex-1 break-words">{runError ?? readError}</span>
@@ -180,8 +180,8 @@ function ProgressLine() {
   if (p.stalled) parts.push(`${p.stalled} stalled`);
   if (p.cancelled) parts.push(`${p.cancelled} cancelled`);
   return (
-    <div className="flex items-center gap-3 text-xs text-muted-foreground tabular-nums">
-      {setId && dirty && <span className="text-amber-600">Unsaved changes</span>}
+    <div className="flex items-center gap-3 type-secondary text-muted-foreground tabular-nums">
+      {setId && dirty && <span className="text-warning">Unsaved changes</span>}
       <span>
         {p.completed}/{total} done
       </span>
@@ -199,10 +199,10 @@ function SetupView() {
     <div className="p-3 space-y-3 max-w-[1600px] mx-auto">
       <section className="rounded-lg border border-border bg-card">
         <header className="flex items-center gap-2 h-10 px-3 border-b border-border">
-          <span className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Base</span>
-          <span className="text-xs text-muted-foreground">every cell</span>
+          <span className="type-meta uppercase tracking-wider font-semibold text-muted-foreground">Base</span>
+          <span className="type-secondary text-muted-foreground">every cell</span>
           <div className="flex-1" />
-          <span className="text-xs text-muted-foreground">Runs per cell</span>
+          <span className="type-secondary text-muted-foreground">Runs per cell</span>
           <div className="inline-flex items-center rounded-md border border-border">
             <button
               type="button"
@@ -213,7 +213,7 @@ function SetupView() {
             >
               <Minus className="w-3.5 h-3.5" />
             </button>
-            <span className="w-6 text-center text-xs tabular-nums">{repeats}</span>
+            <span className="w-6 text-center type-secondary tabular-nums">{repeats}</span>
             <button
               type="button"
               aria-label="More runs per cell"
@@ -224,7 +224,7 @@ function SetupView() {
               <Plus className="w-3.5 h-3.5" />
             </button>
           </div>
-          <span className="text-xs tabular-nums font-medium" title="Rows × columns × runs per cell">
+          <span className="type-secondary tabular-nums font-medium" title="Rows × columns × runs per cell">
             {total} cells
           </span>
         </header>

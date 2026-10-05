@@ -29,7 +29,6 @@ import {
   AlertDialogTitle,
 } from "@ai-matrx/design-system";
 import {
-  Loader2,
   ArrowUpCircle,
   CheckCircle2,
   GitCompareArrows,
@@ -64,6 +63,7 @@ import { buildAgentPayload } from "@ai-matrx/chat/agent-copy/buildAgentPayload";
 import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 
+import { Spinner } from "@/components/ui/loaders/Spinner";
 interface AgentVersionDiffPageProps {
   agentId: string;
   initialVersion?: number;
@@ -310,7 +310,7 @@ export function AgentVersionDiffPage({
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full gap-2 text-muted-foreground">
-        <Loader2 className="w-5 h-5 animate-spin text-primary" />
+        <Spinner size="sm" className="text-primary" />
         <span className="type-body">Loading version history...</span>
       </div>
     );
@@ -647,7 +647,7 @@ export function AgentVersionDiffPage({
                 leftVersion !== liveAgent.version && (
                   <Button
                     icon={promoting ? (
-                      <Loader2 className="animate-spin" />
+                      <Spinner size="xs" className="text-current" />
                     ) : (
                       <ArrowUpCircle />
                     )}
@@ -763,7 +763,7 @@ export function AgentVersionDiffPage({
           <AlertDialogFooter>
             <AlertDialogCancel disabled={promoting}>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handlePromote} disabled={promoting}>
-              {promoting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              {promoting && <Spinner size="xs" className="mr-2" />}
               Promote v{leftVersion}
             </AlertDialogAction>
           </AlertDialogFooter>

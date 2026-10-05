@@ -209,7 +209,7 @@ function ResizableFrame({ children }: { children: ReactNode }) {
             {w}
           </button>
         ))}
-        <span ref={labelRef} className="ml-2 text-xs tabular-nums text-muted-foreground">
+        <span ref={labelRef} className="ml-2 type-secondary tabular-nums text-muted-foreground">
           560px
         </span>
       </div>

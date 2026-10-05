@@ -6,7 +6,7 @@
 // platform's own path and is then recorded on the coupon (billing.coupon_mark_sent).
 
 import { useState } from "react";
-import { Loader2, Mail, MessageSquare, Smartphone } from "lucide-react";
+import { Mail, MessageSquare, Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -26,6 +26,7 @@ import { UserSearchField } from "@/features/user-search/UserSearchField";
 import { sendCoupon } from "../service/coupons";
 import { draftCouponMessage, normalizePhone, type CouponKind, type SendChannel } from "../lib/coupons";
 
+import { Spinner } from "@/components/ui/loaders/Spinner";
 export interface SendCouponTarget {
   couponId: string;
   kind: CouponKind;
@@ -199,7 +200,7 @@ export function SendCouponDialog({
           <Button variant="quiet" onClick={onClose}>
             Cancel
           </Button>
-          <Button icon={sending && <Loader2 className="animate-spin" />} variant="primary" onClick={() => void send()} disabled={sending || !ready}>
+          <Button icon={sending && <Spinner size="xs" className="text-current" />} variant="primary" onClick={() => void send()} disabled={sending || !ready}>
             Send
           </Button>
         </DialogFooter>

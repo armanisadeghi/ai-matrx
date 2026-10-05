@@ -52,7 +52,7 @@ export function AxisEditor({ axis }: { axis: MatrixAxisKey }) {
   return (
     <section className="rounded-lg border border-border bg-card">
       <header className="flex items-center gap-2 h-10 px-3 border-b border-border">
-        <span className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground shrink-0">
+        <span className="type-meta uppercase tracking-wider font-semibold text-muted-foreground shrink-0">
           {axis === "rows" ? "Rows" : "Columns"}
         </span>
         <input
@@ -61,7 +61,7 @@ export function AxisEditor({ axis }: { axis: MatrixAxisKey }) {
           aria-label={`${axis === "rows" ? "Rows" : "Columns"} name`}
           className="w-40 h-7 px-2 rounded border border-transparent hover:border-border focus:border-border bg-transparent text-sm font-medium"
         />
-        <span className="text-xs text-muted-foreground tabular-nums">{data.variants.length}</span>
+        <span className="type-secondary text-muted-foreground tabular-nums">{data.variants.length}</span>
         <div className="flex-1" />
         <Button
           icon={<ClipboardPaste />}
@@ -151,7 +151,7 @@ function VariantRow({
         >
           {expanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
         </button>
-        <span className="w-6 shrink-0 text-right text-[11px] tabular-nums text-muted-foreground">
+        <span className="w-6 shrink-0 text-right type-meta tabular-nums text-muted-foreground">
           {index + 1}
         </span>
         <input
@@ -164,12 +164,12 @@ function VariantRow({
         />
         <div className="flex-1 min-w-0 flex items-center gap-1 overflow-hidden">
           {chips.length === 0 ? (
-            <span className="text-[11px] text-muted-foreground/70">Base only</span>
+            <span className="type-meta text-muted-foreground/70">Base only</span>
           ) : (
             chips.map((c) => (
               <span
                 key={c}
-                className="shrink-0 h-5 px-1.5 rounded bg-primary/10 text-primary text-[10px] font-medium inline-flex items-center"
+                className="shrink-0 h-5 px-1.5 rounded bg-primary/10 text-primary type-meta font-medium inline-flex items-center"
               >
                 {c}
               </span>
@@ -266,7 +266,7 @@ function PasteDialog({
           className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm font-mono resize-y"
         />
         <DialogFooter className="items-center">
-          <span className="mr-auto text-xs text-muted-foreground tabular-nums">
+          <span className="mr-auto type-secondary text-muted-foreground tabular-nums">
             {prompts.length} {prompts.length === 1 ? "prompt" : "prompts"}
           </span>
           <Button variant="quiet" onClick={() => onOpenChange(false)}>

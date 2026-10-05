@@ -234,7 +234,7 @@ export function BookingPicker({ page, preview }: { page: PublicBooking; preview?
     return (
       <section className="mt-6 flex flex-col gap-3">
         <h2 className="text-base font-medium">{thanks?.title ?? "You're booked"}</h2>
-        <p className="text-sm text-muted-foreground">
+        <p className="type-body text-muted-foreground">
           {/* NEVER CLAIM WHAT DID NOT HAPPEN (MAKE-HOME 1c): no email is sent from here, so the
               screen says the time and the owner's own words, never "we have sent a confirmation". */}
           {whenText(stage.slot.at, zone)}
@@ -243,7 +243,7 @@ export function BookingPicker({ page, preview }: { page: PublicBooking; preview?
         {stage.ref ? (
           // THE LINK IS SHOWN, NOT ONLY EMAILED. An email can be lost and a
           // confirmation page is the one moment we know the person is looking.
-          <p className="text-sm">
+          <p className="type-body">
             Need to change it?{" "}
             <a className="underline underline-offset-2" href={`/b/manage/${stage.ref}`}>
               Move or cancel this appointment
@@ -259,7 +259,7 @@ export function BookingPicker({ page, preview }: { page: PublicBooking; preview?
     return (
       <section className="mt-6 flex flex-col gap-2">
         <h2 className="text-base font-medium">Thank you</h2>
-        <p className="text-sm text-muted-foreground">{stage.message}</p>
+        <p className="type-body text-muted-foreground">{stage.message}</p>
       </section>
     );
   }
@@ -268,7 +268,7 @@ export function BookingPicker({ page, preview }: { page: PublicBooking; preview?
     const busy = stage.kind === "sending";
     return (
       <section className="mt-6 flex flex-col gap-4">
-        <header className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm">
+        <header className="flex flex-wrap items-baseline gap-x-2 gap-y-1 type-body">
           <span className="font-medium">{whenText(stage.slot.at, zone)}</span>
           <span className="text-muted-foreground">
             {preview ? "" : "held for you"}{stage.expiresAt ? ` until ${clockText(stage.expiresAt, zone)}` : ""}
@@ -292,7 +292,7 @@ export function BookingPicker({ page, preview }: { page: PublicBooking; preview?
           const wrong = missing.includes(q.field) || Boolean(shapeRefusal);
           return (
             <label key={q.field} className="flex flex-col gap-1">
-              <span className="text-sm">
+              <span className="type-body">
                 {label}
                 {q.required ? <span aria-hidden="true"> *</span> : null}
               </span>
@@ -324,21 +324,21 @@ export function BookingPicker({ page, preview }: { page: PublicBooking; preview?
                   </RecordsUiProvider>
                 </div>
               ) : (
-                <p className="text-xs text-muted-foreground">
+                <p className="type-secondary text-muted-foreground">
                   This question names a column the page could not read, so it cannot be answered here.
                 </p>
               )}
               {shapeRefusal ? (
-                <span className="text-xs text-destructive">{shapeRefusal} <ErrorAlchemyMenu error={shapeRefusal} /></span>
+                <span className="type-secondary text-destructive">{shapeRefusal} <ErrorAlchemyMenu error={shapeRefusal} /></span>
               ) : q.help ? (
-                <span className="text-xs text-muted-foreground">{q.help}</span>
+                <span className="type-secondary text-muted-foreground">{q.help}</span>
               ) : null}
             </label>
           );
         })}
 
         {missing.length > 0 ? (
-          <p className="text-sm text-destructive">
+          <p className="type-body text-destructive">
             {missing.map((k) => (labelFor.get(k) ?? k).toLowerCase()).join(", ")} still{" "}
             {missing.length === 1 ? "needs" : "need"} an answer.
           </p>
@@ -358,7 +358,7 @@ export function BookingPicker({ page, preview }: { page: PublicBooking; preview?
         ) : null}
 
         {preview && refused ? (
-          <p className="rounded border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground" role="status">
+          <p className="rounded border border-border bg-muted/40 px-3 py-2 type-body text-muted-foreground" role="status">
             {refused}
           </p>
         ) : null}
@@ -377,7 +377,7 @@ export function BookingPicker({ page, preview }: { page: PublicBooking; preview?
   const free = slots.filter((s) => !s.taken).length;
   return (
     <section className="mt-6 flex flex-col gap-4">
-      <header className="flex items-baseline gap-2 text-sm">
+      <header className="flex items-baseline gap-2 type-body">
         <span className="font-medium">Pick a time</span>
         <span className="tabular-nums text-muted-foreground">
           {free} free of {slots.length}
@@ -385,24 +385,24 @@ export function BookingPicker({ page, preview }: { page: PublicBooking; preview?
       </header>
 
       {refused ? (
-        <p className="rounded border border-destructive px-3 py-2 text-sm text-destructive">{refused} <ErrorAlchemyMenu /></p>
+        <p className="rounded border border-destructive px-3 py-2 type-body text-destructive">{refused} <ErrorAlchemyMenu /></p>
       ) : null}
 
       {days.length === 0 ? (
         // read-gate-exempt: slots arrive with the server-rendered booking page (a failed read never renders this picker); the copy says the window is over
-        <p className="rounded border border-dashed px-3 py-2 text-sm text-muted-foreground">
+        <p className="rounded border border-dashed px-3 py-2 type-body text-muted-foreground">
           No times are left in the hours offered. More appear as the days move forward.
         </p>
       ) : (
         days.map(([day, inDay]) => (
           <div key={day} className="flex flex-col gap-2">
-            <h2 className="text-sm font-medium">{day}</h2>
+            <h2 className="type-title">{day}</h2>
             <ol className="flex flex-wrap gap-2">
               {inDay.map((slot) => (
                 <li key={slot.key}>
                   {slot.taken ? (
                     // A TAKEN TIME IS NOT A DEAD BUTTON: it is not a button.
-                    <span className="inline-flex h-11 items-center rounded border border-dashed px-3 text-sm text-muted-foreground">
+                    <span className="inline-flex h-11 items-center rounded border border-dashed px-3 type-body text-muted-foreground">
                       {clockText(slot.at, zone)} · taken
                     </span>
                   ) : (

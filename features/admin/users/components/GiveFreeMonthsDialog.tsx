@@ -7,7 +7,7 @@
 // refuses with its own words, which are shown per person with the resulting end date.
 
 import { useEffect, useState } from "react";
-import { Loader2, X } from "lucide-react";
+import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -34,6 +34,7 @@ import { isEnterpriseAudience } from "@/features/admin/limits/enterpriseCustom";
 import { applyFreeMonths, fetchFreeTimeKnobs } from "../service/coupons";
 import { monthsLabel, refusalText, validateMonths, type FreeMonthsResult } from "../lib/coupons";
 
+import { Spinner } from "@/components/ui/loaders/Spinner";
 export interface FreeMonthsPerson {
   id: string;
   label: string;
@@ -138,25 +139,25 @@ export function GiveFreeMonthsDialog({
           </DialogDescription>
         </DialogHeader>
         {results ? (
-          <ul className="max-h-72 space-y-1 overflow-y-auto text-sm">
+          <ul className="max-h-72 space-y-1 overflow-y-auto type-body">
             {results.map((r) => (
               <li key={r.user_id} className="flex items-baseline justify-between gap-3">
                 <span className="truncate">{nameOf(r.user_id)}</span>
                 {r.ok && r.grant ? (
-                  <span className="shrink-0 text-xs text-muted-foreground">
+                  <span className="shrink-0 type-secondary text-muted-foreground">
                     {planName(r.grant.plan_key)} to {new Date(r.grant.ends_at).toLocaleDateString()}
                     {r.grant.capped ? " (capped)" : ""}
                     {r.has_live_subscription ? " · pays" : ""}
                   </span>
                 ) : (
-                  <span className="shrink-0 text-xs text-destructive">{refusalText(r)}</span>
+                  <span className="shrink-0 type-secondary text-destructive">{refusalText(r)}</span>
                 )}
               </li>
             ))}
           </ul>
         ) : (
           <div className="space-y-3">
-            {loadError && <p className="text-sm text-destructive">{loadError}</p>}
+            {loadError && <p className="type-body text-destructive">{loadError}</p>}
             {initialPeople.length === 0 && (
               <div className="space-y-2">
                 <UserSearchField
@@ -180,7 +181,7 @@ export function GiveFreeMonthsDialog({
                     {people.map((p) => (
                       <span
                         key={p.id}
-                        className="inline-flex items-center gap-1 rounded border border-border px-1.5 py-0.5 text-xs"
+                        className="inline-flex items-center gap-1 rounded border border-border px-1.5 py-0.5 type-secondary"
                       >
                         {p.label}
                         <button
@@ -231,7 +232,7 @@ export function GiveFreeMonthsDialog({
           </Button>
           {!results && (
             <Button
-              icon={saving && <Loader2 className="animate-spin" />}
+              icon={saving && <Spinner size="xs" className="text-current" />}
               variant="primary"
               onClick={() => void apply()}
               disabled={saving || !planKey || !!monthsError || cap === null || people.length === 0}

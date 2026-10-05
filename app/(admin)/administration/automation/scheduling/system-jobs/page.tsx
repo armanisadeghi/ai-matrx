@@ -345,7 +345,7 @@ export default function SystemJobsPage() {
           <div className="font-medium truncate">{r.title}</div>
           {r.description && (
             <div
-              className="text-xs text-muted-foreground line-clamp-1"
+              className="type-secondary text-muted-foreground line-clamp-1"
               title={r.description}
             >
               {r.description}
@@ -361,7 +361,7 @@ export default function SystemJobsPage() {
       width: 200,
       cell: (r) => (
         <span
-          className="font-mono text-xs truncate"
+          className="font-mono type-secondary truncate"
           title={r.tool_name ?? undefined}
         >
           {r.tool_name ?? "—"}
@@ -375,7 +375,7 @@ export default function SystemJobsPage() {
       header: "Classification",
       width: 260,
       cell: (r) => (
-        <span className="flex min-w-0 items-center gap-1 text-xs">
+        <span className="flex min-w-0 items-center gap-1 type-secondary">
           {(r.taxonomy_path ?? []).map((node, index) => (
             <span key={node.id} className="flex min-w-0 items-center gap-1">
               {index > 0 && (
@@ -440,7 +440,7 @@ export default function SystemJobsPage() {
         const trig = r.trigger;
         if (!trig) {
           return (
-            <span className="text-xs text-muted-foreground">No trigger</span>
+            <span className="type-secondary text-muted-foreground">No trigger</span>
           );
         }
         if (trig.type === "cron") {
@@ -450,7 +450,7 @@ export default function SystemJobsPage() {
           return (
             <Tooltip>
               <TooltipTrigger asChild>
-                <span className="text-xs line-clamp-2" tabIndex={0}>
+                <span className="type-secondary line-clamp-2" tabIndex={0}>
                   {cadenceText(r)}
                   {trig.enabled === false ? " (trigger off)" : ""}
                 </span>
@@ -462,7 +462,7 @@ export default function SystemJobsPage() {
           );
         }
         return (
-          <span className="text-xs">
+          <span className="type-secondary">
             {cadenceText(r)}
             {trig.enabled === false && (
               <span className="ml-1 text-muted-foreground">(trigger off)</span>
@@ -477,7 +477,7 @@ export default function SystemJobsPage() {
       accessorFn: (r) => r.trigger?.next_due_at ?? "",
       width: 120,
       cell: (r) => (
-        <span className="text-xs">
+        <span className="type-secondary">
           {r.enabled && r.trigger?.next_due_at
             ? humanizeRelative(r.trigger.next_due_at)
             : "—"}
@@ -492,7 +492,7 @@ export default function SystemJobsPage() {
       cell: (r) => {
         const run = r.last_run;
         if (!run?.status) {
-          return <span className="text-xs text-muted-foreground">Never</span>;
+          return <span className="type-secondary text-muted-foreground">Never</span>;
         }
         const when = run.finished_at ?? run.started_at;
         return (
@@ -503,7 +503,7 @@ export default function SystemJobsPage() {
             <Badge variant={lastRunTone(run.status)} className="text-[10px]">
               {run.status}
             </Badge>
-            <span className="text-xs text-muted-foreground">
+            <span className="type-secondary text-muted-foreground">
               {when ? humanizeRelative(when) : ""}
             </span>
             {run.error_message && (
@@ -699,7 +699,7 @@ export default function SystemJobsPage() {
         return (
           <Tooltip>
             <TooltipTrigger asChild>
-              <span className="text-xs line-clamp-2" tabIndex={0}>
+              <span className="type-secondary line-clamp-2" tabIndex={0}>
                 {label}
               </span>
             </TooltipTrigger>
@@ -725,13 +725,13 @@ export default function SystemJobsPage() {
       cell: (r) =>
         r.taxonomy_path.length === 0 ? (
           <span
-            className="text-xs text-amber-600 dark:text-amber-400"
+            className="type-secondary text-warning"
             title="No Feature Registry classification. Choose one with Edit."
           >
             Unregistered
           </span>
         ) : (
-          <span className="flex min-w-0 items-center gap-1 text-xs">
+          <span className="flex min-w-0 items-center gap-1 type-secondary">
             {r.taxonomy_path.map((node, index) => (
               <span key={node.id} className="flex min-w-0 items-center gap-1">
                 {index > 0 && (
@@ -774,7 +774,7 @@ export default function SystemJobsPage() {
       cell: (r) => {
         const run = r.last_run;
         if (!run?.status) {
-          return <span className="text-xs text-muted-foreground">Never</span>;
+          return <span className="type-secondary text-muted-foreground">Never</span>;
         }
         const failed = run.status === "failed";
         const when = run.end_time ?? run.start_time;
@@ -789,7 +789,7 @@ export default function SystemJobsPage() {
             >
               {run.status}
             </Badge>
-            <span className="text-xs text-muted-foreground">
+            <span className="type-secondary text-muted-foreground">
               {when ? humanizeRelative(when) : ""}
             </span>
             {failed && (
@@ -805,7 +805,7 @@ export default function SystemJobsPage() {
       header: "Command",
       width: 280,
       cell: (r) => (
-        <span className="font-mono text-xs truncate block" title={r.command}>
+        <span className="font-mono type-secondary truncate block" title={r.command}>
           {r.command}
         </span>
       ),
@@ -994,7 +994,7 @@ export default function SystemJobsPage() {
         data-surface-value="db_job_count"
       >
         <div className="mb-1.5">
-          <h2 className="text-sm font-medium">Database jobs (pg_cron)</h2>
+          <h2 className="type-title">Database jobs (pg_cron)</h2>
           {/* pg_cron jobs: no Run now — several are destructive purges and pg_cron has no run-once. */}
         </div>
         <NonEditableContextMenu
@@ -1184,7 +1184,7 @@ function SystemJobEditDialog({
         <DialogHeader>
           <DialogTitle>Edit {task.title}</DialogTitle>
           <DialogDescription>
-            <span className="text-xs">{humanizeIdentifier(task.tool_name)}</span> — change
+            <span className="type-secondary">{humanizeIdentifier(task.tool_name)}</span> — change
             when it runs and what it runs with. Enable/disable lives on the row.
           </DialogDescription>
         </DialogHeader>
@@ -1204,7 +1204,7 @@ function SystemJobEditDialog({
                 ))}
               </SelectContent>
             </Select>
-            <p className="text-xs text-muted-foreground">
+            <p className="type-secondary text-muted-foreground">
               Canonical Feature Registry identity; the job cannot exist by name
               alone.
             </p>
@@ -1237,7 +1237,7 @@ function SystemJobEditDialog({
                 placeholder="900"
               />
               {Number(everySeconds) > 0 && (
-                <p className="text-xs text-muted-foreground">
+                <p className="type-secondary text-muted-foreground">
                   {humanizeTrigger("interval", {
                     every_seconds: Number(everySeconds),
                   })}
@@ -1254,7 +1254,7 @@ function SystemJobEditDialog({
                   onChange={(e) => setExpression(e.target.value)}
                   placeholder="0 9 * * 1-5"
                 />
-                <p className="text-xs text-muted-foreground">
+                <p className="type-secondary text-muted-foreground">
                   {hint ??
                     "5 fields: minute hour day-of-month month day-of-week."}
                 </p>
@@ -1283,14 +1283,14 @@ function SystemJobEditDialog({
               }}
               placeholder="Leave untouched to keep the current args. {} clears them."
             />
-            <p className="text-xs text-muted-foreground">
+            <p className="type-secondary text-muted-foreground">
               {/* Sent as variables_args only when edited; current server args are not echoed back. */}
               Editing replaces the current args; it never merges.
             </p>
           </div>
 
           {formError && (
-            <ErrorNotice size="inline" className="text-xs" message={formError} />
+            <ErrorNotice size="inline" className="type-secondary" message={formError} />
           )}
         </div>
 
@@ -1382,7 +1382,7 @@ function DbJobEditDialog({
                 ))}
               </SelectContent>
             </Select>
-            <p className="text-xs text-muted-foreground">
+            <p className="type-secondary text-muted-foreground">
               Canonical Feature Registry identity; the job cannot exist by name
               alone.
             </p>
@@ -1396,7 +1396,7 @@ function DbJobEditDialog({
               onChange={(e) => setSchedule(e.target.value)}
               placeholder="0 3 * * *  or  30 seconds"
             />
-            <p className="text-xs text-muted-foreground">
+            <p className="type-secondary text-muted-foreground">
               {hint ??
                 (looksLikeInterval
                   ? `Every ${schedule.trim().toLowerCase()}`
@@ -1405,13 +1405,13 @@ function DbJobEditDialog({
           </div>
 
           <div className="rounded-md bg-muted/50 p-2">
-            <p className="font-mono text-[11px] break-all text-muted-foreground">
+            <p className="font-mono type-meta break-all text-muted-foreground">
               {job.command}
             </p>
           </div>
 
           {formError && (
-            <ErrorNotice size="inline" className="text-xs" message={formError} />
+            <ErrorNotice size="inline" className="type-secondary" message={formError} />
           )}
         </div>
 

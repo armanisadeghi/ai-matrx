@@ -18,11 +18,11 @@ export function ProductBackdrop() {
       />
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -left-32 top-80 h-80 w-80 rounded-full bg-cyan-400/10 blur-3xl"
+        className="pointer-events-none absolute -left-32 top-80 h-80 w-80 rounded-full bg-info/10 blur-3xl"
       />
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -right-32 top-40 h-96 w-96 rounded-full bg-violet-500/10 blur-3xl"
+        className="pointer-events-none absolute -right-32 top-40 h-96 w-96 rounded-full bg-primary/10 blur-3xl"
       />
     </>
   );
@@ -71,7 +71,7 @@ export function ProductHero({
           {actions}
         </div>
         {note ? (
-          <div className="mt-4 text-sm leading-6 text-muted-foreground">
+          <div className="mt-4 type-body leading-6 text-muted-foreground">
             {note}
           </div>
         ) : null}
@@ -101,7 +101,7 @@ export function ProductSection({
     >
       <div className="mx-auto max-w-2xl text-center">
         {eyebrow ? (
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">
+          <p className="type-secondary font-semibold uppercase tracking-[0.14em] text-primary">
             {eyebrow}
           </p>
         ) : null}
@@ -150,7 +150,7 @@ export function FeatureGrid({ items }: { items: readonly FeatureItem[] }) {
             <StatusPill status={status} />
           </div>
           <h3 className="mt-4 text-lg font-bold tracking-tight">{title}</h3>
-          <p className="mt-1.5 text-sm leading-6 text-muted-foreground">
+          <p className="mt-1.5 type-body leading-6 text-muted-foreground">
             {body}
           </p>
         </li>
@@ -171,11 +171,11 @@ export function Steps({
           key={title}
           className="rounded-3xl border border-border/80 bg-card/90 p-5"
         >
-          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary type-body font-bold text-primary-foreground">
             {index + 1}
           </span>
           <h3 className="mt-4 text-lg font-bold tracking-tight">{title}</h3>
-          <p className="mt-1.5 text-sm leading-6 text-muted-foreground">
+          <p className="mt-1.5 type-body leading-6 text-muted-foreground">
             {body}
           </p>
         </li>
@@ -201,7 +201,7 @@ export function TrustList({
           </span>
           <div>
             <h3 className="text-base font-bold tracking-tight">{title}</h3>
-            <p className="mt-1 text-sm leading-6 text-muted-foreground">
+            <p className="mt-1 type-body leading-6 text-muted-foreground">
               {body}
             </p>
           </div>
@@ -229,7 +229,7 @@ export function Faq({ items }: { items: readonly FaqItem[] }) {
               aria-hidden="true"
             />
           </summary>
-          <p className="pb-1 pt-2 text-sm leading-6 text-muted-foreground">
+          <p className="pb-1 pt-2 type-body leading-6 text-muted-foreground">
             {answer}
           </p>
         </details>

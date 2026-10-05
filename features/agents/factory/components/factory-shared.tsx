@@ -1,8 +1,8 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
 import { StateChip, type ChipTone } from "@/components/mardown-display/blocks/result-kinds/result-kind-shared";
 
+import { Spinner } from "@/components/ui/loaders/Spinner";
 const SPINE_TONE: Record<string, ChipTone> = {
   completed: "good",
   failed: "bad",
@@ -24,7 +24,7 @@ export function SpineStatusChip({ status }: { status: string }) {
     <StateChip
       label={SPINE_LABEL[status] ?? status}
       tone={SPINE_TONE[status] ?? "neutral"}
-      icon={status === "running" ? <Loader2 className="size-3 animate-spin" /> : undefined}
+      icon={status === "running" ? <Spinner size="xs" className="text-current" /> : undefined}
     />
   );
 }

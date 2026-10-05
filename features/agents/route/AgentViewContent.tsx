@@ -182,7 +182,7 @@ function CopyableIdRow({
       >
         <span className="truncate">{value}</span>
         {copied === copyKey ? (
-          <Check className="w-3 h-3 text-emerald-500 shrink-0" />
+          <Check className="w-3 h-3 text-success shrink-0" />
         ) : (
           <Copy className="w-3 h-3 opacity-60 group-hover:opacity-100 shrink-0" />
         )}
@@ -561,7 +561,7 @@ export function AgentViewContent({ agentId, recordSections }: { agentId: string;
         </div>
 
         {dataIssues.length > 0 && (
-          <Alert className="border-amber-500/50 bg-amber-500/10 text-amber-950 dark:text-amber-100">
+          <Alert className="border-warning/50 bg-warning/10 text-warning">
             <AlertTriangle className="h-4 w-4" />
             <AlertTitle>
               Recovered {dataIssues.length} stored data{" "}
@@ -651,7 +651,7 @@ export function AgentViewContent({ agentId, recordSections }: { agentId: string;
                   aria-label="Copy agent ID"
                 >
                   {copied === "agent-id" ? (
-                    <Check className="w-3 h-3 text-emerald-500 shrink-0" />
+                    <Check className="w-3 h-3 text-success shrink-0" />
                   ) : (
                     <Copy className="w-3 h-3 opacity-60 group-hover:opacity-100 shrink-0" />
                   )}
@@ -814,7 +814,7 @@ export function AgentViewContent({ agentId, recordSections }: { agentId: string;
               <Card>
                 <CardHeader className="pb-2 flex-row items-center justify-between space-y-0">
                   <CardTitle className="flex items-center gap-2 type-body">
-                    <Variable className="w-4 h-4 text-purple-500" />
+                    <Variable className="w-4 h-4 text-primary" />
                     Variables ({variableCount})
                   </CardTitle>
                   <CopyButtons
@@ -893,7 +893,7 @@ export function AgentViewContent({ agentId, recordSections }: { agentId: string;
               <Card>
                 <CardHeader className="pb-2 flex-row items-center justify-between space-y-0">
                   <CardTitle className="flex items-center gap-2 type-body">
-                    <Layers className="w-4 h-4 text-cyan-500" />
+                    <Layers className="w-4 h-4 text-info" />
                     Context Policies ({contextPolicyCount})
                   </CardTitle>
                   <CopyButtons
@@ -932,7 +932,7 @@ export function AgentViewContent({ agentId, recordSections }: { agentId: string;
                         key={i}
                         className="flex items-start gap-3 p-2.5 rounded-lg bg-muted/30"
                       >
-                        <code className="type-secondary font-semibold text-cyan-600 dark:text-cyan-400 shrink-0">
+                        <code className="type-secondary font-semibold text-info shrink-0">
                           {slot.key}
                         </code>
                         <div className="flex-1 min-w-0 type-body space-y-0.5">
@@ -965,7 +965,7 @@ export function AgentViewContent({ agentId, recordSections }: { agentId: string;
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="flex items-center gap-2 type-body">
-                    <Wrench className="w-4 h-4 text-orange-500" />
+                    <Wrench className="w-4 h-4 text-warning" />
                     Tools ({totalTools})
                   </CardTitle>
                 </CardHeader>
@@ -999,7 +999,7 @@ export function AgentViewContent({ agentId, recordSections }: { agentId: string;
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="flex items-center gap-2 type-body">
-                    <Server className="w-4 h-4 text-blue-500" />
+                    <Server className="w-4 h-4 text-info" />
                     MCP Servers ({mcpCount})
                   </CardTitle>
                 </CardHeader>
@@ -1024,7 +1024,7 @@ export function AgentViewContent({ agentId, recordSections }: { agentId: string;
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="flex items-center gap-2 type-body">
-                    <FileJson className="w-4 h-4 text-pink-500" />
+                    <FileJson className="w-4 h-4 text-primary" />
                     Output Schema
                   </CardTitle>
                 </CardHeader>
@@ -1046,7 +1046,7 @@ export function AgentViewContent({ agentId, recordSections }: { agentId: string;
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="flex items-center gap-2 type-body">
-                    <MessageSquare className="w-4 h-4 text-amber-500" />
+                    <MessageSquare className="w-4 h-4 text-warning" />
                     System Instructions
                   </CardTitle>
                 </CardHeader>

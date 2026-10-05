@@ -80,7 +80,7 @@ function ReorderBoard() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-4 p-6">
-      <div className="flex items-center gap-3 text-sm">
+      <div className="flex items-center gap-3 type-body">
         <span className="font-medium">Supply reorder points</span>
         <span className="text-muted-foreground">table {status ?? "…"}</span>
         <span className="text-muted-foreground">{total ?? 0} rows</span>
@@ -88,9 +88,9 @@ function ReorderBoard() {
           Add 3 sample items
         </button>
       </div>
-      {error && <p className="text-sm text-destructive">{error.message}</p>}
+      {error && <p className="type-body text-destructive">{error.message}</p>}
       <form
-        className="flex flex-wrap items-end gap-2 text-sm"
+        className="flex flex-wrap items-end gap-2 type-body"
         onSubmit={(e) => {
           e.preventDefault();
           if (!item.trim() || !reorderAt) return;
@@ -103,8 +103,8 @@ function ReorderBoard() {
         <label className="flex flex-col">Reorder at<input className="w-24 rounded border px-2 py-1" type="number" required value={reorderAt} onChange={(e) => setReorderAt(e.target.value)} /></label>
         <button type="submit" className="rounded border px-3 py-1" disabled={busy !== null}>Save</button>
       </form>
-      {lastWrite && <p className="text-xs text-muted-foreground" data-testid="last-write">{lastWrite}</p>}
-      <table className="w-full text-sm">
+      {lastWrite && <p className="type-secondary text-muted-foreground" data-testid="last-write">{lastWrite}</p>}
+      <table className="w-full type-body">
         <thead><tr className="text-left text-muted-foreground"><th>Item</th><th>Category</th><th>On hand</th><th>Reorder at</th><th>Unit cost</th><th></th></tr></thead>
         <tbody>
           {loading && rows.length === 0 && <tr><td colSpan={6}>Loading…</td></tr>}

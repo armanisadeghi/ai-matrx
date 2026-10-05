@@ -50,7 +50,7 @@ export function VersionIdBadge({
           {showLabel && <span className="opacity-60">id</span>}
           <span className="tabular-nums">{short}</span>
           {copied ? (
-            <Check className="w-2.5 h-2.5 text-emerald-500" />
+            <Check className="w-2.5 h-2.5 text-success" />
           ) : (
             <Copy className="w-2.5 h-2.5" />
           )}

@@ -11,7 +11,7 @@
 // editor says so. There is no Unlimited option and blank never saves.
 
 import { useCallback, useEffect, useState } from "react";
-import { Loader2, X } from "lucide-react";
+import { X } from "lucide-react";
 import { Input } from "@ai-matrx/design-system/controls";
 import { toast } from "@/lib/toast";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
@@ -25,6 +25,7 @@ import {
   parseCustomLimit,
 } from "../enterpriseCustom";
 
+import { Spinner } from "@/components/ui/loaders/Spinner";
 function CustomCell({
   period,
   saved,
@@ -117,7 +118,7 @@ function CustomCell({
 
   return (
     <label className="group block min-w-0 space-y-0.5">
-      <span className="block text-[11px] font-medium text-muted-foreground">{label}</span>
+      <span className="block type-meta font-medium text-muted-foreground">{label}</span>
       <div className="relative">
         <Input
           className="w-full" numeric mark={draft !== null && draft.trim() !== savedText ? "changed" : saved === undefined && draft === null ? "inherited" : undefined}
@@ -133,7 +134,7 @@ function CustomCell({
           }}
         />
         {saving ? (
-          <Loader2 className="absolute right-1.5 top-1/2 h-3 w-3 -translate-y-1/2 animate-spin text-muted-foreground" />
+          <Spinner size="xs" className="absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
         ) : saved !== undefined ? (
           <button
             type="button"
@@ -151,7 +152,7 @@ function CustomCell({
       </div>
       <span
         className={cn(
-          "block truncate text-right text-[11px] text-muted-foreground",
+          "block truncate text-right type-meta text-muted-foreground",
           value.trim() === "0" && "text-warning",
         )}
       >
@@ -197,18 +198,18 @@ export function EnterpriseCustomLimitsEditor({
       aria-label="Enterprise custom limits"
     >
       <div className="mb-1.5 flex items-baseline justify-between gap-2">
-        <h3 className="text-xs font-semibold">Custom limits · AI points per person</h3>
+        <h3 className="type-secondary font-semibold">Custom limits · AI points per person</h3>
         {values && setCount === 0 ? (
-          <span className="truncate text-[11px] text-warning">
+          <span className="truncate type-meta text-warning">
             Not set — members use their own plan
           </span>
         ) : null}
       </div>
       {error ? (
-        <p className="text-xs text-destructive">{error}</p>
+        <p className="type-secondary text-destructive">{error}</p>
       ) : !values ? (
-        <div className="flex h-12 items-center gap-2 text-xs text-muted-foreground">
-          <Loader2 className="h-3 w-3 animate-spin" /> Reading custom values
+        <div className="flex h-12 items-center gap-2 type-secondary text-muted-foreground">
+          <Spinner size="xs" className="text-current" /> Reading custom values
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-x-5 gap-y-1 pr-4 sm:grid-cols-5">

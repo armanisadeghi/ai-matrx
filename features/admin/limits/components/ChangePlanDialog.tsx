@@ -18,7 +18,6 @@
 // unlimited — members inherit the values entered there.
 
 import { useEffect, useState } from "react";
-import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -46,6 +45,7 @@ import { groupPlansByAudience, planPriceLabel, type Plan } from "../types";
 import { isEnterpriseAudience } from "../enterpriseCustom";
 import { EnterpriseCustomLimitsEditor } from "./EnterpriseCustomLimitsEditor";
 
+import { Spinner } from "@/components/ui/loaders/Spinner";
 const DEFAULT_CHOICE = "__default__";
 
 export type ChangePlanSubject =
@@ -158,7 +158,7 @@ export function ChangePlanDialog({
         </DialogHeader>
         <div className="space-y-3">
           {loadError ? (
-            <p className="text-sm text-destructive">{loadError}</p>
+            <p className="type-body text-destructive">{loadError}</p>
           ) : (
             <Select value={choice} onValueChange={setChoice} disabled={!plans}>
               <SelectTrigger aria-label="Plan">
@@ -213,7 +213,7 @@ export function ChangePlanDialog({
           <Button variant="quiet" onClick={onClose}>
             Cancel
           </Button>
-          <Button icon={saving && <Loader2 className="animate-spin" />} variant="primary" onClick={() => void save()} disabled={saving || !choice || !!monthsError || (givesFreeTime && cap === null)}>
+          <Button icon={saving && <Spinner size="xs" className="text-current" />} variant="primary" onClick={() => void save()} disabled={saving || !choice || !!monthsError || (givesFreeTime && cap === null)}>
             Save plan
           </Button>
         </DialogFooter>

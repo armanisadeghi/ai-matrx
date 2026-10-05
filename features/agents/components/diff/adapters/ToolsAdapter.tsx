@@ -55,7 +55,7 @@ function ToolsDiffRenderer({ node, enrichment }: FieldDiffProps) {
               className={cn(
                 "px-3 py-1.5 border-r border-border",
                 status === "removed"
-                  ? "bg-red-50 text-red-700 dark:bg-red-950/15 dark:text-red-300"
+                  ? "bg-destructive/10 text-destructive bg-destructive/15"
                   : "",
                 status === "added" ? "text-muted-foreground/50" : "",
                 status === "unchanged" ? "text-foreground/80" : "",
@@ -75,7 +75,7 @@ function ToolsDiffRenderer({ node, enrichment }: FieldDiffProps) {
               className={cn(
                 "px-3 py-1.5",
                 status === "added"
-                  ? "bg-green-50 text-green-700 dark:bg-green-950/15 dark:text-green-300"
+                  ? "bg-success/10 text-success bg-success/15"
                   : "",
                 status === "removed" ? "text-muted-foreground/50" : "",
                 status === "unchanged" ? "text-foreground/80" : "",

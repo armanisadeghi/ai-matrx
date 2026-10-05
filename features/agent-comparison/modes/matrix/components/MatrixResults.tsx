@@ -9,7 +9,7 @@
 
 import { useState } from "react";
 import { RichContent } from "@/components/rich-content/RichContent";
-import { ExternalLink, History, Loader2, RotateCw } from "lucide-react";
+import { ExternalLink, History, RotateCw } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { Cost } from "@/components/cost/Cost";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -32,6 +32,7 @@ import {
 import { selectMatrixCells, selectMatrixSetup } from "../redux/selectors";
 import type { MatrixCell, MatrixVariant } from "../types";
 
+import { Spinner } from "@/components/ui/loaders/Spinner";
 const nf = new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 });
 const nf1 = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
 
@@ -43,7 +44,7 @@ function tokens(n: number | null | undefined): string {
 /** Total input, then its uncached and cached parts, then output. */
 function TokenLine({ m, className }: { m: Metrics; className?: string }) {
   return (
-    <span className={cn("text-[11px] text-muted-foreground tabular-nums", className)}>
+    <span className={cn("type-meta text-muted-foreground tabular-nums", className)}>
       in {tokens(m.inputAll)}
       <span className="text-muted-foreground/70">
         {" "}({tokens(m.input)} new · {tokens(m.cached)} cached)
@@ -92,7 +93,7 @@ export function MatrixResults({
   const first = colAvgs[0];
 
   if (rows.length === 0 || cols.length === 0) {
-    return <div className="p-8 text-center text-sm text-muted-foreground">Set up rows and columns first</div>;
+    return <div className="p-8 text-center type-body text-muted-foreground">Set up rows and columns first</div>;
   }
 
   return (
@@ -117,7 +118,7 @@ export function MatrixResults({
         </div>
       )}
       <div className="overflow-x-auto rounded-lg border border-border bg-card">
-        <table className="w-full text-xs border-collapse">
+        <table className="w-full type-secondary border-collapse">
           <thead>
             <tr className="border-b border-border bg-muted/40">
               <th className="sticky left-0 z-10 bg-muted/40 text-left font-semibold px-2 py-2 min-w-48">
@@ -149,7 +150,7 @@ export function MatrixResults({
                         <span
                           className={cn(
                             "shrink-0 h-4 px-1 rounded text-[9px] font-medium inline-flex items-center",
-                            used ? "bg-amber-500/15 text-amber-600" : "bg-muted text-muted-foreground",
+                            used ? "bg-warning/15 text-warning" : "bg-muted text-muted-foreground",
                           )}
                         >
                           {used ? "tools" : "no tools"}
@@ -175,7 +176,7 @@ export function MatrixResults({
                         <Cost usd={rowSum.cost} short />
                         <div className="text-muted-foreground">{tokens(rowSum.total)} tok</div>
                         {rowSum.unfinished > 0 && (
-                          <div className="text-rose-600">{unfinishedLabel(rowCells)}</div>
+                          <div className="text-destructive">{unfinishedLabel(rowCells)}</div>
                         )}
                       </>
                     ) : (
@@ -247,7 +248,7 @@ function FootRow({
           ) : (
             "—"
           )}
-          {unfinished?.[i] && <span className="block text-rose-600">{unfinished[i]}</span>}
+          {unfinished?.[i] && <span className="block text-destructive">{unfinished[i]}</span>}
         </td>
       ))}
       <td />
@@ -309,15 +310,15 @@ function CellButton({
             {repeats.map((c, i) => (
               <span key={i} className={cn("w-2 h-2 rounded-full shrink-0", STATUS_DOT[statusOf(c)])} />
             ))}
-            {running && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />}
-            {!avg && <span className="text-[11px] text-muted-foreground">{label}</span>}
+            {running && <Spinner size="xs" className="text-muted-foreground" />}
+            {!avg && <span className="type-meta text-muted-foreground">{label}</span>}
             {shown && <Cost usd={shown.cost} short className="ml-auto font-medium" />}
           </div>
           {shown && <TokenLine m={shown} className="block mt-0.5" />}
         </button>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-[28rem] max-w-[90vw] p-0">
-        <div className="px-3 py-2 border-b border-border text-xs font-medium truncate">
+        <div className="px-3 py-2 border-b border-border type-secondary font-medium truncate">
           {rowLabel} × {colLabel}
         </div>
         <div className="max-h-[60vh] overflow-y-auto divide-y divide-border">
@@ -346,7 +347,7 @@ function CellDetail({
   const r = cell?.result ?? null;
   const status = statusOf(cell);
   return (
-    <div className="px-3 py-2 space-y-1.5 text-xs">
+    <div className="px-3 py-2 space-y-1.5 type-secondary">
       <div className="flex items-center gap-2">
         <span className={cn("w-2 h-2 rounded-full", STATUS_DOT[status])} />
         <span className="font-medium capitalize">{status === "empty" ? "Not run" : status}</span>
@@ -376,8 +377,8 @@ function CellDetail({
           {cell ? "Re-run" : "Run"}
         </button>
       </div>
-      {cell?.error && <div className="text-rose-600 break-words">{cell.error}</div>}
-      {cell?.stalled && <div className="text-amber-600">Runner stopped responding</div>}
+      {cell?.error && <div className="text-destructive break-words">{cell.error}</div>}
+      {cell?.stalled && <div className="text-warning">Runner stopped responding</div>}
       {r && (
         <>
           <div className="grid grid-cols-4 gap-x-2 gap-y-0.5 tabular-nums">
@@ -398,8 +399,8 @@ function CellDetail({
                 <span
                   key={t.name}
                   className={cn(
-                    "h-5 px-1.5 rounded text-[10px] font-mono inline-flex items-center",
-                    isBundleLister(t.name) ? "bg-muted text-muted-foreground" : "bg-amber-500/15 text-amber-700",
+                    "h-5 px-1.5 rounded type-meta font-mono inline-flex items-center",
+                    isBundleLister(t.name) ? "bg-muted text-muted-foreground" : "bg-warning/15 text-warning",
                   )}
                 >
                   {t.name} ×{t.count}
@@ -414,7 +415,7 @@ function CellDetail({
       )}
       {cell && cell.history.length > 0 && (
         <div className="pt-1 space-y-0.5">
-          <div className="text-[10px] text-muted-foreground">Earlier attempts</div>
+          <div className="type-meta text-muted-foreground">Earlier attempts</div>
           {[...cell.history].reverse().map((h) => (
             <div key={`${h.attempt}-${h.conversationId}`} className="flex items-center gap-2 tabular-nums">
               <span className={cn("w-1.5 h-1.5 rounded-full", STATUS_DOT[h.status])} />
@@ -448,7 +449,7 @@ function CellDetail({
 function Stat({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="min-w-0">
-      <div className="text-[10px] text-muted-foreground">{label}</div>
+      <div className="type-meta text-muted-foreground">{label}</div>
       <div className="font-medium truncate">{value}</div>
     </div>
   );
@@ -491,13 +492,13 @@ function ToolsAnalysis({
   return (
     <div className="grid gap-4 lg:grid-cols-2">
       <section className="rounded-lg border border-border bg-card overflow-x-auto">
-        <header className="flex items-center gap-2 h-9 px-3 border-b border-border text-xs">
+        <header className="flex items-center gap-2 h-9 px-3 border-b border-border type-secondary">
           <span className="font-semibold">Tools vs no tools</span>
           <span className="text-muted-foreground tabular-nums">
             {toolRows.size} of {toolRows.size + noToolRows.size} rows used tools ({nf.format(share * 100)}%)
           </span>
         </header>
-        <table className="w-full text-xs">
+        <table className="w-full type-secondary">
           <thead>
             <tr className="border-b border-border text-muted-foreground">
               <th className="text-left font-medium px-3 py-1.5">{cols.length ? "Column" : ""}</th>
@@ -527,10 +528,10 @@ function ToolsAnalysis({
 
       {pairs.length > 0 && (
         <section className="rounded-lg border border-border bg-card overflow-x-auto">
-          <header className="flex items-center h-9 px-3 border-b border-border text-xs font-semibold">
+          <header className="flex items-center h-9 px-3 border-b border-border type-secondary font-semibold">
             Break-even share of tool rows
           </header>
-          <table className="w-full text-xs">
+          <table className="w-full type-secondary">
             <thead>
               <tr className="border-b border-border text-muted-foreground">
                 <th className="text-left font-medium px-3 py-1.5">Pair</th>
@@ -580,7 +581,7 @@ function InputCell({ m }: { m: Metrics | null }) {
   return (
     <span className="flex flex-col items-end" title={`${tokens(m.input)} uncached + ${tokens(m.cached)} cached`}>
       <span>{tokens(m.inputAll)}</span>
-      <span className="text-[10px] text-muted-foreground">
+      <span className="type-meta text-muted-foreground">
         {tokens(m.input)} new · {tokens(m.cached)} cached
       </span>
     </span>

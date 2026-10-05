@@ -70,7 +70,7 @@ function VariablesDiffRenderer({ node }: FieldDiffProps) {
               className={cn(
                 "px-3 py-1.5 border-r border-border whitespace-pre-wrap",
                 changed && oldVar
-                  ? "bg-red-50 text-red-700 dark:bg-red-950/15 dark:text-red-300"
+                  ? "bg-destructive/10 text-destructive bg-destructive/15"
                   : "text-foreground/80",
                 !oldVar ? "text-muted-foreground/50" : "",
               )}
@@ -81,7 +81,7 @@ function VariablesDiffRenderer({ node }: FieldDiffProps) {
               className={cn(
                 "px-3 py-1.5 whitespace-pre-wrap",
                 changed && newVar
-                  ? "bg-green-50 text-green-700 dark:bg-green-950/15 dark:text-green-300"
+                  ? "bg-success/10 text-success bg-success/15"
                   : "text-foreground/80",
                 !newVar ? "text-muted-foreground/50" : "",
               )}
@@ -128,10 +128,10 @@ function VariableRow({ child }: { child: DiffNode }) {
         className={cn(
           "px-3 py-1.5 border-r border-border whitespace-pre-wrap",
           child.changeType === "removed"
-            ? "bg-red-50 text-red-700 dark:bg-red-950/15 dark:text-red-300"
+            ? "bg-destructive/10 text-destructive bg-destructive/15"
             : "",
           child.changeType === "modified"
-            ? "bg-red-50 text-red-700 dark:bg-red-950/15 dark:text-red-300"
+            ? "bg-destructive/10 text-destructive bg-destructive/15"
             : "",
           child.changeType === "added" ? "text-muted-foreground/50" : "",
           child.changeType === "unchanged" ? "text-foreground/80" : "",
@@ -143,10 +143,10 @@ function VariableRow({ child }: { child: DiffNode }) {
         className={cn(
           "px-3 py-1.5 whitespace-pre-wrap",
           child.changeType === "added"
-            ? "bg-green-50 text-green-700 dark:bg-green-950/15 dark:text-green-300"
+            ? "bg-success/10 text-success bg-success/15"
             : "",
           child.changeType === "modified"
-            ? "bg-green-50 text-green-700 dark:bg-green-950/15 dark:text-green-300"
+            ? "bg-success/10 text-success bg-success/15"
             : "",
           child.changeType === "removed" ? "text-muted-foreground/50" : "",
           child.changeType === "unchanged" ? "text-foreground/80" : "",

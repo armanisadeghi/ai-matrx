@@ -56,7 +56,7 @@ export function ToolNamesInput({
       {value.map((name) => (
         <span
           key={name}
-          className="inline-flex items-center gap-1 h-6 pl-2 pr-1 rounded border border-border bg-muted/40 text-[11px] font-mono"
+          className="inline-flex items-center gap-1 h-6 pl-2 pr-1 rounded border border-border bg-muted/40 type-meta font-mono"
         >
           {name}
           <button
@@ -98,10 +98,10 @@ export function ToolNamesInput({
           />
           <div className="max-h-64 overflow-y-auto">
             {status === "loading" && (
-              <div className="px-2 py-1.5 text-xs text-muted-foreground">Loading tools…</div>
+              <div className="px-2 py-1.5 type-secondary text-muted-foreground">Loading tools…</div>
             )}
             {status === "failed" && (
-              <div className="px-2 py-1.5 text-xs text-destructive">Tool list did not load</div>
+              <div className="px-2 py-1.5 type-secondary text-destructive">Tool list did not load</div>
             )}
             {candidates.map((t) => (
               <button
@@ -110,8 +110,8 @@ export function ToolNamesInput({
                 onClick={() => add(t.name)}
                 className="w-full flex items-center justify-between gap-2 px-2 py-1 rounded text-left hover:bg-muted"
               >
-                <span className="text-xs font-mono truncate">{t.name}</span>
-                <span className="text-[10px] text-muted-foreground shrink-0">{t.category}</span>
+                <span className="type-secondary font-mono truncate">{t.name}</span>
+                <span className="type-meta text-muted-foreground shrink-0">{t.category}</span>
               </button>
             ))}
             {query.trim() && !tools.some((t) => t.name === query.trim()) && (

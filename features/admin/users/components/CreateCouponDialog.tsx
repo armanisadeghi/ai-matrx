@@ -8,7 +8,7 @@
 // existing-account coupons).
 
 import { useEffect, useState } from "react";
-import { Loader2, Send, X } from "lucide-react";
+import { Send, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -46,6 +46,7 @@ import {
 import { USERS_ADMIN_LOCATION } from "../constants";
 import { freeTimePlans, planOptionLabel } from "./GiveFreeMonthsDialog";
 
+import { Spinner } from "@/components/ui/loaders/Spinner";
 interface PickedPerson {
   id: string;
   label: string;
@@ -197,15 +198,15 @@ export function CreateCouponDialog({
                 })}
               />
             </div>
-            <ul className="max-h-80 divide-y divide-border overflow-y-auto rounded border border-border text-sm">
+            <ul className="max-h-80 divide-y divide-border overflow-y-auto rounded border border-border type-body">
               {created.map((c) => {
                 const redeemable = couponRedeemable(c, origin) ?? c.code;
                 return (
                   <li key={c.id} className="flex items-center gap-2 px-2 py-1.5">
-                    <code className="min-w-0 flex-1 truncate font-mono text-xs" title={redeemable}>
+                    <code className="min-w-0 flex-1 truncate font-mono type-secondary" title={redeemable}>
                       {redeemable}
                     </code>
-                    <span className="max-w-[140px] truncate text-xs text-muted-foreground">{labelFor(c) ?? ""}</span>
+                    <span className="max-w-[140px] truncate type-secondary text-muted-foreground">{labelFor(c) ?? ""}</span>
                     <Button
                       icon={<Send />}
                       variant="outline"
@@ -220,7 +221,7 @@ export function CreateCouponDialog({
           </div>
         ) : (
           <div className="space-y-3">
-            {loadError && <p className="text-sm text-destructive">{loadError}</p>}
+            {loadError && <p className="type-body text-destructive">{loadError}</p>}
             <div className="grid grid-cols-2 gap-2">
               <Select value={kind} onValueChange={(v) => setKind(v as CouponKind)}>
                 <SelectTrigger aria-label="Kind">
@@ -292,7 +293,7 @@ export function CreateCouponDialog({
                 {people.length > 0 && (
                   <div className="flex flex-wrap gap-1">
                     {people.map((p) => (
-                      <span key={p.id} className="inline-flex items-center gap-1 rounded border border-border px-1.5 py-0.5 text-xs">
+                      <span key={p.id} className="inline-flex items-center gap-1 rounded border border-border px-1.5 py-0.5 type-secondary">
                         {p.label}
                         <button
                           type="button"
@@ -326,7 +327,7 @@ export function CreateCouponDialog({
           </Button>
           {!created && (
             <Button
-              icon={saving && <Loader2 className="animate-spin" />}
+              icon={saving && <Spinner size="xs" className="text-current" />}
               variant="primary"
               onClick={() => void create()}
               disabled={saving || !planKey || !knobs || !!monthsError || !!batchError || invalid.length > 0}

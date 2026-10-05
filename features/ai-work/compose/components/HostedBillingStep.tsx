@@ -23,7 +23,6 @@ import {
   CircleAlert,
   ExternalLink,
   KeyRound,
-  Loader2,
   LogOut,
   RefreshCw,
   X,
@@ -43,6 +42,7 @@ import {
   type OwnPlanStatus,
 } from "@/features/ai-work/lib/ownPlan";
 
+import { Spinner } from "@/components/ui/loaders/Spinner";
 const PROVIDER = "claude_code" as const;
 
 type Busy = "reading" | "starting" | "code" | "cancel" | "sign-out" | null;
@@ -97,7 +97,7 @@ export function HostedBillingStep({
 
   return (
     <div className="mt-3 flex flex-col gap-2">
-      <span className="text-xs font-medium text-foreground">Who pays</span>
+      <span className="type-secondary font-medium text-foreground">Who pays</span>
       <ToggleGroup
         type="single"
         variant="outline"
@@ -135,13 +135,13 @@ export function HostedBillingStep({
       {billing === "own_plan" && (
         <div className="flex flex-col gap-2 rounded-md border border-border p-2.5">
           {busy === "reading" && !status ? (
-            <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            <span className="flex items-center gap-1.5 type-secondary text-muted-foreground">
+              <Spinner size="xs" className="text-current" />
               Checking your Claude sign-in
             </span>
           ) : state === "signed_in" || state === "signed_in_not_plan" ? (
             <div className="flex flex-wrap items-center gap-2">
-              <span className="flex items-center gap-1.5 text-xs text-foreground">
+              <span className="flex items-center gap-1.5 type-secondary text-foreground">
                 {state === "signed_in" ? (
                   <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
                 ) : (
@@ -153,7 +153,7 @@ export function HostedBillingStep({
               </span>
               <Button
                 icon={busy === "sign-out" ? (
-                  <Loader2 className="animate-spin" />
+                  <Spinner size="xs" className="text-current" />
                 ) : (
                   <LogOut />
                 )}
@@ -206,7 +206,7 @@ export function HostedBillingStep({
                 </Button>
               </div>
               {state === "awaiting_browser" && status?.user_code && (
-                <span className="text-xs text-foreground">
+                <span className="type-secondary text-foreground">
                   Enter this code there:{" "}
                   <span className="font-mono">{status.user_code}</span>
                 </span>
@@ -229,7 +229,7 @@ export function HostedBillingStep({
                   />
                   <Button
                     icon={busy === "code" ? (
-                      <Loader2 className="animate-spin" />
+                      <Spinner size="xs" className="text-current" />
                     ) : (
                       <KeyRound />
                     )}
@@ -246,7 +246,7 @@ export function HostedBillingStep({
             <div className="flex flex-wrap items-center gap-2">
               <Button
                 icon={busy === "starting" ? (
-                  <Loader2 className="animate-spin" />
+                  <Spinner size="xs" className="text-current" />
                 ) : (
                   <KeyRound />
                 )}
@@ -258,14 +258,14 @@ export function HostedBillingStep({
                 Connect your Claude account
               </Button>
               {busy === "starting" && (
-                <span className="text-xs text-muted-foreground">
+                <span className="type-secondary text-muted-foreground">
                   Starting your sandbox can take a minute or two
                 </span>
               )}
             </div>
           )}
           {status?.detail && (
-            <span className="text-xs text-muted-foreground">
+            <span className="type-secondary text-muted-foreground">
               {status.detail}
             </span>
           )}

@@ -42,12 +42,12 @@ function ClassificationBadges({
   return (
     <>
       {showType && (
-        <span className="text-[10px] px-1 rounded bg-muted text-muted-foreground shrink-0">
+        <span className="type-meta px-1 rounded bg-muted text-muted-foreground shrink-0">
           {def.blockType === "render_kind" ? "kind" : def.blockType}
         </span>
       )}
       {showWebState && (
-        <span className="text-[10px] px-1 rounded border border-border/60 text-muted-foreground shrink-0">
+        <span className="type-meta px-1 rounded border border-border/60 text-muted-foreground shrink-0">
           {publishedToWebLabel(def.isPublic)}
         </span>
       )}
@@ -93,12 +93,12 @@ export function RenderBlocksSection() {
       <div className="flex-1 min-h-0 flex overflow-hidden">
         <div className="w-full min-w-0">
           {loading && definitions.length === 0 ? (
-            <div className="flex items-center justify-center py-10 text-muted-foreground text-sm gap-2">
+            <div className="flex items-center justify-center py-10 text-muted-foreground type-body gap-2">
               <Loader2 className="h-4 w-4 animate-spin" />
               Loading render blocks…
             </div>
           ) : error ? (
-            <div className="px-4 py-10 text-center text-sm text-destructive">
+            <div className="px-4 py-10 text-center type-body text-destructive">
               {error}
               <ErrorAlchemyMenu error={error} />
             </div>
@@ -106,7 +106,7 @@ export function RenderBlocksSection() {
             <div className="h-full overflow-y-auto overflow-x-hidden scrollbar-thin">
               <div className="p-2">
                 {categoryTree.length === 0 ? (
-                  <div className="px-4 py-10 text-center text-sm text-muted-foreground">
+                  <div className="px-4 py-10 text-center type-body text-muted-foreground">
                     No categories yet.
                   </div>
                 ) : (
@@ -168,21 +168,21 @@ function RenderBlockRow({
       <Blocks className="h-3.5 w-3.5 mt-0.5 text-muted-foreground shrink-0" />
       <span className="flex-1 min-w-0">
         <span className="flex items-center gap-1.5 min-w-0">
-          <span className="text-sm text-foreground truncate">{def.label}</span>
+          <span className="type-body text-foreground truncate">{def.label}</span>
           <ClassificationBadges def={def} />
           {!def.isActive && (
-            <span className="text-[10px] text-muted-foreground shrink-0">
+            <span className="type-meta text-muted-foreground shrink-0">
               inactive
             </span>
           )}
         </span>
         {def.description && (
-          <span className="block text-xs text-muted-foreground truncate">
+          <span className="block type-secondary text-muted-foreground truncate">
             {def.description}
           </span>
         )}
       </span>
-      <span className="hidden md:block max-w-[14rem] truncate text-[11px] font-mono text-muted-foreground/70 pt-0.5">
+      <span className="hidden md:block max-w-[14rem] truncate type-meta font-mono text-muted-foreground/70 pt-0.5">
         {def.blockId}
       </span>
     </button>
@@ -246,7 +246,7 @@ function CategoryTreeBranch({
         )}
         <span className="truncate flex-1">{node.category.label}</span>
         {hasItems && (
-          <span className="text-[10px] text-muted-foreground tabular-nums">
+          <span className="type-meta text-muted-foreground tabular-nums">
             {items.length}
           </span>
         )}
@@ -305,7 +305,7 @@ function UncategorizedBranch({
         )}
         <Folder className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
         <span className="truncate flex-1">Uncategorized</span>
-        <span className="text-[10px] text-muted-foreground tabular-nums">
+        <span className="type-meta text-muted-foreground tabular-nums">
           {items.length}
         </span>
       </button>
@@ -343,12 +343,12 @@ function RenderBlockDetail({
         </button>
         <div className="flex flex-col min-w-0 flex-1">
           <div className="flex items-center gap-1.5 min-w-0">
-            <span className="text-sm font-semibold text-foreground truncate">
+            <span className="type-title text-foreground truncate">
               {def.label}
             </span>
             <ClassificationBadges def={def} always />
           </div>
-          <div className="text-xs text-muted-foreground truncate font-mono">
+          <div className="type-secondary text-muted-foreground truncate font-mono">
             {def.blockId}
           </div>
         </div>
@@ -359,7 +359,7 @@ function RenderBlockDetail({
       >
         <div className="px-4 pt-3 shrink-0 space-y-2">
           {def.description && (
-            <p className="text-sm text-foreground/90">{def.description}</p>
+            <p className="type-body text-foreground/90">{def.description}</p>
           )}
           <TabsList>
             <TabsTrigger value="preview">Preview</TabsTrigger>
@@ -376,7 +376,7 @@ function RenderBlockDetail({
           value="template"
           className="flex-1 min-h-0 overflow-auto scrollbar-thin p-4"
         >
-          <pre className="text-xs font-mono bg-muted/30 p-3 rounded-md whitespace-pre-wrap">
+          <pre className="type-secondary font-mono bg-muted/30 p-3 rounded-md whitespace-pre-wrap">
             {def.template}
           </pre>
         </TabsContent>

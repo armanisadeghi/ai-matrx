@@ -15,7 +15,7 @@
 // replaced with the function's fresh answer.
 
 import { useEffect, useState } from "react";
-import { MoreHorizontal, RotateCcw, WalletCards, Loader2 } from "lucide-react";
+import { MoreHorizontal, RotateCcw, WalletCards } from "lucide-react";
 import { formatCount } from "@ai-matrx/kit/format";
 import { Input } from "@ai-matrx/design-system/controls";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
@@ -64,6 +64,7 @@ import {
 } from "../lib/usageLimits";
 import type { AdminUsageState, AdminUserRow } from "../types";
 
+import { Spinner } from "@/components/ui/loaders/Spinner";
 const SEGMENTS: ReadonlyArray<{ id: AccountSegment; label: string }> = [
   { id: "people", label: "People" },
   { id: "guests", label: "Guests" },
@@ -94,7 +95,7 @@ function displayName(row: AdminUserRow): string {
 
 function WindowCell({ row, period }: { row: AdminUserRow; period: string }) {
   const w = windowOf(row, period);
-  if (!w) return <span className="text-xs text-muted-foreground">—</span>;
+  if (!w) return <span className="type-secondary text-muted-foreground">—</span>;
   const ratio = windowRatio(w);
   const pct = ratio === null ? null : ratio === Infinity ? 999 : Math.min(999, Math.round(ratio * 100));
   const title = [
@@ -111,7 +112,7 @@ function WindowCell({ row, period }: { row: AdminUserRow; period: string }) {
           style={{ width: `${pct === null ? 0 : Math.min(100, pct)}%` }}
         />
       </div>
-      <div className="mt-0.5 flex items-baseline justify-between gap-1 text-[11px] tabular-nums">
+      <div className="mt-0.5 flex items-baseline justify-between gap-1 type-meta tabular-nums">
         <span className="truncate text-muted-foreground">
           {formatCount(w.used, { style: "compact" })} / {w.limit === null ? "no limit" : formatCount(w.limit, { style: "compact" })}
         </span>
@@ -200,7 +201,7 @@ function ResetDialog({
             <span>Note (optional)</span>
             <Input value={note} placeholder="Support: stuck after a failed run" onChange={(e) => setNote(e.target.value)} />
           </label>
-          <p className={cn("text-sm", ready ? "text-foreground" : "text-muted-foreground")}>
+          <p className={cn("type-body", ready ? "text-foreground" : "text-muted-foreground")}>
             {ready ? resetConsequence(name, periods) : "Pick the windows to clear."}
           </p>
         </div>
@@ -208,7 +209,7 @@ function ResetDialog({
           <Button variant="quiet" onClick={onClose}>
             Cancel
           </Button>
-          <Button icon={saving && <Loader2 className="animate-spin" />} variant="danger" onClick={() => void submit()} disabled={saving || !ready}>
+          <Button icon={saving && <Spinner size="xs" className="text-current" />} variant="danger" onClick={() => void submit()} disabled={saving || !ready}>
             Reset usage
           </Button>
         </DialogFooter>
@@ -276,24 +277,24 @@ export function UsageLimitsClient() {
       filter: "select",
       cell: (row) =>
         row.plan ? (
-          <div className="min-w-0 text-xs">
+          <div className="min-w-0 type-secondary">
             <div className="truncate">{row.plan.name}</div>
             {row.plan.organization ? (
               <AppLink
                 href={`/administration/users/organizations?org=${row.plan.organization.id}`}
-                className="block truncate text-[11px] text-primary underline-offset-2 hover:underline"
+                className="block truncate type-meta text-primary underline-offset-2 hover:underline"
                 onClick={(event) => event.stopPropagation()}
               >
                 via {row.plan.organization.name}
               </AppLink>
             ) : (
-              <div className="truncate text-[11px] text-muted-foreground">
+              <div className="truncate type-meta text-muted-foreground">
                 {row.plan.source === "grant" ? "assigned" : row.plan.source === "guest" ? "guest allowance" : row.plan.source === "organization" ? "organization plan" : "default plan"}
               </div>
             )}
           </div>
         ) : (
-          <span className="text-xs text-muted-foreground">—</span>
+          <span className="type-secondary text-muted-foreground">—</span>
         ),
       width: 150,
     },
@@ -306,7 +307,7 @@ export function UsageLimitsClient() {
       cell: (row) => {
         const state = row.plan?.state ?? "ok";
         return (
-          <span className={cn("inline-flex rounded border px-1.5 py-0.5 text-[11px] font-medium", STATE_BADGE[state])}>
+          <span className={cn("inline-flex rounded border px-1.5 py-0.5 type-meta font-medium", STATE_BADGE[state])}>
             {STATE_LABEL[state]}
           </span>
         );
@@ -330,7 +331,7 @@ export function UsageLimitsClient() {
       id: "month_points",
       header: "Points this month",
       accessorFn: (row) => row.plan?.month_points ?? 0,
-      cell: (row) => <span className="text-xs tabular-nums">{formatCount(row.plan?.month_points ?? 0)}</span>,
+      cell: (row) => <span className="type-secondary tabular-nums">{formatCount(row.plan?.month_points ?? 0)}</span>,
       align: "right",
       width: 120,
     },

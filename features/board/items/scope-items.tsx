@@ -19,7 +19,7 @@
  */
 
 import { useEffect, useState } from "react";
-import { Loader2, Tag } from "lucide-react";
+import { Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { readOf } from "@/components/read-state/ReadGate";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -37,6 +37,7 @@ import { entityComments, type BoardItemType, type ItemBodyProps, type PickerProp
 import { RecordList } from "./feature-items";
 import { titleToAdopt } from "./feature-items.logic";
 
+import { Spinner } from "@/components/ui/loaders/Spinner";
 export const SCOPE_ITEM_KEY = "scope";
 const NEW_SCOPE_TITLE = "New scope";
 
@@ -83,7 +84,7 @@ function ScopePicker({ onPick, onCancel }: PickerProps) {
         renderRow={(r) => (
           <>
             <span className="min-w-0 flex-1 truncate">{r.scope.name}</span>
-            <span className="shrink-0 truncate text-xs text-muted-foreground">{r.type.label_singular}</span>
+            <span className="shrink-0 truncate type-secondary text-muted-foreground">{r.type.label_singular}</span>
           </>
         )}
       />
@@ -101,16 +102,16 @@ function ScopeDraftBody({ onSource }: Pick<ItemBodyProps, "onSource">) {
   if (!settled) {
     return (
       <div className="flex h-full items-center justify-center" aria-busy="true" aria-label="Loading your scope types">
-        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        <Spinner size="sm" className="text-muted-foreground" />
       </div>
     );
   }
   if (!chosen) {
     return (
       <div className="flex h-full flex-col gap-2 overflow-y-auto bg-card p-4">
-        <p className="text-sm font-medium text-foreground">What kind of scope?</p>
+        <p className="type-title text-foreground">What kind of scope?</p>
         {types.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
+          <p className="type-body text-muted-foreground">
             You have no scope types yet. Define one on the Scopes page, then start a scope here.
           </p>
         ) : (
@@ -157,7 +158,7 @@ function ScopeRecordBody({ id, source, title, onSource }: ItemBodyProps & { id: 
       </div>
     ) : (
       <div className="flex h-full items-center justify-center" aria-busy="true" aria-label="Opening the scope">
-        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        <Spinner size="sm" className="text-muted-foreground" />
       </div>
     );
   }

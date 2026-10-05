@@ -61,7 +61,7 @@ export function StatusChip({
       className={cn(
         "inline-flex min-w-0 max-w-full items-center",
         variant === "header"
-          ? "h-5 shrink-0 gap-1.5 rounded-full bg-muted px-2 text-[11px] font-medium text-muted-foreground"
+          ? "h-5 shrink-0 gap-1.5 rounded-full bg-muted px-2 type-meta font-medium text-muted-foreground"
           : "gap-[0.45em] font-medium text-muted-foreground",
         status.tone === "danger" && "text-destructive",
       )}

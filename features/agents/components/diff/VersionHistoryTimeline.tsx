@@ -14,7 +14,6 @@ import { supabase } from "@ai-matrx/chat/host/db";
 import {
   GitCompareArrows,
   ArrowRight,
-  Loader2,
   ChevronDown,
   Atom,
   ShieldAlert,
@@ -34,6 +33,7 @@ import {
 import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
+import { Spinner } from "@/components/ui/loaders/Spinner";
 interface VersionHistoryTimelineProps {
   agentId: string;
   versions: AgentVersionHistoryItem[];
@@ -119,7 +119,7 @@ export function VersionHistoryTimeline({
   if (enrichLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-16 gap-3">
-        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+        <Spinner size="md" className="text-primary" />
         <div className="type-body text-muted-foreground">
           {/* read-gate-exempt: fetch progress shown only while the fetch is in flight, never a result count */}
           Loading version details... {progress.fetched}/{progress.total}

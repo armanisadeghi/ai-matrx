@@ -16,7 +16,7 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { ListChecks, Loader2 } from "lucide-react";
+import { ListChecks } from "lucide-react";
 import { BasicInput } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
@@ -36,6 +36,7 @@ import type { BoardItemType, ItemBodyProps, PickerProps } from "./types";
 import { RecordList } from "./feature-items";
 import { TableRecordBody } from "./data-items";
 
+import { Spinner } from "@/components/ui/loaders/Spinner";
 export const LIST_ITEM_KEY = "list";
 const NEW_LIST_TITLE = "New picklist";
 
@@ -85,7 +86,7 @@ function ListPicker({ onPick, onCancel }: PickerProps) {
         renderRow={(l) => (
           <>
             <span className="min-w-0 flex-1 truncate">{l.listName}</span>
-            <span className="shrink-0 truncate text-xs text-muted-foreground">
+            <span className="shrink-0 truncate type-secondary text-muted-foreground">
               {l.itemCount} {l.itemCount === 1 ? "choice" : "choices"}
               {l.organizationName ? ` · ${l.organizationName}` : ""}
             </span>
@@ -165,7 +166,7 @@ function ListDraftBody({ onSource }: Pick<ItemBodyProps, "onSource">) {
         aria-label="Picklist name"
         className="w-full max-w-xs"
       />
-      <Button icon={creating ? <Loader2 className="animate-spin" /> : <ListChecks />} variant="primary" onClick={() => void create()} disabled={creating || !name.trim() || !userId}>
+      <Button icon={creating ? <Spinner size="xs" className="text-current" /> : <ListChecks />} variant="primary" onClick={() => void create()} disabled={creating || !name.trim() || !userId}>
         Create
       </Button>
     </div>

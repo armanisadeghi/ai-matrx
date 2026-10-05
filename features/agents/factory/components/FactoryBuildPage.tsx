@@ -30,7 +30,6 @@ import {
   Check,
   ChevronRight,
   Circle,
-  Loader2,
   Repeat,
   SkipForward,
   X,
@@ -66,6 +65,7 @@ import {
 import { SpineStatusChip, formatDuration } from "./factory-shared";
 import { FACTORY_BASE_PATH } from "./FactoryBuildsPage";
 
+import { Spinner } from "@/components/ui/loaders/Spinner";
 const POLL_MS = 3000;
 
 export type RowStatus = "done" | "running" | "failed" | "skipped" | "pending";
@@ -191,7 +191,7 @@ export const StatusIcon: React.FC<{ status: RowStatus }> = ({ status }) => {
     case "failed":
       return <span className={cn(box, "bg-destructive/15 text-destructive")}><X className="size-3" /></span>;
     case "running":
-      return <span className={cn(box, "bg-primary/15 text-primary")}><Loader2 className="size-3 animate-spin" /></span>;
+      return <span className={cn(box, "bg-primary/15 text-primary")}><Spinner size="xs" className="text-current" /></span>;
     case "skipped":
       return <span className={cn(box, "bg-muted text-muted-foreground")}><SkipForward className="size-3" /></span>;
     default:

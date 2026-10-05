@@ -45,9 +45,9 @@ export function DesktopMock() {
         className="relative overflow-hidden rounded-2xl border border-border bg-card shadow-2xl"
       >
         <div className="flex items-center gap-1.5 border-b border-border bg-muted/50 px-4 py-3">
-          <span className="h-3 w-3 rounded-full bg-red-400/80" />
-          <span className="h-3 w-3 rounded-full bg-amber-400/80" />
-          <span className="h-3 w-3 rounded-full bg-emerald-400/80" />
+          <span className="h-3 w-3 rounded-full bg-destructive/80" />
+          <span className="h-3 w-3 rounded-full bg-warning/80" />
+          <span className="h-3 w-3 rounded-full bg-success/80" />
         </div>
         <div className="flex min-h-[19rem] sm:min-h-[22rem]">
           <div className="flex w-[4.5rem] shrink-0 flex-col gap-1 border-r border-border bg-muted/30 p-2 sm:w-24">
@@ -55,7 +55,7 @@ export function DesktopMock() {
               <div
                 key={label}
                 className={cn(
-                  "flex flex-col items-center gap-1 rounded-lg px-1 py-1.5 text-[10px] font-medium",
+                  "flex flex-col items-center gap-1 rounded-lg px-1 py-1.5 type-meta font-medium",
                   label === "Computer"
                     ? "bg-primary/12 text-primary"
                     : live
@@ -69,17 +69,17 @@ export function DesktopMock() {
             ))}
           </div>
           <div className="min-w-0 flex-1 p-4 sm:p-5">
-            <p className="text-sm font-bold">Computer</p>
-            <p className="mt-0.5 text-xs text-muted-foreground">
+            <p className="type-body font-bold">Computer</p>
+            <p className="mt-0.5 type-secondary text-muted-foreground">
               What your agents can use on this machine
             </p>
             <div className="mt-4 grid grid-cols-2 gap-2">
               {TOOLS.map((tool) => (
                 <div
                   key={tool}
-                  className="flex items-center gap-2 rounded-xl border border-border bg-background/70 px-3 py-2.5 text-xs font-medium"
+                  className="flex items-center gap-2 rounded-xl border border-border bg-background/70 px-3 py-2.5 type-secondary font-medium"
                 >
-                  <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
+                  <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-success" />
                   <span className="truncate">{tool}</span>
                 </div>
               ))}

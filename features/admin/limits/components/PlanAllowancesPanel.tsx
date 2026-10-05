@@ -225,7 +225,7 @@ function LimitCell({
     <td className="group px-1.5 py-1 align-top">
       <div className="relative">
         {isMicroUsd(column.capability) && (
-          <span className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+          <span className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 type-secondary text-muted-foreground">
             $
           </span>
         )}
@@ -293,13 +293,13 @@ function PlanMatrix({
   const groups = groupPlansByAudience(plans);
   return (
     <div className="overflow-x-auto rounded-md border border-border">
-      <table className="w-full min-w-max border-collapse text-sm">
+      <table className="w-full min-w-max border-collapse type-body">
         <thead className="bg-muted/40">
           <tr className="border-b border-border">
-            <th className="sticky left-0 z-10 min-w-36 bg-muted/40 px-3 py-2 text-left text-xs font-medium text-muted-foreground">
+            <th className="sticky left-0 z-10 min-w-36 bg-muted/40 px-3 py-2 text-left type-secondary font-medium text-muted-foreground">
               Plan
             </th>
-            <th className="min-w-24 whitespace-nowrap px-2 py-2 text-right text-xs font-medium text-muted-foreground">
+            <th className="min-w-24 whitespace-nowrap px-2 py-2 text-right type-secondary font-medium text-muted-foreground">
               Price
             </th>
             {columns.map((column) => {
@@ -307,7 +307,7 @@ function PlanMatrix({
               return (
                 <th
                   key={`${column.capability}|${column.period}`}
-                  className="min-w-28 px-1.5 py-2 text-right text-xs font-medium"
+                  className="min-w-28 px-1.5 py-2 text-right type-secondary font-medium"
                 >
                   {showCapability && (
                     <span className="block truncate font-mono type-meta text-muted-foreground">
@@ -387,7 +387,7 @@ function GroupRows({
             </span>
           </td>
           <td
-            className="min-w-24 whitespace-nowrap px-2 py-1.5 text-right align-top text-xs tabular-nums text-muted-foreground"
+            className="min-w-24 whitespace-nowrap px-2 py-1.5 text-right align-top type-secondary tabular-nums text-muted-foreground"
             title={
               plan.annual_cents !== null && plan.annual_cents !== plan.monthly_cents
                 ? `Billed yearly: ${planPriceLabel({ monthly_cents: plan.annual_cents, per_seat: plan.per_seat })}`
@@ -402,7 +402,7 @@ function GroupRows({
             </Link>
           </td>
           {isEnterpriseAudience(plan.audience) ? (
-            <td colSpan={columns.length} className="px-3 py-1.5 align-middle text-xs text-muted-foreground">
+            <td colSpan={columns.length} className="px-3 py-1.5 align-middle type-secondary text-muted-foreground">
               Custom per organization ·{" "}
               <Link
                 href="/administration/users/organizations?plan=enterprise"
@@ -528,12 +528,12 @@ export function PlanAllowancesPanel() {
   }, []);
 
   if (loading) {
-    return <p className="p-6 text-sm text-muted-foreground">Loading plans…</p>;
+    return <p className="p-6 type-body text-muted-foreground">Loading plans…</p>;
   }
   if (error) {
     return (
       <div className="p-6">
-        <p className="text-sm text-destructive">{error} <ErrorAlchemyMenu error={error} /></p>
+        <p className="type-body text-destructive">{error} <ErrorAlchemyMenu error={error} /></p>
         <Button className="mt-3" variant="outline" onClick={() => void load()}>
           Retry
         </Button>
@@ -548,10 +548,10 @@ export function PlanAllowancesPanel() {
     <div className="space-y-8">
       <section className="space-y-3">
         <div className="flex flex-wrap items-center gap-2">
-          <h3 className="text-sm font-semibold">AI points</h3>
+          <h3 className="type-title">AI points</h3>
           {pointsCap && <EnforcementBadge enforced={pointsCap.enforced} />}
           <span
-            className="text-xs text-muted-foreground"
+            className="type-secondary text-muted-foreground"
             title="Blank is unlimited, 0 is not included, — means the window is off."
           >
             per person, in points
@@ -592,7 +592,7 @@ export function PlanAllowancesPanel() {
 
       <section className="space-y-3">
         <div className="flex flex-wrap items-center gap-2">
-          <h3 className="text-sm font-semibold">Other allowances</h3>
+          <h3 className="type-title">Other allowances</h3>
           <div className="ml-auto flex items-center gap-1.5">
             <Select value={newCapability} onValueChange={setNewCapability}>
               <SelectTrigger className="w-52" aria-label="Capability">

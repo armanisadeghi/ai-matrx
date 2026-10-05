@@ -161,7 +161,7 @@ export function PatchEditor({
     <div className="space-y-1.5">
       {shown.map((f) => (
         <div key={f.key} className="flex items-start gap-2 min-w-0">
-          <span className="w-24 shrink-0 pt-1.5 text-[11px] font-medium text-muted-foreground">
+          <span className="w-24 shrink-0 pt-1.5 type-meta font-medium text-muted-foreground">
             {f.label}
           </span>
           <div className="flex-1 min-w-0">

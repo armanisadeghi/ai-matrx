@@ -140,7 +140,7 @@ function PlanRow({ plan, onSave }: { plan: Plan; onSave: (fields: PlanFields) =>
           className="w-32"
           onSave={(raw) => onSave({ name: raw })}
         />
-        <span className="mt-0.5 block font-mono text-[10px] text-muted-foreground">{plan.plan_key}</span>
+        <span className="mt-0.5 block font-mono type-meta text-muted-foreground">{plan.plan_key}</span>
       </td>
       <td className="px-1.5 py-1.5 align-top">
         <TextCell
@@ -178,7 +178,7 @@ function PlanRow({ plan, onSave }: { plan: Plan; onSave: (fields: PlanFields) =>
           onSave={saveAnnual}
         />
         {savings && (
-          <span className="mt-0.5 block text-[10px] text-emerald-600 dark:text-emerald-400">{savings}</span>
+          <span className="mt-0.5 block type-meta text-success">{savings}</span>
         )}
       </td>
       <td className="px-1.5 py-1.5 text-center align-top">
@@ -286,12 +286,12 @@ export function PlanDetailsPanel({ onChanged }: { onChanged?: () => void }) {
   );
 
   if (loading) {
-    return <p className="p-6 text-sm text-muted-foreground">Loading plans…</p>;
+    return <p className="p-6 type-body text-muted-foreground">Loading plans…</p>;
   }
   if (error) {
     return (
       <div className="p-6">
-        <p className="text-sm text-destructive">
+        <p className="type-body text-destructive">
           {error} <ErrorAlchemyMenu error={error} />
         </p>
         <Button className="mt-3" variant="outline" onClick={() => void load()}>
@@ -304,14 +304,14 @@ export function PlanDetailsPanel({ onChanged }: { onChanged?: () => void }) {
   const groups = groupPlansByAudience(plans);
   return (
     <div className="overflow-x-auto rounded-md border border-border">
-      <table className="w-full border-collapse text-sm">
+      <table className="w-full border-collapse type-body">
         <thead className="bg-muted/40">
           <tr className="border-b border-border">
             {HEADERS.map((h, i) => (
               <th
                 key={h}
                 className={cn(
-                  "whitespace-nowrap px-1.5 py-2 text-left text-xs font-medium text-muted-foreground",
+                  "whitespace-nowrap px-1.5 py-2 text-left type-secondary font-medium text-muted-foreground",
                   i === 0 && "sticky left-0 z-10 bg-muted/40 px-3",
                 )}
               >
@@ -344,7 +344,7 @@ function GroupBlock({
       <tr className="border-b border-border bg-muted/20">
         <td
           colSpan={HEADERS.length}
-          className="px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground"
+          className="px-3 py-1 type-meta font-semibold uppercase tracking-wide text-muted-foreground"
         >
           {label}
         </td>

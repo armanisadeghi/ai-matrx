@@ -226,7 +226,7 @@ export default function MatrxExtendPage() {
         lead="One side panel, always one click away."
       >
         <FeatureGrid items={AVAILABLE} />
-        <p className="mt-6 flex flex-wrap items-center justify-center gap-2 text-center text-sm text-muted-foreground">
+        <p className="mt-6 flex flex-wrap items-center justify-center gap-2 text-center type-body text-muted-foreground">
           <StatusPill status="soon" />
           Safari is in progress. Chrome comes first.
         </p>
@@ -260,7 +260,7 @@ export default function MatrxExtendPage() {
         title="Yours to control"
       >
         <TrustList items={TRUST} />
-        <p className="mt-6 text-center text-sm text-muted-foreground">
+        <p className="mt-6 text-center type-body text-muted-foreground">
           Read the{" "}
           <Link
             href="/privacy-policy/extension"

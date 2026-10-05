@@ -21,7 +21,7 @@ function ModelDiffRenderer({ node, enrichment }: FieldDiffProps) {
       <div
         className={cn(
           "px-3 py-2 border-r border-border",
-          node.changeType !== "unchanged" ? "bg-red-50 dark:bg-red-950/15" : "",
+          node.changeType !== "unchanged" ? "bg-destructive/10 bg-destructive/15" : "",
         )}
       >
         {oldId ? (
@@ -32,7 +32,7 @@ function ModelDiffRenderer({ node, enrichment }: FieldDiffProps) {
             showIcon={false}
             className={cn(
               node.changeType !== "unchanged"
-                ? "text-red-700 dark:text-red-300"
+                ? "text-destructive"
                 : "text-foreground/80",
             )}
           />
@@ -44,7 +44,7 @@ function ModelDiffRenderer({ node, enrichment }: FieldDiffProps) {
         className={cn(
           "px-3 py-2",
           node.changeType !== "unchanged"
-            ? "bg-green-50 dark:bg-green-950/15"
+            ? "bg-success/10 bg-success/15"
             : "",
         )}
       >
@@ -56,7 +56,7 @@ function ModelDiffRenderer({ node, enrichment }: FieldDiffProps) {
             showIcon={false}
             className={cn(
               node.changeType !== "unchanged"
-                ? "text-green-700 dark:text-green-300"
+                ? "text-success"
                 : "text-foreground/80",
             )}
           />

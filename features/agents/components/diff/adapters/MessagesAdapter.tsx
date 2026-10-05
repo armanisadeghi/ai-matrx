@@ -93,7 +93,7 @@ function MessagesDiffRenderer({ node }: FieldDiffProps) {
                   : oldMsg &&
                       newMsg &&
                       extractText(oldMsg) !== extractText(newMsg)
-                    ? "bg-red-50 text-red-700 dark:bg-red-950/15 dark:text-red-300"
+                    ? "bg-destructive/10 text-destructive bg-destructive/15"
                     : "text-foreground/80",
               )}
             >
@@ -107,7 +107,7 @@ function MessagesDiffRenderer({ node }: FieldDiffProps) {
                   : oldMsg &&
                       newMsg &&
                       extractText(oldMsg) !== extractText(newMsg)
-                    ? "bg-green-50 text-green-700 dark:bg-green-950/15 dark:text-green-300"
+                    ? "bg-success/10 text-success bg-success/15"
                     : "text-foreground/80",
               )}
             >
@@ -168,7 +168,7 @@ function MessageRow({ child, index }: { child: DiffNode; index: number }) {
         className={cn(
           "px-3 py-2 border-r border-border whitespace-pre-wrap break-words",
           child.changeType === "removed"
-            ? "bg-red-50 text-red-700 dark:bg-red-950/15 dark:text-red-300"
+            ? "bg-destructive/10 text-destructive bg-destructive/15"
             : "",
           child.changeType === "added" ? "text-muted-foreground/50" : "",
           child.changeType === "unchanged" ? "text-foreground/80" : "",
@@ -180,7 +180,7 @@ function MessageRow({ child, index }: { child: DiffNode; index: number }) {
         className={cn(
           "px-3 py-2 whitespace-pre-wrap break-words",
           child.changeType === "added"
-            ? "bg-green-50 text-green-700 dark:bg-green-950/15 dark:text-green-300"
+            ? "bg-success/10 text-success bg-success/15"
             : "",
           child.changeType === "removed" ? "text-muted-foreground/50" : "",
           child.changeType === "unchanged" ? "text-foreground/80" : "",
