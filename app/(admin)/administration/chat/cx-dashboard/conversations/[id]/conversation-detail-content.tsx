@@ -1,6 +1,7 @@
 "use client";
 
 import AppLink from "@/components/navigation/AppLink";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -36,7 +37,6 @@ import {
   MessageSquare,
   ChevronRight,
 } from "lucide-react";
-import dynamic from "next/dynamic";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   ADMIN_CX_DASHBOARD_SURFACE_NAME,
@@ -45,10 +45,6 @@ import {
 import { useAdminCost } from "@/components/cost/useAdminCost";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { useOpenAgentFromChatWindow } from "@/features/overlays/openers/agentFromChatWindow";
-
-const MarkdownStream = dynamic(() => import("@/components/MarkdownStream"), {
-  ssr: false,
-});
 
 type Detail = {
   conversation: CxConversation;
@@ -390,9 +386,9 @@ function MessageRow({ message }: { message: CxMessage }) {
       {/* Main content */}
       {textContent ? (
         <div className="text-sm prose prose-sm dark:prose-invert max-w-none">
-          <MarkdownStream imagePolicy={message.role === "assistant" ? "ai" : "other"}
-            content={textContent}
-            isStreamActive={false}
+          <RichContent level="full" imagePolicy={message.role === "assistant" ? "ai" : "other"}
+            source={textContent}
+            isStreaming={false}
             hideCopyButton={false}
             allowFullScreenEditor={false}
           />

@@ -20,7 +20,7 @@
  * Spec: docs/protocol/KIND_DIRECTIVES.md.
  */
 
-import MarkdownStream from "@/components/MarkdownStream";
+import { RichContent } from "@/components/rich-content/RichContent";
 import AGENT_DEFINITION_ITEM from "./agent-definition-item.json";
 
 interface Row {
@@ -152,7 +152,7 @@ export default function KindDirectivesDemoPage() {
             <h2 className="text-sm font-medium text-foreground">{row.title}</h2>
             <p className="mb-3 text-xs text-muted-foreground">{row.note}</p>
             <div className="rounded-md border border-border bg-background p-3">
-              <MarkdownStream imagePolicy="self" content={row.markdown} />
+              <RichContent level="full" imagePolicy="self" source={row.markdown} />
             </div>
           </section>
         ))}

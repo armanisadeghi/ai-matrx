@@ -13,7 +13,7 @@ import {
 import { Loader2 } from "lucide-react";
 import { get_prompt_sample, TEST_ADMIN_TOKEN } from "./sample-prompt";
 import CodeBlock from "@/features/code-editor/components/code-block/CodeBlock";
-import MarkdownStream from "@/components/MarkdownStream";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { BACKEND_URLS, ENDPOINTS } from "@/lib/api/endpoints";
 import { peekSelectedOrganizationId } from "@/lib/api/organization-admission";
 import { requestRaw } from "@/lib/python-client";
@@ -336,9 +336,9 @@ export default function DirectChatClient() {
           </div>
           <div className="flex-1 overflow-y-auto bg-textured p-3 rounded-md min-h-0">
             {streamText ? (
-              <MarkdownStream imagePolicy="ai"
-                content={streamText}
-                isStreamActive={isStreaming}
+              <RichContent level="full" imagePolicy="ai"
+                source={streamText}
+                isStreaming={isStreaming}
                 className="text-xs"
               />
             ) : (

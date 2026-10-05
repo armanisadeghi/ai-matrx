@@ -54,7 +54,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@ai-matrx/design-system";
-import MarkdownStream from "@/components/MarkdownStream";
+import { RichContent } from "@/components/rich-content/RichContent";
 import ThinkingTrace from "@/components/mardown-display/blocks/thinking-reasoning/ThinkingTrace";
 import { ToolCallVisualization } from "@ai-matrx/chat/tool-call-visualization/components/ToolCallVisualization";
 import { ChatResultColumn } from "@ai-matrx/chat/tool-call-visualization/components/ChatResultColumn";
@@ -761,8 +761,8 @@ function RevealedMarkdown({
   // MarkdownStream → EnhancedChatMarkdown. No requestId/messageId → the static
   // (DB-loaded) markdown path, byte-identical spacing to a committed turn.
   return (
-    <MarkdownStream imagePolicy="ai"
-      content={content}
+    <RichContent level="full" imagePolicy="ai"
+      source={content}
       hideCopyButton
       allowFullScreenEditor={false}
     />
