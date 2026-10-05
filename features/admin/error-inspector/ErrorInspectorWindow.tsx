@@ -452,7 +452,7 @@ export default function ErrorInspectorWindow({
                 <div className="text-xs font-medium text-muted-foreground mb-1">
                   Call site / component stack
                 </div>
-                <pre className="rounded-md border border-border bg-muted/30 p-2 text-[11px] font-mono text-foreground whitespace-pre-wrap break-words overflow-x-auto">
+                <pre data-kind-source="explicit" className="rounded-md border border-border bg-muted/30 p-2 text-[11px] font-mono text-foreground whitespace-pre-wrap break-words overflow-x-auto">
                   {selected.callSite}
                 </pre>
               </div>
@@ -463,7 +463,7 @@ export default function ErrorInspectorWindow({
                 <div className="text-xs font-medium text-muted-foreground mb-1">
                   Stack
                 </div>
-                <pre className="rounded-md border border-border bg-muted/30 p-2 text-[11px] font-mono text-foreground whitespace-pre-wrap break-words overflow-x-auto">
+                <pre data-kind-source="explicit" className="rounded-md border border-border bg-muted/30 p-2 text-[11px] font-mono text-foreground whitespace-pre-wrap break-words overflow-x-auto">
                   {selected.stack}
                 </pre>
               </div>
@@ -474,7 +474,7 @@ export default function ErrorInspectorWindow({
                 <div className="text-xs font-medium text-muted-foreground mb-1">
                   Raw error object
                 </div>
-                <pre className="rounded-md border border-border bg-muted/30 p-2 text-[11px] font-mono text-foreground whitespace-pre-wrap break-words overflow-x-auto">
+                <pre data-kind-source="explicit" className="rounded-md border border-border bg-muted/30 p-2 text-[11px] font-mono text-foreground whitespace-pre-wrap break-words overflow-x-auto">
                   {JSON.stringify(selected.raw, null, 2)}
                 </pre>
               </div>
@@ -495,7 +495,7 @@ export default function ErrorInspectorWindow({
                 </code>{" "}
                 to retier this error.
               </p>
-              <pre className="mt-1 rounded-md border border-border bg-muted/30 p-2 text-[11px] font-mono text-foreground whitespace-pre-wrap break-words overflow-x-auto">
+              <pre data-kind-source="explicit" className="mt-1 rounded-md border border-border bg-muted/30 p-2 text-[11px] font-mono text-foreground whitespace-pre-wrap break-words overflow-x-auto">
                 {buildDowngradeRuleStub(selected)}
               </pre>
             </details>

@@ -569,7 +569,7 @@ function HistoryTab({ data }: { data: MessagesEntry | undefined }) {
                     </div>
                     {preview && (
                       <Section title="Flat Text">
-                        <pre className="text-sm text-foreground whitespace-pre-wrap break-words font-mono bg-muted/50 rounded-md p-3 max-h-80 overflow-y-auto">
+                        <pre data-kind-source="explicit" className="text-sm text-foreground whitespace-pre-wrap break-words font-mono bg-muted/50 rounded-md p-3 max-h-80 overflow-y-auto">
                           {preview}
                         </pre>
                       </Section>
@@ -892,7 +892,7 @@ function UserInputTab({ data }: { data: InstanceUserInputState | undefined }) {
   return (
     <div className="space-y-4">
       <Section title="Text">
-        <pre className="text-sm text-foreground whitespace-pre-wrap break-words font-mono bg-muted/50 rounded-md p-3 max-h-60 overflow-y-auto">
+        <pre data-kind-source="explicit" className="text-sm text-foreground whitespace-pre-wrap break-words font-mono bg-muted/50 rounded-md p-3 max-h-60 overflow-y-auto">
           {data.text || "(empty)"}
         </pre>
       </Section>

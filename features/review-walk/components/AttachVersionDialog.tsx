@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { kindTextToMarkdown } from "@/features/content-ir/surfaces/kind-text-to-markdown";
 import { toast } from "@/lib/toast";
 import type { UseOutputFeedbackResult } from "@/lib/output-feedback/useOutputFeedback";
 
@@ -49,7 +50,9 @@ export function AttachVersionDialog({
   // Re-seed each time the dialog opens: the attached version wins, else the
   // AI output so the user edits rather than retypes.
   useEffect(() => {
-    if (open) setDraft(existingCorrection ?? originalContent);
+    // The person edits what they SAW: a kind answer opens as its readable text.
+    // (The frozen original handed to the capture stays the raw output.)
+    if (open) setDraft(existingCorrection ?? kindTextToMarkdown(originalContent));
   }, [open, existingCorrection, originalContent]);
 
   const handleSave = async () => {

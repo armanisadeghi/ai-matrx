@@ -100,13 +100,23 @@ function settledKindValue(props: CodeBlockProps): unknown {
 
 const CodeBlock: React.FC<CodeBlockProps> = (props) => {
   const kindValue = settledKindValue(props);
+  // G1: a non-JSON language (```ts, ```xml …) is the model QUOTING source,
+  // and a settled `showSource` caller (editors, diffs, artifact/canvas source)
+  // is a deliberate source view — both marked so the leak sentinel skips them.
+  // A STREAMING JSON-family card is never marked, whatever its caller says:
+  // a kind drawn raw mid-stream is exactly the leak the sentinel exists for.
+  const quoted =
+    !JSON_LANGUAGES.has((props.language ?? "").trim().toLowerCase()) ||
+    (props.showSource === true && !props.isStreamActive);
   return (
-    <KindDataGate
-      component="CodeBlock"
-      data={kindValue}
-      showSource={kindValue === undefined}
-    >
-      <CodeBlockBody {...props} />
+    <KindDataGate component="CodeBlock" data={kindValue}>
+      {quoted ? (
+        <div data-kind-source="explicit" className="contents">
+          <CodeBlockBody {...props} />
+        </div>
+      ) : (
+        <CodeBlockBody {...props} />
+      )}
     </KindDataGate>
   );
 };

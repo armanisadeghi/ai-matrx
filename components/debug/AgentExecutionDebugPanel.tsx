@@ -191,7 +191,7 @@ function CodeBlock({
           )}
         </Button>
       </div>
-      <pre className="text-xs bg-white dark:bg-black p-3 rounded border border-border overflow-x-auto">
+      <pre data-kind-source="explicit" className="text-xs bg-white dark:bg-black p-3 rounded border border-border overflow-x-auto">
         <code /* rich-content-exempt: debug or inspector output: logs, JSON, code or source view */ className="whitespace-pre-wrap break-words font-mono">
           {content}
         </code>
@@ -651,7 +651,7 @@ export const AgentExecutionDebugPanel: React.FC<
                           #{idx + 1}
                         </span>
                       </div>
-                      <pre className="text-xs whitespace-pre-wrap break-words bg-white dark:bg-black p-2 rounded max-h-40 overflow-y-auto">
+                      <pre data-kind-source="explicit" className="text-xs whitespace-pre-wrap break-words bg-white dark:bg-black p-2 rounded max-h-40 overflow-y-auto">
                         {extractFlatText(record) ||
                           JSON.stringify(record.content, null, 2)}
                       </pre>
@@ -753,7 +753,7 @@ export const AgentExecutionDebugPanel: React.FC<
                   <h5 className="text-xs font-semibold mb-2">
                     Accumulated Response Text
                   </h5>
-                  <pre /* rich-content-exempt: debug or inspector output: logs, JSON, code or source view */ className="text-xs whitespace-pre-wrap break-words bg-white dark:bg-black p-2 rounded border border-border max-h-48 overflow-y-auto">
+                  <pre data-kind-source="explicit" /* rich-content-exempt: debug or inspector output: logs, JSON, code or source view */ className="text-xs whitespace-pre-wrap break-words bg-white dark:bg-black p-2 rounded border border-border max-h-48 overflow-y-auto">
                     {accumulatedText}
                   </pre>
                   <p className="text-[10px] text-gray-400 mt-1">

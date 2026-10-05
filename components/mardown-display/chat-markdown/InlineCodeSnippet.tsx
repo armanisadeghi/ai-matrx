@@ -142,6 +142,11 @@ export const InlineCodeSnippet: React.FC<InlineCodeSnippetProps> = ({
   return (
     <div
       data-code-snippet=""
+      // G1: quoted source (a non-JSON language) or a declared source view —
+      // the leak sentinel skips it. A JSON snippet stays unmarked.
+      data-kind-source={
+        showSource || sourceView || !isJsonFenceLanguage(language) ? "explicit" : undefined
+      }
       className={cn(
         // not-prose: a surrounding `prose` block gave the <pre> its own
         // ~1.7em top and bottom margins inside this frame (a tall empty band

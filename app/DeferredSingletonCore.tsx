@@ -45,6 +45,7 @@ import {
 } from "@/features/entitlements/state/entitlementsSlice";
 import { UrlPanelManager } from "@/features/window-panels/url-sync/UrlPanelManager";
 import { OrganizationGateDialog } from "@/features/organizations/gate/OrganizationGateDialog";
+import { KindLeakSentinel } from "@/features/content-ir/surfaces/KindLeakSentinel";
 
 
 export default function DeferredSingletonCore() {
@@ -118,6 +119,8 @@ export default function DeferredSingletonCore() {
     <>
       <PersistentDOMConnector />
       <OverlayController />
+      {/* G1: files any `__kind` drawn as raw text (never-raw law). */}
+      <KindLeakSentinel />
       {/* Render-free until an action needs it. The ONE app-wide answer to "you
           have no organization selected": instead of refusing the action and
           sending the person somewhere else to fix it, this asks which workspace

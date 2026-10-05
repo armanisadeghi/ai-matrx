@@ -58,7 +58,16 @@ export function KindDataGate({
   const key = candidate ? canonicalJson(data) : "";
   const kindData = candidate && !routedAbove.includes(key);
   useReportKindAtRawRenderer(component, kindData ? slugOf(data) : null, kindData);
-  if (!kindData) return <>{children}</>;
+  if (!kindData) {
+    // G1: a caller's explicit source view says so in the DOM (leak sentinel).
+    return showSource ? (
+      <div data-kind-source="explicit" className="contents">
+        {children}
+      </div>
+    ) : (
+      <>{children}</>
+    );
+  }
   return (
     <RoutedValuesContext.Provider value={[...routedAbove, key]}>
       <KindValueFrontDoor value={data} />

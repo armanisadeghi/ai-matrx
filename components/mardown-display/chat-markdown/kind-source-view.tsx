@@ -15,7 +15,12 @@ const KindSourceViewContext = createContext(false);
 /** Declares a subtree a source view — kind regions in it stay as written. */
 export function KindSourceView({ children }: { children: React.ReactNode }) {
   return (
-    <KindSourceViewContext.Provider value>{children}</KindSourceViewContext.Provider>
+    <KindSourceViewContext.Provider value>
+      {/* G1: the DOM says it too, so the leak sentinel skips this source view. */}
+      <div data-kind-source="explicit" className="contents">
+        {children}
+      </div>
+    </KindSourceViewContext.Provider>
   );
 }
 
