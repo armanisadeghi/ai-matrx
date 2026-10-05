@@ -4,7 +4,7 @@ name: quick
 description: "Obviously-easy lane (Sonnet, medium effort): mechanical edits, censuses, doc/log reads, greps, running a known test, collecting evidence, a scripted browser walk. Pass `model` explicitly (sonnet). Default budget 40 tool calls."
 model: sonnet
 maxTurns: 60
-disallowedTools: Agent
+disallowedTools: Agent, SendMessage, ListAgents, Artifact, ArtifactData, ArtifactComments, DesignSync, EnterWorktree, ExitWorktree, RemoteTrigger, CronCreate, CronDelete, CronList, PushNotification, ReportFindings
 effort: medium
 ---
 

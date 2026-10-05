@@ -4,7 +4,7 @@ name: standard
 description: "MEDIUM-effort lane — the default for dispatched work. With `model: sonnet` (the default) for any bounded brief: a fix with a known repro or file, a review or verification, a test walk, research, seeding. With `model: opus` only when the brief states why: a large build, design judgment, or debugging with no known cause. Default budget 120 tool calls."
 model: sonnet
 maxTurns: 180
-disallowedTools: Agent
+disallowedTools: Agent, SendMessage, ListAgents, Artifact, ArtifactData, ArtifactComments, DesignSync, EnterWorktree, ExitWorktree, RemoteTrigger, CronCreate, CronDelete, CronList, PushNotification, ReportFindings
 effort: medium
 ---
 

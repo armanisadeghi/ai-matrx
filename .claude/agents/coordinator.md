@@ -4,6 +4,7 @@ name: coordinator
 description: "Sub-coordinator lane (Sonnet by default, medium effort): ONLY when the owning session hands a whole bounded program to one agent that must itself dispatch workers (e.g. a teach-the-system trial driver). The brief must give a dispatch budget (how many workers, which models). Default budget 200 tool calls."
 model: sonnet
 maxTurns: 300
+disallowedTools: Artifact, ArtifactData, ArtifactComments, DesignSync, EnterWorktree, ExitWorktree, RemoteTrigger, CronCreate, CronDelete, CronList, PushNotification, ReportFindings
 effort: medium
 ---
 

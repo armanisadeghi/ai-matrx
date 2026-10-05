@@ -4,7 +4,7 @@ name: deep
 description: "HIGH-effort lane, rare and task-driven: only when the work itself needs sustained reasoning (conflicting evidence, causal analysis across systems, consequential design). State the reason in the brief. Pass `model` explicitly (usually opus). Effort is NOT a function of model — a Fable dispatch normally goes through `standard` at medium. Default budget 200 tool calls."
 model: opus
 maxTurns: 300
-disallowedTools: Agent
+disallowedTools: Agent, SendMessage, ListAgents, Artifact, ArtifactData, ArtifactComments, DesignSync, EnterWorktree, ExitWorktree, RemoteTrigger, CronCreate, CronDelete, CronList, PushNotification, ReportFindings
 effort: high
 ---
 
