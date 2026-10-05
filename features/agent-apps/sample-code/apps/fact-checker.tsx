@@ -12,6 +12,7 @@ import MarkdownStream from "@/components/MarkdownStream";
 import type { AgentAppComponentProps } from "../../types";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { enterSendsHere } from "@/components/official/composer/composerSubmit";
 
 export default function FactCheckerApp({
   onExecute,
@@ -46,7 +47,7 @@ export default function FactCheckerApp({
   }, [claim, isFormValid, isBusy, onExecute]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey && enterSendsHere(true)) {
       e.preventDefault();
       handleSubmit();
     }
