@@ -10,12 +10,14 @@
 //   - an agent is THE agent picker (`AgentParamPicker` → `AgentListDropdown`);
 //   - values carry placeholders through the platform's `VariableSelector` (`ValueText`).
 
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { ArrowDown, ArrowUp, Trash2 } from "lucide-react";
 import { useFields } from "@ai-matrx/records/react";
 import type { Field, RecordsDataSource } from "@ai-matrx/records";
+import { createRecordsClient } from "@ai-matrx/records/core";
 import {
   ConditionGroup,
+  personActor,
   fieldName,
   type ConditionField,
 } from "@ai-matrx/records-ui";
@@ -830,34 +832,18 @@ function ActionFields({
           </Labeled>
         </>
       );
-    case "fill_with_ai": {
+    case "fill_with_ai":
       // The column's OWN enrichment (its instruction and inputs) runs for this record — a
       // column a model fills is set up once, on the column; this step just says "now".
-      const aiColumns = triggerFields.filter((f) => f.source === "agent");
-      if (aiColumns.length === 0) {
-        return (
-          <p className="text-xs text-muted-foreground">
-            No column on this table is filled by AI yet. Set one up from the column&apos;s menu first.
-          </p>
-        );
-      }
       return (
-        <Labeled label="Column">
-          <Select value={text("field_id")} onValueChange={(v) => set("field_id", v)} disabled={readOnly}>
-            <SelectTrigger className="h-8 w-auto min-w-[10rem]" aria-label="Column">
-              <SelectValue placeholder="Choose a column" />
-            </SelectTrigger>
-            <SelectContent>
-              {aiColumns.map((f) => (
-                <SelectItem key={String(f.id)} value={String(f.id)}>
-                  {fieldName(f)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </Labeled>
+        <AiColumnPicker
+          seat={seat}
+          tableId={triggerTableId}
+          value={text("field_id")}
+          onChange={(v) => set("field_id", v)}
+          disabled={readOnly}
+        />
       );
-    }
     case "wait":
       return (
         <WaitFields
@@ -867,6 +853,77 @@ function ActionFields({
         />
       );
   }
+}
+
+/**
+ * The table's AI-filled columns, as the store answers them (`custom.enrichments`) — not every
+ * column an agent happened to create (those all say `source: "agent"`).
+ */
+function AiColumnPicker({
+  seat,
+  tableId,
+  value,
+  onChange,
+  disabled,
+}: {
+  seat: Seat;
+  tableId: string;
+  value: string;
+  onChange: (v: string) => void;
+  disabled: boolean;
+}) {
+  const [columns, setColumns] = useState<{ id: string; label: string }[] | null>(null);
+  const [why, setWhy] = useState<string | null>(null);
+  const organizationId =
+    (seat.tables.rows.find((t) => t.table_id === tableId) as { organization_id?: string } | undefined)
+      ?.organization_id ?? null;
+  useEffect(() => {
+    if (!organizationId) return;
+    let live = true;
+    const client = createRecordsClient({
+      dataSource: seat.dataSource,
+      actor: personActor(seat.userId),
+      organizationId,
+    });
+    void client.enrichments({ table_id: tableId }).then((answer) => {
+      if (!live) return;
+      if (!answer.ok) {
+        setWhy(answer.error.message);
+        setColumns([]);
+        return;
+      }
+      setColumns(answer.data.map((e) => ({ id: String(e.field_id), label: e.label || e.field_key })));
+    });
+    return () => {
+      live = false;
+    };
+  }, [seat.dataSource, seat.userId, organizationId, tableId]);
+
+  if (why) return <p className="text-xs text-destructive">{why}</p>;
+  if (columns === null) return <p className="text-xs text-muted-foreground">Finding the AI columns…</p>;
+  if (columns.length === 0) {
+    return (
+      <p className="text-xs text-muted-foreground">
+        No column on this table is filled by AI yet. Set one up from the column&apos;s menu first.
+      </p>
+    );
+  }
+  return (
+    <Labeled label="Column">
+      <Select value={value} onValueChange={onChange} disabled={disabled}>
+        <SelectTrigger className="h-8 w-auto min-w-[10rem]" aria-label="Column">
+          <SelectValue placeholder="Choose a column" />
+        </SelectTrigger>
+        <SelectContent>
+          {columns.map((c) => (
+            <SelectItem key={c.id} value={c.id}>
+              {c.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </Labeled>
+  );
 }
 
 const UNITS = [
