@@ -8,6 +8,10 @@ let members = 0;
 let coowners = 0;
 let leaseConflict = false;
 let failClosedWrite = false;
+function currentJournal() {
+  if (!journal) throw new Error("Expected a persisted closure journal");
+  return journal;
+}
 const rpc = jest.fn((name: string, args: Record<string, unknown>) => {
   if (name === "account_closure_claim") {
     if (leaseConflict) return Promise.resolve({ data: null, error: null });
@@ -79,9 +83,9 @@ describe("account lifecycle orchestration", () => {
     const token = recoveryToken(); journal = { requestId: "r", state: "closed", requestedAt: "now", email: input.email, checkpoints: { access_disable_started: "now" }, receipts: {}, errors: [], recoveryTokenHash: token.hash };
     generateLink.mockResolvedValueOnce({ data: { properties: {} }, error: new Error("no link") });
     await expect(restoreAccount({ userId, requestId: "r", token: token.token })).rejects.toMatchObject({ status: 502 });
-    expect(journal!.recoveryTokenHash).toBe(token.hash);
+    expect(currentJournal().recoveryTokenHash).toBe(token.hash);
     await expect(restoreAccount({ userId, requestId: "r", token: token.token })).resolves.toEqual({ actionLink: "http://signin" });
-    expect(journal!.state).toBe("restored"); expect(journal!.recoveryTokenHash).toBeUndefined();
+    expect(currentJournal().state).toBe("restored"); expect(currentJournal().recoveryTokenHash).toBeUndefined();
   });
 
   it("keeps recovery possible when final closure persistence and unban compensation both fail", async () => {
@@ -90,8 +94,9 @@ describe("account lifecycle orchestration", () => {
     sendEmail.mockImplementation(async ({ html }: { html: string }) => { recoveryLink = html.match(/href="([^"]+)/)?.[1] ?? ""; return { success: true }; });
     updateUserById.mockImplementation(async (_id: string, patch: { ban_duration: string }) => ({ error: patch.ban_duration === "none" ? new Error("unban unavailable") : null }));
     await expect(closeAccount(input)).rejects.toMatchObject({ status: 409 });
-    const url = new URL(recoveryLink); const token = url.searchParams.get("token")!; const requestId = url.searchParams.get("request")!;
-    expect(journal!.state).toBe("failed"); expect((journal!.checkpoints as Record<string, string>).access_disable_started).toBeDefined();
+    const url = new URL(recoveryLink); const token = url.searchParams.get("token"); const requestId = url.searchParams.get("request");
+    if (!token || !requestId) throw new Error("Expected the emailed recovery token and request");
+    expect(currentJournal().state).toBe("failed"); expect((currentJournal().checkpoints as Record<string, string>).access_disable_started).toBeDefined();
     failClosedWrite = false; updateUserById.mockResolvedValue({ error: null });
     await expect(restoreAccount({ userId, requestId, token })).resolves.toEqual({ actionLink: "http://signin" });
   });
@@ -100,7 +105,7 @@ describe("account lifecycle orchestration", () => {
     const previous = { requestId: "old", state: "restored", requestedAt: "then", email: input.email, checkpoints: { restored: "then" }, receipts: { old: ["sub"] }, errors: [] };
     sendEmail.mockResolvedValue({ success: false });
     await expect(closeAccount({ ...input, metadata: { account_closure: previous } })).rejects.toMatchObject({ status: 502 });
-    expect(journal!.requestId).not.toBe("old"); expect(journal!.checkpoints).not.toHaveProperty("restored");
+    expect(currentJournal().requestId).not.toBe("old"); expect(currentJournal().checkpoints).not.toHaveProperty("restored");
     journal = null; leaseConflict = true; sendEmail.mockClear();
     await expect(closeAccount(input)).rejects.toMatchObject({ status: 409 }); expect(sendEmail).not.toHaveBeenCalled();
   });
