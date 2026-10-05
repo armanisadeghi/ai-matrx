@@ -29,7 +29,7 @@ import {
   Compass,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import MarkdownStream from "@/components/MarkdownStream";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { formatPageRange } from "@/features/page-extraction/utils/chunk-preview";
 import { stripThinkingStreaming } from "@ai-matrx/kit/text";
 import { SOURCE_VARIATION_BY_KIND } from "@/features/page-extraction/constants";
@@ -194,9 +194,9 @@ export function ChunkCard({ chunk, pageRun, onJumpToPage }: ChunkCardProps) {
                   isRunning && "border-l-2 border-primary/50 pl-2",
                 )}
               >
-                <MarkdownStream imagePolicy="ai"
-                  content={outputText}
-                  isStreamActive={isRunning}
+                <RichContent level="full" imagePolicy="ai"
+                  source={outputText}
+                  isStreaming={isRunning}
                   hideCopyButton
                   allowFullScreenEditor={false}
                 />
