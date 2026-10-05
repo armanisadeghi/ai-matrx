@@ -38,7 +38,7 @@ function deferred<T>(): Deferred<T> {
   return { promise, resolve, reject };
 }
 
-const activeRead: BillingSummaryRead = {
+const activeRead: Extract<BillingSummaryRead, { ok: true }> = {
   ok: true as const,
   subscription: {
     id: "sub_harbor_monthly",
@@ -48,12 +48,11 @@ const activeRead: BillingSummaryRead = {
     current_period_end: "2026-11-01T00:00:00.000Z",
     cancel_at_period_end: false,
     beneficiary_user_id: "member-harbor",
-    updated_at: "2026-10-01T00:00:00.000Z",
   },
   price: null,
 };
 
-const paymentDueRead: BillingSummaryRead = {
+const paymentDueRead: Extract<BillingSummaryRead, { ok: true }> = {
   ...activeRead,
   subscription: { ...activeRead.subscription, status: "past_due" },
 };
