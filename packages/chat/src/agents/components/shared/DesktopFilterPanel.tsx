@@ -173,12 +173,7 @@ function MultiSelectChips({
             className="flex-1 bg-transparent text-xs text-foreground placeholder:text-muted-foreground/50 outline-none"
           />
           {searchQ && (
-            <button
-              onClick={() => setSearchQ("")}
-              className="text-muted-foreground hover:text-foreground"
-            >
-              <X className="h-3 w-3" />
-            </button>
+            <Button variant="quiet" icon={<X />} aria-label="Clear search" onClick={() => setSearchQ("")} />
           )}
         </div>
       )}

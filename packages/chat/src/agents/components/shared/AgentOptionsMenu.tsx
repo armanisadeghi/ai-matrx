@@ -553,12 +553,7 @@ export function AgentOptionsMenu({
               onClick={() => setOpen(true)}
             />
           ) : (
-            <button
-              onClick={() => setOpen(true)}
-              className="flex items-center justify-center w-6 h-6 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
-            >
-              <MoreHorizontal className="w-4 h-4" />
-            </button>
+            <Button variant="quiet" icon={<MoreHorizontal />} aria-label="Agent options" onClick={() => setOpen(true)} />
           )}
           <DrawerContent className="max-h-[85dvh]">
             <DrawerTitle className="sr-only">Agent Options</DrawerTitle>

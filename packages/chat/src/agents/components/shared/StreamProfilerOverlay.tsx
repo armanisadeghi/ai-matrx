@@ -61,9 +61,7 @@ export function StreamProfilerOverlay() {
           <Activity className="w-4 h-4" />
           Stream Performance Profiler
         </div>
-        <button onClick={() => setIsOpen(false)} className="text-slate-500 hover:text-slate-300">
-          <X className="w-4 h-4" />
-        </button>
+        <Button variant="quiet" icon={<X />} aria-label="Close" onClick={() => setIsOpen(false)} />
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">

@@ -11,7 +11,7 @@
 // dropdown (their mutations were no-ops); real rename/delete live in the
 // conversation-list rows (features/agents/redux/conversation-list/).
 
-import { Badge } from "@ai-matrx/design-system/controls";
+import { Badge, Button } from "@ai-matrx/design-system/controls";
 import { useState, useEffect, useRef, useMemo } from "react";
 import {
   MoreHorizontal,
@@ -160,12 +160,7 @@ function ConversationItem({
           <div className="flex-shrink-0 pr-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button
-                  className="p-0.5 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <MoreHorizontal className="h-3 w-3" />
-                </button>
+                <Button variant="quiet" icon={<MoreHorizontal />} aria-label="Chat options" onClick={(e) => e.stopPropagation()} />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-32" sideOffset={4}>
                 <DropdownMenuItem

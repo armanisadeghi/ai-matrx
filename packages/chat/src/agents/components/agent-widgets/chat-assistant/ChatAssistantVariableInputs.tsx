@@ -293,21 +293,11 @@ function MicroNumber({
 
   return (
     <div className="flex items-center gap-0.5">
-      <button
-        className="w-5 h-5 flex items-center justify-center rounded bg-muted/40 border border-border/60 hover:bg-muted"
-        onClick={decrement}
-      >
-        <Minus className="w-2.5 h-2.5" />
-      </button>
+      <Button variant="outline" icon={<Minus />} aria-label="Decrease" onClick={decrement} />
       <span className="w-8 text-center text-[10px] font-medium tabular-nums">
         {value}
       </span>
-      <button
-        className="w-5 h-5 flex items-center justify-center rounded bg-muted/40 border border-border/60 hover:bg-muted"
-        onClick={increment}
-      >
-        <Plus className="w-2.5 h-2.5" />
-      </button>
+      <Button variant="outline" icon={<Plus />} aria-label="Increase" onClick={increment} />
     </div>
   );
 }

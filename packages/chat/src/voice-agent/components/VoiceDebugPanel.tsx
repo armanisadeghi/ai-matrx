@@ -147,17 +147,7 @@ export function VoiceDebugPanel({
             aria-label="Copy debug data"
             icon={copied ? <Check /> : <Copy />}
           />
-          <button
-            type="button"
-            onClick={() => setOpen((o) => !o)}
-            className="text-zinc-400 hover:text-zinc-200"
-          >
-            {open ? (
-              <ChevronDown className="h-3.5 w-3.5" />
-            ) : (
-              <ChevronUp className="h-3.5 w-3.5" />
-            )}
-          </button>
+          <Button variant="quiet" icon={open ? <ChevronDown /> : <ChevronUp />} aria-label={open ? "Collapse" : "Expand"} onClick={() => setOpen((o) => !o)} />
         </span>
       </div>
 

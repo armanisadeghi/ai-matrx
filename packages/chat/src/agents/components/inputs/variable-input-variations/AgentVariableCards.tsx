@@ -20,9 +20,9 @@ import { AudioVariableInput } from "../input-components/AudioVariableInput";
 import { VideoVariableInput } from "../input-components/VideoVariableInput";
 import { DocumentVariableInput } from "../input-components/DocumentVariableInput";
 import { YoutubeVariableInput } from "../input-components/YoutubeVariableInput";
-import { Button } from "@ai-matrx/design-system";
 import { ArrowRight, Minus, Plus } from "lucide-react";
 import { variableRunLabel } from "@ai-matrx/agents";
+import { Button } from "@ai-matrx/design-system/controls";
 
 interface AgentVariableInputCardProps {
   conversationId: string;
@@ -166,9 +166,7 @@ function AgentVariableInputCard({
 
 function SubmitArrow({ onClick }: { onClick: () => void }) {
   return (
-    <Button
-      size="icon"
-      className="w-6 h-6 rounded-full bg-primary text-primary-foreground shrink-0"
+    <Button variant="primary" className="shrink-0"
       onClick={onClick}
     >
       <ArrowRight className="w-3 h-3" />
@@ -324,21 +322,11 @@ function NumberMicroInput({
 
   return (
     <div className="flex items-center gap-1">
-      <button
-        className="w-6 h-6 flex items-center justify-center rounded-md bg-muted/50 border border-border hover:bg-muted"
-        onClick={decrement}
-      >
-        <Minus className="w-3 h-3" />
-      </button>
+      <Button variant="outline" icon={<Minus />} aria-label="Decrease" onClick={decrement} />
       <span className="w-10 text-center text-xs font-medium tabular-nums">
         {localValue}
       </span>
-      <button
-        className="w-6 h-6 flex items-center justify-center rounded-md bg-muted/50 border border-border hover:bg-muted"
-        onClick={increment}
-      >
-        <Plus className="w-3 h-3" />
-      </button>
+      <Button variant="outline" icon={<Plus />} aria-label="Increase" onClick={increment} />
     </div>
   );
 }

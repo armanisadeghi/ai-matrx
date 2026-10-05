@@ -31,6 +31,7 @@ import { CompactAssistantInput } from "./CompactAssistantInput";
 import { AssistantControlBar } from "./AssistantControlBar";
 import { useAssistantHeartbeat } from "./useAssistantHeartbeat";
 import { X, GripHorizontal } from "lucide-react";
+import { Button } from "@ai-matrx/design-system/controls";
 
 interface AgentChatAssistantProps {
   conversationId: string;
@@ -189,12 +190,7 @@ export function AgentChatAssistant({
                 </span>
               </div>
               <div className="shrink-0" data-no-drag>
-                <button
-                  className="p-0.5 rounded-md hover:bg-muted transition-colors"
-                  onClick={handleDismiss}
-                >
-                  <X className="w-3 h-3 text-muted-foreground" />
-                </button>
+                <Button variant="quiet" icon={<X />} aria-label="Dismiss" onClick={handleDismiss} />
               </div>
             </div>
 

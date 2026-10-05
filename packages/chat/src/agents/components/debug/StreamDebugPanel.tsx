@@ -1,6 +1,6 @@
 "use client";
 
-import { Chip, type ChipTone } from "@ai-matrx/design-system/controls";
+import { Chip, type ChipTone, Button } from "@ai-matrx/design-system/controls";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 
 import React, { useState, useRef, useEffect, useMemo } from "react";
@@ -97,23 +97,10 @@ function CopyBtn({
 }) {
   const { copied, copy } = useCopy();
   return (
-    <button
-      type="button"
-      onClick={(e) => {
+    <Button variant="quiet" icon={copied === id ? <Check /> : <Copy />} aria-label="Copy" onClick={(e) => {
         e.stopPropagation();
         copy(text, id);
-      }}
-      className={cn(
-        "p-0.5 text-muted-foreground hover:text-foreground transition-colors",
-        className,
-      )}
-    >
-      {copied === id ? (
-        <Check className="h-3 w-3 text-green-500" />
-      ) : (
-        <Copy className="h-3 w-3" />
-      )}
-    </button>
+      }} className={className} />
   );
 }
 
