@@ -35,12 +35,13 @@ function CommentReplyLine({ handle, conversationId, streaming }: { handle: strin
     conversationId ? selectConversationMessages(conversationId)(state as never) : NO_MESSAGES,
   );
   const { receipts } = useConversationReceipts(streaming ? null : conversationId);
-  // ONE cue per reply: once the ledger's receipt ("Replied in the thread on c1.
-  // Open thread") exists it is the cue, and this fence line stands down.
-  const hasReceipt = receipts.some(
-    (r) => /comment_reply$/.test(r.directive) && readThreadLink(r.thread)?.handle === handle,
-  );
-  if (hasReceipt) return null;
+  // ONE cue per reply, in ONE place: this line, with the same words and door
+  // live and after a reload (the foot zone no longer shows the reply receipt).
+  // After a reload the ledger's thread link is the door when the remark's
+  // handle no longer resolves.
+  const link = receipts
+    .map((r) => (/comment_reply$/.test(r.directive) ? readThreadLink(r.thread) : null))
+    .find((l) => l?.handle === handle) ?? null;
   if (streaming) {
     return (
       <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground" data-comment-reply={handle}>
@@ -56,7 +57,9 @@ function CommentReplyLine({ handle, conversationId, streaming }: { handle: strin
     ? { entity: "message", id: messageId, title: "Chat answer" }
     : remark?.record
       ? { entity: remark.record.token, id: remark.record.id, title: remark.record.title || "Comments" }
-      : null;
+      : link
+        ? { entity: link.entity, id: link.id, title: "Chat answer" }
+        : null;
   const label = (
     <>
       <MessagesSquare className="h-3 w-3 shrink-0" aria-hidden />
@@ -80,7 +83,7 @@ function CommentReplyLine({ handle, conversationId, streaming }: { handle: strin
           entity: thread.entity,
           id: thread.id,
           title: thread.title,
-          focus: remark?.commentId ?? null,
+          focus: remark?.commentId ?? link?.rootId ?? null,
         })
       }
     >

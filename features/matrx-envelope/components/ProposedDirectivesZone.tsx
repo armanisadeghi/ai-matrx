@@ -172,7 +172,10 @@ export function ProposedDirectivesZone({
           }
         />
       ))}
-      {receipts.map((r) => (
+      {receipts
+        // A reply's cue is the line on the answer (one cue, one place), not a second one down here.
+        .filter((r) => !/comment_reply$/.test(r.directive))
+        .map((r) => (
         <DirectiveReceiptBlock
           key={r.ledgerKey}
           directive={r.directive}

@@ -145,10 +145,12 @@ describe("the fence in the answer", () => {
 describe("one cue per reply", () => {
   // Live walk 2026-10-05: "Reply in thread · c1" above the paragraph AND
   // "Replied in the thread on c1. Open thread" at the foot — two cues, one reply.
-  it("once the ledger's receipt exists, the fence line stands down", () => {
-    render(<Fence streaming={false} items={[{ to: "c3", body: REPLY_TEXT }]} />, undefined, [replyReceipt("c3")]);
-    expect(host.querySelector('[data-comment-reply="c3"]')).toBeNull();
-    expect(host.textContent).not.toContain("Reply in thread");
+  it("once the ledger's receipt exists the answer's line is still the ONE cue, same words, with a door", () => {
+    render(<Fence streaming={false} items={[{ to: "c3", body: REPLY_TEXT }]} />, [], [replyReceipt("c3")]);
+    const lines = host.querySelectorAll('[data-comment-reply="c3"]');
+    expect(lines).toHaveLength(1);
+    expect(lines[0].textContent).toContain("Reply in thread · c3");
+    expect(lines[0].tagName).toBe("BUTTON");
   });
 
   it("another handle's receipt does not hide this reply's line", () => {
