@@ -24,6 +24,8 @@ import type { OrgChartCardState } from "@/components/official/org-chart/OrgChart
 import type { AgentOrgNodeData } from "../buildAgentOrgForest";
 import { ORG_BOX_LABEL } from "../constants";
 import { useBoxIdentity } from "../useBoxIdentity";
+import { useAgentActivity, type AgentActivity } from "../useOrgChartActivity";
+import { formatRelativeTime } from "@ai-matrx/kit/format";
 
 
 /** The card hover bar's icon button (same as AgentPeekButton and the Orchestra cards). */
@@ -87,6 +89,7 @@ export function AgentOrgCard({
   const d = node.node.data;
   const who = useBoxIdentity(d.boxType, d.entityId);
   const a = accentClasses(d.accent);
+  const activity = useAgentActivity(d.boxType === "agent" ? d.entityId : null);
   const isAgent = d.boxType === "agent";
   const Icon = d.isConductor
     ? Network
@@ -138,6 +141,7 @@ export function AgentOrgCard({
         interactive && "hover:border-foreground/25 hover:shadow-md",
         d.isConductor ? cn("border-transparent ring-2", a.ring) : "border-border",
         !isAgent && "border-l-4 border-l-foreground/25",
+        activity?.state === "running" && !state.selected && "ring-2 ring-success/60",
         state.selected && "ring-2 ring-primary shadow-md",
         state.matched && !state.selected && "ring-2 ring-warning",
       )}
@@ -180,6 +184,7 @@ export function AgentOrgCard({
       </div>
 
       <div className="mt-auto flex min-w-0 flex-wrap items-center gap-1 pt-1.5">
+        {activity && <ActivityBadge activity={activity} />}
         {d.otherPlacements > 0 && (
           <span
             className="inline-flex items-center gap-1 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground"
@@ -207,7 +212,7 @@ export function AgentOrgCard({
             Loop — shown once above
           </span>
         )}
-        {!d.loop && !d.unavailable && d.otherPlacements === 0 && footnote && (
+        {!activity && !d.loop && !d.unavailable && d.otherPlacements === 0 && footnote && (
           <span className="line-clamp-1 text-[10px] text-muted-foreground/80">{footnote}</span>
         )}
       </div>
@@ -235,6 +240,40 @@ export function AgentOrgCard({
         {menu}
       </div>
     </div>
+  );
+}
+
+const ACTIVITY_STYLE: Record<AgentActivity["state"], { dot: string; chip: string; label: string }> = {
+  running: { dot: "bg-success animate-pulse", chip: "bg-success/15 text-success", label: "Running" },
+  stalled: { dot: "bg-warning", chip: "bg-warning/15 text-warning", label: "Stalled" },
+  done: { dot: "bg-muted-foreground/60", chip: "bg-muted text-muted-foreground", label: "Done" },
+  failed: { dot: "bg-destructive", chip: "bg-destructive/10 text-destructive", label: "Failed" },
+  stopped: { dot: "bg-muted-foreground/60", chip: "bg-muted text-muted-foreground", label: "Stopped" },
+};
+
+function ActivityBadge({ activity }: { activity: AgentActivity }) {
+  const s = ACTIVITY_STYLE[activity.state];
+  const when = formatRelativeTime(activity.at);
+  const text =
+    activity.state === "running"
+      ? activity.running > 1
+        ? `Running ×${activity.running}`
+        : "Running"
+      : `${s.label} ${when}`;
+  const title =
+    activity.state === "running"
+      ? `Last activity ${when}`
+      : activity.state === "stalled"
+        ? `Still marked running, no activity since ${when}`
+        : `Last run ${s.label.toLowerCase()} ${when}`;
+  return (
+    <span
+      className={cn("inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium", s.chip)}
+      title={title}
+    >
+      <span className={cn("h-1.5 w-1.5 rounded-full", s.dot)} />
+      {text}
+    </span>
   );
 }
 

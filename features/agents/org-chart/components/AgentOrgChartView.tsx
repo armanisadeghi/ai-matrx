@@ -81,6 +81,7 @@ import {
 } from "../constants";
 import { crossLinksOf, type AgentOrgNodeData } from "../buildAgentOrgForest";
 import { useAgentOrgChart } from "../useAgentOrgChart";
+import { OrgChartActivityProvider, useOrgChartActivity } from "../useOrgChartActivity";
 import { loadOrgDirectory } from "../useBoxIdentity";
 import type { OrgPosition } from "../positionsService";
 import { AgentOrgCard, boxHref, cardIconButton } from "./AgentOrgCard";
@@ -147,6 +148,8 @@ export function AgentOrgChartView({
   );
 
   const { byKey, firstKeyOf } = indexForest(forest);
+  const chartAgentIds = [...firstKeyOf.keys()].map(parseBoxId).filter((b) => b.type === "agent").map((b) => b.id);
+  const activity = useOrgChartActivity(chartAgentIds);
   const positionById = new Map(positions.map((p) => [p.id, p]));
 
   // Names of people and teams for menus and messages (cards resolve their own).
@@ -673,7 +676,13 @@ export function AgentOrgChartView({
           : [];
 
   return (
+    <OrgChartActivityProvider value={activity.byAgentId}>
     <div className="relative h-full w-full">
+      {!error && !directoryError && activity.error && (
+        <div className="absolute inset-x-3 top-14 z-30 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+          Live activity is unavailable: {activity.error}
+        </div>
+      )}
       {error && (
         <div className="absolute inset-x-3 top-14 z-30 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
           Part of the chart could not load: {error}
@@ -848,5 +857,6 @@ export function AgentOrgChartView({
         }}
       />
     </div>
+    </OrgChartActivityProvider>
   );
 }
