@@ -17,6 +17,7 @@
 import type { ChatDispatch } from "../../store/root-state";
 import { loadConversation } from "../redux/execution-system/thunks/load-conversation.thunk";
 import { followWhatIsStillInFlight } from "./follow-what-is-still-in-flight";
+import { markAnswerFollowing } from "./mark-answer-following";
 
 export async function rereadAndFollow(
   dispatch: ChatDispatch,
@@ -24,6 +25,8 @@ export async function rereadAndFollow(
   /** Names the door in the warning when the re-read fails. */
   label: string,
 ): Promise<void> {
+  // The answer resumed the turn: the waiting stamp is stale the moment it lands.
+  dispatch(markAnswerFollowing(conversationId));
   try {
     await dispatch(loadConversation({ conversationId })).unwrap();
   } catch (err: unknown) {
