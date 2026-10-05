@@ -194,9 +194,15 @@ export function nonJsonKindsAsCode(text: string): string {
   if (cached !== undefined) return cached;
   let out = "";
   let cursor = 0;
+  let paragraphs: CodeSpanParagraph[] | null = null;
+  let p = 0;
   for (const region of scanKindSpellingRegions(text, { families: "all" })) {
     if (region.family === "lifted" || region.family === "markdown") continue;
-    out += text.slice(cursor, region.start) + asCodeSpan(text.slice(region.start, region.end));
+    paragraphs ??= codeSpanParagraphs(text);
+    while (p < paragraphs.length - 1 && paragraphs[p]!.end <= region.start) p++;
+    const fence = safeCodeSpanFence(text, region.start, region.end, paragraphs[p]!);
+    if (fence === null) continue; // detection only: left exactly as it was
+    out += text.slice(cursor, region.start) + fence + text.slice(region.start, region.end) + fence;
     cursor = region.end;
   }
   const result = cursor === 0 ? text : out + text.slice(cursor);
@@ -205,15 +211,62 @@ export function nonJsonKindsAsCode(text: string): string {
   return result;
 }
 
-/** A CommonMark code span whose fence is longer than any backtick run inside. */
-function asCodeSpan(source: string): string {
-  let longest = 0;
-  let run = 0;
-  for (const ch of source) {
-    run = ch === "`" ? run + 1 : 0;
-    if (run > longest) longest = run;
+/** One blank-line-bounded paragraph of the text, read once per call (round 11, H3). */
+interface CodeSpanParagraph {
+  start: number;
+  end: number;
+  /** A line opening raw HTML: CommonMark draws an HTML block's text verbatim, backticks included. */
+  html: boolean;
+  /** A GFM table row in it: a `|` inside a code span would still split the cell. */
+  table: boolean;
+  /** Lengths of every backtick run in it. */
+  runs: Set<number>;
+}
+
+/** A line that can start (or interrupt with) an HTML block; inline tags mid-line keep markdown. */
+const HTML_TAG = /^ {0,3}<\/?[A-Za-z][A-Za-z0-9-]*(?:[\s/>]|$)/m;
+const TABLE_ROW = /^[ \t]*\|/m;
+
+function codeSpanParagraphs(text: string): CodeSpanParagraph[] {
+  const out: CodeSpanParagraph[] = [];
+  const blank = /\n[ \t]*\n/g;
+  let start = 0;
+  for (;;) {
+    const m = blank.exec(text);
+    const end = m ? m.index + 1 : text.length;
+    const body = text.slice(start, end);
+    const runs = new Set<number>();
+    for (let i = 0; i < body.length; ) {
+      if (body[i] !== "`") {
+        i++;
+        continue;
+      }
+      let n = 0;
+      while (body[i + n] === "`") n++;
+      runs.add(n);
+      i += n;
+    }
+    out.push({ start, end, html: HTML_TAG.test(body), table: TABLE_ROW.test(body), runs });
+    if (!m) break;
+    start = m.index + m[0].length - 1;
   }
-  const fence = "`".repeat(longest + 1);
-  const pad = source.startsWith("`") || source.endsWith("`") ? " " : "";
-  return `${fence}${pad}${source}${pad}${fence}`;
+  return out;
+}
+
+/**
+ * The backtick fence that draws `text[start, end)` as an inline code span
+ * WITHOUT changing anything around it — or null when no fence can (round 11,
+ * H3): the region crosses a blank line (a span cannot), sits in raw HTML (its
+ * backticks would show), holds a backtick or a table pipe, or touches a
+ * backtick (the runs would merge). The fence length is one no backtick run in
+ * the paragraph has, so no stray backtick there can pair with it.
+ */
+function safeCodeSpanFence(text: string, start: number, end: number, paragraph: CodeSpanParagraph): string | null {
+  const source = text.slice(start, end);
+  if (/\n[ \t]*\n/.test(source) || source.includes("`")) return null;
+  if (paragraph.html || (paragraph.table && source.includes("|"))) return null;
+  if (text[start - 1] === "`" || text[end] === "`") return null;
+  let ticks = 1;
+  while (paragraph.runs.has(ticks)) ticks++;
+  return "`".repeat(ticks);
 }
