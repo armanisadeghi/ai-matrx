@@ -576,6 +576,12 @@ export const selectAgentIsForked = createSelector(
   (record): boolean => record?.sourceAgentId != null,
 );
 
+/** True while a copy runs its source agent's current content (templates7_b). */
+export const selectAgentFollowsSource = createSelector(
+  [selectAgentById],
+  (record): boolean => record?.followsSource ?? false,
+);
+
 // ---------------------------------------------------------------------------
 // Access metadata (populated by fetchAgentsList / fetchAgentAccessLevel)
 // null = not yet fetched — do not infer permissions from null

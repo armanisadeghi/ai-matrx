@@ -24628,6 +24628,7 @@ export type ChatDatabase = {
         Args: { p_table: unknown }
         Returns: string
       }
+      _tag_slug: { Args: { p_name: string }; Returns: string }
       _take_lock_nowait: {
         Args: { p_for: string; p_mode: string; p_rels: unknown[] }
         Returns: Json
@@ -27233,13 +27234,18 @@ export type ChatDatabase = {
         Args: { p_actor: string; p_name: string; p_org: string }
         Returns: string
       }
-      tag_scope_type_id: {
-        Args: { p_actor: string; p_org: string }
-        Returns: string
-      }
       tags_backfill: {
         Args: { p_after?: string; p_limit?: number; p_token: string }
         Returns: Record<string, unknown>
+      }
+      tags_in: {
+        Args: { p_org_ids: string[] }
+        Returns: {
+          id: string
+          name: string
+          organization_id: string
+          slug: string
+        }[]
       }
       text_anchor_problem: { Args: { p: Json }; Returns: string }
       text_anchor_target_problem: {

@@ -63,7 +63,10 @@ export function templateAgentCopier(dispatch: AppDispatch, options?: TemplateAge
       },
       async duplicate(sourceAgentId, organizationId) {
         try {
-          return await dispatch(duplicateAgent({ agentId: sourceAgentId, organizationId })).unwrap();
+          // A template copy follows its platform agent until the person edits it (templates7_b).
+          return await dispatch(
+            duplicateAgent({ agentId: sourceAgentId, organizationId, followsSource: true }),
+          ).unwrap();
         } catch (err) {
           throw new Error(`Could not copy the agent: ${messageOf(err)}`);
         }

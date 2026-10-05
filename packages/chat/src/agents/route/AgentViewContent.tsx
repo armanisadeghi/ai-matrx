@@ -21,7 +21,9 @@ import {
 import {
   fetchAgentVersionHistory,
   fetchFullAgent,
+  resetAgentToSource,
 } from "../redux/agent-definition/thunks";
+import { confirm } from "@host/components/dialogs/confirm/ConfirmDialogHost";
 import { ReadFailure } from "@host/components/read-state/ReadFailure";
 import { selectCategoryById } from "../redux/agent-shortcut-categories/selectors";
 import { fetchModelOptions } from "@host/features/ai-models/redux/modelRegistrySlice";
@@ -30,6 +32,7 @@ import { isUuidShape } from "@ai-matrx/kit/uuid";
 import { supabase } from "../../host/db";
 import { Badge } from "@ai-matrx/design-system";
 import { Button } from "@ai-matrx/design-system";
+import { Button as ControlButton } from "@ai-matrx/design-system/controls";
 import { Card, CardContent, CardHeader, CardTitle } from "@host/components/ui/card";
 import {
   Alert,
@@ -57,6 +60,7 @@ import {
   Folder,
   AlignLeft,
   AlertTriangle,
+  RefreshCw,
   type LucideIcon,
 } from "lucide-react";
 import { toast } from "../../host/notify";
@@ -87,6 +91,51 @@ function extractTextContent(msg: AgentDefinitionMessage): string {
     .filter((b) => b.type === "text")
     .map((b) => (b as { type: "text"; text: string }).text)
     .join("\n");
+}
+
+/**
+ * One line for a copy made from another agent (templates7_b): while it follows, runs use the
+ * source's current instructions, tools, model and settings; an edit to those stops it, and
+ * "Reset to latest" (agx_reset_agent_to_source) puts the source's content back.
+ */
+function SourceFollowState({ agentId, follows }: { agentId: string; follows: boolean }) {
+  const dispatch = useAppDispatch();
+  const [resetting, setResetting] = useState(false);
+  if (follows) {
+    return (
+      <div className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+        <RefreshCw className="w-3 h-3 shrink-0" />
+        <span>Updates with the template</span>
+      </div>
+    );
+  }
+  const reset = async () => {
+    const ok = await confirm({
+      title: "Reset to latest",
+      description:
+        "Your changes to instructions, tools and model are replaced with the template's. Your tables stay connected.",
+      confirmLabel: "Reset",
+      variant: "destructive",
+    });
+    if (!ok) return;
+    setResetting(true);
+    try {
+      await dispatch(resetAgentToSource(agentId)).unwrap();
+      toast.success("Reset to the latest template");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Reset failed");
+    } finally {
+      setResetting(false);
+    }
+  };
+  return (
+    <div className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+      <span>Customized — no longer updates</span>
+      <ControlButton variant="quiet" onClick={reset} disabled={resetting}>
+        Reset to latest
+      </ControlButton>
+    </div>
+  );
 }
 
 function RoleBadge({ role }: { role: string }) {
@@ -623,6 +672,14 @@ export function AgentViewContent({ agentId, recordSections }: { agentId: string;
 
               {/* Version + category metadata */}
               <div className="flex flex-col gap-1.5 pt-1">
+                {!agent.isVersion &&
+                  agent.sourceAgentId &&
+                  (agent.followsSource || agent.sourceVersion != null) && (
+                    <SourceFollowState
+                      agentId={liveAgentId}
+                      follows={agent.followsSource}
+                    />
+                  )}
                 {currentVersionId && (
                   <CopyableIdRow
                     label="Current Version ID"

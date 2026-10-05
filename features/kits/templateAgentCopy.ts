@@ -8,6 +8,11 @@
 //
 //   1. the platform agent the template names (its id, or its name in the system org)
 //   2. `agx_duplicate_agent` through the `duplicateAgent` thunk — the ONE fork, as the person
+//      with `p_follows_source`: the copy runs the platform agent's CURRENT instructions,
+//      tools, model and settings (keeping only its own variable bindings) until the person
+//      edits those — then it is "Customized" and stops updating (templates7_b). The records
+//      tool write in step 5 is a no-op on a platform agent that already carries it, so it
+//      never ends the following.
 //   3. named from the template (`nameCopiedAgent`: next free name, guarded write), its tags
 //      cleared in that same write (see TAGS below)
 //   4. each template variable connected to its installed table(s). A TABLE variable
