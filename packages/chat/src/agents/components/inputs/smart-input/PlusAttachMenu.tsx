@@ -8,7 +8,7 @@
  *   2. ONE combined row: model picker + Overrides (inline drill-in) + Advanced
  *      (full window @ settings tab — RunSettingsEditor)
  *   3. Working doc / Scratchpad switches
- *   4. ContextLensBar
+ *   4. ActiveContextLensChip (with the preview eye)
  *   5. ComputeLensBar
  *   6. [compact only] auto-clear toggle (Enter-submits lives ONLY in
  *      Chat Options → Quickset; every version of this menu stays identical)
@@ -50,7 +50,7 @@ import { selectAutoClearConversation } from "../../../redux/execution-system/ins
 import { selectShouldShowAutoClearToggle } from "../../../redux/execution-system/selectors/aggregate.selectors";
 import { setAutoClearMode } from "../../../redux/execution-system/thunks/create-instance.thunk";
 import { selectAgentIdFromInstance } from "../../../redux/execution-system/conversations/conversations.selectors";
-import { ContextLensBar } from "../../../../context/sources/scopes";
+import { ActiveContextLensChip } from "../../../../context/sources/scopes";
 import { ComputeLensBar } from "./ComputeLensBar";
 import { useSandboxBindingBlocked } from "./use-compute-target-actions";
 import { useOpenContextPreviewPanel } from "../../../../host/window-openers";
@@ -153,7 +153,7 @@ function ContextLensMenuRow({ conversationId }: { conversationId: string }) {
 
   return (
     <div className="flex w-full border-t border-border px-2 py-1">
-      <ContextLensBar
+      <ActiveContextLensChip
         conversationId={conversationId}
         className="h-7 w-full max-w-full"
         previewOpen={previewOpen}

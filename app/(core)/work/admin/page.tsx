@@ -76,7 +76,7 @@ const AI_WORK_ADMIN_MAP: FeatureAdminMap = {
       name: "AiWorkComposer",
       filePath: "features/ai-work/compose/components/AiWorkComposer.tsx",
       description:
-        "The /work/new progressive form. Composes launchAgentExecution, RunSkillPicker, the resource picker, ContextLensBar, and UniversalAssociationPicker; floats the run in LiveRunWindow.",
+        "The /work/new progressive form. Composes launchAgentExecution, RunSkillPicker, the resource picker, ActiveContextLensChip, and UniversalAssociationPicker; floats the run in LiveRunWindow.",
       tier: "internal",
     },
     {

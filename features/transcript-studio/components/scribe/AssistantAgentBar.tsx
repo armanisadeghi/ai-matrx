@@ -31,7 +31,8 @@ import {
   switchAssistantAgentThunk,
 } from "../../redux/thunks";
 import { ActionSheet, type ActionSheetItem } from "./ActionSheet";
-import { ActiveContextButton } from "@/features/scopes/components/active-context/ActiveContextButton";
+import { ActiveContextLensChip } from "@/features/scopes/components/active-context/ActiveContextLensChip";
+import { selectHasActiveContext } from "@/features/scopes/redux/selectors/active-context";
 import { cn } from "@/lib/utils";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 
@@ -53,6 +54,7 @@ export function AssistantAgentBar({
     void dispatch(initializeChatAgents());
   }, [dispatch]);
   const activeAgentId = useAppSelector(selectActiveAssistantAgentId(sessionId));
+  const hasActiveContext = useAppSelector(selectHasActiveContext);
   const activeConversationId = useAppSelector(
     selectAssistantConversationId(sessionId),
   );
@@ -205,7 +207,7 @@ export function AssistantAgentBar({
 
       <div className="flex-1" />
 
-      <ActiveContextButton size="xs" align="end" iconOnly warnWhenEmpty />
+      <ActiveContextLensChip align="end" iconOnly attention={!hasActiveContext} />
 
       <button
         type="button"

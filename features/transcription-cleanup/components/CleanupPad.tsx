@@ -62,7 +62,7 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
-import { ActiveContextButton } from "@/features/scopes/components/active-context/ActiveContextButton";
+import { ActiveContextLensChip } from "@/features/scopes/components/active-context/ActiveContextLensChip";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import {
@@ -2495,7 +2495,7 @@ export default function CleanupPad({
               icon={SlidersHorizontal}
               label="Scopes"
             />
-            <ActiveContextButton size="sm" triggerClassName="w-full" />
+            <ActiveContextLensChip fill />
           </>
         )}
 

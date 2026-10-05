@@ -6,7 +6,7 @@
 //
 // Used in headers, footers, command-bar status strips — anywhere a tight
 // 1-line summary of "what context am I working in" is needed without the
-// full picker. For the full picker, use <ActiveContextButton /> or
+// full picker. For the full picker, use <ActiveContextLensChip /> or
 // <ContextAssignmentField mode="active" />.
 
 "use client";

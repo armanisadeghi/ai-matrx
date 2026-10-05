@@ -97,7 +97,6 @@ import {
 import { ContextSummaryChips } from "@/features/scopes/components/context-assignment/ContextSummaryChips";
 import { ContextStatusButton } from "@/features/scopes/components/context-assignment/ContextStatusButton";
 import { UploadContextPrompt } from "@/features/scopes/components/context-assignment/UploadContextPrompt";
-import { ActiveContextButton } from "@/features/scopes/components/active-context/ActiveContextButton";
 import { ActiveContextLensChip } from "@/features/scopes/components/active-context/ActiveContextLensChip";
 import { ClearContextButton } from "@/features/scopes/components/active-context/ClearContextButton";
 import type {
@@ -1895,8 +1894,8 @@ export default function ContextLabPage() {
           title="The pieces every surface drops in"
           intro={
             <>
-              The rollout kit: Surface-A <code>ActiveContextButton</code>,{" "}
-              <code>ActiveContextLensChip</code> (chat-header face), rose{" "}
+              The rollout kit: Surface-A <code>ActiveContextLensChip</code>{" "}
+              (the one scope control), rose{" "}
               <code>ClearContextButton</code> (Eraser + &quot;Context&quot;),{" "}
               <code>ContextSummaryChips</code>, amber/green{" "}
               <code>ContextStatusButton</code>, and{" "}
@@ -1907,10 +1906,11 @@ export default function ContextLabPage() {
             <div className="w-[680px] max-w-full space-y-3">
               <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border p-3">
                 <span className="w-40 shrink-0 text-xs text-muted-foreground">
-                  ActiveContextButton
+                  States
                 </span>
-                <ActiveContextButton size="sm" />
-                <ActiveContextButton size="xs" />
+                <ActiveContextLensChip iconOnly />
+                <ActiveContextLensChip iconOnly attention />
+                <ActiveContextLensChip attention />
               </div>
               <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border p-3">
                 <span className="w-40 shrink-0 text-xs text-muted-foreground">

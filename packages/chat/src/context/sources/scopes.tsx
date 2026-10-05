@@ -255,10 +255,8 @@ export interface ChatScopesSource {
   slugifyKey: (name: string) => string;
   drillPathForScope: AnyFn;
   // Components
-  ActiveContextButton: AnyComponent;
   ActiveContextLensChip: AnyComponent;
   ActiveContextTree: AnyComponent;
-  ContextLensBar: AnyComponent;
   MillerColumnsCore: AnyComponent;
   ContextValueInput: AnyComponent;
   ContextValueRow: AnyComponent;
@@ -424,10 +422,8 @@ export const buildScopeValuePayload = source.fn("buildScopeValuePayload");
 export const slugifyKey = source.fn("slugifyKey");
 export const drillPathForScope = source.fn("drillPathForScope");
 
-export const ActiveContextButton: ComponentType<any> = source.component("ActiveContextButton");
 export const ActiveContextLensChip: ComponentType<any> = source.component("ActiveContextLensChip");
 export const ActiveContextTree: ComponentType<any> = source.component("ActiveContextTree");
-export const ContextLensBar: ComponentType<any> = source.component("ContextLensBar");
 export const MillerColumnsCore: ComponentType<any> = source.component("MillerColumnsCore");
 export const ContextValueInput: ComponentType<any> = source.component("ContextValueInput");
 export const ContextValueRow: ComponentType<any> = source.component("ContextValueRow");

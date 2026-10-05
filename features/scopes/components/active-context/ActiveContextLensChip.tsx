@@ -2,11 +2,25 @@
 
 // features/scopes/components/active-context/ActiveContextLensChip.tsx
 //
+// THE scope control — the one face of "what my agents act within" app-wide.
 // Lens Chip trigger → Popover/Sheet → ActiveContextTree (the promoted dense
 // ContextTree). Clear lives in the tree footer. Writes appContextSlice via
 // the same bridge as ContextDocsMenu / PlusAttachMenu.
+//
+// States (one component, no second face):
+//   iconOnly   — square 28px trigger with a count badge (rails, tight bars)
+//   attention  — amber "this needs a scope" prompt
+//   fill       — stretches to its row (sidebars, list headers)
+//   onOpenPreview — adds the eye zone that opens "what the agent receives"
 
 import React, { useEffect, useState } from "react";
+import { Eye } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 import {
   Popover,
   PopoverContent,
@@ -51,12 +65,27 @@ export interface ActiveContextLensChipProps {
   align?: "start" | "center" | "end";
   className?: string;
   conversationId?: string;
+  /** Square 28px trigger with a count badge. */
+  iconOnly?: boolean;
+  /** Amber "this needs a scope" prompt. */
+  attention?: boolean;
+  /** Stretch to the row's width. */
+  fill?: boolean;
+  /** Adds the eye zone that opens the "what the agent receives" preview. */
+  onOpenPreview?: () => void;
+  /** True while that preview is open — keeps the eye zone lit. */
+  previewOpen?: boolean;
 }
 
 export function ActiveContextLensChip({
   align = "start",
   className,
   conversationId,
+  iconOnly = false,
+  attention = false,
+  fill = false,
+  onOpenPreview,
+  previewOpen = false,
 }: ActiveContextLensChipProps) {
   const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
@@ -145,18 +174,36 @@ export function ActiveContextLensChip({
     />
   ) : null;
 
+  const withPreview = Boolean(onOpenPreview);
   const trigger = (
-    <span className="inline-flex min-w-0 max-w-full overflow-hidden">
+    <span
+      className={cn(
+        "inline-flex min-w-0 max-w-full overflow-hidden",
+        fill && "w-full",
+      )}
+    >
       <LensChip
         nodes={chipNodes}
         onClick={isMobile ? () => setOpen(true) : () => {}}
-        className={className}
+        iconOnly={iconOnly}
+        attention={attention}
+        fill={fill}
+        className={cn(
+          withPreview &&
+            "h-5 rounded-full border-0 bg-transparent px-1.5 text-xs hover:bg-muted/60 group-hover:bg-primary/5",
+          !withPreview && className,
+        )}
       />
     </span>
   );
 
-  return (
-    <div className="inline-flex min-w-0 max-w-full items-center overflow-hidden">
+  const chip = (
+    <div
+      className={cn(
+        "inline-flex min-w-0 max-w-full items-center overflow-hidden",
+        fill && "w-full",
+      )}
+    >
       {isMobile ? (
         <>
           {trigger}
@@ -176,6 +223,42 @@ export function ActiveContextLensChip({
           </PopoverContent>
         </Popover>
       )}
+    </div>
+  );
+
+  if (!withPreview) return chip;
+
+  return (
+    <div
+      className={cn(
+        "group inline-flex h-7 shrink-0 items-center rounded-full border bg-card pl-1 pr-0.5 text-xs transition-colors",
+        previewOpen
+          ? "border-primary/50 hover:border-primary/70"
+          : "border-border hover:border-primary/45",
+        className,
+      )}
+    >
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            onClick={onOpenPreview}
+            aria-label="See exactly what the agent receives"
+            className={cn(
+              "inline-flex h-5 items-center rounded-full px-1.5 transition-colors",
+              previewOpen
+                ? "bg-primary/15 text-primary"
+                : "text-primary/80 group-hover:bg-primary/10 group-hover:text-primary",
+            )}
+          >
+            <Eye className="h-3.5 w-3.5" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="top">
+          See exactly what the agent receives
+        </TooltipContent>
+      </Tooltip>
+      {chip}
     </div>
   );
 }

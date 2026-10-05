@@ -6,7 +6,7 @@
  * from `POST /ai/context/preview` (injected context block, tiered variables
  * with provenance, agent variable/slot binding fill) plus the client-side
  * entries attached for this conversation's turns. Opened from the "Context"
- * segment of the composer's ContextLensBar; inherits `matrx-user/chat`
+ * segment of the composer's ActiveContextLensChip; inherits `matrx-user/chat`
  * because it always previews a chat conversation's context (conversation_id /
  * conversation_agent_id arrive via inheritance).
  *

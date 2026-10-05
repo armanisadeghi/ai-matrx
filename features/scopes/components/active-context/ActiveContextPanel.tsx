@@ -3,7 +3,7 @@
 // features/scopes/components/active-context/ActiveContextPanel.tsx
 //
 // Inline Surface-A working-context editor — the same field + dispatch wiring
-// as ActiveContextButton's popover, without the trigger chrome. Use inside
+// as the scope picker body, without the trigger chrome. Use inside
 // tab panels (RunControlsMenu), drawers, or any host that already provides
 // the shell.
 //

@@ -51,7 +51,7 @@ description: "Context and scope-tagging UI. Use when adding a context picker to 
 | Same, without blocking the page | `ContextAssignmentPopover` | trigger = your button |
 | Same, as an explicit modal step | `ContextAssignmentDialog` | controlled `open` |
 | Same, floating/draggable | `ContextAssignmentWindow` | inline-controlled |
-| Set the WORKING context from a header/toolbar | `ActiveContextButton` | live-apply popover; sizes `xs`/`sm`, `iconOnly` for rails |
+| Set the WORKING context anywhere (header, toolbar, rail, composer) | `ActiveContextLensChip` | THE one scope control; `iconOnly` for rails, `attention` for "needs a scope", `fill` for sidebars, `onOpenPreview` adds the preview eye |
 | Same field inside a tab panel / drawer (no trigger) | `ActiveContextPanel` | composes `ContextAssignmentField mode="active"`; default `checkboxVariant="standard"`; used by `RunControlsMenu` Context tab |
 | Clear working context (rose Eraser + "Context", app-wide) | `ClearContextButton` | dispatches `clearContext`; wired into every Surface A control |
 | Show context status per entity (amber/green nudge) | `ContextStatusButton` | pass `knownScopeCount` on list rows (bulk!), omit on single-entity surfaces |
@@ -61,7 +61,7 @@ description: "Context and scope-tagging UI. Use when adding a context picker to 
 | Filter a list by context (no saving!) | `ContextAssignmentField mode="filter"` | emits via `onSelectionChange`; zero save-side effects |
 
 All in `features/scopes/components/context-assignment/` except
-`ActiveContextButton` + `ActiveContextPanel` (`features/scopes/components/active-context/` —
+`ActiveContextLensChip` + `ActiveContextPanel` (`features/scopes/components/active-context/` —
 Surface A writers MUST live there; ESLint + FEATURE.md enforce it).
 
 ## Hard rules
@@ -95,7 +95,7 @@ Surface A writers MUST live there; ESLint + FEATURE.md enforce it).
   status icons swap glyphs, never dimensions.
 - **Mobile = one bottom sheet.** Every wrapper (`ContextAssignmentPopover`,
   `ContextAssignmentDialog`, `ContextAssignmentWindow`, `UploadContextPrompt`,
-  `ActiveContextButton`) switches to `ContextSheet` on `useIsMobile()` — never a
+  `ActiveContextLensChip`) switches to `ContextSheet` on `useIsMobile()` — never a
   desktop popover/dialog/window on a phone. `ContextSheet` (built on the
   `BottomSheet` primitive) hosts the body with **`fill`**, which makes the
   field's own section list the single scroll area and pins the footer. Never set

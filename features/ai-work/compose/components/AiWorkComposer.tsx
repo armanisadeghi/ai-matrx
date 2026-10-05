@@ -14,7 +14,7 @@
  *   2. Request       → the run's user input; above its textarea sits the ONE
  *                      composer row — `SmartAgentResourcePickerButton`
  *                      (a stored file becomes a durable file→conversation edge
- *                      the backend injects at call time), `ContextLensBar`
+ *                      the backend injects at call time), `ActiveContextLensChip`
  *                      for the active scopes, and `ConversationContextRail`
  *                      (`withAttachments`: attachments LEFT, the value chip
  *                      pinned RIGHT, its full view owned by the rail)
@@ -60,7 +60,7 @@ import { useCanvasHoldsKind } from "@/features/canvas/host/toolCanvas";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { RunSkillPicker } from "@ai-matrx/chat/agents/components/inputs/smart-input/RunSkillPicker";
 import { SmartAgentResourcePickerButton } from "@ai-matrx/chat/agents/components/inputs/resources/SmartAgentResourcePickerButton";
-import { ContextLensBar } from "@/features/scopes/components/active-context/ContextLensBar";
+import { ActiveContextLensChip } from "@/features/scopes/components/active-context/ActiveContextLensChip";
 import { selectBuilderAdvancedSettings } from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { setBuilderAdvancedSettings } from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { useOpenLiveRunWindow } from "@/features/overlays/openers/liveRunWindow";
@@ -665,7 +665,7 @@ function ComposerBody({
               conversationId={conversationId}
               triggerSize="default"
             />
-            <ContextLensBar
+            <ActiveContextLensChip
               conversationId={conversationId}
               previewOpen={contextPreviewOpen}
               onOpenPreview={() =>

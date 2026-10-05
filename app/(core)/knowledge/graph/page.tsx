@@ -9,7 +9,7 @@
 
 import { KnowledgeGraphClient } from "./KnowledgeGraphClient";
 import KnowledgeGraphLanding from "@/features/auth/components/module-landing/landings/KnowledgeGraphLanding";
-import { ActiveContextButton } from "@/features/scopes/components/active-context/ActiveContextButton";
+import { ActiveContextLensChip } from "@/features/scopes/components/active-context/ActiveContextLensChip";
 import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 
@@ -38,10 +38,9 @@ export default async function KnowledgeGraphPage({
           <div className="ml-auto shrink-0 flex items-center">
             {/* Working context — filtering today; direct scope↔node assignment
                 is the next (and biggest) step for this surface. */}
-            <ActiveContextButton
-              size="sm"
+            <ActiveContextLensChip
               align="end"
-              triggerClassName="max-w-[200px] sm:max-w-[360px]"
+              className="max-w-[200px] sm:max-w-[360px]"
             />
           </div>
         </div>

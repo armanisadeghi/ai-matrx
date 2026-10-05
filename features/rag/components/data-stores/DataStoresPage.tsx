@@ -19,7 +19,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ActiveContextButton } from "@/features/scopes/components/active-context/ActiveContextButton";
+import { ActiveContextLensChip } from "@/features/scopes/components/active-context/ActiveContextLensChip";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { RagHubHeader } from "@/features/rag/components/shell/RagHubHeader";
 import {
@@ -181,7 +181,7 @@ export function DataStoresPage() {
     <>
       {/* Working context — what scoped retrieval acts within. */}
       <div className="border-b px-3 py-1.5">
-        <ActiveContextButton size="sm" triggerClassName="max-w-full" />
+        <ActiveContextLensChip fill />
       </div>
       {creating ? null : <CreateStoreInline onCreated={(id) => select(id)} />}
       <div className="flex-1 overflow-auto">

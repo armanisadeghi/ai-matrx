@@ -2,7 +2,7 @@
 
 /**
  * ComputeLensBar — condensed sandbox / local-PC row for the `+` attach menu.
- * Mirrors ContextLensBar: one pill, left label zone, up to two inline target
+ * Mirrors ActiveContextLensChip's preview pill: one pill, left label zone, up to two inline target
  * chips, overflow + chevron opens the full Sandbox panel in run-controls window.
  */
 

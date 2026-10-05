@@ -17,7 +17,7 @@
 // custom cleanup slots ("Custom"), and the tile's recording-SESSION LIST (the
 // "Sessions" drawer — ThreadAudioSessionList, driven by the war-room association
 // store: list / switch / start a session, scoped to THIS tile). The pad's own
-// PAGE-scoped session list and the GLOBAL ActiveContextButton stay hidden (the
+// PAGE-scoped session list and the GLOBAL ActiveContextLensChip stay hidden (the
 // tile owns sessions, and War Room carries its own context, never the global).
 //
 // Grid / combined compact: session chrome folds into CleanupPad's single toolbar

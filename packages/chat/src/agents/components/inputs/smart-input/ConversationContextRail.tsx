@@ -128,7 +128,7 @@ import {
 } from "../../../ui-first-tools/redux/agent-lists.thunks";
 import { useConversationListsTab } from "../../../ui-first-tools/ui/lists/TaskPanel";
 import { selectAgentContextPolicies } from "../../../redux/agent-definition/selectors";
-import { ActiveContextButton } from "../../../../context/sources/scopes";
+import { ActiveContextLensChip } from "../../../../context/sources/scopes";
 import { selectActiveScopeIdsByType } from "../../../../context/sources/scopes";
 import { contextEntryLabel } from "../../context-policies-display/contextEntryLabel";
 
@@ -619,10 +619,10 @@ export function ConversationContextRail({
             {showSetScopeCta && (
               <span
                 data-rail-entry=""
-                className="shrink-0 rounded-md ring-1 ring-inset ring-amber-500/60"
+                className="shrink-0"
                 title="This agent needs a scope you haven't set yet"
               >
-                <ActiveContextButton size="xs" iconOnly className="shrink-0" />
+                <ActiveContextLensChip iconOnly attention />
               </span>
             )}
             {withAttachments ? (

@@ -58,10 +58,8 @@ import { entityTitleFallback, fetchEntityTitles, getCachedEntityTitle } from "@/
 import { referenceConfigFromItem } from "@/features/scopes/utils/referenceCell";
 import { buildScopeValuePayload } from "@/features/scopes/utils/scopeValuePayload";
 import { slugifyKey } from "@/features/scopes/utils/slugify";
-import { ActiveContextButton } from "@/features/scopes/components/active-context/ActiveContextButton";
 import { ActiveContextLensChip } from "@/features/scopes/components/active-context/ActiveContextLensChip";
 import { ActiveContextTree } from "@/features/scopes/components/active-context/ActiveContextTree";
-import { ContextLensBar } from "@/features/scopes/components/active-context/ContextLensBar";
 import { MillerColumnsCore } from "@/features/scopes/components/active-context/miller-columns/MillerColumns";
 import { ContextValueInput } from "@/features/scopes/components/reference/ContextValueInput";
 import { ContextValueRow } from "@/features/scopes/components/reference/ContextValueRow";
@@ -146,10 +144,8 @@ registerChatScopes({
   buildScopeValuePayload,
   slugifyKey,
   drillPathForScope,
-  ActiveContextButton,
   ActiveContextLensChip,
   ActiveContextTree,
-  ContextLensBar,
   MillerColumnsCore,
   ContextValueInput,
   ContextValueRow,

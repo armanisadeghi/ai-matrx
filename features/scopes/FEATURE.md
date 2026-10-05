@@ -226,8 +226,8 @@ this directory.
   knob `resources.inventory/page_size`. Which kinds the Source input offers = `entity_types.source_input_pickable`. **Components consume hooks — never slices, thunks, or
   services directly.**
 - `components/active-context/` — Surface A (the only `appContextSlice` writers): `ActiveScopePicker`,
-  `ActiveScopeChips`, `ContradictionBanner`, `ActiveContextButton`, `ContextLensBar`, `LensChip`,
-  `ActiveContextLensChip`, `quick-pick/` (interaction law: **row = forward, checkbox = select**).
+  `ActiveScopeChips`, `ContradictionBanner`, `LensChip`,
+  `ActiveContextLensChip` (THE one scope control — states `iconOnly`, `attention`, `fill`, `onOpenPreview`), `quick-pick/` (interaction law: **row = forward, checkbox = select**).
   `miller-columns/` + `drill-deck/` share `quick-pick/engine.ts`: every column longer than
   `COLUMN_SEARCH_THRESHOLD` (8) shows its own search (`filterColumnRows`, `useColumnQuery`,
   `parts.tsx#ColumnSearch`); `useDrillPathEngine` is the one-pick-per-column selection (a pick
@@ -402,6 +402,8 @@ The frontend primitive uses only five RPCs: `cat_list(p_dimension?)`, `cat_creat
   not the same axis.
 
 ## Change Log
+
+- 2026-10-05 — ONE scope control: `ActiveContextButton` and `ContextLensBar` deleted; every caller renders `ActiveContextLensChip` (new states `iconOnly` + count badge, amber `attention`, `fill`, and the preview eye via `onOpenPreview`/`previewOpen`).
 
 - 2026-10-03 — **The flip: scopes are read from the record store only** (lane 9 SCOPES-ON-THE-STORE, wave 1 step 5;
   Arman's "burn the boats"). Every knob-off `context.*` read branch is deleted from `scopesService.ts`, `tagApi.ts`
