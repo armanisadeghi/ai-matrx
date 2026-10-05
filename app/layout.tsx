@@ -30,7 +30,12 @@ import "@ai-matrx/meet/styles.css";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { cn } from "@/lib/utils";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
+import { ViewportHintProvider } from "@ai-matrx/kit/media-query";
+import {
+  VIEWPORT_HINT_COOKIE,
+  viewportHintIsMobile,
+} from "@ai-matrx/kit/viewport-hint";
 import { metadata } from "./config/metadata";
 import { viewport } from "./config/viewport";
 import { SyncBootScript } from "@/lib/sync/components/SyncBootScript";
@@ -66,6 +71,14 @@ export default async function RootLayout({ children }: RootLayoutProps) {
   const isDark = themeCookie === "dark";
   const dataTheme =
     themeCookie === "light" || themeCookie === "dark" ? themeCookie : undefined;
+  // Request-time "is this a phone?" so every useIsMobile renders the phone
+  // tree on the server and during hydration (@ai-matrx/kit 0.23.0).
+  const headerList = await headers();
+  const isMobileHint = viewportHintIsMobile({
+    cookie: cookieStore.get(VIEWPORT_HINT_COOKIE)?.value,
+    chUaMobile: headerList.get("sec-ch-ua-mobile"),
+    userAgent: headerList.get("user-agent"),
+  });
 
   return (
     <html
@@ -113,29 +126,31 @@ export default async function RootLayout({ children }: RootLayoutProps) {
             Routes that want streaming declare their own loading.tsx/Suspense
             BELOW their existence checks. */}
         {/* One address door for @ai-matrx/kit/url-state (lane URL-STATE). */}
-        <UrlStateDoor />
-        {/* THE HONEST-SCREEN MOUNT — exactly one, at the root, so every route
+        <ViewportHintProvider isMobile={isMobileHint}>
+          <UrlStateDoor />
+          {/* THE HONEST-SCREEN MOUNT — exactly one, at the root, so every route
             group inherits it. Mounting it per-shell is how the first attempt
             covered `(core)` and missed everything else. Renders nothing unless
             the server resolved nobody while this tab still holds a session. */}
-        <SessionIntegrityGate />
-        {process.env.NODE_ENV === "development" ? <DevWalkMonitor /> : null}
-        {children}
-        <AgentTrafficForwarder />
-        <UserAcquisitionCapture />
-        <Toaster />
-        <Sonner />
-        {/* Consent-based new-version prompt + post-boot stale-chunk guard.
+          <SessionIntegrityGate />
+          {process.env.NODE_ENV === "development" ? <DevWalkMonitor /> : null}
+          {children}
+          <AgentTrafficForwarder />
+          <UserAcquisitionCapture />
+          <Toaster />
+          <Sonner />
+          {/* Consent-based new-version prompt + post-boot stale-chunk guard.
                         Bakes THIS deployment's id in server-side so the client can
                         compare against /api/version. Never auto-refreshes. */}
-        <NewVersionWatcher
-          deploymentId={process.env.VERCEL_DEPLOYMENT_ID ?? null}
-        />
-        {/* Glass portal layer — lives outside all content stacking contexts.
+          <NewVersionWatcher
+            deploymentId={process.env.VERCEL_DEPLOYMENT_ID ?? null}
+          />
+          {/* Glass portal layer — lives outside all content stacking contexts.
                     NO position, NO z-index, NO transform, NO overflow, NO filter here — ever.
                     Children (dock, panels) are position:fixed themselves.
                     A stacking context on this wrapper would block their backdrop-filter in Chromium. */}
-        <div id="glass-layer" />
+          <div id="glass-layer" />
+        </ViewportHintProvider>
       </body>
     </html>
   );
