@@ -16,5 +16,6 @@ export {
 } from "@ai-matrx/data/db";
 
 export const runWithSessionRetry = createSessionRetry({
-  auth: supabase.auth,
+  // Lazy: read the client when a call runs, never at import time.
+  auth: { getSession: () => supabase.auth.getSession() },
 });
