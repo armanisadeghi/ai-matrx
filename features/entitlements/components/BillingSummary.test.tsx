@@ -1,7 +1,13 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { BillingSummary } from "./BillingSummary";
-import { readBillingSummary } from "../billing-summary";
+import { readBillingSummary, type BillingSummaryRead } from "../billing-summary";
+
+declare global {
+  var IS_REACT_ACT_ENVIRONMENT: boolean;
+}
+
+globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
 jest.mock("../billing-summary", () => ({
   ...jest.requireActual("../billing-summary"),
@@ -32,7 +38,7 @@ function deferred<T>(): Deferred<T> {
   return { promise, resolve, reject };
 }
 
-const activeRead = {
+const activeRead: BillingSummaryRead = {
   ok: true as const,
   subscription: {
     id: "sub_harbor_monthly",
@@ -47,7 +53,7 @@ const activeRead = {
   price: null,
 };
 
-const paymentDueRead = {
+const paymentDueRead: BillingSummaryRead = {
   ...activeRead,
   subscription: { ...activeRead.subscription, status: "past_due" },
 };
@@ -74,7 +80,7 @@ describe("BillingSummary account switching", () => {
   });
 
   it("clears a prior account invoice immediately while a new account is loading", async () => {
-    const organizationRead = deferred<typeof activeRead>();
+    const organizationRead = deferred<BillingSummaryRead>();
     const recovery = deferred<{ invoice: { url: string; status: string; requiresAction: boolean } }>();
     mockRead.mockResolvedValueOnce(paymentDueRead).mockReturnValueOnce(organizationRead.promise);
     mockFetch.mockImplementation((_input: RequestInfo | URL, init?: RequestInit) => {

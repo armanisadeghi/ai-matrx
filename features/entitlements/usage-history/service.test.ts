@@ -21,7 +21,7 @@ function clientWith(calls: Array<[string, unknown?]>, auth: { user: { id: string
     gte: jest.fn((...args: [string, unknown]) => { calls.push(args); return request; }),
     or: jest.fn((...args: [string]) => { calls.push(args); return request; }),
     order: jest.fn((...args: [string, unknown]) => { calls.push(args); return request; }),
-    limit: jest.fn(async (limit: number) => { calls.push(["limit", limit]); return { data: [], error: null }; }),
+    limit: async (limit: number): Promise<{ data: []; error: null }> => { calls.push(["limit", limit]); return { data: [], error: null }; },
   };
   return {
     auth: { getUser: async () => ({ data: { user: auth.user }, error: auth.error ?? null }) },
