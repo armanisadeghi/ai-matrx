@@ -37,7 +37,7 @@ import {
 } from "../redux/skillsConverters";
 import { createSkill, deleteSkill, patchSkill } from "../redux/skillsThunks";
 import type { SkillDraft, SkillType } from "../types";
-import MarkdownStream from "@/components/MarkdownStream";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { SkillProjectAssociations } from "./SkillProjectAssociations";
 import { SkillResourcesPanel } from "./SkillResourcesPanel";
 import { ProTextarea } from "@/components/official/ProTextarea";
@@ -849,7 +849,7 @@ function BodyEditor({
               Nothing to preview yet.
             </span>
           ) : (
-            <MarkdownStream imagePolicy="other" content={value} />
+            <RichContent level="full" imagePolicy="other" source={value} />
           )}
         </div>
       ) : (

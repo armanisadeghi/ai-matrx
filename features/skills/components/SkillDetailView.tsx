@@ -27,7 +27,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import MarkdownStream from "@/components/MarkdownStream";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { cn } from "@/lib/utils";
 
 import type { SkillRow } from "../types";
@@ -174,7 +174,7 @@ export function SkillDetailView({
             </div>
             {skill.body && skill.body.trim() ? (
               <div className="min-w-0 overflow-x-auto rounded-md border border-border bg-card px-3 py-2">
-                <MarkdownStream imagePolicy="other" content={skill.body} />
+                <RichContent level="full" imagePolicy="other" source={skill.body} />
               </div>
             ) : (
               <p className="rounded-md border border-dashed border-border px-3 py-2 text-[11px] text-muted-foreground/70">
