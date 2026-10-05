@@ -13,7 +13,7 @@ import { createClient } from "@/utils/supabase/client";
 import { entityRecordReadable } from "@/features/unified-data/hub/doors";
 import { useStoreRead } from "@/lib/redux/store-reads/useStoreRead";
 import { selectStoreRead } from "@/lib/redux/slices/storeReadsSlice";
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@/lib/redux/rootReducer";
 
 export const recordReadableKey = (organizationId: string, token: string, recordId: string) =>
   `unified-data.record-readable:${organizationId}:${token}:${recordId}`;
