@@ -145,6 +145,8 @@ function OutcomePanel({
     line = "This job needs a new output shape first.";
   } else if (outcome === "workflow_sized") {
     line = "This job needs a workflow, not one agent.";
+  } else if (outcome === "worker_lost") {
+    line = "Stopped mid-build. Start it again to resume.";
   } else if (outcome) {
     line = "The build stopped.";
   }

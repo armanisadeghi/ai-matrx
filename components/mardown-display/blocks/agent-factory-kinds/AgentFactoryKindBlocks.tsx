@@ -394,6 +394,7 @@ const OUTCOME_TONE: Record<string, ChipTone> = {
   no_proof_inputs: "warn",
   needs_new_kind: "warn",
   unproven: "warn",
+  worker_lost: "warn",
 };
 const OUTCOME_LABEL: Record<string, string> = {
   passed: "Passed",
@@ -405,6 +406,7 @@ const OUTCOME_LABEL: Record<string, string> = {
   no_proof_inputs: "Needs examples",
   needs_new_kind: "Needs new shape",
   unproven: "Too few real cases",
+  worker_lost: "Stopped mid-build",
 };
 
 export function outcomeChip(outcome: string | null) {
