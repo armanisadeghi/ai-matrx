@@ -29,6 +29,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@ai-matrx/design-system";
+import { CONTROLS_CONTAINER_CLASS } from "@ai-matrx/design-system/controls";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { ConnectorPromptHost } from "@/features/connectors/ConnectorPromptHost";
 import { useOpenDetail } from "@ai-matrx/detail/react";
@@ -90,6 +91,8 @@ export function AgendaPanel({
     <section
       className={cn(
         variant === "card" && "rounded-md border border-border bg-card",
+        // The width a row's "Create a note" collapses against (icon alone below 48rem).
+        CONTROLS_CONTAINER_CLASS,
         "flex min-h-0 flex-col",
         className,
       )}
@@ -403,6 +406,7 @@ function AgendaEventRow({
           icon={<StickyNote />}
           type="button"
           variant="quiet"
+          collapse="container"
           onClick={() => void createNote()}
           disabled={savingNote}
           data-agenda-create-note
