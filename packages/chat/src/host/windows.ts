@@ -52,6 +52,7 @@ export const CHAT_WINDOWS = {
   runControlsWindow: "runControlsWindow",
   sendToAgentWindow: "sendToAgentWindow",
   toolCallWindow: "toolCallWindow",
+  workingDocumentWindow: "workingDocumentWindow",
   // Host windows the package opens with its own payload.
   fullScreenEditor: "fullScreenEditor",
   saveToNotes: "saveToNotes",

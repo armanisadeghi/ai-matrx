@@ -13,6 +13,7 @@
  * selectors the sidebar rows and detail pane already use.
  */
 
+import { CHAT_WINDOWS } from "../../host/windows";
 import type {
   SurfaceManifest,
   SurfaceScopePayload,
@@ -116,7 +117,7 @@ export const observationalMemoryManifest: SurfaceManifest = {
     "Agent observational memory inspector",
   readiness: "partial",
   readinessNote: "emitter wired, browser verification pending",
-  overlayId: "observationalMemoryWindow",
+  overlayId: CHAT_WINDOWS.observationalMemoryWindow,
   label: "Memory Inspector",
   intro: `<surface_intro>
 You are on the Memory Inspector — an admin floating window for auditing the Observational Memory feature. The sidebar lists every conversation with memory activity this session; the detail pane shows the selected conversation's memory state: whether it is enabled, degraded, its counters/cost, and the persisted memory metadata itself. This is a diagnostic surface — help the admin interpret memory behavior; never fabricate memory content.

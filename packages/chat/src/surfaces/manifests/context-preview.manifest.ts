@@ -20,6 +20,7 @@
  * open its scope wins) and builds the scope via `createContextPreviewScope`.
  */
 
+import { CHAT_WINDOWS } from "../../host/windows";
 import type {
   SurfaceManifest,
   SurfaceScopePayload,
@@ -283,7 +284,7 @@ export const contextPreviewManifest: SurfaceManifest = {
   readinessNote:
     "Manifest + panel emitter live for every declared value. Live binding verification (non-matching-name mapping + Matrx-vs-matrix test) not yet run.",
   label: "Context Preview",
-  overlayId: "contextPreviewPanel",
+  overlayId: CHAT_WINDOWS.contextPreviewPanel,
   inheritsFrom: "matrx-user/chat",
   intro: `<surface_intro>
 You are on the Context Preview panel — a diagnostic overlay showing the user exactly what their agent will receive on the next run, resolved by the SERVER through the same code path the real agent run uses.

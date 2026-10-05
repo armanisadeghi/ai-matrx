@@ -23,7 +23,7 @@
  */
 
 import { useEffect, useEffectEvent, useRef, useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname } from "../../host/navigation";
 import {
   Drawer,
   DrawerContent,

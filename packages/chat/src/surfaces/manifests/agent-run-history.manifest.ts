@@ -62,6 +62,7 @@
  * while the window is open ITS scope wins.
  */
 
+import { CHAT_WINDOWS } from "../../host/windows";
 import type {
   SurfaceManifest,
   SurfaceScopePayload,
@@ -293,7 +294,7 @@ export const agentRunHistoryManifest: SurfaceManifest = {
   readiness: "partial",
   readinessNote:
     "Emitter wired and verified live in the Surface Context window: AgentRunHistoryWindow mounts SurfaceRuntimeProvider and every declared value is supplied by agent-run-history-scope.ts. Not `verified` because no agent has been bound to this surface, so the non-matching-name binding and Matrx-vs-matrix checks have not been run, and the DB manifest sync has not been applied for the new values.",
-  overlayId: "agentRunHistoryWindow",
+  overlayId: CHAT_WINDOWS.agentRunHistoryWindow,
   label: "Agent Run History",
   intro: `<surface_intro>
 You are on Agent Run History — a floating window for reviewing an agent's past

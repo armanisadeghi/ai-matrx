@@ -13,6 +13,7 @@
  * title/countdown logic already uses.
  */
 
+import { CHAT_WINDOWS } from "../../host/windows";
 import type {
   SurfaceManifest,
   SurfaceScopePayload,
@@ -76,7 +77,7 @@ export const agentGateManifest: SurfaceManifest = {
     "Pre-execution agent gate / trigger",
   readiness: "partial",
   readinessNote: "emitter wired, browser verification pending",
-  overlayId: "agentGateWindow",
+  overlayId: CHAT_WINDOWS.agentGateWindow,
   label: "Agent Gate",
   intro: `<surface_intro>
 You are on the Agent Gate — the pre-execution checkpoint shown before an agent run proceeds. The gated agent's pre_execution_message tells the user what it needs; the user types a reply (or the bypass countdown auto-advances) and the run continues in the downstream window. conversation_id identifies the pending run.

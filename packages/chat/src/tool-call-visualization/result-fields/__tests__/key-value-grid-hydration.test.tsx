@@ -180,7 +180,9 @@ describe("KeyValueGrid hydration", () => {
     expect(container.textContent).toContain("Content Hash");
     expect(container.textContent).toContain("Source Metadata");
     expect(container.textContent).toContain("Source Offset Start");
-    expect(container.textContent).toContain("Source Chunk Ids");
+    // @ai-matrx/kit's humanizeIdentifier (npm latest, 0.22.x, synced by 8b7989cb4e)
+    // now capitalises the "ids" word as "IDs" — a deliberate label change, not a drop.
+    expect(container.textContent).toContain("Source Chunk IDs");
     expect(container.textContent).toContain("Chunk Index");
     expect(container.textContent).toContain("8fba6bb0d5d6b2c98c0d75d48f7ad6d9");
   });

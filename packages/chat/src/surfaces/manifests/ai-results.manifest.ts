@@ -20,6 +20,7 @@
  * per-run fields.
  */
 
+import { CHAT_WINDOWS } from "../../host/windows";
 import type {
   SurfaceManifest,
   SurfaceScopePayload,
@@ -142,7 +143,7 @@ export const aiResultsManifest: SurfaceManifest = {
     "Cross-agent conversation history viewer",
   readiness: "partial",
   readinessNote: "emitter wired, browser verification pending",
-  overlayId: "quickChatHistory",
+  overlayId: CHAT_WINDOWS.quickChatHistory,
   label: "AI Results",
   intro: `<surface_intro>
 You are on AI Results — a cross-agent conversation history browser in a floating window. The sidebar lists past runs across every accessible agent (grouped by date or agent, filterable by agent and search); selecting one shows it read-only in the main pane. selected_conversation_id identifies the open run; last_run_text is its final assistant reply. Agents bound here help the user find, judge, or summarize past runs — they do not operate on a live run.

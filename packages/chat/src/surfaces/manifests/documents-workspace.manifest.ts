@@ -36,6 +36,7 @@
  *   conversation_link  The conversation the workspace was opened for
  */
 
+import { CHAT_WINDOWS } from "../../host/windows";
 import type {
   SurfaceManifest,
   SurfaceScopePayload,
@@ -198,7 +199,7 @@ export const documentsWorkspaceManifest: SurfaceManifest = {
   readiness: "partial",
   readinessNote:
     "Manifest + emitter + tab-strip menu wiring shipped 2026-08-24; no agent is bound yet and the non-matching-name binding test has not been run.",
-  overlayId: "workingDocumentWindow",
+  overlayId: CHAT_WINDOWS.workingDocumentWindow,
   label: "Documents Workspace",
   intro: `<surface_intro>
 You are on the Documents Workspace — the shell that holds the user's open documents as tabs, with a rail of their other documents beside it. From out here a document is a whole item in a list, not text you are editing: open_documents is what is open, active_document_title / active_document_kind is the tab on screen, and active_document_content is its body if you were given it.

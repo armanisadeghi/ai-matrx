@@ -39,7 +39,7 @@ const dispatch = jest.fn();
 jest.mock("../../../store/hooks", () => ({ useAppDispatch: () => dispatch }));
 jest.mock("../../../host/windows", () => ({
   openOverlay: (x: unknown) => x,
-  CHAT_WINDOWS: { saveToNotes: "saveToNotes" },
+  CHAT_WINDOWS: jest.requireActual("../../../host/windows").CHAT_WINDOWS,
 }));
 jest.mock("../../../host/org", () => ({
   selectOrganizationId: () => "org",

@@ -14,6 +14,9 @@ import creatorDebug from "@host/lib/redux/preferences/creatorDebugSlice";
 // whole column threw at render. The real store always carries it (rootReducer.ts),
 // so the seat mounts the real reducer rather than stubbing the selector.
 import userAuth from "@host/lib/redux/slices/userAuthSlice";
+// The column reads the composer's pre-send state (`state.instanceUserInput`) —
+// the real reducer, like userAuth above, so a store missing it cannot hide a regression.
+import instanceUserInput from "../../../redux/execution-system/instance-user-input/instance-user-input.slice";
 import { loadOlderMessages } from "../../../redux/execution-system/thunks/load-older-messages.thunk";
 import { AgentConversationColumn } from "../AgentConversationColumn";
 
@@ -209,7 +212,7 @@ describe("AgentConversationColumn cold history anchoring", () => {
 
   it("keeps a cold transcript at newest through delayed growth until the user reads upward", () => {
     const store = configureStore({
-      reducer: { messages, conversations, creatorDebug, userAuth },
+      reducer: { messages, conversations, creatorDebug, userAuth, instanceUserInput },
     });
     store.dispatch(
       hydrateMessages({
@@ -226,8 +229,10 @@ describe("AgentConversationColumn cold history anchoring", () => {
             conversationId={conversationId}
             surfaceKey="chat"
             deferColdMarkdown
-            // This test is about the transcript's anchoring, not the input.
-            hideInput
+            // 4cde5e68b4 hid the input here, which made the "input not disabled"
+            // assertion below read a textarea that was never rendered. The input stays
+            // shown, with the composer the column now requires by type.
+            smartInputProps={{ composer: { size: "page", mode: "chat" } }}
           />
         </Provider>,
       );

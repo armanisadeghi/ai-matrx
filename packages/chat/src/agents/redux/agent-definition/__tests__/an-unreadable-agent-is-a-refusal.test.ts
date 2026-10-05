@@ -11,6 +11,14 @@
 const rpc = jest.fn();
 jest.mock("../../../../host/db", () => ({ supabase: { rpc: (...a: unknown[]) => rpc(...a) } }));
 
+// A signed-in person: since a6bb7d7447 the thunk refuses a signed-out visitor
+// (isSignedOutVisitor) before it reads, and this suite has no host session.
+// The refusal under test is the signed-in one: the read ran and returned no row.
+jest.mock("../../../../host/identity", () => ({
+  ...jest.requireActual("../../../../host/identity"),
+  isSignedOutVisitor: async () => false,
+}));
+
 import { fetchAgentExecutionMinimal } from "../thunks";
 
 it("rejects, and records the error, when the read returns no row", async () => {

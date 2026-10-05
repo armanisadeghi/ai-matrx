@@ -1,8 +1,11 @@
-jest.mock("../../../mandates/service", () => ({
-  resolveMandate: jest.fn(),
+// f60ec1dced: every launcher that resolves chat.default_new_chat asks for an
+// organization first, so beginFreshChat resolves through `resolveMandateAsking`
+// (never `resolveMandate` directly). The guest boundary is asserted on that door.
+jest.mock("../../../mandates/resolve-asking", () => ({
+  resolveMandateAsking: jest.fn(),
 }));
 
-import { resolveMandate } from "../../../mandates/service";
+import { resolveMandateAsking } from "../../../mandates/resolve-asking";
 import type { ChatRootState } from "../../../store/root-state";
 import {
   beginFreshChat,
@@ -11,7 +14,7 @@ import {
   stageChatAgentSwitch,
 } from "./begin-fresh-chat";
 
-const resolveMandateMock = jest.mocked(resolveMandate);
+const resolveMandateMock = jest.mocked(resolveMandateAsking);
 
 describe("parseChatPath", () => {
   it("does not interpret chat utility routes as conversation ids", () => {
