@@ -62,18 +62,18 @@ export function StageHeader({
             />
           </span>
           <span className="text-foreground/80 shrink-0">{icon}</span>
-          <h3 className="text-sm font-semibold truncate">{title}</h3>
+          <h3 className="type-title truncate">{title}</h3>
           {target ? (
-            <span className="text-[11px] text-muted-foreground tabular-nums shrink-0">
+            <span className="type-meta text-muted-foreground tabular-nums shrink-0">
               {done} / {target}
             </span>
           ) : done > 0 ? (
-            <span className="text-[11px] text-muted-foreground tabular-nums shrink-0">
+            <span className="type-meta text-muted-foreground tabular-nums shrink-0">
               {done} done
             </span>
           ) : null}
         </div>
-        <div className="flex items-center gap-2 text-[10px] text-muted-foreground tabular-nums shrink-0">
+        <div className="flex items-center gap-2 type-meta text-muted-foreground tabular-nums shrink-0">
           {ratePerSec && ratePerSec > 0.1 ? (
             <span>{ratePerSec.toFixed(1)}/sec</span>
           ) : null}
@@ -90,7 +90,7 @@ export function StageHeader({
         </div>
       </div>
       {subtitle && (
-        <p className="text-[11px] text-muted-foreground">{subtitle}</p>
+        <p className="type-meta text-muted-foreground">{subtitle}</p>
       )}
       {target ? <Progress value={percent} className="h-1" /> : null}
     </div>

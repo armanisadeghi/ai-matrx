@@ -62,7 +62,7 @@ export function ProgressPanel({ isStreaming, currentStep, messages, error, liveS
                     {isStreaming && <Loader2 className="h-4 w-4 animate-spin text-primary" />}
                     {isComplete && <CheckCircle2 className="h-4 w-4 text-green-500" />}
                     {isError && <AlertCircle className="h-4 w-4 text-destructive" />}
-                    <span className="text-sm font-semibold">
+                    <span className="type-title">
                         {isStreaming ? 'Running Research Pipeline...' : isComplete ? 'Pipeline Complete' : isError ? 'Pipeline Error' : 'Pipeline Progress'}
                     </span>
                 </div>
@@ -90,7 +90,7 @@ export function ProgressPanel({ isStreaming, currentStep, messages, error, liveS
                     return (
                         <div key={step.key} className="flex items-center gap-1">
                             <div className={cn(
-                                'flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium whitespace-nowrap transition-colors',
+                                'flex items-center gap-1.5 rounded-full px-2.5 py-1 type-secondary font-medium whitespace-nowrap transition-colors',
                                 isActive ? 'bg-primary text-primary-foreground' :
                                 isDone ? 'bg-primary/20 text-primary' :
                                 'bg-muted text-muted-foreground',
@@ -108,7 +108,7 @@ export function ProgressPanel({ isStreaming, currentStep, messages, error, liveS
 
             {/* Live Stats Bar — real-time counters from data events */}
             {hasLiveStats && liveStats && (
-                <div className="flex items-center gap-4 px-4 py-2 border-b border-border/50 bg-muted/20 text-[10px] text-muted-foreground flex-wrap">
+                <div className="flex items-center gap-4 px-4 py-2 border-b border-border/50 bg-muted/20 type-meta text-muted-foreground flex-wrap">
                     {liveStats.sourcesFound > 0 && (
                         <span className="flex items-center gap-1">
                             <Search className="h-3 w-3 text-blue-400" />
@@ -136,7 +136,7 @@ export function ProgressPanel({ isStreaming, currentStep, messages, error, liveS
             {/* Messages Log */}
             <div ref={scrollRef} className="max-h-48 overflow-y-auto p-3 space-y-1.5">
                 {messages.map(msg => (
-                    <div key={msg.id} className="flex items-start gap-2 text-xs">
+                    <div key={msg.id} className="flex items-start gap-2 type-secondary">
                         <span className="text-muted-foreground shrink-0 tabular-nums">
                             {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                         </span>
@@ -144,7 +144,7 @@ export function ProgressPanel({ isStreaming, currentStep, messages, error, liveS
                     </div>
                 ))}
                 {error && (
-                    <div className="flex items-start gap-2 text-xs text-destructive">
+                    <div className="flex items-start gap-2 type-secondary text-destructive">
                         <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
                         {error}
                       <ErrorAlchemyMenu error={error} />

@@ -79,7 +79,7 @@ export function BundleBar({
           <Button icon={<Bookmark />} iconEnd={<ChevronDown className="opacity-60" />} variant="outline">
             {loaded ? loaded.name : "Saved selections"}
             {loaded && dirty && (
-              <span className="text-[10px] text-amber-600 dark:text-amber-400">
+              <span className="type-meta text-amber-600 dark:text-amber-400">
                 edited
               </span>
             )}
@@ -99,9 +99,9 @@ export function BundleBar({
                 >
                   <Globe2 className="h-3.5 w-3.5 mt-0.5 shrink-0 text-muted-foreground" />
                   <span className="flex-1 min-w-0">
-                    <span className="block truncate text-xs">{b.name}</span>
+                    <span className="block truncate type-secondary">{b.name}</span>
                     {b.description && (
-                      <span className="block truncate text-[10px] text-muted-foreground">
+                      <span className="block truncate type-meta text-muted-foreground">
                         {b.description}
                       </span>
                     )}
@@ -128,7 +128,7 @@ export function BundleBar({
                   onClick={() => onLoad(b)}
                   className="flex items-center gap-2"
                 >
-                  <span className="flex-1 min-w-0 truncate text-xs">{b.name}</span>
+                  <span className="flex-1 min-w-0 truncate type-secondary">{b.name}</span>
                   {loaded?.id === b.id && <Check className="h-3.5 w-3.5" />}
                   <button
                     type="button"
@@ -146,7 +146,7 @@ export function BundleBar({
             </>
           )}
           {bundles.length === 0 && (
-            <div className="px-2 py-3 text-xs text-muted-foreground">
+            <div className="px-2 py-3 type-secondary text-muted-foreground">
               No saved selections yet. Pick resources, then Save as.
             </div>
           )}
@@ -180,16 +180,16 @@ export function BundleBar({
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start">
           <DropdownMenuItem onClick={() => setNamingTemplate(false)}>
-            <span className="text-xs">Save for this topic</span>
+            <span className="type-secondary">Save for this topic</span>
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => setNamingTemplate(true)}>
-            <span className="text-xs">Save as reusable template</span>
+            <span className="type-secondary">Save as reusable template</span>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
       {loaded?.isSystem && (
-        <span className={cn("text-[10px] text-muted-foreground")}>
+        <span className={cn("type-meta text-muted-foreground")}>
           Built-in selection — Save as to make your own version.
         </span>
       )}

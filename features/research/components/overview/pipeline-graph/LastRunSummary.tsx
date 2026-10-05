@@ -115,16 +115,16 @@ function Line({ icon: Icon, label, value, href, warning, dim }: LineProps) {
       )}
     >
       <Icon className="h-3 w-3 text-muted-foreground shrink-0" />
-      <span className="text-[11px] text-muted-foreground flex-1 truncate">
+      <span className="type-meta text-muted-foreground flex-1 truncate">
         {label}
       </span>
       {warning && (
-        <span className="inline-flex items-center gap-0.5 text-[10px] text-amber-600 dark:text-amber-400 font-medium">
+        <span className="inline-flex items-center gap-0.5 type-meta text-amber-600 dark:text-amber-400 font-medium">
           <AlertTriangle className="h-2.5 w-2.5" />
           {warning}
         </span>
       )}
-      <span className="text-xs font-semibold tabular-nums">{value}</span>
+      <span className="type-secondary font-semibold tabular-nums">{value}</span>
       {href && (
         <ArrowRight className="h-3 w-3 text-muted-foreground/50 group-hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
       )}
@@ -358,7 +358,7 @@ export function LastRunSummary({
           ) : (
             <Clock className="h-3.5 w-3.5 text-muted-foreground" />
           )}
-          <span className="text-xs font-semibold">
+          <span className="type-secondary font-semibold">
             {variant === "fresh"
               ? "Run complete"
               : hasReport
@@ -366,7 +366,7 @@ export function LastRunSummary({
                 : "Work in progress"}
           </span>
           {when && (
-            <span className="ml-auto inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+            <span className="ml-auto inline-flex items-center gap-1 type-meta text-muted-foreground">
               <Clock className="h-2.5 w-2.5" />
               {when}
             </span>

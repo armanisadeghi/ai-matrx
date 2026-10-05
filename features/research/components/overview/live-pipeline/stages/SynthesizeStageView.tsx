@@ -47,10 +47,10 @@ function SynthCard({ item }: { item: WorkItem }) {
         ) : (
           <Layers className="h-3 w-3 text-foreground/60 shrink-0" />
         )}
-        <span className="text-xs font-medium truncate">{item.label}</span>
+        <span className="type-secondary font-medium truncate">{item.label}</span>
         <span
           className={cn(
-            "text-[10px] capitalize ml-auto shrink-0",
+            "type-meta capitalize ml-auto shrink-0",
             STATUS_TEXT_CLASS[item.status],
           )}
         >
@@ -62,17 +62,17 @@ function SynthCard({ item }: { item: WorkItem }) {
           <ModelBadge modelId={item.metadata.model_id} />
         )}
         {item.metadata.result_length != null && (
-          <span className="text-[10px] text-muted-foreground tabular-nums">
+          <span className="type-meta text-muted-foreground tabular-nums">
             {formatCount(item.metadata.result_length)} chars
           </span>
         )}
         {item.metadata.version != null && (
-          <span className="text-[10px] text-muted-foreground tabular-nums">
+          <span className="type-meta text-muted-foreground tabular-nums">
             v{item.metadata.version}
           </span>
         )}
         {item.metadata.error && (
-          <span className="text-[10px] text-destructive truncate max-w-[200px]">
+          <span className="type-meta text-destructive truncate max-w-[200px]">
             {item.metadata.error}
             <ErrorAlchemyMenu error={item.metadata.error} />
           </span>
@@ -125,7 +125,7 @@ export function SynthesizeStageView({
 
       {keywordItems.length > 0 && (
         <div className="mt-3">
-          <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
+          <div className="type-meta uppercase tracking-wider text-muted-foreground mb-1">
             Per-keyword syntheses
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5">
@@ -138,7 +138,7 @@ export function SynthesizeStageView({
 
       {topicItems.length > 0 && (
         <div className="mt-3">
-          <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
+          <div className="type-meta uppercase tracking-wider text-muted-foreground mb-1">
             Topic synthesis
           </div>
           {topicItems.map((item) => (

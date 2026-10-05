@@ -64,7 +64,7 @@ export function PipelineNextSteps({
     >
       <div className="flex items-center gap-1.5">
         <span className="h-1.5 w-1.5 rounded-full bg-amber-500 shrink-0" />
-        <h2 className="text-[10px] font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-400">
+        <h2 className="type-meta font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-400">
           Next steps
         </h2>
       </div>
@@ -201,8 +201,8 @@ function StepRow({
           <Icon className="h-3 w-3" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-medium text-foreground">{title}</p>
-          <div className="mt-1 text-[11px] leading-snug text-muted-foreground">
+          <p className="type-secondary font-medium text-foreground">{title}</p>
+          <div className="mt-1 type-meta leading-snug text-muted-foreground">
             {children}
           </div>
         </div>

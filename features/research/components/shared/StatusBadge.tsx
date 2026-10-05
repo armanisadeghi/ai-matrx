@@ -29,7 +29,7 @@ export function StatusBadge({ status, className }: StatusBadgeProps) {
 
     if (!config) {
         return (
-            <span className={cn('inline-flex items-center text-[10px] font-medium uppercase tracking-wide whitespace-nowrap text-muted-foreground', className)}>
+            <span className={cn('inline-flex items-center type-meta font-medium uppercase tracking-wide whitespace-nowrap text-muted-foreground', className)}>
                 {status}
             </span>
         );
@@ -37,7 +37,7 @@ export function StatusBadge({ status, className }: StatusBadgeProps) {
 
     return (
         <span className={cn(
-            'inline-flex items-center gap-1.5 text-[11px] font-medium whitespace-nowrap text-muted-foreground',
+            'inline-flex items-center gap-1.5 type-meta font-medium whitespace-nowrap text-muted-foreground',
             className,
         )}>
             <span className="h-1.5 w-1.5 shrink-0 rounded-full opacity-80" style={{ backgroundColor: config.color }} />

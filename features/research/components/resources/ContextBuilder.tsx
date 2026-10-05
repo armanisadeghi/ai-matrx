@@ -285,7 +285,7 @@ export default function ContextBuilder() {
   if (builder.loading) {
     return (
       <div className="h-full flex items-center justify-center">
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <div className="flex items-center gap-2 type-secondary text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" />
           Reading everything this topic holds…
         </div>
@@ -296,12 +296,12 @@ export default function ContextBuilder() {
   if (builder.error || !builder.manifest) {
     return (
       <div className="h-full overflow-y-auto p-4">
-        <div className="mx-auto max-w-lg rounded-xl border border-destructive/40 bg-destructive/[0.06] p-4 text-sm text-destructive">
+        <div className="mx-auto max-w-lg rounded-xl border border-destructive/40 bg-destructive/[0.06] p-4 type-body text-destructive">
           <div className="flex items-center gap-2 font-medium">
             <AlertTriangle className="h-4 w-4" />
             Could not load this topic&apos;s resources
           </div>
-          <p className="mt-1 text-xs">{builder.error}</p>
+          <p className="mt-1 type-secondary">{builder.error}</p>
           <Button
             variant="outline"
             className="mt-3"
@@ -323,10 +323,10 @@ export default function ContextBuilder() {
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex items-center gap-2 rounded-full matrx-glass-thin-border px-3 py-1.5">
             <ListTree className="h-3.5 w-3.5 text-primary" />
-            <span className="text-xs font-medium text-foreground/80">
+            <span className="type-secondary font-medium text-foreground/80">
               Context Builder
             </span>
-            <span className="hidden sm:inline text-[11px] text-muted-foreground">
+            <span className="hidden sm:inline type-meta text-muted-foreground">
               Choose exactly what an agent reads
             </span>
           </div>
@@ -389,7 +389,7 @@ export default function ContextBuilder() {
             />
 
             <div>
-              <div className="px-1 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <div className="px-1 pb-1 type-meta font-semibold uppercase tracking-wider text-muted-foreground">
                 What the agent receives
               </div>
               <VariablePreview
@@ -659,7 +659,7 @@ function AgentRunnerBody({
     <div className="rounded-lg border border-border/60 bg-card/40 p-2.5 space-y-2">
       <div className="flex items-center gap-1.5">
         <Cpu className="h-3.5 w-3.5 text-muted-foreground" />
-        <span className="text-xs font-medium text-foreground">Run an agent</span>
+        <span className="type-secondary font-medium text-foreground">Run an agent</span>
       </div>
 
       <div className="flex items-center gap-1.5">
@@ -707,11 +707,11 @@ function AgentRunnerBody({
         <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/[0.04] px-3 py-2">
           <AlertTriangle className="h-3.5 w-3.5 text-destructive shrink-0 mt-0.5" />
           <div className="min-w-0">
-            <p className="text-xs font-medium text-destructive">
+            <p className="type-secondary font-medium text-destructive">
               This output has no agent bound
               <ErrorAlchemyMenu />
             </p>
-            <p className="text-[11px] text-muted-foreground break-words">
+            <p className="type-meta text-muted-foreground break-words">
               {mandate.error}
             </p>
           </div>
@@ -724,7 +724,7 @@ function AgentRunnerBody({
       {mandate && !runsViaMandate && (
         <div className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/[0.06] px-3 py-2">
           <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0 text-amber-600 dark:text-amber-400" />
-          <div className="min-w-0 text-[11px] text-amber-700 dark:text-amber-400">
+          <div className="min-w-0 type-meta text-amber-700 dark:text-amber-400">
             <span>
               Running your one-off pick instead of this output&apos;s agent —
               the mandate&apos;s configuration overrides (model, settings) are
@@ -743,7 +743,7 @@ function AgentRunnerBody({
 
       {agentId && (
         <label className="block space-y-1">
-          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+          <span className="type-meta uppercase tracking-wider text-muted-foreground">
             Instruction
           </span>
           <ProTextarea
@@ -758,7 +758,7 @@ function AgentRunnerBody({
 
       {agentId && declared && declared.length > 0 && (
         <div className="space-y-0.5">
-          <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+          <div className="type-meta uppercase tracking-wider text-muted-foreground">
             Its variables
           </div>
           {declared.map((v) => {
@@ -766,7 +766,7 @@ function AgentRunnerBody({
             return (
               <div
                 key={v.name}
-                className="flex items-center gap-1.5 text-[11px]"
+                className="flex items-center gap-1.5 type-meta"
               >
                 <span
                   className={cn(
@@ -784,7 +784,7 @@ function AgentRunnerBody({
           {Array.from(bundleVars)
             .filter((v) => !declared.some((d) => d.name === v))
             .map((v) => (
-              <div key={v} className="flex items-center gap-1.5 text-[11px]">
+              <div key={v} className="flex items-center gap-1.5 type-meta">
                 <span className="h-1.5 w-1.5 rounded-full bg-amber-500/70 shrink-0" />
                 <code className="text-foreground/85">{v}</code>
                 <span className="text-amber-700 dark:text-amber-400">
@@ -796,14 +796,14 @@ function AgentRunnerBody({
       )}
 
       {agentId && declared && declared.length === 0 && (
-        <div className="text-[11px] text-muted-foreground">
+        <div className="type-meta text-muted-foreground">
           This agent declares no variables, so it reads only its own prompt —
           selecting resources here will not reach it. Give it variables in the
           agent builder first.
         </div>
       )}
 
-      <p className="text-[10px] text-muted-foreground">
+      <p className="type-meta text-muted-foreground">
         Opens in the standard agent panel: live streaming, thinking and tool
         cards, and the usual message actions (copy, send to notes, save).
       </p>

@@ -42,9 +42,9 @@ function KeywordCardBody({ item }: { item: WorkItem }) {
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-1.5 min-w-0">
           <StatusDot status={item.status} />
-          <span className="text-xs font-medium truncate">{item.label}</span>
+          <span className="type-secondary font-medium truncate">{item.label}</span>
         </div>
-        <span className="text-[11px] tabular-nums text-foreground/80 shrink-0">
+        <span className="type-meta tabular-nums text-foreground/80 shrink-0">
           {sources > 0 ? `${sources} sources` : "—"}
         </span>
       </div>
@@ -58,7 +58,7 @@ function KeywordCardBody({ item }: { item: WorkItem }) {
             style={{ width: `${percent}%` }}
           />
         </div>
-        <span className="text-[10px] tabular-nums text-muted-foreground shrink-0">
+        <span className="type-meta tabular-nums text-muted-foreground shrink-0">
           {pagesCompleted}/{totalPages}
         </span>
       </div>
@@ -107,7 +107,7 @@ function KeywordCard({ item }: { item: WorkItem }) {
         <>
           <CheckCircle2 className="h-3 w-3 shrink-0 text-green-500" />
           <span className="truncate">{item.label}</span>
-          <span className="text-[10px] tabular-nums text-muted-foreground">
+          <span className="type-meta tabular-nums text-muted-foreground">
             {sources > 0 ? `${sources} sources` : "done"}
           </span>
         </>
@@ -137,10 +137,10 @@ function SourceRow({ source, isNew, isChanged }: SourceRowProps) {
       )}
     >
       <Favicon hostname={source.hostname} size={14} />
-      <span className="text-[10px] text-muted-foreground tabular-nums w-24 truncate shrink-0">
+      <span className="type-meta text-muted-foreground tabular-nums w-24 truncate shrink-0">
         {source.hostname}
       </span>
-      <span className="text-[11px] truncate flex-1">
+      <span className="type-meta truncate flex-1">
         {source.title ?? source.url}
       </span>
       {isNew && <DeltaBadge delta="new" />}
@@ -241,7 +241,7 @@ export function SearchStageView({
             open={sourceFeedOpen}
             onOpenChange={setSourceFeedOpen}
             summary={
-              <span className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
+              <span className="flex items-center gap-1.5 type-meta uppercase tracking-wider text-muted-foreground">
                 <Globe className="h-2.5 w-2.5" />
                 Live source feed (
                 <UntrustedCount
@@ -253,7 +253,7 @@ export function SearchStageView({
               </span>
             }
             trailing={
-              <span className="text-[10px] text-muted-foreground tabular-nums">
+              <span className="type-meta text-muted-foreground tabular-nums">
                 of{" "}
                 <UntrustedCount
                   read={readOf({ isLoading: sourcesQuery.isLoading, error: sourcesQuery.error })}

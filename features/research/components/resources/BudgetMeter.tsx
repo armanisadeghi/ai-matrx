@@ -125,17 +125,17 @@ export function BudgetMeter({
             />
             <span
               className={cn(
-                "text-sm font-semibold",
+                "type-title",
                 WEIGHT_TEXT_CLASSES[weight.tone],
               )}
             >
               {weight.label}
             </span>
-            <span className="text-xs text-muted-foreground">
+            <span className="type-secondary text-muted-foreground">
               — {weight.detail}
             </span>
           </div>
-          <div className="pt-1 text-[10px] text-muted-foreground">
+          <div className="pt-1 type-meta text-muted-foreground">
             ~{formatTokens(tokens)} estimated tokens ·{" "}
             {formatChars(chars)} characters
           </div>
@@ -147,7 +147,7 @@ export function BudgetMeter({
               <TooltipTrigger asChild>
                 <Info className="h-3 w-3 opacity-70" />
               </TooltipTrigger>
-              <TooltipContent className="max-w-xs text-xs">
+              <TooltipContent className="max-w-xs type-secondary">
                 The ceiling for everything sent in one run. Resources are kept
                 in the order below and anything past the ceiling is dropped —
                 you will see exactly what, here, before you run. Clear the box
@@ -211,14 +211,14 @@ export function BudgetMeter({
             </button>
           </PopoverTrigger>
           <PopoverContent /* sizing: fixed — fixed known budget-kind labels, already truncates */ align="start" className="w-80 space-y-2">
-            <div className="text-xs font-medium text-foreground">
+            <div className="type-secondary font-medium text-foreground">
               Dropped by the {formatTokens(budgetTokens ?? 0)} budget
             </div>
             <div className="space-y-1">
               {losers.map((k) => (
                 <div
                   key={k.kind}
-                  className="flex items-center justify-between gap-2 text-[11px]"
+                  className="flex items-center justify-between gap-2 type-meta"
                 >
                   <span className="truncate text-muted-foreground">
                     {kindDef(k.kind)?.label ?? k.kind}
@@ -229,7 +229,7 @@ export function BudgetMeter({
                 </div>
               ))}
             </div>
-            <p className="text-[11px] leading-relaxed text-muted-foreground">
+            <p className="type-meta leading-relaxed text-muted-foreground">
               Resources are kept in the order shown in the breakdown, so earlier
               ones survive. Raise the budget, or narrow a selection (Top N, a
               tighter filter) to choose what stays.
@@ -239,7 +239,7 @@ export function BudgetMeter({
       )}
 
       {over && droppedByBudget === 0 && (
-        <div className="flex items-start gap-1.5 text-[11px] text-amber-700 dark:text-amber-400">
+        <div className="flex items-start gap-1.5 type-meta text-amber-700 dark:text-amber-400">
           <AlertTriangle className="h-3.5 w-3.5 mt-px shrink-0" />
           <span>
             One resource is larger than the whole {formatTokens(budgetTokens ?? 0)}{" "}
@@ -255,7 +255,7 @@ export function BudgetMeter({
             const def = kindDef(k.kind);
             const share = tokens > 0 ? (k.tokens / tokens) * 100 : 0;
             return (
-              <div key={k.kind} className="flex items-center gap-2 text-[11px]">
+              <div key={k.kind} className="flex items-center gap-2 type-meta">
                 <span className="flex-1 min-w-0 truncate text-muted-foreground">
                   {def?.label ?? k.kind}
                 </span>
@@ -294,7 +294,7 @@ export function BudgetMeter({
       )}
 
       {contributing.length === 0 && (
-        <div className="text-[11px] text-muted-foreground">
+        <div className="type-meta text-muted-foreground">
           Nothing selected yet.
         </div>
       )}

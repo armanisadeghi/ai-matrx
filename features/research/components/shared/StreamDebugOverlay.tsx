@@ -99,7 +99,7 @@ export function StreamDebugOverlay() {
         className="flex items-center gap-2 px-3 py-2 w-full text-left"
       >
         <Bug className="h-3.5 w-3.5 text-orange-400 shrink-0" />
-        <span className="text-[11px] font-mono font-semibold text-zinc-300 flex-1 truncate">
+        <span className="type-meta font-mono font-semibold text-zinc-300 flex-1 truncate">
           Stream Debug
           {activeStreamName && (
             <span className="text-zinc-500 ml-1">· {activeStreamName}</span>
@@ -145,7 +145,7 @@ export function StreamDebugOverlay() {
           className="flex-1 overflow-y-auto border-t border-zinc-800 min-h-0 max-h-[calc(60dvh-36px)]"
         >
           {events.length === 0 ? (
-            <p className="text-[10px] text-zinc-600 p-3 text-center font-mono">
+            <p className="type-meta text-zinc-600 p-3 text-center font-mono">
               Waiting for events…
             </p>
           ) : (

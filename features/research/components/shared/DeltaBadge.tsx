@@ -23,7 +23,7 @@ export function DeltaBadge({ type, className }: DeltaBadgeProps) {
     const config = CONFIG[type];
     return (
         <span className={cn(
-            'inline-flex items-center gap-1 text-[10px] font-medium uppercase tracking-wide whitespace-nowrap text-muted-foreground',
+            'inline-flex items-center gap-1 type-meta font-medium uppercase tracking-wide whitespace-nowrap text-muted-foreground',
             className,
         )}>
             <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', config.dotClass)} />

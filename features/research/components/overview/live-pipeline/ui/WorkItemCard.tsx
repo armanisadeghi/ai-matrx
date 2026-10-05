@@ -47,19 +47,19 @@ export function WorkItemCard({
           <StatusDot status={status} />
           <span
             className={cn(
-              "text-xs font-medium truncate",
+              "type-secondary font-medium truncate",
               status === "dead_link" && "line-through opacity-70",
             )}
           >
             {label}
           </span>
           {progress && (
-            <span className="text-[10px] text-muted-foreground tabular-nums shrink-0 ml-auto">
+            <span className="type-meta text-muted-foreground tabular-nums shrink-0 ml-auto">
               {progress}
             </span>
           )}
           {meta && !progress && (
-            <span className="text-[10px] text-muted-foreground tabular-nums shrink-0 ml-auto">
+            <span className="type-meta text-muted-foreground tabular-nums shrink-0 ml-auto">
               {meta}
             </span>
           )}
@@ -67,20 +67,20 @@ export function WorkItemCard({
         {(badges || hostname || (meta && progress)) && (
           <div className="mt-0.5 flex items-center gap-1 flex-wrap">
             {hostname && (
-              <span className="text-[10px] text-muted-foreground/80 truncate max-w-[160px]">
+              <span className="type-meta text-muted-foreground/80 truncate max-w-[160px]">
                 {hostname}
               </span>
             )}
             {badges}
             {meta && progress && (
-              <span className="text-[10px] text-muted-foreground tabular-nums ml-auto">
+              <span className="type-meta text-muted-foreground tabular-nums ml-auto">
                 {meta}
               </span>
             )}
             {!hostname && !badges && !meta && (
               <span
                 className={cn(
-                  "text-[10px] capitalize",
+                  "type-meta capitalize",
                   STATUS_TEXT_CLASS[status],
                 )}
               >

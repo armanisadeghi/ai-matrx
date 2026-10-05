@@ -155,7 +155,7 @@ export function ResourcePicker({
   return (
     <div className="space-y-3">
       {manifest.unknownKinds.length > 0 && (
-        <div className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/[0.06] px-2.5 py-2 text-[11px] text-amber-700 dark:text-amber-400">
+        <div className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/[0.06] px-2.5 py-2 type-meta text-amber-700 dark:text-amber-400">
           <AlertTriangle className="h-3.5 w-3.5 mt-px shrink-0" />
           <span>
             The database returned resource kinds this app does not know how to
@@ -178,7 +178,7 @@ export function ResourcePicker({
         if (defs.length === 0) return null;
         return (
           <div key={group}>
-            <div className="px-1 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <div className="px-1 pb-1 type-meta font-semibold uppercase tracking-wider text-muted-foreground">
               {GROUP_LABEL[group]}
             </div>
             <div className="rounded-lg border border-border/60 divide-y divide-border/50 overflow-hidden">
@@ -240,7 +240,7 @@ export function ResourcePicker({
                         }
                       >
                         <div className="flex items-center gap-1.5">
-                          <span className="text-xs font-medium text-foreground truncate">
+                          <span className="type-secondary font-medium text-foreground truncate">
                             {def.label}
                           </span>
                           {def.heavy && (
@@ -255,14 +255,14 @@ export function ResourcePicker({
                             <TooltipTrigger asChild>
                               <Info className="h-3 w-3 text-muted-foreground/60" />
                             </TooltipTrigger>
-                            <TooltipContent className="max-w-xs text-xs">
+                            <TooltipContent className="max-w-xs type-secondary">
                               {def.description}
                             </TooltipContent>
                           </Tooltip>
                         </div>
                       </button>
 
-                      <div className="flex items-center gap-2 shrink-0 text-[11px] tabular-nums">
+                      <div className="flex items-center gap-2 shrink-0 type-meta tabular-nums">
                         {empty ? (
                           <span className="text-muted-foreground">none yet</span>
                         ) : (
@@ -305,7 +305,7 @@ export function ResourcePicker({
                         {onSetDelivery && def.resourceType && (
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <div className="flex h-5 items-center overflow-hidden rounded-full border border-border/60 text-[10px]">
+                              <div className="flex h-5 items-center overflow-hidden rounded-full border border-border/60 type-meta">
                                 {(["direct", "context"] as const).map((mode) => {
                                   const active =
                                     (deliveries?.[def.key] ?? "direct") === mode;
@@ -327,7 +327,7 @@ export function ResourcePicker({
                                 })}
                               </div>
                             </TooltipTrigger>
-                            <TooltipContent className="max-w-xs text-xs">
+                            <TooltipContent className="max-w-xs type-secondary">
                               Inject puts the text straight into the agent&apos;s
                               variables — always read, always counted against the
                               budget. On demand attaches each item as a reference
@@ -422,7 +422,7 @@ export function ResourcePicker({
                                     />
                                   </label>
                                 </TooltipTrigger>
-                                <TooltipContent className="max-w-xs text-xs">
+                                <TooltipContent className="max-w-xs type-secondary">
                                   Caps how much EACH item contributes, so one
                                   enormous page cannot take the whole budget.
                                   Anything trimmed says so in the payload. Leave
@@ -475,7 +475,7 @@ function ItemList({
 
   if (items.length === 0) {
     return (
-      <div className="pl-7 pt-1 text-[11px] text-muted-foreground">
+      <div className="pl-7 pt-1 type-meta text-muted-foreground">
         Nothing here yet.
       </div>
     );
@@ -494,11 +494,11 @@ function ItemList({
             aria-label={`Include ${item.label}`}
             className="h-3 w-3 shrink-0"
           />
-          <span className="flex-1 min-w-0 truncate text-[11px] text-foreground/90">
+          <span className="flex-1 min-w-0 truncate type-meta text-foreground/90">
             {item.label}
           </span>
           {item.sublabel && (
-            <span className="hidden sm:block truncate max-w-[9rem] text-[10px] text-muted-foreground">
+            <span className="hidden sm:block truncate max-w-[9rem] type-meta text-muted-foreground">
               {item.sublabel}
             </span>
           )}
@@ -509,7 +509,7 @@ function ItemList({
             />
           )}
           {item.bestRank !== null && (
-            <span className="text-[10px] tabular-nums text-muted-foreground">
+            <span className="type-meta tabular-nums text-muted-foreground">
               #{item.bestRank}
             </span>
           )}
@@ -518,7 +518,7 @@ function ItemList({
               excluded
             </Badge>
           )}
-          <span className="w-14 text-right text-[10px] tabular-nums text-muted-foreground">
+          <span className="w-14 text-right type-meta tabular-nums text-muted-foreground">
             {formatTokens(itemTokens(item))}
           </span>
         </div>

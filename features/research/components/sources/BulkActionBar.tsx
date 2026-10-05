@@ -49,7 +49,7 @@ export function BulkActionBar({
 
   return (
     <div className="fixed bottom-16 md:bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1.5 rounded-xl border border-border bg-card shadow-lg px-3 py-2 mb-safe">
-      <span className="text-sm font-medium tabular-nums mr-1">
+      <span className="type-title tabular-nums mr-1">
         {selectedCount} selected
       </span>
       {busy && (

@@ -20,7 +20,7 @@ export function OriginBadge({ origin, className }: OriginBadgeProps) {
 
     return (
         <span className={cn(
-            'inline-flex items-center rounded border border-border px-1.5 py-px text-[10px] font-medium uppercase tracking-wide whitespace-nowrap text-muted-foreground',
+            'inline-flex items-center rounded border border-border px-1.5 py-px type-meta font-medium uppercase tracking-wide whitespace-nowrap text-muted-foreground',
             className,
         )}>
             {config.label}

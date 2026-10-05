@@ -66,11 +66,11 @@ export function AuthorityRankingViz({
           <h2 className="text-lg font-semibold tracking-tight">
             Authority Ranking
           </h2>
-          <span className="rounded-full bg-muted/60 px-2 py-0.5 text-[11px] font-medium text-muted-foreground tabular-nums">
+          <span className="rounded-full bg-muted/60 px-2 py-0.5 type-meta font-medium text-muted-foreground tabular-nums">
             {ranked.length} ranked
           </span>
         </div>
-        <div className="hidden items-center gap-1.5 text-[11px] text-muted-foreground sm:flex">
+        <div className="hidden items-center gap-1.5 type-meta text-muted-foreground sm:flex">
           <Award className="h-3.5 w-3.5 text-emerald-500" />
           Top score {topScore}/100
         </div>
@@ -149,7 +149,7 @@ function AuthorityRow({
         {/* Rank number */}
         <div
           className={cn(
-            "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold tabular-nums",
+            "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg type-secondary font-bold tabular-nums",
             rank <= 3
               ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
               : "bg-muted/60 text-muted-foreground",
@@ -168,7 +168,7 @@ function AuthorityRow({
         {/* Hostname + title + reasoning */}
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <span className="truncate text-xs font-medium text-muted-foreground">
+            <span className="truncate type-secondary font-medium text-muted-foreground">
               {source.hostname ?? "unknown source"}
             </span>
             <AuthorityTierBadge
@@ -177,11 +177,11 @@ function AuthorityRow({
               reasoning={source.authority_reasoning}
             />
           </div>
-          <div className="truncate text-sm font-medium text-foreground">
+          <div className="truncate type-title text-foreground">
             {source.title ?? source.url}
           </div>
           {source.authority_reasoning && (
-            <p className="mt-0.5 line-clamp-2 text-[11px] leading-snug text-muted-foreground/80">
+            <p className="mt-0.5 line-clamp-2 type-meta leading-snug text-muted-foreground/80">
               {source.authority_reasoning}
             </p>
           )}

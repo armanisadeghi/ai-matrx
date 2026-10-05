@@ -704,7 +704,7 @@ export function PipelineGraph() {
         {/* The headline must never say "Report ready" while a keyword sits
             unprocessed — that single line is what made an incomplete topic look
             finished. Outstanding work outranks a green report. */}
-        <span className="text-[11px] uppercase tracking-wider text-muted-foreground/80 truncate">
+        <span className="type-meta uppercase tracking-wider text-muted-foreground/80 truncate">
           {stream.isStreaming
             ? `${pipeline.state.activeStage ?? "Working"}…`
             : pendingWork
@@ -775,11 +775,11 @@ export function PipelineGraph() {
                 disabled={!canRunAll}
                 className="flex-col items-start gap-0.5 py-2"
               >
-                <span className="flex items-center text-xs font-medium">
+                <span className="flex items-center type-secondary font-medium">
                   <Play className="h-3 w-3 mr-2 shrink-0" />
                   Run everything pending
                 </span>
-                <span className="pl-5 text-[10px] leading-snug text-muted-foreground">
+                <span className="pl-5 type-meta leading-snug text-muted-foreground">
                   Search, read, analyze, then write the report — skips steps
                   already done.
                 </span>
@@ -793,11 +793,11 @@ export function PipelineGraph() {
                 disabled={!canRunReport}
                 className="flex-col items-start gap-0.5 py-2"
               >
-                <span className="flex items-center text-xs font-medium">
+                <span className="flex items-center type-secondary font-medium">
                   <Pencil className="h-3 w-3 mr-2 shrink-0" />
                   Update report
                 </span>
-                <span className="pl-5 text-[10px] leading-snug text-muted-foreground">
+                <span className="pl-5 type-meta leading-snug text-muted-foreground">
                   Keep the current report and fold in new or changed sources.
                 </span>
               </DropdownMenuItem>
@@ -806,11 +806,11 @@ export function PipelineGraph() {
                 disabled={!canRunReport}
                 className="flex-col items-start gap-0.5 py-2"
               >
-                <span className="flex items-center text-xs font-medium">
+                <span className="flex items-center type-secondary font-medium">
                   <RefreshCw className="h-3 w-3 mr-2 shrink-0" />
                   Rebuild report
                 </span>
-                <span className="pl-5 text-[10px] leading-snug text-muted-foreground">
+                <span className="pl-5 type-meta leading-snug text-muted-foreground">
                   Rewrite from scratch using all included sources (reuses
                   existing analyses).
                 </span>
@@ -1207,8 +1207,8 @@ export function PipelineGraph() {
                   }
                   tooltip={
                     <div className="space-y-1 max-w-xs">
-                      <div className="font-medium text-xs">Tags (manual)</div>
-                      <div className="text-[11px] text-muted-foreground leading-snug">
+                      <div className="font-medium type-secondary">Tags (manual)</div>
+                      <div className="type-meta text-muted-foreground leading-snug">
                         A manual organization tool — not part of an automatic
                         run. On the Tags page, create a tag, assign sources to
                         it, then consolidate to synthesize across that
@@ -1276,17 +1276,17 @@ export function PipelineGraph() {
               <Search className="h-4 w-4" />
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="text-xs font-semibold mb-0.5">
+              <h3 className="type-secondary font-semibold mb-0.5">
                 Add your first keywords
               </h3>
-              <p className="text-[11px] text-muted-foreground leading-snug mb-2">
+              <p className="type-meta text-muted-foreground leading-snug mb-2">
                 Keywords drive everything downstream. Add a few search terms and
                 the pipeline graph will light up — or hit Run pipeline to let
                 the agent suggest them.
               </p>
               <Link
                 href={`${base}/keywords`}
-                className="inline-flex items-center gap-1 h-7 px-3 rounded-full bg-primary text-primary-foreground text-[11px] font-medium hover:bg-primary/90 transition-colors"
+                className="inline-flex items-center gap-1 h-7 px-3 rounded-full bg-primary text-primary-foreground type-meta font-medium hover:bg-primary/90 transition-colors"
               >
                 <Plus className="h-3 w-3" />
                 Manage keywords
@@ -1308,7 +1308,7 @@ export function PipelineGraph() {
       {isMobile ? (
         <Drawer open={keywordModalOpen} onOpenChange={setKeywordModalOpen}>
           <DrawerContent className="max-h-[50dvh]">
-            <DrawerTitle className="px-4 pt-3 text-sm font-semibold">
+            <DrawerTitle className="px-4 pt-3 type-title">
               Add keyword
             </DrawerTitle>
             <KeywordForm
@@ -1324,7 +1324,7 @@ export function PipelineGraph() {
         <Dialog open={keywordModalOpen} onOpenChange={setKeywordModalOpen}>
           <DialogContent className="max-w-sm">
             <DialogHeader>
-              <DialogTitle className="text-sm">Add keyword</DialogTitle>
+              <DialogTitle className="type-body">Add keyword</DialogTitle>
             </DialogHeader>
             <KeywordForm
               value={newKeyword}

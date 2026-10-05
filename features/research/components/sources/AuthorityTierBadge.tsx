@@ -54,7 +54,7 @@ export function AuthorityTierBadge({
     return (
       <span
         className={cn(
-          "inline-flex items-center text-[10px] font-medium uppercase tracking-wide whitespace-nowrap text-muted-foreground/70",
+          "inline-flex items-center type-meta font-medium uppercase tracking-wide whitespace-nowrap text-muted-foreground/70",
           className,
         )}
       >
@@ -73,11 +73,11 @@ export function AuthorityTierBadge({
       )}
     >
       {!scoreHidden && (
-        <span className="text-[13px] font-semibold leading-none tabular-nums text-foreground">
+        <span className="type-title leading-none tabular-nums text-foreground">
           {roundedScore}
         </span>
       )}
-      <span className="inline-flex items-center gap-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+      <span className="inline-flex items-center gap-1 type-meta font-medium uppercase tracking-wide text-muted-foreground">
         <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", cfg.dotClass)} />
         {cfg.label}
       </span>
@@ -90,10 +90,10 @@ export function AuthorityTierBadge({
     <Tooltip>
       <TooltipTrigger asChild>{badge}</TooltipTrigger>
       <TooltipContent className="max-w-xs">
-        <p className="text-xs font-semibold">
+        <p className="type-secondary font-semibold">
           Authority: {cfg.label} ({roundedScore}/100)
         </p>
-        <p className="mt-0.5 text-xs text-muted-foreground">{reasoning}</p>
+        <p className="mt-0.5 type-secondary text-muted-foreground">{reasoning}</p>
       </TooltipContent>
     </Tooltip>
   );

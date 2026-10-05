@@ -101,10 +101,10 @@ export function IntentSection({
 
   return (
     <section className="space-y-3">
-      <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground border-b border-border pb-2">
+      <h2 className="type-secondary font-semibold uppercase tracking-wider text-muted-foreground border-b border-border pb-2">
         Research Intent
       </h2>
-      <p className="text-xs text-muted-foreground">
+      <p className="type-secondary text-muted-foreground">
         Shapes what this topic is trying to produce — keyword phrasing,
         source mix, and how results get scored. Changing it also resets the
         pipeline limits below to that intent&apos;s package; adjust numbers
@@ -112,21 +112,21 @@ export function IntentSection({
       </p>
 
       {loadError && (
-        <div className="rounded-lg border border-destructive/20 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+        <div className="rounded-lg border border-destructive/20 bg-destructive/10 px-3 py-2 type-secondary text-destructive">
           {loadError}
           <ErrorAlchemyMenu error={loadError} />
         </div>
       )}
 
       {!intents ? (
-        <div className="flex h-9 items-center gap-2 text-xs text-muted-foreground">
+        <div className="flex h-9 items-center gap-2 type-secondary text-muted-foreground">
           <Loader2 className="h-3.5 w-3.5 animate-spin" />
           Loading intents…
         </div>
       ) : (
         <div className="space-y-1.5">
           {!intentKey && (
-            <div className="rounded-xl border border-dashed border-border/60 bg-card/20 px-2.5 py-2 text-[11px] text-muted-foreground">
+            <div className="rounded-xl border border-dashed border-border/60 bg-card/20 px-2.5 py-2 type-meta text-muted-foreground">
               Not set (defaults) — the pipeline runs its baseline behavior.
             </div>
           )}
@@ -160,10 +160,10 @@ export function IntentSection({
                     <Compass className="h-3.5 w-3.5" />
                   </div>
                   <div className="min-w-0">
-                    <div className="font-medium text-xs text-foreground">
+                    <div className="font-medium type-secondary text-foreground">
                       {intent.label}
                     </div>
-                    <div className="text-[10px] text-muted-foreground mt-px leading-snug line-clamp-1">
+                    <div className="type-meta text-muted-foreground mt-px leading-snug line-clamp-1">
                       {intent.primary_objective}
                     </div>
                   </div>

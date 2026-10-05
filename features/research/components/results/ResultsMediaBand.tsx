@@ -44,13 +44,13 @@ export function ResultsMediaBand({
         <div className="flex items-center gap-2">
           <ImageIcon className="h-5 w-5 text-cyan-500" />
           <h2 className="text-lg font-semibold tracking-tight">Rich Media</h2>
-          <span className="rounded-full bg-muted/60 px-2 py-0.5 text-[11px] font-medium text-muted-foreground tabular-nums">
+          <span className="rounded-full bg-muted/60 px-2 py-0.5 type-meta font-medium text-muted-foreground tabular-nums">
             {images.length}
           </span>
         </div>
         <Link
           href={mediaHref}
-          className="inline-flex items-center gap-1 text-[11px] font-medium text-primary/80 transition-colors hover:text-primary"
+          className="inline-flex items-center gap-1 type-meta font-medium text-primary/80 transition-colors hover:text-primary"
         >
           View all media
           <ArrowUpRight className="h-3 w-3" />
@@ -106,7 +106,7 @@ function MediaTile({
         />
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
         {(image.caption || image.alt_text) && (
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 truncate px-2 py-1.5 text-[10px] font-medium text-white opacity-0 transition-opacity group-hover:opacity-100">
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 truncate px-2 py-1.5 type-meta font-medium text-white opacity-0 transition-opacity group-hover:opacity-100">
             {image.caption || image.alt_text}
           </div>
         )}

@@ -73,17 +73,17 @@ export function AnalyzeCurationDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl w-[92vw] max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-sm">
+          <DialogTitle className="flex items-center gap-2 type-body">
             <Scissors className="h-4 w-4 text-primary" />
             Curate content before analysis
           </DialogTitle>
-          <DialogDescription className="text-xs">
+          <DialogDescription className="type-secondary">
             Trim the junk so the model — and downstream Knowledge — only see what
             matters. The original page content is backed up and recoverable.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex items-center gap-3 text-[11px] tabular-nums text-muted-foreground">
+        <div className="flex items-center gap-3 type-meta tabular-nums text-muted-foreground">
           <span>
             <b className="text-foreground">{text.length.toLocaleString()}</b>{" "}
             chars to analyze
@@ -101,7 +101,7 @@ export function AnalyzeCurationDialog({
         {len > 0 && (
           <div className="space-y-3 rounded-lg border border-border/60 bg-muted/20 p-3">
             <div className="flex items-center gap-3">
-              <span className="w-16 shrink-0 text-[11px] text-muted-foreground">
+              <span className="w-16 shrink-0 type-meta text-muted-foreground">
                 Trim start
               </span>
               <Slider
@@ -114,7 +114,7 @@ export function AnalyzeCurationDialog({
               />
             </div>
             <div className="flex items-center gap-3">
-              <span className="w-16 shrink-0 text-[11px] text-muted-foreground">
+              <span className="w-16 shrink-0 type-meta text-muted-foreground">
                 Trim end
               </span>
               <Slider

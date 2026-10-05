@@ -50,7 +50,7 @@ export function TopSourcesGrid({
       <header className="flex items-center gap-2">
         <Star className="h-5 w-5 text-amber-500" />
         <h2 className="text-lg font-semibold tracking-tight">Top Sources</h2>
-        <span className="rounded-full bg-muted/60 px-2 py-0.5 text-[11px] font-medium text-muted-foreground tabular-nums">
+        <span className="rounded-full bg-muted/60 px-2 py-0.5 type-meta font-medium text-muted-foreground tabular-nums">
           {top.length}
         </span>
       </header>
@@ -112,12 +112,12 @@ function TopSourceCard({
           className="h-9 w-9 shrink-0 p-1 border border-border/40"
         />
         <div className="min-w-0 flex-1">
-          <div className="truncate text-xs font-medium text-muted-foreground">
+          <div className="truncate type-secondary font-medium text-muted-foreground">
             {source.hostname ?? "unknown source"}
           </div>
           <Link
             href={`/research/topics/${topicId}/sources/${source.id}`}
-            className="mt-0.5 line-clamp-2 text-sm font-semibold text-foreground hover:text-primary"
+            className="mt-0.5 line-clamp-2 type-title text-foreground hover:text-primary"
           >
             {source.title ?? source.url}
           </Link>
@@ -141,7 +141,7 @@ function TopSourceCard({
       </div>
 
       {source.authority_reasoning && (
-        <p className="mt-2 line-clamp-3 flex-1 text-xs leading-relaxed text-muted-foreground/85">
+        <p className="mt-2 line-clamp-3 flex-1 type-secondary leading-relaxed text-muted-foreground/85">
           {source.authority_reasoning}
         </p>
       )}
@@ -151,14 +151,14 @@ function TopSourceCard({
           href={source.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground transition-colors hover:text-foreground"
+          className="inline-flex items-center gap-1 type-meta font-medium text-muted-foreground transition-colors hover:text-foreground"
         >
           <ExternalLink className="h-3 w-3" />
           Visit
         </a>
         <Link
           href={`/research/topics/${topicId}/sources/${source.id}`}
-          className="inline-flex items-center gap-1 text-[11px] font-medium text-primary/80 transition-colors hover:text-primary"
+          className="inline-flex items-center gap-1 type-meta font-medium text-primary/80 transition-colors hover:text-primary"
         >
           Details
           <ArrowUpRight className="h-3 w-3" />

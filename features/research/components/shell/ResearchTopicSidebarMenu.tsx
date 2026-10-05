@@ -155,7 +155,7 @@ function TopicAbout({ topicId }: { topicId: string }) {
         />
       </button>
       {open && (
-        <p className="px-2 pb-2 text-[11px] leading-snug text-muted-foreground">
+        <p className="px-2 pb-2 type-meta leading-snug text-muted-foreground">
           {description}
         </p>
       )}

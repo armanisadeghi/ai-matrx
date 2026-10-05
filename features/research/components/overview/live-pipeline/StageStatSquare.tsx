@@ -67,7 +67,7 @@ export function StageStatSquare({
     <>
       <div className="flex items-center gap-1.5">
         <Icon className="h-3 w-3 shrink-0 text-foreground/60" />
-        <span className="truncate text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+        <span className="truncate type-meta font-semibold uppercase tracking-wide text-muted-foreground">
           {STAGE_LABEL[stage.kind]}
         </span>
         <StatusIcon
@@ -88,11 +88,11 @@ export function StageStatSquare({
         <span className="text-xl font-bold leading-none tabular-nums">
           {data.value}
         </span>
-        <span className="text-[11px] text-muted-foreground">{data.unit}</span>
+        <span className="type-meta text-muted-foreground">{data.unit}</span>
       </div>
 
       <div className="flex items-center justify-between gap-1">
-        <span className="truncate text-[10px] text-muted-foreground/80">
+        <span className="truncate type-meta text-muted-foreground/80">
           {data.sub}
         </span>
         {dur && (

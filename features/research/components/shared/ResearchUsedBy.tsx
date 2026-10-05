@@ -63,9 +63,9 @@ export function ResearchUsedBy({ token, id }: ResearchUsedByProps) {
 
   return (
     <section className="space-y-1.5">
-      <h3 className="text-xs font-semibold text-foreground">Used by</h3>
+      <h3 className="type-secondary font-semibold text-foreground">Used by</h3>
       {assoc.status === "error" ? (
-        <p className="text-xs text-destructive">
+        <p className="type-secondary text-destructive">
           The places using this research could not be loaded
           {assoc.error ? `: ${assoc.error}` : "."}
           <ErrorAlchemyMenu />
@@ -79,7 +79,7 @@ export function ResearchUsedBy({ token, id }: ResearchUsedByProps) {
             return (
               <li
                 key={`${item.token}:${item.id}`}
-                className="flex items-baseline gap-2 text-xs"
+                className="flex items-baseline gap-2 type-secondary"
               >
                 <span className="shrink-0 text-muted-foreground">
                   {CONSUMER_LABEL[item.token]}
@@ -104,13 +104,13 @@ export function ResearchUsedBy({ token, id }: ResearchUsedByProps) {
           })}
         </ul>
       ) : assoc.status === "ready" ? (
-        <p className="text-xs text-muted-foreground">
+        <p className="type-secondary text-muted-foreground">
           Nothing consumes this research yet. Attach it to a site, plan page, or
           canonical page from that record&apos;s research panel, and it shows up
           here.
         </p>
       ) : (
-        <p className="text-xs text-muted-foreground">
+        <p className="type-secondary text-muted-foreground">
           <SuspenseLoader
             centered={false}
             size="xs"

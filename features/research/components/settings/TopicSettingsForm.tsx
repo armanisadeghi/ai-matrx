@@ -256,7 +256,7 @@ export function TopicSettingsForm({
       {/* Project — optional association */}
       <section className="space-y-2">
         <div className="flex items-baseline justify-between">
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          <h2 className="type-secondary font-semibold uppercase tracking-wider text-muted-foreground">
             Project <span className="font-normal normal-case">(optional)</span>
           </h2>
           <button
@@ -269,7 +269,7 @@ export function TopicSettingsForm({
           </button>
         </div>
         {savedProjectId === undefined ? (
-          <div className="flex h-9 items-center gap-2 text-xs text-muted-foreground">
+          <div className="flex h-9 items-center gap-2 type-secondary text-muted-foreground">
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
             Loading project link…
           </div>
@@ -323,7 +323,7 @@ export function TopicSettingsForm({
           </div>
         )}
         {projectChanged && (
-          <p className="text-xs text-amber-600 dark:text-amber-400">
+          <p className="type-secondary text-amber-600 dark:text-amber-400">
             {selectedProjectId
               ? "This topic's project link will change on save."
               : "This topic's project link will be removed on save."}
@@ -333,7 +333,7 @@ export function TopicSettingsForm({
 
       {/* Basic Info */}
       <section className="space-y-4">
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground border-b border-border pb-2">
+        <h2 className="type-secondary font-semibold uppercase tracking-wider text-muted-foreground border-b border-border pb-2">
           Basic Info
         </h2>
 
@@ -390,12 +390,12 @@ export function TopicSettingsForm({
 
       {/* Voice & Lens */}
       <section className="space-y-4">
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground border-b border-border pb-2">
+        <h2 className="type-secondary font-semibold uppercase tracking-wider text-muted-foreground border-b border-border pb-2">
           Voice &amp; Lens
         </h2>
         <div className="space-y-2">
           <Label htmlFor="topic-tone">Tone profile</Label>
-          <p className="text-xs text-muted-foreground">
+          <p className="type-secondary text-muted-foreground">
             The brand voice, audience, and framing for everything this topic
             produces — injected into every output (report, podcast, blog,
             slides, SEO) so the whole bundle reads as one author.
@@ -416,7 +416,7 @@ export function TopicSettingsForm({
 
       {/* Autonomy */}
       <section className="space-y-3">
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground border-b border-border pb-2">
+        <h2 className="type-secondary font-semibold uppercase tracking-wider text-muted-foreground border-b border-border pb-2">
           Automation Level
         </h2>
         <AutonomySelector value={autonomyLevel} onChange={setAutonomyLevel} />
@@ -424,7 +424,7 @@ export function TopicSettingsForm({
 
       {/* Search & Read */}
       <section className="space-y-4">
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground border-b border-border pb-2">
+        <h2 className="type-secondary font-semibold uppercase tracking-wider text-muted-foreground border-b border-border pb-2">
           Search & Read
         </h2>
 
@@ -450,7 +450,7 @@ export function TopicSettingsForm({
 
         <div className="space-y-2">
           <Label htmlFor="scrape-threshold">Good Read Threshold</Label>
-          <p className="text-xs text-muted-foreground">
+          <p className="type-secondary text-muted-foreground">
             Minimum characters to consider a read successful.
           </p>
           <Input
@@ -488,7 +488,7 @@ export function TopicSettingsForm({
       />
 
       {error && (
-        <div className="rounded-lg border border-destructive/20 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+        <div className="rounded-lg border border-destructive/20 bg-destructive/10 px-3 py-2 type-secondary text-destructive">
           {error}
           <ErrorAlchemyMenu error={error} />
         </div>

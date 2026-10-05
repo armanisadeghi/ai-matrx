@@ -31,7 +31,7 @@ export function SectionCard({
       {(title || trailing) && (
         <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-border/40 bg-muted/20">
           {title && (
-            <div className="flex items-center gap-1.5 text-[11px] font-semibold text-foreground/80">
+            <div className="flex items-center gap-1.5 type-meta font-semibold text-foreground/80">
               {title}
             </div>
           )}

@@ -51,13 +51,13 @@ export function VariablePreview({
       >
         Preview the full context
         {estimatedTokens > 0 && (
-          <span className="ml-auto flex items-center gap-1 text-[10px] text-muted-foreground">
+          <span className="ml-auto flex items-center gap-1 type-meta text-muted-foreground">
             ~{formatTokens(estimatedTokens)}
             <Maximize2 className="h-3 w-3" />
           </span>
         )}
       </Button>
-      <p className="px-0.5 text-[10px] text-muted-foreground">
+      <p className="px-0.5 type-meta text-muted-foreground">
         Opens a full window: every variable, rendered or raw, with the usual
         save actions.
       </p>

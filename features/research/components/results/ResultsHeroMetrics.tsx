@@ -190,7 +190,7 @@ function MetricTile({
       />
       <div className="flex items-center gap-2 text-muted-foreground">
         <Icon className={cn("h-4 w-4 shrink-0", metric.accent)} />
-        <span className="text-[11px] font-medium uppercase tracking-wide whitespace-nowrap">
+        <span className="type-meta font-medium uppercase tracking-wide whitespace-nowrap">
           {metric.label}
         </span>
         {copyContext && (
@@ -244,7 +244,7 @@ function MetricTile({
         />
       </div>
       {metric.hint && (
-        <div className="mt-1.5 text-[11px] text-muted-foreground/80">
+        <div className="mt-1.5 type-meta text-muted-foreground/80">
           {metric.hint}
         </div>
       )}

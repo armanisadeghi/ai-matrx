@@ -219,11 +219,11 @@ export function PipelineStageNode({
 
   const tooltipContent = tooltip ?? (
     <div className="space-y-0.5">
-      <div className="font-medium text-xs">{label}</div>
+      <div className="font-medium type-secondary">{label}</div>
       {badge && (
-        <div className="text-[11px] text-muted-foreground">{badge.label}</div>
+        <div className="type-meta text-muted-foreground">{badge.label}</div>
       )}
-      <div className="text-[10px] text-muted-foreground/80">
+      <div className="type-meta text-muted-foreground/80">
         Click to open · ⌘-click for new tab
       </div>
     </div>
@@ -277,7 +277,7 @@ export function PipelineStageNode({
             >
               <Icon className="h-3 w-3" />
             </div>
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/85 truncate flex-1">
+            <span className="type-meta font-semibold uppercase tracking-wider text-muted-foreground/85 truncate flex-1">
               {label}
             </span>
             {badge && badge.icon && (
@@ -299,7 +299,7 @@ export function PipelineStageNode({
                 {count}
               </span>
               {hint && (
-                <div className="mt-0.5 text-[10px] text-muted-foreground/80 truncate leading-tight">
+                <div className="mt-0.5 type-meta text-muted-foreground/80 truncate leading-tight">
                   {hint}
                 </div>
               )}

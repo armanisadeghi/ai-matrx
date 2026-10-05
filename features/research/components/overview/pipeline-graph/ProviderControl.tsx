@@ -97,7 +97,7 @@ export function ProviderControl({ topicId, value, onSaved }: Props) {
         sideOffset={6}
         className="p-1 rounded-xl border border-border/60 bg-popover/95 backdrop-blur"
       >
-        <div className="px-2 pt-2 pb-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+        <div className="px-2 pt-2 pb-1 type-meta font-medium uppercase tracking-wider text-muted-foreground">
           Search provider
         </div>
         <div className="space-y-px">
@@ -126,7 +126,7 @@ export function ProviderControl({ topicId, value, onSaved }: Props) {
                   <div className="flex items-center gap-1.5">
                     <span
                       className={cn(
-                        "text-xs font-medium",
+                        "type-secondary font-medium",
                         isSelected && "text-primary",
                       )}
                     >
@@ -136,7 +136,7 @@ export function ProviderControl({ topicId, value, onSaved }: Props) {
                       <Check className="h-3 w-3 text-primary shrink-0" />
                     )}
                   </div>
-                  <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
+                  <p className="mt-0.5 type-meta leading-snug text-muted-foreground">
                     {opt.description}
                   </p>
                 </div>

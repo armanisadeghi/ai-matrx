@@ -191,7 +191,7 @@ function FilterDrawerContent({
                   {option.label}
                 </span>
                 {option.count !== undefined && (
-                  <span className="text-[13px] text-muted-foreground tabular-nums mr-3 shrink-0">
+                  <span className="type-body text-muted-foreground tabular-nums mr-3 shrink-0">
                     {option.count}
                   </span>
                 )}
@@ -202,7 +202,7 @@ function FilterDrawerContent({
             ))}
 
             {filteredOptions.length === 0 && searchQuery && (
-              <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">
+              <div className="flex items-center justify-center py-8 text-muted-foreground type-body">
                 No matches found
               </div>
             )}
@@ -238,7 +238,7 @@ function FilterDrawerContent({
 
             {hasActiveFilters && (
               <div className="pt-4 pb-2">
-                <p className="text-[13px] text-muted-foreground text-center">
+                <p className="type-body text-muted-foreground text-center">
                   {filters.filter((f) => f.selectedId !== null).length} active{" "}
                   {filters.filter((f) => f.selectedId !== null).length === 1
                     ? "filter"
@@ -293,11 +293,11 @@ export function ResearchFilterBar({
           className,
         )}
       >
-        <span className="text-[11px] font-medium text-foreground/80 pl-1.5 shrink-0">
+        <span className="type-meta font-medium text-foreground/80 pl-1.5 shrink-0">
           {title}
         </span>
         {count && (
-          <span className="text-[10px] text-muted-foreground tabular-nums shrink-0">
+          <span className="type-meta text-muted-foreground tabular-nums shrink-0">
             {read ? <UntrustedCount value={count} read={read} label={title} /> : count}
           </span>
         )}

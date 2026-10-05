@@ -27,7 +27,7 @@ export function VideoSourceMeta({
   return (
     <div
       className={cn(
-        "flex items-center gap-x-2 gap-y-0.5 flex-wrap text-[11px] text-muted-foreground",
+        "flex items-center gap-x-2 gap-y-0.5 flex-wrap type-meta text-muted-foreground",
         className,
       )}
     >
@@ -75,7 +75,7 @@ export function VideoProcessingChip({
   // unprocessed | processing (leased, in flight) | partial | completed | failed.
   if (status === "completed") {
     return (
-      <span className="inline-flex items-center gap-0.5 rounded-full bg-blue-100 px-1.5 py-px text-[10px] font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 whitespace-nowrap">
+      <span className="inline-flex items-center gap-0.5 rounded-full bg-blue-100 px-1.5 py-px type-meta font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 whitespace-nowrap">
         <CheckCircle2 className="h-2.5 w-2.5" />
         Transcribed
       </span>
@@ -83,7 +83,7 @@ export function VideoProcessingChip({
   }
   if (status === "partial") {
     return (
-      <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-100 px-1.5 py-px text-[10px] font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 whitespace-nowrap">
+      <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-100 px-1.5 py-px type-meta font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 whitespace-nowrap">
         <AlertTriangle className="h-2.5 w-2.5" />
         Partial
       </span>
@@ -91,7 +91,7 @@ export function VideoProcessingChip({
   }
   if (status === "failed") {
     return (
-      <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-100 px-1.5 py-px text-[10px] font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 whitespace-nowrap">
+      <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-100 px-1.5 py-px type-meta font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 whitespace-nowrap">
         <AlertTriangle className="h-2.5 w-2.5" />
         Processing failed
         <ErrorAlchemyMenu />
@@ -100,7 +100,7 @@ export function VideoProcessingChip({
   }
   if (status === "processing" || status === "queued") {
     return (
-      <span className="inline-flex items-center gap-0.5 rounded-full bg-muted px-1.5 py-px text-[10px] font-medium text-muted-foreground whitespace-nowrap">
+      <span className="inline-flex items-center gap-0.5 rounded-full bg-muted px-1.5 py-px type-meta font-medium text-muted-foreground whitespace-nowrap">
         <Loader2 className="h-2.5 w-2.5 animate-spin" />
         Processing
       </span>
@@ -108,7 +108,7 @@ export function VideoProcessingChip({
   }
   // unprocessed / null / unknown — a normal state, never an error.
   return (
-    <span className="inline-flex items-center rounded-full bg-muted px-1.5 py-px text-[10px] font-medium text-muted-foreground whitespace-nowrap">
+    <span className="inline-flex items-center rounded-full bg-muted px-1.5 py-px type-meta font-medium text-muted-foreground whitespace-nowrap">
       Not processed
     </span>
   );

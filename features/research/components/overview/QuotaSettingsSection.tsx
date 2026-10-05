@@ -120,7 +120,7 @@ function FieldRow({
         onChange={(e) => onChange(Number(e.target.value))}
         disabled={disabled}
       />
-      <p className="text-[10px] text-muted-foreground/80 leading-snug">
+      <p className="type-meta text-muted-foreground/80 leading-snug">
         {spec.hint}
       </p>
     </div>
@@ -138,10 +138,10 @@ export function QuotaSettingsSection({ values, onChange, disabled }: Props) {
 
   return (
     <section className="space-y-3">
-      <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+      <span className="type-meta font-semibold uppercase tracking-wider text-muted-foreground">
         Pipeline Limits
       </span>
-      <p className="text-[11px] text-muted-foreground/85 leading-snug">
+      <p className="type-meta text-muted-foreground/85 leading-snug">
         Hard caps for each pipeline phase. Defaults are tuned for a low-cost
         first run.
       </p>
@@ -172,7 +172,7 @@ export function QuotaSettingsSection({ values, onChange, disabled }: Props) {
 
       {advancedOpen && (
         <div className="space-y-3 rounded-lg border border-amber-500/20 bg-amber-500/5 p-2.5">
-          <p className="text-[10px] text-amber-700 dark:text-amber-400 leading-snug">
+          <p className="type-meta text-amber-700 dark:text-amber-400 leading-snug">
             These features are disabled by default and cost money per topic.
             Set above 0 to enable.
           </p>
