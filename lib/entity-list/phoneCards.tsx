@@ -172,10 +172,10 @@ export function resolvePhoneCardLayout<TRow>(
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <>
-      <dt className="text-[11px] uppercase leading-5 tracking-wide text-muted-foreground">
+      <dt className="type-meta uppercase leading-5 tracking-wide text-muted-foreground">
         {label}
       </dt>
-      <dd className="min-w-0 truncate text-xs leading-5 text-foreground">
+      <dd className="min-w-0 truncate type-secondary leading-5 text-foreground">
         {children}
       </dd>
     </>
@@ -291,7 +291,7 @@ export function EntityPhoneCard<TRow>({
           become blocks, and an anchor this primitive renders has no call site
           to stamp `data-tap-target` on.
         */}
-        <div className="min-w-0 flex-1 text-sm font-medium leading-snug text-foreground [&_.truncate]:!whitespace-normal [&_.truncate]:line-clamp-2 [&_a]:block [&_a]:min-h-11 [&_a]:py-2.5">
+        <div className="min-w-0 flex-1 type-title leading-snug text-foreground [&_.truncate]:!whitespace-normal [&_.truncate]:line-clamp-2 [&_a]:block [&_a]:min-h-11 [&_a]:py-2.5">
           {layout.title ? controls.renderCell(layout.title.id) : rowName}
         </div>
         <div className="flex shrink-0 items-center gap-0.5">
@@ -320,10 +320,10 @@ export function EntityPhoneCard<TRow>({
       ) : null}
 
       {layout.meta.length > 0 ? (
-        <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+        <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 type-secondary text-muted-foreground">
           {layout.meta.map((spec) => (
             <span key={spec.id} className="inline-flex items-baseline gap-1">
-              <span className="text-[11px] uppercase tracking-wide">{spec.label}</span>
+              <span className="type-meta uppercase tracking-wide">{spec.label}</span>
               {controls.renderCell(spec.id)}
             </span>
           ))}
@@ -421,7 +421,7 @@ function EntityPhoneLine<TRow>({
         ) : null}
         <div className="min-w-0 flex-1 py-1">
           {/* The title anchor is the card's door: one line, cut at the card's width, stretched over the card. */}
-          <div className="min-w-0 text-sm font-medium leading-5 text-foreground [&_a]:block [&_a]:truncate [&_a]:after:absolute [&_a]:after:inset-0">
+          <div className="min-w-0 type-title leading-5 text-foreground [&_a]:block [&_a]:truncate [&_a]:after:absolute [&_a]:after:inset-0">
             {layout.title ? controls.renderCell(layout.title.id) : rowName}
           </div>
           {facts.length > 0 ? (
@@ -429,7 +429,7 @@ function EntityPhoneLine<TRow>({
               // FACTS, NOT CONTROLS: a value cell may draw a link or a peek button (an organization's
               // EntityRef), which the touch floor grows to 44px — a 16px line became 44. On this line
               // they are text; a tap falls through to the card's door.
-              className="pointer-events-none flex h-4 min-w-0 items-center gap-1 overflow-hidden whitespace-nowrap text-xs leading-4 text-muted-foreground [&_*]:!min-h-0 [&_*]:!min-w-0"
+              className="pointer-events-none flex h-4 min-w-0 items-center gap-1 overflow-hidden whitespace-nowrap type-secondary leading-4 text-muted-foreground [&_*]:!min-h-0 [&_*]:!min-w-0"
               data-entity-phone-card-line
             >
               {facts.map(({ spec, quiet }, index) => (
