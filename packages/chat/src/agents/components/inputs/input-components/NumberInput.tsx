@@ -55,6 +55,19 @@ export function NumberInput({
     onChange(e.target.value);
   };
 
+  // Typing is free (a half-typed "-" or "1." must survive); leaving the field
+  // brings a number outside the agent's own min/max back inside it, the same
+  // limits the − / + buttons already keep.
+  const handleBlur = () => {
+    if (value.trim() === "") return;
+    const typed = parseFloat(value);
+    if (!Number.isFinite(typed)) return;
+    let next = typed;
+    if (min !== undefined && next < min) next = min;
+    if (max !== undefined && next > max) next = max;
+    if (next !== typed) onChange(roundToStep(next).toString());
+  };
+
   const canDecrement = min === undefined || numValue > min;
   const canIncrement = max === undefined || numValue < max;
 
@@ -82,6 +95,8 @@ export function NumberInput({
           type="text"
           value={value}
           onChange={handleInputChange}
+          onBlur={handleBlur}
+          inputMode="decimal"
           className={
             compact
               ? "text-center bg-transparent text-sm font-medium h-7 border border-border rounded-full"

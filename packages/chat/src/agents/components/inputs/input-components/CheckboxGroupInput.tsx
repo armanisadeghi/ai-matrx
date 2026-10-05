@@ -27,7 +27,7 @@ export function CheckboxGroupInput({
   wrap = true,
   containerWidth = 0,
 }: CheckboxGroupInputProps) {
-  const selectedItems = value ? value.split("\n").filter(Boolean) : [];
+  const selectedItems = parseSelected(value, options);
 
   const otherItem = selectedItems.find((item) => item.startsWith("Other: "));
   const otherText = otherItem ? otherItem.substring(7) : "";
@@ -168,4 +168,20 @@ export function CheckboxGroupInput({
       </div>
     </div>
   );
+}
+
+/**
+ * The stored value is one choice per line. An agent's DEFAULT is often written
+ * as "Saturday, Sunday": when the value has no line breaks and every
+ * comma-separated piece is one of the options, read it as those choices so the
+ * boxes show ticked (and the next change saves one per line).
+ */
+function parseSelected(value: string, options: readonly string[]): string[] {
+  if (!value) return [];
+  const lines = value.split("\n").map((item) => item.trim()).filter(Boolean);
+  if (lines.length === 1 && lines[0].includes(",")) {
+    const pieces = lines[0].split(",").map((item) => item.trim()).filter(Boolean);
+    if (pieces.length > 1 && pieces.every((piece) => options.includes(piece))) return pieces;
+  }
+  return lines;
 }

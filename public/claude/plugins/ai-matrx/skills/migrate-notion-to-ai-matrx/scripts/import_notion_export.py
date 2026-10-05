@@ -134,7 +134,7 @@ def read_databases(root: Path) -> list[dict]:
                 values[col] = cell.strip()
             rows.append({"id": page_id or f"{db_id}:{title}", "title": title, "values": values, "body": body,
                          "folder": md.parent if md else folder, "files": files})
-        out.append({"id": db_id, "name": name, "title_column": header[0] if header else "Name",
+        out.append({"id": db_id, "name": name, "dir": path.parent, "title_column": header[0] if header else "Name",
                     "columns": header[1:], "rows": rows})
     return out
 
@@ -211,6 +211,17 @@ def propose(db: dict, by_id: dict[str, dict], root: Path) -> dict:
             "rows": len(db["rows"]), "columns": cols, "views": _views(cols)}
 
 
+def _file_path(base: Path, row: dict, value: str) -> Path | None:
+    """The one file a cell names: its path is relative to the database's CSV (Notion's export), or
+    to the row's own page; never the first file anywhere that happens to share its name."""
+    parts = [urllib.parse.unquote(x) for x in value.strip().split("/") if x]
+    for start in (base, row["folder"]):
+        candidate = start.joinpath(*parts)
+        if candidate.is_file():
+            return candidate
+    return None
+
+
 def _file_under(root: Path, value: str) -> bool:
     for part in value.split(","):
         rel = [urllib.parse.unquote(p) for p in part.strip().split("/")]
@@ -260,6 +271,19 @@ def _end(raw: str):
     if " → " not in raw:
         return None
     return datetime.strptime(raw.split(" → ")[1].split(" (")[0].strip(), _DATE).date().isoformat()
+
+
+def _filled(table_id: str, columns: list[str]) -> set[str]:
+    """Notion IDs of the rows whose file columns already hold files — a rerun leaves them alone."""
+    out, offset = set(), 0
+    while True:
+        page = must(call("tables", action="list_rows", table=table_id, limit=200, offset=offset), "read rows")
+        for row in page.get("rows") or []:
+            if all(row["values"].get(c) for c in columns):
+                out.add(row["values"].get(KEY_COLUMN))
+        if len(page.get("rows") or []) < 200:
+            return out
+        offset += 200
 
 
 def run(root: Path, plan: dict, organization: str, progress_path: Path) -> None:
@@ -312,7 +336,13 @@ def run(root: Path, plan: dict, organization: str, progress_path: Path) -> None:
             done_rows = progress.setdefault("done", {}).get(mark, 0)
             db = dbs[p["notion_id"]]
             batch_rows = []
+            file_cols = [c["name"] for c in p["columns"] if c["type"] == "file"]
+            if phase == "files" and not file_cols:
+                continue
+            filled = _filled(tables[p["notion_id"]], file_cols) if phase == "files" else set()
             for r in db["rows"]:
+                if r["id"] in filled:
+                    continue
                 out = {KEY_COLUMN: r["id"]}
                 for c in p["columns"]:
                     raw = r["values"].get(c["notion"], "")
@@ -327,10 +357,11 @@ def run(root: Path, plan: dict, organization: str, progress_path: Path) -> None:
                     elif phase == "files" and c["type"] == "file" and raw:
                         items = []
                         for part in raw.split(","):
-                            rel = [urllib.parse.unquote(x) for x in part.strip().split("/")]
-                            hits = [f for f in r["folder"].rglob(rel[-1])] or list(root.rglob(rel[-1]))
-                            if hits:
-                                items.append({"name": hits[0].name, "base64": base64.b64encode(hits[0].read_bytes()).decode()})
+                            found = _file_path(db["dir"], r, part)
+                            if found:
+                                items.append({"name": found.name, "base64": base64.b64encode(found.read_bytes()).decode()})
+                            else:
+                                print(f"  note: {p['table']} \"{r['title']}\": {urllib.parse.unquote(part.strip())} is not in the export", flush=True)
                         if items:
                             out[c["name"]] = items
                 if phase == "rows":
