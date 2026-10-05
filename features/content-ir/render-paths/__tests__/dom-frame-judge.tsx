@@ -88,7 +88,7 @@ jest.mock("next/navigation", () => ({
 }));
 
 // eslint-disable-next-line import/first -- the mocks above must register before the renderer loads
-import { BlockRenderer } from "@/components/mardown-display/chat-markdown/block-registry/BlockRenderer";
+import { BlockRenderer, decideBlockRender } from "@/components/mardown-display/chat-markdown/block-registry/BlockRenderer";
 // eslint-disable-next-line import/first
 import { renderBlockToContentBlock } from "@/components/mardown-display/chat-markdown/render-block-to-content-block";
 // eslint-disable-next-line import/first
@@ -275,7 +275,10 @@ function branchSignature(block: RenderBlockPayload, live: boolean): string {
     routedType = routed.type ?? "";
     routedLanguage = routed.language ?? "";
     gate = decision.gate ? String((decision.gate as { kind?: unknown }).kind ?? "gate") : "";
-  } catch {
+  } catch (error) {
+    // A decision that throws is a branch of its own — but never a silent one:
+    // a broken judge (a missing import) must not pass as "threw" forever.
+    if (error instanceof ReferenceError || error instanceof TypeError) throw error;
     routedType = "threw";
   }
   const metadata = (block.metadata ?? {}) as Record<string, unknown>;
