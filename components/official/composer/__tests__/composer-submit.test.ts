@@ -118,3 +118,67 @@ describe("every composer shares the primitive", () => {
     expect(source).not.toMatch(/key\s*===\s*["']Enter["'][^\n]*shiftKey/);
   });
 });
+
+// ── THE TOUCH GUARD — every multi-line box, not only the census above ──────
+// Arman, 2026-09-28: on a phone Enter must never send — its keyboard has one
+// key for a new line. A file that renders a multi-line text box AND writes its
+// own `Enter && !shiftKey` branch must route that branch through the shared
+// rule (`enterSendsHere` / `composerKeyIntent`). Found on 2026-10-04: seven
+// boxes (Ask Knowledge, Make › Describe, two flashcard chats, a debate demo,
+// two sample apps) sent on a phone's Enter.
+const MULTILINE_BOX = /<textarea\b|<Textarea\b|<BasicTextarea\b|<ProTextarea\b/;
+const OWN_ENTER_RULE = /key\s*===\s*["']Enter["'][^\n]*shiftKey/;
+const SHARED_RULE = /enterSendsHere|composerKeyIntent/;
+
+/** Files whose Enter branch does NOT send a message — with the reason. */
+const NOT_A_SEND: Record<string, string> = {
+  "components/matrx/ConfigBuilder/index.tsx": "Enter moves focus to the next field; textareas keep their newline",
+  "features/data-tables/components/EditableCell.tsx": "a spreadsheet cell: Enter commits the edit and moves down, as in every spreadsheet",
+  "packages/chat/src/agents/components/inputs/variable-input-variations/AgentVariablesGuided.tsx": "Enter moves to the next variable, never sends",
+  "features/podcasts/generator/components/CreateShowDialog.tsx": "the Enter branch is on a single-line <Input>",
+  "features/tasks/widgets/AssociateTaskButton.tsx": "the Enter branch is on a single-line <Input>",
+  "features/tasks/widgets/QuickCreateTaskButton.tsx": "the Enter branch is on a single-line <Input>",
+  "features/tasks/widgets/TaskTapButton.tsx": "the Enter branch is on a single-line <Input>",
+  "features/transcript-studio/components/columns/EditableConceptRow.tsx": "the Enter branch is on the single-line label <input>",
+};
+
+export function bypassesTouchRule(source: string): boolean {
+  return MULTILINE_BOX.test(source) && OWN_ENTER_RULE.test(source) && !SHARED_RULE.test(source);
+}
+
+function tsxFiles(dir: string, out: string[] = []): string[] {
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (entry.name === "node_modules" || entry.name.startsWith(".") || entry.name === "__tests__") continue;
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) tsxFiles(full, out);
+    else if (entry.name.endsWith(".tsx")) out.push(full);
+  }
+  return out;
+}
+
+describe("THE TOUCH GUARD — no multi-line box sends on a phone's Enter", () => {
+  it("the detector catches a hand-rolled send and passes the shared rule", () => {
+    const bad = `<Textarea onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) send(); }} />`;
+    const good = `<Textarea onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && enterSendsHere(true)) send(); }} />`;
+    expect(bypassesTouchRule(bad)).toBe(true);
+    expect(bypassesTouchRule(good)).toBe(false);
+  });
+
+  it("every multi-line box in the app uses the shared rule (or is a named non-send)", () => {
+    const offenders = ["app", "features", "components", "packages", "lib"]
+      .filter((dir) => fs.existsSync(path.join(REPO, dir)))
+      .flatMap((dir) => tsxFiles(path.join(REPO, dir)))
+      .map((file) => path.relative(REPO, file))
+      .filter((relative) => !(relative in NOT_A_SEND))
+      .filter((relative) => bypassesTouchRule(fs.readFileSync(path.join(REPO, relative), "utf8")));
+    expect(offenders).toEqual([]);
+  });
+
+  it("every named non-send still exists and still needs its exemption", () => {
+    for (const relative of Object.keys(NOT_A_SEND)) {
+      const full = path.join(REPO, relative);
+      expect(fs.existsSync(full)).toBe(true);
+      expect(OWN_ENTER_RULE.test(fs.readFileSync(full, "utf8"))).toBe(true);
+    }
+  });
+});

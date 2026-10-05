@@ -18,6 +18,7 @@ import {
 import MarkdownRenderer from "@/components/mardown-display/MarkdownRenderer";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { WalletCards } from 'lucide-react';
+import { enterSendsHere } from "@/components/official/composer/composerSubmit";
 
 interface AiChatModalProps {
     isOpen: boolean;
@@ -236,7 +237,7 @@ const AiChatModal: React.FC<AiChatModalProps> = ({ isOpen, onClose }) => {
                             value={message}
                             onChange={(e) => setMessage(e.target.value)}
                             onKeyDown={(e) => {
-                                if (e.key === 'Enter' && !e.shiftKey) {
+                                if (e.key === 'Enter' && !e.shiftKey && enterSendsHere(true)) {
                                     e.preventDefault();
                                     handleSubmit();
                                 }

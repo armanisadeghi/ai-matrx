@@ -28,6 +28,7 @@ import MarkdownStream from "@/components/MarkdownStream";
 import type { AgentDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { enterSendsHere } from "@/components/official/composer/composerSubmit";
 
 interface FactCheckerHookedProps {
   variables: Record<string, unknown>;
@@ -69,7 +70,7 @@ export default function FactCheckerHooked({
   }, [claim, isFormValid, isBusy, submit]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey && enterSendsHere(true)) {
       e.preventDefault();
       handleSubmit();
     }

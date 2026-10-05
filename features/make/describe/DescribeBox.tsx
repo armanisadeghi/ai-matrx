@@ -39,6 +39,7 @@ import { KindIcon } from "@/features/unified-data/home/dataHomeColumns";
 import { createClient } from "@/utils/supabase/client";
 
 import { madeSince, secondsWords, snapshotOf, type MadeThing, type StoreSnapshot } from "./made";
+import { enterSendsHere } from "@/components/official/composer/composerSubmit";
 
 /** How often the store is read while the agent works: each new thing appears as it lands. */
 const POLL_MS = 3_000;
@@ -169,7 +170,7 @@ export function DescribeBox() {
           value={sentence}
           onChange={(e) => setSentence(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
+            if (e.key === "Enter" && !e.shiftKey && enterSendsHere(true)) {
               e.preventDefault();
               void start();
             }

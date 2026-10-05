@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2, Send, MessageSquare, User, LayoutTemplate, Volume2 } from 'lucide-react';
 import { toast } from "@/lib/toast";
+import { enterSendsHere } from "@/components/official/composer/composerSubmit";
 
 interface Message {
     role: 'user' | 'assistant';
@@ -181,7 +182,7 @@ export default function DebatePage() {
                                 className="min-h-[60px] max-h-[120px] resize-none"
                                 disabled={isPending || isPlaying}
                                 onKeyDown={(e) => {
-                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                    if (e.key === 'Enter' && !e.shiftKey && enterSendsHere(true)) {
                                         e.preventDefault();
                                         handleSubmit(e);
                                     }

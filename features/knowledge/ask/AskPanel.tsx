@@ -27,6 +27,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { LoadingSpinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
+import { enterSendsHere } from "@/components/official/composer/composerSubmit";
 import {
   searchKnowledge,
   type KnowledgeHit,
@@ -251,7 +252,7 @@ export function AskPanel({
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === "Enter" && (e.metaKey || e.ctrlKey || !e.shiftKey)) {
+              if (e.key === "Enter" && (e.metaKey || e.ctrlKey || (!e.shiftKey && enterSendsHere(true)))) {
                 e.preventDefault();
                 void ask();
               }
