@@ -47,8 +47,8 @@ end;
 $function$;
 comment on function platform.cutover_press_history(integer) is
   'Platform-admin read of every switch press (platform.cutover_seam_press), newest first. Replaces the final-switch admin screen (ONE-HOME SOAK, 2026-10-03).';
-revoke all on function platform.cutover_press_history(integer) from public, anon, service_role;
--- The door is declared BEFORE the grant (ddl_guard §6d-4 revokes a client grant on an undeclared definer).
+-- The door is declared BEFORE the grant (ddl_guard §6d-4 revokes a client grant on an undeclared definer). PUBLIC's default
+-- EXECUTE is cleared at birth by the ddl_guard; anon and service_role are checked after the apply.
 insert into platform.client_callable_door
   (schema_name, function_name, identity_args, identity_argtypes, reason, declared_by,
    signed_in_callers, anonymous_callers)

@@ -27,6 +27,7 @@ import {
   billingOrganizationRequiredResponse,
   isBillingOrganizationRequiredError,
 } from "@/features/entitlements/stripe/billingOwnerRoute";
+import { checkoutReturnUrls } from "@/features/pricing/components/checkoutReturn";
 
 export async function POST(request: NextRequest) {
   try {
@@ -125,15 +126,15 @@ export async function POST(request: NextRequest) {
       );
     const priceQuery = () =>
       admin
-      .schema("billing")
-      .from("price")
-      .select(
-        "stripe_price_id, active, trial_period_days, unit_amount, interval, currency, interval_count",
-      )
-      .eq("livemode", livemode)
-      .eq("active", true)
-      .is("deleted_at", null)
-      .not("metadata->>plan_key", "is", null);
+        .schema("billing")
+        .from("price")
+        .select(
+          "stripe_price_id, active, trial_period_days, unit_amount, interval, currency, interval_count",
+        )
+        .eq("livemode", livemode)
+        .eq("active", true)
+        .is("deleted_at", null)
+        .not("metadata->>plan_key", "is", null);
     const findPrice = () =>
       priceQuery()
         .contains("metadata", { plan_key: plan.plan_key })
@@ -145,7 +146,12 @@ export async function POST(request: NextRequest) {
     if (!price) {
       // The plan's price is the truth (set in admin); Stripe follows it. A
       // price edited since the last sync gets its Stripe price here, once.
-      await syncPlanPrices(getStripe(), admin, requiredStripeMode(), plan.plan_key);
+      await syncPlanPrices(
+        getStripe(),
+        admin,
+        requiredStripeMode(),
+        plan.plan_key,
+      );
       ({ data: price, error: priceError } = await findPrice());
       if (priceError) throw priceError;
     }
@@ -254,11 +260,7 @@ export async function POST(request: NextRequest) {
           s.metadata?.plan_key === plan?.plan_key &&
           s.metadata?.billing_cycle === cycle,
       );
-      if (
-        pending?.url &&
-        pending.success_url === `${origin}/pricing?checkout=success`
-      )
-        return NextResponse.json({ url: pending.url });
+      if (pending?.url) return NextResponse.json({ url: pending.url });
       // Retire abandoned alternatives before starting another checkout. These
       // are unpaid sessions, not subscriptions or charges.
       for (const previous of open.data.filter(
@@ -270,6 +272,11 @@ export async function POST(request: NextRequest) {
         await stripe.checkout.sessions.expire(previous.id, {}, requestOptions);
       }
       await assertHeld();
+      const returnUrls = checkoutReturnUrls(origin, {
+        planKey: plan.plan_key,
+        cycle,
+        audience: plan.audience,
+      });
       const session = await stripe.checkout.sessions.create(
         {
           mode: "subscription",
@@ -288,8 +295,8 @@ export async function POST(request: NextRequest) {
               ? { trial_period_days: price.trial_period_days }
               : {}),
           },
-          success_url: `${origin}/pricing?checkout=success`,
-          cancel_url: `${origin}/pricing?checkout=cancelled`,
+          success_url: returnUrls.success,
+          cancel_url: returnUrls.cancelled,
           metadata,
         },
         {

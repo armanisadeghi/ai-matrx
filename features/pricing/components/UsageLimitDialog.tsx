@@ -1,14 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  AlertOctagon,
-  ArrowRight,
-  Check,
-  Clock,
-  Crown,
-  X
-} from "lucide-react";
+import { AlertOctagon, ArrowRight, Check, Clock, Crown, X } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { formatDurationMs } from "@ai-matrx/kit/format";
@@ -19,7 +12,10 @@ import {
   pointsWindows,
   upgradePlans,
 } from "@/features/entitlements/catalog/format";
-import type { BillingCycle, CatalogPlan } from "@/features/entitlements/catalog/types";
+import type {
+  BillingCycle,
+  CatalogPlan,
+} from "@/features/entitlements/catalog/types";
 import { useChoosePlan } from "./useChoosePlan";
 
 /** How many paid plans the dialog offers side by side. */
@@ -30,8 +26,8 @@ interface UsageLimitDialogProps {
   onOpenChange: (open: boolean) => void;
   /** What was hit (e.g. "Messages", "AI points") — the capability label. */
   meter: string;
-  used: number;
-  limit: number;
+  used: number | null;
+  limit: number | null;
   /** When the meter resets — ISO string or Date. Absent = no countdown shown. */
   resetsAt?: string | Date;
   /** The person's plan name, when known. */
@@ -103,9 +99,7 @@ export function UsageLimitDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className="overflow-hidden border-border/70 p-0 sm:max-w-2xl [&>button.absolute]:hidden"
-      >
+      <DialogContent className="overflow-hidden border-border/70 p-0 sm:max-w-2xl [&>button.absolute]:hidden">
         <div className="relative">
           <div
             aria-hidden
@@ -146,21 +140,25 @@ export function UsageLimitDialog({
                 {meter}
               </span>
               <span className="font-mono text-sm tabular-nums">
-                <span className="font-semibold">{used.toLocaleString()}</span>
+                <span className="font-semibold">
+                  {used?.toLocaleString() ?? "—"}
+                </span>
                 <span className="text-muted-foreground">
                   {" / "}
-                  {limit.toLocaleString()}
+                  {limit?.toLocaleString() ?? "—"}
                 </span>
               </span>
             </div>
-            <div className="h-1.5 overflow-hidden rounded-full bg-background ring-1 ring-border">
-              <div
-                className="h-full rounded-full bg-foreground"
-                style={{
-                  width: `${limit > 0 ? Math.min(100, (used / limit) * 100) : 100}%`,
-                }}
-              />
-            </div>
+            {used !== null && limit !== null ? (
+              <div className="h-1.5 overflow-hidden rounded-full bg-background ring-1 ring-border">
+                <div
+                  className="h-full rounded-full bg-foreground"
+                  style={{
+                    width: `${limit > 0 ? Math.min(100, (used / limit) * 100) : 100}%`,
+                  }}
+                />
+              </div>
+            ) : null}
             {reset && countdown && (
               <div className="flex items-center justify-between text-xs text-muted-foreground">
                 <span className="inline-flex items-center gap-1.5">
@@ -179,65 +177,76 @@ export function UsageLimitDialog({
 
           {/* Plan options — from billing.plan_catalog(); hidden until it answers. */}
           {recommended.length > 0 && (
-          <div className="px-7 pb-6">
-            <div className="mb-3 flex items-center justify-between">
-              <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                <Crown className="h-3 w-3" />
-                Or skip the wait
-              </span>
-            </div>
+            <div className="px-7 pb-6">
+              <div className="mb-3 flex items-center justify-between">
+                <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  <Crown className="h-3 w-3" />
+                  Or skip the wait
+                </span>
+              </div>
 
-            <div className="grid gap-2.5 sm:grid-cols-3">
-              {recommended.map((plan) => {
-                const price = planPrice(plan, cycle);
-                const monthPoints = pointsWindows(plan).find((w) => w.period === "month");
-                return (
-                  <button
-                    key={plan.planKey}
-                    type="button"
-                    onClick={() => handleSelect(plan, cycle)}
-                    className={cn(
-                      "group flex flex-col gap-2 rounded-xl border p-4 text-left transition-all",
-                      plan.badge
-                        ? "border-foreground bg-foreground/[0.03]"
-                        : "border-border/70 hover:border-foreground/40 hover:bg-accent/30",
-                    )}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-semibold">{plan.name}</span>
-                      {plan.badge && (
-                        <span className="rounded-full bg-foreground px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-background">
-                          {plan.badge}
+              <div className="grid gap-2.5 sm:grid-cols-3">
+                {recommended.map((plan) => {
+                  const price = planPrice(plan, cycle);
+                  const monthPoints = pointsWindows(plan).find(
+                    (w) => w.period === "month",
+                  );
+                  return (
+                    <button
+                      key={plan.planKey}
+                      type="button"
+                      onClick={() => handleSelect(plan, cycle)}
+                      className={cn(
+                        "group flex flex-col gap-2 rounded-xl border p-4 text-left transition-all",
+                        plan.badge
+                          ? "border-foreground bg-foreground/[0.03]"
+                          : "border-border/70 hover:border-foreground/40 hover:bg-accent/30",
+                      )}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-semibold">
+                          {plan.name}
+                        </span>
+                        {plan.badge && (
+                          <span className="rounded-full bg-foreground px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-background">
+                            {plan.badge}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-xl font-semibold tabular-nums">
+                          {price.kind === "paid"
+                            ? price.value
+                            : price.kind === "free"
+                              ? "$0"
+                              : "Custom"}
+                        </span>
+                        {price.kind === "paid" && (
+                          <span className="text-[10px] text-muted-foreground">
+                            {price.suffix}
+                          </span>
+                        )}
+                      </div>
+                      {monthPoints && (
+                        <span className="flex items-start gap-1.5 text-xs text-muted-foreground">
+                          <Check
+                            className="mt-0.5 h-3 w-3 shrink-0 text-foreground"
+                            strokeWidth={3}
+                          />
+                          {monthPoints.limit == null
+                            ? "Custom AI points"
+                            : `${formatPoints(monthPoints.limit)} AI points / month`}
                         </span>
                       )}
-                    </div>
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-xl font-semibold tabular-nums">
-                        {price.kind === "paid" ? price.value : price.kind === "free" ? "$0" : "Custom"}
+                      <span className="mt-1 inline-flex items-center gap-1 text-xs font-medium">
+                        Upgrade to {plan.name}
+                        <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
                       </span>
-                      {price.kind === "paid" && (
-                        <span className="text-[10px] text-muted-foreground">
-                          {price.suffix}
-                        </span>
-                      )}
-                    </div>
-                    {monthPoints && (
-                      <span className="flex items-start gap-1.5 text-xs text-muted-foreground">
-                        <Check className="mt-0.5 h-3 w-3 shrink-0 text-foreground" strokeWidth={3} />
-                        {monthPoints.limit == null
-                          ? "Custom AI points"
-                          : `${formatPoints(monthPoints.limit)} AI points / month`}
-                      </span>
-                    )}
-                    <span className="mt-1 inline-flex items-center gap-1 text-xs font-medium">
-                      Upgrade to {plan.name}
-                      <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
-                    </span>
-                  </button>
-                );
-              })}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
           )}
 
           <div className="flex items-center justify-between gap-3 border-t border-border/60 bg-muted/20 px-7 py-3">

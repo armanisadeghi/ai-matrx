@@ -14,11 +14,7 @@ import { formatCost, pointsToUsd } from "@ai-matrx/kit/format";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
-import {
-  useAppDispatch,
-  useAppSelector,
-  useAppStore,
-} from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import {
   selectUsageGateFetchedAt,
@@ -62,7 +58,10 @@ function formatReset(iso: string | null): string | null {
 
 const LEVEL_CHIP: Record<UsageGateLevel, { text: string; tone: string }> = {
   ok: { text: "On track", tone: "bg-muted text-muted-foreground" },
-  near: { text: "Near limit", tone: "bg-amber-500/15 text-amber-600 dark:text-amber-400" },
+  near: {
+    text: "Near limit",
+    tone: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
+  },
   over: { text: "Limit reached", tone: "bg-destructive/10 text-destructive" },
 };
 
@@ -70,11 +69,14 @@ function WindowRow({ w }: { w: UsageWindow }) {
   // This is render-time formatting. `useCostDisplay` subscribes to the knob
   // snapshot, so values re-render when the points rate answers after usage.
   const { unit, rate } = useCostDisplay();
-  const points = (v: number) => formatCost(pointsToUsd(v, { rate }), { rate, unit });
+  const points = (v: number) =>
+    formatCost(pointsToUsd(v, { rate }), { rate, unit });
   const pct =
-    w.limit !== null && w.limit > 0
+    w.used !== null && w.limit !== null && w.limit > 0
       ? Math.min(100, Math.round((w.used / w.limit) * 100))
       : 0;
+  const hasMeasuredProgress =
+    w.used !== null && w.limit !== null && w.limit > 0;
   const bar =
     w.state === "over"
       ? "bg-destructive"
@@ -99,14 +101,16 @@ function WindowRow({ w }: { w: UsageWindow }) {
             "Not included"
           ) : (
             <>
-              <span className="text-foreground">{points(w.used)}</span>
+              <span className="text-foreground">
+                {w.used === null ? "—" : points(w.used)}
+              </span>
               {" of "}
               {points(w.limit)}
             </>
           )}
         </span>
       </div>
-      {w.limit !== null && w.limit > 0 ? (
+      {hasMeasuredProgress ? (
         <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-muted">
           <div
             className={cn("h-full rounded-full transition-all", bar)}
@@ -153,7 +157,11 @@ export function MyUsageCard({ className }: { className?: string }) {
       <div className={cn(frame, "p-3 sm:p-4")}>
         <h3 className="text-sm font-semibold text-foreground">Your AI usage</h3>
         {fetchedAt === null && reading ? (
-          <div className="mt-3 space-y-2" aria-busy="true" aria-label="Reading your usage">
+          <div
+            className="mt-3 space-y-2"
+            aria-busy="true"
+            aria-label="Reading your usage"
+          >
             <div className="h-3 w-2/3 animate-pulse rounded bg-muted" />
             <div className="h-1 w-full animate-pulse rounded-full bg-muted" />
             <div className="h-3 w-1/2 animate-pulse rounded bg-muted" />
@@ -163,11 +171,7 @@ export function MyUsageCard({ className }: { className?: string }) {
             <p className="text-sm text-muted-foreground">
               We couldn&apos;t read your usage just now.
             </p>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={read}
-            >
+            <Button size="sm" variant="outline" onClick={read}>
               <RotateCw className="h-3.5 w-3.5" aria-hidden />
               Try again
             </Button>

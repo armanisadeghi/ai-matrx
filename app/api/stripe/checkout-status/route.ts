@@ -19,12 +19,12 @@ import { syncSubscription } from "@/features/entitlements/stripe/sync";
 import {
   billingOwnerRef,
   ownerEq,
-  readRequestOrganizationId,
 } from "@/features/entitlements/stripe/billingOwner";
 import {
   billingOrganizationRequiredResponse,
   isBillingOrganizationRequiredError,
 } from "@/features/entitlements/stripe/billingOwnerRoute";
+import { isVerifiedCheckoutSession } from "@/features/pricing/components/checkoutReturn";
 
 type CheckoutStatus = "active" | "pending" | "unavailable";
 
@@ -43,26 +43,46 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
     const body = (await request.json().catch(() => ({}))) as {
-      planKey?: string;
-      cycle?: "monthly" | "annual";
+      sessionId?: string;
     };
-    if (
-      !body.planKey ||
-      (body.cycle && body.cycle !== "monthly" && body.cycle !== "annual")
-    ) {
+    if (!body.sessionId?.startsWith("cs_")) {
       return NextResponse.json(
-        { error: "Choose a current plan." },
+        { error: "A Checkout session is required." },
         { status: 400 },
       );
     }
 
     const admin = createAdminClient();
     const livemode = requiredStripeMode() === "live";
+    const stripe = getStripe();
+    // Do not search history: a return must prove this precise Stripe session.
+    const session = await stripe.checkout.sessions.retrieve(
+      body.sessionId,
+      { expand: ["subscription"] },
+      { timeout: 10_000, maxNetworkRetries: 0 },
+    );
+    const planKey = session.metadata?.plan_key;
+    const cycle = session.metadata?.billing_cycle;
+    if (
+      !isVerifiedCheckoutSession(body.sessionId, user.id, {
+        id: session.id,
+        mode: session.mode,
+        status: session.status,
+        clientReferenceId: session.client_reference_id,
+        purpose: session.metadata?.purpose,
+        planKey,
+        cycle,
+        paymentStatus: session.payment_status,
+        hasSubscription: Boolean(session.subscription),
+      })
+    )
+      return response("pending");
+
     const { data: plan, error: planError } = await admin
       .schema("billing")
       .from("plan")
       .select("plan_key,audience,organization_id")
-      .eq("plan_key", body.planKey)
+      .eq("plan_key", planKey)
       .eq("active", true)
       .is("deleted_at", null)
       .maybeSingle();
@@ -77,7 +97,9 @@ export async function POST(request: NextRequest) {
     const personal = plan.audience === "personal";
     const organizationId = personal
       ? plan.organization_id
-      : readRequestOrganizationId(request);
+      : session.metadata?.organization_id;
+    if (!organizationId || session.metadata?.organization_id !== organizationId)
+      return response("pending");
     if (!personal && organizationId) {
       const { data: membership, error } = await supabase
         .schema("iam")
@@ -111,27 +133,12 @@ export async function POST(request: NextRequest) {
     if (customerError) throw customerError;
     if (!customer?.stripe_customer_id) return response("pending");
 
-    const stripe = getStripe();
-    const sessions = await stripe.checkout.sessions.list(
-      {
-        customer: customer.stripe_customer_id,
-        status: "complete",
-        limit: 20,
-      },
-      { timeout: 10_000, maxNetworkRetries: 0 },
-    );
-    const session = sessions.data.find(
-      (candidate) =>
-        candidate.mode === "subscription" &&
-        candidate.client_reference_id === user.id &&
-        candidate.metadata?.purpose === "platform_subscription" &&
-        candidate.metadata.plan_key === plan.plan_key &&
-        candidate.metadata.billing_cycle === (body.cycle ?? "monthly") &&
-        (candidate.payment_status === "paid" ||
-          candidate.payment_status === "no_payment_required") &&
-        candidate.subscription,
-    );
-    if (!session || !session.subscription) return response("pending");
+    const sessionCustomer =
+      typeof session.customer === "string"
+        ? session.customer
+        : session.customer?.id;
+    if (sessionCustomer !== customer.stripe_customer_id)
+      return response("pending");
 
     const subscriptionId =
       typeof session.subscription === "string"
@@ -150,7 +157,9 @@ export async function POST(request: NextRequest) {
         : subscription.customer.id;
     if (
       subscriptionCustomer !== customer.stripe_customer_id ||
-      !["active", "trialing"].includes(subscription.status)
+      !["active", "trialing"].includes(subscription.status) ||
+      subscription.metadata.plan_key !== plan.plan_key ||
+      subscription.metadata.billing_cycle !== cycle
     )
       return response("pending");
 

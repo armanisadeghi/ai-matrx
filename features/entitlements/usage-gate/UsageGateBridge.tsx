@@ -13,11 +13,7 @@
 
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import {
-  useAppDispatch,
-  useAppSelector,
-  useAppStore,
-} from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { registerDirectiveHandler } from "@/lib/client-directives/directiveRegistry";
 import { toast } from "@/lib/toast";
@@ -31,10 +27,7 @@ import {
   selectUsageGateResetsAt,
 } from "../state/selectors";
 import { setUsageRefusal } from "../state/entitlementsSlice";
-import {
-  applyServerUsageState,
-  refreshUsageInBackground,
-} from "./usageGate";
+import { applyServerUsageState, refreshUsageInBackground } from "./usageGate";
 import { usageNoticeKey } from "./usageState";
 import { supabase } from "@/utils/supabase/client";
 import { selectUsageGateFreePeriod } from "../state/selectors";
@@ -172,18 +165,23 @@ export function UsageGateBridge() {
             p_user_id: userId,
           });
         if (error) {
-          console.warn("[usage-gate] free_period_warning_days unreadable; using the fallback.", error.message);
+          console.warn(
+            "[usage-gate] free_period_warning_days unreadable; using the fallback.",
+            error.message,
+          );
         } else if (typeof data === "number" && data > 0) {
           warningDays = data;
         }
       }
       if (!live) return;
       const due = freePeriodNoticeFor(freePeriod, warningDays, new Date());
-      if (!due || readShownDay() === due.dayKey || shownNotices.has(due.dayKey)) return;
+      if (!due || readShownDay() === due.dayKey || shownNotices.has(due.dayKey))
+        return;
       shownNotices.add(due.dayKey);
       const name = await catalogPlanName(freePeriod.planKey);
       if (!live) return;
-      const notice = freePeriodNoticeFor(freePeriod, warningDays, new Date(), name) ?? due;
+      const notice =
+        freePeriodNoticeFor(freePeriod, warningDays, new Date(), name) ?? due;
       // "Once per day" counts from when the person dealt with it (dismissed or
       // chose a plan) — a notice raised before the toaster mounted is never
       // marked seen without being seen.
@@ -215,7 +213,7 @@ export function UsageGateBridge() {
       }}
       meter={periodLabel(refusal.period)}
       used={refusal.used}
-      limit={refusal.limit ?? refusal.used}
+      limit={refusal.limit}
       {...(refusal.resetsAt ? { resetsAt: refusal.resetsAt } : {})}
       {...(planName ? { currentPlan: planName } : {})}
       onSelect={() => {

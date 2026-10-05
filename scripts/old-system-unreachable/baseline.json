@@ -65,8 +65,5 @@
     "matrx-frontend:utils/permissions/registry.ts workbench.udt_datasets": "SHARING-REGISTRY: an access ruling, not cleanup. The live share tokens dataset / structured_list still carry the older table names in platform.shareable_resource_registry; each of the 10 dataset grants has a matching record grant. Re-pointing the rows at the store is an access decision for the chair (ONE-HOME wave 4, 2026-10-03)",
     "matrx-frontend:utils/permissions/registry.ts workbench.udt_structured_lists": "SHARING-REGISTRY: an access ruling, not cleanup. The live share tokens dataset / structured_list still carry the older table names in platform.shareable_resource_registry; each of the 10 dataset grants has a matching record grant. Re-pointing the rows at the store is an access decision for the chair (ONE-HOME wave 4, 2026-10-03)"
   },
-  "db_doors": {
-    "platform.final_switch_press(text,jsonb)": "FINAL-SWITCH: refuses before it reaches the older tables (already_there: everything is on the new system); its older-table arms leave with the final-switch machinery after the 48 h soak (v6 CENSUS-CLEANUP A3)",
-    "platform.final_switch_undo(text,boolean)": "FINAL-SWITCH: refuses before it reaches the older tables (undo_retired, 2026-10-01 20:08:56Z); it leaves with the final-switch machinery after the 48 h soak (v6 CENSUS-CLEANUP A3)"
-  }
+  "db_doors": {}
 }

@@ -14,7 +14,8 @@ export type UsageGateLevel = "ok" | "near" | "over";
 export interface UsageWindow {
   period: string;
   limit: number | null;
-  used: number;
+  /** Null when billing supplied no finite usage count; never coerced to zero. */
+  used: number | null;
   remaining: number | null;
   resetsAt: string | null;
   state: UsageGateLevel;
@@ -78,7 +79,7 @@ function parseWindow(v: unknown): UsageWindow | null {
   return {
     period,
     limit: num(v.limit),
-    used: num(v.used) ?? 0,
+    used: num(v.used),
     remaining: num(v.remaining),
     resetsAt: str(v.resets_at),
     state,
@@ -87,7 +88,8 @@ function parseWindow(v: unknown): UsageWindow | null {
 
 export function parseFreePeriod(v: unknown): FreePeriod | null {
   if (!isRecord(v)) return null;
-  const status = v.status === "active" || v.status === "ended" ? v.status : null;
+  const status =
+    v.status === "active" || v.status === "ended" ? v.status : null;
   if (!status) return null;
   return {
     status,
@@ -149,7 +151,9 @@ export function parseUsageSnapshot(raw: unknown): UsageSnapshot | null {
 /** The window that decided the state — the one a notice or refusal names. */
 export function bindingWindow(snapshot: UsageSnapshot): UsageWindow | null {
   if (snapshot.bindingPeriod) {
-    const hit = snapshot.windows.find((w) => w.period === snapshot.bindingPeriod);
+    const hit = snapshot.windows.find(
+      (w) => w.period === snapshot.bindingPeriod,
+    );
     if (hit) return hit;
   }
   return (

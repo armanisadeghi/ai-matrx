@@ -9,9 +9,10 @@
 //   /apps/holloway-content/client/<id>     one client's review page: approve or send back
 // Every read and write is the viewer's own (the store decides); a refusal is shown in the store's words.
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { Button } from "@ai-matrx/design-system";
+import { useRouter } from "next/navigation";
+import { Badge, Button, Select, Tabs } from "@ai-matrx/design-system/controls";
 import { useStoreTable } from "@ai-matrx/records/react";
 import type { StoreRowOf } from "@ai-matrx/records/app-table";
 
@@ -24,13 +25,7 @@ type Post = StoreRowOf<typeof posts>;
 type Client = StoreRowOf<typeof clients>;
 type Status = NonNullable<PostsRow["status"]>;
 const STATUS_ORDER: Status[] = ["Idea", "Drafting", "In review", "Scheduled", "Published"];
-const STATUS_TONE: Record<Status, string> = {
-  Idea: "bg-muted text-muted-foreground",
-  Drafting: "bg-amber-500/15 text-amber-700 dark:text-amber-300",
-  "In review": "bg-violet-500/15 text-violet-700 dark:text-violet-300",
-  Scheduled: "bg-sky-500/15 text-sky-700 dark:text-sky-300",
-  Published: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
-};
+const STATUS_TONE = { Idea: "neutral", Drafting: "warning", "In review": "primary", Scheduled: "info", Published: "success" } as const;
 
 function isoDay(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -49,7 +44,8 @@ export default function ContentApp({ path }: PersonAppProps) {
   const [screen, id] = path;
   const all = useStoreTable(posts, { sort: [{ column: "publish_date", as: "date" }] });
   const people = useStoreTable(clients, { sort: [{ column: "name" }] });
-  const clientName = useMemo(() => new Map(people.rows.map((c) => [c._id, c.name ?? "Unnamed client"])), [people.rows]);
+  const router = useRouter();
+  const clientName = new Map(people.rows.map((c) => [c._id, c.name ?? "Unnamed client"]));
   const nameOf = (p: Post) => (p.client ?? []).map((c) => clientName.get(c)).filter(Boolean).join(", ") || "No client";
 
   const setStatus = (p: Post, status: Status, approved?: boolean) =>
@@ -60,13 +56,17 @@ export default function ContentApp({ path }: PersonAppProps) {
     <div className="mx-auto max-w-5xl px-4 pb-16 pt-4">
       <header className="mb-4 flex flex-wrap items-center gap-2">
         <span className="text-base font-semibold">Holloway Creative</span>
-        <nav className="flex gap-1 text-sm">
-          <Tab href={ROOT} on={!screen}>Calendar</Tab>
-          <Tab href={`${ROOT}/approvals`} on={screen === "approvals"}>
-            Approvals{" "}
-            <span className="tabular-nums text-muted-foreground">{all.rows.filter((p) => p.status === "In review").length}</span>
-          </Tab>
-        </nav>
+        <Tabs
+          aria-label="Screens"
+          variant="capsule"
+          value={screen === "approvals" ? "approvals" : screen === "client" ? "client" : "calendar"}
+          onValueChange={(v) => router.push(v === "approvals" ? `${ROOT}/approvals` : v === "calendar" ? ROOT : `${ROOT}/${path.join("/")}`)}
+          data={[
+            { value: "calendar", label: "Calendar" },
+            { value: "approvals", label: "Approvals", count: all.rows.filter((p) => p.status === "In review").length },
+            ...(screen === "client" ? [{ value: "client" as const, label: "Client review" }] : []),
+          ]}
+        />
       </header>
       {error ? <p className="mb-3 rounded-md border border-destructive/40 p-2 text-sm text-destructive">{error.message}</p> : null}
       {all.truncated ? <p className="mb-3 text-xs text-muted-foreground">Showing {all.rows.length} of {all.total} posts.</p> : null}
@@ -83,31 +83,16 @@ export default function ContentApp({ path }: PersonAppProps) {
   );
 }
 
-function Tab({ href, on, children }: { href: string; on: boolean; children: React.ReactNode }) {
-  return (
-    <Link href={href} className={`rounded-md px-2.5 py-1 ${on ? "bg-muted font-medium" : "text-muted-foreground hover:bg-muted/60"}`}>
-      {children}
-    </Link>
-  );
-}
-
 function StatusPill({ post, onStatus }: { post: Post; onStatus?: (p: Post, s: Status) => void }) {
   const s = post.status;
-  if (!onStatus) return s ? <span className={`rounded px-1.5 py-0.5 text-xs ${STATUS_TONE[s]}`}>{s}</span> : null;
+  if (!onStatus) return s ? <Badge tone={STATUS_TONE[s]}>{s}</Badge> : null;
   return (
-    <select
+    <Select<Status | "">
       aria-label="Status"
       value={s ?? ""}
-      onChange={(e) => onStatus(post, e.target.value as Status)}
-      className={`rounded border-0 px-1.5 py-0.5 text-xs ${s ? STATUS_TONE[s] : "bg-muted"}`}
-    >
-      {s ? null : <option value="">No status</option>}
-      {STATUS_ORDER.map((v) => (
-        <option key={v} value={v}>
-          {v}
-        </option>
-      ))}
-    </select>
+      onValueChange={(v) => v && onStatus(post, v)}
+      options={[...(s ? [] : [{ value: "" as const, label: "No status" }]), ...STATUS_ORDER.map((v) => ({ value: v, label: v }))]}
+    />
   );
 }
 
@@ -117,12 +102,10 @@ function PostCard({ post, client, onStatus, children }: { post: Post; client?: s
       <div className="flex flex-wrap items-center gap-1.5 text-xs">
         {client ? <span className="font-medium">{client}</span> : null}
         {(post.platform ?? []).map((p) => (
-          <span key={p} className="rounded bg-muted px-1.5 py-0.5 text-muted-foreground">
-            {p}
-          </span>
+          <Badge key={p}>{p}</Badge>
         ))}
         <span className="ml-auto flex items-center gap-1.5">
-          {post.approved ? <span className="text-emerald-600 dark:text-emerald-400">Approved</span> : null}
+          {post.approved ? <Badge tone="success">Approved</Badge> : null}
           <StatusPill post={post} onStatus={onStatus} />
         </span>
       </div>
@@ -135,14 +118,12 @@ function PostCard({ post, client, onStatus, children }: { post: Post; client?: s
 
 function ClientFilter({ clients, value, onChange }: { clients: Client[]; value: string; onChange: (v: string) => void }) {
   return (
-    <select aria-label="Client" value={value} onChange={(e) => onChange(e.target.value)} className="rounded-md border bg-background px-2 py-1 text-sm">
-      <option value="">All clients</option>
-      {clients.map((c) => (
-        <option key={c._id} value={c._id}>
-          {c.name}
-        </option>
-      ))}
-    </select>
+    <Select
+      aria-label="Client"
+      value={value || "all"}
+      onValueChange={(v) => onChange(v === "all" ? "" : v)}
+      options={[{ value: "all", label: "All clients" }, ...clients.map((c) => ({ value: c._id, label: c.name ?? "Unnamed client" }))]}
+    />
   );
 }
 
@@ -185,13 +166,13 @@ function Calendar({
       <div className="flex flex-wrap items-center gap-2">
         <ClientFilter clients={people} value={client} onChange={setClient} />
         <div className="ml-auto flex items-center gap-1">
-          <Button size="sm" variant="outline" onClick={() => move(-4)}>
+          <Button variant="outline" onClick={() => move(-4)}>
             Earlier
           </Button>
-          <Button size="sm" variant="outline" onClick={() => setStart(mondayOf(new Date()))}>
+          <Button variant="outline" onClick={() => setStart(mondayOf(new Date()))}>
             This week
           </Button>
-          <Button size="sm" variant="outline" onClick={() => move(4)}>
+          <Button variant="outline" onClick={() => move(4)}>
             Later
           </Button>
         </div>
@@ -252,10 +233,10 @@ function Decide({ post, onDecide }: { post: Post; onDecide: (p: Post, s: Status,
   };
   return (
     <div className="mt-2 flex flex-wrap items-center gap-2">
-      <Button size="sm" disabled={busy} onClick={() => act("Scheduled", true)}>
+      <Button variant="primary" disabled={busy} onClick={() => act("Scheduled", true)}>
         Approve
       </Button>
-      <Button size="sm" variant="outline" disabled={busy} onClick={() => act("Drafting", false)}>
+      <Button variant="outline" disabled={busy} onClick={() => act("Drafting", false)}>
         Send back
       </Button>
       {refused ? <span className="text-xs text-destructive">{refused}</span> : null}

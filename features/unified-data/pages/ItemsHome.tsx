@@ -1,6 +1,7 @@
 "use client";
 
-// features/unified-data/pages/PagesHome.tsx — v6 lane 11, wave D: EVERY PAGE BUILT FROM TABLES.
+// features/unified-data/pages/ItemsHome.tsx — EVERY PAGE, OR EVERY DASHBOARD, BUILT FROM TABLES.
+// (v6 lane 11 wave D for pages; v7 APPS-ON-DATA item 4 gave dashboards the same home, and both a Share.)
 //
 // The pages home is the canonical list shell (`EntityListPage`) over the data home's own corpus
 // (`createDataHomeCorpus`): `custom.data_home_items` lists every dashboard record the person may see
@@ -12,10 +13,10 @@
 // The organization filter is the shell's (`?org_filter=`, All organizations on every visit); the
 // active organization narrows nothing here.
 
-import { useMemo } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ExternalLink, FolderOpen } from "lucide-react";
+import { ExternalLink, FolderOpen, Share2 } from "lucide-react";
 import { RecordsMount, personActor } from "@ai-matrx/records-ui";
 import { useRecordsClient } from "@ai-matrx/records/react";
 import type { RecordsDataSource } from "@ai-matrx/records";
@@ -27,6 +28,7 @@ import type { EntityListConfig, EntityListController, EntityRowActionsResult } f
 import type { ItemMenuConfig } from "@/components/official/item/types";
 import { makeScope } from "@/lib/list-scope/types";
 import { useAppSelector } from "@/lib/redux/hooks";
+import { recordStoreShare } from "@/features/sharing/components/RecordStoreShareSurface";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { useRecordsDataSource } from "@/features/data-tables/records-ui-host/recordsUiHost";
@@ -36,14 +38,24 @@ import { createDataHomeService } from "@/features/unified-data/home/dataHomeServ
 import { dataHomeColumns, ownerLabel } from "@/features/unified-data/home/dataHomeColumns";
 import type { DataHomeRow } from "@/features/unified-data/home/dataHomeRows";
 
-export const PAGES_SURFACE_KEY = "data-pages";
+/** The two kinds of thing built from tables that have a home of their own. */
+const HOMES = {
+  page: { title: "Pages", surfaceKey: "data-pages", singular: "page", plural: "pages", empty: "On a table, open Dashboards and press New page." },
+  dashboard: {
+    title: "Dashboards",
+    surfaceKey: "data-dashboards",
+    singular: "dashboard",
+    plural: "dashboards",
+    empty: "On a table, open Dashboards and add a chart.",
+  },
+} as const;
+export type ItemsHomeKind = keyof typeof HOMES;
 
-/** The columns a page row fills: no star (pages are not starred yet), no record count (a page holds none). */
-const PAGE_COLUMNS = new Set(["name", "organization", "updated", "owner", "access", "details"]);
+/** The columns an item row fills: no star (not starred yet), no record count (it holds none). */
+const ITEM_COLUMNS = new Set(["name", "organization", "updated", "owner", "access", "details"]);
 
-const onlyPages = (rows: DataHomeRow[]) => rows.filter((row) => row.kind === "page");
-
-export function PagesHome() {
+export function ItemsHome({ kind }: { kind: ItemsHomeKind }) {
+  const home = HOMES[kind];
   const router = useRouter();
   const userId = useAppSelector(selectUserId);
   const dataSource = useRecordsDataSource();
@@ -54,11 +66,11 @@ export function PagesHome() {
   return (
     <>
       <PageHeader>
-        <HeaderStructured back={back} title="Pages" />
+        <HeaderStructured back={back} title={home.title} />
       </PageHeader>
       <div className="h-full overflow-y-auto p-4 pt-[var(--shell-header-h)]">
         {!userId ? (
-          <OrganizationContextNotice state="resolving" what="Pages" />
+          <OrganizationContextNotice state="resolving" what={home.title} />
         ) : (
           // org-filter: none — All organizations; the doors answer for the person.
           <RecordsMount
@@ -66,7 +78,7 @@ export function PagesHome() {
             config={{ dataSource, actor: personActor(userId), organizationId: null }}
             host={{ Link, density: "condensed" }}
           >
-            <PagesList dataSource={dataSource} />
+            <ItemsList kind={kind} dataSource={dataSource} />
           </RecordsMount>
         )}
       </div>
@@ -74,8 +86,21 @@ export function PagesHome() {
   );
 }
 
-function usePageRowActions(_list: EntityListController<DataHomeRow>): EntityRowActionsResult<DataHomeRow> {
+// A page and a dashboard are each one record of the store, so Share is the store's record share
+// (the same dialog a record and a table open), in the item's own organization.
+function useItemRowActions(_list: EntityListController<DataHomeRow>): EntityRowActionsResult<DataHomeRow> {
   const router = useRouter();
+  const [sharing, setSharing] = useState<DataHomeRow | null>(null);
+  const modals: ReactNode =
+    sharing && sharing.organizationId
+      ? recordStoreShare({
+          kind: "record",
+          organizationId: sharing.organizationId,
+          subjectId: sharing.itemId,
+          name: sharing.name,
+          onClose: () => setSharing(null),
+        })
+      : null;
   return {
     actions: {
       onOpenRow: (row) => router.push(row.href),
@@ -88,38 +113,44 @@ function usePageRowActions(_list: EntityListController<DataHomeRow>): EntityRowA
               { kind: "link", id: "open-new", label: "Open in new tab", icon: ExternalLink, href: row.href, target: "_blank" },
             ],
           },
+          ...(row.organizationId
+            ? [{ id: "share", items: [{ kind: "command" as const, id: "share", label: "Share…", icon: Share2, onSelect: () => setSharing(row) }] }]
+            : []),
         ],
       }),
     },
+    modals,
   };
 }
 
-function PagesList({ dataSource }: { dataSource: RecordsDataSource }) {
+function ItemsList({ kind, dataSource }: { kind: ItemsHomeKind; dataSource: RecordsDataSource }) {
+  const home = HOMES[kind];
+
   const client = useRecordsClient();
   const corpus = useMemo(() => createDataHomeCorpus(client, dataSource), [client, dataSource]);
   const service = useMemo(
     () =>
       createDataHomeService({
-        load: () => corpus.load().then(onlyPages),
+        load: () => corpus.load().then((rows) => rows.filter((row) => row.kind === kind)),
         loaded: () => {
           const held = corpus.loaded();
-          return held ? onlyPages(held) : undefined;
+          return held ? held.filter((row) => row.kind === kind) : undefined;
         },
         isStarred: () => false,
         ownerLabel,
       }),
-    [corpus],
+    [corpus, kind],
   );
   const config = useMemo<EntityListConfig<DataHomeRow>>(
     () => ({
-      surfaceKey: PAGES_SURFACE_KEY,
-      entityLabel: { singular: "page", plural: "pages" },
+      surfaceKey: home.surfaceKey,
+      entityLabel: { singular: home.singular, plural: home.plural },
       sourceFeature: "udt",
       scopes: [...DATA_HOME_SHELL_LANES],
       lanes: { system: false },
       service,
       columns: dataHomeColumns({ organizationName: (id) => corpus.meta.names.get(id) ?? id }).filter((c) =>
-        PAGE_COLUMNS.has(c.id),
+        ITEM_COLUMNS.has(c.id),
       ),
       prefsVersion: 1,
       prefsDefaults: { view: "table", density: "compact", sort: "updated", direction: "desc" },
@@ -127,7 +158,7 @@ function PagesList({ dataSource }: { dataSource: RecordsDataSource }) {
       getRowName: (row) => row.name,
       rowKeys: true,
       door: { column: "name", hrefFor: (row) => row.href },
-      useRowActions: usePageRowActions,
+      useRowActions: useItemRowActions,
       supportsArchived: false,
       facetSections: [
         {
@@ -139,11 +170,11 @@ function PagesList({ dataSource }: { dataSource: RecordsDataSource }) {
           formatValue: (id) => corpus.meta.names.get(id) ?? id,
         },
       ],
-      searchPlaceholder: "Search pages",
+      searchPlaceholder: `Search ${home.plural}`,
       searchDebounceMs: 0,
-      emptyState: { title: "No pages yet", description: "On a table, open Dashboards and press New page." },
+      emptyState: { title: `No ${home.plural} yet`, description: home.empty },
     }),
-    [service, corpus],
+    [service, corpus, home],
   );
   return <EntityListPage config={config} defaultScope={makeScope("all")} clearsShellHeader={false} />;
 }

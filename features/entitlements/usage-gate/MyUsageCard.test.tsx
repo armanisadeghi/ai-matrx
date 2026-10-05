@@ -8,7 +8,9 @@
 import { act, useSyncExternalStore } from "react";
 import { createRoot } from "react-dom/client";
 
-(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+(
+  globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
+).IS_REACT_ACT_ENVIRONMENT = true;
 
 const rate = { value: null as number | null, listeners: new Set<() => void>() };
 const usageState = {
@@ -22,7 +24,7 @@ const usageState = {
       windows: [
         {
           period: "month",
-          used: 2_000,
+          used: 2_000 as number | null,
           limit: 8_000,
           remaining: 6_000,
           resetsAt: "2026-11-01T00:00:00Z",
@@ -41,7 +43,8 @@ const usageState = {
 
 jest.mock("@/lib/redux/hooks", () => ({
   useAppDispatch: () => jest.fn(),
-  useAppSelector: (selector: (state: typeof usageState) => unknown) => selector(usageState),
+  useAppSelector: (selector: (state: typeof usageState) => unknown) =>
+    selector(usageState),
   useAppStore: () => ({ getState: () => usageState }),
 }));
 
@@ -64,6 +67,10 @@ jest.mock("@/components/cost/useCostDisplay", () => ({
 }));
 
 import { MyUsageCard } from "./MyUsageCard";
+
+beforeEach(() => {
+  usageState.entitlements.usageGate.windows[0].used = 2_000;
+});
 
 function landRate(value: number) {
   act(() => {
@@ -100,5 +107,22 @@ it("renders the usage RPC's actual values when the rate arrives after it", async
   landRate(20_000);
 
   expect(host.textContent).toContain("2,000 points of 8,000 points");
+  act(() => root.unmount());
+});
+
+it("renders a malformed usage count as unmeasured instead of zero", async () => {
+  rate.value = 20_000;
+  usageState.entitlements.usageGate.windows[0].used = null;
+  const host = document.createElement("div");
+  document.body.appendChild(host);
+  const root = createRoot(host);
+
+  await act(async () => {
+    root.render(<MyUsageCard />);
+  });
+
+  expect(host.textContent).toContain("— of 8,000 points");
+  expect(host.textContent).not.toContain("0 points of 8,000 points");
+  expect(host.querySelector('[style*="width"]')).toBeNull();
   act(() => root.unmount());
 });

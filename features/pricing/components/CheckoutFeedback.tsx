@@ -13,10 +13,10 @@ import {
 } from "@/features/entitlements/state/entitlementsSlice";
 import { readUsageSnapshot } from "@/features/entitlements/usage-gate/usageRead";
 import {
-  checkoutReturnKind,
+  checkoutReturnContext,
   parseCheckoutStatus,
   type CheckoutStatus,
-} from "./checkoutFeedback";
+} from "./checkoutReturn";
 
 type FeedbackState = "checking" | "active" | "waiting" | "error";
 const MAX_AUTOMATIC_CHECKS = 4;
@@ -29,9 +29,7 @@ const MAX_AUTOMATIC_CHECKS = 4;
 export function CheckoutFeedback() {
   const searchParams = useSearchParams();
   const dispatch = useAppDispatch();
-  const returned = checkoutReturnKind(searchParams);
-  const planKey = searchParams.get("plan");
-  const cycle = searchParams.get("cycle") === "annual" ? "annual" : "monthly";
+  const returned = checkoutReturnContext(searchParams);
   const [state, setState] = useState<FeedbackState>("checking");
   const [attempt, setAttempt] = useState(0);
 
@@ -46,14 +44,14 @@ export function CheckoutFeedback() {
   }, [dispatch]);
 
   const check = useCallback(async (): Promise<CheckoutStatus | null> => {
-    if (!planKey) return null;
+    if (returned?.kind !== "success" || !returned.sessionId) return null;
     try {
       const response = await fetchWithOrganization(
         "/api/stripe/checkout-status",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ planKey, cycle }),
+          body: JSON.stringify({ sessionId: returned.sessionId }),
         },
       );
       const parsed = parseCheckoutStatus(
@@ -65,10 +63,10 @@ export function CheckoutFeedback() {
     } catch {
       return null;
     }
-  }, [cycle, planKey, refreshAccess]);
+  }, [refreshAccess, returned]);
 
   useEffect(() => {
-    if (returned !== "success" || !planKey) return;
+    if (returned?.kind !== "success" || !returned.sessionId) return;
     let cancelled = false;
     void (async () => {
       for (let current = 0; current < MAX_AUTOMATIC_CHECKS; current += 1) {
@@ -92,16 +90,16 @@ export function CheckoutFeedback() {
     return () => {
       cancelled = true;
     };
-  }, [attempt, check, planKey, returned]);
+  }, [attempt, check, returned]);
 
-  if (returned === "cancelled") {
+  if (returned?.kind === "cancelled") {
     return (
       <p role="status" className="text-center text-sm text-muted-foreground">
         Checkout was canceled. Your plan has not changed.
       </p>
     );
   }
-  if (returned !== "success" || !planKey) return null;
+  if (returned?.kind !== "success" || !returned.sessionId) return null;
   if (state === "checking") {
     return (
       <p role="status" className="text-center text-sm text-muted-foreground">

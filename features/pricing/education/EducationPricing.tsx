@@ -16,7 +16,7 @@
 //    a button); Free users get a real Stripe Checkout (/api/stripe/checkout);
 //    everyone signed in gets a real link into the study tools.
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
@@ -40,8 +40,6 @@ import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsAuthenticated } from "@/lib/redux/selectors/userSelectors";
 import { selectEntitlementTier } from "@/features/entitlements/state/selectors";
-import { readPlanSource } from "@/features/entitlements/plan-service";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import type { EducationPricing as EducationPricingData } from "./loadEducationPricing";
 import { useLoginHref } from "@/hooks/auth/useLoginHref";
 
@@ -154,22 +152,6 @@ export function EducationPricing({
   const tier = useAppSelector(selectEntitlementTier);
   const isPremium = isAuthenticated && tier === "premium";
   const isFreeMember = isAuthenticated && !isPremium;
-  // `entitlement_snapshot().is_subscribed` is just `tier in (premium, trial)`,
-  // so the grant source is read from the plan of the organization the person
-  // is in (a tier belongs to an organization, DD-047).
-  const organizationId = useAppSelector(selectOrganizationId);
-  const [planSource, setPlanSource] = useState<string | null>(null);
-  useEffect(() => {
-    if (!isPremium || !organizationId) return;
-    let cancelled = false;
-    void readPlanSource(organizationId).then((source) => {
-      if (!cancelled) setPlanSource(source);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [isPremium, organizationId]);
-  const isComplimentary = isPremium && planSource === "complimentary";
   const [checkingOut, setCheckingOut] = useState(false);
 
   const upgrade = async () => {
@@ -283,7 +265,9 @@ export function EducationPricing({
               <span className="text-sm text-muted-foreground">forever</span>
             </div>
             {pricing.free?.tagline ? (
-              <p className="text-sm text-muted-foreground">{pricing.free.tagline}</p>
+              <p className="text-sm text-muted-foreground">
+                {pricing.free.tagline}
+              </p>
             ) : null}
           </div>
 
@@ -328,17 +312,9 @@ export function EducationPricing({
             <PlanLabel
               name={paidName}
               emphasis
-              badge={
-                isPremium
-                  ? isComplimentary
-                    ? "Your plan · complimentary"
-                    : "Your plan"
-                  : undefined
-              }
+              badge={isPremium ? "Your plan" : undefined}
             />
-            {isComplimentary ? (
-              <div className="text-4xl font-semibold tracking-tight">$0</div>
-            ) : premium ? (
+            {premium ? (
               <div className="flex items-baseline gap-1.5">
                 <span className="text-4xl font-semibold tracking-tight tabular-nums">
                   {formatPrice(premium.amountCents, premium.currency)}
@@ -353,9 +329,7 @@ export function EducationPricing({
               </div>
             )}
             <p className="text-sm text-muted-foreground">
-              {isComplimentary
-                ? "Complimentary for now — no card on file."
-                : "No limits on AI generation, in any study tool."}
+              No limits on AI generation, in any study tool.
             </p>
           </div>
 
@@ -371,9 +345,7 @@ export function EducationPricing({
           </ul>
 
           <p className="text-sm text-muted-foreground">
-            {isComplimentary
-                ? "Nothing is charged while it is complimentary."
-                : "Cancel anytime from the billing portal."}
+            Cancel anytime from the billing portal.
           </p>
         </div>
       </div>

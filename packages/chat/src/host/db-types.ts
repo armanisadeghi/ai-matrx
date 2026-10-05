@@ -24286,7 +24286,6 @@ export type ChatDatabase = {
         Args: { p_definition_id: string }
         Returns: boolean
       }
-      _final_switch_copy_again_state: { Args: never; Returns: Json }
       _final_switch_is_on: { Args: never; Returns: boolean }
       _final_switch_last: {
         Args: never
@@ -24311,34 +24310,7 @@ export type ChatDatabase = {
           isSetofReturn: false
         }
       }
-      _final_switch_old_write_doors: { Args: never; Returns: unknown[] }
-      _final_switch_orphan_lists: { Args: never; Returns: Json }
-      _final_switch_person_refusal: { Args: never; Returns: Json }
       _final_switch_platform_org: { Args: never; Returns: string }
-      _final_switch_readiness: { Args: never; Returns: Json }
-      _final_switch_record: {
-        Args: {
-          p_did: Json
-          p_direction: string
-          p_id: string
-          p_note: string
-          p_outcome: string
-          p_readiness: Json
-          p_refusal: string
-          p_says: string
-        }
-        Returns: undefined
-      }
-      _final_switch_scopes: {
-        Args: {
-          p_actor: string
-          p_note: string
-          p_orgs: string[]
-          p_to: string
-        }
-        Returns: Json
-      }
-      _final_switch_scopes_code: { Args: never; Returns: string }
       _final_switch_undo_retired: {
         Args: never
         Returns: {
@@ -24361,12 +24333,6 @@ export type ChatDatabase = {
           isOneToOne: true
           isSetofReturn: false
         }
-      }
-      _final_switch_undo_retired_says: {
-        Args: {
-          p_row: Database["platform"]["Tables"]["cutover_seam_press"]["Row"]
-        }
-        Returns: string
       }
       _inventory_filter: {
         Args: {
@@ -25161,10 +25127,6 @@ export type ChatDatabase = {
         Args: { p_definitions: Json; p_organization_id: string; p_values: Json }
         Returns: Json
       }
-      cutover_carry_removals: {
-        Args: { p_org: string; p_tables?: string[] }
-        Returns: Json
-      }
       cutover_census_record: {
         Args: { p_census: Json; p_key: string; p_seam: string }
         Returns: Json
@@ -25197,6 +25159,21 @@ export type ChatDatabase = {
       cutover_older_row_changed_since: {
         Args: { p_now: Json; p_row: string; p_since: string; p_table: string }
         Returns: boolean
+      }
+      cutover_press_history: {
+        Args: { p_limit?: number }
+        Returns: {
+          direction: string
+          id: string
+          note: string
+          organization_id: string
+          outcome: string
+          pressed_at: string
+          pressed_by: string
+          refusal: string
+          says: string
+          seam_key: string
+        }[]
       }
       cutover_scope_own_words: { Args: { p_org: string }; Returns: Json }
       cutover_scope_rows_copied: { Args: { p_org: string }; Returns: Json }
@@ -25692,32 +25669,6 @@ export type ChatDatabase = {
           p_tag_name: string
         }
         Returns: string
-      }
-      final_switch_acting: { Args: never; Returns: boolean }
-      final_switch_adopt_orphan_lists: {
-        Args: { p_run: string }
-        Returns: Json
-      }
-      final_switch_copy_again_record: {
-        Args: {
-          p_event: string
-          p_ok: boolean
-          p_organization_id: string
-          p_report: Json
-          p_run: string
-        }
-        Returns: Json
-      }
-      final_switch_press: {
-        Args: { p_copy_again?: Json; p_note?: string }
-        Returns: Json
-      }
-      final_switch_readiness: { Args: never; Returns: Json }
-      final_switch_retire_undo: { Args: { p_note?: string }; Returns: Json }
-      final_switch_state: { Args: never; Returns: Json }
-      final_switch_undo: {
-        Args: { p_accept_not_carried?: boolean; p_note?: string }
-        Returns: Json
       }
       find_custom_references_to: {
         Args: {
@@ -27294,98 +27245,6 @@ export type ChatDatabase = {
           b_id: string
           b_type: string
           shape: string
-        }[]
-      }
-      unified_data_ramp_exit:
-        | {
-            Args: never
-            Returns: {
-              engine_new: string
-              engine_old: string
-              exit_date: string
-              exit_trigger: string
-              id: string
-              note: string
-              owner_name: string
-              status: string
-            }[]
-          }
-        | {
-            Args: { p_organization_id: string }
-            Returns: {
-              engine_new: string
-              engine_old: string
-              exit_date: string
-              exit_trigger: string
-              id: string
-              note: string
-              owner_name: string
-              status: string
-            }[]
-          }
-      unified_data_ramp_gate: {
-        Args: { p_consumer: string; p_organization_id: string }
-        Returns: unknown
-        SetofOptions: {
-          from: "*"
-          to: "ramp_gate_run"
-          isOneToOne: true
-          isSetofReturn: false
-        }
-      }
-      unified_data_ramp_set:
-        | {
-            Args: {
-              p_consumer: string
-              p_note?: string
-              p_on: boolean
-              p_organization_id: string
-              p_user_id?: string
-            }
-            Returns: unknown
-            SetofOptions: {
-              from: "*"
-              to: "ramp_gate_run"
-              isOneToOne: true
-              isSetofReturn: false
-            }
-          }
-        | {
-            Args: {
-              p_acting_user_id?: string
-              p_consumer: string
-              p_note?: string
-              p_on: boolean
-              p_organization_id: string
-              p_user_id?: string
-            }
-            Returns: unknown
-            SetofOptions: {
-              from: "*"
-              to: "ramp_gate_run"
-              isOneToOne: true
-              isSetofReturn: false
-            }
-          }
-      unified_data_ramp_state: {
-        Args: { p_organization_id: string }
-        Returns: {
-          batch: string
-          consumer_id: string
-          gate_gained: number
-          gate_lost: number
-          gate_ran_at: string
-          gate_verdict: string
-          gate_why: string
-          knob_key: string
-          label: string
-          landed_at: string
-          no_rollback: boolean
-          not_ready_why: string
-          owning_lane: string
-          ramp_order: number
-          record_types: string[]
-          switched_on: boolean
         }[]
       }
       unified_data_store_on: {
@@ -29255,23 +29114,6 @@ export type ChatDatabase = {
         Returns: Json
       }
       access_request_withdraw: { Args: { p_request_id: string }; Returns: Json }
-      add_column_to_user_table: {
-        Args: {
-          p_data_type: string
-          p_default_value?: Json
-          p_display_name: string
-          p_field_name: string
-          p_field_order?: number
-          p_is_required?: boolean
-          p_table_id: string
-          p_validation_rules?: Json
-        }
-        Returns: Json
-      }
-      add_data_row_to_user_table: {
-        Args: { p_data: Json; p_table_id: string }
-        Returns: Json
-      }
       add_enum_values: {
         Args: { p_new_values: string[]; p_type_name: string }
         Returns: string[]
@@ -31130,10 +30972,6 @@ export type ChatDatabase = {
         Args: { p_ip?: unknown; p_organization_id: string }
         Returns: Json
       }
-      append_rows_to_user_table: {
-        Args: { p_rows: Json; p_table_id: string }
-        Returns: number
-      }
       apply_template: {
         Args: { p_org_id: string; p_template_id: string }
         Returns: Json
@@ -31763,16 +31601,6 @@ export type ChatDatabase = {
         }
         Returns: Json
       }
-      create_new_user_table_dynamic: {
-        Args: {
-          p_description: string
-          p_initial_fields?: Json
-          p_is_public: boolean
-          p_organization_id: string
-          p_table_name: string
-        }
-        Returns: Json
-      }
       create_note_version_manual: {
         Args: {
           p_change_source?: string
@@ -31851,31 +31679,6 @@ export type ChatDatabase = {
           p_scope_ids?: string[]
         }
         Returns: Json
-      }
-      create_user_list: {
-        Args: {
-          p_authenticated_read?: boolean
-          p_description: string
-          p_is_public: boolean
-          p_items?: Json
-          p_list_name: string
-          p_organization_id?: string
-          p_public_read?: boolean
-          p_user_id: string
-        }
-        Returns: Json
-      }
-      create_user_table_with_fields: {
-        Args: {
-          p_description?: string
-          p_fields?: Json
-          p_is_public?: boolean
-          p_organization_id?: string
-          p_project_id?: string
-          p_table_name: string
-          p_task_id?: string
-        }
-        Returns: string
       }
       creator_claim_handle: {
         Args: {
@@ -32450,14 +32253,9 @@ export type ChatDatabase = {
         Args: { p_conversation_id: string }
         Returns: boolean
       }
-      delete_data_row_from_user_table: {
-        Args: { p_row_id: string }
-        Returns: Json
-      }
       delete_note_version: { Args: { p_id: string }; Returns: boolean }
       delete_scope: { Args: { p_scope_id: string }; Returns: Json }
       delete_scope_type: { Args: { p_type_id: string }; Returns: Json }
-      delete_user_table: { Args: { p_table_id: string }; Returns: Json }
       detect_self_containment_row_cycles: { Args: never; Returns: Json }
       dict_assert_access: {
         Args: { p_level: string; p_owner_id: string; p_user_id: string }
@@ -33288,16 +33086,6 @@ export type ChatDatabase = {
         Returns: Json
       }
       expire_stale_tunnels: { Args: never; Returns: undefined }
-      export_user_table_as_csv:
-        | { Args: { p_table_id: string }; Returns: string }
-        | {
-            Args: {
-              p_sort_direction?: string
-              p_sort_field?: string
-              p_table_id: string
-            }
-            Returns: string
-          }
       feedback_get_admin_info: {
         Args: { p_user_id: string }
         Returns: {
@@ -33903,7 +33691,6 @@ export type ChatDatabase = {
       }
       get_feedback_summary: { Args: never; Returns: Json }
       get_file_resource_family: { Args: { p_file_id: string }; Returns: Json }
-      get_full_table: { Args: { ref: Json }; Returns: Json }
       get_inverse_fk_relationships: {
         Args: { p_table_name: string }
         Returns: {
@@ -34182,9 +33969,6 @@ export type ChatDatabase = {
         Args: { p_list_id: string }
         Returns: Json
       }
-      get_table_cell: { Args: { ref: Json }; Returns: Json }
-      get_table_column: { Args: { ref: Json }; Returns: Json }
-      get_table_row: { Args: { ref: Json }; Returns: Json }
       get_tables_and_columns: {
         Args: never
         Returns: {
@@ -34319,37 +34103,6 @@ export type ChatDatabase = {
           preferences_exists: boolean
         }[]
       }
-      get_user_table_complete: {
-        Args: {
-          p_sort_direction?: string
-          p_sort_field?: string
-          p_table_id: string
-        }
-        Returns: Json
-      }
-      get_user_table_data_paginated: {
-        Args: {
-          p_limit?: number
-          p_offset?: number
-          p_search_term?: string
-          p_sort_direction?: string
-          p_sort_field?: string
-          p_table_id: string
-        }
-        Returns: Json
-      }
-      get_user_table_data_paginated_v2: {
-        Args: {
-          p_limit?: number
-          p_offset?: number
-          p_search_term?: string
-          p_sort_direction?: string
-          p_sort_field?: string
-          p_table_id: string
-        }
-        Returns: Json
-      }
-      get_user_tables: { Args: never; Returns: Json }
       get_value_history: {
         Args: {
           p_context_item_id: string
@@ -35965,17 +35718,6 @@ export type ChatDatabase = {
           token: string
           use_count: number
         }[]
-      }
-      list_table_columns: { Args: { ref: Json }; Returns: Json }
-      list_table_rows: {
-        Args: {
-          limit_rows?: number
-          offset_rows?: number
-          order_by?: string
-          order_dir?: string
-          ref: Json
-        }
-        Returns: Json
       }
       list_templates: {
         Args: { p_category?: string; p_personal_only?: boolean }
@@ -38286,36 +38028,10 @@ export type ChatDatabase = {
         Args: { p_bucket: string; p_words: number }
         Returns: boolean
       }
-      udt_backfill_autonumber: {
-        Args: { p_field_id: string; p_table_id: string }
-        Returns: Json
-      }
-      udt_bulk_write: {
-        Args: { p_operations: Json; p_table_id: string }
-        Returns: Json
-      }
       udt_cast_jsonb_value: {
         Args: {
           p_new_type: Database["public"]["Enums"]["field_data_type"]
           p_value: Json
-        }
-        Returns: Json
-      }
-      udt_change_field_type: {
-        Args: {
-          p_field_id: string
-          p_new_type: Database["public"]["Enums"]["field_data_type"]
-          p_strategy?: string
-          p_table_id: string
-        }
-        Returns: Json
-      }
-      udt_column_facets: {
-        Args: {
-          p_field_name: string
-          p_limit?: number
-          p_search_term?: string
-          p_table_id: string
         }
         Returns: Json
       }
@@ -38324,51 +38040,9 @@ export type ChatDatabase = {
         Args: { p_dry_run?: boolean; p_table_id?: string }
         Returns: Json
       }
-      udt_delete_field: {
-        Args: { p_field_id: string; p_table_id: string }
-        Returns: Json
-      }
-      udt_list_example_tables: { Args: never; Returns: Json }
-      udt_set_field_format: {
-        Args: { p_field_id: string; p_format?: Json; p_table_id: string }
-        Returns: Json
-      }
-      udt_set_table_row_actions: {
-        Args: { p_row_actions?: Json; p_table_id: string }
-        Returns: Json
-      }
-      udt_set_table_row_label: {
-        Args: { p_row_label?: Json; p_table_id: string }
-        Returns: Json
-      }
-      udt_set_table_style: {
-        Args: { p_path: string[]; p_table_id: string; p_value?: Json }
-        Returns: Json
-      }
-      udt_table_profile: {
-        Args: { p_preview_values?: number; p_table_id: string }
-        Returns: Json
-      }
-      udt_upsert_cell: {
-        Args: {
-          p_field_name: string
-          p_row_id: string
-          p_table_id: string
-          p_value: Json
-        }
-        Returns: Json
-      }
-      udt_upsert_row: {
-        Args: { p_data?: Json; p_row_id?: string; p_table_id: string }
-        Returns: Json
-      }
       udt_validate_cell_rules: {
         Args: { p_data_type: string; p_rules: Json; p_value: Json }
         Returns: string
-      }
-      udt_validate_row: {
-        Args: { p_data: Json; p_prior: Json; p_table_id: string }
-        Returns: Json
       }
       ues_get_bulk: {
         Args: { p_entity_ids: string[]; p_entity_type: string }
@@ -38420,20 +38094,6 @@ export type ChatDatabase = {
           p_status_note?: string
           p_tags?: string[]
           p_value_type?: Database["public"]["Enums"]["context_value_type"]
-        }
-        Returns: Json
-      }
-      update_data_row_in_user_table: {
-        Args: { p_data: Json; p_row_id: string }
-        Returns: Json
-      }
-      update_field_metadata: {
-        Args: {
-          p_display_name?: string
-          p_field_id: string
-          p_field_order?: number
-          p_is_required?: boolean
-          p_validation_rules?: Json
         }
         Returns: Json
       }
@@ -38493,41 +38153,6 @@ export type ChatDatabase = {
           p_description?: string
           p_feedback_id: string
           p_feedback_type?: string
-        }
-        Returns: Json
-      }
-      update_user_table_config: {
-        Args: {
-          p_field_updates?: Json
-          p_table_id: string
-          p_table_updates?: Json
-        }
-        Returns: Json
-      }
-      update_user_table_default_sort: {
-        Args: {
-          p_sort_direction?: string
-          p_sort_field?: string
-          p_table_id: string
-        }
-        Returns: Json
-      }
-      update_user_table_metadata: {
-        Args: {
-          p_authenticated_read?: boolean
-          p_description?: string
-          p_is_public?: boolean
-          p_table_id: string
-          p_table_name?: string
-        }
-        Returns: Json
-      }
-      update_user_table_row_ordering: {
-        Args: {
-          p_enabled: boolean
-          p_label_field?: string
-          p_order?: Json
-          p_table_id: string
         }
         Returns: Json
       }
