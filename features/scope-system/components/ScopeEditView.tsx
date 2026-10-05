@@ -235,7 +235,6 @@ export function ScopeEditView({
                   autoFocus
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  style={{ fontSize: "16px" }}
                   disabled={savingBasics}
                 />
               </div>

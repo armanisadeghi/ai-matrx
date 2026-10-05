@@ -1,4 +1,5 @@
 "use client";
+import { Chip } from "@ai-matrx/design-system/controls";
 import React, {
   useState,
   useEffect,
@@ -788,18 +789,11 @@ function TabErrorFallback({
                     {Object.keys(context.analysisData).map((k) => {
                       const relevant = getRelevantAnalysisKey(tabId) === k;
                       return (
-                        <span
+                        <Chip
                           key={k}
-                          className={cn(
-                            "inline-block rounded-full px-2.5 py-0.5 text-xs font-mono border",
-                            relevant
-                              ? "bg-primary/15 border-primary/40 text-primary font-semibold"
-                              : "bg-muted border-border text-muted-foreground",
-                          )}
-                        >
-                          {k}
-                          {relevant && " ← this tab reads this"}
-                        </span>
+                          tone={relevant ? "primary" : "neutral"}
+                          label={relevant ? `${k} ← this tab reads this` : k}
+                        />
                       );
                     })}
                   </div>
@@ -1760,18 +1754,11 @@ function UnavailableDataNotice({
                     {Object.keys(context.analysisData).map((k) => {
                       const relevant = getRelevantAnalysisKey(tabId) === k;
                       return (
-                        <span
+                        <Chip
                           key={k}
-                          className={cn(
-                            "inline-block rounded-full px-2.5 py-0.5 text-xs font-mono border",
-                            relevant
-                              ? "bg-primary/15 border-primary/40 text-primary font-semibold"
-                              : "bg-muted border-border text-muted-foreground",
-                          )}
-                        >
-                          {k}
-                          {relevant && " ← this tab reads this"}
-                        </span>
+                          tone={relevant ? "primary" : "neutral"}
+                          label={relevant ? `${k} ← this tab reads this` : k}
+                        />
                       );
                     })}
                   </div>

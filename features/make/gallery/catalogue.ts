@@ -35,6 +35,8 @@ export interface GalleryCard {
   install_door: string;
   /** Present when the read asked `installed_in`: this organization's live install, or null. */
   installed: { install_id: string; state: string; version: number } | null;
+  /** A one-off (a describe run): on no shelf until the person keeps it (custom.template_keep). */
+  ephemeral?: boolean;
   /** The template's readable address (`spec.id`, unique and stable): /templates/<slug>. Public door only. */
   slug?: string | null;
   /** The main table's first rows, for the card's live thumbnail. Public door, asked with `thumb`. */
@@ -88,9 +90,11 @@ export const GALLERY_PAGE = 200;
  */
 export function galleryFilter(
   filters: GalleryFilters,
-  opts: { installedIn?: string | null; scope?: "all" | "platform" | "org"; organizationId?: string | null; offset?: number } = {},
+  opts: { installedIn?: string | null; scope?: "all" | "platform" | "org"; organizationId?: string | null; offset?: number; id?: string | null } = {},
 ): Record<string, unknown> {
   const f: Record<string, unknown> = { limit: GALLERY_PAGE, offset: opts.offset ?? 0 };
+  // One template by id — the only read that answers a one-off (a describe run) before it is kept.
+  if (opts.id) f.id = opts.id;
   if (opts.scope && opts.scope !== "all") f.scope = opts.scope;
   if (opts.organizationId) f.organization_id = opts.organizationId;
   if (opts.installedIn) f.installed_in = opts.installedIn;

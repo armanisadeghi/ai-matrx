@@ -1,5 +1,7 @@
 "use client";
 
+import { Badge as StatusBadge } from "@ai-matrx/design-system/controls";
+import {  } from "@ai-matrx/design-system/controls";
 import React, { useCallback, useState } from "react";
 import {
   X,
@@ -186,20 +188,14 @@ function Badge({
   label: string;
   variant?: "default" | "success" | "warn" | "error" | "info";
 }) {
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium",
-        variant === "success" && "bg-emerald-500/10 text-emerald-500",
-        variant === "warn" && "bg-amber-500/10 text-amber-500",
-        variant === "error" && "bg-red-500/10 text-red-500",
-        variant === "info" && "bg-blue-500/10 text-blue-400",
-        variant === "default" && "bg-muted text-muted-foreground",
-      )}
-    >
-      {label}
-    </span>
-  );
+  const tone = {
+    default: "neutral",
+    success: "success",
+    warn: "warning",
+    error: "destructive",
+    info: "info",
+  } as const;
+  return <StatusBadge tone={tone[variant]}>{label}</StatusBadge>;
 }
 
 // ─── Tab: Overview ────────────────────────────────────────────────────────────

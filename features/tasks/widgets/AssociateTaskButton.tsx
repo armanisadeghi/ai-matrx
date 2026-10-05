@@ -383,7 +383,6 @@ export default function AssociateTaskButton(props: AssociateTaskButtonProps) {
                 }
               }}
               placeholder="Task title..."
-              style={{ fontSize: "16px" }}
             />
             <ProTextarea
               value={newDescription}

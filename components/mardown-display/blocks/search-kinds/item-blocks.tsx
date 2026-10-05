@@ -16,6 +16,7 @@
  * thumbnail card for news; a duration-badged thumbnail row for videos.
  */
 
+import { Badge } from "@ai-matrx/design-system/controls";
 import React, { useState } from "react";
 import {
   ExternalLink,
@@ -210,10 +211,7 @@ export function NewsResultBlock({ serverData, className }: SearchKindBlockProps)
           />
           <span className="truncate">{text(value.site_name) ?? ""}</span>
           {value.is_breaking === true && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-1.5 py-0.5 text-[10px] font-medium text-destructive">
-              <Radio className="h-2.5 w-2.5" />
-              Breaking
-            </span>
+            <Badge tone="destructive">Breaking</Badge>
           )}
         </div>
         <div className="line-clamp-2 text-sm font-medium leading-snug text-foreground group-hover:text-primary">

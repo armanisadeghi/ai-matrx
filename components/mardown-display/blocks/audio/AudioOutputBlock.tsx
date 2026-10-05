@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "@ai-matrx/design-system/controls";
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
   Play,
@@ -404,18 +405,14 @@ function PortraitPlayer({ url, mimeType, title, artist, cover }: PlayerProps) {
 
       {/* File actions */}
       <div className="px-1 flex items-center gap-1 border-t border-border pt-3">
-        <button
+        <Button
+          variant="quiet"
           onClick={download}
           disabled={isDownloading}
-          className="flex items-center gap-1 px-2 py-1 text-xs text-primary hover:bg-primary/10 rounded-md transition-colors disabled:opacity-50"
+          icon={isDownloading ? <Loader2 className="animate-spin" /> : <Download />}
         >
-          {isDownloading ? (
-            <Loader2 size={12} className="animate-spin" />
-          ) : (
-            <Download size={12} />
-          )}
           {isDownloading ? "Downloading…" : "Download"}
-        </button>
+        </Button>
         <button
           onClick={copyLink}
           className="flex items-center gap-1 px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors"
@@ -559,18 +556,14 @@ function LandscapePlayer({ url, mimeType, title, artist, cover }: PlayerProps) {
 
           {/* File actions */}
           <div className="flex items-center gap-1 mt-2 pt-2 border-t border-border">
-            <button
+            <Button
+              variant="quiet"
               onClick={download}
               disabled={isDownloading}
-              className="flex items-center gap-1 px-2 py-0.5 text-[11px] text-primary hover:bg-primary/10 rounded-md transition-colors disabled:opacity-50"
+              icon={isDownloading ? <Loader2 className="animate-spin" /> : <Download />}
             >
-              {isDownloading ? (
-                <Loader2 size={10} className="animate-spin" />
-              ) : (
-                <Download size={10} />
-              )}
               {isDownloading ? "Downloading…" : "Download"}
-            </button>
+            </Button>
             <button
               onClick={copyLink}
               className="flex items-center gap-1 px-2 py-0.5 text-[11px] text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors"

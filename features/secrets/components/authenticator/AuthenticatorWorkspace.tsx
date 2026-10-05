@@ -244,7 +244,6 @@ export function AuthenticatorWorkspace() {
                   onChange={(event) => setQuery(event.target.value)}
                   placeholder="Search authenticators"
                   aria-label="Search authenticators"
-                  style={{ fontSize: "16px" }}
                 />
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               </div>

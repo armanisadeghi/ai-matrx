@@ -32,6 +32,7 @@
  * stored binding on a binding screen.
  */
 
+import { Badge } from "@ai-matrx/design-system/controls";
 import {
   ConfigurationTable,
   ConfigurationTableRow,
@@ -780,9 +781,9 @@ function OverrideRow({
     >
       <span className="truncate">{sentenceCaseLabel(row.label)}</span>
       {isRemoved && (
-        <span className="ml-1.5 rounded bg-amber-500/15 px-1.5 py-0.5 text-xs font-medium text-amber-600 dark:text-amber-400">
+        <Badge className="ml-1.5" tone="warning">
           {removedLabel}
-        </span>
+        </Badge>
       )}
     </Label>
   );

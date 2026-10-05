@@ -119,7 +119,6 @@ function FieldRow({
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
         disabled={disabled}
-        style={{ fontSize: "16px" }}
       />
       <p className="text-[10px] text-muted-foreground/80 leading-snug">
         {spec.hint}

@@ -577,7 +577,6 @@ function InlineTitle({
           setEditing(false);
         }}
         className={cn("h-7 flex-1 min-w-0", isSub ? "text-[13px]" : "text-sm")}
-        style={{ fontSize: "16px" }}
       />
     );
   }

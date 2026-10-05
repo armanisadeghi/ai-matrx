@@ -153,7 +153,6 @@ export function CuratedIconPickerWindow({
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Filter…"
             className="shrink-0"
-            style={{ fontSize: "16px" }}
             aria-label="Filter icons"
           />
         ) : null}

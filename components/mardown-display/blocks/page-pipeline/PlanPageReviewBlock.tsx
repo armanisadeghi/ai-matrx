@@ -28,6 +28,7 @@
  * `features/content-ir/kinds/plan-page-review.ts`.
  */
 
+import { Badge } from "@ai-matrx/design-system/controls";
 import { CheckCircle2, ClipboardCheck, Loader2, PenLine } from "lucide-react";
 
 import type {
@@ -237,9 +238,7 @@ export default function PlanPageReviewBlock({
           </span>
         )}
         {blockers > 0 && (
-          <span className="rounded-full bg-destructive/10 px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-destructive">
-            {blockers} must fix
-          </span>
+          <Badge tone="destructive">{`${blockers} must fix`}</Badge>
         )}
         {!data.isComplete && (
           <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">

@@ -26,6 +26,7 @@
  * `features/content-ir/kinds/plan-page-outline.ts`.
  */
 
+import { Badge } from "@ai-matrx/design-system/controls";
 import type { ReactNode } from "react";
 import {
   ArrowRightLeft,
@@ -292,9 +293,7 @@ export default function PlanPageOutlineBlock({
           Where this page sits
         </span>
         {data.uncovered_gaps.length > 0 && (
-          <span className="rounded-full bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-amber-700 dark:text-amber-400">
-            {data.uncovered_gaps.length} uncovered
-          </span>
+          <Badge tone="warning">{`${data.uncovered_gaps.length} uncovered`}</Badge>
         )}
         {!data.isComplete && (
           <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">

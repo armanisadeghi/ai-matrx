@@ -296,7 +296,6 @@ export function EditScopeValueSheet({
               value={changeSummary}
               onChange={(e) => setChangeSummary(e.target.value)}
               placeholder="What changed and why?"
-              style={{ fontSize: "16px" }}
               disabled={busy}
             />
             <p className="text-[10px] text-muted-foreground">

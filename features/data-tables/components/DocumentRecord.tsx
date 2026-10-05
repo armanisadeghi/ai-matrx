@@ -332,7 +332,7 @@ export function DocumentRecord({
 
   const title = (
     <>
-      <Input variant="bare"
+      <Input
         value={renameDraft}
         onChange={(e) => setRenameDraft(e.target.value)}
         onBlur={commitRename}

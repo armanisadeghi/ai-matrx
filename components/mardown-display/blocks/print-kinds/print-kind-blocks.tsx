@@ -16,6 +16,7 @@
  * a renderer formats; the quote is the server's answer.
  */
 
+import { Badge } from "@ai-matrx/design-system/controls";
 import React from "react";
 import {
   AlertTriangle,
@@ -200,18 +201,19 @@ function StatusPill({
   tone?: "good" | "warn" | "bad" | "neutral";
 }) {
   return (
-    <span
-      className={cn(
-        "inline-flex rounded-full border px-2 py-0.5 text-xs font-medium capitalize",
-        tone === "good" && "border-success/40 bg-success/10 text-success",
-        tone === "warn" && "border-warning/40 bg-warning/10 text-warning",
-        tone === "bad" &&
-          "border-destructive/40 bg-destructive/10 text-destructive",
-        tone === "neutral" && "border-border bg-muted text-muted-foreground",
-      )}
+    <Badge
+      tone={
+        tone === "good"
+          ? "success"
+          : tone === "warn"
+            ? "warning"
+            : tone === "bad"
+              ? "destructive"
+              : "neutral"
+      }
     >
       {humanize(value)}
-    </span>
+    </Badge>
   );
 }
 

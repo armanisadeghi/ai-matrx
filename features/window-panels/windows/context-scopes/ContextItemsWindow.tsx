@@ -280,7 +280,6 @@ function ContextItemsSidebar({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search items…"
-              style={{ fontSize: "13px" }}
             />
           </div>
           <button

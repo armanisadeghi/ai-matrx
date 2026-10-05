@@ -133,7 +133,6 @@ export default function SearchDemoPage() {
           onChange={(e) => setKeywords(e.target.value)}
           onKeyDown={handleKeyDown}
           disabled={isLoading}
-          style={{ fontSize: "16px" }}
         />
       </div>
       <div className="w-24">
@@ -151,7 +150,6 @@ export default function SearchDemoPage() {
           value={maxResults}
           onChange={(e) => setMaxResults(e.target.value)}
           disabled={isLoading}
-          style={{ fontSize: "16px" }}
         />
       </div>
       <Button

@@ -101,7 +101,6 @@ export function DataStoreBindPanel({
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
             placeholder="Store name (e.g. Tax 2024)"
-            style={{ fontSize: "16px" }}
             autoFocus
             onKeyDown={(e) => {
               if (e.key === "Enter") void handleCreate();

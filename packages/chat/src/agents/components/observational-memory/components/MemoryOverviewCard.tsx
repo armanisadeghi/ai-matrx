@@ -8,6 +8,7 @@
  * plus a live "degraded" warning when any `memory_error` event has fired.
  */
 
+import { Badge } from "@ai-matrx/design-system/controls";
 import React from "react";
 import {
   Activity,
@@ -83,14 +84,15 @@ export function MemoryOverviewCard({
         </div>
 
         {degraded && (
-          <div
-            className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-500 text-[10px] font-medium shrink-0"
-            title={lastError?.error ?? "A memory operation failed. The conversation continues normally."}
-          >
-            <AlertTriangle className="w-3 h-3" />
-            Degraded
+          <span className="flex shrink-0 items-center gap-1">
+            <Badge
+              tone="warning"
+              title={lastError?.error ?? "A memory operation failed. The conversation continues normally."}
+            >
+              Degraded
+            </Badge>
             <ErrorAlchemyMenu error={lastError?.error} />
-          </div>
+          </span>
         )}
       </div>
 

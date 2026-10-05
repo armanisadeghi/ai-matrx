@@ -347,7 +347,6 @@ export const DateCellEditor = forwardRef<HTMLInputElement, Props>(
                   }
                 }}
                 className="flex-1"
-                style={{ fontSize: "16px" }}
               />
             </div>
           )}

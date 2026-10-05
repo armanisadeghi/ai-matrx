@@ -68,19 +68,33 @@ jest.mock("next/dynamic", () => {
   };
 });
 jest.mock("@/lib/redux/hooks", () => {
-  const state = { activeRequests: { byRequestId: {} } };
+  const empty = { activeRequests: { byRequestId: {} } };
+  // A suite may hand the judge a REAL store's state (`judgeReadsState`, K5);
+  // otherwise every selector reads the empty store.
+  const state = () =>
+    ((globalThis as { __domFrameJudgeState?: () => unknown }).__domFrameJudgeState?.() ?? empty) as object;
   return {
     useAppDispatch: () => () => undefined,
     useAppSelector: (selector: (s: unknown) => unknown) => {
       try {
-        return selector(state);
+        return selector(state());
       } catch {
         return undefined;
       }
     },
-    useAppStore: () => ({ getState: () => state, dispatch: () => undefined, subscribe: () => () => undefined }),
+    useAppStore: () => ({ getState: state, dispatch: () => undefined, subscribe: () => () => undefined }),
   };
 });
+
+/**
+ * Let the judge's selectors read a REAL store (K5): pass the state getter of a
+ * store built from the production slice reducers. `null` returns to the
+ * empty store.
+ */
+export function judgeReadsState(getState: (() => unknown) | null): void {
+  (globalThis as { __domFrameJudgeState?: (() => unknown) | undefined }).__domFrameJudgeState =
+    getState ?? undefined;
+}
 jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 jest.mock("next/navigation", () => ({
   useRouter: () => ({ push: () => undefined, replace: () => undefined, prefetch: () => undefined }),

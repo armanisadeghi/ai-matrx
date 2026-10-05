@@ -1,5 +1,6 @@
 "use client";
 
+import { Badge } from "@ai-matrx/design-system/controls";
 import { useState } from "react";
 import { Save, Loader2, AlertTriangle, Eye } from "lucide-react";
 import { useChatCanvasTab } from "../../../host/canvas";
@@ -71,17 +72,13 @@ export function AgentSaveStatus({
         )}
 
         {isEditMode && isReadOnly && (
-          <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded bg-amber-500/10">
-            View only
-          </span>
+          <Badge tone="warning">View only</Badge>
         )}
 
         {isEditMode && isDirty && (
           <>
-            <span className="text-[10px] font-medium text-amber-500 px-1.5 py-0.5 rounded bg-amber-500/10">
-              {isNewRoute ? "Not saved" : "Unsaved"}
-              <ErrorAlchemyMenu />
-            </span>
+            <Badge tone="warning">{isNewRoute ? "Not saved" : "Unsaved"}</Badge>
+            <ErrorAlchemyMenu />
             {!isNewRoute && (
               <button
                 onClick={() => diffTab.toggle({ title: "Unsaved changes", data: { agentId } })}

@@ -15,6 +15,7 @@
  * stay mounted even when collapsed.
  */
 
+import { Badge } from "@ai-matrx/design-system/controls";
 import { useState, useCallback, useEffect } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useAppSelector } from "../../../store/hooks";
@@ -124,13 +125,9 @@ export function CreatorRunPanel({
             <span className="font-medium text-foreground truncate shrink-0 max-w-[120px] sm:max-w-none">
               {conversationTitle ?? "Creator Panel"}
             </span>
-            <span
-              className={cn(
-                "ml-2 inline-flex items-center px-1.5 py-0.5 rounded border text-[9px] font-mono uppercase tracking-wider shrink-0",
-                isOverridden
-                  ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
-                  : "bg-muted text-muted-foreground border-border",
-              )}
+            <Badge
+              className="ml-2 shrink-0"
+              tone={isOverridden ? "success" : "neutral"}
               title={
                 isOverridden
                   ? "AI calls for this conversation are routed to the sandbox proxy"
@@ -138,7 +135,7 @@ export function CreatorRunPanel({
               }
             >
               {isOverridden ? "Sandbox" : "Cloud"}
-            </span>
+            </Badge>
             <ChevronDown className="w-3 h-3 shrink-0 ml-auto" />
           </button>
         </div>

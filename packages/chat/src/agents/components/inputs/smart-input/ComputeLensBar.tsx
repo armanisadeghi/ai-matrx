@@ -6,6 +6,7 @@
  * chips, overflow + chevron opens the full Sandbox panel in run-controls window.
  */
 
+import { Button } from "@ai-matrx/design-system/controls";
 import {
   Box,
   Check,
@@ -309,14 +310,15 @@ export function ComputeLensBar({
       {hasBinding ? (
         // The word "Detach", not an icon glyph — detaching must never require
         // decoding icon language (Arman's ruling, 2026-08-08).
-        <button
+        <Button
           type="button"
+          variant="quiet"
+          className="shrink-0"
           onClick={() => applyBinding(null)}
-          className="inline-flex h-5 shrink-0 items-center rounded-full px-1.5 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
           title={`Detach ${boundView?.name ?? "connected compute"} from this chat`}
         >
           Detach
-        </button>
+        </Button>
       ) : null}
 
       {(overflowCount > 0 || totalCount > 0) && (

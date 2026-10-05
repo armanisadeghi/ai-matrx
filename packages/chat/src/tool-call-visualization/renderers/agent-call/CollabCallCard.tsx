@@ -20,6 +20,7 @@
  * kind component.
  */
 
+import { Chip } from "@ai-matrx/design-system/controls";
 import React, { useMemo } from "react";
 import { GitBranch, Handshake, Inbox, ScrollText, TriangleAlert } from "lucide-react";
 import { useAppSelector } from "../../../store/hooks";
@@ -107,10 +108,11 @@ export function CollabCallCard(props: ToolRendererProps) {
             />
           )}
         </span>
-        <span className="inline-flex items-center gap-1 rounded-full border border-violet-500/30 bg-violet-500/10 px-2 py-0.5 text-[11px] font-medium text-violet-700 dark:text-violet-300">
-          {isFork ? <GitBranch className="h-3 w-3" /> : <ScrollText className="h-3 w-3" />}
-          {MODE_CHIP[info.historyMode]}
-        </span>
+        <Chip
+          tone="violet"
+          icon={isFork ? <GitBranch /> : <ScrollText />}
+          label={MODE_CHIP[info.historyMode]}
+        />
         {info.messagesIncluded !== null && (
           <span className="text-xs text-muted-foreground">
             {info.messagesIncluded} message{info.messagesIncluded === 1 ? "" : "s"} shared

@@ -1,3 +1,4 @@
+import { Badge, Chip } from "@ai-matrx/design-system/controls";
 import React, { useState } from "react";
 import { AlertTriangle, Lightbulb, Eye, FileJson, Copy, Check } from "lucide-react";
 import {
@@ -445,18 +446,14 @@ const IntelligentViewer = ({ data, bookmark }: IntelligentViewerProps) => {
                                         {selectedSection?.title || "Unknown Section"}
                                     </h3>
                                     {selectedSection?.isUnknown && (
-                                        <span className="text-xs bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400 px-2 py-1 rounded-md">
-                                            Needs Handler
-                                        </span>
+                                        <Badge tone="destructive">Needs Handler</Badge>
                                     )}
                                 </div>
 
                                 {/* Bookmark Path Display */}
                                 {selectedSection?.bookmarkPath && (
                                     <div className="mt-1 flex items-center gap-2">
-                                        <span className="text-xs text-gray-500 dark:text-gray-400 font-mono bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-md truncate max-w-md">
-                                            {selectedSection.bookmarkPath}
-                                        </span>
+                                        <Chip label={selectedSection.bookmarkPath} />
                                         <button
                                             onClick={handleBookmarkCopy}
                                             className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
@@ -498,17 +495,17 @@ const IntelligentViewer = ({ data, bookmark }: IntelligentViewerProps) => {
                                                 <h4 className="font-semibold text-blue-800 dark:text-blue-200">
                                                     Recommended Viewer: {recommendation.viewerName}
                                                 </h4>
-                                                <span
-                                                    className={`text-xs px-2 py-1 rounded-full ${
+                                                <Badge
+                                                    tone={
                                                         recommendation.confidence === "high"
-                                                            ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300"
+                                                            ? "success"
                                                             : recommendation.confidence === "medium"
-                                                            ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300"
-                                                            : "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300"
-                                                    }`}
+                                                              ? "warning"
+                                                              : "destructive"
+                                                    }
                                                 >
-                                                    {recommendation.confidence} confidence
-                                                </span>
+                                                    {`${recommendation.confidence} confidence`}
+                                                </Badge>
                                             </div>
                                             <p className="text-sm text-blue-700 dark:text-blue-300 mb-2">{recommendation.reasoning}</p>
                                             <div className="text-xs text-blue-600 dark:text-blue-400">

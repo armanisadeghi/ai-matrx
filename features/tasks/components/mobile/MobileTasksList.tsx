@@ -201,7 +201,6 @@ export default function MobileTasksList({
                 value={searchQuery}
                 onChange={(e) => dispatch(setSearchQuery(e.target.value))}
                 placeholder="Search tasks..."
-                style={{ fontSize: "16px" }}
               />
               {searchQuery && (
                 <button
@@ -235,7 +234,6 @@ export default function MobileTasksList({
                       });
                     }, 300);
                   }}
-                  style={{ fontSize: "16px" }}
                 />
                 <div className="flex items-center gap-2">
                   <Button

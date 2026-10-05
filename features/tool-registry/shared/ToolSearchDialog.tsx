@@ -171,7 +171,6 @@ export function ToolSearchDialog({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search name, category, description, id…"
-              style={{ fontSize: "16px" }}
               autoFocus
             />
           </div>

@@ -171,7 +171,6 @@ export const JsonTableView: React.FC<JsonTableViewProps> = ({
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Filter rows…"
             className="w-48"
-            style={{ fontSize: "16px" }}
           />
         </div>
       </div>

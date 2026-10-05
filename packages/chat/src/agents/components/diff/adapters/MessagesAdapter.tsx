@@ -1,5 +1,6 @@
 "use client";
 
+import { Badge } from "@ai-matrx/design-system/controls";
 import { cn } from "@ai-matrx/design-system";
 import { MessageSquare } from "lucide-react";
 import type {
@@ -129,18 +130,17 @@ function MessageRow({ child, index }: { child: DiffNode; index: number }) {
   const roleBadge = (
     <div className="flex items-center gap-1">
       <span>#{index + 1}</span>
-      <span
-        className={cn(
-          "text-[0.625rem] px-1 rounded",
+      <Badge
+        tone={
           child.changeType === "added"
-            ? "bg-green-100 text-green-700 dark:bg-green-950/30 dark:text-green-400"
+            ? "success"
             : child.changeType === "removed"
-              ? "bg-red-100 text-red-700 dark:bg-red-950/30 dark:text-red-400"
-              : "bg-muted",
-        )}
+              ? "destructive"
+              : "neutral"
+        }
       >
         {role}
-      </span>
+      </Badge>
     </div>
   );
 

@@ -323,7 +323,6 @@ export default function TaskPreviewWindow({
                   onChange={(e) => patchRow(row.key, "title", e.target.value)}
                   disabled={!row.include}
                   className="flex-1"
-                  style={{ fontSize: "16px" }}
                 />
                 <select
                   value={row.priority}

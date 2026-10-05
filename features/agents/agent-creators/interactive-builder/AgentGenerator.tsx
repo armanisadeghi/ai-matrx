@@ -758,7 +758,6 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
                   value={agentName}
                   onChange={(e) => setAgentName(e.target.value)}
                   placeholder="Enter a name for your new agent"
-                  style={{ fontSize: "16px" }}
                   disabled={isSaving}
                 />
               </div>

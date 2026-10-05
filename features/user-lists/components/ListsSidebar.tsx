@@ -74,7 +74,6 @@ export function ListsSidebar({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search lists…"
-            style={{ fontSize: "16px" }}
           />
           {search && (
             <button

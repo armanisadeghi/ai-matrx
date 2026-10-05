@@ -164,7 +164,6 @@ export function ScopeTypeSettingsForm({
             id={ids.singular}
             value={labelSingular}
             onChange={(e) => setLabelSingular(e.target.value)}
-            style={{ fontSize: "16px" }}
             disabled={busy}
           />
         </div>
@@ -176,7 +175,6 @@ export function ScopeTypeSettingsForm({
             id={ids.plural}
             value={labelPlural}
             onChange={(e) => setLabelPlural(e.target.value)}
-            style={{ fontSize: "16px" }}
             disabled={busy}
           />
         </div>
@@ -266,7 +264,6 @@ export function ScopeTypeSettingsForm({
               onChange={(e) => setMaxAssignments(e.target.value)}
               placeholder="Unlimited"
               min={1}
-              style={{ fontSize: "16px" }}
               disabled={busy}
             />
           </div>

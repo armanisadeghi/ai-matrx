@@ -1,4 +1,5 @@
 "use client";
+import { Chip } from "@ai-matrx/design-system/controls";
 import React, {
   useState,
   useCallback,
@@ -3209,9 +3210,7 @@ const InteractiveDiagramBlock: React.FC<InteractiveDiagramBlockProps> = ({
                         </p>
                       )}
                       <div className="flex items-center gap-1.5 flex-wrap mt-1">
-                        <span className="px-1.5 py-0.5 bg-blue-100 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 rounded-full text-[10px] font-medium">
-                          {formatDiagramType(diagram.type)}
-                        </span>
+                        <Chip tone="blue" label={formatDiagramType(diagram.type)} />
                         {diagram.layout?.direction && (
                           <span className="px-1.5 py-0.5 bg-muted text-muted-foreground rounded-full text-[10px]">
                             {diagram.layout.direction}

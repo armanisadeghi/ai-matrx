@@ -248,7 +248,6 @@ export function CloudFilesTab({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Filter in folder..."
-            style={{ fontSize: "16px" }}
           />
         </div>
       </div>

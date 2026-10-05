@@ -190,7 +190,6 @@ export default function IconInputWithValidation({
             placeholder={placeholder}
             disabled={disabled}
             className={cn("pr-10 text-base", className)}
-            style={{ fontSize: "16px" }}
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 e.preventDefault();

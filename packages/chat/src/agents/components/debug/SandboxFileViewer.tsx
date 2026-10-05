@@ -13,6 +13,7 @@
  * assistant message. The path input here makes it usable/testable on its own.
  */
 
+import { Button } from "@ai-matrx/design-system/controls";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { FileText, Loader2, RefreshCw, Copy, Check } from "lucide-react";
 import { toast } from "../../../host/notify";
@@ -96,18 +97,14 @@ export function SandboxFileViewer({
             spellCheck={false}
             className="flex-1 bg-transparent font-mono text-xs text-foreground placeholder:text-muted-foreground/60 focus:outline-none"
           />
-          <button
+          <Button
             type="submit"
+            variant="quiet"
             disabled={loading || !path.trim()}
-            className="flex items-center gap-1 rounded px-2 py-1 text-[11px] text-primary hover:bg-accent/60 disabled:opacity-40"
+            icon={loading ? <Loader2 className="animate-spin" /> : <RefreshCw />}
           >
-            {loading ? (
-              <Loader2 className="h-3 w-3 animate-spin" />
-            ) : (
-              <RefreshCw className="h-3 w-3" />
-            )}
             Open
-          </button>
+          </Button>
         </form>
       )}
 

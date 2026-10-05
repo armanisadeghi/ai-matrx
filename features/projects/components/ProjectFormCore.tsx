@@ -447,7 +447,6 @@ export function ProjectFormCore({
                     ? "border-green-500"
                     : "",
               )}
-              style={{ fontSize: "16px" }}
             />
             <div className="flex items-center justify-between">
               <SlugIndicator

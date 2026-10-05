@@ -147,7 +147,6 @@ function NewCategoryDialog({
               onChange={(e) => setLabel(e.target.value)}
               placeholder="e.g. Editing Tools"
               disabled={busy}
-              style={{ fontSize: "16px" }}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !busy) {
                   e.preventDefault();

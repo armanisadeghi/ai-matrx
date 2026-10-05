@@ -404,7 +404,6 @@ export default function TaskTapButton(props: TaskTapButtonProps) {
                 }
               }}
               placeholder="Task title..."
-              style={{ fontSize: "16px" }}
             />
             <ProTextarea
               value={newDescription}

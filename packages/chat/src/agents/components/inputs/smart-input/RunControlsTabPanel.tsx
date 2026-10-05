@@ -14,6 +14,7 @@
  * Keep tab content and badge logic HERE so the presentations can never drift.
  */
 
+import { Badge } from "@ai-matrx/design-system/controls";
 import { type ComponentType, type ReactNode } from "react";
 import {
   Paperclip,
@@ -235,9 +236,7 @@ export function useRunControlsState(
   const tabTrailing = (tabId: RunControlsTab): ReactNode => {
     if (tabId === "tools" && addedCount > 0) {
       return (
-        <span className="rounded-full bg-primary/15 px-1.5 text-xs font-semibold text-primary">
-          {addedCount}
-        </span>
+        <Badge tone="primary">{addedCount}</Badge>
       );
     }
     if (tabId === "model" && hasModelOverride) {

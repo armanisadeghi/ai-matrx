@@ -38,6 +38,7 @@
  * already draws chrome. These contribute flow spacing and no frame.
  */
 
+import { Button } from "@ai-matrx/design-system/controls";
 import React from "react";
 import {
   AlertTriangle,
@@ -164,7 +165,7 @@ export const RecordDoor: React.FC<{
     );
   }
   return (
-    <button
+    <Button
       type="button"
       aria-label={`Open ${label} in AI Matrx`}
       title={`Open ${label} in AI Matrx`}
@@ -172,11 +173,12 @@ export const RecordDoor: React.FC<{
         event.stopPropagation();
         open(resolvedType, recordId, { name: name ?? undefined });
       }}
-      className="inline-flex shrink-0 items-center gap-1 rounded px-1 py-0.5 text-xs font-medium text-primary transition-colors hover:bg-primary/10"
+      variant="link"
+      className="shrink-0"
+      iconEnd={<ArrowUpRight />}
     >
       Open
-      <ArrowUpRight className="h-3 w-3" />
-    </button>
+    </Button>
   );
 };
 
@@ -191,15 +193,11 @@ export const OpenInGoogle: React.FC<{ href: unknown; label?: string }> = ({
   const url = readText(href);
   if (!url || !/^https?:\/\//.test(url)) return null;
   return (
-    <a
-      href={url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="inline-flex shrink-0 items-center gap-1 rounded px-1 py-0.5 text-xs font-medium text-primary transition-colors hover:bg-primary/10"
-    >
-      {label}
-      <ExternalLink className="h-3 w-3" />
-    </a>
+    <Button asChild variant="link" className="shrink-0" iconEnd={<ExternalLink />}>
+      <a href={url} target="_blank" rel="noopener noreferrer">
+        {label}
+      </a>
+    </Button>
   );
 };
 

@@ -14,6 +14,7 @@
  * Clears itself the moment the operation settles or a live stream takes over.
  */
 
+import { Button } from "@ai-matrx/design-system/controls";
 import {
   CircleDashed,
   Loader2,
@@ -126,22 +127,24 @@ export function ServerOperationBanner({
       )}
       <span className="min-w-0 flex-1">{message}</span>
       {waiting && hasQuestion && (
-        <button
+        <Button
           type="button"
           onClick={showQuestion}
-          className="shrink-0 rounded-md px-2 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/10"
+          variant="quiet"
+          className="shrink-0"
         >
           Show {pendingAsks.length === 1 ? "question" : "questions"}
-        </button>
+        </Button>
       )}
       {waitingOnPerson && !hasQuestion && (
-        <button
+        <Button
           type="button"
           onClick={showParkedAsk}
-          className="shrink-0 rounded-md px-2 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/10"
+          variant="quiet"
+          className="shrink-0"
         >
           Show
-        </button>
+        </Button>
       )}
       {waiting && !hasQuestion && !continuing && !waitingOnPerson && (
         <button

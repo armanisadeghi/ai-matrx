@@ -252,7 +252,6 @@ export function InlineCreate({
         }}
         placeholder={placeholder}
         className={cn("flex-1", big ? "h-9 text-sm" : "h-7 text-xs")}
-        style={{ fontSize: "16px" }}
       />
       <button
         type="button"

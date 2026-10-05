@@ -1,4 +1,5 @@
 "use client";
+import { Badge } from "@ai-matrx/design-system/controls";
 import React from "react";
 import { Download, CheckCircle2 } from "lucide-react";
 
@@ -16,9 +17,7 @@ const ScrapeBatchCompleteBlock: React.FC<ScrapeBatchCompleteBlockProps> = ({
       <span className="text-sm font-medium text-foreground">
         Scrape Complete
       </span>
-      <span className="text-xs px-1.5 py-0.5 rounded bg-success/15 text-success font-medium">
-        {totalScraped} page{totalScraped !== 1 ? "s" : ""} scraped
-      </span>
+      <Badge tone="success">{`${totalScraped} page${totalScraped !== 1 ? "s" : ""} scraped`}</Badge>
     </div>
   </div>
 );

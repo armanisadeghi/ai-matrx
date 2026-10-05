@@ -23,6 +23,7 @@
  * toggle becomes an "update" instead of a "set".
  */
 
+import { Badge } from "@ai-matrx/design-system/controls";
 import React, { useCallback } from "react";
 import { Beaker } from "lucide-react";
 import { Label } from "@ai-matrx/design-system";
@@ -128,16 +129,9 @@ export function MemoryControls({
       </div>
 
       {toggleRequested && (
-        <div
-          className={cn(
-            "text-[10px] rounded px-2 py-1 border",
-            toggleTarget
-              ? "bg-emerald-500/5 border-emerald-500/20 text-emerald-600 dark:text-emerald-400"
-              : "bg-amber-500/5 border-amber-500/20 text-amber-600 dark:text-amber-400",
-          )}
-        >
-          {toggleTarget ? "Enable" : "Disable"} queued — rides the next turn.
-        </div>
+        <Badge tone={toggleTarget ? "success" : "warning"}>
+          {`${toggleTarget ? "Enable" : "Disable"} queued — rides the next turn`}
+        </Badge>
       )}
 
       {!isCompact && persistedMeta && (

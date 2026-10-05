@@ -7,6 +7,7 @@
  * shows file:range so the user can scan a message at a glance.
  */
 
+import { Chip } from "@ai-matrx/design-system/controls";
 import React from "react";
 import { Code2 } from "lucide-react";
 import {
@@ -39,10 +40,7 @@ export default function EditorCodeSnippetBlock({
   return (
     <HoverCard openDelay={120} closeDelay={80}>
       <HoverCardTrigger asChild>
-        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium border bg-cyan-50 dark:bg-cyan-950/30 border-cyan-200 dark:border-cyan-900/50 text-cyan-700 dark:text-cyan-300 cursor-default align-middle">
-          <Code2 className="w-3.5 h-3.5 shrink-0" />
-          <span className="font-mono truncate max-w-[20ch]">{label}</span>
-        </span>
+        <Chip tone="cyan" icon={<Code2 />} label={label} />
       </HoverCardTrigger>
       <HoverCardContent
         side="top"

@@ -105,7 +105,7 @@ function TagList({
           />
         ))}
         {adding ? (
-          <Input variant="bare"
+          <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}

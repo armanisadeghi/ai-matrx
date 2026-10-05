@@ -1,4 +1,5 @@
 "use client";
+import { Chip } from "@ai-matrx/design-system/controls";
 import React, { useState } from "react";
 import { Tag, ChevronDown, ChevronUp, TestTube2 } from "lucide-react";
 import { ToggledDataBody } from "./ToggledDataBody";
@@ -33,14 +34,9 @@ const CategorizationResultBlock: React.FC<CategorizationResultBlockProps> = ({
             <span className="text-sm font-medium text-foreground">
               Categorized
             </span>
-            <span className="text-xs font-mono px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium">
-              {category}
-            </span>
+            <Chip tone="primary" label={category} />
             {dryRun && (
-              <span className="flex items-center gap-1 text-xs px-1.5 py-0.5 rounded bg-warning/15 text-warning font-medium">
-                <TestTube2 className="w-3 h-3" />
-                dry run
-              </span>
+              <Chip tone="warning" icon={<TestTube2 />} label="dry run" />
             )}
           </div>
 

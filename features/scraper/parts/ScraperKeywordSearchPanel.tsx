@@ -78,7 +78,6 @@ export function ScraperKeywordSearchPageBody({
               value={maxResults}
               onChange={(e) => setMaxResults(e.target.value)}
               disabled={isLoading}
-              style={{ fontSize: "16px" }}
             />
           </div>
           {flatResults.length > 0 && (

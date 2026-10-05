@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-05T10:06:54.945Z",
+  "generated_at": "2026-10-05T13:46:39.345Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -463,6 +463,18 @@
       "filename": "carryingedgesperf_the_carrying_edges_have_their_indexes.sql",
       "checksum": "b5fb0c5afc831480603006ce30baa53c27cf079ed66447e29012604411dd9155",
       "applied_at": "2026-09-27 17:55:20.328026+00"
+    },
+    "migrations/campaign/chair_describe2_b_template_keep_grant.sql": {
+      "source": "matrx-frontend",
+      "filename": "chair_describe2_b_template_keep_grant.sql",
+      "checksum": "d23fc1116800e3e054f8ee544b2385e6e1a2cbb6db363a4ff256d9d55bb5a718",
+      "applied_at": "2026-10-05 13:46:38.069246+00"
+    },
+    "migrations/campaign/chair_describe2_one_off_installs_and_bound_tables.sql": {
+      "source": "matrx-frontend",
+      "filename": "chair_describe2_one_off_installs_and_bound_tables.sql",
+      "checksum": "eaeec0fa30e8600d5e3ed9cc83866fa4fa461973358f8848b12f87d5f7ca3687",
+      "applied_at": "2026-10-05 13:46:08.574513+00"
     },
     "migrations/campaign/chair_pb_a_view_or_a_page_gets_a_public_address.sql": {
       "source": "matrx-frontend",

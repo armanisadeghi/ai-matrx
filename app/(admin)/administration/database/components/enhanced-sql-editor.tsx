@@ -449,7 +449,7 @@ export const EnhancedSQLEditor = ({
                             e.target.value,
                           )
                         }
-                        className="flex-1 text-sm font-mono bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700"
+                        className="flex-1"
                       />
                     </div>
                     <Button

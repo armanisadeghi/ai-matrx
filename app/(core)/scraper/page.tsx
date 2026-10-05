@@ -182,7 +182,6 @@ export default function Page() {
               disabled={isFullScraping}
               placeholder="Enter URL to scrape..."
               className="flex-1"
-              style={{ fontSize: "16px" }}
             />
             <Button
               onClick={() => {
@@ -261,7 +260,6 @@ export default function Page() {
               if (error) setError(null);
             }}
             onKeyDown={handleKeyDown}
-            style={{ fontSize: "16px" }}
             inputMode="url"
             autoComplete="url"
           />

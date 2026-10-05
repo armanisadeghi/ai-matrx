@@ -108,7 +108,6 @@ export function RecordingPreview({
                         value={title}
                         onChange={(e) => onTitleChange(e.target.value)}
                         placeholder="Recording title"
-                        style={{ fontSize: '16px' }}
                     />
                 </div>
 

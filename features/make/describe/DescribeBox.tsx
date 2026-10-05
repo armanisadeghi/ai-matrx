@@ -38,6 +38,7 @@ import { templatePreviewHref } from "../gallery/galleryHref";
 
 import { secondsWords } from "./made";
 import {
+  bindReuses,
   checkDescribeSpec,
   coerceDescribeAnswer,
   declareDescribeSpec,
@@ -116,7 +117,7 @@ export function DescribeBox() {
         return;
       }
       const stamp = `${startedAt.toString(36)}${Math.random().toString(36).slice(2, 6)}`.toUpperCase();
-      const templateId = await declareDescribeSpec(client, organizationId, spec, stamp);
+      const templateId = await declareDescribeSpec(client, organizationId, bindReuses(spec, answer.reuses, tables), stamp);
       setRun({ phase: "installing", startedAt, templateId, answer: null, notes: answer.notes });
       const done = await runTemplateDoor(source, "template_install", organizationId, templateId, {
         onCall: (a) => setRun((r) => (r.phase === "installing" ? { ...r, answer: a } : r)),

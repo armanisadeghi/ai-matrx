@@ -1210,7 +1210,6 @@ function RenamableTitle({
             }
           }}
           className="max-w-sm"
-          style={{ fontSize: "16px" }}
         />
       ) : (
         <button

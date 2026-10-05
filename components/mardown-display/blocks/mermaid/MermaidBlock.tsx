@@ -12,6 +12,7 @@
  * workbench (the chat block's "Save as default" writes user preferences).
  */
 
+import { Button } from "@ai-matrx/design-system/controls";
 import React, { Suspense, lazy, useEffect, useState } from "react";
 
 import {
@@ -510,15 +511,15 @@ const MermaidBlock: React.FC<MermaidBlockProps> = ({
 
             {isCanvasAvailable && (
               <SimpleTooltip text="Open in canvas">
-                <button
+                <Button
                   type="button"
                   aria-label="Open in canvas"
                   onClick={() => handleOpenCanvas()}
-                  className="flex items-center gap-1 rounded px-2 py-1 text-xs text-primary transition-colors hover:bg-primary/10"
+                  variant="quiet"
+                  icon={<Maximize2 />}
                 >
-                  <Maximize2 className="h-3.5 w-3.5" />
-                  <span>Canvas</span>
-                </button>
+                  Canvas
+                </Button>
               </SimpleTooltip>
             )}
           </div>

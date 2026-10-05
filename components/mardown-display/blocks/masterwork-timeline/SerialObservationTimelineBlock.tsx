@@ -18,6 +18,7 @@
  * instead of drawing a disclosure that would open onto nothing.
  */
 
+import { Chip, ChipSet } from "@ai-matrx/design-system/controls";
 import { useState } from "react";
 import { ChevronDown, ChevronRight, Eye, EyeOff, HelpCircle } from "lucide-react";
 
@@ -65,23 +66,17 @@ function Facts({
       <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
         {label}
       </p>
-      <ul className="flex flex-wrap gap-1">
+      <ChipSet role="list">
         {items.map((item) => (
-          <li
+          <Chip
             key={item}
-            className={
-              tone === "known"
-                ? "inline-flex items-center rounded-full border border-border bg-muted/60 px-2 py-0.5 text-xs text-foreground"
-                : "inline-flex items-center gap-1 rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-xs text-amber-700 dark:text-amber-400"
-            }
-          >
-            {tone === "unknown" ? (
-              <HelpCircle className="h-3 w-3" aria-hidden />
-            ) : null}
-            {item}
-          </li>
+            role="listitem"
+            tone={tone === "known" ? "neutral" : "warning"}
+            icon={tone === "unknown" ? <HelpCircle aria-hidden /> : undefined}
+            label={item}
+          />
         ))}
-      </ul>
+      </ChipSet>
     </div>
   );
 }
@@ -109,11 +104,14 @@ function Step({ step }: { step: TimelineStepData }) {
         />
         {step.action ? (
           <p className="flex flex-wrap items-baseline gap-x-1.5 text-sm text-foreground">
-            <span className="inline-flex items-center rounded-full border border-primary/40 bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-              {step.action.kind
-                ? (ACTION_LABEL[step.action.kind] ?? step.action.kind)
-                : "Next"}
-            </span>
+            <Chip
+              tone="primary"
+              label={
+                step.action.kind
+                  ? (ACTION_LABEL[step.action.kind] ?? step.action.kind)
+                  : "Next"
+              }
+            />
             {step.action.target ? <span>{step.action.target}</span> : null}
             {step.action.why ? (
               <span className="text-muted-foreground">

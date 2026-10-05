@@ -15,7 +15,7 @@
 
 import { CHOICE_COLORS, TEMPLATE_VIEW_KINDS } from "@ai-matrx/records/templates";
 
-import { checkDescribeSpec, coerceDescribeAnswer, describeDeclaration, describeSpec, describeVariables } from "../describeTemplate";
+import { bindReuses, checkDescribeSpec, coerceDescribeAnswer, describeDeclaration, describeSpec, describeVariables } from "../describeTemplate";
 import firstAnswer from "./fixtures/first-live-answer-cedar-ridge.json";
 import goldReduced from "./fixtures/gold-reduced-to-describe.json";
 
@@ -62,6 +62,19 @@ describe("the describe box installs only what passes the store's check", () => {
     expect(vocab.template_view_kinds).toEqual([...TEMPLATE_VIEW_KINDS]);
     expect(v.today).toBe("2026-10-05");
     expect(JSON.parse(v.existing_tables)).toEqual([]);
+  });
+
+  it("installs into the organization's own Patients table, as a one-off on no shelf", () => {
+    const spec = describeSpec(goldReduced as unknown as Record<string, unknown>);
+    const token = spec.tables[0]!.token;
+    const patients = { id: "7a3c1e90-2b4d-4f6a-8c1e-5d9b0a7f3e21", name: "Patients", fields: [{ key: spec.tables[0]!.fields[0]!.key, label: "Name", kind: "text" }] };
+    const bound = bindReuses(spec, [{ token, existing_table_id: patients.id }, { token: "nope", existing_table_id: "00000000-0000-4000-8000-00000000dead" }], [patients]);
+    expect(bound.tables[0]!.bindsTo).toEqual({ tableId: patients.id, fields: [patients.fields[0]!.key] });
+    const d = describeDeclaration(bound, "00000000-0000-4000-8000-000000000001", "K3X9");
+    expect(d.ephemeral).toBe(true);
+    const plan = d.installPlan as { ids?: Record<string, string>; steps: Array<{ door: string; label: string }> };
+    expect(plan.ids).toEqual({ [`ref:tables.${token}`]: patients.id });
+    expect(plan.steps.some((s) => s.door === "table_from_example" && s.label === `tables.${token}`)).toBe(false);
   });
 
   it("says in one line when the answer holds no template", () => {

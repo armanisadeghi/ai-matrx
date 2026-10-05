@@ -140,7 +140,6 @@ export function PlanTreeToolbar({
             onChange={(event) => onSearchChange(event.target.value)}
             placeholder="Search pages…"
             aria-label="Search plan pages"
-            style={{ fontSize: "16px" }}
           />
           {search ? (
             <button

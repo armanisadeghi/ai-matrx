@@ -1,4 +1,5 @@
 "use client";
+import { Badge } from "@ai-matrx/design-system/controls";
 import React, { useState } from "react";
 import { AlertTriangle, ChevronDown, ChevronUp } from "lucide-react";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -27,8 +28,8 @@ const StructuredInputWarningBlock: React.FC<
               {blockType}
             </span>
             {hasFailures && (
-              <span className="text-xs px-1.5 py-0.5 rounded bg-warning/15 text-warning font-medium">
-                {failures.length} failure{failures.length !== 1 ? "s" : ""}
+              <span className="flex items-center gap-1">
+                <Badge tone="warning">{`${failures.length} failure${failures.length !== 1 ? "s" : ""}`}</Badge>
                 <ErrorAlchemyMenu />
               </span>
             )}

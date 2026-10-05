@@ -28,6 +28,7 @@
  * tokens only; React Compiler is on.
  */
 
+import { Badge } from "@ai-matrx/design-system/controls";
 import React, { useState } from "react";
 import {
   FileText,
@@ -93,9 +94,7 @@ export const SubagentReportBlock: React.FC<SubagentReportBlockProps> = ({
                             <span className="text-sm font-semibold text-foreground">
                                 Research report
                             </span>
-                            <span className="rounded-full border border-primary/20 bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-primary">
-                                sub-agent
-                            </span>
+                            <Badge tone="primary">Sub-agent</Badge>
                         </div>
                         {queries && queries.length > 0 && (
                             <div className="truncate text-xs text-muted-foreground">

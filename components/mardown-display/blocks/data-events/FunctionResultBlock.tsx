@@ -1,5 +1,6 @@
 "use client";
 
+import { Badge } from "@ai-matrx/design-system/controls";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 import React, { useState } from "react";
 import { Terminal, CheckCircle2, XCircle, ChevronDown, ChevronUp, Clock } from "lucide-react";
@@ -36,9 +37,7 @@ const FunctionResultBlock: React.FC<FunctionResultBlockProps> = ({
               <XCircle className="w-3.5 h-3.5 text-destructive flex-shrink-0" />
             )}
             <span className="text-sm font-medium text-foreground font-mono">{functionName}()</span>
-            <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${success ? "bg-success/15 text-success" : "bg-destructive/15 text-destructive"}`}>
-              {success ? "success" : "failed"}
-            </span>
+            <Badge tone={success ? "success" : "destructive"}>{success ? "success" : "failed"}</Badge>
             {durationMs != null && (
               <span className="flex items-center gap-1 text-xs text-muted-foreground">
                 <Clock className="w-3 h-3" />

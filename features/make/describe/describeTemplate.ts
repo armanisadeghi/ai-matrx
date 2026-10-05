@@ -15,7 +15,7 @@
 //
 // Pure parts are exported for the guard; the doors take a client.
 
-import { RESOLVABLE_FIELD_TYPE_WORDS } from "@ai-matrx/records/use-cases";
+import { RESOLVABLE_FIELD_TYPE_WORDS } from "@ai-matrx/records/templates";
 import {
   CONTEXT_POLICIES,
   FIELD_SENSITIVITIES,
@@ -142,13 +142,34 @@ export function checkDescribeSpec(spec: TemplateSpec): DescribeCheck {
 }
 
 /**
+ * REUSE, NEVER DUPLICATE: each table the mandate said it meant (`reuses`) binds to the organization's own
+ * table (`bindsTo`) — the install makes no second one, adds only the fields it lacks and links the new
+ * tables to it. A reuse that names a token the spec lacks, or a table the organization does not have, binds
+ * nothing (the table is made, as the spec says).
+ */
+export function bindReuses(spec: TemplateSpec, reuses: DescribeAnswer["reuses"], existing: ExistingTable[]): TemplateSpec {
+  if (!reuses.length) return spec;
+  const byId = new Map(existing.map((t) => [t.id, t]));
+  const want = new Map(reuses.filter((r) => byId.has(r.existing_table_id)).map((r) => [r.token, byId.get(r.existing_table_id)!]));
+  return {
+    ...spec,
+    tables: spec.tables.map((t) => {
+      const e = want.get(t.token);
+      return e ? { ...t, bindsTo: { tableId: e.id, fields: e.fields.map((f) => f.key).filter(Boolean) } } : t;
+    }),
+  };
+}
+
+/**
  * The declaration custom.template_declare('org') takes: the checked spec, plus the keys the install door
  * needs and a one-off spec does not own — a catalogue id unique to this run, and the template agent slot
- * (the platform's default reader, no variables; the describe box runs no host agent step).
+ * (the platform's default reader, no variables; the describe box runs no host agent step). It is declared
+ * `ephemeral`: on no template shelf until the person presses "Save as my template".
  */
 export function describeDeclaration(spec: TemplateSpec, organizationId: string, stamp: string): Record<string, unknown> {
   const full = {
     ...spec,
+    ephemeral: true,
     catalogueId: `DESCRIBE-${stamp}`.slice(0, 64),
     strengths: [],
     // The describe profile works `requires` out; the gallery card reads it.

@@ -267,7 +267,7 @@ export function TemplatePreview({ templateId, bare = false, autoInstall = false 
   // org-filter: write-target the active organization is where this template installs; with none chosen the install asks
   const active = useOrganizationRequired();
   const organizationId = active.organizationState === "ready" ? active.organizationId : null;
-  const read = useCatalogue(`card:${templateId}:${organizationId ?? ""}`, galleryFilter({}, { installedIn: organizationId }));
+  const read = useCatalogue(`card:${templateId}:${organizationId ?? ""}`, galleryFilter({}, { installedIn: organizationId, id: templateId }));
   const card = read.phase === "read" ? (read.data.cards.find((c) => c.id === templateId) ?? null) : null;
   const [run, setRun] = useState<Run>({ phase: "idle" });
   const [askOrganization, setAskOrganization] = useState(false);
@@ -422,6 +422,7 @@ export function TemplatePreview({ templateId, bare = false, autoInstall = false 
             </Button>
           ) : null}
           <SavesTo />
+          {card.scope === "org" && card.ephemeral ? <KeepOneOff templateId={card.id} kept={read.reload} /> : null}
           {card.scope === "org" ? <ArchiveOrgTemplate templateId={card.id} name={card.name} /> : null}
         </div>
 
@@ -526,6 +527,31 @@ export function Progress({ run }: { run: { door: "template_install" | "template_
  * An organization's own template is archived, never deleted (custom.template_archive: the person who
  * saved it or an organization admin; anyone else is told so by the door). Installs stay as they are.
  */
+/** A describe run's one-off joins the organization's templates only when the person keeps it. */
+function KeepOneOff({ templateId, kept }: { templateId: string; kept: () => void }) {
+  const [why, setWhy] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const keep = async () => {
+    setBusy(true);
+    const { error } = await createClient().schema("custom").rpc("template_keep", { p_template_id: templateId });
+    setBusy(false);
+    if (error) {
+      setWhy(error.message);
+      return;
+    }
+    window.dispatchEvent(new Event(TEMPLATES_CHANGED_EVENT));
+    kept();
+  };
+  return (
+    <>
+      <Button variant="outline" onClick={() => void keep()} disabled={busy} data-make-template-keep="">
+        Save as my template
+      </Button>
+      {why ? <span className="text-sm text-destructive" role="alert">{why}</span> : null}
+    </>
+  );
+}
+
 function ArchiveOrgTemplate({ templateId, name }: { templateId: string; name: string }) {
   const router = useRouter();
   const [confirm, setConfirm] = useState(false);

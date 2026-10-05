@@ -181,7 +181,6 @@ export function PdfStudioSidebar({
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search documents…"
-                style={{ fontSize: "16px" }}
               />
             </div>
 

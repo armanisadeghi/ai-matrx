@@ -205,12 +205,11 @@ function NotePickerBody({
       <div className="border-b border-border px-2 py-1.5">
         <div className="relative">
           <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input variant="bare" adornment="start"
+          <Input adornment="start"
             type="search"
             placeholder="Search notes…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            style={{ fontSize: "16px" }}
           />
         </div>
       </div>

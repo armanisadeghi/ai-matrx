@@ -162,7 +162,7 @@ export function CatalogPasteBox({ autoFocus = true }: { autoFocus?: boolean }) {
                 )}
             >
                 <Link2 className="ml-2 size-5 shrink-0 text-muted-foreground" aria-hidden />
-                <Input variant="bare"
+                <Input
                     ref={inputRef}
                     value={value}
                     autoFocus={autoFocus}

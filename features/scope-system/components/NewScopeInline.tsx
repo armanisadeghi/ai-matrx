@@ -276,7 +276,6 @@ export function NewScopeInline({
             onChange={(e) => handleNameChange(e.target.value)}
             disabled={busy}
             required
-            style={{ fontSize: "16px" }}
           />
         </div>
         <div className="space-y-1.5">
@@ -293,7 +292,6 @@ export function NewScopeInline({
               }}
               placeholder={toSlug(name) || "url-slug"}
               disabled={busy}
-              style={{ fontSize: "16px" }}
               className="flex-1"
             />
             <Button
@@ -335,7 +333,6 @@ export function NewScopeInline({
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             disabled={busy}
-            style={{ fontSize: "16px" }}
           />
         </div>
 
@@ -432,7 +429,6 @@ export function NewScopeInline({
                       })
                     }
                     disabled={busy}
-                    style={{ fontSize: "16px" }}
                     className="flex-1"
                   />
                   <Button

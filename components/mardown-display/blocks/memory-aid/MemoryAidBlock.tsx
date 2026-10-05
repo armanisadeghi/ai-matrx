@@ -22,6 +22,7 @@
  * envelope (`study_media.ir_envelope`) — `readMemoryAidData` recognizes both.
  */
 
+import { Chip } from "@ai-matrx/design-system/controls";
 import { Brain, Landmark, Lightbulb, Loader2, MapPin, Pencil, Plus, Trash2 } from "lucide-react";
 import { Button } from "@ai-matrx/design-system";
 import {
@@ -303,9 +304,7 @@ export function TechniquePill({
   technique: MnemonicTechnique | HintTechnique;
 }) {
   return (
-    <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-      {TECHNIQUE_LABEL[technique]}
-    </span>
+    <Chip tone="primary" label={TECHNIQUE_LABEL[technique]} />
   );
 }
 

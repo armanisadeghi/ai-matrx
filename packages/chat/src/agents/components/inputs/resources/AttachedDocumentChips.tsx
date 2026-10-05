@@ -16,6 +16,7 @@
  * complete dynamic family policy + remove. Only the USER removes an attachment.
  */
 
+import { Button } from "@ai-matrx/design-system/controls";
 import { useEffect } from "react";
 import { AlertTriangle, FileText, RefreshCw } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
@@ -416,19 +417,18 @@ export function AttachedDocumentChips({
       data-rail-entry={inline ? "" : undefined}
     >
       {links.error && (
-        <button
+        <Button
           type="button"
+          tone="warning"
+          className="shrink-0"
           onClick={() => void links.reload()}
           disabled={links.status === "loading"}
-          className="inline-flex h-7 shrink-0 items-center gap-1.5 rounded-md border border-amber-500/40 bg-amber-500/10 px-2 text-xs text-amber-700 hover:bg-amber-500/15 disabled:opacity-60 dark:text-amber-300"
           title={links.error}
+          icon={<AlertTriangle />}
+          iconEnd={<RefreshCw className={links.status === "loading" ? "animate-spin" : undefined} />}
         >
-          <AlertTriangle className="size-3.5" />
           Attachment list unavailable
-          <RefreshCw
-            className={`size-3 ${links.status === "loading" ? "animate-spin" : ""}`}
-          />
-        </button>
+        </Button>
       )}
       <AnimatePresence mode="popLayout">
         {processedDocs.map((link) => (

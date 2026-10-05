@@ -479,7 +479,6 @@ export function ShortcutEditorNext({
               onChange={(e) => update("label", e.target.value)}
               placeholder={agentName}
               disabled={busy}
-              style={{ fontSize: "16px" }}
             />
           </Section>
 

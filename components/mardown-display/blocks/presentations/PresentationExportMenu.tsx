@@ -1,4 +1,5 @@
 "use client";
+import { Badge } from "@ai-matrx/design-system/controls";
 import { getActiveOrgId } from "@/lib/organizations/activeOrg";
 import React, { useState } from "react";
 import { announceComingSoon } from "@/lib/coming-soon/announce";
@@ -516,17 +517,11 @@ const PresentationExportMenu: React.FC<PresentationExportMenuProps> = ({
                     Create Google Slides
                   </p>
                   {!capabilities.googleSlides.available ? (
-                    <span className="px-1.5 py-0.5 text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 rounded">
-                      Coming Soon
-                    </span>
+                    <Badge tone="warning">Coming Soon</Badge>
                   ) : isAuthenticated && hasSlideScope ? (
-                    <span className="px-1.5 py-0.5 text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded">
-                      Ready
-                    </span>
+                    <Badge tone="success">Ready</Badge>
                   ) : (
-                    <span className="px-1.5 py-0.5 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded">
-                      Sign In
-                    </span>
+                    <Badge tone="info">Sign In</Badge>
                   )}
                 </div>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
@@ -548,9 +543,7 @@ const PresentationExportMenu: React.FC<PresentationExportMenuProps> = ({
                     Email to Me
                   </p>
                   {!user && (
-                    <span className="px-1.5 py-0.5 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded">
-                      Sign In
-                    </span>
+                    <Badge tone="info">Sign In</Badge>
                   )}
                 </div>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">

@@ -89,13 +89,11 @@ export default function SiteWorkbenchTab() {
               value={draftLabel}
               onChange={(e) => setDraftLabel(e.target.value)}
               placeholder="Label (optional)"
-              style={{ fontSize: "16px" }}
             />
             <Input mono
               value={draftUrl}
               onChange={(e) => setDraftUrl(e.target.value)}
               placeholder="https://…"
-              style={{ fontSize: "16px" }}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();

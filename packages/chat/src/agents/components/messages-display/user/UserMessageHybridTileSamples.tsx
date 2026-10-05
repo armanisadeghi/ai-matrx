@@ -5,6 +5,7 @@
  * Dev gallery only; pick a variant before wiring into AgentUserMessage.
  */
 
+import { Badge } from "@ai-matrx/design-system/controls";
 import { createElement, type ComponentType } from "react";
 import {
   Globe,
@@ -592,9 +593,7 @@ export function UserMessageHybridTileSamples({
           <h3 className="text-sm font-semibold text-foreground">
             S8 · Adaptive — ship candidate
           </h3>
-          <span className="text-[10px] font-medium uppercase tracking-wide text-primary bg-primary/10 px-1.5 py-0.5 rounded border border-primary/20">
-            Light 3D + dark glass
-          </span>
+          <Badge tone="primary">Light 3D + dark glass</Badge>
         </div>
         <p className="text-xs text-muted-foreground max-w-3xl">
           Combines S5 (3D raised) in light mode and S7 (glass ring + gradient)

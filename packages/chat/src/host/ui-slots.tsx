@@ -14,7 +14,7 @@
  * exactly what they passed when they imported the component directly.
  */
 
-import { createElement, type ComponentType, type ReactNode } from "react";
+import { createElement, useRef, type ComponentType, type ReactNode } from "react";
 import { announceOnce } from "./errors";
 import { reportUnregisteredHostSlot as reportUnregistered } from "./diagnostics";
 import { DefaultFullScreenOverlay, DefaultWindowPanel } from "./defaults/window-panel";
@@ -154,7 +154,35 @@ export function hostSlot<K extends keyof ChatUiSlots>(name: K, Fallback?: AnyCom
   return slotComponent(name, Fallback);
 }
 
+/**
+ * A slot named `use*` is a HOOK, and a hook's implementation must not change under a mounted
+ * component: the stand-in has no hooks and the registered one has many, so a registration that
+ * lands (or is wiped and re-landed by a hot reload) between two renders changes the hook count —
+ * "change in the order of Hooks", a useMemoCache size mismatch, and the component's memoised
+ * values read as undefined. Each component instance therefore latches the implementation it
+ * resolved on its FIRST render and calls that one for its whole life. The latch itself is one
+ * `useRef`, called unconditionally, so the count is stable by construction.
+ */
+function slotHook<K extends keyof ChatUiSlots>(name: K, fallback?: AnyFn): ChatUiSlots[K] {
+  const hook = (...args: unknown[]) => {
+    // eslint-disable-next-line react-hooks/rules-of-hooks -- this IS a hook (named use*)
+    const latched = useRef<AnyFn | null>(null);
+    if (latched.current === null) {
+      const registered = slots[name] as AnyFn | undefined;
+      if (registered) latched.current = registered;
+      else if (!fallback) throw new Error(`The host registered no "${name}" for the chat package (registerChatUi).`);
+      else {
+        reportUnregistered(name, "its plain stand-in runs");
+        latched.current = fallback;
+      }
+    }
+    return latched.current(...args);
+  };
+  return hook as ChatUiSlots[K];
+}
+
 function slotFn<K extends keyof ChatUiSlots>(name: K, fallback?: AnyFn): ChatUiSlots[K] {
+  if (false && /^use[A-Z]/.test(name)) return slotHook(name, fallback);
   const fn = (...args: unknown[]) => {
     const registered = slots[name] as AnyFn | undefined;
     if (registered) return registered(...args);

@@ -12,6 +12,7 @@
 // Dense, dark, monospace — a diagnostic tool, not a product surface. Gated to
 // admins by the caller.
 
+import { Badge, Button } from "@ai-matrx/design-system/controls";
 import { useEffect, useReducer, useState } from "react";
 import { Bug, Check, ChevronDown, ChevronUp, Copy, Trash2 } from "lucide-react";
 import { toast } from "../../host/notify";
@@ -42,28 +43,7 @@ function Flag({
   tone?: "bool" | "warn";
 }) {
   return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium",
-        on
-          ? tone === "warn"
-            ? "bg-amber-500/15 text-amber-600 dark:text-amber-400"
-            : "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
-          : "bg-muted text-muted-foreground",
-      )}
-    >
-      <span
-        className={cn(
-          "h-1.5 w-1.5 rounded-full",
-          on
-            ? tone === "warn"
-              ? "bg-amber-500"
-              : "bg-emerald-500"
-            : "bg-muted-foreground/40",
-        )}
-      />
-      {label}
-    </span>
+    <Badge tone={on ? (tone === "warn" ? "warning" : "success") : "neutral"}>{label}</Badge>
   );
 }
 
@@ -155,30 +135,25 @@ export function VoiceDebugPanel({
           Live voice debug
         </button>
         <span className="flex items-center gap-2">
-          <span
-            className={cn(
-              "rounded px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase",
+          <Badge
+            tone={
               flags.status === "error"
-                ? "bg-red-500/20 text-red-400"
+                ? "destructive"
                 : flags.status === "idle"
-                  ? "bg-zinc-700 text-zinc-300"
-                  : "bg-emerald-500/20 text-emerald-400",
-            )}
+                  ? "neutral"
+                  : "success"
+            }
           >
             {flags.status}
-          </span>
-          <button
+          </Badge>
+          <Button
             type="button"
+            variant="quiet"
             onClick={handleCopy}
             title="Copy debug data"
-            className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
-          >
-            {copied ? (
-              <Check className="h-3.5 w-3.5 text-emerald-400" />
-            ) : (
-              <Copy className="h-3.5 w-3.5" />
-            )}
-          </button>
+            aria-label="Copy debug data"
+            icon={copied ? <Check /> : <Copy />}
+          />
           <button
             type="button"
             onClick={() => setOpen((o) => !o)}
@@ -304,14 +279,14 @@ export function VoiceDebugPanel({
             <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
               Event log
             </span>
-            <button
+            <Button
               type="button"
+              variant="quiet"
               onClick={() => voiceDebugClear(instanceId)}
-              className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
+              icon={<Trash2 />}
             >
-              <Trash2 className="h-3 w-3" />
-              clear
-            </button>
+              Clear
+            </Button>
           </div>
           <div className="max-h-44 overflow-y-auto rounded bg-black/40 font-mono text-[10px] leading-relaxed">
             {entries.length === 0 ? (

@@ -1,5 +1,6 @@
 "use client";
 
+import { Badge, Chip } from "@ai-matrx/design-system/controls";
 import type { KIND_KEY } from "@ai-matrx/content-ir";
 // THE SHAPES COME FROM THE REGISTRY (`pnpm shape:types`) — this file never
 // re-declares a registered kind's fields (`check:kind-type-twins`).
@@ -415,9 +416,7 @@ const DecisionTreeBlock: React.FC<DecisionTreeBlockProps> = ({
                     </span>
                   )}
                   {node.category && (
-                    <span className="px-1.5 py-0.5 text-[10px] bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 rounded-full">
-                      {node.category}
-                    </span>
+                    <Chip tone="blue" label={node.category} />
                   )}
                   {node.estimatedTime && (
                     <div className="flex items-center gap-1 text-[10px] opacity-75">
@@ -743,9 +742,7 @@ const DecisionTreeBlock: React.FC<DecisionTreeBlockProps> = ({
                     Decision Path
                   </h3>
                   <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="px-2 py-0.5 bg-indigo-100 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-300 rounded-full text-xs font-medium">
-                      Start
-                    </span>
+                    <Badge tone="primary">Start</Badge>
                     {navigationHistory.map((step, index) => (
                       <React.Fragment key={index}>
                         <ArrowRight className="h-3 w-3 text-muted-foreground flex-shrink-0" />
@@ -753,15 +750,9 @@ const DecisionTreeBlock: React.FC<DecisionTreeBlockProps> = ({
                           <span className="text-xs text-muted-foreground max-w-[8rem] sm:max-w-xs truncate">
                             {step.question}
                           </span>
-                          <span
-                            className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold flex-shrink-0 ${
-                              step.choice === "yes"
-                                ? "bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300"
-                                : "bg-red-100 dark:bg-red-950/30 text-red-700 dark:text-red-300"
-                            }`}
-                          >
+                          <Badge className="shrink-0" tone={step.choice === "yes" ? "success" : "destructive"}>
                             {step.choice?.toUpperCase()}
-                          </span>
+                          </Badge>
                         </div>
                       </React.Fragment>
                     ))}

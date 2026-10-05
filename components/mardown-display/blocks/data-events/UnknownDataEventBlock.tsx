@@ -1,4 +1,5 @@
 "use client";
+import { Chip } from "@ai-matrx/design-system/controls";
 import React, { useState } from "react";
 import { HelpCircle, ChevronDown, ChevronUp, Copy, Check } from "lucide-react";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
@@ -96,9 +97,7 @@ const UnknownDataEventBlock: React.FC<UnknownDataEventBlockProps> = ({
             <span className="text-sm font-medium text-foreground">
               Unknown Data Event
             </span>
-            <span className="text-xs font-mono px-1.5 py-0.5 rounded bg-warning/15 text-warning font-medium">
-              {dataType}
-            </span>
+            <Chip tone="warning" label={dataType} />
           </div>
           <p className="text-xs text-muted-foreground mt-0.5">
             This data type is not yet registered. Expand to inspect, or Copy for

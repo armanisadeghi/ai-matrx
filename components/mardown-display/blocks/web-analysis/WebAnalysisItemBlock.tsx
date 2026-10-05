@@ -28,6 +28,7 @@
  * already draws chrome. This contributes flow spacing and no frame of its own.
  */
 
+import { Chip } from "@ai-matrx/design-system/controls";
 import React from "react";
 import { Braces, CircleCheck, TriangleAlert } from "lucide-react";
 
@@ -149,25 +150,17 @@ const WebAnalysisItemBlock: React.FC<WebAnalysisItemBlockProps> = ({
 
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
         {hasCount ? (
-          <span
-            className={cn(
-              "inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium",
+          <Chip
+            tone={passed ? "success" : "destructive"}
+            icon={passed ? <CircleCheck /> : <TriangleAlert />}
+            label={
               passed
-                ? "bg-success/10 text-success"
-                : "bg-destructive/10 text-destructive",
-            )}
-          >
-            {passed ? (
-              <CircleCheck className="h-3.5 w-3.5 shrink-0" />
-            ) : (
-              <TriangleAlert className="h-3.5 w-3.5 shrink-0" />
-            )}
-            {passed
-              ? "No issues found"
-              : `${check.issuesFound!.toLocaleString()} ${
-                  check.issuesFound === 1 ? "issue" : "issues"
-                } found`}
-          </span>
+                ? "No issues found"
+                : `${check.issuesFound!.toLocaleString()} ${
+                    check.issuesFound === 1 ? "issue" : "issues"
+                  } found`
+            }
+          />
         ) : null}
         {label ? (
           <span className="text-sm font-medium text-foreground">{label}</span>

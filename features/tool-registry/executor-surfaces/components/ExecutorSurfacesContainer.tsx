@@ -127,7 +127,6 @@ export function ExecutorSurfacesContainer() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search executor name, parent, description…"
-            style={{ fontSize: "16px" }}
           />
         </div>
         <div className="flex items-center gap-0.5 rounded-md border border-border p-0.5 bg-background">

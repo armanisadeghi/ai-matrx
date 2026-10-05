@@ -197,7 +197,7 @@ export function Composer({ shows }: ComposerProps) {
             <div className="space-y-3">
               <div className="flex items-center gap-2 rounded-xl border border-border bg-background/60 px-3.5 py-2.5">
                 <Globe className="h-4 w-4 shrink-0 text-muted-foreground" />
-                <Input variant="bare"
+                <Input
                   value={resolveUrl}
                   onChange={(e) => setResolveUrl(e.target.value)}
                   placeholder={

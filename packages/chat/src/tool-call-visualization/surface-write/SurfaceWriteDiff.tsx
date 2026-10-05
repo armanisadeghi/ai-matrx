@@ -27,6 +27,7 @@
  * computes, and the package engine caps its quadratic paths.
  */
 
+import { Badge } from "@ai-matrx/design-system/controls";
 import { useDeferredValue, useState } from "react";
 
 import {
@@ -93,12 +94,12 @@ export function SurfaceWriteDiff({
     <span className="ml-1 inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
       <span>{MODE_LABEL[receipt.mode] ?? "Changed"}</span>
       {receipt.truncated ? (
-        <span
-          className="rounded border border-amber-500/40 bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-400"
+        <Badge
+          tone="warning"
           title={`This change was ${formatCount(receipt.beforeChars)} → ${formatCount(receipt.afterChars)} characters; the diff shows the first part only. Open the item itself to see all of it.`}
         >
           shortened
-        </span>
+        </Badge>
       ) : null}
       {canPreview ? (
         <button

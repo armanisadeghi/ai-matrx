@@ -26,6 +26,7 @@
  * Consumes the bridge serverData from `features/content-ir/kinds/seo-package.ts`.
  */
 
+import { Chip, ChipSet } from "@ai-matrx/design-system/controls";
 import { useState, type ReactNode } from "react";
 import {
   Check,
@@ -241,22 +242,16 @@ export function SeoPackageKeywords({
   if (keywords.length === 0) return null;
   return (
     <Field label="Keywords">
-      <div className="mt-0.5 flex flex-wrap gap-1">
+      <ChipSet className="mt-0.5">
         {keywords.map((keyword, index) => (
-          <span
+          <Chip
             key={`${index}-${keyword}`}
-            className={cn(
-              "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px]",
-              keyword === primary_keyword
-                ? "bg-primary/10 font-medium text-primary"
-                : "bg-muted/60 text-muted-foreground",
-            )}
-          >
-            <Tag className="h-2.5 w-2.5" />
-            {keyword}
-          </span>
+            tone={keyword === primary_keyword ? "primary" : "neutral"}
+            icon={<Tag />}
+            label={keyword}
+          />
         ))}
-      </div>
+      </ChipSet>
     </Field>
   );
 }

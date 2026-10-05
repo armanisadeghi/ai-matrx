@@ -96,7 +96,6 @@ export function CurrencyVariableInput({
         placeholder="0.00"
         disabled={disabled}
         aria-label={`${variableName} amount`}
-        style={{ fontSize: "16px" }}
         className="flex-1"
       />
       <Select

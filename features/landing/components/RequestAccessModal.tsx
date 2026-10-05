@@ -227,7 +227,6 @@ export function RequestAccessModal({ open, onOpenChange }: RequestAccessModalPro
                 placeholder="John Smith"
                 required
                 disabled={isSubmitting}
-                style={{ fontSize: '16px' }}
               />
             </div>
 
@@ -244,7 +243,6 @@ export function RequestAccessModal({ open, onOpenChange }: RequestAccessModalPro
                 placeholder="Acme Corporation"
                 required
                 disabled={isSubmitting}
-                style={{ fontSize: '16px' }}
               />
             </div>
 
@@ -261,7 +259,6 @@ export function RequestAccessModal({ open, onOpenChange }: RequestAccessModalPro
                 placeholder="john@acme.com"
                 required
                 disabled={isSubmitting}
-                style={{ fontSize: '16px' }}
               />
             </div>
 
@@ -289,7 +286,7 @@ export function RequestAccessModal({ open, onOpenChange }: RequestAccessModalPro
                 }}
                 disabled={isSubmitting}
               >
-                <SelectTrigger id="user_type" style={{ fontSize: '16px' }}>
+                <SelectTrigger id="user_type">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -316,7 +313,6 @@ export function RequestAccessModal({ open, onOpenChange }: RequestAccessModalPro
                   placeholder="Your role"
                   required={step1Data.user_type === 'other'}
                   disabled={isSubmitting}
-                  style={{ fontSize: '16px' }}
                 />
               </div>
             )}
@@ -389,7 +385,6 @@ export function RequestAccessModal({ open, onOpenChange }: RequestAccessModalPro
                   onChange={(e) => setStep2Data({ ...step2Data, phone: e.target.value })}
                   placeholder="+1 (555) 123-4567"
                   disabled={isSubmitting}
-                  style={{ fontSize: '16px' }}
                 />
               </div>
               <div className="space-y-2">
@@ -403,7 +398,6 @@ export function RequestAccessModal({ open, onOpenChange }: RequestAccessModalPro
                   onChange={(e) => setStep2Data({ ...step2Data, referral_source: e.target.value })}
                   placeholder="LinkedIn, Twitter, colleague…"
                   disabled={isSubmitting}
-                  style={{ fontSize: '16px' }}
                 />
               </div>
             </div>

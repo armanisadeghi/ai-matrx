@@ -2,6 +2,7 @@
 
 // THE SHAPES COME FROM THE REGISTRY (`pnpm shape:types`) — this file never
 // re-declares a registered kind's fields (`check:kind-type-twins`).
+import { Badge } from "@ai-matrx/design-system/controls";
 import type {
   ProgressCategory,
   ProgressItem,
@@ -686,9 +687,7 @@ const ProgressTrackerBlock: React.FC<ProgressTrackerBlockProps> = ({
                                         </span>
                                       )}
                                       {item.optional && (
-                                        <span className="px-2 py-0.5 text-xs font-medium rounded-full text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30">
-                                          optional
-                                        </span>
+                                        <Badge tone="info">optional</Badge>
                                       )}
                                       {item.estimated_hours && (
                                         <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">

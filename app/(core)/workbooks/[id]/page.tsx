@@ -247,7 +247,7 @@ export default function WorkbookPage({
         left={
           <>
             <ChevronLeftTapButton href="/workbooks" ariaLabel="Back" />
-            <Input variant="bare"
+            <Input
               value={renameDraft}
               onChange={(e) => setRenameDraft(e.target.value)}
               onBlur={commitRename}

@@ -129,7 +129,6 @@ export function ScopeAdvancedSection({ scope }: ScopeAdvancedSectionProps) {
                 value={slug}
                 onChange={(e) => setSlug(e.target.value)}
                 placeholder={toSlug(scope.name) || "url-slug"}
-                style={{ fontSize: "16px" }}
                 disabled={busy}
                 className="flex-1"
               />
@@ -158,7 +157,6 @@ export function ScopeAdvancedSection({ scope }: ScopeAdvancedSectionProps) {
               value={sortOrder}
               onChange={(e) => setSortOrder(e.target.value)}
               placeholder="0"
-              style={{ fontSize: "16px" }}
               disabled={busy}
               className="max-w-[140px]"
             />

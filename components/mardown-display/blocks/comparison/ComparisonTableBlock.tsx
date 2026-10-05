@@ -1,5 +1,6 @@
 "use client";
 
+import { Badge } from "@ai-matrx/design-system/controls";
 import type { KIND_KEY } from "@ai-matrx/content-ir";
 // THE SHAPES COME FROM THE REGISTRY (`pnpm shape:types`) — this file never
 // re-declares a registered kind's fields (`check:kind-type-twins`).
@@ -953,20 +954,17 @@ const ComparisonTableBlock: React.FC<ComparisonTableBlockProps> = ({
                             </td>
                             {showScores && (
                               <td className="px-2 py-2 text-center">
-                                <span
-                                  className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-semibold tabular-nums ${
+                                <Badge
+                                  tone={
                                     itemScores[item] >= 80
-                                      ? "bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300"
+                                      ? "success"
                                       : itemScores[item] >= 60
-                                        ? "bg-yellow-100 dark:bg-yellow-950/30 text-yellow-700 dark:text-yellow-300"
-                                        : "bg-red-100 dark:bg-red-950/30 text-red-700 dark:text-red-300"
-                                  }`}
+                                        ? "warning"
+                                        : "destructive"
+                                  }
                                 >
-                                  {itemScores[item]}%
-                                  {itemScores[item] >= 80 && (
-                                    <Zap className="h-3 w-3 text-green-500" />
-                                  )}
-                                </span>
+                                  {`${itemScores[item]}%`}
+                                </Badge>
                               </td>
                             )}
                             {comparison.criteria.map(

@@ -119,7 +119,6 @@ export function YoutubeVariableInput({
           onChange={(e) => handleChange(e.target.value)}
           placeholder="Paste any YouTube URL or 11-char video ID"
           aria-label={`YouTube URL for ${variableName}`}
-          style={{ fontSize: "16px" }}
         />
       </div>
       {id && stored !== id && (

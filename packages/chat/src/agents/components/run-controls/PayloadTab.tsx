@@ -21,6 +21,7 @@
  *   - Raw payload (collapsed JSON) + Copy button
  */
 
+import { Badge } from "@ai-matrx/design-system/controls";
 import { useCallback, useMemo, useState } from "react";
 import { Copy, Check } from "lucide-react";
 import { useAppSelector } from "../../../store/hooks";
@@ -187,9 +188,9 @@ function MessagePartsView({ parts }: { parts: UserInputPart[] }) {
               {partType}
             </span>
             {isReferenceRole(partRole) && (
-              <span className="inline-flex items-center px-1.5 py-px rounded border text-[9px] font-medium bg-primary/10 border-primary/30 text-primary shrink-0">
+              <Badge className="shrink-0" tone="primary">
                 {IMAGE_ROLE_META[partRole].ask}
-              </span>
+              </Badge>
             )}
             <div className="flex-1 min-w-0">
               {text ? (

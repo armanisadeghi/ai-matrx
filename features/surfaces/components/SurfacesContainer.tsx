@@ -771,7 +771,6 @@ function NewClientDialog({
               value={name}
               onChange={(e) => setName(e.target.value.toLowerCase())}
               placeholder="e.g. matrx-mobile"
-              style={{ fontSize: "16px" }}
               disabled={busy}
               autoFocus
             />

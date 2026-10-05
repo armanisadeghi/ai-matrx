@@ -478,7 +478,6 @@ const ColumnHeaderMenu = ({
                   value={valueQuery}
                   onChange={(e) => setValueQuery(e.target.value)}
                   placeholder="Search values…"
-                  style={{ fontSize: "16px" }}
                 />
               )}
 
@@ -567,7 +566,6 @@ const ColumnHeaderMenu = ({
                   })
                 }
                 placeholder="From"
-                style={{ fontSize: "16px" }}
               />
               <span className="text-xs text-muted-foreground">to</span>
               <Input
@@ -580,7 +578,6 @@ const ColumnHeaderMenu = ({
                   })
                 }
                 placeholder="To"
-                style={{ fontSize: "16px" }}
               />
             </div>
           )}
@@ -594,7 +591,6 @@ const ColumnHeaderMenu = ({
                   onFilterChange({ mode: "text", text: e.target.value })
                 }
                 placeholder="Contains…"
-                style={{ fontSize: "16px" }}
               />
               {filter?.mode === "text" && filter.text !== "" && (
                 <button

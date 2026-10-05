@@ -379,7 +379,6 @@ export function SurfacesListColumn({
               "h-9 pl-8 text-sm bg-background",
               isUrlSearch && "border-primary/40",
             )}
-            style={{ fontSize: "16px" }}
           />
         </div>
       </div>

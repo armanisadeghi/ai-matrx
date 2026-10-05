@@ -38873,6 +38873,7 @@ export type Database = {
         }
         Returns: Json
       }
+      template_keep: { Args: { p_template_id: string }; Returns: Json }
       template_restore: {
         Args: {
           p_budget_ms?: number

@@ -387,7 +387,6 @@ function BrowserWorkbenchWindowInner({
             value={addressDraft}
             onChange={(e) => setAddressDraft(e.target.value)}
             className="min-w-[12rem] flex-1"
-            style={{ fontSize: "16px" }}
             placeholder="https://…"
             onKeyDown={(e) => {
               if (e.key === "Enter") {

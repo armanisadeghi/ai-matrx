@@ -172,7 +172,6 @@ export function TranscriptsSidebar({
             placeholder="Search transcripts..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            style={{ fontSize: "16px" }}
           />
         </div>
       </div>
@@ -275,7 +274,6 @@ export function TranscriptsSidebar({
                     <Input
                       value={renameValue}
                       onChange={(e) => setRenameValue(e.target.value)}
-                      style={{ fontSize: "16px" }}
                       autoFocus
                       disabled={renameBusy}
                       onKeyDown={(e) => {

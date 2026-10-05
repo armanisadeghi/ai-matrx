@@ -121,7 +121,6 @@ export function PlacesSelector({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search jobs by name or key…"
-            style={{ fontSize: "16px" }}
           />
         </div>
         <Button

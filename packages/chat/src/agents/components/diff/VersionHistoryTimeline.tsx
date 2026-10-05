@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@ai-matrx/design-system/controls";
+import { Badge, Button, Chip, ChipSet } from "@ai-matrx/design-system/controls";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -309,17 +309,16 @@ function VersionRow({
         <td className="py-2.5 pr-3 max-sm:min-w-[12rem]">
           <div className="mb-1 flex flex-wrap items-center gap-1">
             {effectiveChange && (
-              <span
-                className="inline-block rounded bg-amber-100 px-1.5 py-0.5 text-[0.5625rem] font-medium text-amber-700 dark:bg-amber-950/40 dark:text-amber-400"
+              <Badge
+                tone="warning"
                 title={
                   declared
                     ? "Manually declared: the way this agent is used could break at this version."
                     : "The declared input/output structure changed at this version — pinned callers and saved sample inputs may no longer fit."
                 }
               >
-                Contract: {effectiveChange}
-                {declared ? " (declared)" : ""}
-              </span>
+                {`Contract: ${effectiveChange}${declared ? " (declared)" : ""}`}
+              </Badge>
             )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -354,28 +353,23 @@ function VersionRow({
             </div>
           )}
           {diff && changedFields.length > 0 ? (
-            <div className="flex flex-wrap gap-1">
+            <ChipSet>
               {changedFields.map((n) => (
-                <span
+                <Chip
                   key={n.key}
-                  className={cn(
-                    "inline-block px-1.5 py-0.5 rounded text-[0.5625rem] font-medium",
+                  tone={
                     n.changeType === "added"
-                      ? "bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-400"
+                      ? "success"
                       : n.changeType === "removed"
-                        ? "bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400"
-                        : "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400",
-                  )}
-                >
-                  {humanizeIdentifier(n.key) || n.key}
-                  {n.changeType === "added"
-                    ? " +"
-                    : n.changeType === "removed"
-                      ? " −"
-                      : ""}
-                </span>
+                        ? "destructive"
+                        : "warning"
+                  }
+                  label={`${humanizeIdentifier(n.key) || n.key}${
+                    n.changeType === "added" ? " +" : n.changeType === "removed" ? " −" : ""
+                  }`}
+                />
               ))}
-            </div>
+            </ChipSet>
           ) : diff && changedFields.length === 0 ? (
             <span className="text-muted-foreground/50">No changes</span>
           ) : !version.snapshotLoaded ? (

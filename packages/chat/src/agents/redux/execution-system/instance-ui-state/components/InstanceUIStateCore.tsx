@@ -1,5 +1,6 @@
 "use client";
 
+import { Badge } from "@ai-matrx/design-system/controls";
 import React, { useState } from "react";
 import { cn } from "@ai-matrx/design-system";
 import {
@@ -351,16 +352,9 @@ export function InstanceUIStateCore({
           )}
         </div>
         <div className="flex items-center gap-1 shrink-0">
-          <span
-            className={cn(
-              "inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium border shrink-0",
-              state.displayMode === "direct"
-                ? "bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/20"
-                : "bg-muted text-muted-foreground border-border",
-            )}
-          >
+          <Badge className="shrink-0" tone={state.displayMode === "direct" ? "info" : "neutral"}>
             {state.displayMode}
-          </span>
+          </Badge>
           <CopyEntireButton json={instanceJson} />
         </div>
       </div>

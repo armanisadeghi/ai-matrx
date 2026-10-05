@@ -51,6 +51,7 @@
  * a list says how many things are in it, and a record shows its fields.
  */
 
+import { Badge } from "@ai-matrx/design-system/controls";
 import React from "react";
 import {
   ChevronDown,
@@ -137,12 +138,13 @@ export const ColumnTypeBadge: React.FC<{
     .filter(Boolean)
     .join(" · ");
   return (
-    <span
-      className="shrink-0 rounded bg-primary/10 px-1 text-[10px] font-normal leading-tight text-primary"
+    <Badge
+      className="shrink-0"
+      tone="primary"
       title={detail ? `Declared ${type} — ${detail}` : `Declared ${type}`}
     >
       {TYPE_LABEL[type] ?? type}
-    </span>
+    </Badge>
   );
 };
 

@@ -273,7 +273,6 @@ function SourcePicker({ onFile, onError, disabled }: SourcePickerProps) {
             placeholder="https://example.com/image.jpg"
             disabled={fetching}
             className="flex-1"
-            style={{ fontSize: "16px" }}
             autoFocus
           />
           <Button

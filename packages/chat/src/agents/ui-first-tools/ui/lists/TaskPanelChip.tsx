@@ -13,6 +13,7 @@
  * shows correct counts even if the user reloaded the page mid-conversation.
  */
 
+import { Chip } from "@ai-matrx/design-system/controls";
 import { useEffect } from "react";
 import { ListChecks } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "../../../../store/hooks";
@@ -61,29 +62,16 @@ export function TaskPanelChip({
 
   return (
     <>
-      <button
-        type="button"
-        onClick={lists.toggle}
-        aria-pressed={lists.isVisible}
-        className={cn(
-          "inline-flex items-center gap-1.5 px-2 py-1 text-xs rounded-md",
-          "bg-card hover:bg-muted text-muted-foreground hover:text-foreground",
-          "border border-border transition-colors",
-          lists.isVisible && "border-primary bg-primary/15 text-primary",
-          className,
-        )}
+      <Chip
+        asChild
+        pressed={lists.isVisible}
+        className={className}
+        icon={<ListChecks />}
+        label={`${taskCounts.done}/${taskCounts.total}${todoCounts.open > 0 ? ` · ${todoCounts.open} open` : ""}`}
         title="Open agent lists panel"
       >
-        <ListChecks className="w-3.5 h-3.5" />
-        <span>
-          {taskCounts.done}/{taskCounts.total}
-        </span>
-        {todoCounts.open > 0 && (
-          <span className="ml-1 px-1 rounded bg-primary/10 text-primary">
-            {todoCounts.open}
-          </span>
-        )}
-      </button>
+        <button type="button" onClick={lists.toggle} />
+      </Chip>
     </>
   );
 }

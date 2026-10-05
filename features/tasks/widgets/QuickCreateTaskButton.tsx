@@ -152,7 +152,6 @@ export default function QuickCreateTaskButton(props: QuickCreateTaskButtonProps)
               }
             }}
             placeholder="Task title..."
-            style={{ fontSize: "16px" }}
           />
 
           {expanded && (

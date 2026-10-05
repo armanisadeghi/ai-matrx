@@ -609,8 +609,6 @@ export function DataTableBlock({ serverData, className }: DataTableBlockProps) {
               value={filter}
               onChange={(event) => setFilter(event.target.value)}
               placeholder={`Filter ${rows.length.toLocaleString()} rows…`}
-              // 16px prevents iOS zoom-on-focus.
-              style={{ fontSize: "16px" }}
             />
           </div>
         </div>

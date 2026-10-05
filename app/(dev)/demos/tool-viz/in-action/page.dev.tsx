@@ -1237,7 +1237,6 @@ function RealRunsPanel({
             value={toolSearch}
             onChange={(e) => setToolSearch(e.target.value)}
             placeholder="Search tools…"
-            style={{ fontSize: 16 }}
           />
         </div>
         <div className="flex items-center gap-0.5 px-0.5">

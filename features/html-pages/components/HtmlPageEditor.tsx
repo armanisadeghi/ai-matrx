@@ -513,7 +513,6 @@ export default function HtmlPageEditor({
               markDirty();
             }}
             placeholder="Page title"
-            style={{ fontSize: "16px" }}
           />
           <p className="text-[11px] text-muted-foreground mt-1">
             Used as the HTML &lt;title&gt; and primary SEO title (
@@ -554,7 +553,6 @@ export default function HtmlPageEditor({
               markDirty();
             }}
             placeholder="comma, separated, keywords"
-            style={{ fontSize: "16px" }}
           />
         </div>
 
@@ -569,7 +567,6 @@ export default function HtmlPageEditor({
               markDirty();
             }}
             placeholder="https://…"
-            style={{ fontSize: "16px" }}
           />
         </div>
 
@@ -584,7 +581,6 @@ export default function HtmlPageEditor({
               markDirty();
             }}
             placeholder="https://…"
-            style={{ fontSize: "16px" }}
           />
         </div>
 

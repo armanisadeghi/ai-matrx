@@ -2,6 +2,7 @@
 
 // THE SHAPES COME FROM THE REGISTRY, via the parser that produces them —
 // this renderer never re-declares them (`check:kind-type-twins`).
+import { Chip } from "@ai-matrx/design-system/controls";
 import type {
   TroubleshootingStep,
   TroubleshootingSolution,
@@ -840,12 +841,7 @@ const TroubleshootingBlock: React.FC<TroubleshootingBlockProps> = ({
                                 <div className="flex flex-wrap gap-2">
                                   {issue.relatedIssues.map(
                                     (relatedIssue, index) => (
-                                      <span
-                                        key={index}
-                                        className="px-3 py-1 text-xs bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 rounded-full"
-                                      >
-                                        {relatedIssue}
-                                      </span>
+                                      <Chip key={index} tone="blue" label={relatedIssue} />
                                     ),
                                   )}
                                 </div>

@@ -1,3 +1,4 @@
+import { Badge } from "@ai-matrx/design-system/controls";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import React, { useState } from 'react';
 import { Copy, Check, FileText, Hash, Type, List, Minus, Quote, Link, CornerDownLeft, Square, SquareCheckBig } from 'lucide-react';
@@ -359,9 +360,7 @@ const LinesViewer = ({ data }: { data: LineItem[] }) => {
                   {/* Line Header */}
                   <div className="flex items-center gap-2 mb-2 opacity-75">
                     {getLineIcon(line.type)}
-                    <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-0.5 rounded font-mono">
-                      {index + 1}
-                    </span>
+                    <Badge>{index + 1}</Badge>
                     <span className="text-xs text-gray-500 dark:text-gray-400">
                       {getLineLabel(line.type)}
                     </span>

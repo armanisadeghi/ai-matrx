@@ -417,7 +417,6 @@ export function MediaVariableInput({
             onChange={(e) => onChange(e.target.value)}
             placeholder={meta.urlPlaceholder}
             aria-label={`${meta.label} URL for ${variableName}`}
-            style={{ fontSize: "16px" }}
           />
         </>
       )}

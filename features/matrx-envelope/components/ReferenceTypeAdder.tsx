@@ -163,14 +163,12 @@ function UrlTypeAdder({
         placeholder="https://…"
         value={url}
         onChange={(e) => setUrl(e.target.value)}
-        style={{ fontSize: "16px" }}
       />
       <Input
         aria-label="Link label"
         placeholder="Label (optional)"
         value={label}
         onChange={(e) => setLabel(e.target.value)}
-        style={{ fontSize: "16px" }}
       />
       <Button type="submit" size="sm" className="w-full" disabled={!valid}>
         <Link2 className="mr-1.5 h-3.5 w-3.5" />
@@ -264,7 +262,6 @@ function ScopeTypeAdder({
             candidateRefs.current[0]?.focus();
           }}
           placeholder={`Search ${referenceTypeDisplayPlural("scope").toLowerCase()}…`}
-          style={{ fontSize: "16px" }}
         />
       </div>
       {treeError ? (
@@ -701,7 +698,6 @@ function CandidateSearch({
             candidateRefs.current[0]?.focus();
           }}
           placeholder={`Search ${plural.toLowerCase()}…`}
-          style={{ fontSize: "16px" }}
         />
         {loading && (
           <Loader2 className="absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 animate-spin text-muted-foreground" />

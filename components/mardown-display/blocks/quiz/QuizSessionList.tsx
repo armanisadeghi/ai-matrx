@@ -1,5 +1,6 @@
 'use client';
 
+import { Chip } from "@ai-matrx/design-system/controls";
 import React, { useEffect, useState } from 'react';
 import { Trash2, Play, Clock, Trophy, CheckCircle, AlertCircle } from 'lucide-react';
 import { getUserQuizSessions, deleteQuizSession, type QuizSession } from '@/actions/quiz.actions';
@@ -122,9 +123,7 @@ export const QuizSessionList: React.FC<QuizSessionListProps> = ({
                   </div>
                   {session.category && (
                     <div className="ml-7">
-                      <span className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-2 py-0.5 rounded">
-                        {session.category}
-                      </span>
+                      <Chip tone="violet" label={session.category} />
                     </div>
                   )}
                 </div>

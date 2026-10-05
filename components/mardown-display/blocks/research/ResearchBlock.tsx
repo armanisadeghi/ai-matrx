@@ -2,6 +2,7 @@
 
 // THE SHAPES COME FROM THE REGISTRY, via the parser that produces them —
 // this renderer never re-declares them (`check:kind-type-twins`).
+import { Badge } from "@ai-matrx/design-system/controls";
 import type {
   ResearchFinding,
   ResearchSection,
@@ -789,13 +790,9 @@ const ResearchBlock: React.FC<ResearchBlockProps> = ({
                               {section.title}
                             </span>
                           </div>
-                          <div className={`px-2 py-1 rounded text-xs font-medium ${
-                            section.recognized 
-                              ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300' 
-                              : 'bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300'
-                          }`}>
-                            {section.recognized ? 'Recognized' : 'Unrecognized'}
-                          </div>
+                          <Badge tone={section.recognized ? "success" : "destructive"}>
+                            {section.recognized ? "Recognized" : "Unrecognized"}
+                          </Badge>
                         </div>
                       ))}
                     </div>

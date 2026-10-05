@@ -314,7 +314,6 @@ export default function HtmlPageListView({
               placeholder="Search pages…"
               value={search}
               onChange={(event) => replaceListState({ q: event.target.value })}
-              style={{ fontSize: "16px" }}
             />
             {search && (
               <button

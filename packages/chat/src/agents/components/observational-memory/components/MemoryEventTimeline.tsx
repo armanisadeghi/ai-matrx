@@ -16,6 +16,7 @@
  * can trace exactly what each turn spent on memory.
  */
 
+import { Badge } from "@ai-matrx/design-system/controls";
 import React from "react";
 import {
   AlertTriangle,
@@ -169,9 +170,7 @@ function MemoryEventRow({ event }: { event: MemoryEventEntry }) {
               </span>
             )}
             {event.phase && (
-              <span className="font-mono text-[10px] text-amber-500 bg-amber-500/10 px-1 rounded">
-                {event.phase}
-              </span>
+              <Badge tone="warning">{event.phase}</Badge>
             )}
             {event.model && (
               <span

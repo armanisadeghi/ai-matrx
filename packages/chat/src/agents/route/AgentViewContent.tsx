@@ -32,7 +32,7 @@ import { isUuidShape } from "@ai-matrx/kit/uuid";
 import { supabase } from "../../host/db";
 import { Badge } from "@ai-matrx/design-system";
 import { Button } from "@ai-matrx/design-system";
-import { Button as ControlButton } from "@ai-matrx/design-system/controls";
+import { Button as ControlButton, Chip } from "@ai-matrx/design-system/controls";
 import { Card, CardContent, CardHeader, CardTitle } from "@host/components/ui/card";
 import {
   Alert,
@@ -853,9 +853,7 @@ export function AgentViewContent({ agentId, recordSections }: { agentId: string;
                         key={v.name}
                         className="flex items-start gap-3 p-2.5 rounded-lg bg-muted/30"
                       >
-                        <code className="text-xs font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded shrink-0">
-                          {`{{${v.name}}}`}
-                        </code>
+                        <Chip className="shrink-0" tone="primary" label={`{{${v.name}}}`} />
                         <div className="flex-1 min-w-0 text-sm space-y-0.5">
                           <div className="font-medium text-foreground">
                             {variableRunLabel(v)}

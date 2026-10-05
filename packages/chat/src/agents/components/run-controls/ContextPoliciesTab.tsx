@@ -20,6 +20,7 @@
  * value survives the instance being destroyed (e.g. on reset).
  */
 
+import { Button } from "@ai-matrx/design-system/controls";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Plus, Trash2, Pencil, Check, X, RefreshCw } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "../../../store/hooks";
@@ -733,14 +734,9 @@ function AddAdHocRow({
             </option>
           ))}
         </select>
-        <button
-          type="button"
-          onClick={handleAdd}
-          className="flex items-center gap-1 px-2 py-1 text-[11px] bg-primary/10 text-primary hover:bg-primary/20 rounded transition-colors"
-        >
-          <Plus className="w-3 h-3" />
+        <Button type="button" variant="quiet" onClick={handleAdd} icon={<Plus />}>
           Add
-        </button>
+        </Button>
       </div>
       {error && (
         <div className="mt-1 text-[10px] text-destructive">{error} <ErrorAlchemyMenu error={error} /></div>

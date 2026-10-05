@@ -172,7 +172,6 @@ export function InlineCreate({
           e.stopPropagation();
         }}
         placeholder={placeholder}
-        style={{ fontSize: "16px" }}
       />
       <button
         type="button"

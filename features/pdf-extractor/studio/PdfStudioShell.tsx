@@ -965,7 +965,6 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
                 onChange={(e) => setFindQuery(e.target.value)}
                 placeholder="Find in document…"
                 className="flex-1"
-                style={{ fontSize: "16px" }}
                 onKeyDown={(e) => {
                   if (e.key === "Escape") {
                     setFindOpen(false);
