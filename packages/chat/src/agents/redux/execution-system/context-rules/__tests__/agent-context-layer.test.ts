@@ -9,7 +9,8 @@
  *
  * SUT: `ensureContextRulesReady` (awaited by every send path) + the real
  * agent-definition reducer and fetch thunk + `buildRequestContext`. Only the
- * database RPC is a double.
+ * database RPC is a double. The run path reads ONE tier, `agx_get_run_tier` (P24,
+ * acf230b49a / 12ec40f734), which replaced `agx_get_execution_minimal`.
  */
 
 import { configureStore } from "@reduxjs/toolkit";
@@ -109,7 +110,7 @@ it.each([
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- thunk dispatch on a narrow test store
     await (store.dispatch as any)(ensureContextRulesReady(CHAT));
 
-    expect(rpc).toHaveBeenCalledWith("agx_get_execution_minimal", { p_agent_id: AGENT });
+    expect(rpc).toHaveBeenCalledWith("agx_get_run_tier", { p_agent_id: AGENT });
     const { rows, context } = buildRequestContext(store.getState() as unknown as ChatRootState, CHAT);
     expect(rows.map((r) => r.include)).toEqual([included, included]);
     expect(Object.keys(context ?? {}).sort()).toEqual(sent);

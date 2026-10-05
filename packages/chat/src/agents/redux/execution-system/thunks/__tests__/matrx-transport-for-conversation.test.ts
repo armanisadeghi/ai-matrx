@@ -26,10 +26,18 @@ jest.mock("../resolve-base-url", () => ({
   resolveBackendForConversation: jest.fn(),
 }));
 
-import { resilientFetch } from "@ai-matrx/data/net";
-import { configureServerForTest } from "../../../../../host/__tests__/server-test-host";
-import { resolveBackendForConversation } from "../resolve-base-url";
-import { createMatrxTransportForConversation } from "../matrx-transport-for-conversation";
+// jest.setup.ts has already pulled the app graph in through the surface/context registrations, so
+// `@ai-matrx/agents/matrx` is cached BOUND TO THE REAL `@ai-matrx/data/net`; the mocks above would
+// never reach it and the real resilientFetch ran (jsdom's AbortSignal handed to Node's fetch:
+// "Expected signal to be an instance of AbortSignal"). Reset, then load the subject fresh so it
+// binds the mock. A test-environment realm mismatch, not a product bug: a browser has one realm.
+jest.resetModules();
+/* eslint-disable @typescript-eslint/no-require-imports */
+const { resilientFetch } = require("@ai-matrx/data/net") as typeof import("@ai-matrx/data/net");
+const { configureServerForTest } = require("../../../../../host/__tests__/server-test-host") as typeof import("../../../../../host/__tests__/server-test-host");
+const { resolveBackendForConversation } = require("../resolve-base-url") as typeof import("../resolve-base-url");
+const { createMatrxTransportForConversation } = require("../matrx-transport-for-conversation") as typeof import("../matrx-transport-for-conversation");
+/* eslint-enable @typescript-eslint/no-require-imports */
 
 const mockedFetch = resilientFetch as jest.MockedFunction<
   typeof resilientFetch
