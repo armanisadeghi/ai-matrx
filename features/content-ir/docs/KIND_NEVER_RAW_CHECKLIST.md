@@ -597,3 +597,34 @@ $fn$;
       its pipeline. Test 3/3 red before. `SearchErrorBlock`: its detail is the same show-data toggle as its sibling
       cards — NOT a deliberate debug view — so it takes `ToggledDataBody`; the error line reads a kind as its one-line
       form (7 red before).
+
+## R8. Round 8 — every spelling of the key, one normalizer (2026-10-05)
+
+Owner ruling: literal, `_`-escaped, markdown-escaped `\_\_kind`, backslash-escaped quotes `\"__kind\"`, zero-width
+characters in the key, Python repr `'__kind'`, typographic quotes `“__kind”` and HTML entities `&quot;__kind&quot;` are
+all a kind.
+
+- [x] R8-1. ONE spelling normalizer in `json-kind-signal.ts`: `ALL_KIND_SPELLINGS` (+ `smart` / `entity` options),
+      `hasKindKeyAnySpelling`, `normalizeKindSpellings` (every spelled region → canonical JSON, quoted source and whole
+      JSON untouched) and the shared finder `firstSpelledKindRegion`. Text detectors (`markdownCarriesKind` →
+      `textCarriesKind` → `valueCarriesKind`, `firstKindSlug`, the screen scan / judge `domLeaksKind`) read every
+      spelling; converters (`snippetKindText`, `kindTextToMarkdown`, `kindTextPreview`, `inlineKindText` /
+      `catalogProseText`, `kindTextLabel` / `conversationTitleText` / `publicResourceText`, `plainTitleFromMarkdown`,
+      `kindCell`) normalize first; text callers (`GenericBody`, `ContextValueDisplay`, `ArtifactVersionBody`,
+      `SettledOutputBody`) too. Prose: escaped / smart / entity / repr kinds read as their one-line label at the one
+      prose leaf (`spelledKindsAsOneLine`, replaces `pythonKindsAsOneLine`, in `BasicMarkdownContent` + `KindTextGate`);
+      a zero-width key is rewritten at the stream ingress (`ZeroWidthKindKey`, inside `MarkdownEscapedKindJson`, so the
+      accumulator and the splitter both lift it — fence, standalone and prose). JSON contexts keep `hasKindKey`'s
+      default: there those spellings are string VALUES, which `valueCarriesKind` reads.
+- [x] R8-2. THE CLASS GUARD `kind-spelling-matrix.test.tsx` (in `pnpm test:render-matrix`): 8 spellings × (9 detectors
+      + 10 converters + chat prose live char-by-char/reload judged by the DOM frame judge + content-fed RichContent) =
+      168 cells; one line per spelling or consumer; self-tests prove a converter or detector that skips the normalizer
+      turns it red. Against the pre-round-8 code 44 converter cells were red.
+- [x] R8-3. Guard gaps: (a) read-only / disabled INPUT and TEXTAREA `value` is read by the judge and the sentinel
+      (editable fields stay skipped — a person's own input); (b) `data-kind-source` is watched — removing it re-scans
+      that subtree; (c) an iframe `srcdoc` string is parsed (DOMParser, never the frame's document) and its body read;
+      (d) `TextSectionsWindow` Raw view marked `data-kind-source`; `StructuredAgentAnswerBlock` "Details" is not a
+      labelled source, so a payload carrying a kind goes through `AnswerValueView`. Guard
+      `kind-leak-sentinel-guard-gaps.test.ts` (13 of 21 red before).
+- [ ] R8-open. `StructuredAgentAnswerBlock` small-object table cells print `JSON.stringify(cell)` (a cell holding a kind
+      object prints it raw) — not in this round's brief.
