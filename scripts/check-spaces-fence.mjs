@@ -1,0 +1,112 @@
+#!/usr/bin/env node
+// scripts/check-spaces-fence.mjs — THE SPACES FENCE (Arman, 2026-10-05).
+//
+// Spaces is built clean beside everything we have, by a dedicated builder lane that copies Notion
+// exactly "without anything that touches things we already have". This guard makes that a rule the
+// system enforces, not a promise:
+//
+//   1. every commit whose subject starts with `spaces:` or `spaces(` touches ONLY the fence;
+//   2. no file outside the fence imports from it (nothing we already have may come to depend on it
+//      before the one switch-over).
+//
+// The fence: features/spaces/** and app/(core)/spaces/**. The owner session's own connection work
+// (storage, data sources, AI wiring) is committed under other prefixes and is not judged here.
+//
+//   node scripts/check-spaces-fence.mjs              # judge history since the fence was laid
+//   node scripts/check-spaces-fence.mjs --self-test  # prove both checks can fail, then pass
+//
+// SoR: common-docs/systems/content/spaces/STATE.md § The fence.
+
+import { execFileSync } from "node:child_process";
+import { readFileSync } from "node:fs";
+
+const FENCE = [/^features\/spaces\//, /^app\/\(core\)\/spaces\//];
+const FENCE_LAID = "2026-10-05";
+const SUBJECT = /^spaces[:(]/;
+const IMPORT_INTO_FENCE = /(?:from\s+|import\s*\(\s*|require\s*\(\s*)["'](?:@\/features\/spaces(?:\/|["'])|[./]+(?:[^"']*\/)?features\/spaces(?:\/|["']))/;
+
+export function insideFence(path) {
+  return FENCE.some((re) => re.test(path));
+}
+
+/** Commits: [{ sha, subject, files[] }] → violations for `spaces:` commits that leave the fence. */
+export function judgeCommits(commits) {
+  const out = [];
+  for (const c of commits) {
+    if (!SUBJECT.test(c.subject)) continue;
+    for (const f of c.files) if (!insideFence(f)) out.push(`${c.sha.slice(0, 10)} "${c.subject}" touches ${f}`);
+  }
+  return out;
+}
+
+/** Files: [{ path, source }] → violations for files outside the fence importing from it. */
+export function judgeImports(files) {
+  const out = [];
+  for (const f of files) {
+    if (insideFence(f.path)) continue;
+    const line = f.source.split("\n").findIndex((l) => IMPORT_INTO_FENCE.test(l));
+    if (line >= 0) out.push(`${f.path}:${line + 1} imports from the Spaces fence`);
+  }
+  return out;
+}
+
+function git(args) {
+  return execFileSync("git", args, { encoding: "utf8", maxBuffer: 256 * 1024 * 1024 });
+}
+
+function liveCommits() {
+  const log = git(["log", `--since=${FENCE_LAID}`, "--format=%H%x09%s"]).trim();
+  if (!log) return [];
+  return log
+    .split("\n")
+    .map((row) => {
+      const [sha, ...rest] = row.split("\t");
+      return { sha, subject: rest.join("\t") };
+    })
+    .filter((c) => SUBJECT.test(c.subject))
+    .map((c) => ({ ...c, files: git(["show", "--name-only", "--format=", c.sha]).trim().split("\n").filter(Boolean) }));
+}
+
+function liveFiles() {
+  return git(["ls-files", "*.ts", "*.tsx", "*.js", "*.jsx", "*.mjs"])
+    .trim()
+    .split("\n")
+    .filter((p) => p && !insideFence(p) && !p.startsWith("node_modules/") && p !== "scripts/check-spaces-fence.mjs")
+    .map((path) => {
+      try {
+        return { path, source: readFileSync(path, "utf8") };
+      } catch {
+        return { path, source: "" };
+      }
+    });
+}
+
+function selfTest() {
+  const failures = [];
+  const expect = (name, got, wantCount) => {
+    if (got.length !== wantCount) failures.push(`${name}: expected ${wantCount} violation(s), got ${got.length} ${JSON.stringify(got)}`);
+  };
+  expect("planted commit leaves the fence", judgeCommits([{ sha: "a".repeat(40), subject: "spaces: columns", files: ["features/spaces/blocks/Columns.tsx", "features/notes/NoteEditor.tsx"] }]), 1);
+  expect("route commit inside the fence", judgeCommits([{ sha: "b".repeat(40), subject: "spaces(sidebar): tree", files: ["app/(core)/spaces/page.tsx", "features/spaces/sidebar/Tree.tsx"] }]), 0);
+  expect("non-spaces commit is not judged", judgeCommits([{ sha: "c".repeat(40), subject: "fix(notes): save", files: ["features/notes/x.ts"] }]), 0);
+  expect("alias import from outside", judgeImports([{ path: "features/notes/a.tsx", source: 'import { X } from "@/features/spaces/blocks";' }]), 1);
+  expect("relative import from outside", judgeImports([{ path: "components/b.tsx", source: 'const m = await import("../features/spaces/editor");' }]), 1);
+  expect("import inside the fence", judgeImports([{ path: "features/spaces/a.tsx", source: 'import { X } from "@/features/spaces/blocks";' }]), 0);
+  expect("look-alike name is not the fence", judgeImports([{ path: "features/notes/c.tsx", source: 'import { Y } from "@/features/spaces-old/z";' }]), 0);
+  if (failures.length) {
+    console.error(`check:spaces-fence self-test FAILED\n  ${failures.join("\n  ")}`);
+    process.exit(1);
+  }
+  console.log("check:spaces-fence self-test passed (7 cases: planted violations fail, clean cases pass)");
+}
+
+if (process.argv.includes("--self-test")) {
+  selfTest();
+} else {
+  const violations = [...judgeCommits(liveCommits()), ...judgeImports(liveFiles())];
+  if (violations.length) {
+    console.error(`check:spaces-fence FAILED — the Spaces builder left its fence:\n  ${violations.join("\n  ")}`);
+    process.exit(1);
+  }
+  console.log("check:spaces-fence passed — Spaces commits stay inside the fence and nothing outside imports it");
+}

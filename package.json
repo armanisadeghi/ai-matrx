@@ -257,6 +257,8 @@
     "check:phone-layout:self-test": "tsx scripts/check-phone-layout.ts --self-test",
     "check:one-control": "node scripts/one-control/check-one-control.mjs",
     "check:page-top": "node scripts/page-top/check-page-top.mjs",
+    "check:spaces-fence": "node scripts/check-spaces-fence.mjs",
+    "check:spaces-fence:self-test": "node scripts/check-spaces-fence.mjs --self-test",
     "check:page-top:strict": "node scripts/page-top/check-page-top.mjs --strict",
     "check:page-top:self-test": "node scripts/page-top/check-page-top.mjs --self-test",
     "check:one-control:strict": "node scripts/one-control/check-one-control.mjs --strict",
