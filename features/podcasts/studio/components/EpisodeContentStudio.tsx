@@ -23,7 +23,7 @@ import {
 import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import MarkdownStream from "@/components/MarkdownStream";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { podcastService } from "@/features/podcasts/service";
 import { useEpisodeArticles } from "@/features/podcasts/generator/useEpisodeArticles";
 import type {
@@ -170,9 +170,9 @@ export function EpisodeContentStudio({ episodeId }: { episodeId: string }) {
             {(draft != null || article) && (
               <div className="border-t border-border px-4 py-3">
                 <div className="prose prose-sm prose-neutral max-h-80 max-w-none overflow-y-auto dark:prose-invert">
-                  <MarkdownStream imagePolicy="ai"
-                    content={draft ?? article?.content_markdown ?? ""}
-                    isStreamActive={isBusy}
+                  <RichContent level="full" imagePolicy="ai"
+                    source={draft ?? article?.content_markdown ?? ""}
+                    isStreaming={isBusy}
                   />
                 </div>
                 {published && blogSlug && (
