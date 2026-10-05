@@ -239,6 +239,8 @@ export function FindMatchOverlay({
     <div
       ref={overlayRef}
       aria-hidden="true"
+      // A mirror of the person's own editor text (ruling b, round 6).
+      data-kind-source="explicit"
       className="find-match-overlay pointer-events-none absolute inset-0 overflow-hidden text-transparent"
       style={{
         // Runtime syncStyles() copies the active font, padding and border

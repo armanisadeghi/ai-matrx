@@ -19,6 +19,7 @@ import { useAppSelector } from "../../store/hooks";
 import { selectConversationTitle } from "../../agents/redux/execution-system/conversations/conversations.selectors";
 import { selectConversationListItemById } from "../../agents/redux/conversation-list/conversation-list.selectors";
 import { conversationRenameOpener } from "../../agents/components/conversation-actions/rename/conversationRenameOpener";
+import { conversationTitleText } from "../../utils/content-ir/surfaces/kind-text-label";
 
 /** The chat's real title (null until it has one) — the conversation's, else its list row's. */
 function useChatRealTitle(conversationId: string | null): string | null {
@@ -30,7 +31,7 @@ function useChatRealTitle(conversationId: string | null): string | null {
   const listTitle = useAppSelector((state) =>
     conversationId ? (selectConversationListItemById(conversationId)(state)?.title ?? null) : null,
   );
-  return conversationTitle?.trim() || listTitle?.trim() || null;
+  return conversationTitleText(conversationTitle?.trim() || listTitle?.trim() || null);
 }
 
 /** The panel's chat name: its real title, else "New chat". */

@@ -1,3 +1,4 @@
+import { registerChatUi } from "@ai-matrx/chat/host/ui-slots";
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
@@ -89,10 +90,10 @@ jest.mock("@host/features/context-menu-v3/utils/resolveMarkdownContext", () => (
   resolveMarkdownContext: jest.fn(),
 }));
 
-jest.mock("@host/features/war-room/utils/renderPathTrace", () => ({
+registerChatUi({
   isWarRoomThreadAgentSurface: () => false,
   traceWarRoomRenderPath: jest.fn(),
-}));
+});
 
 jest.mock("@host/lib/error-boundary/ErrorBoundaryWithCapture", () => ({
   ErrorBoundaryWithCapture: ({ children }: { children: React.ReactNode }) =>

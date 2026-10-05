@@ -30,7 +30,7 @@ import {
   type DocumentListScope,
   type WorkingDocumentKind,
 } from "../../redux/execution-system/instance-working-document/cx-working-document.service";
-import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 
 interface DocumentLinkPickerProps {
   kind: WorkingDocumentKind;

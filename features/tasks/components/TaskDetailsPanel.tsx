@@ -817,6 +817,7 @@ export default function TaskDetailsPanel({
             </div>
           ) : (
             <ProTextarea
+              data-kind-source="explicit"
               value={description}
               onChange={(e) => handleDescriptionChange(e.target.value)}
               placeholder="Add a description… Markdown is supported"

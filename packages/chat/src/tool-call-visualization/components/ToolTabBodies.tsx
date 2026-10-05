@@ -26,7 +26,7 @@ import { Check, CircleAlert, Copy, FileCode2, Route, Settings2 } from "lucide-re
 
 import { Badge } from "@ai-matrx/design-system";
 import { cn } from "@ai-matrx/design-system";
-import { CopyButtons } from "@host/components/agent-copy/CopyButtons";
+import { CopyButtons } from "@ai-matrx/chat/host/ui-slots";
 import { JsonInspector } from "@host/components/official-candidate/json-inspector/JsonInspector";
 
 import type { ToolLifecycleEntry } from "../../agents/types/request.types";
@@ -43,7 +43,7 @@ import {
   entryHasError,
   toolEntryBundleToHuman,
 } from "../utils/toolEntryBundle";
-import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 
 // ─── Copy payload helpers ──────────────────────────────────────────────────
 

@@ -57,7 +57,7 @@ import { extractErrorMessage } from "@ai-matrx/data/net";
 import type { components } from "@ai-matrx/agents/generated/api-types";
 import { usePageCaptureContribution } from "@host/components/agent-copy/page-capture/usePageCapture";
 import { useContextPreview, type ContextSelection } from "./useContextPreview";
-import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 import { AGENT_ICON } from "@host/components/icons/domain-icons";
 import { formatCount } from "@ai-matrx/kit/format";
 import { getUserId } from "../../../host/identity";
@@ -187,7 +187,7 @@ function Block({
         </div>
       ) : block ? (
         <div className="group/block relative mt-1.5">
-          <pre className="whitespace-pre-wrap break-words rounded-md border border-border bg-muted/40 px-2.5 py-2 font-mono text-[11px] leading-relaxed text-foreground">
+          <pre data-kind-source="explicit" className="whitespace-pre-wrap break-words rounded-md border border-border bg-muted/40 px-2.5 py-2 font-mono text-[11px] leading-relaxed text-foreground">
             {block}
           </pre>
           <InlineCopyButton
@@ -229,7 +229,7 @@ function FedBlock({ label, text, slot }: { label: string; text?: string | null; 
       <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{label}</div>
       {text ? (
         <div className="group/block relative mt-1">
-          <pre className="max-h-[28rem] overflow-auto whitespace-pre-wrap break-words rounded-md border border-border bg-muted/40 px-2.5 py-2 font-mono text-[11px] leading-relaxed text-foreground">
+          <pre data-kind-source="explicit" className="max-h-[28rem] overflow-auto whitespace-pre-wrap break-words rounded-md border border-border bg-muted/40 px-2.5 py-2 font-mono text-[11px] leading-relaxed text-foreground">
             {text}
           </pre>
           <InlineCopyButton
@@ -327,7 +327,7 @@ function DiffTab({
   else
     fedVerdict = `Different — ${formatCount(today.block_byte_length)} bytes today, ${formatCount(store.block_byte_length)} bytes from the record store.`;
   return (
-    <div className="flex flex-col" data-compare-diff>
+    <div className="flex flex-col" data-compare-diff data-kind-source="explicit">
       <Summary compare={compare} />
       <section className="px-4 pt-4" data-diff-fed>
         <h3 className="text-[11px] font-semibold uppercase tracking-wider text-primary">What the model is fed</h3>
@@ -425,7 +425,7 @@ function JsonBlock({ label, value, slot }: { label: string; value: unknown; slot
     <div className="min-w-0" data-selection-block={slot}>
       <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{label}</div>
       <div className="group/block relative mt-1">
-        <pre className="overflow-auto whitespace-pre-wrap break-all rounded-md border border-border bg-muted/40 px-2.5 py-2 font-mono text-[11px] leading-relaxed text-foreground">
+        <pre data-kind-source="explicit" className="overflow-auto whitespace-pre-wrap break-all rounded-md border border-border bg-muted/40 px-2.5 py-2 font-mono text-[11px] leading-relaxed text-foreground">
           {text}
         </pre>
         <InlineCopyButton
@@ -557,7 +557,7 @@ function Differences({ differences }: { differences: Difference[] }) {
                           <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
                             {p === "old" ? "Current system" : "Record store"}
                           </div>
-                          <div className="whitespace-pre-wrap break-words rounded bg-muted/40 px-2 py-1 font-mono text-[11px] text-foreground/90">
+                          <div data-kind-source="explicit" className="whitespace-pre-wrap break-words rounded bg-muted/40 px-2 py-1 font-mono text-[11px] text-foreground/90">
                             {v || <span className="italic text-muted-foreground">(not delivered)</span>}
                           </div>
                         </div>

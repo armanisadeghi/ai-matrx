@@ -442,3 +442,115 @@ accumulator), read through `isQuotedSourceXmlBlock` (`json-kind-signal.ts`) by X
       card and generic flashcard grid (conversation 32eaa687 actually streamed a ```json fence — `content_history`
       shows the `<artifact>` text is the post-stream materialization rewrite); two live localhost runs at HEAD rendered
       prose + cards throughout.
+
+## R6. Round 6 — catalog prose, string-held kinds, attributes, titles, raw views (2026-10-05)
+
+Rulings: (a) catalog prose that shows an example kind JSON is documentation — it reads as the kind's one-line
+label, the stored row is never rewritten; (b) an editor of a person's own stored text is an edit-of-source view —
+marked `data-kind-source="explicit"`; (c) escaped kind JSON on screen (`{\"__kind\":…}`) IS a leak.
+
+- [x] R1. Catalog prose. `catalogProseText` (`surfaces/kind-one-line.ts`; `inlineKindText(…, { plain: true })`) in every
+      skill-description slot, text AND `title`: RunSkillPicker (secondary + tooltip + configured row), SkillConfigPicker
+      (card + chip tooltip), SkillsBrowser, SkillDetailView, SkillInline (tool card). Search subtitles ride S1's
+      `snippetKindText` (proven on the same shapes). Guard `catalog-prose-never-raw-kind.test.ts` (5 site checks failed
+      before). Agent / tool descriptions not swept this round.
+- [x] R2. `hasKindKey(JSON.stringify(x))` missed string-held kinds (escaped quotes) at 5 sites — ToggledDataBody,
+      emission-routing, GenericBody, RunRow, FirstTurnVariables — now `valueCarriesKind`. Repo grep: no other site.
+      Guard `string-held-kind-detection.test.tsx` (behaviour + a `git grep --untracked` source guard; 3 failed before).
+- [x] R3. Sentinel: (i) `hasKindKey(…, { escaped: true })` (new detector option) via `screenTextHoldsKind` — an escaped
+      key on screen is reported, silent inside marked views; (ii) `title` / `aria-label` / `alt` read on changed nodes
+      only (+ an `attributeFilter` observer for attribute changes); (iii) every contenteditable that is not "false" is
+      skipped (`plaintext-only`, `""`). Guard `kind-leak-sentinel.test.ts` (4 failed before, 22 pass). End to end:
+      `kind-leak-sentinel-pipeline.test.ts` — DOM → sentinel → real captureError → store (tier red) →
+      `installErrorPersistence` flush → `log_client_error` with `p_source: "content-ir"`. The client half works and
+      the live RPC accepts the source; no drop in code. Zero rows = persistence is production-build only
+      (`NODE_ENV`), so dev-server leaks never reach `ops.system_error`.
+- [x] R4. Conversation titles: `conversationTitleText` (package `kind-text-label.ts`) at the list read boundary
+      (`mapRpcRowToConversationListItem` + the cx list mapper), SsrSidebarChats, the panel title (ChatPanelTitleMenu),
+      `displayConversationTitle`, and every `title?.trim() || "Untitled conversation|chat"` site (ai-work list/columns/
+      detail/provenance/transcript, /work/conversations page, cx row actions, plugins, battle, import dialog, reference
+      picker). `kindTextLabel` strips wrapper tags and is never "" for kind text (falls back to the kind name), so
+      `plainTitleFromMarkdown` names an `<artifact>`-wrapped kind. Guard `conversation-title-never-raw-kind.test.ts`
+      (7 failed before).
+- [x] R5. ContextCompareView is an inspector of the bytes an agent is fed: its raw panes (Block, FedBlock, the diff
+      tab, Selection JSON, difference values) are marked; AnswerBoth (real answers) is not. CmsArtifactDetail metadata
+      and the CMS collection "Raw data" `<pre>` marked. Guard `marked-source-views-round6.test.ts`.
+- [x] R6. Editors marked: TaskDetails Details, TaskDetailsPanel description, NoteEditorCore plain (ProTextarea +
+      Textarea), the phone note textarea, FindMatchOverlay (a mirror of the editor text). A READ-ONLY note never shows
+      Plain: desktop and phone map a reader's Plain to the rendered view (the phone's read-only textarea is gone).
+      Task read view was already `RichContent`. Guard `marked-source-views-round6.test.ts`.
+- [ ] R7. SOURCE, next 1–4 AM PT window — DESIGNED, NOT APPLIED. Proven read-only with pg_temp copies on live
+      (10 shapes + 118 real kind messages, 13.5 MB: no `"__kind":` survives, prose outside regions untouched). Known
+      limit: an escaped kind inside a string keeps its OUTER object's keys (`{"answer":"…"}`) — only kind regions are
+      stripped, by design. APPLY: run the two statements below (Supabase MCP or direct), then
+      `REINDEX INDEX CONCURRENTLY chat.cx_message_search_tsv_idx` over a session-mode connection (port 5432,
+      `statement_timeout 30min`). `chat.kind_region_words` is NEW; `chat.kind_readable_text` replaces the body S2 set
+      (take a `pnpm db:based-on chat.kind_readable_text` line first if it goes through a file).
+
+```sql
+create or replace function chat.kind_region_words(r text) returns text
+language plpgsql immutable parallel safe set search_path to 'pg_catalog' as $fn$
+-- The words of ONE kind region: \uXXXX decoded, the __kind pair and every key
+-- (quoted, escaped, json5) removed, escapes / quotes / braces stripped.
+declare
+  m text; code int;
+begin
+  r := replace(r, '\_', '_');
+  for m in select distinct (regexp_matches(r, '\\+u([0-9a-fA-F]{4})', 'g'))[1] loop
+    code := ('x' || lpad(m, 8, '0'))::bit(32)::int;
+    r := regexp_replace(r, '\\+u' || m, case when code between 32 and 55295 or code between 57344 and 65533 then chr(code) else ' ' end, 'g');
+  end loop;
+  r := regexp_replace(r, '\\*["'']?__kind\\*["'']?\s*:\s*\\*["'']?[A-Za-z0-9_.:-]*\\*["'']?\s*,?', ' ', 'g');
+  r := regexp_replace(r, '(\\*"[A-Za-z_][A-Za-z0-9_ -]*\\*"|''[A-Za-z_]\w*''|(?<=[{,])\s*[A-Za-z_]\w*)\s*:', ' ', 'g');
+  r := regexp_replace(r, '\\+[nrt]', ' ', 'g');
+  r := regexp_replace(r, '```[A-Za-z0-9]*|\\+"|["{}\[\]]|\\+', ' ', 'g');
+  r := regexp_replace(r, '(?<=^|[\s,:])''|''(?=[\s,]|$)', ' ', 'g');
+  r := regexp_replace(r, '\s*,(\s*,)+', ',', 'g');
+  r := regexp_replace(r, '^[\s,]+|[\s,]+$', '', 'g');
+  return regexp_replace(r, '\s+', ' ', 'g');
+end
+$fn$;
+
+create or replace function chat.kind_readable_text(p text) returns text
+language plpgsql immutable parallel safe set search_path to 'pg_catalog' as $fn$
+-- A message's kind regions indexed and headlined as the words a person sees
+-- (kind-never-raw R7, round 6). Every key spelling: "__kind", \"__kind\"
+-- (string-held / double-encoded), '__kind' and bare __kind (json5),
+-- "\_\_kind", "__kind". Only the region from the key's owning { to its
+-- matching } is rewritten; text outside every region passes through untouched.
+declare
+  c_key constant text := '(\\*"(__kind|\\_\\_kind|\\u005[fF]_kind)\\*"|''__kind''|(?<=[{,])\s*__kind)\s*:';
+  rest text := p; out text := ''; k int; s int; back int; chars text[]; n int; i int; depth int; instr bool; e int;
+begin
+  if p is null or (strpos(p, '__kind') = 0 and strpos(p, '\_\_kind') = 0 and strpos(lower(p), '__kind') = 0) then
+    return p;
+  end if;
+  loop
+    k := regexp_instr(rest, c_key);
+    exit when k = 0;
+    back := strpos(reverse(left(rest, k - 1)), '{');
+    s := case when back = 0 then k else k - back end;
+    chars := regexp_split_to_array(substr(rest, s), '');
+    n := coalesce(array_length(chars, 1), 0);
+    depth := 0; instr := false; e := n; i := 1;
+    while i <= n loop
+      if instr then
+        if chars[i] = '\' then i := i + 1;
+        elsif chars[i] = '"' then instr := false;
+        end if;
+      elsif chars[i] = '\' then i := i + 1;
+      elsif chars[i] = '"' then instr := true;
+      elsif chars[i] = '{' then depth := depth + 1;
+      elsif chars[i] = '}' then
+        depth := depth - 1;
+        if depth <= 0 then e := i; exit; end if;
+      end if;
+      i := i + 1;
+    end loop;
+    out := out || left(rest, s - 1) || ' ' || chat.kind_region_words(substr(rest, s, e)) || ' ';
+    rest := substr(rest, s + e);
+  end loop;
+  return out || rest;
+end
+$fn$;
+```

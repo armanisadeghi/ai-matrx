@@ -33,7 +33,7 @@ import type { ToolRendererProps } from "../../types";
 import { getArg, isTerminal, resultAsObject } from "../_shared";
 import { ToolErrorCard } from "../../result-fields/ToolErrorCard";
 import { ToolResultCard } from "../_shared-entity/ToolResultCard";
-import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 
 const ASK_PERSON_TINT = "text-amber-600 dark:text-amber-400";
 

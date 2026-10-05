@@ -44,6 +44,7 @@ import {
   renameConversationBattle,
 } from "../redux/thunks";
 import type { ConversationBattleFork } from "../types";
+import { conversationTitleText } from "@/features/content-ir/surfaces/kind-text-label";
 
 const INITIAL_FORK_COUNT = 2;
 
@@ -111,7 +112,7 @@ export function ConversationBattlePage({
     setIsForking(true);
     const firstForkNumber = nextForkNumber;
     dispatch(reserveForkNumbers(count));
-    const sourceTitle = source.title?.trim() || "Untitled chat";
+    const sourceTitle = conversationTitleText(source.title?.trim() || null) || "Untitled chat";
 
     try {
       const { created, failures } = await createConversationBattleForks({

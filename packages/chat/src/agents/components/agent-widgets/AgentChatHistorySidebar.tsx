@@ -13,7 +13,7 @@ import { ItemRow } from "@host/components/official/item/ItemRow";
 import { buildConversationMenu } from "../conversation-actions/conversationActionRegistry";
 import { renameConversation } from "../../redux/conversation-list/conversation-row-actions.thunks";
 import type { ChatDispatch } from "../../../store/root-state";
-import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 
 /** Stable idle result — a fresh literal per call re-rendered the sidebar on every dispatch. */
 const IDLE_CONVERSATIONS = {

@@ -27,7 +27,7 @@ import {
   mandateRefusalHeadline,
   type MandateRunFailure,
 } from "@host/features/mandates/test-run";
-import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 
 export function RunFailureCard({
   failure,

@@ -21,7 +21,7 @@ import {
   resolveAgentRunRoute,
   type AgentRunRoute,
 } from "./agent-run-route";
-import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 
 interface AgentRunSidebarMenuProps {
   expanded: boolean;

@@ -32,7 +32,7 @@ import { cn } from "@ai-matrx/design-system";
 import { supabase } from "../../../../host/db";
 import type { Tables } from "../../../../host/db-types";
 import { formatDateTime, formatRelativeTime, formatTokens } from "./format";
-import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 
 type MemoryRow = Tables<{ schema: "chat" }, "observational_memory">;
 

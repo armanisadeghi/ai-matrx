@@ -62,7 +62,7 @@ import {
   setWorkingDocSeenPatch,
   useWorkingDocViewState,
 } from "./workingDocumentViewStore";
-import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 
 /**
  * Stable RichDocument action-surface id for a conversation's document. Shared

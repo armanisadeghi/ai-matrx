@@ -22,7 +22,7 @@ import { Skeleton } from "@ai-matrx/design-system";
 import SuspenseLoader from "@host/components/loaders/SuspenseLoader";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@ai-matrx/design-system";
-import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 
 interface SideState {
   agentId: string | null;

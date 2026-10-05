@@ -31,6 +31,7 @@ import {
   titleProvenance,
 } from "./presentation";
 import type { ConversationBrowseRow } from "./types";
+import { conversationTitleText } from "@/features/content-ir/surfaces/kind-text-label";
 
 /** Size bands must match `public.cvx_size_band` exactly. */
 export const MESSAGE_COUNT_FILTER_OPTIONS = [
@@ -90,7 +91,7 @@ export const CONVERSATION_COLUMNS: EntityColumnSpec<ConversationBrowseRow>[] = [
               className="truncate font-medium"
               title={row.title ?? undefined}
             >
-              {row.title?.trim() || "Untitled conversation"}
+              {conversationTitleText(row.title?.trim() || null) || "Untitled conversation"}
             </span>
             {row.is_archived && (
               <Badge variant="outline" className="shrink-0 py-0 text-[10px]">

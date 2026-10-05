@@ -50,7 +50,7 @@ import { collectMessages, isTerminal, isSuccess } from "../_shared";
 import { getDomain, getFaviconUrl } from "../search/parseSearch";
 import { parseScrape, type ScrapePage } from "./parseScrape";
 import { AGENT_ICON } from "@host/components/icons/domain-icons";
-import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Small building blocks

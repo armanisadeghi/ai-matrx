@@ -13,7 +13,6 @@ import { useNoteDelete } from "../../hooks/useNoteDelete";
 import { useToastManager } from "@/hooks/useToastManager";
 import { toastErrorAlreadyCaptured } from "@/lib/toast";
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
-import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { CONTEXT_MENU_HEADING_KEY } from "@/features/context-menu-v3/types";
 import { RichDocument } from "@/features/rich-document/RichDocument";
 import { EditInPlace } from "@/components/rich-editor/in-place/EditInPlace";
@@ -88,9 +87,10 @@ export default function MobileNoteEditor({
   // saves would otherwise silently discard every edit.
   const access = useNoteAccess(noteId);
   const readOnly = access.readOnly;
-  // Write is an editing view — a viewer reads the rendered note.
+  // Write and Plain are editing views — a viewer reads the rendered note,
+  // never its raw source (round 6, R6).
   const effectiveMode: MobileEditorMode =
-    readOnly && isRichEditorMode(editorMode) ? "preview" : editorMode;
+    readOnly && (isRichEditorMode(editorMode) || editorMode === "plain") ? "preview" : editorMode;
   const richMode = isRichEditorMode(effectiveMode);
   const rememberEditedMode = useRememberNoteEditorMode();
 
@@ -423,34 +423,8 @@ export default function MobileNoteEditor({
         {/* Plain text — wrapped in the universal v3 menu: on mobile it mounts
             the long-press / selection-icon bottom-sheet drill-down, giving the
             phone editor the same Copy-as / Export / AI / agent actions as
-            desktop. Read-only access gets the NON-editable wrapper: v3's
-            Cut/Paste mutate through getTextarea/onTextReplace regardless of
-            the textarea's readOnly attribute, which would dirty the record
-            and arm a doomed save on a note this user can't write. */}
-        {effectiveMode === "plain" && readOnly && (
-          <NonEditableContextMenu
-            sourceFeature="notes"
-            surfaceName={NOTES_EDITOR_CONTEXT_MENU_PROPS.surfaceName}
-            resolveContextOnOpen={noteMenuHeading}
-            contextData={surfaceContextData}
-            contentSource={noteIdentityContentSource(noteId, `mobile-readonly:${noteId}`)}
-            entity={{
-              type: "note",
-              id: noteId,
-              title: noteLabel || note.label,
-              resourceType: "note",
-            }}
-          >
-            <textarea
-              ref={textareaRef}
-              value={localContent}
-              readOnly
-              placeholder="Start writing..."
-              className="w-full bg-transparent text-foreground placeholder:text-muted-foreground outline-none border-none resize-none leading-relaxed"
-              style={{ fontSize: "16px", minHeight: "calc(100dvh - 200px)" }}
-            />
-          </NonEditableContextMenu>
-        )}
+            desktop. Read-only access never reaches Plain: a viewer reads the
+            rendered note (effectiveMode → preview, round 6 R6). */}
         {effectiveMode === "plain" && !readOnly && (
           <EditableContextMenu
             sourceFeature="notes"
@@ -472,6 +446,7 @@ export default function MobileNoteEditor({
           >
             <textarea
               ref={textareaRef}
+              data-kind-source="explicit"
               value={localContent}
               onChange={(e) => {
                 handleChange(e.target.value);

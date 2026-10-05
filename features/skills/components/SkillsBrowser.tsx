@@ -26,6 +26,7 @@ import type { SkillRow } from "../types";
 import { getSkillProvenance } from "../skill-provenance";
 import { SkillAttributionLine, SkillOriginBadges } from "./SkillOriginBadges";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { catalogProseText } from "@/features/content-ir/surfaces/kind-one-line";
 
 type ScopeFilter = "all" | "system" | "public" | "personal";
 
@@ -242,7 +243,7 @@ export function SkillsBrowser({
                         <ScopeBadge skill={s} />
                       </div>
                       <div className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
-                        {s.description}
+                        {catalogProseText(s.description)}
                       </div>
                       <SkillAttributionLine skill={s} className="mt-0.5" />
                     </div>

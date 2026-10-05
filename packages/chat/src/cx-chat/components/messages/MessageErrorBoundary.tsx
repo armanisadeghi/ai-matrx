@@ -3,7 +3,7 @@
 import React from 'react';
 import { TriangleAlert } from 'lucide-react';
 import { captureReactRenderError } from "../../../host/diagnostics";
-import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 
 interface MessageErrorBoundaryProps {
     children: React.ReactNode;

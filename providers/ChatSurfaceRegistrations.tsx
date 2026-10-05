@@ -13,6 +13,8 @@ import "@/providers/chat-surface-manifests";
 // The app-feature tool renderers (SEO, topical map, notes, tasks, lists, documents, datasets,
 // knowledge search). Imported BEFORE the data-tool wrappers below, which wrap `dataset`.
 import "@/features/chat-tool-renderers/registerFeatureToolRenderers";
+// The note and task context-item drawer bodies.
+import "@/features/chat-context-bodies/registerContextBodies";
 // The data tools' renderers (records, dataset): rows as a table, writes as a line with a door.
 import "@/features/records-tool-display/registerDataToolRenderers";
 import { registerSurfaceIntelligence } from "@ai-matrx/chat/surfaces/runtime/intelligence";

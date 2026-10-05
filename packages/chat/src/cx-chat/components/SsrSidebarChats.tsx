@@ -57,13 +57,14 @@ interface CxConversationListItem {
 }
 const toSidebarItem = (c: ConversationListItem): CxConversationListItem => ({
   id: c.conversationId,
-  title: c.title,
+  title: conversationTitleText(c.title),
   updatedAt: c.updatedAt,
   messageCount: c.messageCount,
   status: c.status,
 });
 const selectSidebarConversations = (state: ChatRootState) => selectGlobalConversationList(state);
 import type { SharedCxConversationSummary } from "../types/cx-tables";
+import { conversationTitleText } from "../../utils/content-ir/surfaces/kind-text-label";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 

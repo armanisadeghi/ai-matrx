@@ -92,7 +92,7 @@ import { prependTemplateToDraft } from "@host/features/message-templates/utils/p
 import { SmartInputMessageTemplatePicker } from "@host/features/message-templates/components/SmartInputMessageTemplatePicker";
 import { useOpenContextPreviewPanel } from "../../../../../host/window-openers";
 import { useOpenRunControlsWindow } from "../../../../../host/window-openers";
-import { useOpenCloudBrowserCanvas } from "@host/features/cloud-browser/hooks/useOpenCloudBrowserCanvas";
+import { useOpenCloudBrowserCanvas } from "@ai-matrx/chat/host/ui-slots";
 import { ActiveContextTree } from "../../../../../context/sources/scopes";
 import { useComputeTargetActions } from "../use-compute-target-actions";
 import type { ComputeTarget } from "../../../../../compute/targets";

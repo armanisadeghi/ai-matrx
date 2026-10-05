@@ -12,7 +12,7 @@ import {
   UI_GATE_EDITABLE_KEYS,
   type UiGateEditableKey,
 } from "@host/lib/redux/slices/agent-settings/ui-gates";
-import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 
 interface RunInputCapabilitiesProps {
   conversationId: string;

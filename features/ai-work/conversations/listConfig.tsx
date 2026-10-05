@@ -44,6 +44,7 @@ import {
   DEFAULT_CONVERSATION_FILTERS,
   type ConversationBrowseRow,
 } from "./types";
+import { conversationTitleText } from "@/features/content-ir/surfaces/kind-text-label";
 
 function useRowActions(
   list: EntityListController<ConversationBrowseRow>,
@@ -75,7 +76,7 @@ export const conversationListConfig: EntityListConfig<ConversationBrowseRow> = {
   // fix and every existing user would keep the meaningless order.
   prefsDefaults: { sort: "last_activity", direction: "desc" },
   getRowId: (row) => row.id,
-  getRowName: (row) => row.title?.trim() || "Untitled conversation",
+  getRowName: (row) => conversationTitleText(row.title?.trim() || null) || "Untitled conversation",
   // THE DOOR LAW: the title cell is a real anchor. A provider mirror is
   // agentless and cannot run, so its home is the read-only transcript; an AI
   // Matrx conversation's home is chat.
@@ -84,7 +85,7 @@ export const conversationListConfig: EntityListConfig<ConversationBrowseRow> = {
   getRowEntity: (row) => ({
     type: "conversation",
     id: row.id,
-    title: row.title?.trim() || "Untitled conversation",
+    title: conversationTitleText(row.title?.trim() || null) || "Untitled conversation",
   }),
   defaultFilters: DEFAULT_CONVERSATION_FILTERS,
   // A pasted session id, conversation id or commit sha is wherever it is —
@@ -178,7 +179,7 @@ export const conversationListConfig: EntityListConfig<ConversationBrowseRow> = {
     rowKind: "conversation",
     listKind: "conversation-list",
     humanRow: (row) =>
-      `${row.title?.trim() || "Untitled conversation"} — ${conversationTypeLabel(
+      `${conversationTitleText(row.title?.trim() || null) || "Untitled conversation"} — ${conversationTypeLabel(
         row.conversation_type,
       )}${row.workspace_name ? ` in ${row.workspace_name}` : ""}, ${
         row.message_count

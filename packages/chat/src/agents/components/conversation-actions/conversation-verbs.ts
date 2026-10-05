@@ -19,10 +19,11 @@ import {
   renameConversation,
 } from "../../redux/conversation-list/conversation-row-actions.thunks";
 import { conversationRenameOpener } from "./rename/conversationRenameOpener";
+import { conversationTitleText } from "../../../utils/content-ir/surfaces/kind-text-label";
 
 export function displayConversationTitle(title: string | null | undefined): string {
   if (!title) return "Untitled conversation";
-  return title.trim().length > 0 ? title : "Untitled conversation";
+  return title.trim().length > 0 ? (conversationTitleText(title) ?? title) : "Untitled conversation";
 }
 
 /** The conversation's title from whichever store already holds it — never fetched. */

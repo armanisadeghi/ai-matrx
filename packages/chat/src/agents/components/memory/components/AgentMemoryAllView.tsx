@@ -17,7 +17,7 @@ import {
   importanceTier,
 } from "../types";
 import type { UseAgentMemoriesReturn } from "../hooks/useAgentMemories";
-import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 
 const TIER_BADGE_CLASS: Record<ReturnType<typeof importanceTier>, string> = {
   high: "bg-primary/15 text-primary",

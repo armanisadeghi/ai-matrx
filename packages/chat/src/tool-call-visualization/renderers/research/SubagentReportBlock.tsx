@@ -38,8 +38,7 @@ import {
 } from "lucide-react";
 import { cn } from "@ai-matrx/design-system";
 import { RichContent } from "@ai-matrx/chat/host/ui-slots";
-import { RichDocument } from "@host/features/rich-document/RichDocument";
-import type { ContentSource } from "@host/features/rich-document/types";
+import { RichDocument } from "@ai-matrx/chat/host/ui-slots";
 import { useAutoScrollOnStream } from "../useAutoScrollOnStream";
 import { AGENT_ICON } from "@host/components/icons/domain-icons";
 
@@ -177,7 +176,7 @@ export const SubagentReportBlock: React.FC<SubagentReportBlockProps> = ({
                             <div className="p-4">
                                 <RichDocument imagePolicy="ai"
                                     content={report}
-                                    source={{ type: "raw" } as ContentSource}
+                                    source={{ type: "raw" }}
                                     actionsVariant="mini-bar"
                                     actionsClassName="mt-2"
                                     actions={{ exclude: ["announcements", "preferences"] }}

@@ -19,6 +19,7 @@
  */
 
 import { useSyncExternalStore } from "react";
+import { useInHeaderSpecimen } from "./header-specimen-context";
 
 type State = { host: HTMLElement | null; count: number };
 
@@ -71,7 +72,10 @@ export function setPhonePageActionCount(owner: string, count: number): void {
 }
 
 export function usePhonePageActions(): State {
-  return useSyncExternalStore(subscribe, () => state, () => SERVER);
+  const live = useSyncExternalStore(subscribe, () => state, () => SERVER);
+  // A template drawn as a specimen never moves its actions into the real
+  // shell's ⋮ sheet: it keeps its own phone row (header-specimen-context.ts).
+  return useInHeaderSpecimen() ? SERVER : live;
 }
 
 /** Tests only. */

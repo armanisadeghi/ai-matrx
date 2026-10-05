@@ -54,7 +54,7 @@ import { MessageFilesStrip } from "../../../../host/ui-slots";
 import {
   isWarRoomThreadAgentSurface,
   traceWarRoomRenderPath,
-} from "@host/features/war-room/utils/renderPathTrace";
+} from "@ai-matrx/chat/host/ui-slots";
 
 export interface AssistantTurnGroupMember {
   /** Stable React key for this sub-message render. */

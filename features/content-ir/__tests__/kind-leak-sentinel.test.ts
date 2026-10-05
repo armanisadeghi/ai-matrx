@@ -232,6 +232,8 @@ describe("the kind leak sentinel (G1)", () => {
       const el = document.createElement(attr === "alt" ? "img" : "span");
       el.setAttribute(attr, KIND);
       document.body.appendChild(el);
+      // The observer's microtask, then its debounce.
+      await Promise.resolve();
       await settle();
       seen.push(...capture.mock.calls.map((call) => String(call[0].raw.attribute)));
       capture.mockClear();
@@ -246,6 +248,7 @@ describe("the kind leak sentinel (G1)", () => {
     await settle();
     expect(capture).not.toHaveBeenCalled();
     el.setAttribute("title", KIND);
+    await Promise.resolve();
     await settle();
     expect(capture).toHaveBeenCalledTimes(1);
   });

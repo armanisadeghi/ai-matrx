@@ -17,7 +17,7 @@ import {
 } from "@ai-matrx/design-system";
 import { AgentSettingsModal } from "@host/features/agents/components/settings-management/AgentSettingsModal";
 import { useAgentSaveAction } from "./useAgentSaveAction";
-import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 
 export function AgentSaveStatus({
   agentId,

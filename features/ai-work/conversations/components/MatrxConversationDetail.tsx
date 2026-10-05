@@ -29,6 +29,7 @@ import type { ProviderConversation } from "@/features/ai-work/service/providerCo
 import { conversationTypeLabel } from "../presentation";
 import { ConversationProvenancePanel } from "./ConversationProvenancePanel";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
+import { conversationTitleText } from "@/features/content-ir/surfaces/kind-text-label";
 
 export function MatrxConversationDetail({
   conversation,
@@ -38,7 +39,7 @@ export function MatrxConversationDetail({
   /** True when an agent owns this conversation, i.e. /chat can actually run it. */
   runnable: boolean;
 }) {
-  const title = conversation.title?.trim() || "Untitled conversation";
+  const title = conversationTitleText(conversation.title?.trim() || null) || "Untitled conversation";
 
   return (
     <div className="mx-auto max-w-6xl p-4 sm:p-5">

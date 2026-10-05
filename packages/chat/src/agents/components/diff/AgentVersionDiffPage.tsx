@@ -63,7 +63,7 @@ import {
 } from "../../format";
 import { buildAgentPayload } from "@host/components/agent-copy/buildAgentPayload";
 import { pushAddressWithoutNavigating } from "@host/lib/url-state/addressWithoutNavigating";
-import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 
 interface AgentVersionDiffPageProps {
   agentId: string;

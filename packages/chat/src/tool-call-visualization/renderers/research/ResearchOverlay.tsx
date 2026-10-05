@@ -29,8 +29,7 @@ import {
 import { cn } from "@ai-matrx/design-system";
 import { RichContent } from "@ai-matrx/chat/host/ui-slots";
 import { copyRichContent } from "@ai-matrx/chat/host/ui-slots";
-import { RichDocument } from "@host/features/rich-document/RichDocument";
-import type { ContentSource } from "@host/features/rich-document/types";
+import { RichDocument } from "@ai-matrx/chat/host/ui-slots";
 import { BasicMarkdownContent } from "@host/components/mardown-display/chat-markdown/BasicMarkdownContent";
 
 import type { ToolOverlayTabSpec, ToolRendererProps } from "../../types";
@@ -95,7 +94,7 @@ export const ResearchReportTab: React.FC<ToolRendererProps> = ({ entry }) => {
                 <div className="p-5">
                     <RichDocument imagePolicy="ai"
                         content={parsed.report}
-                        source={{ type: "raw" } as ContentSource}
+                        source={{ type: "raw" }}
                         actionsVariant="mini-bar"
                         actionsClassName="mt-2"
                         actions={{ exclude: ["announcements", "preferences"] }}

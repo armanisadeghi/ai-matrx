@@ -30,6 +30,7 @@ import { GenericRenderer } from "../../registry/GenericRenderer";
 import { ToolErrorCard } from "../../result-fields/ToolErrorCard";
 import { humanizeEnumValue } from "../../result-fields/shape";
 import { ToolResultCard } from "../_shared-entity/ToolResultCard";
+import { catalogProseText } from "@host/features/content-ir/surfaces/kind-one-line";
 
 const SKILL_ICON_TINT = "text-violet-600 dark:text-violet-400";
 
@@ -132,7 +133,7 @@ export const SkillInline: React.FC<ToolRendererProps> = (props) => {
         const type = humanType(result.skill_type);
         const version = typeof result.version === "number" ? `v${result.version}` : null;
         const description =
-            typeof result.description === "string" ? result.description.trim() : "";
+            typeof result.description === "string" ? catalogProseText(result.description.trim()) : "";
         const categories = stringArray(result.category_path);
         const triggers = stringArray(result.trigger_patterns);
 

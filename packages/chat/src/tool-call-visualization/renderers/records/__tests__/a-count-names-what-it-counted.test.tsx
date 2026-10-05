@@ -4,11 +4,12 @@
  * "Worked with records · table list" read "11 records." — it had counted tables. A count now names
  * what the verb counted.
  */
+import { registerChatUi } from "@ai-matrx/chat/host/ui-slots";
 import { expect, it, jest } from "@jest/globals";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
-jest.mock("@host/components/errors/ErrorAlchemyMenu", () => ({ ErrorAlchemyMenu: () => null }));
+registerChatUi({ ErrorAlchemyMenu: () => null });
 
 import { RecordsInline } from "../RecordsInline";
 

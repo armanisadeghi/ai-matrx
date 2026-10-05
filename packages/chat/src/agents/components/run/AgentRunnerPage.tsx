@@ -54,7 +54,7 @@ import { selectInstanceVariableDefinitions } from "../../redux/execution-system/
 import { useAgentRunSurfaceScope } from "../../hooks/useAgentRunSurfaceScope";
 import type { SourceFeature } from "../../types/instance.types";
 import { createAgentRunVariableValuesHandler } from "./agent-run-variable-write";
-import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 
 const RUN_INITIAL_MESSAGE_LIMIT = 12;
 

@@ -17,7 +17,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { FileText, Loader2, RefreshCw, Copy, Check } from "lucide-react";
 import { toast } from "../../../host/notify";
 import { SandboxFilesystemAdapter } from "@host/features/code/adapters/SandboxFilesystemAdapter";
-import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 
 interface SandboxFileViewerProps {
   /** sandbox_instances.id (the row UUID). */

@@ -23,7 +23,7 @@ import { chatConversationsActions } from "./_legacy-stubs";
 import { RichDocumentActions } from "@host/features/rich-document/RichDocumentActions";
 import { MessageTimestamp } from "../agents/components/messages-display/MessageTimestamp";
 import type { ConversationMessage } from "./_legacy-stubs";
-import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 
 // ============================================================================
 // PROPS

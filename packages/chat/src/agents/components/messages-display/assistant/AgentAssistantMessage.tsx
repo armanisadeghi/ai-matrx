@@ -114,8 +114,8 @@ import {
 import {
   isWarRoomThreadAgentSurface,
   traceWarRoomRenderPath,
-} from "@host/features/war-room/utils/renderPathTrace";
-import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+} from "@ai-matrx/chat/host/ui-slots";
+import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 
 const _NO_LIVE_SOURCES: MessageCitationSource[] = [];
 const _selectNoLiveSources = () => _NO_LIVE_SOURCES;

@@ -56,7 +56,7 @@ import { ENDPOINTS } from "@ai-matrx/agents/matrx";
 import { DEFAULT_BUILDER_ADVANCED_SETTINGS } from "../../types/instance.types";
 import { parseRequestOverrides } from "../../redux/execution-system/utils/request-overrides";
 import { SurfaceSimulatorSelect } from "./SurfaceSimulatorSelect";
-import { SystemInstructionModal } from "@host/features/agents/components/builder/message-builders/system-instructions/SystemInstructionModal";
+import { SystemInstructionModal } from "@ai-matrx/chat/host/ui-slots";
 import { useOpenSystemInstructionWindow } from "../../../host/window-openers";
 import { NumberStepper } from "@host/components/official-candidate/NumberStepper";
 import { openOverlay, CHAT_WINDOWS } from "../../../host/windows";
@@ -64,7 +64,7 @@ import {
   selectIsMemoryEnabledForConversation,
   selectMemoryDegraded,
 } from "../../redux/execution-system/observational-memory/observational-memory.selectors";
-import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 import { selectIsSuperAdmin } from "../../../host/identity";
 
 interface RunSettingsEditorProps {

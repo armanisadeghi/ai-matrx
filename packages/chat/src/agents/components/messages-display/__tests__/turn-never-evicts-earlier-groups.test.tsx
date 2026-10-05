@@ -14,6 +14,7 @@
  * reservation, its commit). Only the leaf message components are stubbed, to
  * count mounts and unmounts per group.
  */
+import { registerChatUi } from "@ai-matrx/chat/host/ui-slots";
 import React, { act, useEffect } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { Provider } from "react-redux";
@@ -54,10 +55,10 @@ jest.mock("@host/features/context-menu-v3/NonEditableContextMenu", () => ({
 jest.mock("@host/features/context-menu-v3/utils/resolveMarkdownContext", () => ({
   resolveMarkdownContext: jest.fn(),
 }));
-jest.mock("@host/features/war-room/utils/renderPathTrace", () => ({
+registerChatUi({
   isWarRoomThreadAgentSurface: () => false,
   traceWarRoomRenderPath: jest.fn(),
-}));
+});
 jest.mock(
   "../../../redux/execution-system/thunks/load-conversation.thunk",
   () => ({ loadConversation: jest.fn(() => ({ type: "test/load" })) }),

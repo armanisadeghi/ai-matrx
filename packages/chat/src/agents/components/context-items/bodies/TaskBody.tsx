@@ -1,60 +1,16 @@
 "use client";
 
 /**
- * Task drawer body — fully editable, full height. Mounts the canonical
- * `TaskEditor` (embedded/compact, self-persists). Reports the task title to the
- * drawer title bar; no duplicate header.
+ * Task drawer body: the task editor is an app feature, so the host registers it. A bare host
+ * draws the generic body with a one-line label (PACKAGE-INDEPENDENCE.md section 5.1).
  */
 
-import { useEffect } from "react";
-import TaskEditor from "@host/features/tasks/components/TaskEditor";
-import { useAppSelector } from "../../../../store/hooks";
-import {
-  selectTaskById,
-  type TaskRecord,
-} from "../../../../context/sources/scopes";
+import { hostSlot } from "../../../../host/ui-slots";
 import type { ContextItemBodyProps } from "../types";
-import { TaskPreviewContent } from "@host/features/agents/components/previews/TaskHoverPreview";
-import { ResourceSnapshotView } from "./ResourceSnapshotView";
+import { UnregisteredBody } from "./UnregisteredBody";
 
-export function TaskBody({ item, setTitle }: ContextItemBodyProps) {
-  const taskId = item.refs.taskIds?.[0] ?? null;
-  const snapshot = item.refs.resourceSnapshot;
-  const task = useAppSelector((s) =>
-    taskId
-      ? (selectTaskById(s as Parameters<typeof selectTaskById>[0], taskId) as
-          | TaskRecord
-          | undefined)
-      : undefined,
-  );
-
-  useEffect(() => {
-    if (task?.title?.trim()) setTitle?.(task.title.trim());
-  }, [task?.title, setTitle]);
-
-  if (snapshot) {
-    return <ResourceSnapshotView snapshot={snapshot} />;
-  }
-
-  if (!taskId) {
-    return (
-      <p className="p-4 text-xs text-muted-foreground italic">
-        No task reference on this item.
-      </p>
-    );
-  }
-
-  if (!item.editable) {
-    return (
-      <div className="h-full min-h-0 overflow-y-auto p-4">
-        <TaskPreviewContent taskId={taskId} />
-      </div>
-    );
-  }
-
-  return (
-    <div className="h-full min-h-0 overflow-y-auto">
-      <TaskEditor taskId={taskId} embedded compact />
-    </div>
-  );
+function TaskBodyStandIn(props: ContextItemBodyProps) {
+  return <UnregisteredBody name="TaskBody" what="The task editor" props={props} />;
 }
+
+export const TaskBody = hostSlot("TaskBody", TaskBodyStandIn);

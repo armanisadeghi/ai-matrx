@@ -31,7 +31,7 @@ import { selectInstanceStatus } from "../../redux/execution-system/conversations
 import { selectInstanceDisplayTitle } from "../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { selectHasUnsentComposerDraft } from "../../redux/execution-system/instance-user-input/unsent-draft.selectors";
 import { AgentRunner } from "../smart/AgentRunner";
-import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 
 interface AgentInlineOverlayProps {
   conversationId: string;

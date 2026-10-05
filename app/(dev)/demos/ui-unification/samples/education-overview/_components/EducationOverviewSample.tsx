@@ -77,7 +77,7 @@ import type { EducationSnapshot } from "@/features/education/home/types";
 import { setStudyTodaySnapshot } from "@/features/education/study/dashboard/studyTodaySnapshot";
 import { modeReviewHref, modeWeakHref } from "@/features/education/study/dashboard/nextActions";
 import { EDU_NAV_GROUPS, EDU_TOOL_NAV } from "@/features/education/lib/education-nav";
-import { artifactTile, targetVisual } from "@/features/education/library/artifactVisuals";
+import { targetVisual } from "@/features/education/library/artifactVisuals";
 import { kitHref, type StudyKit } from "@/features/education/kits/kitService";
 import { EDUCATION_LIBRARY_COLUMNS } from "@/features/education/library/columns";
 import { EducationLibraryCards } from "@/features/education/library/components/EducationLibraryCards";
@@ -88,7 +88,7 @@ import { EDU_START_HREF } from "@/features/education/onboard/startRoutes";
 
 import { KpiRow, type KpiRowItem } from "../../_components/page-top/kpi-row";
 import { FeatureCards } from "../../_components/page-top/feature-cards";
-import { Badge, Button, ControlRow, ControlScope, type SegmentOption, SegmentedControl } from "@ai-matrx/design-system/controls";
+import { Badge, Button, Chip, ChipSet, ControlRow, ControlScope, type SegmentOption, SegmentedControl } from "@ai-matrx/design-system/controls";
 
 /* ------------------------------------------------------------------ */
 /* Header — the sitewide crumb trail                                    */
@@ -360,38 +360,29 @@ function KitCard({ kit }: { kit: StudyKit }) {
         </span>
         <ChevronRight className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" aria-hidden />
       </Link>
-      <div className="flex flex-wrap gap-1 px-3 pb-2">
+      <ChipSet layout="grid" className="px-2.5 pb-2.5">
         {present.map(({ artifact, visual }) => {
           const Icon = visual.icon;
           return (
-            <Link
-              key={visual.label}
-              href={artifact.href}
-              className={cn("inline-flex h-6 cursor-pointer items-center gap-1 rounded-md px-1.5 text-[0.6875rem] font-medium hover:brightness-110", artifactTile(visual))}
-            >
-              <Icon className="size-3.5" aria-hidden />
-              {visual.label}
-            </Link>
+            <Chip key={visual.label} asChild tone={visual.tone} icon={<Icon />} label={visual.label}>
+              <Link href={artifact.href} />
+            </Chip>
           );
         })}
-      </div>
+      </ChipSet>
       {missing.length > 0 ? (
-        <div className="mt-auto flex flex-wrap items-center gap-1 border-t border-border px-3 py-1.5">
-          <span className="mr-0.5 text-[0.6875rem] text-muted-foreground">Not yet:</span>
-          {missing.map((option) => {
-            const Icon = option.visual.icon;
-            return (
-              <Link
-                key={option.target}
-                href={option.href}
-                className="inline-flex h-6 cursor-pointer items-center gap-1 rounded-md border border-dashed border-border px-1.5 text-[0.6875rem] text-muted-foreground hover:border-primary/50 hover:text-foreground"
-              >
-                <Plus className="size-3" aria-hidden />
-                <Icon className="size-3" aria-hidden />
-                {option.visual.label}
-              </Link>
-            );
-          })}
+        <div className="mt-auto border-t border-border px-2.5 pb-2.5 pt-2">
+          <p className="mb-1.5 px-[3px] text-[0.6875rem] text-muted-foreground">Not in this kit yet</p>
+          <ChipSet layout="grid">
+            {missing.map((option) => {
+              const Icon = option.visual.icon;
+              return (
+                <Chip key={option.target} asChild variant="add" icon={<Icon />} label={option.visual.label}>
+                  <Link href={option.href} />
+                </Chip>
+              );
+            })}
+          </ChipSet>
         </div>
       ) : null}
     </article>

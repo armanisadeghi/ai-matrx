@@ -26,7 +26,7 @@ import {
 import { selectHasMessages } from "../../agents/redux/execution-system/messages/messages.selectors";
 import { clearFocus } from "../../agents/redux/execution-system/conversation-focus/conversation-focus.slice";
 import type { ConversationListItem } from "../../agents/redux/conversation-list/conversation-list.types";
-import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 import { asClause } from "@ai-matrx/kit/text";
 import { WorkspaceGate } from "@host/features/organizations/components/WorkspaceGate";
 import type { AnyMandateKey } from "@ai-matrx/agents/mandates";

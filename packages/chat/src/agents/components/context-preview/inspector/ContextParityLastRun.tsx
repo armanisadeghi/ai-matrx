@@ -22,7 +22,7 @@ import { ShieldCheck, ShieldAlert } from "lucide-react";
 
 import { supabase } from "../../../../host/db";
 import { schedulerDb } from "../../../../host/db";
-import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 
 /** Seeded by matrx-frontend/migrations/campaign/paritynightly_*.sql. */
 export const CONTEXT_PARITY_TASK_ID = "a7c1e2d3-0000-4e5f-9a00-000000000973";

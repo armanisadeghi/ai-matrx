@@ -25,6 +25,7 @@ import type {
 import { isCodePluginSourceApp } from "@/features/ai-work/lib/providerSource";
 import type { ConversationBrowseRow } from "./types";
 import { applyAudience } from "./types";
+import { conversationTitleText } from "@/features/content-ir/surfaces/kind-text-label";
 
 /**
  * Where a conversation NATURALLY opens.
@@ -127,7 +128,7 @@ export function useConversationRowActions(
         }}
         token="project"
         containerLabel={
-          projectPickerRow?.title?.trim() || "Untitled conversation"
+          conversationTitleText(projectPickerRow?.title?.trim() || null) || "Untitled conversation"
         }
         orgId={projectPickerRow?.organization_id ?? null}
         attachedIds={attachedProjectIds}

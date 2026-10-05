@@ -28,7 +28,7 @@ import {
   fetchTrashedConversations,
   restoreConversation,
 } from "../../redux/conversation-list/conversation-trash.thunks";
-import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 
 interface ConversationTrashSectionProps {
   /** `"consumer"` matches the comfortable /chat sidebar; `"dense"` the rest. */

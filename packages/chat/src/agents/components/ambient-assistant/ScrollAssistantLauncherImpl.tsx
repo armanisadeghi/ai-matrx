@@ -28,7 +28,7 @@ import { cn } from "@ai-matrx/design-system";
 import { IntelligenceIndicator } from "../../../surfaces/runtime/intelligence";
 import { OrganizationContextNotice } from "@host/features/organizations/components/OrganizationRequiredNotice";
 import { useOrganizationRequired } from "@host/features/organizations/useOrganizationRequired";
-import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 import { selectIsAuthenticated } from "../../../host/identity";
 import { selectOrganizationId } from "../../../host/org";
 

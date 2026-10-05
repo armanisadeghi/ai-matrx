@@ -98,7 +98,7 @@ it("every notes host opens the canvas tab — none mounts its own history panel"
     "features/notes/components/NoteWorkspace.tsx",
     "features/notes/components/NotesWindowView.tsx",
     "features/window-panels/windows/notes/NotesWindow.tsx",
-    "packages/chat/src/agents/components/context-items/bodies/NoteBody.tsx",
+    "features/chat-context-bodies/NoteBody.tsx",
   ]) {
     const source = read(file);
     expect(source).not.toMatch(/NoteVersionHistory\b|NoteHistoryPane|InstanceHistoryOpen/);

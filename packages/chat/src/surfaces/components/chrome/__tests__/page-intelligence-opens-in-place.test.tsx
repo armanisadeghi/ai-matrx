@@ -11,6 +11,7 @@
  * that opens the mandate window" red; the secondary door removed → "the full
  * page stays reachable in a new tab" red.
  */
+import { registerChatUi } from "@ai-matrx/chat/host/ui-slots";
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { PageIntelligenceSection } from "../PageIntelligenceSection";
@@ -40,7 +41,7 @@ jest.mock("../../../../mandates/service", () => ({
   fetchMandateIdentities: () =>
     Promise.resolve({ "notes.page_guidance": { label: "Notes Page Guide" } }),
 }));
-jest.mock("@host/components/errors/ErrorAlchemyMenu", () => ({ ErrorAlchemyMenu: () => null }));
+registerChatUi({ ErrorAlchemyMenu: () => null });
 jest.mock("../../../../host/window-openers", () => ({ ...jest.requireActual("../../../../host/window-openers"),
   useOpenMandateWindow: () => openMandate,
 }));

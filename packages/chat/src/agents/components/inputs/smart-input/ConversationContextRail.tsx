@@ -98,7 +98,7 @@ import { CloudBrowserHandoffCanvasOpener } from "@host/features/cloud-browser/co
 import {
   cloudBrowserCanvasSourceId,
   useOpenCloudBrowserCanvas,
-} from "@host/features/cloud-browser/hooks/useOpenCloudBrowserCanvas";
+} from "@ai-matrx/chat/host/ui-slots";
 import { docKindForContextKey } from "../../../utils/workingDocumentContext";
 import {
   isCanvasItemContextKey,

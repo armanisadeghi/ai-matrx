@@ -34,7 +34,7 @@ import { CHAT_WINDOWS } from "../../../host/windows";
 import { useIsChatWindowOpen } from "../../../host/windows-react";
 import type { SourceFeature } from "@ai-matrx/agents/generated/source-attribution";
 import { cn } from "@ai-matrx/design-system";
-import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 import { selectIsAuthenticated } from "../../../host/identity";
 import { selectOrganizationId } from "../../../host/org";
 

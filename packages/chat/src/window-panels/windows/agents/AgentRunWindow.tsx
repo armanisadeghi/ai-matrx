@@ -85,7 +85,7 @@ import {
   AGENT_RUN_WINDOW_CONVERSATION_ARG,
   AGENT_RUN_WINDOW_URL_MODE,
 } from "./agentRunWindowAddress";
-import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 import { selectUserId } from "../../../host/identity";
 import { selectOrganizationId } from "../../../host/org";
 

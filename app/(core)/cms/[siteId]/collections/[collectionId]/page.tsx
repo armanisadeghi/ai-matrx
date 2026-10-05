@@ -969,7 +969,7 @@ export default function CollectionItemsPage() {
                 <p className="text-xs font-medium text-muted-foreground mb-1">
                   Raw data
                 </p>
-                <pre className="text-xs font-mono whitespace-pre-wrap break-all">
+                <pre data-kind-source="explicit" className="text-xs font-mono whitespace-pre-wrap break-all">
                   {JSON.stringify(openItem.data ?? {}, null, 2)}
                 </pre>
               </div>

@@ -25,7 +25,7 @@ import { AlertTriangle } from "lucide-react";
 
 import type { ToolRendererProps } from "../../types";
 import { resultAsObject } from "../_shared";
-import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 
 const COUNTED: Record<string, readonly [string, string]> = {
   table_list: ["table", "tables"],

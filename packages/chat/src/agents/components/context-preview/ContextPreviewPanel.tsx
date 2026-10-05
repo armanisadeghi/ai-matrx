@@ -49,7 +49,7 @@ import {
 } from "./useContextPreview";
 import { AttachedContextSection } from "./AttachedContextSection";
 import { ContextCompareView } from "./ContextCompareView";
-import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 import { contextEntryLabel } from "../context-policies-display/contextEntryLabel";
 import {
   MessageContextReceiptTable,

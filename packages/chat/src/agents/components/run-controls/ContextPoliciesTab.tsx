@@ -42,7 +42,7 @@ import {
 } from "../../hooks/useBuilderContextSeed";
 import { cn } from "@ai-matrx/design-system";
 import { ConfirmDialog } from "@host/components/ui/confirm-dialog";
-import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 
 // =============================================================================
 // Selectors

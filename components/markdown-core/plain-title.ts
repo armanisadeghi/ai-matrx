@@ -92,9 +92,12 @@ export function plainTitleFromMarkdown(
   // A kind names the record by its label ("Flashcard set · Cell biology"),
   // never by its JSON (KIND_NEVER_RAW) — the stored content is untouched.
   const text = source ?? "";
-  const title = plainTextOfMarkdownLine(
-    hasKindKey(text) ? kindTextLabel(text, 200) : firstContentLine(text),
-  );
+  const holdsKind = hasKindKey(text);
+  const title =
+    plainTextOfMarkdownLine(holdsKind ? kindTextLabel(text, 200) : firstContentLine(text)) ||
+    // A kind always names its record (an `<artifact>`-wrapped kind used to
+    // project to "") — R4, round 6.
+    (holdsKind ? kindTextLabel(text, 200) : "");
   if (!maxLength || title.length <= maxLength) return title;
   const cut = title.slice(0, maxLength - 1);
   const space = cut.lastIndexOf(" ");

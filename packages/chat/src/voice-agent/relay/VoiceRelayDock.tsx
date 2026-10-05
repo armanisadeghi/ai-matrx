@@ -27,7 +27,7 @@ import {
   VOICE_COMMUNICATOR_MANDATE_KEY,
 } from "./useVoiceRelaySession";
 import type { QuestionPacing } from "./types";
-import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 import { asClause } from "@ai-matrx/kit/text";
 
 export interface VoiceRelayDockProps {

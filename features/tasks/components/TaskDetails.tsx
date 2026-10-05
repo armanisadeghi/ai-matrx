@@ -114,7 +114,9 @@ export default function TaskDetails({ task }: { task: TaskWithProject }) {
         <label className="block text-xs font-medium text-foreground mb-1">
           Details
         </label>
+        {/* The person's own stored text, edited as written (ruling b, round 6). */}
         <div
+          data-kind-source="explicit"
           className={`${fullScreenMode ? "max-h-96" : "max-h-48"} overflow-y-auto`}
         >
           <ProTextarea

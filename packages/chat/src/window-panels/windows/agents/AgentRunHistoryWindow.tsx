@@ -43,7 +43,7 @@ import {
   readSelectedRunTranscript,
   type AgentRunHistorySnapshot,
 } from "./agent-run-history-scope";
-import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 import { CHAT_WINDOWS } from "../../../host/windows";
 
 const SURFACE_KEY = "agent-run-history-window";

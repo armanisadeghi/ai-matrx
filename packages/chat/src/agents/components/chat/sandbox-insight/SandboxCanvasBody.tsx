@@ -50,7 +50,7 @@ import type { SandboxInstance } from "../../../../compute/targets";
 import { selectLiveToolLifecycleByConversation } from "../../../redux/execution-system/active-requests/active-requests.selectors";
 import { SandboxActivityFeed } from "./SandboxActivityFeed";
 import { isSandboxTool } from "./sandbox-activity";
-import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 
 /** The agent's working directory in every sandbox image. */
 const AGENT_HOME = "/home/agent";

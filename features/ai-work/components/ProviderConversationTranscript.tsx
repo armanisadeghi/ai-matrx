@@ -73,6 +73,7 @@ import {
 } from "../hooks/useLiveProviderTranscript";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
+import { conversationTitleText } from "@/features/content-ir/surfaces/kind-text-label";
 
 /** Tool activity page loaded per request — a mirror can hold thousands. */
 const TOOL_ACTIVITY_PAGE_SIZE = 200;
@@ -92,7 +93,7 @@ export function ProviderConversationTranscript({
   detail: ProviderConversationDetail;
 }) {
   const { conversation, visibleMessageCount } = detail;
-  const title = conversation.title?.trim() || "Untitled conversation";
+  const title = conversationTitleText(conversation.title?.trim() || null) || "Untitled conversation";
   /**
    * Storage providers of this conversation's coding-session bindings. A reply
    * typed in AI Matrx carries `source_feature = coding_session_reply`, so the

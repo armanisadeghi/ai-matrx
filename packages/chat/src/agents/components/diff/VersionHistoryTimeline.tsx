@@ -31,7 +31,7 @@ import {
   MOBILE_TABLE_FROZEN_CELL,
   MOBILE_TABLE_FROZEN_HEAD,
 } from "@host/components/official/mobile-table/mobileTable";
-import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 interface VersionHistoryTimelineProps {

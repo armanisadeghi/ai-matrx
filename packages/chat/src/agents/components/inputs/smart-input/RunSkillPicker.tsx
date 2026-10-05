@@ -46,6 +46,7 @@ import {
   type PicksCatalogItem,
 } from "./RunPicksSurface";
 import { groupCatalog, toolCategoryLabel } from "./run-tool-catalog";
+import { catalogProseText } from "@host/features/content-ir/surfaces/kind-one-line";
 
 type AgentSkillTier = "included" | "listed" | "forbidden";
 
@@ -138,8 +139,8 @@ export function RunSkillPicker({ conversationId }: { conversationId: string }) {
     return {
       id: skill.id,
       label: skill.label,
-      secondary: skill.description || undefined,
-      title: skill.description || undefined,
+      secondary: catalogProseText(skill.description) || undefined,
+      title: catalogProseText(skill.description) || undefined,
       note: tier ? TIER_META[tier].label : undefined,
     };
   };
@@ -191,7 +192,7 @@ export function RunSkillPicker({ conversationId }: { conversationId: string }) {
               />
             }
             detail={meta?.label}
-            title={skill?.description || undefined}
+            title={catalogProseText(skill?.description) || undefined}
           />
         );
       })}

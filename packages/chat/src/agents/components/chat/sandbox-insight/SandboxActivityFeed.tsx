@@ -23,7 +23,7 @@ import {
   type SandboxActivityRow,
 } from "./sandbox-activity";
 import { DURABLE_VFS_BADGE_TEXT } from "../../../../tool-call-visualization/renderers/shell/ShellInline";
-import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 import { getToolDisplayName } from "../../../../tool-call-visualization/registry/registry";
 
 function formatDuration(ms: number | null): string | null {

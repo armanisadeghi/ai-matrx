@@ -42,7 +42,7 @@ import {
 import {
   isWarRoomThreadAgentSurface,
   traceWarRoomRenderPath,
-} from "@host/features/war-room/utils/renderPathTrace";
+} from "@ai-matrx/chat/host/ui-slots";
 
 // CreatorRunPanel renders a <WindowPanel> as styling chrome (admin-gated
 // tab panel). Without `dynamic()` it would pull WindowPanel and the

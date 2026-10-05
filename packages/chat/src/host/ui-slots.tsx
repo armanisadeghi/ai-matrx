@@ -52,6 +52,17 @@ export interface ChatUiSlots {
   ReviewAnswersLink: AnyComponent;
   RecordChangeApprovalCard: AnyComponent;
   ParkedOnPersonCard: AnyComponent;
+  /** The inline error card (title, sentence, actions); the host's carries the Alchemy menu. */
+  ErrorNotice: AnyComponent;
+  // Context-item drawer bodies the app owns (notes and tasks are app features).
+  NoteBody: AnyComponent;
+  NoteFooter: AnyComponent;
+  NoteTitleActions: AnyComponent;
+  TaskBody: AnyComponent;
+  RichDocument: AnyComponent;
+  // Builder doors: the agent builder's editors, reached from the run-controls window.
+  SystemInstructionEditor: AnyComponent;
+  SystemInstructionModal: AnyComponent;
   // Functions and hooks
   confirm: AnyFn;
   copyRichContent: AnyFn;
@@ -71,6 +82,12 @@ export interface ChatUiSlots {
   useEntityTitles: AnyFn;
   /** The skills the host has loaded: `{ status, skills }` (a host with none answers nothing loaded). */
   loadedSkills: AnyFn;
+  /** Dev-only render-path tracing for the war-room tile; a host without it traces nothing. */
+  traceWarRoomRenderPath: AnyFn;
+  isWarRoomThreadAgentSurface: AnyFn;
+  /** Opens a cloud-browser run in the host's canvas; a host without one gets a no-op opener. */
+  useOpenCloudBrowserCanvas: AnyFn;
+  cloudBrowserCanvasSourceId: AnyFn;
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
@@ -111,6 +128,15 @@ function unregisteredWidget(name: string): AnyComponent {
   return UnregisteredWidget;
 }
 
+/**
+ * A named slot with the caller's own stand-in (for a package default richer than one line,
+ * e.g. a context-item body falling back to `GenericBody`). Same contract as the wrappers above:
+ * unregistered -> the stand-in, reported once.
+ */
+export function hostSlot<K extends keyof ChatUiSlots>(name: K, Fallback?: AnyComponent): ChatUiSlots[K] {
+  return slotComponent(name, Fallback);
+}
+
 function slotFn<K extends keyof ChatUiSlots>(name: K, fallback?: AnyFn): ChatUiSlots[K] {
   const fn = (...args: unknown[]) => {
     const registered = slots[name] as AnyFn | undefined;
@@ -129,7 +155,21 @@ export const RichContent = slotComponent("RichContent", ({ source, className }: 
 export const CopyButtons = slotComponent("CopyButtons");
 export const InfoHint = slotComponent("InfoHint");
 export const AnswerValueView = slotComponent("AnswerValueView");
-export const ErrorAlchemyMenu = slotComponent("ErrorAlchemyMenu");
+/** A host with no error menu draws one labelled line; the error sentence itself is already on screen. */
+export const ErrorAlchemyMenu = slotComponent("ErrorAlchemyMenu", unregisteredWidget("ErrorAlchemyMenu"));
+/** A host with no error card draws the plain sentence, its actions and children, marked as the stand-in. */
+export const ErrorNotice = slotComponent(
+  "ErrorNotice",
+  ({ title, message, error, actions, children, className }: { title?: string; message?: string | null; error?: unknown; actions?: ReactNode; children?: ReactNode; className?: string }) =>
+    createElement(
+      "div",
+      { className: `rounded-md border border-destructive/40 p-2 text-sm ${className ?? ""}`, "data-chat-slot-fallback": "ErrorNotice" },
+      title ? createElement("div", { className: "font-medium" }, title) : null,
+      createElement("div", null, message || (error instanceof Error ? error.message : typeof error === "string" ? error : "")),
+      children ?? null,
+      actions ?? null,
+    ),
+);
 export const EntityRef = slotComponent("EntityRef");
 export const AdvancedMenu = slotComponent("AdvancedMenu");
 export const AuthGateDialog = slotComponent("AuthGateDialog");
@@ -173,3 +213,17 @@ export const summarizeContextCell = slotFn("summarizeContextCell", (cell: unknow
 /** A host with no entity directory titles nothing; callers fall back to the raw reference. */
 export const useEntityTitles = slotFn("useEntityTitles", () => ({ titleFor: () => undefined }));
 export const loadedSkills = slotFn("loadedSkills", () => ({ status: "idle", skills: [] }));
+/** A host with no war-room tile has nothing to trace; the call is a reported no-op. */
+export const traceWarRoomRenderPath = slotFn("traceWarRoomRenderPath", () => undefined);
+export const isWarRoomThreadAgentSurface = slotFn("isWarRoomThreadAgentSurface", () => false);
+/** A host with no cloud browser opens nothing; the opener is a reported no-op. */
+export const useOpenCloudBrowserCanvas = slotFn("useOpenCloudBrowserCanvas", () => () => undefined);
+/** A host with no rich document viewer shows the text as it is, marked as the stand-in. */
+export const RichDocument = slotComponent("RichDocument", ({ content, className }: { content?: unknown; className?: string }) =>
+  createElement("div", { className: `whitespace-pre-wrap text-sm ${className ?? ""}`, "data-chat-slot-fallback": "RichDocument" }, typeof content === "string" ? content : ""),
+);
+/** The canvas identity of one chat's cloud browser (the host's own scheme; a bare host just keys by chat). */
+export const cloudBrowserCanvasSourceId = slotFn("cloudBrowserCanvasSourceId", (conversationId: string) => `cloud-browser:${conversationId}`);
+/** Builder doors: a host without the agent builder shows one labelled line where the editor would be. */
+export const SystemInstructionEditor = slotComponent("SystemInstructionEditor", unregisteredWidget("SystemInstructionEditor"));
+export const SystemInstructionModal = slotComponent("SystemInstructionModal", unregisteredWidget("SystemInstructionModal"));

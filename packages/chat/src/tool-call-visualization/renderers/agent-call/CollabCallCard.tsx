@@ -32,7 +32,7 @@ import { stripThinkingStreaming } from "@ai-matrx/kit/text";
 import { cn } from "@ai-matrx/design-system";
 import type { ToolRendererProps } from "../../types";
 import { getCollabCallInfo, type CollabCallInfo } from "./collab";
-import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 
 const NO_CHILD_STREAM = () => null;
 

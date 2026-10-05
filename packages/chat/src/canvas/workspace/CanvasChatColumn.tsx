@@ -25,7 +25,7 @@ import type { AttachedContextRailItem } from "../../agents/components/inputs/sma
 import { setContextEntries } from "../../agents/redux/execution-system/instance-context/instance-context.slice";
 import { useAppDispatch } from "../../store/hooks";
 import { Button } from "@ai-matrx/design-system";
-import { ErrorNotice } from "@host/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/chat/host/ui-slots";
 import { cn } from "@ai-matrx/design-system";
 import type { ContextObjectType } from "../../agents/types/agent-api-types";
 import type { CanvasWorkspaceConversation } from "./useCanvasWorkspaceConversation";

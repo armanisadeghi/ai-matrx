@@ -56,7 +56,7 @@ import type {
   CompletionPayload,
 } from "@ai-matrx/agents/generated/stream-events";
 import type { InstanceStatus } from "../../types/instance.types";
-import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 const DEBUG_PANEL_SHELL =

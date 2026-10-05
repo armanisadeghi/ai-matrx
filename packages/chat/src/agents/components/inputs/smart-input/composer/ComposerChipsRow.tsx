@@ -20,7 +20,7 @@ import { ChevronDown, Cloud, Server } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { cn } from "@ai-matrx/design-system";
 import { useOpenRunControlsWindow } from "../../../../../host/window-openers";
-import { useOpenCloudBrowserCanvas } from "@host/features/cloud-browser/hooks/useOpenCloudBrowserCanvas";
+import { useOpenCloudBrowserCanvas } from "@ai-matrx/chat/host/ui-slots";
 import { ChatConnectionsStrip } from "../ChatConnectionsStrip";
 import { ComposerConnectPromo } from "./ComposerConnectPromo";
 import { useComputeTargetActions } from "../use-compute-target-actions";

@@ -48,6 +48,7 @@ import {
 } from "@/features/ai-work/conversations/bindingPlurality";
 import { workspaceName } from "@/features/ai-work/lib/codingSessionPresentation";
 import { CODE_PLUGIN_SOURCE_APP } from "@/features/ai-work/lib/providerSource";
+import { conversationTitleText } from "@/features/content-ir/surfaces/kind-text-label";
 
 function workConversationHref(conversationId: string): string {
   return `/work/conversations/${conversationId}`;
@@ -437,7 +438,7 @@ function CodingSessionRow({
 }) {
   const meta = providerMeta(session.provider);
   const Icon = meta?.icon ?? Code2;
-  const title = session.conversation?.title?.trim() || "Untitled conversation";
+  const title = conversationTitleText(session.conversation?.title?.trim() || null) || "Untitled conversation";
   const verdict = fidelityVerdict(session.fidelity);
   const workspace = workspaceName(session.metadata);
   const dispatch = useAppDispatch();
@@ -554,7 +555,7 @@ function CodingSessionDetail({
 }) {
   const dispatch = useAppDispatch();
   const meta = providerMeta(session.provider);
-  const title = session.conversation?.title?.trim() || "Untitled conversation";
+  const title = conversationTitleText(session.conversation?.title?.trim() || null) || "Untitled conversation";
   const verdict = fidelityVerdict(session.fidelity);
   // A mirrored conversation is `code-plugin` · <tool>. Before its conversation
   // row is readable, the binding's own provider names the tool.

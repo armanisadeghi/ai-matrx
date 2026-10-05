@@ -11,12 +11,12 @@ import { TapTargetButtonGroup } from "@ai-matrx/tap-target";
 import {
   ChevronLeftTapButton,
   MaximizeTapButton,
-  MoreHorizontalTapButton,
-  ShareTapButton,
   UndoTapButton,
   RedoTapButton,
 } from "@ai-matrx/tap-target/buttons";
-import { Plus, Search, Shapes } from "lucide-react";
+import { Copy, Inbox, ListChecks, Plus, Search, Settings, Shapes, Share2 } from "lucide-react";
+import { HeaderSpecimen } from "@/features/shell/components/header/templates/HeaderSpecimen";
+import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { TabsByPurpose } from "../../_components/round2";
 import { Group, ROWS, STATUS, Section } from "./kit";
 import { Badge, Button, ControlRow, SearchField, SegmentedControl, Select } from "@ai-matrx/design-system/controls";
@@ -96,32 +96,44 @@ function ModuleHomeTop() {
   );
 }
 
+/** The REAL internal-page template (RecordPageHeader) in a stand-in shell
+ *  band — never a mock of it. One line: back, parents, the record (last
+ *  crumb), modes, actions. */
 function InternalTop() {
+  const [mode, setMode] = useState("/forms/r2?view=questions");
   return (
     <div className="flex h-full flex-col">
-      <div className="flex min-h-10 items-center border-b border-border px-[3px]">
-        <ChevronLeftTapButton variant="transparent" ariaLabel="Back" />
-        <div className="flex min-w-0 flex-1 flex-col px-[3px]">
-          <span className="truncate text-[0.6875rem] text-muted-foreground">Forms</span>
-          <span className="truncate text-[0.8125rem] font-semibold leading-4">Intake form — dental</span>
-        </div>
-        <ShareTapButton variant="transparent" ariaLabel="Share" />
-        <MoreHorizontalTapButton variant="transparent" ariaLabel="More" />
-      </div>
-      <div className="flex gap-4 border-b border-border px-3">
-        {["Questions", "Responses", "Settings"].map((t, i) => (
-          <span
-            key={t}
-            className={
-              i === 0
-                ? "-mb-px h-8 border-b-2 border-primary pt-2 text-[0.8125rem] font-medium"
-                : "-mb-px h-8 border-b-2 border-transparent pt-2 text-[0.8125rem] font-medium text-muted-foreground"
-            }
-          >
-            {t}
-          </span>
-        ))}
-      </div>
+      <HeaderSpecimen>
+        <RecordPageHeader
+          backHref="/forms"
+          parents={[
+            {
+              label: "Forms",
+              href: "/forms",
+              optionsLabel: "Modules",
+              options: [
+                { label: "Forms", href: "/forms", active: true },
+                { label: "Tables", href: "/tables" },
+              ],
+            },
+          ]}
+          record={{
+            name: "Intake form — dental",
+            siblings: ROWS.map((r) => ({ label: r.name, href: `/forms/${r.id}`, active: r.id === "r2" })),
+          }}
+          modes={[
+            { name: "Questions", href: "/forms/r2?view=questions", icon: ListChecks },
+            { name: "Responses", href: "/forms/r2?view=responses", icon: Inbox },
+            { name: "Settings", href: "/forms/r2?view=settings", icon: Settings },
+          ]}
+          activeModeHref={mode}
+          onModeSelect={setMode}
+          actions={[
+            { label: "Share", icon: Share2, onPress: () => {} },
+            { label: "Duplicate", icon: Copy, onPress: () => {} },
+          ]}
+        />
+      </HeaderSpecimen>
       <div className="flex flex-col gap-2 p-3">
         <div className="h-3 w-3/5 rounded bg-muted" />
         <div className="h-3 w-2/5 rounded bg-muted" />

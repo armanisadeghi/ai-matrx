@@ -32,6 +32,7 @@ import {
   SKILL_TIER_ORDER,
   type SkillTierKey,
 } from "./skill-tiers";
+import { catalogProseText } from "@/features/content-ir/surfaces/kind-one-line";
 
 type Tier = SkillTierKey;
 type CatalogueFilter = "all" | "configured" | "unassigned";
@@ -494,7 +495,7 @@ function SkillCatalogueRow({
             </span>
           </div>
           <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
-            {skill.description || "No description provided."}
+            {catalogProseText(skill.description) || "No description provided."}
           </p>
           <SkillAttributionLine skill={skill} className="mt-1" />
           <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[10px] text-muted-foreground/80">
@@ -606,7 +607,7 @@ function SelectedTier({
               <div
                 key={id}
                 className="group flex items-center gap-2 rounded-md border border-border/70 bg-background px-2.5 py-1.5"
-                title={skill?.description ?? id}
+                title={catalogProseText(skill?.description) || id}
               >
                 {/* THE DOOR LAW. When the catalogue has no row for this id the
                     old control printed "Unknown skill 1a2b3c4d" and DISABLED

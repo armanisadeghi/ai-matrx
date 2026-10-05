@@ -707,7 +707,7 @@ export function CmsArtifactDetail({ artifactId }: CmsArtifactDetailProps) {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <pre className="text-[10px] text-muted-foreground bg-muted/50 rounded-md p-3 overflow-auto max-h-48">
+              <pre data-kind-source="explicit" className="text-[10px] text-muted-foreground bg-muted/50 rounded-md p-3 overflow-auto max-h-48">
                 {JSON.stringify(artifact.metadata, null, 2)}
               </pre>
             </CardContent>

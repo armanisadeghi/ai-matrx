@@ -50,7 +50,7 @@ import {
 import { fetchAgentOutputSchemas } from "../../../../../mandates/output-contract";
 import { Popover, PopoverContent, PopoverTrigger, Skeleton } from "@ai-matrx/design-system";
 import { cn } from "@ai-matrx/design-system";
-import { ErrorNotice } from "@host/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/chat/host/ui-slots";
 import { useAppDispatch, useAppSelector } from "../../../../../store/hooks";
 import { selectBuilderAdvancedSettings } from "../../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { setBuilderAdvancedSettings } from "../../../../redux/execution-system/instance-ui-state/instance-ui-state.slice";

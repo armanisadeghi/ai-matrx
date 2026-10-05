@@ -28,7 +28,7 @@ import { ToolResultValue } from "../result-fields/ToolResultValue";
 import { ToolErrorCard } from "../result-fields/ToolErrorCard";
 import { UrlChip } from "../result-fields/UrlChips";
 import { detectResultShape } from "../result-fields/shape";
-import { CopyButtons } from "@host/components/agent-copy/CopyButtons";
+import { CopyButtons } from "@ai-matrx/chat/host/ui-slots";
 
 // Progress messages that are pure noise — they describe the machinery, not
 // what's happening. Filtered out of the honest-progress display.

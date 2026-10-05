@@ -13,7 +13,7 @@ import {
 } from "../inputs/variable-input-variations/variable-input-options";
 import type { ApiEndpointMode } from "../../types/instance.types";
 import { VoiceTextarea } from "@host/components/official/VoiceTextarea";
-import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 
 // =============================================================================
 // Shared settings panel used by both the sidebar and widget-invoker testers.

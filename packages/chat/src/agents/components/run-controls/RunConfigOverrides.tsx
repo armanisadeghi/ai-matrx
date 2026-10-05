@@ -78,7 +78,7 @@ import { ModelListDropdown } from "@host/features/ai-models/components/lab/Model
 import { parseRequestOverrides } from "../../redux/execution-system/utils/request-overrides";
 import { isUnsetChoice } from "../../redux/execution-system/instance-model-overrides/auto-means-unset";
 import type { LLMParams } from "../../types/agent-api-types";
-import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { InfoHint } from "@host/components/official/InfoHint";
 

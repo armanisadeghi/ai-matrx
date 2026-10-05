@@ -22,7 +22,7 @@ import { toast } from "../../host/notify";
 import { useAppStore } from "../../store/hooks";
 import { requestPromptPreview } from "./service";
 import type { PromptPreview } from "./types";
-import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 
 interface PromptPreviewContentProps {
   conversationId: string;

@@ -45,7 +45,7 @@ import {
   listSurfaceOptions,
   type SurfaceOption,
 } from "../../../surfaces/services/surfaces.service";
-import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 
 // Module-level cache — the surface catalog (~100 rows) changes rarely, so we
 // fetch it once per session instead of on every panel open.

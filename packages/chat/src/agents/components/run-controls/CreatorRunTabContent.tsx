@@ -37,7 +37,7 @@ import { selectUseStructuredSystemInstruction } from "../../redux/execution-syst
 import { RunSettingsEditor } from "./RunSettingsEditor";
 import { ContextPoliciesTab } from "./ContextPoliciesTab";
 import { PayloadTab } from "./PayloadTab";
-import { SystemInstructionEditor } from "@host/features/agents/components/builder/message-builders/system-instructions/SystemInstructionEditor";
+import { SystemInstructionEditor } from "@ai-matrx/chat/host/ui-slots";
 import { WindowPanel } from "@host/features/window-panels/WindowPanel";
 import { StreamDebugPanel } from "../debug/StreamDebugPanel";
 import { AgentWidgetInvokerTester } from "./AgentWidgetInvokerTester";

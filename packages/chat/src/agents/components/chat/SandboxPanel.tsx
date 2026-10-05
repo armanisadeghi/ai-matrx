@@ -64,7 +64,7 @@ import {
 import { clearSandboxBindingCache } from "../../../compute/targets";
 import { resolveBindingScope } from "../../../compute/targets";
 import type { SandboxInstance } from "../../../compute/targets";
-import { ErrorNotice } from "@host/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/chat/host/ui-slots";
 import { selectUserId } from "../../../host/identity";
 import { selectOrganizationId } from "../../../host/org";
 

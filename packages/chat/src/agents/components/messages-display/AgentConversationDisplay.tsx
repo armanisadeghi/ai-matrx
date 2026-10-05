@@ -52,7 +52,7 @@ import {
 import {
   isWarRoomThreadAgentSurface,
   traceWarRoomRenderPath,
-} from "@host/features/war-room/utils/renderPathTrace";
+} from "@ai-matrx/chat/host/ui-slots";
 // STATIC (2026-07-28, fragmentation campaign): these three render together on
 // every transcript, so their former per-component dynamic(ssr:false)
 // boundaries multiplied chunk groups across every consuming context for zero

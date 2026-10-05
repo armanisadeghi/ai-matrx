@@ -24,7 +24,7 @@ import {
   setFamilyRepresentationEnabled,
   updateFamilyPromotion,
 } from "./resource-family-policy";
-import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 import {
   capabilitySentence,
   familyWords,

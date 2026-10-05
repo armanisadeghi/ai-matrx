@@ -11,7 +11,7 @@ import { BookMarked, DatabaseZap, TextCursorInput, type LucideIcon } from "lucid
 import { cn } from "@ai-matrx/design-system";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@ai-matrx/design-system";
 import type { FlagVerdict, MessageFlagKey, MessageFlags } from "./flags";
-import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 
 export interface FlagToggleState {
   /** Absent (not rendered) — e.g. Prefill on a user message. */

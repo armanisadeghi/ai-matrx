@@ -80,6 +80,7 @@ import {
 } from "../bindingPlurality";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
+import { conversationTitleText } from "@/features/content-ir/surfaces/kind-text-label";
 
 /** A field the source did not report. Never rendered as an empty cell. */
 const NOT_REPORTED = "Not reported";
@@ -468,7 +469,7 @@ export function ConversationProvenancePanel({
             <AGENT_ICON className="h-3.5 w-3.5 text-muted-foreground" />
           )}
           <span className="text-sm font-medium text-foreground">
-            {conversation.title?.trim() || "Untitled conversation"}
+            {conversationTitleText(conversation.title?.trim() || null) || "Untitled conversation"}
           </span>
           <span className="rounded-full bg-background px-2 py-0.5 text-[11px] font-medium text-foreground ring-1 ring-border">
             {provenance.chip}

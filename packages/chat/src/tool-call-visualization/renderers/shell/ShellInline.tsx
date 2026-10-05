@@ -40,7 +40,7 @@ import { GenericRenderer } from "../../registry/GenericRenderer";
 import { ToolErrorCard } from "../../result-fields/ToolErrorCard";
 import { ToolResultCard } from "../_shared-entity/ToolResultCard";
 import type { ToolResultCardProps } from "../_shared-entity/ToolResultCard";
-import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 
 /** How much output the collapsed view shows before offering the rest. */
 export const TAIL_LINES = 12;

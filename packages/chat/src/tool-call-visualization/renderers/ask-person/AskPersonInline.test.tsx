@@ -1,3 +1,4 @@
+import { registerChatUi } from "@ai-matrx/chat/host/ui-slots";
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
@@ -7,9 +8,7 @@ import type { ToolLifecycleEntry } from "../../../agents/types/request.types";
   globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
-jest.mock("@host/components/errors/ErrorAlchemyMenu", () => ({
-  ErrorAlchemyMenu: () => null,
-}));
+registerChatUi({ ErrorAlchemyMenu: () => null });
 
 const fetchPending = jest.fn();
 const completeAsSelf = jest.fn();

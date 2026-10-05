@@ -7,7 +7,7 @@
 
 import { AlertCircle } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 
 interface VoiceErrorBannerProps {
   error: { code: string; message: string } | null;

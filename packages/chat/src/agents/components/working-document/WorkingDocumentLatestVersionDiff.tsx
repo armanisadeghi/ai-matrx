@@ -16,7 +16,7 @@ import { GitCompare, Loader2 } from "lucide-react";
 
 import { AnimatedDiffReveal } from "@ai-matrx/diff/react";
 import { useWorkingDocumentVersions } from "./useWorkingDocumentVersions";
-import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 
 interface WorkingDocumentLatestVersionDiffProps {
   documentId: string | null;

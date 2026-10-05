@@ -243,7 +243,7 @@ export function NoteEditorCore({
   content,
   onChange,
   onChangeFlush,
-  editorMode,
+  editorMode: requestedEditorMode,
   textareaRef: externalTextareaRef,
   richEditorRef,
   onEditorModeChange,
@@ -271,6 +271,10 @@ export function NoteEditorCore({
   enableTextStats = false,
   imagePolicy,
 }: NoteEditorCoreProps) {
+  // Plain is an editing view. A person who may only READ the note gets the
+  // canonical rendered view, never its raw source (round 6, R6).
+  const editorMode: EditorMode =
+    readOnly && requestedEditorMode === "plain" ? "preview" : requestedEditorMode;
   // Full-page surfaces pad the bottom by 85dvh so the last line can scroll to
   // the middle; embedded/tile surfaces must NOT (it balloons content past the
   // box and bleeds over neighbors).
@@ -397,6 +401,7 @@ export function NoteEditorCore({
             // cursor ops / find&replace / voice insertion are unchanged.
             <ProTextarea
               ref={textareaRef}
+              data-kind-source="explicit"
               surfaceName={surfaceName}
               getApplicationScope={getApplicationScope}
               value={content}
@@ -423,6 +428,7 @@ export function NoteEditorCore({
           ) : (
             <Textarea
               ref={textareaRef}
+              data-kind-source="explicit"
               value={content}
               onChange={(e) => onChange(e.target.value)}
               placeholder={placeholder}

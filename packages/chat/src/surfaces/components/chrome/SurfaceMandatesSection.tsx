@@ -55,7 +55,7 @@ import { MandateNotesPanel } from "@host/features/mandates/components/MandateNot
 import { mandateDisplayName } from "@host/features/mandates/mandate-words";
 import { useOpenMandateWindow } from "../../../host/window-openers";
 import { INTELLIGENCE_ICON } from "@host/components/icons/domain-icons";
-import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 export interface SurfaceMandatesSectionProps {

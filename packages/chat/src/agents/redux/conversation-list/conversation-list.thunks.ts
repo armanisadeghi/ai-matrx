@@ -27,6 +27,7 @@ import {
 import { CONVERSATION_LIST_PAGE_SIZE } from "./conversation-list.types";
 import { HIDDEN_CONVERSATION_LANE } from "../conversation-history/lanes";
 import { getUserId, hasBrowserSession } from "../../../host/identity";
+import { conversationTitleText } from "../../../utils/content-ir/surfaces/kind-text-label";
 
 type GetAgentConversationsReturns =
   Database["public"]["Functions"]["get_agent_conversations"]["Returns"];
@@ -81,7 +82,7 @@ export function mapRpcRowToConversationListItem(
 ): ConversationListItem {
   return {
     conversationId: row.conversation_id,
-    title: row.title,
+    title: conversationTitleText(row.title),
     description: row.description,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -290,7 +291,7 @@ export const fetchGlobalConversations = createAsyncThunk<
     // here, then overlay the real flag via `applyFavoritesFromUes`.
     const mapped: ConversationListItem[] = rows.map((row) => ({
       conversationId: row.id as string,
-      title: (row.title ?? null) as string | null,
+      title: conversationTitleText((row.title ?? null) as string | null),
       description: (row.description ?? null) as string | null,
       updatedAt: row.updated_at as string,
       createdAt: row.created_at as string,

@@ -34,7 +34,7 @@ import type { ResultDensity } from "../../result-fields/ResultValue";
 import { ToolResultValue } from "../../result-fields/ToolResultValue";
 import { ToolErrorCard } from "../../result-fields/ToolErrorCard";
 import { CtxItemCard, type CtxItem } from "./CtxItemCard";
-import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 import { contextEntryLabel } from "../../../agents/components/context-policies-display/contextEntryLabel";
 
 const INLINE_ITEM_CAP = 4;

@@ -26,7 +26,7 @@ import {
   selectMemoryMetadata,
 } from "../../../redux/execution-system/observational-memory/observational-memory.selectors";
 import { formatDateTime, formatRelativeTime } from "./format";
-import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 
 interface MemoryOverviewCardProps {
   conversationId: string;

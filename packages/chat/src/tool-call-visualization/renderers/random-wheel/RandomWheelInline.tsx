@@ -51,7 +51,7 @@ import type {
   RandomWheelSource,
   ResolvedWheel,
 } from "./types";
-import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants (behavior tuning — not feature flags)

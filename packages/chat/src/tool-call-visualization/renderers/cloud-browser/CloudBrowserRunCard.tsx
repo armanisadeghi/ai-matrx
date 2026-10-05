@@ -12,7 +12,7 @@ import {
 
 import { Button } from "@ai-matrx/design-system";
 import type { MediaRef } from "@host/features/files/types";
-import { useOpenCloudBrowserCanvas } from "@host/features/cloud-browser/hooks/useOpenCloudBrowserCanvas";
+import { useOpenCloudBrowserCanvas } from "@ai-matrx/chat/host/ui-slots";
 import type { ToolLifecycleEntry } from "../../../agents/types/request.types";
 import { cn } from "@ai-matrx/design-system";
 

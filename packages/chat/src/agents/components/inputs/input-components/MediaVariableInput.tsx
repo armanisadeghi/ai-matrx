@@ -52,7 +52,7 @@ import { ResourceFamilyPolicyEditor } from "../resources/ResourceFamilyPolicyEdi
 import { useAppDispatch, useAppSelector } from "../../../../store/hooks";
 import { setRuntimeVariableResourcePolicy } from "../../../redux/execution-system/instance-variable-values/instance-variable-values.slice";
 import { selectRuntimeVariableResourcePolicies } from "../../../redux/execution-system/instance-variable-values/instance-variable-values.selectors";
-import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 import { readMediaVariableValue } from "../../../utils/media-variable-value";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 

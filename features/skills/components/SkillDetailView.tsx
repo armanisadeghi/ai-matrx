@@ -33,6 +33,7 @@ import { cn } from "@/lib/utils";
 import type { SkillRow } from "../types";
 import { SkillAttributionLine, SkillOriginBadges } from "./SkillOriginBadges";
 import { SKILL_TIER_META, SKILL_TIER_ORDER, type SkillTierKey } from "./skill-tiers";
+import { catalogProseText } from "@/features/content-ir/surfaces/kind-one-line";
 
 interface SkillDetailViewProps {
   skill: SkillRow;
@@ -128,7 +129,7 @@ export function SkillDetailView({
       <ScrollArea className="min-h-0 flex-1 [&>div>div]:!block [&>div>div]:!min-w-0">
         <div className="min-w-0 space-y-4 px-4 py-3">
           <p className="text-xs leading-relaxed text-muted-foreground">
-            {skill.description || "No description provided."}
+            {catalogProseText(skill.description) || "No description provided."}
           </p>
 
           <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1 text-[11px]">

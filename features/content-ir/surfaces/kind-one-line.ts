@@ -29,14 +29,20 @@ function kindName(slug: string | null | undefined): string {
   return (slug && humanizeIdentifier(slug)) || UNNAMED;
 }
 
-/** One line for a kind VALUE: `**Title** · Kind Name`, or the kind name alone. */
-export function kindOneLine(value: unknown): string {
+/**
+ * One line for a kind VALUE: `**Title** · Kind Name`, or the kind name alone.
+ * `plain` drops the markdown emphasis (`Title · Kind Name`) for slots that
+ * draw text as written — a tooltip, a `title` attribute, a clamped caption.
+ */
+export function kindOneLine(value: unknown, options: { plain?: boolean } = {}): string {
   if (!value || typeof value !== "object" || Array.isArray(value)) return UNNAMED;
   const record = value as Record<string, unknown>;
   const slug = typeof record.__kind === "string" ? record.__kind : null;
   const title = deriveInstanceTitle(record);
   const name = kindName(slug);
-  return title && title !== name ? `**${title.replace(/[*_`[\]]/g, "")}** · ${name}` : name;
+  if (!(title && title !== name)) return name;
+  const clean = title.replace(/[*_`[\]]/g, "");
+  return options.plain ? `${clean} · ${name}` : `**${clean}** · ${name}`;
 }
 
 function inside(ranges: Array<[number, number]>, at: number): boolean {
@@ -48,7 +54,7 @@ function inside(ranges: Array<[number, number]>, at: number): boolean {
  * prose replaced by its one-line form. Quoted source (inline code, non-JSON
  * fences) stays as written. Text with no kind key comes back unchanged.
  */
-export function inlineKindText(source: string): string {
+export function inlineKindText(source: string, options: { plain?: boolean } = {}): string {
   if (!source || !hasKindKey(source)) return source;
   type Span = { start: number; end: number; line: string };
   const spans: Span[] = [];
@@ -59,7 +65,7 @@ export function inlineKindText(source: string): string {
     } catch {
       value = { __kind: region.kind };
     }
-    spans.push({ start: region.start, end: region.end, line: kindOneLine(value) });
+    spans.push({ start: region.start, end: region.end, line: kindOneLine(value, options) });
   }
   const quoted = quotedSourceRanges(source);
   for (const region of findBrokenKindJsonRegions(source)) {
@@ -85,4 +91,17 @@ export function inlineKindText(source: string): string {
     }
   }
   return out;
+}
+
+/**
+ * CATALOG PROSE as a person reads it (ruling (a), round 6): a skill / agent /
+ * tool description that shows an example kind JSON (`emit a
+ * {"__kind": "math_problem"} block`) is documentation — the example reads as
+ * its kind's one-line label, never the JSON. Plain text out, for text AND
+ * attribute slots (`title`, tooltips). Display transform only: the stored
+ * description is never rewritten.
+ */
+export function catalogProseText(text: string | null | undefined): string {
+  if (!text) return "";
+  return inlineKindText(text, { plain: true });
 }

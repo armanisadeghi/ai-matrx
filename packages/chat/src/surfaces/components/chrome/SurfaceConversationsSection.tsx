@@ -45,7 +45,7 @@ import { sourceFeatureFromSurfaceName } from "../../../agents/utils/source-featu
 import { useAgentNames } from "../../hooks/useAgentNames";
 import { useEffectiveKnob } from "../../../host/prefs-react";
 import { selectOrganizationId as selectActiveOrganizationId } from "../../../host/org";
-import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 import { asClause } from "@ai-matrx/kit/text";
 import { selectUserId } from "../../../host/identity";
 

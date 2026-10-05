@@ -3,6 +3,7 @@ import { ProviderConversationHeader } from "@/features/ai-work/components/Provid
 import { ProviderConversationTranscript } from "@/features/ai-work/components/ProviderConversationTranscript";
 import { MatrxConversationDetail } from "@/features/ai-work/conversations/components/MatrxConversationDetail";
 import { readProviderConversation } from "@/features/ai-work/service/providerConversation";
+import { conversationTitleText } from "@/features/content-ir/surfaces/kind-text-label";
 
 interface WorkConversationPageProps {
   params: Promise<{ conversationId: string }>;
@@ -29,7 +30,7 @@ export default async function WorkConversationPage({
 
   if (read.state === "not-provider") {
     const title =
-      read.conversation.title?.trim() || "Untitled conversation";
+      conversationTitleText(read.conversation.title?.trim() || null) || "Untitled conversation";
     return (
       <>
         <ProviderConversationHeader title={title} />

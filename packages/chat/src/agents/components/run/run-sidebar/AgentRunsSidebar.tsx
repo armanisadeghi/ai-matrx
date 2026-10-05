@@ -20,7 +20,7 @@ import { ItemRow } from "@host/components/official/item/ItemRow";
 import { buildConversationMenu } from "../../conversation-actions/conversationActionRegistry";
 import { renameConversation } from "../../../redux/conversation-list/conversation-row-actions.thunks";
 import { pushAddressWithoutNavigating } from "@host/lib/url-state/addressWithoutNavigating";
-import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 
 interface AgentRunsSidebarProps {
   agentId: string;

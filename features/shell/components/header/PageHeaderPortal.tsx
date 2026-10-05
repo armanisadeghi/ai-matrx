@@ -11,6 +11,7 @@
 // Guard: `__tests__/page-header-ssr.test.tsx`.
 
 import { ServerRenderedHeaderSlot } from "./ServerRenderedHeaderSlot";
+import { useInHeaderSpecimen } from "./header-specimen-context";
 
 interface PageHeaderPortalProps {
   desktop?: React.ReactNode;
@@ -25,6 +26,18 @@ export default function PageHeaderPortal({
   children,
   fallback = false,
 }: PageHeaderPortalProps) {
+  // Inside a <HeaderSpecimen> the row renders where it stands (the system
+  // page shows the REAL template, never a mock of it).
+  const inSpecimen = useInHeaderSpecimen();
+  if (inSpecimen) {
+    return (
+      <div className="contents" data-page-header-portal="specimen">
+        {children && <div className="shell-header-inject flex">{children}</div>}
+        {desktop && <div className="shell-header-inject hidden lg:flex">{desktop}</div>}
+        {mobile && <div className="shell-header-inject flex lg:hidden">{mobile}</div>}
+      </div>
+    );
+  }
   return (
     <ServerRenderedHeaderSlot
       slot="center"

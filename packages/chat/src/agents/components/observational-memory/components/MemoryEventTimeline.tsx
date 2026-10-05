@@ -44,7 +44,7 @@ import {
   formatRelativeTime,
   formatTokens,
 } from "./format";
-import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 
 interface MemoryEventTimelineProps {
   conversationId: string;

@@ -24,7 +24,7 @@ import {
   type DecisionAnswerView,
   type DecisionAnswersView,
 } from "@ai-matrx/agents/presentation/decision-answers";
-import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 
 function percent(value: number | null): string {
   if (value == null) return "—";

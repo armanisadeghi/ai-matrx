@@ -139,6 +139,7 @@ import { useDialogSitting } from "../../sitting/useDialogSitting";
 import { SittingResumed } from "../../sitting/SittingResumed";
 import { RunStages } from "../RunStages";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
+import { conversationTitleText } from "@/features/content-ir/surfaces/kind-text-label";
 
 interface ChatImportSitting extends SittingBase {
   text: string;
@@ -440,7 +441,7 @@ export function ChatImportDialog({
       setRows(
         all.map((c) => ({
           key: c.id,
-          title: c.title?.trim() || "Untitled conversation",
+          title: conversationTitleText(c.title?.trim() || null) || "Untitled conversation",
           provider: c.source_app || "ai-matrx",
           turns: c.message_count ?? 0,
           userWords: 0,

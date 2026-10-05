@@ -31,7 +31,7 @@ import {
   selectConversationMessages,
 } from "../../redux/execution-system/messages/messages.selectors";
 import { useLiveRunStatus } from "./useLiveRunStatus";
-import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 
 const selectNoConversationMessages = () => EMPTY_CONVERSATION_MESSAGES;
 

@@ -19,7 +19,7 @@
 
 import { selectPrimaryRequest } from "../../../../redux/execution-system/active-requests/active-requests.selectors";
 import { indexRunMcpAttachments, readRunMcpAttachments, mcpChipPresentation } from "@host/features/connectors/run-attachments";
-import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 import { AttachedResourcesSection } from "@host/features/connectors/AttachedResourcesSection";
 import { useEffect, useState } from "react";
 import { Loader2, Paperclip } from "lucide-react";

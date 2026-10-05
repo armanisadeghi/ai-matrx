@@ -33,7 +33,7 @@ import {
   type CxWorkingDocumentSummary,
   type WorkingDocumentKind,
 } from "../../../redux/execution-system/instance-working-document/cx-working-document.service";
-import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 
 export interface DocumentsRailSelection {
   conversationId: string;

@@ -37,7 +37,7 @@ import {
   defaultDestination,
   type SendToAgentDestinationOption,
 } from "./send-to-agent-plan";
-import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 import { formatCount } from "@ai-matrx/kit/format";
 import { CHAT_WINDOWS } from "../../../host/windows";
 

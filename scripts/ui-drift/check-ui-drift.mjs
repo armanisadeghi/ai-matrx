@@ -29,6 +29,9 @@
  *                            `truncate`/`line-clamp-1` + `max-w-*` clamp, or a Badge whose className
  *                            defeats the design-system clamp (`whitespace-normal`, `max-w-none`…).
  *                            A sentence-length value in a capsule is the owner's 2026-10-04 defect.
+ *   hand-built-chip          a hand-built tinted chip/tag/pill: tinted fill + tinted ink + radius +
+ *                            px-* + small text in one className (owner, 2026-10-05). Predicate shared
+ *                            with ESLint `matrx/no-hand-built-chip` (scripts/lint-rules/hand-built-chip.mjs).
  *   canonical-override       a page re-styling the package's canonical table/toolbar: a class prop
  *                            (`className`, `tableClassName`, `*ClassName`) on MatrxDataTable /
  *                            TableTitleRow / TableViewTabs / … from @ai-matrx/design-system, or a
@@ -69,6 +72,7 @@ import { fileURLToPath } from "node:url";
 import ts from "typescript";
 
 import { emitItem, endItems } from "../checks/items.mjs";
+import { HAND_BUILT_CHIP_FIX, handBuiltChipTokens } from "../lint-rules/hand-built-chip.mjs";
 import {
   CANONICAL_OVERRIDE_FIX,
   CANONICAL_TABLE_COMPONENTS,
@@ -116,6 +120,10 @@ export const RULES = {
   "canonical-override": {
     title: "page re-styles the canonical table/toolbar",
     fix: CANONICAL_OVERRIDE_FIX,
+  },
+  "hand-built-chip": {
+    title: "hand-built tinted chip/tag/pill",
+    fix: HAND_BUILT_CHIP_FIX,
   },
   "unclamped-text-pill": {
     title: "dynamic text in an unclamped pill",
@@ -394,6 +402,10 @@ export function scanSource(file, text) {
           if (!spinnerFile && toks.some((t) => stripVariants(t).base === "animate-spin")) add("spinner-outside-spinner", open, `<${tag}>`);
         } else classRules(toks, open, `<${tag}>`);
       }
+      if (!defLayer && !packageSide && toks.length) {
+        const chip = handBuiltChipTokens(toks.join(" "));
+        if (chip) add("hand-built-chip", open, `<${tag}> ${chip.sort().join(" ")}`);
+      }
       if (/^[a-z]/.test(tag)) {
         const role = attrString(attr(attrs, "role"));
         if (role === "dialog" || role === "alertdialog" || role === "tablist") add("hand-rolled-overlay", open, `<${tag} role=${role}>`);
@@ -638,6 +650,7 @@ export function Bad() {
       <Badge className="whitespace-normal">{item.title}</Badge>
       <MatrxDataTable data={rows} tableClassName="h-auto" />
       <section className="[&_[data-matrx-table-tabs]]:border-b-0" />
+      <span className="inline-flex rounded-full bg-warning/10 px-2.5 text-xs font-semibold text-warning">3 due</span>
     </Card>
   );
 }
@@ -664,6 +677,8 @@ export function Good() {
       <Badge>{item.title}</Badge>
       <MatrxDataTable data={rows} density="condensed" frameHeight="content" emptyHeader="hide" />
       <section className="contents [&_[data-row-id]:focus-visible]:bg-accent" />
+      <Chip tone="warning" label="3 due" />
+      <span className="flex size-8 items-center justify-center rounded-md bg-primary/10 text-primary" />
     </Card>
   );
 }
@@ -687,6 +702,7 @@ const PLANTED_SITES = [
   "unclamped-text-pill :: <Badge> whitespace-normal",
   "canonical-override :: <MatrxDataTable> tableClassName",
   "canonical-override :: <section> [&_[data-matrx-table-tabs]]:border-b-0",
+  "hand-built-chip :: <span> bg-warning/10 px-2.5 rounded-full text-warning text-xs",
 ];
 
 export function selfTest() {

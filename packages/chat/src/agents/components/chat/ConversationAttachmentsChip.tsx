@@ -30,7 +30,7 @@ import {
 import { attachmentKey } from "@host/features/connectors/attachable-resources";
 import { useConversationAttachments } from "@ai-matrx/chat/host/ui-slots";
 import { useMcpCatalog } from "../../hooks/useMcpTools";
-import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 
 export function ConversationAttachmentsChip({
   conversationId,

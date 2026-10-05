@@ -14,7 +14,7 @@ import {
 import { useWorkingDocumentVersions } from "./useWorkingDocumentVersions";
 import { useWorkingDocument } from "../../hooks/useWorkingDocument";
 import { setWorkingDocMainView } from "./workingDocumentViewStore";
-import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 
 interface WorkingDocumentVersionHistoryProps {
   conversationId: string;

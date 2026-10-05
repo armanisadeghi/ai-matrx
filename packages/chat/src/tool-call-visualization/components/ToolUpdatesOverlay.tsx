@@ -30,7 +30,7 @@ import FullScreenOverlay, {
   type TabDefinition,
 } from "@host/components/official/FullScreenOverlay";
 import { cn } from "@ai-matrx/design-system";
-import { CopyButtons } from "@host/components/agent-copy/CopyButtons";
+import { CopyButtons } from "@ai-matrx/chat/host/ui-slots";
 
 import type { ToolLifecycleEntry } from "../../agents/types/request.types";
 

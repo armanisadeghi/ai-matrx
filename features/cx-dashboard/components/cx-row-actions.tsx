@@ -41,6 +41,7 @@ import type {
   CxToolCall,
   CxUserRequest,
 } from "@/features/cx-dashboard/types/cxDashboardTypes";
+import { conversationTitleText } from "@/features/content-ir/surfaces/kind-text-label";
 
 // ---------------------------------------------------------------------------
 // The one thing every CX surface can say about a right-clicked row.
@@ -126,7 +127,7 @@ export function cxConversationMenuTarget(c: CxConversation): CxMenuTarget {
   return {
     kind: "conversation",
     id: c.id,
-    title: c.title?.trim() || "Untitled conversation",
+    title: conversationTitleText(c.title?.trim() || null) || "Untitled conversation",
     href: conversationHref(c.id),
     lines: [
       `Status: ${c.status}`,

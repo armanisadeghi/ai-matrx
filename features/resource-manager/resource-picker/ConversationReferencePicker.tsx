@@ -36,6 +36,7 @@ import {
 } from "./ResourcePickerSubViewHeader";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { conversationTitleText } from "@/features/content-ir/surfaces/kind-text-label";
 
 export interface ConversationReferenceRow {
   id: string;
@@ -57,7 +58,7 @@ const PAGE_SIZE = 40;
 export function formatConversationReference(
   conversation: ConversationReferenceRow,
 ): string {
-  const title = conversation.title?.trim() || "Untitled chat";
+  const title = conversationTitleText(conversation.title?.trim() || null) || "Untitled chat";
   return `my conversation "${title}" (conversation ${conversation.id})`;
 }
 
@@ -78,7 +79,7 @@ function ConversationRow({
         <PickerRow
           icon={MessagesSquare}
           iconClassName="text-emerald-600 dark:text-emerald-400"
-          label={row.title?.trim() || "Untitled chat"}
+          label={conversationTitleText(row.title?.trim() || null) || "Untitled chat"}
           secondary={
             `${formatRelativeTime(row.updatedAt, { fallback: "" })}${agentName ? ` · ${agentName}` : ""}` ||
             undefined

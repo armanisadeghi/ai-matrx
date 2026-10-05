@@ -7,7 +7,7 @@ import { Badge } from "@ai-matrx/design-system";
 import type { ToolRendererProps } from "../../types";
 import type { ToolLifecycleEntry } from "../../../agents/types/request.types";
 import { getArg, resultAsObject } from "../_shared";
-import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 
 interface NewsArticle {
     source: { id: string | null; name: string };

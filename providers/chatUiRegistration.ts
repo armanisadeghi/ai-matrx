@@ -11,6 +11,7 @@ import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { InfoHint } from "@/components/official/InfoHint";
 import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import AdvancedMenu from "@/components/official/AdvancedMenu";
 import { AuthGateDialog } from "@/components/dialogs/AuthGateDialog";
@@ -52,6 +53,11 @@ import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { ReviewAnswersLink } from "@/features/agents/decision-review/components/ReviewAnswersLink";
 import { RecordChangeApprovalCard } from "@/features/record-change-approvals/RecordChangeApprovalCard";
 import { ParkedOnPersonCard } from "@/features/action-requests/components/ParkedOnPersonCard";
+import { RichDocument } from "@/features/rich-document/RichDocument";
+import { traceWarRoomRenderPath, isWarRoomThreadAgentSurface } from "@/features/war-room/utils/renderPathTrace";
+import { useOpenCloudBrowserCanvas, cloudBrowserCanvasSourceId } from "@/features/cloud-browser/hooks/useOpenCloudBrowserCanvas";
+import { SystemInstructionEditor } from "@/features/agents/components/builder/message-builders/system-instructions/SystemInstructionEditor";
+import { SystemInstructionModal } from "@/features/agents/components/builder/message-builders/system-instructions/SystemInstructionModal";
 import { kindValueToMarkdown } from "@/features/canvas/export/exportArtifactMarkdown";
 
 // Loaded on demand, client-only: the sharing modal is heavy and opens rarely.
@@ -61,6 +67,13 @@ const ShareModal = dynamic(
 );
 
 registerChatUi({
+  SystemInstructionEditor,
+  SystemInstructionModal,
+  RichDocument,
+  traceWarRoomRenderPath,
+  isWarRoomThreadAgentSurface,
+  useOpenCloudBrowserCanvas,
+  cloudBrowserCanvasSourceId,
   MessageFilesStrip,
   RulebookNudge,
   NegativeVerdictFollowUp,
@@ -76,6 +89,7 @@ registerChatUi({
   InfoHint,
   AnswerValueView,
   ErrorAlchemyMenu,
+  ErrorNotice,
   EntityRef,
   AdvancedMenu,
   AuthGateDialog,

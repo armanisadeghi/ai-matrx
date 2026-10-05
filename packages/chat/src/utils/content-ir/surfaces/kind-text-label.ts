@@ -12,7 +12,7 @@
 
 import { humanizeKind } from "../kinds/kind-markdown-utils";
 import { deriveInstanceTitle } from "../instance-title";
-import { hasKindKey } from "./json-kind-signal";
+import { firstKindSlug, hasKindKey } from "./json-kind-signal";
 import { kindTextToMarkdown } from "./kind-text-to-markdown";
 
 function clip(text: string, max: number): string {
@@ -41,6 +41,8 @@ function firstReadableLine(markdown: string): string {
   for (const raw of markdown.split("\n")) {
     const line = raw
       .replace(/^\s*(?:#{1,6}\s+|>\s*|[-*+]\s+|\d+[.)]\s+)/, "")
+      // A wrapper tag (`<artifact …>`, `<answer>`) names nothing.
+      .replace(/<\/?[A-Za-z][\w:-]*(\s[^<>]*)?\/?>/g, "")
       .replace(/[*_`]+/g, "")
       .replace(/\s+/g, " ")
       .trim();
@@ -55,5 +57,21 @@ export function kindTextLabel(text: string | null | undefined, max = 90): string
   if (!hasKindKey(text)) return clip(text.replace(/\s+/g, " ").trim(), max);
   const whole = wholeKindLabel(text);
   if (whole) return clip(whole, max);
-  return clip(firstReadableLine(kindTextToMarkdown(text)), max);
+  const line = firstReadableLine(kindTextToMarkdown(text));
+  // Nothing readable around the kind (a kind wrapped in an `<artifact>` tag,
+  // a kind that never completed): the kind's name, never "" (R4, round 6).
+  if (line) return clip(line, max);
+  const slug = firstKindSlug(text);
+  return clip(slug ? humanizeKind(slug) : "Structured output", max);
+}
+
+/**
+ * A conversation TITLE as a person reads it (R4, round 6): a title that holds
+ * kind JSON reads as its one-line kind label; any other title — and null —
+ * comes back as it is. Read boundaries and title renderers call this; the
+ * stored title is never rewritten.
+ */
+export function conversationTitleText(title: string | null | undefined): string | null {
+  if (title == null) return null;
+  return hasKindKey(title) ? kindTextLabel(title, 200) : title;
 }

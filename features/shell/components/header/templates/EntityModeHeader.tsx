@@ -23,10 +23,12 @@ import AppLink from "@/components/navigation/AppLink";
 import {
   Check,
   ChevronDown,
+  ChevronRight,
   MoreHorizontal,
   type LucideIcon,
 } from "lucide-react";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
+import { CrumbNode, type Crumb } from "@/features/shell/components/header/templates/CrumbTrailHeader";
 import {
   RouteModeNav,
   type RouteNavItem,
@@ -101,6 +103,13 @@ export interface EntityModeHeaderProps {
   backHref: string;
   /** Current entity's name — small, in the top row, never an h1. */
   entityLabel: string;
+  /**
+   * The levels ABOVE the entity, in the org/scopes crumb pattern (each a link,
+   * each with its own sibling menu). The entity name is the last crumb, on the
+   * same line — never a second line of text above or below it. Hidden on a
+   * phone: there the row is back + name.
+   */
+  trail?: Crumb[];
   /** Compact status beside the identity, visible at every breakpoint. */
   entityStatus?: React.ReactNode;
   /** Sibling entities for the name dropdown. Omit for a plain label. */
@@ -273,6 +282,7 @@ EntitySheetRows.routeHeaderMenu = true as const;
 export function EntityModeHeader({
   backHref,
   entityLabel,
+  trail,
   entityStatus,
   entityOptions,
   modes,
@@ -320,6 +330,20 @@ export function EntityModeHeader({
                 the band solid, so every control in it is transparent. The name
                 beside the back button carries its own inset (rule 3). */}
             <ChevronLeftTapButton variant="transparent" href={resolvedBackHref} ariaLabel="Back" />
+            {trail && trail.length > 0 ? (
+              <nav
+                aria-label="Breadcrumb"
+                data-entity-trail
+                className="hidden sm:flex shrink-0 items-center gap-1 ps-[3px]"
+              >
+                {trail.map((crumb, i) => (
+                  <span key={`${crumb.label}-${i}`} className="flex min-w-0 items-center gap-1">
+                    <CrumbNode crumb={crumb} isLast={false} />
+                    <ChevronRight aria-hidden className="h-3.5 w-3.5 shrink-0 text-muted-foreground/60" />
+                  </span>
+                ))}
+              </nav>
+            ) : null}
             {entityOptions && entityOptions.length > 0 ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>

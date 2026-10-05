@@ -112,7 +112,7 @@ function CrumbOptions({ crumb }: { crumb: Crumb }) {
   );
 }
 
-function CrumbNode({ crumb, isLast }: { crumb: Crumb; isLast: boolean }) {
+export function CrumbNode({ crumb, isLast }: { crumb: Crumb; isLast: boolean }) {
   if (crumb.pending) {
     return (
       <span className="flex min-w-0 items-center">
