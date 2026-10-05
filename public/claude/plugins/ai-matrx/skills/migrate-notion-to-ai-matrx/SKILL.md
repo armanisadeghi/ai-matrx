@@ -18,8 +18,8 @@ lost. They are not technical: speak plainly, ask exactly one confirmation (the p
      and also `export AI_MATRX_API_KEY=<their key>` (the import script reads it), then restart Claude.
    - Claude desktop / claude.ai: Settings → Connectors → Add custom connector → URL
      `https://server.app.matrxserver.com/api/matrx-mcp` → sign in to AI Matrx.
-   Use the personal key path for the import: with a sign-in connector, an organization that asks
-   before an AI changes its tables will hold the writes for approval.
+   Either way the AI acts as them, with exactly their access (an organization can turn that off,
+   and then writes wait for a person's approval).
 2. **Their organization** — `list_tables` (or any refusal) names their organizations. Ask which one
    the Notion workspace goes into only if there is more than one; note its id.
 3. **Notion** — the import reads a Notion export, the only way Notion hands over every page body
@@ -71,13 +71,28 @@ command: finished work is skipped (`notion-progress.json` beside the export), an
 there are matched, never duplicated. Lines starting `note:` are things written differently from
 the export (a link to a page that was not exported, a file that could not be read) — collect them.
 
+## 2b. Bring the comments
+
+Notion's export leaves out comments. If the official Notion MCP is connected, read each page's
+comments with it, then send them per table in batches of ≤100:
+
+```
+tables action:"add_comments" table:<table id> key_column:"Notion ID"
+       comments:[{"key": "<Notion page id>", "body": "<comment text>", "author": "<name>", "at": "<date>"}]
+```
+
+Each lands on its row's discussion with the original author and date leading it; sent again,
+a comment already there is left alone. If the Notion MCP is not connected, tell them comments
+stay in Notion and offer to bring them once it is.
+
 ## 3. Show them
 
 Give them, in plain words:
 1. The count table (every database ✓ or the difference and why).
 2. The notes, grouped, each with what to do (usually nothing).
-3. What did not come over and why: comments, page templates, and linked database copies (they
-   became views of the one table).
+3. What did not come over and why: page templates (AI Matrx is adding row templates), comments
+   when the Notion MCP was not connected, and linked database copies (they became views of the
+   one table).
 4. Where to look: AI Matrx → Data (their tables are there, each with its views).
 
 Then offer the next step: splitting their work into AI Matrx agents (the `build-ai-matrx-agents` skill).
