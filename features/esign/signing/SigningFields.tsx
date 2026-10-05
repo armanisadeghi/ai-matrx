@@ -28,6 +28,7 @@ export function SigningFields({
   fields,
   rotation,
   myId,
+  signedSigners,
   values,
   pressable,
   activeId,
@@ -38,6 +39,8 @@ export function SigningFields({
   fields: PlacedField[];
   rotation: number;
   myId: string | null;
+  /** Other signers who have already signed: their boxes read "Signed". */
+  signedSigners: ReadonlySet<string>;
   /** Null until the signer adopts; then every one of their fields shows its value. */
   values: FieldValues | null;
   /** False before the sign step and after signing: the fields show, a press does nothing. */
@@ -61,21 +64,26 @@ export function SigningFields({
           height: `${box.h * 100}%`,
         };
         if (field.signerId !== myId) {
+          const signed = signedSigners.has(field.signerId);
           return (
             <div
               key={field.id}
               style={{
                 ...style,
                 containerType: "size",
-                background: PAPER.otherFill,
-                borderColor: PAPER.otherBorder,
-                color: PAPER.otherText,
+                background: signed ? PAPER.signedFill : PAPER.otherFill,
+                borderColor: signed ? PAPER.signedBorder : PAPER.otherBorder,
+                color: signed ? PAPER.signedText : PAPER.otherText,
               }}
-              title={`${FIELD_LABEL[field.kind]} for another signer`}
-              className="absolute flex items-center justify-center overflow-hidden rounded-sm border border-dashed"
+              title={`${FIELD_LABEL[field.kind]} for another signer${signed ? ", signed" : ""}`}
+              className={cn(
+                "absolute flex items-center justify-center gap-1 overflow-hidden rounded-sm border",
+                !signed && "border-dashed",
+              )}
             >
+              {signed && <Check className="h-3 w-3 shrink-0" />}
               <span className="truncate px-1" style={{ fontSize: "clamp(7px, 45cqh, 13px)" }}>
-                Other signer
+                {signed ? "Signed" : "Other signer"}
               </span>
             </div>
           );

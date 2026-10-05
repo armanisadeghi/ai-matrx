@@ -284,7 +284,8 @@ export function SigningSurface({
   /** One act; an outsider whose session ran out mid-walk is sent back for a fresh code. */
   async function act(action: SigningAction, args: Parameters<typeof signingAct>[3] = {}) {
     const answer = await signingAct(dispatch, door, action, args);
-    if (!answer.granted && answer.reason === "link_no_longer_valid" && doorClosed.current) {
+    // Once signed, a dead session never sends the signer back to "Send me the code".
+    if (!answer.granted && answer.reason === "link_no_longer_valid" && doorClosed.current && step !== "done") {
       doorClosed.current();
     }
     return answer;
@@ -529,6 +530,13 @@ export function SigningSurface({
   const canDraw = load.signature_options?.drawn !== false;
   const allSeen = docs.length > 0 && docs.every((d) => d.rendered && d.seenHash);
   const current = docs[activeDoc] ?? null;
+  // Who else has already signed: their boxes read "Signed", not an empty placeholder.
+  const signedSigners = new Set(
+    (load.other_signers ?? [])
+      .filter((o) => text(o, "status") === "signed")
+      .map((o) => text(o, "id"))
+      .filter((id): id is string => id !== null),
+  );
 
   return (
     <Shell>
@@ -576,6 +584,7 @@ export function SigningSurface({
                     )}
                     rotation={rotation}
                     myId={myId}
+                    signedSigners={signedSigners}
                     values={fieldValues}
                     pressable={step !== "done"}
                     activeId={step === "sign" ? (guide?.field.id ?? null) : null}
