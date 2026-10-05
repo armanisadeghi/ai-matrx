@@ -24425,13 +24425,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "context_access_log_context_item_id_fkey"
-            columns: ["context_item_id"]
-            isOneToOne: false
-            referencedRelation: "context_items"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "context_access_log_value_id_fkey"
             columns: ["value_id"]
             isOneToOne: false
@@ -24522,22 +24515,7 @@ export type Database = {
           value_timestamp?: string | null
           version?: number
         }
-        Relationships: [
-          {
-            foreignKeyName: "context_item_values_context_item_id_fkey"
-            columns: ["context_item_id"]
-            isOneToOne: false
-            referencedRelation: "context_items"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ctx_context_item_values_scope_id_fkey"
-            columns: ["scope_id"]
-            isOneToOne: false
-            referencedRelation: "scopes"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       context_items: {
         Row: {
@@ -24715,20 +24693,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "context_value_refs_context_item_id_fkey"
-            columns: ["context_item_id"]
-            isOneToOne: false
-            referencedRelation: "context_items"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "context_value_refs_scope_id_fkey"
-            columns: ["scope_id"]
-            isOneToOne: false
-            referencedRelation: "scopes"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "context_value_refs_value_id_fkey"
             columns: ["value_id"]
             isOneToOne: false
@@ -24777,22 +24741,7 @@ export type Database = {
           template_id?: string
           template_version?: number
         }
-        Relationships: [
-          {
-            foreignKeyName: "scope_dataset_instances_context_item_id_fkey"
-            columns: ["context_item_id"]
-            isOneToOne: false
-            referencedRelation: "context_items"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "scope_dataset_instances_scope_id_fkey"
-            columns: ["scope_id"]
-            isOneToOne: false
-            referencedRelation: "scopes"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       scope_door_registry: {
         Row: {
@@ -96556,6 +96505,23 @@ export type Database = {
           updated_at: string
         }[]
       }
+      agx_get_run_tier: {
+        Args: { p_agent_id: string; p_version_id?: string }
+        Returns: {
+          access_level: string
+          auto_context_disabled: boolean
+          context_policies: Json
+          description: string
+          id: string
+          is_version: boolean
+          model_id: string
+          name: string
+          tool_ids: string[]
+          ui_gates: Json
+          variable_definitions: Json
+          version_id: string
+        }[]
+      }
       agx_get_shared_for_chat: {
         Args: { p_archived?: string }
         Returns: {
@@ -104043,6 +104009,8 @@ export type Database = {
         Args: { p_description?: string; p_name?: string; p_team_id: string }
         Returns: undefined
       }
+      template_public_page: { Args: { p_key: string }; Returns: Json }
+      template_public_thumb: { Args: { p_spec: Json }; Returns: Json }
       templates_public: { Args: { p_filter?: Json }; Returns: Json }
       thread_contents: {
         Args: { thread_id: string }
