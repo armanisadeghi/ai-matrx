@@ -8,6 +8,17 @@
 import { RichContent } from "@/components/rich-content/RichContent";
 import { Maximize2 } from "lucide-react";
 import { parseStructuredCellValue, structuredCellSummary } from "./structuredCellValue";
+import { kindOneLine } from "@/features/content-ir/surfaces/kind-one-line";
+import { rootKindSlug } from "@/features/content-ir/surfaces/json-kind-signal";
+
+/** A cell holding a kind (or a list of kinds) reads as its one-line form (P6), never "{ } __kind, …". */
+function kindCellLine(structured: object): string | null {
+  if (Array.isArray(structured)) {
+    if (structured.length === 0 || !structured.every((item) => rootKindSlug(item))) return null;
+    return structured.map(kindOneLine).join(" · ");
+  }
+  return rootKindSlug(structured) ? kindOneLine(structured) : null;
+}
 
 export function ExtractionCellDisplay({
   value,
@@ -22,7 +33,8 @@ export function ExtractionCellDisplay({
   }
 
   const structured = parseStructuredCellValue(value);
-  if (structured) {
+  const kindLine = structured ? kindCellLine(structured) : null;
+  if (structured && !kindLine) {
     return (
       <div className="relative min-w-0 pr-5">
         <div className="line-clamp-2 break-words text-xs leading-relaxed">
@@ -50,7 +62,7 @@ export function ExtractionCellDisplay({
   return (
     <div className="relative min-w-0 pr-5">
       <div className="line-clamp-2 break-words text-xs leading-relaxed">
-        <RichContent source={value} level="inline" imagePolicy="other" />
+        <RichContent source={kindLine ?? value} level="inline" imagePolicy="other" />
       </div>
       {onView ? (
         <button

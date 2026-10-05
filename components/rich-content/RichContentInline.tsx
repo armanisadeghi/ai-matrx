@@ -33,6 +33,7 @@ import {
   type InlineLinks,
 } from "./prose/inline-level-elements";
 import { withImagePolicy, type ImagePolicyDeclaration } from "@/components/rich-content/prose/remote-image-policy";
+import { inlineKindText } from "@/features/content-ir/surfaces/kind-one-line";
 
 // The element map lives ONCE in prose/inline-level-elements.tsx (shared with
 // the server level and the static leaf). Never re-declare it here — a copy
@@ -72,7 +73,10 @@ export function RichContentInline({
   imagePolicy,
   gfmCell = false,
 }: RichContentInlineProps) {
-  const { text, violations } = guardMarkdownDelimiters(gfmCell ? preprocessCellProse(unescapeCellPipes(source)) : preprocessProse(source));
+  // The never-raw law at the inline level (P6): a kind region reads as its
+  // one-line form (title · kind name) — an inline level mounts no kind component.
+  const prose = inlineKindText(gfmCell ? unescapeCellPipes(source) : source);
+  const { text, violations } = guardMarkdownDelimiters(gfmCell ? preprocessCellProse(prose) : preprocessProse(prose));
 
   // Loud recovery — same channel as every other level (never silent). The
   // React Compiler memoizes the guard result per source, so `violations`

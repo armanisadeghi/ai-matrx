@@ -13,6 +13,7 @@
 
 import { cn } from "@/lib/utils";
 import { RichContent } from "./RichContent";
+import { inlineKindText } from "@/features/content-ir/surfaces/kind-one-line";
 
 const CLAMP: Record<1 | 2 | 3 | 4 | 6, string> = {
   1: "truncate",
@@ -51,7 +52,9 @@ export function RichContentPreview({
   className,
 }: RichContentPreviewProps) {
   if (!source || !source.trim()) return null;
-  const cut = previewSource(source, lines, maxChars);
+  // A kind becomes its one-line form BEFORE the line cut (P6): cutting a
+  // pretty-printed kind first would leave half an object to the inline level.
+  const cut = previewSource(inlineKindText(source), lines, maxChars);
   return (
     <span className={cn("block min-w-0", CLAMP[lines], className)}>
       <RichContent source={cut} level="inline" links="text" isStreaming={false} />
