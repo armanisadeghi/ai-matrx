@@ -12,6 +12,7 @@ import { showManualCopy } from "@/components/dialogs/clipboard-fallback/manualCo
 import { toast } from "@/lib/toast";
 import { getSessionKnob } from "@/lib/scoped-config/sessionKnob";
 import { markdownToReadableText } from "./markdown-readable-text";
+import { formattedCopyHtml } from "@/components/matrx/buttons/markdown-copy-html"; // the frame aliases this seam
 
 interface CopyOptions {
   isMarkdown?: boolean;
@@ -160,11 +161,6 @@ export function richCopyPlainText(markdown: string, flavor: CopyFlavor, defaultF
   return plainFlavor === "text" ? markdownToReadableText(markdown) : markdown;
 }
 
-async function formattedHtml(markdown: string): Promise<string> {
-  const { markdownToHtml } = await import("@ai-matrx/print/markdown");
-  return markdownToHtml(markdown);
-}
-
 /**
  * Write a clipboard item. `html` may be a promise: the item is created inside
  * the click (Safari requires it), the browser waits for the bytes.
@@ -203,7 +199,7 @@ export async function writeClipboardFlavors(plain: string, html?: Promise<string
 export async function copyRichContent(markdown: string, flavor: CopyFlavor = "default", options: RichCopyOptions = {}): Promise<boolean> {
   const source = options.includeThinking ? markdown : removeThinkingContent(markdown);
   const plain = richCopyPlainText(source, flavor, defaultCopyFlavor());
-  const ok = await writeClipboardFlavors(plain, flavor === "default" ? formattedHtml(source) : undefined);
+  const ok = await writeClipboardFlavors(plain, flavor === "default" ? formattedCopyHtml(source) : undefined);
   const label = options.toast === undefined ? FLAVOR_TOAST[flavor] : options.toast;
   if (ok && label) toast.success(label);
   return ok;

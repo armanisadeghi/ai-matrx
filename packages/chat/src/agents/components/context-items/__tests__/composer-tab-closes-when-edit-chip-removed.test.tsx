@@ -58,9 +58,17 @@ test("removing the edit chip whose diff is in front closes the tab", () => {
   mount();
   const resources = selectInstanceResources(CID)(store.getState());
   expect(resources).toHaveLength(1);
-  // The person opened that chip's diff: the tab shows its item.
-  selected = `${resources[0].resourceId}:remark`;
+  // The person presses that chip: it asks the canvas to show its item.
+  document.body.appendChild(host);
+  const press = host.querySelector<HTMLElement>("button");
+  expect(press).not.toBeNull();
+  act(() => press!.click());
+  expect(toggle).toHaveBeenCalledTimes(1);
+  const shownId = (toggle.mock.calls[0][0] as { selected: string }).selected;
+  toggle.mockReset();
+  selected = shownId;
   mount();
+  expect(toggle).not.toHaveBeenCalled();
   // Reverting the edit removes the chip.
   act(() => {
     store.dispatch(
@@ -70,6 +78,7 @@ test("removing the edit chip whose diff is in front closes the tab", () => {
   mount();
   expect(selectInstanceResources(CID)(store.getState())).toHaveLength(0);
   expect(toggle).toHaveBeenCalledTimes(1);
-  expect(toggle.mock.calls[0][0]).toMatchObject({ selected: `${resources[0].resourceId}:remark` });
+  expect(toggle.mock.calls[0][0]).toMatchObject({ selected: shownId });
   act(() => root.unmount());
+  host.remove();
 });

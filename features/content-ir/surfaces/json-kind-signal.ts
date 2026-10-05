@@ -46,8 +46,26 @@ const KIND_KEY_BODY = [..."__kind"]
 /** A `"__kind"` KEY (not an escaped occurrence inside a string value). */
 const KIND_KEY = new RegExp(String.raw`(?<!\\)"${KIND_KEY_BODY}"\s*:`);
 
-export function hasKindKey(text: string): boolean {
-  return KIND_KEY.test(text);
+/**
+ * JSON5 lets a key go unquoted (`{__kind: "flashcard_set"}`) or single-quoted.
+ * Accepted ONLY in a ```json5 context (X-minor, round 3) — plain JSON never
+ * has such a key, and prose that says `__kind:` is not one.
+ */
+const JSON5_KIND_KEY = /(?:^|[{,]\s*|\n\s*)(?:__kind|'__kind')\s*:/;
+const JSON5_KIND_SLUG = /(?:^|[{,]\s*|\n\s*)(?:__kind|'__kind'|"__kind")\s*:\s*("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')/;
+
+/** Options for the JSON-text readers: `json5` widens the key rule to JSON5's. */
+export interface KindTextOptions {
+  json5?: boolean;
+}
+
+/** Whether a fence language is JSON5 (the one context that widens the key rule). */
+export function isJson5Language(lang: string | null | undefined): boolean {
+  return (lang ?? "").trim().toLowerCase() === "json5";
+}
+
+export function hasKindKey(text: string, options: KindTextOptions = {}): boolean {
+  return KIND_KEY.test(text) || (options.json5 === true && JSON5_KIND_KEY.test(text));
 }
 
 /** The key, then its string value (escapes allowed), captured whole. */
@@ -58,13 +76,22 @@ const KIND_SLUG = new RegExp(
 /** A slug the loader may name: letters, digits and `_.:-` only. */
 const SLUG_TEXT = /^[A-Za-z0-9_.:-]+$/;
 
+/** Whether a `__kind` value is a readable slug (ruling (c): anything else is broken output). */
+export function isKindSlug(value: unknown): value is string {
+  return typeof value === "string" && SLUG_TEXT.test(value);
+}
+
 /**
  * The first complete `__kind` slug in the text, or null. For a LOADER only —
  * which kind's skeleton to show while the region arrives. Never an identity:
  * the parser owns which kind a region actually is.
  */
-export function firstKindSlug(text: string): string | null {
-  const literal = KIND_SLUG.exec(text)?.[1];
+export function firstKindSlug(text: string, options: KindTextOptions = {}): string | null {
+  let literal = KIND_SLUG.exec(text)?.[1];
+  if (!literal && options.json5) {
+    const json5 = JSON5_KIND_SLUG.exec(text)?.[1];
+    literal = json5?.startsWith("'") ? JSON.stringify(json5.slice(1, -1)) : json5;
+  }
   if (!literal) return null;
   let slug: unknown;
   try {
@@ -148,9 +175,12 @@ export function withoutLeadingJsonComments(text: string): string {
   }
 }
 
-export function jsonKindSignal(text: string | null | undefined): JsonKindSignal {
+export function jsonKindSignal(
+  text: string | null | undefined,
+  options: KindTextOptions = {},
+): JsonKindSignal {
   const source = withoutLeadingJsonComments(text ?? "");
-  if (hasKindKey(source)) return "kind";
+  if (hasKindKey(source, options)) return "kind";
 
   let i = skipWs(source, 0);
   if (i >= source.length) return "undecided";
@@ -209,6 +239,60 @@ function skipWs(source: string, from: number): number {
   let i = from;
   while (i < source.length && /\s/.test(source[i])) i++;
   return i;
+}
+
+/**
+ * A ```json5 body as plain JSON, when the difference is only what JSON5 adds
+ * that models actually write: comments, unquoted identifier keys, single-quoted
+ * keys/strings and trailing commas. Null when the result still will not parse.
+ */
+export function json5AsJson(text: string): string | null {
+  let out = "";
+  let i = 0;
+  while (i < text.length) {
+    const ch = text[i]!;
+    if (ch === '"' || ch === "'") {
+      let j = i + 1;
+      let body = "";
+      while (j < text.length && text[j] !== ch) {
+        if (text[j] === "\\") {
+          body += text[j]! + (text[j + 1] ?? "");
+          j += 2;
+          continue;
+        }
+        body += ch === "'" && text[j] === '"' ? '\\"' : text[j]!;
+        j++;
+      }
+      out += `"${body}"`;
+      i = j + 1;
+      continue;
+    }
+    if (text.startsWith("//", i)) {
+      const end = text.indexOf("\n", i);
+      i = end === -1 ? text.length : end;
+      continue;
+    }
+    if (text.startsWith("/*", i)) {
+      const end = text.indexOf("*/", i + 2);
+      i = end === -1 ? text.length : end + 2;
+      continue;
+    }
+    const key = /^[A-Za-z_$][\w$]*(?=\s*:)/.exec(text.slice(i));
+    if (key && /[{,]\s*$/.test(out)) {
+      out += `"${key[0]}"`;
+      i += key[0].length;
+      continue;
+    }
+    out += ch;
+    i++;
+  }
+  out = out.replace(/,(\s*[}\]])/g, "$1");
+  try {
+    JSON.parse(out);
+    return out;
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -304,13 +388,40 @@ export function isQuotedSourceXmlBlock(block: {
 }
 
 /**
+ * Where the front matter that opens `source` ends (0 when none): an optional
+ * byte-order mark, a first line that is exactly `---` or `+++`, through the
+ * same fence (YAML also `...`). Front matter is document properties, never
+ * content — a `{"__kind":…}` VALUE inside it is never a kind block, in the
+ * static splitter or the live accumulator (RC-B3r round 3, C1).
+ */
+export function frontMatterEnd(source: string): number {
+  const body = source.charCodeAt(0) === 0xfeff ? 1 : 0;
+  const firstBreak = source.indexOf("\n", body);
+  if (firstBreak < 0) return 0;
+  const opener = source.slice(body, firstBreak).replace(/\r$/, "");
+  if (opener !== "---" && opener !== "+++") return 0;
+  for (let pos = firstBreak + 1; pos < source.length; ) {
+    const next = source.indexOf("\n", pos);
+    const end = next < 0 ? source.length : next;
+    const line = source.slice(pos, end).replace(/\r$/, "");
+    if (line === opener || (opener === "---" && line === "...")) return end;
+    if (next < 0) break;
+    pos = next + 1;
+  }
+  return 0;
+}
+
+/**
  * The MARKDOWN form: does this prose hold a kind REGION — a `__kind` key
  * anywhere outside quoted source (see `quotedSourceRanges`)? A leaf that
  * answers yes hands the text to the pipeline (`MarkdownStream`), which lifts
  * the region by the same definition — prose, table cell, indented block,
  * blockquote, JSON fence, or the whole text being kind JSON.
  */
-export function markdownCarriesKind(text: string): boolean {
+export function markdownCarriesKind(source: string): boolean {
+  // Front matter is document properties, hidden on screen and never lifted
+  // (X-minor, round 3): a kind there is not a region of the text.
+  const text = source.slice(frontMatterEnd(source));
   if (!hasKindKey(text)) return false;
   if (isKindJsonText(text)) return true;
   const quoted = quotedSourceRanges(text);

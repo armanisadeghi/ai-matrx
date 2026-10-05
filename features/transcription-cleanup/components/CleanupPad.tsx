@@ -160,6 +160,7 @@ import { CLEANUP_OVERLAY_ID, cleanupVoicePadInstanceId } from "../constants";
 // lightweight shell (imported statically); MenuContent lazy-loads on first open.
 // All three panes (Transcript / Clean / Custom) are editable textareas.
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
+import { cleanedResponseShown } from "../cleaned-response-shown";
 import { kindTextToMarkdown } from "@/features/content-ir/surfaces/kind-text-to-markdown";
 
 // Shared with external hosts (e.g. the War Room room-level recording
@@ -928,6 +929,8 @@ export default function CleanupPad({
   const cleanThinking = cleanAi.isThinking;
   const responseValue = editedResponse ?? cleanAi.answerText;
   responseRef.current = responseValue;
+  // DISPLAY only — persist/apply keep `responseValue` (the data).
+  const responseShown = cleanedResponseShown(editedResponse, cleanAi.answerText, cleanAi.isBusy);
 
   // One-click raw↔cleaned compare: the raw transcript is the baseline (old),
   // the AI-cleaned text is the new version, so the diff reads as what cleanup
@@ -2727,7 +2730,7 @@ export default function CleanupPad({
         <CleanupOutput
           key={`clean-${sessionId}`}
           label="Cleaned transcript"
-          content={responseValue}
+          content={responseShown}
           requestId={editedResponse === null ? cleanAi.requestId : null}
           conversationId={cleanAi.conversationId}
           isBusy={cleanAi.isBusy}
@@ -2753,7 +2756,7 @@ export default function CleanupPad({
               enableVoice={false}
               enableCleanup={false}
               enableTextStats
-              value={responseValue}
+              value={responseShown}
               onChange={(e) => handleResponseChange(e.target.value)}
               placeholder={responsePlaceholder}
               wrapperClassName="flex min-h-0 flex-1 flex-col"

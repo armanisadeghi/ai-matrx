@@ -27,6 +27,7 @@
 export type RenderPathId =
   | "chat_fence"
   | "chat_fence_one_line"
+  | "chat_xml_tag"
   | "chat_bare"
   | "chat_artifact"
   | "server_partial"
@@ -67,6 +68,15 @@ export const RENDER_PATHS: readonly RenderPathSpec[] = [
       "An agent answers in chat with a ```json block whose JSON is all on one line. This is the shape that broke on 2026-09-30.",
     exercises:
       "Real: same accumulator and renderer as the fenced path, over a fence whose body never completes a line until the fence closes.",
+    streams: true,
+  },
+  {
+    id: "chat_xml_tag",
+    label: "Chat — inside an XML tag",
+    where:
+      "An agent wraps its answer in a generic tag like <output>…</output> with the JSON on one line. An XML tag is structure, not quoted source (round 3, X1).",
+    exercises:
+      "Real: same accumulator and renderer as the fenced path, over the kind's one-line JSON inside an <output> tag — the kind must leave the XML card the moment its __kind is visible.",
     streams: true,
   },
   {

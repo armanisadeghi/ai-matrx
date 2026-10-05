@@ -37,6 +37,7 @@ import {
   fenceOpenerOf,
   FenceReader,
   findCodeRanges,
+  isHtmlBlockTagName,
   trimFenceLine,
 } from "@ai-matrx/content-ir/source";
 import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
@@ -412,7 +413,12 @@ function proseKindObjectStart(line: string): number {
 
 /** A line whose first character opens a structure the prose split must leave alone. */
 function startsStructuralLine(line: string): boolean {
-  return /^\s*(?:\{|\[\s*\{|<|\||`|~|:::)/.test(line);
+  if (/^\s*(?:\{|\[\s*\{|\||`|~|:::)/.test(line)) return true;
+  // An HTML block line (`<details><summary>…</summary>{"__kind":…`) is prose
+  // to the markdown renderer — the kind on it splits out like any prose line
+  // (X-minor, round 3). Every other tag owns its line.
+  const tag = /^\s*<\/?([A-Za-z][\w-]*)/.exec(line);
+  return tag ? !isHtmlBlockTagName(tag[1]!) : /^\s*</.test(line);
 }
 
 function extractFenceInfo(
@@ -2650,6 +2656,11 @@ export class StreamBlockAccumulator {
     dispatch: DispatchFn,
     status: "streaming" | "complete",
   ): void {
+    // Front matter is document properties, hidden once it closes; while it is
+    // still open its `---` reads as a rule and its values (a kind included,
+    // X-minor round 3) as prose — so an open front matter is held, not drawn.
+    if (status === "streaming" && this.subState.kind === "frontmatter") return;
+
     let content = this.currentBlockContent;
 
     // Project in-flight characters so the UI physically streams char-by-char,

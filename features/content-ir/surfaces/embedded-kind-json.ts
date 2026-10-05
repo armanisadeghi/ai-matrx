@@ -14,7 +14,7 @@
 
 import { readXmlTag } from "@/components/mardown-display/blocks/xml/readXmlTag";
 import { fenceOpenerOf, findCodeRanges } from "@ai-matrx/content-ir/source";
-import { isJsonFenceLanguage, quotedSourceRanges } from "./json-kind-signal";
+import { frontMatterEnd, isJsonFenceLanguage, quotedSourceRanges } from "./json-kind-signal";
 
 export interface EmbeddedKindJsonRegion {
   start: number;
@@ -319,29 +319,9 @@ function jsonFenceChromeSpans(
 }
 
 /** Outermost complete self-described objects, in source order. */
-/**
- * Where the front matter that opens `source` ends (0 when none): an optional
- * byte-order mark, a first line that is exactly `---` or `+++`, through the
- * same fence (YAML also `...`). Front matter is document properties, never
- * content — a `{"__kind":…}` VALUE inside it is never a kind block, in the
- * static splitter or the live accumulator (RC-B3r round 3, C1).
- */
-export function frontMatterEnd(source: string): number {
-  const body = source.charCodeAt(0) === 0xfeff ? 1 : 0;
-  const firstBreak = source.indexOf("\n", body);
-  if (firstBreak < 0) return 0;
-  const opener = source.slice(body, firstBreak).replace(/\r$/, "");
-  if (opener !== "---" && opener !== "+++") return 0;
-  for (let pos = firstBreak + 1; pos < source.length; ) {
-    const next = source.indexOf("\n", pos);
-    const end = next < 0 ? source.length : next;
-    const line = source.slice(pos, end).replace(/\r$/, "");
-    if (line === opener || (opener === "---" && line === "...")) return end;
-    if (next < 0) break;
-    pos = next + 1;
-  }
-  return 0;
-}
+// Front matter is document properties (`frontMatterEnd`) — one definition,
+// in the detector's module, so the leaf gate and the frame judge read it too.
+export { frontMatterEnd } from "./json-kind-signal";
 
 export interface EmbeddedKindSearchOptions {
   /** Generic XML: code, comments, CDATA and tags are literal (the XML card shows them). */

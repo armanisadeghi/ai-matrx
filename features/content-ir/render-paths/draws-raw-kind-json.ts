@@ -27,6 +27,7 @@ import { renderBlockToContentBlock } from "@/components/mardown-display/chat-mar
 import { decideBlockRender } from "@/components/mardown-display/chat-markdown/block-registry/BlockRenderer";
 import {
   hasKindKey,
+  isJson5Language,
   isJsonFenceLanguage,
   isQuotedSourceXmlBlock,
   markdownCarriesKind,
@@ -94,7 +95,10 @@ export function drawsKindAsRawJson(
   options: FrameJudgeOptions = {},
 ): boolean {
   const content = block.content ?? "";
-  if (!hasKindKey(content)) return false;
+  const language = (block.data as { language?: unknown } | null | undefined)?.language;
+  if (!hasKindKey(content, { json5: isJson5Language(typeof language === "string" ? language : null) })) {
+    return false;
+  }
   const { block: routed, gate } = decide(block, options);
   if (gate) return false;
   if (routed.type === "text") return markdownCarriesKind(routed.content ?? "");

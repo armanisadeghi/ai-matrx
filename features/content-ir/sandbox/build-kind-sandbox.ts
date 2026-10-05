@@ -33,6 +33,8 @@
  *   @/components/agent-copy/CopyForAiButton   → FrameCopyForAiButton
  *   @/features/google-workspace/export/sendToGoogle → FrameSendToGoogle
  *   @/features/agent-apps/embed/AppletParts   → FrameAppletParts  (@/applets)
+ *   @/components/matrx/buttons/markdown-copy-html → FrameCopyHtml (plain-text copy, no KaTeX)
+ *   @/lib/scoped-config/sessionKnob           → FrameSessionKnob  (knobs answer "no answer yet")
  * They are aliases rather than database migrations, so the live component
  * bodies are migrated to the frame-safe implementations without a row
  * changing — including the five that import MarkdownStream.
@@ -80,6 +82,14 @@ const ALIAS: Record<string, string> = {
     __dirname,
     "runtime/FrameSendToGoogle.ts",
   ),
+  "@/components/matrx/buttons/markdown-copy-html": resolve(
+    __dirname,
+    "runtime/FrameCopyHtml.ts",
+  ),
+  "@/lib/scoped-config/sessionKnob": resolve(
+    __dirname,
+    "runtime/FrameSessionKnob.ts",
+  ),
   "@/features/agent-apps/embed/AppletParts": resolve(
     __dirname,
     "runtime/FrameAppletParts.tsx",
@@ -89,6 +99,7 @@ const ALIAS: Record<string, string> = {
 /** Module-path fragment → why the frame may not contain it. */
 const FORBIDDEN_MODULES: ReadonlyArray<readonly [RegExp, string]> = [
   [/\/next\/dist\//, "Next.js internals"],
+  [/^node:|(^|\/)node_modules\/node:/, "a Node.js builtin (the frame is a browser document)"],
   [/\/@supabase\//, "the Supabase client (a data door)"],
   [
     /features\/window-panels\//,

@@ -29,6 +29,9 @@ import {
   firstKindSlug,
   hasKindKey,
   isJsonFenceLanguage,
+  isJson5Language,
+  isKindSlug,
+  json5AsJson,
   jsonKindSignal,
   withoutLeadingJsonComments,
 } from "@/features/content-ir/surfaces/json-kind-signal";
@@ -206,7 +209,9 @@ export function pendingStructuredEnvelope(block: {
   // one (the parser names it in a beat) → loader. A complete first key that is
   // not `__kind`, with no `__kind` seen → plain JSON, streamed LIVE below (a
   // loader is a promise of a component, never a lid over content).
-  return jsonKindSignal(block.content) === "not_kind" ? null : envelope;
+  return jsonKindSignal(block.content, { json5: isJson5Language(block.language) }) === "not_kind"
+    ? null
+    : envelope;
 }
 
 /**
@@ -218,6 +223,7 @@ export function pendingStructuredEnvelope(block: {
 export function withTerminalEnvelope<
   T extends {
     content?: string | null;
+    language?: string;
     metadata?: Record<string, unknown>;
     isStreamingBlock?: boolean;
   },
@@ -230,7 +236,11 @@ export function withTerminalEnvelope<
   if (!settled || readEnvelope(block.metadata)) {
     return block;
   }
-  const metadata = withIrEnvelope(block.content ?? "", block.metadata, {
+  // A ```json5 body parses as the JSON it means (X-minor, round 3).
+  const source = isJson5Language(block.language)
+    ? (json5AsJson(block.content ?? "") ?? block.content ?? "")
+    : (block.content ?? "");
+  const metadata = withIrEnvelope(source, block.metadata, {
     allowTerminalError: true,
   });
   return metadata !== block.metadata ? { ...block, metadata } : block;
@@ -250,12 +260,13 @@ export function settleBrokenKindRoute<
   T extends {
     type: string;
     content?: string | null;
+    language?: string;
     metadata?: Record<string, unknown>;
     isStreamingBlock?: boolean;
   },
 >(block: T): T {
   if (block.type !== "code" || block.isStreamingBlock) return block;
-  const slug = firstKindSlug(block.content ?? "");
+  const slug = firstKindSlug(block.content ?? "", { json5: isJson5Language(block.language) });
   if (!slug) return settleUnnamedKindRoute(block);
   const envelope = readEnvelope(block.metadata);
   if (envelope?.root.kind || envelope?.root.status === "complete") return block;
@@ -297,8 +308,13 @@ function settleUnnamedKindRoute<
   },
 >(block: T): T {
   const content = block.content ?? "";
-  if (!isJsonFenceLanguage(block.language) || !hasKindKey(content)) return block;
-  if (readEnvelope(block.metadata)?.root.kind) return block;
+  if (
+    !isJsonFenceLanguage(block.language) ||
+    !hasKindKey(content, { json5: isJson5Language(block.language) })
+  ) {
+    return block;
+  }
+  if (isKindSlug(readEnvelope(block.metadata)?.root.kind)) return block;
   const broken: CanonicalBlockIR = {
     v: IR_VERSION,
     engine: "fe-kind-parser",
@@ -350,14 +366,15 @@ function unparsedKindPendingEnvelope(block: {
   if (leadingComment && !isJsonFenceLanguage(block.language)) return null;
   const body = leadingComment ? withoutLeadingJsonComments(text) : text;
   if (!/^\s*[[{]/.test(body) && !(leadingComment && !body.trim())) return null;
-  if (jsonKindSignal(text) === "not_kind") return null;
+  const json5 = { json5: isJson5Language(block.language) };
+  if (jsonKindSignal(text, json5) === "not_kind") return null;
   return {
     v: IR_VERSION,
     engine: "fe-kind-parser",
     fingerprint: "first-key-signal",
     root: {
       role: "structured",
-      kind: firstKindSlug(text) ?? "",
+      kind: firstKindSlug(text, json5) ?? "",
       kindState: "pending_kind",
       discriminator: { format: "json", key: "__kind" },
       status: "streaming",

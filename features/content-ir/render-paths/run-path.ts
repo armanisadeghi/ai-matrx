@@ -190,6 +190,12 @@ export function runStreamingPath(
   };
 }
 
+/** Wrap a payload in a generic XML tag, one line, the way a model often answers. */
+export function xmlTagWire(kind: string, value: Record<string, unknown>) {
+  const body = JSON.stringify(withKindFirst(value, kind));
+  return `Here it is:\n<output>\n${body}\n</output>\nDone.\n`;
+}
+
 /** Wrap a payload the way the artifact system does. */
 export function artifactWire(kind: string, value: Record<string, unknown>) {
   const body = JSON.stringify(withKindFirst(value, kind));
@@ -266,6 +272,7 @@ export function wireForPath(
   if (pathId === "chat_fence") return buildWireText(value, kind, "fenced");
   if (pathId === "chat_fence_one_line")
     return buildWireText(value, kind, "fenced_one_line");
+  if (pathId === "chat_xml_tag") return xmlTagWire(kind, value);
   if (pathId === "chat_bare") return buildWireText(value, kind, "bare");
   if (pathId === "chat_artifact") return artifactWire(kind, value);
   return null;

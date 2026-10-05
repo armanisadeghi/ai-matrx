@@ -28,7 +28,7 @@ await shot("01-note");
 // 1. the bar's one-click Copy
 const trig = p.locator('button[aria-label^="Copy, transform or export Note \\""]').last();
 await trig.scrollIntoViewIfNeeded().catch(() => {});
-await trig.click(); await p.waitForTimeout(2500);
+await trig.click(); await p.waitForTimeout(600); await shot("01b-after-click"); await p.waitForTimeout(1900);
 const c1 = await clip().catch(e => ({ error: String(e) }));
 log("BAR COPY clipboard types", JSON.stringify(Object.keys(c1)));
 log("BAR COPY text/plain", JSON.stringify(c1["text/plain"]));
