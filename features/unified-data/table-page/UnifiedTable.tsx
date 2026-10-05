@@ -40,7 +40,8 @@ import { useUserOrganizations } from "@/features/organizations/hooks";
 import type { OrganizationState } from "@/features/organizations/useOrganizationRequired";
 import { createRecordsRealtimePort } from "@/features/unified-data/realtime/recordsRealtimePort";
 import { SheetLayout } from "@/features/data-tables/components/SheetLayout";
-import { recordsUiHostFor, useRecordsUiPorts } from "@/features/data-tables/records-ui-host/recordsUiHost";
+import { PREVIEW_RIGHTS, recordsUiHostFor, useRecordsUiPorts } from "@/features/data-tables/records-ui-host/recordsUiHost";
+import type { ObjectAction } from "@ai-matrx/records-ui/object-actions";
 import { useMergedGridKnob } from "@/features/data-tables/records-ui-host/mergedGridKnob";
 import { toast } from "@/lib/toast";
 import { copyAgain } from "@/features/unified-data/cutover/copyAgain";
@@ -107,7 +108,22 @@ export function filterFromAddress(rawFilter: string | null): RecordFilter | null
   return Object.fromEntries(entries) as RecordFilter;
 }
 
-export function useUnifiedTable({ tableId, address }: { tableId: string; address: TableAddress }) {
+export function useUnifiedTable({
+  tableId,
+  address,
+  actionExtensions,
+  readOnly = false,
+}: {
+  tableId: string;
+  address: TableAddress;
+  /**
+   * A HOST'S OWN ENTRIES in the table's one action list ("Open in a floating window", "Revert to
+   * text", …) — the window, a canvas table, the chat modal add theirs after this page's own.
+   */
+  actionExtensions?: readonly ObjectAction[];
+  /** A PREVIEW (the tables picker): read-only whatever the person holds (records-ui `rights` port). */
+  readOnly?: boolean;
+}) {
   const router = useRouter();
   const userId = useAppSelector(selectUserId);
   /** THE AGENT'S VIEW OF THE MERGED GRID (merge 6l): the grid tells the channel, the surface reads it. */
@@ -219,8 +235,8 @@ export function useUnifiedTable({ tableId, address }: { tableId: string; address
     ...(typeof window !== "undefined" ? { origin: window.location.origin } : {}),
     ...(favorite.known ? { isFavorite: favorite.isFavorite, toggleFavorite: favorite.toggle } : {}),
     onMoved: () => object.retry(),
-    extend: () =>
-      tableMenuExtensions({
+    extend: () => [
+      ...tableMenuExtensions({
         // WORKFLOWS ON THIS TABLE (lane 11 wave 2): the simple builder.
         workflows: () => router.push(`/workflows/builder/${tableId}`),
         ...(copyEvaluation.state === "test-copy"
@@ -237,6 +253,8 @@ export function useUnifiedTable({ tableId, address }: { tableId: string; address
               }
             : {}),
       }),
+      ...(actionExtensions ?? []),
+    ],
   };
 
   /** Why the table did not open, in one sentence (for a capture), or null when it did. */
@@ -277,8 +295,10 @@ export function useUnifiedTable({ tableId, address }: { tableId: string; address
         ports,
         merged: mergedGrid,
         gridContext,
+        ...(readOnly ? { rights: PREVIEW_RIGHTS } : {}),
         // THE SHEET — the classic /data grid on the one data seam, the fifth layout (owner, 2026-09-23).
-        layouts: [
+        // A preview leaves the Sheet out: it edits through its own doors, not the `rights` port.
+        layouts: readOnly ? [] : [
           {
             id: "sheet",
             label: "Sheet",

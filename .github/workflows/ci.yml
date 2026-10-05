@@ -235,6 +235,9 @@ jobs:
       - name: the record store lives at /data (no data-v2 links, no retired-table reads)
         # 2026-10-04: the record store moved from data-v2 to /data; the old address survives only as the redirect in next.config.js.
         run: pnpm check:no-data-v2 && pnpm check:no-data-v2:self-test
+      - name: every store table mounts the one table page (no old grid, no second host)
+        # 2026-10-04: the window, chat modal, canvas, quick sheet and picker mount what /data/<table> mounts.
+        run: pnpm check:one-store-grid && pnpm check:one-store-grid:self-test
       - name: the no-fake-data guard can still fail (self-test)
         # A guard you cannot demonstrate failing is not a guard. This plants a
         # seed file carrying Acme, a sequential name and an example.com mailbox

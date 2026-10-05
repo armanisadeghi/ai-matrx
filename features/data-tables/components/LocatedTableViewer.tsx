@@ -1,22 +1,22 @@
 "use client";
 
 /**
- * THE TABLE, OPENED BY ID ANYWHERE OUTSIDE THE TABLE PAGE (lane INTEG-CLIENTS, CUTOVER-PLAN F2/F3).
+ * THE TABLE, OPENED BY ID ANYWHERE OUTSIDE THE TABLE PAGE — AS THE TABLE PAGE ITSELF.
  *
- * Every host that opens a table by id — the Quick Data sheet, the table window, the chat "view
- * table" modal, a canvas table, a tool result's dataset overlay, the agent-resources preview —
- * asks where the table opens (`locateTable`: its own organization, for this person) BEFORE
- * anything mounts, then mounts records-ui's table page through the ONE host binding the /data
- * page uses (`RecordStoreTableHost`). A table the person was not given, or a store that could not
- * be asked, is said in words — never an empty grid.
+ * Every host that opens a table by id — the table window, the Quick Data sheet, the chat "view
+ * table" modal, a canvas table, a tool result's dataset overlay, the tables picker's preview —
+ * mounts exactly what /data/<table> mounts: `useUnifiedTable` + `UnifiedTableBody` (the same pair
+ * a Board tile renders). The table reads as its OWN organization; a table the person was not
+ * given gets the canonical no-access page; the Sheet layout, the merged grid's agent surface, the
+ * table's one action list (with this app's entries) all come with it. Only the route's chrome
+ * (header, address, capture) stays on the route.
+ *
+ * Lane CHAIR-ONE-GRID (2026-10-04): this used to mount a second host binding of its own
+ * (a records-ui mount with fewer ports); `pnpm check:one-store-grid` keeps every store-table host on this one.
  */
 
-import { useEffect, useState } from "react";
-import LoadingSpinner from "@/components/ui/loading-spinner";
-import { locateTable } from "@/features/data-tables/data-source/locate-table";
-import { RecordStoreTableHost } from "@/features/data-tables/records-ui-host/recordsUiHost";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import type { ObjectAction } from "@ai-matrx/records-ui/object-actions";
+import { NO_ADDRESS, UnifiedTableBody, useUnifiedTable } from "@/features/unified-data/table-page/UnifiedTable";
 
 type ViewerProps = {
   tableId: string;
@@ -26,59 +26,22 @@ type ViewerProps = {
   readOnly?: boolean;
 };
 
-type Located =
-  | { tableId: string; state: "record"; organizationId: string }
-  | { tableId: string; state: "refused"; why: string };
-
 export function LocatedTableViewer({ tableId, actionExtensions, readOnly = false }: ViewerProps) {
-  const [located, setLocated] = useState<Located | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    void locateTable(tableId)
-      .then((answer) => {
-        if (cancelled) return;
-        setLocated(
-          answer.ok
-            ? { tableId, state: "record", organizationId: answer.home.organizationId }
-            : { tableId, state: "refused", why: answer.error },
-        );
-      })
-      .catch((err: unknown) => {
-        if (cancelled) return;
-        setLocated({
-          tableId,
-          state: "refused",
-          why: err instanceof Error ? err.message : "This table could not be opened.",
-        });
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [tableId]);
-
-  if (!located || located.tableId !== tableId) {
-    return (
-      <div className="flex h-full min-h-24 items-center justify-center">
-        <LoadingSpinner />
-      </div>
-    );
-  }
-  if (located.state === "refused") {
-    return (
-      <div className="flex h-full min-h-24 items-center justify-center p-4 text-sm text-muted-foreground" role="status">
-        {located.why}
-        <ErrorAlchemyMenu error={located.why} />
-      </div>
-    );
-  }
+  const mount = useUnifiedTable({
+    tableId,
+    address: NO_ADDRESS,
+    ...(actionExtensions ? { actionExtensions } : {}),
+    readOnly,
+  });
   return (
-    <RecordStoreTableHost
-      tableId={tableId}
-      organizationId={located.organizationId}
-      {...(actionExtensions ? { actionExtensions } : {})}
-      readOnly={readOnly}
-    />
+    <div
+      className="flex h-full min-h-0 flex-1 flex-col overflow-hidden"
+      data-record-store-table={tableId}
+      data-grid={mount.mergedGrid ? "merged" : "classic"}
+      {...(readOnly ? { "data-read-only": "preview" } : {})}
+    >
+      <UnifiedTableBody mount={mount} />
+    </div>
   );
 }
 

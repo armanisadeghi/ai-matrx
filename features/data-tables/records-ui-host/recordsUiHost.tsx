@@ -21,8 +21,6 @@ import { useCallback, useMemo, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  RecordsMount,
-  TablePage,
   personActor,
   recordsDataSource,
   tableRightsAt,
@@ -30,7 +28,6 @@ import {
   type HostLayout,
   type OpenRecordsAsk,
   type RecordsUiHost,
-  type TablePageActionHost,
 } from "@ai-matrx/records-ui";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
@@ -43,15 +40,12 @@ import { LinkedRecordsSection } from "@/features/scopes/components/linked-record
 import { useOpenLinkRecordSheet } from "@/features/overlays/openers/linkRecordSheet";
 import { getOrganizationMembers } from "@/features/organizations/service";
 import { useUserOrganizations } from "@/features/organizations/hooks";
-import { createRecordsRealtimePort } from "@/features/unified-data/realtime/recordsRealtimePort";
 import { runRowAgentAction, type RowAgentActionTarget } from "@/features/unified-data/row-agent-action/rowAgentAction";
 import { RECORDS_NOTIFY } from "@/features/unified-data/recordsNotify";
 import { RECORDS_FILES } from "@/features/unified-data/recordsFiles";
 import { RECORDS_TEXT } from "@/features/unified-data/recordsCleanText";
 import { RECORDS_REFERENCES } from "@/features/unified-data/recordsReferences";
 import {
-  RecordStoreTableSurface,
-  useGridContextChannel,
   type GridContextChannel,
 } from "@/features/unified-data/grid-agent-context/RecordStoreTableSurface";
 import { toast } from "@/lib/toast";
@@ -60,9 +54,6 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { createClient } from "@/utils/supabase/client";
 import type { DataBuildOrAskOffer } from "@ai-matrx/agents/generated/provision-offers";
 
-import { useMergedGridKnob } from "./mergedGridKnob";
-import type { ObjectAction } from "@ai-matrx/records-ui/object-actions";
-import { useTableFavorite } from "@/features/unified-data/actions/useTableFavorite";
 
 type DataSource = ReturnType<typeof recordsDataSource>;
 
@@ -322,63 +313,3 @@ export function useRecordsDataSource(): DataSource {
   return useMemo(() => recordsDataSource(createClient()), []);
 }
 
-/**
- * A RECORD-STORE TABLE OPENED BY ID OUTSIDE ITS PAGE (the window, the overlay, a chat artifact, the
- * quick sheet, the picker's preview, the chat modal). The table page itself — records-ui
- * `TablePage` — inside the host's own chrome: it fills the box it is given and draws no header of
- * its own (the host already names the table), so the table's Share and menu sit at the end of its
- * one toolbar row. Which grid draws is the `data_tables.merged_grid` Feature Knob, read for the
- * TABLE's organization and this person.
- */
-export function RecordStoreTableHost({
-  tableId,
-  organizationId,
-  actionExtensions,
-  className,
-  readOnly = false,
-}: {
-  tableId: string;
-  /** The organization the table lives in (`locateTable`'s answer), never the active one. */
-  organizationId: string;
-  /**
-   * The host's own entries in the table's one action list ("Open in a floating window", "Revert to
-   * text", …), placed by the registry (`host.extend`, lane TABLE-ACTIONS). Same ids every render.
-   */
-  actionExtensions?: readonly ObjectAction[];
-  className?: string;
-  /** A preview: read-only whatever the person holds (the picker's preview). */
-  readOnly?: boolean;
-}): ReactNode {
-  const userId = useAppSelector(selectUserId);
-  const dataSource = useRecordsDataSource();
-  const ports = useRecordsUiPorts({ organizationId, dataSource });
-  const merged = useMergedGridKnob(organizationId);
-  const gridContext = useGridContextChannel();
-  const realtime = useMemo(() => createRecordsRealtimePort(organizationId), [organizationId]);
-  const host = recordsUiHostFor({ ports, merged, gridContext, ...(readOnly ? { rights: PREVIEW_RIGHTS } : {}) });
-  const favorite = useTableFavorite(tableId, organizationId);
-  const actionHost: TablePageActionHost = {
-    ...(typeof window !== "undefined" ? { origin: window.location.origin } : {}),
-    isFavorite: favorite.isFavorite,
-    toggleFavorite: favorite.toggle,
-    ...(actionExtensions && actionExtensions.length > 0 ? { extend: () => actionExtensions } : {}),
-  };
-  return (
-    <div
-      className={className ?? "flex h-full min-h-0 flex-1 flex-col overflow-hidden"}
-      data-record-store-table={tableId}
-      data-grid={merged ? "merged" : "classic"}
-      {...(readOnly ? { "data-read-only": "preview" } : {})}
-    >
-      <RecordsMount
-        letTheStoreDecideRights
-        config={{ dataSource, actor: personActor(userId), organizationId, realtime }}
-        host={host}
-      >
-        <RecordStoreTableSurface channel={gridContext} enabled={merged}>
-          <TablePage tableId={tableId} actionHost={actionHost} />
-        </RecordStoreTableSurface>
-      </RecordsMount>
-    </div>
-  );
-}
