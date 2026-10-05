@@ -7,11 +7,14 @@
 //                  then the new agent beside the answer the person accepted. Server pipeline:
 //                  aidream `aidream/services/agent_studio/from_chat.py`. The server keeps working if
 //                  this tab goes away; the agent lands in the person's agents either way.
+//   Admin        → inside /administration the same call goes to POST /admin/agent-studio/from-chat
+//                  (lib/api/adminDoor.ts): any person's chat, the agent born in THAT person's account.
 //   Masterwork   → a draft Rulebook named after the chat, then the existing conversation importer
 //                  opened with this chat already selected (`/masterwork/{id}/import?conversation=`).
 
 import type { AppDispatch } from "@/lib/redux/store";
 import { callApi } from "@/lib/api/call-api";
+import { adminDoorOpen } from "@/lib/api/adminDoor";
 import { createDraftRulebook } from "@/features/masterwork/service";
 import type {
   AgentStudioFromChatProgressData,
@@ -66,16 +69,30 @@ export async function makeAgentFromChat(
     }
   };
 
-  const response = await dispatch(
-    callApi({
-      path: "/agent-studio/from-chat",
-      method: "POST",
-      body: { conversation_id: conversationId },
-      stream: true,
-      expectedErrorStatuses: [401, 403, 404, 409, 422],
-      onStreamEvent,
-    }),
-  );
+  // THE ADMIN DOOR (lib/api/adminDoor.ts): inside /administration the request goes to the
+  // server's /admin twin — any person's chat, the agent born in THAT person's account and the
+  // chat's organization (aidream `make_agent_from_chat_as_admin`); the user route everywhere else.
+  const response = adminDoorOpen()
+    ? await dispatch(
+        callApi({
+          path: "/admin/agent-studio/from-chat",
+          method: "POST",
+          body: { conversation_id: conversationId },
+          stream: true,
+          expectedErrorStatuses: [401, 403, 404, 409, 422],
+          onStreamEvent,
+        }),
+      )
+    : await dispatch(
+        callApi({
+          path: "/agent-studio/from-chat",
+          method: "POST",
+          body: { conversation_id: conversationId },
+          stream: true,
+          expectedErrorStatuses: [401, 403, 404, 409, 422],
+          onStreamEvent,
+        }),
+      );
 
   if (response.error) {
     return { ok: false, says: response.error.message || "Making the agent did not start.", failedAt: lastStep };

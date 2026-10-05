@@ -43,6 +43,8 @@ import {
   createAdminCxDashboardScope,
 } from "@/features/surfaces/manifests/admin-cx-dashboard.manifest";
 import { useAdminCost } from "@/components/cost/useAdminCost";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
+import { useOpenAgentFromChatWindow } from "@/features/overlays/openers/agentFromChatWindow";
 
 const MarkdownStream = dynamic(() => import("@/components/MarkdownStream"), {
   ssr: false,
@@ -58,6 +60,8 @@ type Detail = {
 export function ConversationDetailContent({ detail }: { detail: Detail }) {
   const router = useRouter();
   const formatAdminCost = useAdminCost();
+  // Make an agent from this person's chat — built FOR its owner (the admin door).
+  const openMakeAgent = useOpenAgentFromChatWindow();
   const {
     conversation: conv,
     messages,
@@ -142,6 +146,17 @@ export function ConversationDetailContent({ detail }: { detail: Detail }) {
           </div>
         </div>
         <div className="flex gap-1">
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 text-xs"
+            onClick={() =>
+              openMakeAgent({ conversationId: conv.id, conversationTitle: conv.title })
+            }
+          >
+            <AGENT_ICON className="w-3 h-3 mr-1" />
+            Make an agent
+          </Button>
           <Button
             variant="outline"
             size="sm"

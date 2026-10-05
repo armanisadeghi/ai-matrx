@@ -14,6 +14,20 @@
 import type { ComingSoonEntry } from "./types";
 
 export const COMING_SOON: Record<string, ComingSoonEntry> = {
+  "agents.admin-masterwork-from-chat": {
+    id: "agents.admin-masterwork-from-chat",
+    label: "Masterwork from a person's chat",
+    owner: "agents",
+    promise:
+      "From the admin conversation page, start a Masterwork from any person's chat, owned by that person.",
+    stage: "planned",
+    // The Masterwork conversation importer distils only the caller's OWN chats
+    // (aidream distillation/chat_import.py, owner-only by design: it mines the
+    // Expert's own judgment). An admin door needs a Rulebook born in the chat
+    // owner's account plus an admin ingest path; the single-agent admin door
+    // shipped first (2026-10-04).
+    surfaces: ["Admin conversation detail → Make an agent → Masterwork"],
+  },
   "presentations.google-slides-export": {
     id: "presentations.google-slides-export",
     label: "Create Google Slides",

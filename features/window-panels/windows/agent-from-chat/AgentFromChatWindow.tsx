@@ -33,6 +33,9 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import { toast } from "@/lib/toast";
+import { announceComingSoon } from "@/lib/coming-soon/announce";
+import { adminDoorOpen } from "@/lib/api/adminDoor";
+import { agentGoHref } from "@ai-matrx/chat/agents/addressing/agentAddress";
 
 type Lane = "agent" | "masterwork";
 type ResultTab = "compare" | "requirements" | "inputs";
@@ -67,6 +70,9 @@ function AgentFromChatWindowInner({
   conversationId,
   conversationTitle,
 }: Omit<AgentFromChatWindowProps, "isOpen">) {
+  // Inside /administration this window works on any person's chat and builds FOR its owner
+  // (the one admin-door rule, lib/api/adminDoor.ts — decided by the page, never a flag).
+  const asAdmin = adminDoorOpen();
   const dispatch = useAppDispatch();
   const router = useRouter();
 
@@ -106,6 +112,11 @@ function AgentFromChatWindowInner({
 
   const startMasterwork = async () => {
     if (!conversationId) return;
+    if (asAdmin) {
+      // The importer distils only the caller's own chats; the admin door is a tracked promise.
+      void announceComingSoon("agents.admin-masterwork-from-chat");
+      return;
+    }
     setStartingMasterwork(true);
     try {
       // Asks the person to pick one when none is selected; never picks for them.
@@ -162,7 +173,9 @@ function AgentFromChatWindowInner({
       <div className="flex min-h-0 flex-1 flex-col gap-3 p-3">
         {phase === "idle" ? (
           <>
-            <p className="truncate text-sm text-muted-foreground">From “{title}”</p>
+            <p className="truncate text-sm text-muted-foreground">
+              From “{title}”{asAdmin ? " · built for its owner" : ""}
+            </p>
             <SegmentedControl
               aria-label="What to make"
               value={lane}
@@ -261,12 +274,12 @@ function AgentFromChatResult({
           </Button>
         ) : null}
         <Button variant="outline" asChild iconEnd={<ExternalLink className="h-4 w-4" />}>
-          <a href={`/agents/${result.agent_id}/run`} target="_blank" rel="noreferrer">
+          <a href={agentGoHref(result.agent_id, "/run")} target="_blank" rel="noreferrer">
             Run
           </a>
         </Button>
         <Button variant="primary" asChild>
-          <Link href={`/agents/${result.agent_id}/build`} onClick={onOpened}>
+          <Link href={agentGoHref(result.agent_id, "/build")} onClick={onOpened}>
             Open
           </Link>
         </Button>
