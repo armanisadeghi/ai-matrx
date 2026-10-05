@@ -182,6 +182,34 @@ export function rangeToSource(
 }
 
 /**
+ * How many letters/digits the person selected that the projection cannot place
+ * in the source: the rendered text nodes under `root` that `range` covers and
+ * that have no LIVE entry. `rangeToSource` snaps a boundary inside such a node
+ * to the next mapped text, so a start inside an unmapped line quietly became
+ * the start of the last mapped one — a quote of "r reordered." for a whole
+ * paragraph. Capture asks this first: nonzero = the map is stale or the text
+ * does not occur in the source, and the quote would be shorter than what was
+ * selected. Pure read.
+ */
+export function unmappedSelectedChars(
+  projection: SourceProjection,
+  root: Node,
+  range: Range,
+): number {
+  const live = new Set<Node>();
+  for (const m of projection.nodes) if (isLive(m)) live.add(m.node);
+  let missing = 0;
+  for (const node of collectTextNodes(root)) {
+    if (live.has(node) || !range.intersectsNode(node)) continue;
+    const from = node === range.startContainer ? range.startOffset : 0;
+    const to = node === range.endContainer ? range.endOffset : node.data.length;
+    const selected = node.data.slice(from, Math.max(from, to));
+    missing += (selected.match(/[\p{L}\p{N}]/gu) ?? []).length;
+  }
+  return missing;
+}
+
+/**
  * A UTF-16 source range → DOM Ranges over the rendered text it covers. The
  * markup characters inside the range (e.g. `**`) have no rendered node and
  * are simply not painted. Empty when nothing of it is rendered.

@@ -27,7 +27,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { AnchorBuildError, buildTextAnchor } from "./anchor";
-import { projectSource, projectionIsCurrent, rangeToSource, sourceOffsetAtPoint, type SourceProjection } from "./projection";
+import { projectSource, projectionIsCurrent, rangeToSource, sourceOffsetAtPoint, unmappedSelectedChars, type SourceProjection } from "./projection";
 import { paintCss, paintScopeClass, useSidecarPaint } from "./useSidecarPaint";
 import { useAnnotationSidecar, type AnnotationSidecarApi } from "./useAnnotationSidecar";
 import { MentionComposer } from "./MentionComposer";
@@ -228,8 +228,20 @@ function useAnnotatedRoot(root: HTMLElement | null, passageActions?: readonly Ac
     if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return null;
     const range = sel.getRangeAt(0);
     if (!root.contains(range.commonAncestorContainer)) return null;
-    const current = liveProjection();
+    let current = liveProjection();
     if (!current) return null;
+    // The quote must be what the person selected, never a clipped part of it: text
+    // the map does not hold (a node added since it was taken, or prose that is not
+    // in the source) would snap the boundary onto the next mapped line. Re-map once,
+    // then refuse rather than store a shorter quote.
+    if (unmappedSelectedChars(current, root, range) > 0) {
+      projection.current = projectSource(root, source.body);
+      current = projection.current;
+      if (unmappedSelectedChars(current, root, range) > 0) {
+        if (!silent) toast.error("Part of that passage cannot be matched to the saved text yet, so it cannot be pinned. Select it again in a moment.", { id: `annotation-capture-${instance}` });
+        return null;
+      }
+    }
     const mapped = rangeToSource(current, range);
     // A selection that cannot be pinned is said through the app's ONE toast
     // (which carries the error menu itself) — never a private floating notice.
