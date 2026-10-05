@@ -47,6 +47,8 @@ it("a multi-line question is a text area and a date question is a date control",
   const slot = [...host.querySelectorAll("button")].find((b) => /\d:\d\d/.test(b.textContent ?? ""))!;
   await act(async () => slot.click());
   expect(host.querySelector("textarea")).not.toBeNull();
-  expect(host.querySelector('input[type="date"], input[type="datetime-local"]')).not.toBeNull();
+  // The form's own date control: a typed field with its calendar button (never a native date input).
+  expect(host.querySelector("#field-surgery_date")).not.toBeNull();
+  expect(host.querySelector("[data-records-date-helper]")).not.toBeNull();
   await act(async () => root.unmount());
 });

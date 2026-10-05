@@ -53,13 +53,13 @@ it("the Visit type is picked from the clinic's choices and sent as its key", asy
   await act(async () => root.render(<BookingPicker page={PAGE as never} />));
   const slot = [...host.querySelectorAll("button")].find((b) => /\d:\d\d/.test(b.textContent ?? ""))!;
   await act(async () => slot.click());
-  const select = host.querySelector("select") as HTMLSelectElement | null;
-  expect(select).not.toBeNull();
-  expect([...select!.options].map((o) => o.textContent)).toContain("Follow-up");
-  await act(async () => {
-    select!.value = "follow_up";
-    select!.dispatchEvent(new Event("change", { bubbles: true }));
-  });
+  // The form's own choice control: a radio group of the clinic's choices (never a native <select>).
+  const group = host.querySelector('[role="radiogroup"]');
+  expect(group).not.toBeNull();
+  const choices = [...group!.querySelectorAll('[role="radio"]')];
+  expect(choices.map((o) => o.getAttribute("aria-label"))).toContain("Follow-up");
+  const followUp = choices.find((o) => o.getAttribute("data-records-choice-answer") === "follow_up") as HTMLElement;
+  await act(async () => followUp.click());
   const book = [...host.querySelectorAll("button")].find((b) => /Book/.test(b.textContent ?? ""))!;
   await act(async () => book.click());
   const confirm = sent.find((s) => s.url.endsWith("/confirm"));
