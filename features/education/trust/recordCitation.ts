@@ -162,7 +162,7 @@ export function recordCitationHref(
         : base;
     }
     case "saved_result":
-      return `/shapes/instances/${id}?field=${encodeURIComponent(part)}`;
+      return part ? `/shapes/instances/${id}?field=${encodeURIComponent(part)}` : `/shapes/instances/${id}`;
     // Two different documents, two different doors: `/documents/[id]` loads
     // the CLOUD table (workbench.udt_documents); a markdown document
     // (content.document) opens in the Markdown Studio. The entity registry
@@ -174,13 +174,38 @@ export function recordCitationHref(
   }
 }
 
+const URL_RECORD_RE = new RegExp(`/(${UUID})(?:[/?#]|$)`, "i");
+
+/** The record id the citation's own stamped link names (`/chat/<id>`, `/data/<id>`…), if any. */
+export function recordIdOfUrl(url: string | null | undefined): string | null {
+  const m = URL_RECORD_RE.exec(url ?? "");
+  return m ? m[1]!.toLowerCase() : null;
+}
+
+/**
+ * The record and place a citation names. The part id is the anchor only when
+ * it is a part OF the record: an agent may cite a chunk id of another Source
+ * (or a passage id the resolver never named) while the persisting surface
+ * stamped the record and its link. The stamped link wins then — the record
+ * opens whole, never as an id that is not a record ("We couldn't find this
+ * conversation").
+ */
+function recordAndPart(c: SourceCitation): { recordId: string; part: string } | null {
+  const parsed = parseRecordPart(c.sourceId);
+  const fromUrl = c.recordKind ? recordIdOfUrl(c.url) : null;
+  if (fromUrl && (!parsed || parsed.recordId.toLowerCase() !== fromUrl)) {
+    return { recordId: fromUrl, part: "" };
+  }
+  return parsed;
+}
+
 /** A record citation's target, or null when the citation is not one (or names no record). */
 export function recordCitationTarget(c: SourceCitation): RecordCitationTarget | null {
   const kind = recordKindOf(c);
   if (!kind) return null;
-  const parsed = parseRecordPart(c.sourceId);
-  if (!parsed) return null;
-  const { recordId, part } = parsed;
+  const located = recordAndPart(c);
+  if (!located) return null;
+  const { recordId, part } = located;
   const messageRange = kind === "conversation" ? messageRangeOfPart(part) : null;
   let label: string | null = null;
   if (kind === "conversation") {

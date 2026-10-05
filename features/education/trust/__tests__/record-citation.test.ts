@@ -133,3 +133,31 @@ describe("what was broken before", () => {
     expect(env?.citations[0]?.recordKind).toBe("table");
   });
 });
+
+describe("a citation whose part id is not a part of its stamped record", () => {
+  // Live 2026-10-05 (deck cd7320db…): the agent cited `87e4f307…:1` — a chunk
+  // id that names no conversation — on a card grounded in the conversation
+  // e8efddf6…; the window looked up 87e4f307 and said "We couldn't find this
+  // conversation". The stamped link names the real record.
+  const CONV = "e8efddf6-6b73-415e-ae12-bda960db065f";
+  const OTHER = "87e4f307-126e-425a-b8d6-1dfd2c8826fe";
+  it("opens the record its stamped link names, whole", () => {
+    const t = recordCitationTarget(
+      cite({ recordKind: "conversation", sourceId: `${OTHER}:1`, url: `/chat/${CONV}` }),
+    );
+    expect(t).toMatchObject({ kind: "conversation", recordId: CONV, part: "", messageRange: null, label: null });
+    expect(t?.href).toBe(`/chat/${CONV}`);
+  });
+  it("keeps the part when it IS a part of the stamped record", () => {
+    const t = recordCitationTarget(
+      cite({ recordKind: "conversation", sourceId: `${CONV}:m0-1`, url: `/chat/${CONV}` }),
+    );
+    expect(t).toMatchObject({ recordId: CONV, label: "Messages 1–2" });
+  });
+  it("a saved result with no usable part opens the result without a field", () => {
+    const t = recordCitationTarget(
+      cite({ recordKind: "saved_result", sourceId: `${OTHER}:summary`, url: `/shapes/instances/${CONV}` }),
+    );
+    expect(t?.href).toBe(`/shapes/instances/${CONV}`);
+  });
+});
