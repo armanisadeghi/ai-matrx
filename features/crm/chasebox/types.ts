@@ -60,7 +60,7 @@ export const CHASEBOX_QUEUE_META: Record<ChaseboxQueue, ChaseboxQueueMeta> = {
   },
   pending_drafts: {
     id: "pending_drafts",
-    label: "Drafts awaiting approval",
+    label: "Drafts to approve",
     description:
       "The sequence wrote these and stopped, because the trust ladder says a human approves this one. Nothing goes out until you read it.",
     emptyLabel: "No drafts are waiting on you.",

@@ -108,7 +108,7 @@ export function EntityOrgFilter({ orgId, onChange, counts, countsLoading, onOpen
           aria-label={`Organization filter: ${label}`}
           title="Filter this list by organization. This never changes your active organization."
           className={cn(
-            "matrx-glyph-trim inline-flex h-7 min-w-0 max-w-full items-center gap-1.5 rounded-md border px-2 text-xs font-medium transition-colors sm:max-w-[11rem] lg:max-w-[16rem]",
+            "matrx-glyph-trim inline-flex h-7 min-w-0 max-w-full items-center sm:shrink-0 gap-1.5 rounded-md border px-2 text-xs font-medium transition-colors sm:max-w-[11rem] lg:max-w-[16rem]",
             orgId
               ? "border-primary/40 bg-primary/10 text-foreground"
               // Un-narrowed on a phone it is an icon: beside two page actions
@@ -117,6 +117,8 @@ export function EntityOrgFilter({ orgId, onChange, counts, countsLoading, onOpen
             className,
           )}
         >
+          {/* sm:shrink-0: from sm up the filter keeps its label (up to its cap) and the scope lanes
+              beside it give way — they scroll; /crm/chasebox squeezed it to "All organi…" at 1440. */}
           <Building2 className="h-3.5 w-3.5 shrink-0" />
           {/* Icon-only on a phone while un-narrowed, and always below 48rem of a list pane (the
               pane, not the viewport: beside the chat panel a 1024px screen holds a 540px list). */}
