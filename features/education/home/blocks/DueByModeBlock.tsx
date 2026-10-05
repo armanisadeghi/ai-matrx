@@ -13,9 +13,9 @@
 
 import Link from "next/link";
 import { CalendarClock, Flame } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { modeReviewHref, modeWeakHref } from "../../study/dashboard/nextActions";
 import type { EducationSnapshot } from "../types";
+import { Chip, ChipSet, type ChipTone } from "@ai-matrx/design-system/controls";
 
 export function DueByModeBlock({ snapshot }: { snapshot: EducationSnapshot }) {
   const modes = snapshot.study.modes.filter((m) => m.due > 0 || m.weak > 0);
@@ -44,24 +44,24 @@ export function DueByModeBlock({ snapshot }: { snapshot: EducationSnapshot }) {
               <p className="truncate text-sm font-medium text-foreground">
                 {mode.label}
               </p>
-              <div className="mt-2 flex flex-wrap gap-1.5">
+              <ChipSet className="mt-2">
                 {mode.due > 0 && (
-                  <Chip
+                  <CountChip
                     href={reviewHref}
-                    tone="bg-amber-500/10 text-amber-700 dark:text-amber-400"
-                    icon={<CalendarClock className="h-3.5 w-3.5" />}
+                    tone="warning"
+                    icon={<CalendarClock />}
                     label={`${mode.due} due`}
                   />
                 )}
                 {mode.weak > 0 && (
-                  <Chip
+                  <CountChip
                     href={weakHref}
-                    tone="bg-rose-500/10 text-rose-700 dark:text-rose-400"
-                    icon={<Flame className="h-3.5 w-3.5" />}
+                    tone="rose"
+                    icon={<Flame />}
                     label={`${mode.weak} weak`}
                   />
                 )}
-              </div>
+              </ChipSet>
             </div>
           );
         })}
@@ -73,28 +73,24 @@ export function DueByModeBlock({ snapshot }: { snapshot: EducationSnapshot }) {
 /**
  * A count is a door (THE DOOR LAW). When a mode genuinely has no review surface
  * yet the chip renders as plain text rather than as a link that goes nowhere —
- * it still tells the truth about the number.
+ * it still tells the truth about the number. THE chip (design-system), never a
+ * local twin.
  */
-function Chip({
+function CountChip({
   href,
   tone,
   icon,
   label,
 }: {
   href: string | null;
-  tone: string;
+  tone: ChipTone;
   icon: React.ReactNode;
   label: string;
 }) {
-  const className = cn(
-    "inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium",
-    tone,
-  );
-  if (!href) return <span className={className}>{icon}{label}</span>;
+  if (!href) return <Chip tone={tone} icon={icon} label={label} />;
   return (
-    <Link href={href} className={cn(className, "transition-colors hover:brightness-110")}>
-      {icon}
-      {label}
-    </Link>
+    <Chip asChild tone={tone} icon={icon} label={label}>
+      <Link href={href} />
+    </Chip>
   );
 }
