@@ -56,7 +56,8 @@ function ports() {
   const copier = jest.fn().mockResolvedValueOnce({ agentId: "agent-1" });
   const extraCopier = jest.fn().mockResolvedValueOnce({ agentId: "agent-2" });
   const createWorkflow = jest.fn().mockResolvedValue("wf-1");
-  return { note, copier, extraCopier, createWorkflow };
+  const claim = jest.fn().mockResolvedValue({ state: "claimed", orphans: [] });
+  return { note, copier, extraCopier, createWorkflow, claim };
 }
 
 describe("a template install adds its extra agents and workflows", () => {
@@ -103,5 +104,50 @@ describe("a template install adds its extra agents and workflows", () => {
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.why).toMatch(/row "r1" of "company_profile", which was not created/);
     expect(p.copier).not.toHaveBeenCalled();
+  });
+});
+
+describe("claim, then create: an interrupted install never makes a copy twice", () => {
+  it("claims every agent and workflow BEFORE creating it", async () => {
+    const p = ports();
+    const order: string[] = [];
+    p.claim.mockImplementation(async (_i: string, kind: string, label: string) => {
+      order.push(`claim:${kind}:${label}`);
+      return { state: "claimed", orphans: [] };
+    });
+    p.copier.mockReset().mockImplementation(async (r: { name: string }) => (order.push(`create:agent:${r.name}`), { agentId: "agent-1" }));
+    p.extraCopier.mockReset().mockImplementation(async (r: { name: string }) => (order.push(`create:agent:${r.name}`), { agentId: "agent-2" }));
+    p.createWorkflow.mockImplementation(async (_o: string, w: { name: string }) => (order.push(`create:workflow:${w.name}`), "wf-1"));
+    await addInstalledAgent(ANSWER, "org-1", p);
+    for (const step of order.filter((o) => o.startsWith("create:"))) {
+      const claimed = order.indexOf(step.replace("create:", "claim:"));
+      expect(claimed).toBeGreaterThanOrEqual(0);
+      expect(claimed).toBeLessThan(order.indexOf(step));
+    }
+  });
+
+  it("a stale claim's orphan is finished, not forked again; extra orphans are archived", async () => {
+    const p = ports();
+    const archiveAgent = jest.fn().mockResolvedValue(undefined);
+    p.claim.mockImplementation(async (_i: string, kind: string, label: string) =>
+      kind === "agent" && label === "Org chart" ? { state: "claimed", orphans: ["orphan-1", "orphan-2"] } : { state: "claimed", orphans: [] },
+    );
+    p.extraCopier.mockReset().mockImplementation(async (r: { existingAgentId?: string }) => ({ agentId: r.existingAgentId ?? "fresh" }));
+    const r = await addInstalledAgent(ANSWER, "org-1", { ...p, archiveAgent });
+    expect(r.ok).toBe(true);
+    expect(p.extraCopier.mock.calls[0][0].existingAgentId).toBe("orphan-1");
+    expect(archiveAgent).toHaveBeenCalledWith("orphan-2");
+    expect(p.note).toHaveBeenCalledWith(expect.anything(), "orphan-1", "Org chart");
+  });
+
+  it("an entry already made is never created again; a claim held by another tab stops with a sentence", async () => {
+    const p = ports();
+    p.claim.mockImplementation(async (_i: string, kind: string) => (kind === "agent" ? { state: "made", id: "agent-x" } : { state: "held" }));
+    const r = await addInstalledAgent(ANSWER, "org-1", p);
+    expect(p.copier).not.toHaveBeenCalled();
+    expect(p.extraCopier).not.toHaveBeenCalled();
+    expect(p.createWorkflow).not.toHaveBeenCalled();
+    expect(r.ok).toBe(false);
+    expect(!r.ok && r.why).toMatch(/another tab/);
   });
 });

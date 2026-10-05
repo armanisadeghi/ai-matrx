@@ -100,7 +100,7 @@ export function useKitInstall(manifest: KitManifest, targetOrganizationId?: stri
     if (!attached) return;
     let timer: ReturnType<typeof setInterval> | null = null;
     let cancelled = false;
-    kitKnob("attached_poll_ms")
+    templateKnob("attached_poll_ms")
       .then((ms) => {
         if (!cancelled) timer = setInterval(() => setAttempt((n) => n + 1), ms);
       })

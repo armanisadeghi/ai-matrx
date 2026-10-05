@@ -86,7 +86,7 @@ function isRecord(v: unknown): v is Record<string, unknown> {
 
 /** How long a runner's claim lasts without a write renewing it — the `kits.run_lease_seconds` knob. */
 async function runLeaseMs(): Promise<number> {
-  return (await kitKnob("run_lease_seconds")) * 1000;
+  return (await templateKnob("run_lease_seconds")) * 1000;
 }
 
 const LEDGER_FIELDS: NewFieldSpec[] = [
@@ -793,7 +793,7 @@ export async function removeInstall(
 ): Promise<void> {
   // The record is written at the end with columns an older ledger may not have yet.
   await ensureLedger(client);
-  const maxPasses = await kitKnob("archive_max_passes");
+  const maxPasses = await templateKnob("archive_max_passes");
   const problems: string[] = [];
   const tag = `kit-install:${install.id}`;
 

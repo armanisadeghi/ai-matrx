@@ -264,14 +264,15 @@ export function TemplatePreview({ templateId }: { templateId: string }) {
       claim: async (installId, kind, label, sourceId) => {
         const { data, error } = await supabase
           .schema("custom")
-          .rpc("template_install_claim", {
+          // Not in the generated types until the next type pull (migrations/campaign/templates_claim_then_create.sql).
+          .rpc("template_install_claim" as never, {
             p_organization_id: orgId,
             p_install_id: installId,
             p_kind: kind,
             p_label: label,
             ...(sourceId ? { p_source_id: sourceId } : {}),
             p_lease_seconds: await templateKnob("run_lease_seconds"),
-          });
+          } as never);
         if (error) throw new Error(error.message);
         return (data as { claim: Claim }).claim;
       },

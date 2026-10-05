@@ -40,7 +40,7 @@ describe("a template install adds its agent", () => {
     const note = jest.fn().mockResolvedValue(noted("agent-9"));
     expect(agentStillToCopy(ANSWER)).toBe(true);
 
-    const r = await addInstalledAgent(ANSWER, "org-1", { copier, note });
+    const r = await addInstalledAgent(ANSWER, "org-1", { copier, note, claim: jest.fn().mockResolvedValue({ state: "claimed", orphans: [] }) });
 
     expect(copier).toHaveBeenCalledTimes(1);
     expect(copier.mock.calls[0][0]).toMatchObject({
@@ -62,7 +62,7 @@ describe("a template install adds its agent", () => {
   it("says a failed copy in one line with a Retry, and never records it", async () => {
     const copier = jest.fn().mockRejectedValue(new Error("Could not copy the agent: no access"));
     const note = jest.fn();
-    const r = await addInstalledAgent(ANSWER, "org-1", { copier, note });
+    const r = await addInstalledAgent(ANSWER, "org-1", { copier, note, claim: jest.fn().mockResolvedValue({ state: "claimed", orphans: [] }) });
     expect(r.ok).toBe(false);
     expect(note).not.toHaveBeenCalled();
     const html = renderToStaticMarkup(
