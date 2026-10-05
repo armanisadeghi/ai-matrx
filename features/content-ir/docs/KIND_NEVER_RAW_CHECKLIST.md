@@ -704,3 +704,34 @@ converted anywhere; they join the exotic forms as DETECTION ONLY.
       `kind-spelling-matrix` detection-only tables (sentinel reports, judge passes, converters + labels + live +
       reload byte for byte, self-test).
 
+
+## R11. Round 11 — freezes, reload harm, leaks (2026-10-05)
+
+Independent attacker's repros; failing test first for each.
+
+- [x] R11-F1. Render-path regexes made linear, byte-identical (differential fuzz, 0 diffs): math `[ … ]` heuristic
+      (was cubic: `[` + 6 000 spaces 62 s), escaped `\[ … \]` / `\( … \)`, numbering display-math scan
+      (`math-normalizer.ts`, `document-numbering.ts`); sweep stand-ins in `syntax/linear-scan.ts` — section / heading-id
+      / unfinished heading-id tail (cubic), reference uses and bracketed tail (stream heal, per frame). Guard
+      `components/markdown-core/__tests__/regex-linear-time.guard.test.ts`: 20 adversarial ~100 KB cases in a child
+      process (hang = fail); old code 0.15 s – >25 s killed, new < 60 ms.
+- [x] R11-F2. `scanKindSpellingRegions` reach budget (4 × text + 64 KB) for looking past broken regions' grammar breaks
+      (was 23.5 s render at '{"a":[1,{"__kind":"x" 1 [ ' × 6 000). Guard rows `kind-*`.
+- [ ] R11-F1-open. Sweep remainder still super-linear (quadratic on long whitespace / bracket runs; none cubic on the
+      markdown core): `prose-prepare.ts:434,446`, `ConfigurableMarkdownContent.tsx:435,437,456`,
+      `json-kind-signal.ts:54,55,1256,1257`, `kind-text-to-markdown.ts:226` + `noteUnreadableKinds` (balancedEnd per
+      `{`), `plain-title.ts:57`, `task-source.ts:25`, `block-media-identity.ts:39`, `message-citations.ts:477`, tool
+      renderers (`parseSearch.ts` — its sweep timed out, `shape.ts:246`, `ShellInline.tsx:149`), `markdown-headings.ts`,
+      `decision-options.ts:23`, `PublicMessageOptionsMenu.tsx`, analyzer viewers, `agent-copy/export.ts`.
+- [x] R11-H1. Reload swallow after an escaped kind paragraph: the splitter's bare-JSON step now asks the accumulator's
+      own `bareRegionBreaksIntoProse` (moved to json-kind-signal, shared) — live ≡ reload.
+- [x] R11-H2. A ```json body line ending inside a string no longer swallows the closing fence (reader-only line
+      close in `extractCodeBlock`). Root: `@ai-matrx/content-ir` `FenceReader` carries JSON string state across lines —
+      to fix in the package (aidream).
+- [x] R11-H3. `nonJsonKindsAsCode` wraps only when safe (one paragraph, no HTML-block line, no backtick inside or
+      touching, no pipe in a table, fence length unused in the paragraph); else left as written.
+- [x] R11-L1. `RichContentInline` (table cells, inline leaves) applies `nonJsonKindsAsCode`.
+- [x] R11-L2. A list / number / boolean / null `__kind` → `UNREADABLE_KIND_NOTE` in the prose leaf, inline and
+      exports. Object-valued stays a shape (R10-2) — the brief's "object" case is NOT converted; needs a ruling.
+- [ ] R11-L2b. Live draws such a region as the kind block's generic broken state ("No result returned"), reload as the
+      one-line note: both never raw, words differ.
