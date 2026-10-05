@@ -3,9 +3,10 @@
   "updated": "2026-10-05",
   "sha": "1f3cfadceaa4b0a2a0ddda4c4d127cf4dc0936b2",
   "sites": 37596,
-  "count": 1,
+  "count": 2,
   "ids": [
-    "spinner-outside-spinner|features/admin/limits/components/PlanAllowancesPanel.tsx"
+    "spinner-outside-spinner|features/admin/limits/components/PlanAllowancesPanel.tsx",
+    "styled-raw-button|features/admin/limits/components/PlanAllowancesPanel.tsx"
   ],
   "counts": {
     "arbitrary-text-size|app/(admin)/administration/_nav/AdminNavTreeMenu.tsx": 2,
@@ -11707,6 +11708,11 @@
   "reasons": {
     "spinner-outside-spinner|features/admin/limits/components/PlanAllowancesPanel.tsx": {
       "reason": "3px saving glyph beside a 28px grid cell field; a region skeleton would shift the matrix",
+      "accepted_by": "Armani Sadeghi",
+      "date": "2026-10-05"
+    },
+    "styled-raw-button|features/admin/limits/components/PlanAllowancesPanel.tsx": {
+      "reason": "16px hover-reveal remove mark outside the field; the 28px control Button would cover the neighbouring cell",
       "accepted_by": "Armani Sadeghi",
       "date": "2026-10-05"
     }
