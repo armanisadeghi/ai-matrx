@@ -52,5 +52,4 @@ describe("a dashboard or page row can be shared", () => {
     expect(shared.at(-1)).toMatchObject({ kind: "record", subjectId: "dash-1", organizationId: "org-rincon", name: "Truck 1 — jobs by stage" });
     act(() => root.unmount());
   });
-  });
 });
