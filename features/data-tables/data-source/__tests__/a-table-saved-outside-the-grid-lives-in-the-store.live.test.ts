@@ -34,7 +34,9 @@ const KEY = ENV.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? "";
 const EMAIL = ENV.AI_ADMIN_USERNAME ?? process.env.AI_ADMIN_USERNAME ?? "";
 const PASSWORD = ENV.AI_ADMIN_PASSWORD ?? process.env.AI_ADMIN_PASSWORD ?? "";
 const ORG = "884d1ce8-7b49-4fba-a2f3-0f7dd7c83d4f"; // admin's Workspace
-const PARTS_ON_ORDER = "00d6e9a2-45c4-4e45-af46-431bccb3c51a"; // "Rincon Plumbing — Parts on order", moved
+// "Rincon Plumbing — Parts on order": made by this suite's own beforeAll through the product's
+// normal path (createTable + bulkWrite) and archived in afterAll — never a clone-era id.
+let PARTS_ON_ORDER = "";
 const READY = Boolean(URL_ && KEY && EMAIL && PASSWORD);
 
 let client: SupabaseClient;
@@ -110,6 +112,35 @@ describeLive("a table saved or appended to outside the grid lives in its organiz
     if (signed.error || !signed.data.user) throw new Error(`sign-in failed: ${signed.error?.message}`);
     userId = signed.data.user.id;
     expect(signed.data.user.email).toBe("admin@admin.com");
+
+    const headers = ["Part", "Supplier", "Qty"];
+    const born = await service.createTable({
+      tableName: "Rincon Plumbing — Parts on order",
+      description: "Parts the office has ordered and is waiting on",
+      isPublic: false,
+      authenticatedRead: false,
+      fields: headers.map((h, i) => ({
+        field_name: h.toLowerCase(),
+        display_name: h,
+        data_type: h === "Qty" ? "number" : "string",
+        field_order: i + 1,
+        is_required: false,
+      })),
+      organizationId: ORG,
+    });
+    if (!born.success || !born.tableId) throw new Error(`could not make the Parts on order table: ${born.error}`);
+    PARTS_ON_ORDER = born.tableId;
+    made.push(PARTS_ON_ORDER);
+    const seeded = await service.bulkWrite({
+      tableId: PARTS_ON_ORDER,
+      operations: [
+        { part: "Rheem 50-gal electric water heater", supplier: "Ferguson Ventura", qty: 1 },
+        { part: "3/4 in PEX-A coil (300 ft)", supplier: "Ewing Oxnard", qty: 2 },
+        { part: "Delta 1/2 in shower valve cartridge", supplier: "Ferguson Ventura", qty: 5 },
+      ].map((data) => ({ op: "insert" as const, data })),
+    });
+    if (!seeded.success) throw new Error(`could not seed Parts on order: ${seeded.error}`);
+    forgetAllTablePlacements();
   });
 
   afterEach(() => forgetAllTablePlacements());

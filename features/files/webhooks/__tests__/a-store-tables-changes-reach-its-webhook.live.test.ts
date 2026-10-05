@@ -31,8 +31,11 @@ const KEY = ENV.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? "";
 const EMAIL = ENV.AI_ADMIN_USERNAME ?? process.env.AI_ADMIN_USERNAME ?? "";
 const PASSWORD = ENV.AI_ADMIN_PASSWORD ?? process.env.AI_ADMIN_PASSWORD ?? "";
 const ORG = "884d1ce8-7b49-4fba-a2f3-0f7dd7c83d4f";
-const SERVICE_CALLS = "dbc7cd48-7b46-4402-ac9d-e459a95f4598";
-const WO_4471 = "cfc72430-2dbf-40d6-980d-f6e5efdeab3d";
+// Made by this suite's own beforeAll through the product's normal path (createTable + bulkWrite)
+// and archived in afterAll — never a clone-era id.
+let SERVICE_CALLS = "";
+let WO_4471 = "";
+let userId = "";
 const READY = Boolean(URL_ && KEY && EMAIL && PASSWORD);
 
 let client: SupabaseClient;
@@ -41,7 +44,17 @@ jest.mock("@/utils/supabase/client", () => ({
   createClient: () => client,
 }));
 
-import { declareTableWebhook } from "../service";
+jest.mock("@/lib/organizations/ensureOrgId", () => ({
+  ensureOrgId: async (id: string | null | undefined) => id ?? ORG,
+}));
+jest.mock("@/utils/auth/getUserId", () => ({
+  getUserId: () => userId,
+  requireUserId: () => userId,
+}));
+
+import * as dataService from "@/features/data-tables/service";
+import { forgetAllTablePlacements, placeTableInRecordStore } from "@/features/data-tables/data-source/table-home";
+import { declareTableWebhook, listDeliveries } from "../service";
 
 const describeLive = READY ? describe : describe.skip;
 
@@ -53,11 +66,54 @@ describeLive("a record-store table's changes reach the webhook declared for it",
     const signed = await client.auth.signInWithPassword({ email: EMAIL, password: PASSWORD });
     if (signed.error || !signed.data.user) throw new Error(`sign-in failed: ${signed.error?.message}`);
     expect(signed.data.user.email).toBe("admin@admin.com");
+    userId = signed.data.user.id;
+
+    const born = await dataService.createTable({
+      tableName: "Rincon Plumbing — Service calls",
+      description: "Open and finished service calls on the dispatch board",
+      isPublic: false,
+      authenticatedRead: false,
+      fields: [
+        ["Work order", "string"],
+        ["Customer", "string"],
+        ["Stage", "string"],
+      ].map(([h, type], i) => ({
+        field_name: h.toLowerCase().replace(/[^a-z0-9]+/g, "_"),
+        display_name: h,
+        data_type: type,
+        field_order: i + 1,
+        is_required: false,
+      })),
+      organizationId: ORG,
+    });
+    if (!born.success || !born.tableId) throw new Error(`could not make the Service calls table: ${born.error}`);
+    SERVICE_CALLS = born.tableId;
+    const written = await dataService.bulkWrite({
+      tableId: SERVICE_CALLS,
+      operations: [
+        { work_order: "WO-4471", customer: "Marisol Duarte — Ojai", stage: "Scheduled" },
+        { work_order: "WO-4472", customer: "Kern Valley Dental — Oxnard", stage: "On site" },
+      ].map((data) => ({ op: "insert" as const, data })),
+    });
+    if (!written.success) throw new Error(`could not seed Service calls: ${written.error}`);
+    forgetAllTablePlacements();
+    placeTableInRecordStore(SERVICE_CALLS, { organizationId: ORG, userId });
+    const page = await dataService.getTablePage({ tableId: SERVICE_CALLS, limit: 50, offset: 0 });
+    if (!page.success) throw new Error(page.error);
+    WO_4471 = page.data.rows.find((r) => r.data.work_order === "WO-4471")!.id;
   });
 
   afterAll(async () => {
     if (webhookId) {
       await client.schema("custom").rpc("table_webhook_archive", { p_organization_id: ORG, p_webhook_id: webhookId });
+    }
+    // Rows first, then the table (archiving a Table archives what it holds).
+    for (const id of [WO_4471, SERVICE_CALLS].filter(Boolean)) {
+      const r = await client.schema("custom" as never).rpc("record_delete" as never, {
+        p_organization_id: ORG,
+        p_record_id: id,
+      } as never);
+      if (r.error) console.warn(`could not archive ${id}: ${r.error.message}`);
     }
   });
 
@@ -83,7 +139,6 @@ describeLive("a record-store table's changes reach the webhook declared for it",
       p_record_ids: [WO_4471],
     });
     const before = ((read.data ?? []) as Array<{ document: Record<string, unknown> }>)[0]?.document?.stage as string;
-    const since = new Date().toISOString();
     const write = (stage: string) =>
       client.schema("custom").rpc("record_update", {
         p_organization_id: ORG,
@@ -92,15 +147,18 @@ describeLive("a record-store table's changes reach the webhook declared for it",
       });
     const changed = await write(before === "Complete" ? "On site" : "Complete");
     await write(before);
-    // The store logs the change for the dispatcher only because this table now has a webhook.
-    const logged = await client
-      .schema("platform")
-      .from("activity_log")
-      .select("action, entity_type")
-      .eq("entity_id", WO_4471)
-      .gte("occurred_at", since);
     if (changed.error) throw new Error(changed.error.message);
-    expect(logged.error).toBeNull();
-    expect((logged.data ?? []).some((r) => r.action === "record.updated" && r.entity_type === `record:${SERVICE_CALLS}`)).toBe(true);
-  });
+    // The activity log itself is the admin apps' (a person cannot read it), so the proof a person
+    // can see is the one that matters: the platform's dispatcher files a delivery of the change
+    // for THIS table's webhook. It runs on a short tick, so the suite waits for it.
+    let deliveries: Awaited<ReturnType<typeof listDeliveries>> = [];
+    for (let i = 0; i < 24 && deliveries.length === 0; i += 1) {
+      await new Promise((r) => setTimeout(r, 5000));
+      deliveries = await listDeliveries(webhookId);
+    }
+    // The webhook belongs to this one table, so a delivery IS a logged change of its records
+    // (the suite made two: the change and its put-back), each tied to its activity-log row.
+    expect(deliveries.length).toBeGreaterThanOrEqual(1);
+    expect(deliveries.every((d) => d.activity_log_id != null)).toBe(true);
+  }, 180_000);
 });
