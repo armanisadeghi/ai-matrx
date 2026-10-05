@@ -23,9 +23,9 @@ import { configureStore } from "@reduxjs/toolkit";
 
 let mockNextModelId = "";
 
-jest.mock("@/features/ai-models/redux/modelRegistrySlice", () => {
+jest.mock("@ai-matrx/chat/agents/model-registry/modelRegistrySlice", () => {
   const actual = jest.requireActual(
-    "@/features/ai-models/redux/modelRegistrySlice",
+    "@ai-matrx/chat/agents/model-registry/modelRegistrySlice",
   );
   return {
     __esModule: true,
@@ -74,7 +74,7 @@ import agentDefinitionReducer, {
   mergePartialAgent,
 } from "@ai-matrx/chat/agents/redux/agent-definition/slice";
 import { agentDefinitionToUpdate } from "@ai-matrx/chat/agents/redux/agent-definition/converters";
-import modelRegistryReducer from "@/features/ai-models/redux/modelRegistrySlice";
+import modelRegistryReducer from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
 import { normalizeModel } from "@ai-matrx/agents/models";
 import { AgentSettingsCore } from "../AgentSettingsCore";
 

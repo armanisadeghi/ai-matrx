@@ -62,7 +62,7 @@ import {
   selectAllModels,
   selectModelFullyLoaded,
   fetchModelById,
-} from "@host/features/ai-models/redux/modelRegistrySlice";
+} from "../../../model-registry/modelRegistrySlice";
 import {
   useModelControls,
   supportsTools,

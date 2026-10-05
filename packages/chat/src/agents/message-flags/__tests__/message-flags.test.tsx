@@ -35,7 +35,7 @@ import {
   type MessageFlagProfile,
 } from "../flags";
 import { readPrefillRecord, prefillSentence } from "../PrefillNote";
-import type { AIModelRecord } from "@host/features/ai-models/redux/modelRegistrySlice";
+import type { AIModelRecord } from "../../model-registry/modelRegistrySlice";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 

@@ -51,6 +51,7 @@ import agentAssistantMarkdownDraftReducer from "../agents/redux/agent-assistant-
 import proposedDirectivesReducer from "../agents/redux/proposed-directives/proposedDirectivesSlice";
 import agentSettingsReducer from "../agents/redux/agent-settings/agentSettingsSlice";
 import conversationAttachmentsReducer from "../agents/connectors/attachments.slice";
+import modelRegistryReducer from "../agents/model-registry/modelRegistrySlice";
 import { chatHostReducer } from "./chat-host.slice";
 
 export const chatReducers = {
@@ -100,6 +101,8 @@ export const chatReducers = {
   agentSettings: agentSettingsReducer,
   // What is attached to each chat (connector picks); package-owned since P17.
   conversationAttachments: conversationAttachmentsReducer,
+  // The AI model catalogue every picker and label reads; package-owned since P17b.
+  modelRegistry: modelRegistryReducer,
   // Host state the package reads (identity, active org, server, prefs), synced by <ChatProvider> (P3).
   chatHost: chatHostReducer,
 };

@@ -18,7 +18,7 @@ import { createSourceRef, type SourceManifest, type SourceRef, type SourceSet } 
 import { ErrorBox, Skeleton, cn } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectModelLabelById } from "@/features/ai-models/redux/modelRegistrySlice";
+import { selectModelLabelById } from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
 import { useClippedContentGuard } from "@/lib/layout/useClippedContentGuard";
 import { estimateTokens, formatChars, formatTokens, pagesPhrase } from "@ai-matrx/kit/tokens";
 import {

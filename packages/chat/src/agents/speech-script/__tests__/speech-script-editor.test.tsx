@@ -14,7 +14,7 @@
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-import type { AIModelRecord } from "@host/features/ai-models/redux/modelRegistrySlice";
+import type { AIModelRecord } from "../../model-registry/modelRegistrySlice";
 import {
   createSandboxTestStore,
   SandboxStoreProvider,

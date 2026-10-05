@@ -37,7 +37,7 @@ import {
 import {
   selectActiveModels,
   fetchModelOptions,
-} from "@/features/ai-models/redux/modelRegistrySlice";
+} from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";

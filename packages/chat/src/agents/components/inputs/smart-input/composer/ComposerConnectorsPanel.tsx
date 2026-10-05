@@ -34,7 +34,7 @@ import { selectAgentIdFromInstance } from "../../../../redux/execution-system/co
 import { selectBuilderAdvancedSettings } from "../../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { setBuilderAdvancedSettings } from "../../../../redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { useConnectMcpServer } from "../../../../../host/ui-slots";
-import { attachActionLabel } from "../../../../connectors/attachable-resources";
+import { attachActionLabel, type DisplayedAttachment } from "../../../../connectors/attachable-resources";
 import { useAttachResourcePicker } from "../../../../../host/ui-slots";
 import { useConversationAttachments } from "../../../../../host/ui-slots";
 import { useOpenLiveIntegrationsWindow } from "../../../../../host/window-openers";
@@ -100,7 +100,7 @@ export function ComposerConnectorsPanel({
     const agentOwned = agentSlugs.has(s.entry.slug);
     const chooser = s.attachable.length > 0 ? attachActionLabel(s.attachable) : null;
     const chosen =
-      attachments.status === "succeeded" ? attachments.items.filter((i) => i.provider === s.entry.slug).length : 0;
+      attachments.status === "succeeded" ? attachments.items.filter((i: DisplayedAttachment) => i.provider === s.entry.slug).length : 0;
     return (
       <div key={s.entry.slug} className="flex min-h-9 min-w-0 items-center gap-2.5 rounded-lg px-1.5 text-sm hover:bg-accent pointer-coarse:min-h-11">
         <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-muted">

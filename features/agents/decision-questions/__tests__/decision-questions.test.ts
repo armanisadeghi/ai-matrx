@@ -6,7 +6,7 @@
  * screen yet. These prove the verdicts directly instead of asserting them.
  */
 
-import type { AIModelRecord } from "@/features/ai-models/redux/modelRegistrySlice";
+import type { AIModelRecord } from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
 import {
   DECISION_TURN_TOOLS_NOTICE,
   decisionQuestionsCompatibility,

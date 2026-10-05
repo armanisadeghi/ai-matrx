@@ -48,7 +48,7 @@ import {
   fetchModelById,
   retryModelDetail,
   selectModelDetailError,
-} from "@host/features/ai-models/redux/modelRegistrySlice";
+} from "../../model-registry/modelRegistrySlice";
 import { useModelControls } from "../../hooks/useModelControls";
 import { useModelClassControls } from "../../../host/model-class";
 import {

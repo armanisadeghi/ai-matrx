@@ -69,7 +69,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectPlatformDefaultTextModelId } from "@/features/ai-models/redux/platformDefaultModel";
 import { useModels } from "@/features/ai-models/hooks/useModels";
-import { fetchModelOptions } from "@/features/ai-models/redux/modelRegistrySlice";
+import { fetchModelOptions } from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import {
   DECISION_DEFAULT_MODEL_KNOB,

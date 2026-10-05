@@ -290,7 +290,7 @@ const attachmentsSlice = createSlice({
         entry.error = null;
         // A pick that landed while we were not looking stops being pending.
         const landed = new Set(
-          action.payload.rows.map((row) => attachmentKey(row)),
+          action.payload.rows.map((row: ConversationAttachment) => attachmentKey(row)),
         );
         entry.pending = entry.pending.filter(
           (pick) => !landed.has(attachmentKey(pick)),

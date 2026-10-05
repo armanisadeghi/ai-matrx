@@ -20,9 +20,9 @@ import { createRoot, type Root } from "react-dom/client";
 import { Provider } from "react-redux";
 import { configureStore } from "@reduxjs/toolkit";
 
-jest.mock("@/features/ai-models/redux/modelRegistrySlice", () => {
+jest.mock("@ai-matrx/chat/agents/model-registry/modelRegistrySlice", () => {
   const actual = jest.requireActual(
-    "@/features/ai-models/redux/modelRegistrySlice",
+    "@ai-matrx/chat/agents/model-registry/modelRegistrySlice",
   );
   return {
     __esModule: true,
@@ -58,7 +58,7 @@ jest.mock("@/features/overlays/openers/diffViewerWindow", () => ({
 import agentDefinitionReducer, {
   mergePartialAgent,
 } from "@ai-matrx/chat/agents/redux/agent-definition/slice";
-import modelRegistryReducer from "@/features/ai-models/redux/modelRegistrySlice";
+import modelRegistryReducer from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
 import { normalizeModel } from "@ai-matrx/agents/models";
 import { AgentSettingsCore } from "../AgentSettingsCore";
 import type { VariableDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";

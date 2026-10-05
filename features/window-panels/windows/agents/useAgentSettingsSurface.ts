@@ -53,7 +53,7 @@ import {
 import {
   selectModelLabelWithClass,
   selectModelNameById,
-} from "@/features/ai-models/redux/modelRegistrySlice";
+} from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
 import { agentOwnershipLabel } from "@/features/agents/components/settings/AgentSettingsForm";
 import { readAgentSettingsDraft } from "@/features/agents/components/settings/agentSettingsDraftRegistry";
 

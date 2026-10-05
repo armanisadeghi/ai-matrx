@@ -36,7 +36,7 @@ import { selectInstanceOverrideState } from "@ai-matrx/chat/agents/redux/executi
 import {
   selectModelClassName,
   selectModelLabelWithClass,
-} from "@/features/ai-models/redux/modelRegistrySlice";
+} from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
 import { useModelClassLabels } from "@/features/ai-models/hooks/useModelClassLabel";
 import { effectiveOfferingPin } from "@ai-matrx/chat/agents/redux/execution-system/instance-model-overrides/offering-pin";
 import { cn } from "@/lib/utils";

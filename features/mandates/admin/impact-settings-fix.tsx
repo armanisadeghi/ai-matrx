@@ -34,7 +34,7 @@ import {
   fetchModelById,
   selectAllModels,
   selectModelFullyLoaded,
-} from "@/features/ai-models/redux/modelRegistrySlice";
+} from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
 import type { ModelConstraint } from "@/features/ai-models/types";
 import type { FeLlmParams } from "@ai-matrx/chat/agents/types/agent-api-types";
 import {

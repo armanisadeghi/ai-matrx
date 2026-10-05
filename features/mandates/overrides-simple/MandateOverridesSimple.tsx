@@ -61,7 +61,7 @@ import {
   fetchModelById,
   selectAllModels,
   selectModelFullyLoaded,
-} from "@/features/ai-models/redux/modelRegistrySlice";
+} from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
 import { useModelControls } from "@ai-matrx/chat/agents/hooks/useModelControls";
 import { useModelClassControls } from "@/features/ai-models/hooks/useModelClassControls";
 import { buildSettingsRows } from "@ai-matrx/chat/agents/redux/agent-settings/settings-catalogue";

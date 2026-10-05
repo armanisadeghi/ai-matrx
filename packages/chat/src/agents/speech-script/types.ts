@@ -11,7 +11,7 @@
 
 import type { AIModelRecord } from "../redux/model-registry";
 import type { UserInputPart } from "../types/request.types";
-import { parseCapabilities } from "@host/features/ai-models/capabilities/parse";
+import { parseCapabilities } from "../model-registry/parse";
 import { partKind } from "@host/features/agents/decision-questions/types";
 
 export const SPEECH_SCRIPT_KIND = "speech_script" as const;

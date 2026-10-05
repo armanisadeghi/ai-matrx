@@ -37,7 +37,7 @@ import {
 import { useSessionKnob } from "../../../../../host/prefs-react";
 import { knobRefusalSentence, setKnobOverride } from "../../../../../host/prefs";
 import { CHAT_DEFAULT_MODEL_KNOB } from "@host/features/ai-models/preferredChatModel";
-import { selectModelLabelWithClass } from "@host/features/ai-models/redux/modelRegistrySlice";
+import { selectModelLabelWithClass } from "../../../../model-registry/modelRegistrySlice";
 import {
   ComposerMenuDivider,
   ComposerMenuHelp,

@@ -1,6 +1,6 @@
 {
   "$note": "SHRINK-ONLY budget of host ties per specifier in packages/chat/src. Never raise a number or add a key by hand — route the need through the chat host adapter or a registration (common-docs/projects/chat-package-move/PACKAGE-INDEPENDENCE.md). Lower it with: node scripts/check-chat-package-boundary.mjs --write",
-  "total": 927,
+  "total": 903,
   "budget": {
     "@/features/content-ir/registry/schema-source-kind-tables": 1,
     "@/features/surfaces/manifests/registry": 1,
@@ -145,11 +145,9 @@
     "@host/features/agents/war-room-tools/dispatcher/dispatch-war-room-tool.thunk": 2,
     "@host/features/agents/war-room-tools/tools/names": 2,
     "@host/features/agents/war-room-tools/tools/tool-defs": 1,
-    "@host/features/ai-models/capabilities/parse": 5,
     "@host/features/ai-models/components/lab/ModelListDropdown": 6,
     "@host/features/ai-models/hooks/useModels": 3,
     "@host/features/ai-models/preferredChatModel": 2,
-    "@host/features/ai-models/redux/modelRegistrySlice": 19,
     "@host/features/audio/components/MicrophoneIconButton": 3,
     "@host/features/audio/components/TranscriptionLoader": 2,
     "@host/features/audio/hooks/useRecordAndTranscribe": 2,

@@ -18,7 +18,7 @@
 
 import { parseCapabilities } from "@/features/ai-models/capabilities/parse";
 import { isDecisionModelCapability } from "@ai-matrx/agents/models";
-import type { AIModelRecord } from "@/features/ai-models/redux/modelRegistrySlice";
+import type { AIModelRecord } from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
 import {
   resolvePreferredModelChoice,
   type PreferredModelChoice,

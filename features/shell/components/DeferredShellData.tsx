@@ -17,7 +17,7 @@ import {
 import {
   hydrateModels,
   type AIModel,
-} from "@/features/ai-models/redux/modelRegistrySlice";
+} from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
 // smsSlice imported lazily — avoids pulling the full SMS feature into the shell bundle
 import { supabase } from "@/utils/supabase/client";
 import { getClientClaimsUserCached } from "@/utils/supabase/clientClaimsCache";

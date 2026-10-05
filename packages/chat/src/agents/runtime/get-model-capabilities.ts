@@ -14,11 +14,11 @@
 // what the parser does.
 
 import type { ChatRootState } from "../../store/root-state";
-import { selectModelById } from "@host/features/ai-models/redux/modelRegistrySlice";
+import { selectModelById } from "../model-registry/modelRegistrySlice";
 import {
   parseCapabilities,
   type ModelCapabilities,
-} from "@host/features/ai-models/capabilities/parse";
+} from "../model-registry/parse";
 
 /** Resolves capabilities from the agent attached to `conversationId`. */
 export function getCapabilitiesForConversation(

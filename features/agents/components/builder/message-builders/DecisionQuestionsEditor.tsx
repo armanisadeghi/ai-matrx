@@ -39,7 +39,7 @@ import { Button } from "@ai-matrx/design-system";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { cn } from "@/lib/utils";
 import { HighlightedText } from "@/features/agents/components/variables-management/HighlightedText";
-import type { AIModelRecord } from "@/features/ai-models/redux/modelRegistrySlice";
+import type { AIModelRecord } from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
 import { formatTokens } from "@ai-matrx/kit/tokens";
 import {
   DndContext,

@@ -24,7 +24,7 @@ import type { AgentPayloadInput } from "@/components/agent-copy/buildAgentPayloa
 import { useEffect, type Ref } from "react";
 import type { ContentTransferController } from "@ai-matrx/design-system/content-transfer";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
-import { fetchModelIdentityById } from "@/features/ai-models/redux/modelRegistrySlice";
+import { fetchModelIdentityById } from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
 import { selectActiveBattleColumns } from "./activeBattleColumns";
 import {
   battleMarkdown,

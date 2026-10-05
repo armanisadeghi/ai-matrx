@@ -8,7 +8,7 @@
 import type { ChatRootState } from "../../../store/root-state";
 
 const fetchModelById = jest.fn((id: string) => ({ type: "fetchModelById", id }));
-jest.mock("@host/features/ai-models/redux/modelRegistrySlice", () => ({
+jest.mock("../../model-registry/modelRegistrySlice", () => ({
   fetchModelById: (id: string) => fetchModelById(id),
   selectModelById: (state: { modelRegistry: { entities: Record<string, unknown> } }, id: string) =>
     state.modelRegistry.entities[id],

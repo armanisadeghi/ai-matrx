@@ -21,7 +21,7 @@ import {
   selectModelRegistryLoading,
   type AIModel,
   type AIModelRecord,
-} from "@/features/ai-models/redux/modelRegistrySlice";
+} from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
 
 // ---------------------------------------------------------------------------
 // Options hooks — lightweight, for dropdowns

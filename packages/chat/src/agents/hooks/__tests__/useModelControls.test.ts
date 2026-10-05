@@ -1,4 +1,4 @@
-import type { AIModelRecord } from "@host/features/ai-models/redux/modelRegistrySlice";
+import type { AIModelRecord } from "../../model-registry/modelRegistrySlice";
 import { useModelControls } from "../useModelControls";
 
 describe("useModelControls", () => {

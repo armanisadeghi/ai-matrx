@@ -7,7 +7,7 @@ import {
   classConfigKey,
   fetchModelClassConfig,
   type ModelClassConfig,
-} from "@/features/ai-models/redux/modelRegistrySlice";
+} from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
 
 /**
  * The resolved controls for the CLASS a model runs on.

@@ -58,7 +58,7 @@ import type { DbRpcRow } from "@host/types/supabase-rpc";
 import {
   selectModelById,
   type AIModelRecord,
-} from "@host/features/ai-models/redux/modelRegistrySlice";
+} from "../../model-registry/modelRegistrySlice";
 import {
   resolveModelControls,
   supportsTools,

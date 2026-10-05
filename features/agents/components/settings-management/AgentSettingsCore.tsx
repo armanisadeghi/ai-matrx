@@ -65,7 +65,7 @@ import {
   selectModelFullyLoaded,
   selectModelRegistryError,
   selectModelRegistryLoading,
-} from "@/features/ai-models/redux/modelRegistrySlice";
+} from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
 import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
 import { withOfferingPin } from "@/features/ai-models/utils/offering-pin";
 import { useModelCatalog } from "@/features/ai-models/hooks/useModelCatalog";

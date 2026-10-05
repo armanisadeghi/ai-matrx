@@ -11,9 +11,9 @@ import type { ChatRootState, ChatDispatch } from "../../store/root-state";
 import {
   fetchModelById,
   selectModelById,
-} from "@host/features/ai-models/redux/modelRegistrySlice";
+} from "../model-registry/modelRegistrySlice";
 import { setRequestGenerationJob } from "../redux/execution-system/active-requests/active-requests.slice";
-import { parseCapabilities } from "@host/features/ai-models/capabilities/parse";
+import { parseCapabilities } from "../model-registry/parse";
 import { selectCurrentSettings } from "../redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
 import { isJobOutputKind, runOutputKindFromModalities } from "../../host/server/run-wait";
 import type { RequestGenerationJob } from "../types/request.types";

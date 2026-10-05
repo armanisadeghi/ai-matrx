@@ -187,8 +187,8 @@ import {
   runWaitTimeoutMessage,
   type RunOutputKind,
 } from "../../../../host/server/run-wait";
-import { selectModelById } from "@host/features/ai-models/redux/modelRegistrySlice";
-import { parseCapabilities } from "@host/features/ai-models/capabilities/parse";
+import { selectModelById } from "../../../model-registry/modelRegistrySlice";
+import { parseCapabilities } from "../../../model-registry/parse";
 import { payloadSafetyStore } from "@ai-matrx/kit/payload-safety";
 import { netRequests } from "../../../../host/diagnostics";
 import { buildRequestUserOverrides } from "../utils/request-user-overrides";

@@ -12,7 +12,7 @@ import {
   getModelDefaults,
   resolveModelControls,
 } from "../useModelControls";
-import type { AIModelRecord } from "@host/features/ai-models/redux/modelRegistrySlice";
+import type { AIModelRecord } from "../../model-registry/modelRegistrySlice";
 
 function model(id: string, controls: Record<string, unknown>): AIModelRecord {
   return { id, name: id, controls } as unknown as AIModelRecord;

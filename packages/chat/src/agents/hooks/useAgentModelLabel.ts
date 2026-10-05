@@ -8,7 +8,7 @@ import {
 import {
   selectModelLabelById,
   selectModelLabelWithClass,
-} from "@host/features/ai-models/redux/modelRegistrySlice";
+} from "../model-registry/modelRegistrySlice";
 import { useModelClassLabels } from "../../host/model-class";
 
 /**

@@ -30,7 +30,7 @@ import {
 } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import { setOverrides } from "@ai-matrx/chat/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
 import { generateConversationId } from "@ai-matrx/chat/agents/redux/execution-system/utils/ids";
-import { fetchModelById } from "@/features/ai-models/redux/modelRegistrySlice";
+import { fetchModelById } from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import {
   createComparisonSet,

@@ -23,7 +23,7 @@ import {
   selectActiveModels,
   selectActiveModelsReady,
   type AIModelRecord,
-} from "@/features/ai-models/redux/modelRegistrySlice";
+} from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
 
 /** The modalities a preference field can default on. Extend as fields appear. */
 export type DefaultableModality = "text" | "image";

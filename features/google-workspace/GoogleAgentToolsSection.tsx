@@ -32,7 +32,7 @@ import {
   selectModelById,
   selectModelDetailError,
   selectModelFullyLoaded,
-} from "@/features/ai-models/redux/modelRegistrySlice";
+} from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
 import {
   resolveModelControls,
   supportsTools,

@@ -26,7 +26,7 @@ import { selectInstanceOverrideState } from "../../../../redux/execution-system/
 import {
   selectModelLabelById,
   selectModelLabelWithClass,
-} from "@host/features/ai-models/redux/modelRegistrySlice";
+} from "../../../../model-registry/modelRegistrySlice";
 import { useModelOptions } from "@host/features/ai-models/hooks/useModels";
 import { useModelClassLabels } from "../../../../../host/model-class";
 import { useEffectiveClassPin } from "../../../../redux/execution-system/instance-model-overrides/useEffectiveClassPin";

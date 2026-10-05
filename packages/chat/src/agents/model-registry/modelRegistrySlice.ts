@@ -3,22 +3,22 @@ import {
   createAsyncThunk,
   createSelector,
 } from "@reduxjs/toolkit";
-import { createClient } from "@/utils/supabase/client";
-import { extractErrorMessage } from "@/utils/errors";
-import { recordUnavailable } from "@/lib/records/recordUnavailable";
+import { createClient } from "../../host/db";
+import { extractErrorMessage } from "@ai-matrx/data/net";
+import { recordUnavailable } from "../../host/diagnostics";
 import { normalizeModel } from "@ai-matrx/agents/models";
-import { requireCanonicalCapabilities } from "@/features/ai-models/capabilities/parse";
+import { requireCanonicalCapabilities } from "./parse";
 import {
   buildModelClassIndex,
   modelClassName,
   withModelClass,
   type ModelClassIndex,
-} from "@/features/ai-models/utils/model-classes";
+} from "./model-classes";
 // Minimal local state type — avoids importing RootState from store.ts (which
 // transitively imports this slice via reduxTypes → modelRegistrySlice),
 // breaking the type-level circular dependency.
 type StateWithModelRegistry = { modelRegistry: ModelRegistryState };
-import type { Database, Json } from "@/types/database.types";
+import type { ChatDatabase as Database, Json } from "../../host/db-types";
 
 // ---------------------------------------------------------------------------
 // Types

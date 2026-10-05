@@ -5,7 +5,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   fetchModelClasses,
   selectModelLabelWithClass,
-} from "@/features/ai-models/redux/modelRegistrySlice";
+} from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
 
 /** Loads every model's classes once (no-op after the first success). */
 export function useModelClassLabels(): void {

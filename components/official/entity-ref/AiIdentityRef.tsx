@@ -21,7 +21,7 @@ import {
   selectModelClassName,
   selectModelIdentityById,
   selectModelIdentityLookupStatus,
-} from "@/features/ai-models/redux/modelRegistrySlice";
+} from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
 import { toolHref } from "@/features/tool-registry/doors";
 import { fetchToolById } from "@ai-matrx/chat/agents/redux/tools/tools.thunks";
 import {

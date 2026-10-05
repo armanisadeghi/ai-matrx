@@ -101,7 +101,6 @@ import { dictionaryReducer } from "@/features/dictionary/redux/dictionarySlice";
 import { agentConnectionsUiReducer } from "@/features/agent-connections/redux/ui/slice";
 import { agentAppReducer } from "@/features/agents/redux/agent-apps/slice";
 import agentAppConsumersReducer from "@/features/agent-apps/redux/agent-app-consumers/slice";
-import modelRegistryReducer from "../../features/ai-models/redux/modelRegistrySlice";
 
 import artifactsReducer from "./slices/artifactsSlice";
 import htmlPagesReducer from "./slices/htmlPagesSlice";
@@ -235,7 +234,6 @@ export const slimReducerMap = {
   adminPreferences: adminPreferencesReducer,
 
 
-  modelRegistry: modelRegistryReducer,
 
   apiConfig: apiConfigReducer,
 

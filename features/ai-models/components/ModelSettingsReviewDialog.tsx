@@ -43,7 +43,7 @@ import {
 import { RunConfigOverrides } from "@ai-matrx/chat/agents/components/run-controls/RunConfigOverrides";
 import { ReplaceFailureBanner } from "@/components/official/error-detail/ReplaceFailureBanner";
 import type { LLMParams } from "@ai-matrx/chat/agents/types/agent-api-types";
-import { selectAllModels } from "@/features/ai-models/redux/modelRegistrySlice";
+import { selectAllModels } from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
 import type { SettingSwap } from "@/features/ai-models/server/replace-model-references";
 import { suggestSettingSwaps } from "./suggestSettingSwaps";
 

@@ -25,7 +25,7 @@ import { useEffect } from "react";
 import { useAppDispatch, useAppStore } from "../store/hooks";
 import type { ChatRootState } from "../store/root-state";
 import { fetchFullAgent } from "../agents/redux/agent-definition/thunks";
-import { fetchModelIdentityById } from "@host/features/ai-models/redux/modelRegistrySlice";
+import { fetchModelIdentityById } from "../agents/model-registry/modelRegistrySlice";
 import { applyAgentConfig, setError } from "./state/voiceAgentSlice";
 
 /**

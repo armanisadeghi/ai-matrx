@@ -31,7 +31,7 @@ import {
 } from "@/features/page-extraction/utils/columns";
 import { fetchFullAgent } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import { useAgentModelLabel } from "@ai-matrx/chat/agents/hooks/useAgentModelLabel";
-import { fetchModelOptions } from "@/features/ai-models/redux/modelRegistrySlice";
+import { fetchModelOptions } from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
 import {
   selectAllTools,
   selectToolsReady,

@@ -9,7 +9,7 @@ import {
 import { selectMcpCatalog } from "../redux/mcp/mcp.slice";
 import type { EnrichmentContext } from "@ai-matrx/diff/react";
 import type { ChatRootState } from "../../store/root-state";
-import { selectModelIdentityMap } from "@host/features/ai-models/redux/modelRegistrySlice";
+import { selectModelIdentityMap } from "../model-registry/modelRegistrySlice";
 
 export function useDiffEnrichment(): EnrichmentContext {
   const allTools = useAppSelector(selectAllTools);

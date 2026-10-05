@@ -63,7 +63,7 @@ import { selectAgentIdFromInstance } from "../../../redux/execution-system/conve
 import { selectBuilderAdvancedSettings } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { selectPrimaryRequest } from "../../../redux/execution-system/active-requests/active-requests.selectors";
 import { useOpenRunControlsWindow } from "../../../../host/window-openers";
-import { attachActionLabel } from "../../../connectors/attachable-resources";
+import { attachActionLabel, type DisplayedAttachment } from "../../../connectors/attachable-resources";
 import { useAttachResourcePicker } from "../../../../host/ui-slots";
 import { useConversationAttachments } from "../../../../host/ui-slots";
 import { ComposerConnectorsPanel } from "./composer/ComposerConnectorsPanel";
@@ -200,7 +200,7 @@ export function ChatConnectionsStrip({
               ? attachActionLabel(connection.attachable)
               : null;
           const chosen = attachments.items.filter(
-            (item) => item.provider === connection.slug,
+            (item: DisplayedAttachment) => item.provider === connection.slug,
           );
           const openChooser = () =>
             openAttachPicker({
@@ -279,7 +279,7 @@ export function ChatConnectionsStrip({
                 </button>
               ) : null}
               {chooserLabel && attachmentsRead === "succeeded" && showResources
-                ? chosen.map((item) => {
+                ? chosen.map((item: DisplayedAttachment) => {
                     // The provider's own default branch when it published one
                     // (a repository); any other resource simply has none.
                     const declaredBranch = item.metadata?.default_branch;
@@ -392,7 +392,7 @@ export function ChatConnectionsStrip({
               ? attachActionLabel(connection.attachable)
               : null;
           const attachedCount = attachments.items.filter(
-            (item) => item.provider === connection.slug,
+            (item: DisplayedAttachment) => item.provider === connection.slug,
           ).length;
           return (
             <span

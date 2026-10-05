@@ -16,7 +16,7 @@
  */
 
 import type { AIModelRecord } from "../redux/model-registry";
-import { parseCapabilities } from "@host/features/ai-models/capabilities/parse";
+import { parseCapabilities } from "../model-registry/parse";
 import { estimateTokensForText } from "@ai-matrx/kit/tokens";
 
 // Flag keys, the stored flag shape and the compatibility modes are GENERATED

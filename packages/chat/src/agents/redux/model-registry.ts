@@ -1,9 +1,7 @@
 /**
  * The ONE door from package code to the host's model registry (`state.modelRegistry`).
  *
- * The `modelRegistry` slice still lives in the app (`features/ai-models/redux`); P17b makes it a
- * package-owned slice under the same key. Until then package files import the registry here, so
- * the tie is one line and P17b repoints one file.
+ * The `modelRegistry` slice is package-owned (agents/model-registry), mounted under the same key.
  */
 export {
   default as modelRegistryReducer,
@@ -11,4 +9,4 @@ export {
   selectModelById,
   type AIModel,
   type AIModelRecord,
-} from "@host/features/ai-models/redux/modelRegistrySlice";
+} from "../model-registry/modelRegistrySlice";
