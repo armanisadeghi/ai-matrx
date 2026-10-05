@@ -425,7 +425,9 @@ export function OrgChart<T>({
     if (e.pointerType === "mouse" && e.button !== 0) return;
     if ((e.target as HTMLElement).closest("button, a, input, textarea, select, [data-no-drag]")) return;
     const start = { key, startX: e.clientX, startY: e.clientY, pointerType: e.pointerType, active: false, timer: null as number | null };
-    const pressed = e.currentTarget as HTMLElement | null;
+    // The element under the finger: the card's menu trigger sits between it and
+    // this wrapper, so a cancel sent from here bubbles through the trigger.
+    const pressed = e.target as HTMLElement | null;
     const pointerId = e.pointerId;
     if (e.pointerType === "touch") {
       // A finger pans the canvas; holding still on a card for a moment picks it up instead.

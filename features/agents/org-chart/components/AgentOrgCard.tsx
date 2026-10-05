@@ -26,7 +26,8 @@ import { ORG_BOX_LABEL } from "../constants";
 import { useBoxIdentity } from "../useBoxIdentity";
 
 
-const iconButton =
+/** The card hover bar's icon button (same as AgentPeekButton and the Orchestra cards). */
+export const cardIconButton =
   "rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground";
 
 /** Where a box opens. A position has no page of its own: its menu edits it in place. */
@@ -54,7 +55,7 @@ function PeekButton({ token, id }: { token: string; id: string }) {
           e.stopPropagation();
           setOpen(true);
         }}
-        className={iconButton}
+        className={cardIconButton}
       >
         <Lightbulb className="h-3.5 w-3.5" />
       </button>
@@ -227,7 +228,7 @@ export function AgentOrgCard({
           <PeekButton token={d.boxType} id={d.entityId} />
         )}
         {href && (
-          <Link href={href} onClick={(e) => e.stopPropagation()} aria-label={openLabel} title={openLabel} className={iconButton}>
+          <Link href={href} onClick={(e) => e.stopPropagation()} aria-label={openLabel} title={openLabel} className={cardIconButton}>
             <ArrowUpRight className="h-3.5 w-3.5" />
           </Link>
         )}
