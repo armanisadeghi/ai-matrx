@@ -1,186 +1,8 @@
--- chair-step: INVERSE of migrations/campaign/scopesfts1f_the_scope_doors_write_no_old_row.sql (lane FINISH-THE-SWITCH, FTS-1f): re-creates the 25 old write and trigger functions with their grants and the 58 old-row triggers, restores the nine scope doors and the two trash restores as production held them on 2026-10-05, and drops custom.scope_row_of and custom.context_item_row_of. The old rows written by nothing between the two files are not back-filled.
+-- chair-step: INVERSE of migrations/campaign/scopesfts1f_the_scope_doors_write_no_old_row.sql (lane FINISH-THE-SWITCH, FTS-1f): re-creates the 18 old write functions with their grants and door rows, restores the nine scope doors and the two trash restores as production held them on 2026-10-05, and drops custom.scope_row_of and custom.context_item_row_of. The old rows written by nothing between the two files are not back-filled.
 -- lane: FINISH-THE-SWITCH (FTS-1f)
 -- lock: custom,public,context
 -- ground-standing-ok: b — inverses run newest first: this one restores the doors that call custom._ctx_type_subtree_follows, and the older scopesfts1f_a_scope_type_takes_its_fields_sub_types_and_scopes_in_the_store_down.sql then restores the type doors without it before dropping it.
 
-SET LOCAL lock_timeout = '10s';
-
-CREATE OR REPLACE FUNCTION public._notify_suggestion_sweep_context_item()
- RETURNS trigger
- LANGUAGE plpgsql
- SECURITY DEFINER
- SET search_path TO 'public', 'pg_temp'
-AS $function$
-DECLARE v_org uuid;
-BEGIN
-    IF NOT NEW.is_active THEN
-        RETURN NULL;
-    END IF;
-    SELECT organization_id INTO v_org FROM context.scope_types WHERE id = NEW.scope_type_id;
-    IF v_org IS NULL THEN
-        RETURN NULL;
-    END IF;
-    INSERT INTO rag.kg_sweep_queue
-        (change_type, entity_id, scope_type_id, organization_id, created_by)
-    VALUES ('context_item', NEW.id, NEW.scope_type_id, v_org, NEW.created_by);
-    PERFORM pg_notify('suggestion_sweep', json_build_object(
-        'change_type', 'context_item',
-        'entity_id',   NEW.id::text,
-        'scope_type_id', NEW.scope_type_id::text,
-        'organization_id', v_org::text,
-        'created_by', NEW.created_by::text
-    )::text);
-    RETURN NULL;
-END;
-$function$
-;
-GRANT EXECUTE ON FUNCTION _notify_suggestion_sweep_context_item() TO PUBLIC;
-GRANT EXECUTE ON FUNCTION _notify_suggestion_sweep_context_item() TO anon;
-GRANT EXECUTE ON FUNCTION _notify_suggestion_sweep_context_item() TO authenticated;
-GRANT EXECUTE ON FUNCTION _notify_suggestion_sweep_context_item() TO service_role;
-
-
-CREATE OR REPLACE FUNCTION context._follow_to_the_copy()
- RETURNS trigger
- LANGUAGE plpgsql
- SECURITY DEFINER
- SET search_path TO 'pg_catalog'
-AS $function$
-declare
-  v_row  jsonb := case when tg_op = 'DELETE' then to_jsonb(old) else to_jsonb(new) end;
-  v_id   uuid  := (v_row ->> 'id')::uuid;
-  v_org  uuid;
-  v_type uuid;
-  v_on   boolean;
-begin
-  -- WHICH ORGANIZATION AND WHICH SCOPE TYPE (the copy's Table) this row belongs to.
-  if tg_table_name = 'scope_types' then
-    v_org  := (v_row ->> 'organization_id')::uuid;
-    v_type := v_id;
-  elsif tg_table_name = 'scopes' then
-    v_org  := (v_row ->> 'organization_id')::uuid;
-    v_type := (v_row ->> 'scope_type_id')::uuid;
-  elsif tg_table_name = 'context_items' then
-    v_type := (v_row ->> 'scope_type_id')::uuid;
-    select t.organization_id into v_org from context.scope_types t where t.id = v_type;
-  elsif tg_table_name = 'context_item_values' then
-    select s.organization_id, s.scope_type_id into v_org, v_type
-      from context.scopes s where s.id = (v_row ->> 'scope_id')::uuid;
-  end if;
-  if v_org is null then
-    return null;
-  end if;
-
-  -- SCOPES-WRITE-THROUGH: IN AN ORGANIZATION WHOSE STORE IS THE WRITER, the record store is written
-  -- in this same statement and its rules govern — a store refusal refuses the write. OUTSIDE the
-  -- exception handler below on purpose: swallowing a refusal here would commit the old row and leave
-  -- the store behind, silently. A scope door has already written the store for its own rows (marked).
-  if custom.context_writer(v_org) = 'store' then
-    -- LANE 9 W2-W: a store-first scope door has already written the store for the ONE row it names in
-    -- custom.context_door_row (its image); every other row the old triggers write meanwhile (a provisioned
-    -- value) is still carried here, as before.
-    if not custom._ctx_marked()
-       and v_id is distinct from nullif(current_setting('custom.context_door_row', true), '')::uuid then
-      perform custom._ctx_bridge(tg_table_name, tg_op, v_row, v_org, v_type);
-    end if;
-    return null;
-  end if;
-
-  begin
-    v_on := coalesce((platform.knob_resolve('custom', 'context_copy_following', v_org) #>> '{}')::boolean, true);
-    if not v_on then
-      return null;
-    end if;
-
-    insert into custom.io_outbox (event_key, record_id, table_id, operation, dedupe_key, organization_id, actor)
-    values ('context.follow', v_id, v_type,
-            case tg_op when 'INSERT' then 'created' when 'DELETE' then 'deleted' else 'updated' end,
-            'context.follow:' || tg_table_name || ':' || v_id::text,
-            v_org,
-            jsonb_build_object('declared', 'context.' || tg_table_name, 'user_id', auth.uid()))
-    on conflict (organization_id, dedupe_key) where deleted_at is null
-    do update set consumed_at = null,
-                  consumer    = null,
-                  operation   = excluded.operation,
-                  actor       = excluded.actor;
-    -- RE-ARMED FOR EVERY CONSUMER (CHAIR-RECORD-CHANGED): once each consumer keeps its own
-    -- consumption, a re-armed row is news again only when those rows go too.
-    if custom.io_outbox_per_consumer() then
-      perform custom.io_outbox_rearm(v_org, 'context.follow:' || tg_table_name || ':' || v_id::text);
-    end if;
-    -- A RE-ARMED ROW IS NEWS TOO. custom.io_outbox_announce fires on INSERT only, so the second
-    -- edit of the same old row (an update of the outbox row) would wake nobody; say it here, in the
-    -- announce's own shape (a pointer, never the row). The follow debounces, so a duplicate on the
-    -- first insert costs nothing.
-    perform pg_notify('records_changed',
-                      jsonb_build_object('organization_id', v_org, 'record_id', v_id, 'table_id', v_type,
-                                         'operation', 'updated', 'event_key', 'context.follow')::text);
-  exception when others then
-    -- NEVER FAIL THE OLD SIDE'S EDIT, NEVER FAIL IN SILENCE. The current screens are the writer;
-    -- an edit there must land whether or not the copy could be told. The miss is recorded with its
-    -- remedy, and the next change to the same organization (or any follow drain run for it)
-    -- re-plans the whole organization, so nothing is lost for good.
-    begin
-      perform ops.record_system_error(jsonb_build_object(
-      'kind', 'context_follow_enqueue_failure',
-      'organization_id', v_org,
-      'source_app', 'database',
-      'source_feature', 'context-follow',
-      'route', 'context._follow_to_the_copy',
-      'error_type', sqlstate,
-      'error_text', sqlerrm,
-      'context', jsonb_build_object('table', 'context.' || tg_table_name, 'row_id', v_id, 'operation', tg_op,
-                                 'remedy', 'run the follow for this organization: python -m matrx_records.movers.runner --follow-context --organization <id> --apply --i-know-this-writes')));
-    exception when others then
-      raise warning 'context._follow_to_the_copy: could not tell the copy about %.% (%), and could not record it: %',
-        'context', tg_table_name, v_id, sqlerrm;
-    end;
-  end;
-  return null;
-end;
-$function$
-;
-
-
-
-CREATE OR REPLACE FUNCTION context.enforce_context_item_reference_source()
- RETURNS trigger
- LANGUAGE plpgsql
- SECURITY DEFINER
- SET search_path TO ''
-AS $function$
-declare v_org_id uuid;
-begin
-  -- IS DISTINCT FROM treats NULL correctly (NULL is not dataset_template).
-  if new.reference_source->>'container_type' is distinct from 'dataset_template' then
-    return new;
-  end if;
-
-  select organization_id into v_org_id
-  from context.scope_types
-  where id = new.scope_type_id and deleted_at is null;
-  if v_org_id is null then
-    raise exception 'active scope type not found' using errcode='22023',
-            detail = jsonb_build_object('scope_type_id', new.scope_type_id)::text;
-  end if;
-  perform context.validate_dataset_template_source(new.reference_source, v_org_id);
-
-  -- `table` is the reference noun whose resolver expands to the table's rows,
-  -- and it is the noun `provision_scope_dataset` mints into this item's value.
-  if new.value_type <> 'reference'
-     or new.allowed_reference_types is null
-     or cardinality(new.allowed_reference_types) <> 1
-     or new.allowed_reference_types[1] <> 'table'
-     or new.max_items <> 1 then
-    raise exception 'dataset-template context items require value_type=reference, allowed_reference_types=[table], and max_items=1'
-      using errcode='23514';
-  end if;
-  return new;
-end;
-$function$
-;
-
-REVOKE ALL ON FUNCTION context.enforce_context_item_reference_source() FROM PUBLIC;
 
 CREATE OR REPLACE FUNCTION context.index_reference_value(p_value_id uuid, p_item_id uuid, p_scope_id uuid, p_value_text text)
  RETURNS void
@@ -244,41 +66,6 @@ end; $function$
 GRANT EXECUTE ON FUNCTION context.provision_scope_dataset(uuid,uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION context.provision_scope_dataset(uuid,uuid) TO service_role;
 REVOKE ALL ON FUNCTION context.provision_scope_dataset(uuid,uuid) FROM PUBLIC;
-
-CREATE OR REPLACE FUNCTION context.provision_scope_datasets_trigger()
- RETURNS trigger
- LANGUAGE plpgsql
- SECURITY DEFINER
- SET search_path TO ''
-AS $function$
-declare r record; v_org uuid; v_home uuid;
-begin
-  -- An item carries no organization of its own; its scope type does (a scope's is the same).
-  select st.organization_id into v_org from context.scope_types st where st.id = new.scope_type_id;
-  -- POST-MOVE-DOORS: every organization provisions in the record store (the older store is in the deprecated);
-  -- an organization with no Home yet gets one for the Table (custom.scope_table_provision).
-  v_home := custom.organization_home_id(v_org);
-  if tg_table_name='scopes' then
-    for r in select id from context.context_items
-      where scope_type_id=new.scope_type_id and is_active and deleted_at is null
-        and reference_source->>'container_type'='dataset_template'
-    loop
-      perform custom.scope_table_provision(v_org, r.id, new.id, v_home);
-    end loop;
-  else
-    if new.is_active and new.deleted_at is null and new.reference_source->>'container_type'='dataset_template' then
-      for r in select id from context.scopes
-        where scope_type_id=new.scope_type_id and deleted_at is null
-      loop
-        perform custom.scope_table_provision(v_org, new.id, r.id, v_home);
-      end loop;
-    end if;
-  end if;
-  return new;
-end; $function$
-;
-
-
 
 CREATE OR REPLACE FUNCTION context.validate_reference_value(p_item_id uuid, p_value_text text)
  RETURNS void
@@ -492,135 +279,6 @@ $function$
 ;
 GRANT EXECUTE ON FUNCTION create_scope(uuid,uuid,text,uuid,text,jsonb,text,smallint) TO service_role;
 REVOKE ALL ON FUNCTION create_scope(uuid,uuid,text,uuid,text,jsonb,text,smallint) FROM PUBLIC;
-
-CREATE OR REPLACE FUNCTION public.ctx_validate_scope_parent()
- RETURNS trigger
- LANGUAGE plpgsql
-AS $function$
-DECLARE
-    v_type_parent_type_id uuid;
-    v_parent_scope_type_id uuid;
-BEGIN
-    SELECT parent_type_id INTO v_type_parent_type_id
-    FROM context.scope_types WHERE id = NEW.scope_type_id;
-
-    IF v_type_parent_type_id IS NOT NULL THEN
-        IF NEW.parent_scope_id IS NULL THEN
-            RAISE EXCEPTION 'Scopes of this type require a parent scope (type-level rule)';
-        END IF;
-        SELECT scope_type_id INTO v_parent_scope_type_id
-        FROM context.scopes WHERE id = NEW.parent_scope_id;
-        IF v_parent_scope_type_id IS DISTINCT FROM v_type_parent_type_id THEN
-            RAISE EXCEPTION 'Parent scope must be of the required parent type';
-        END IF;
-    ELSE
-        IF NEW.parent_scope_id IS NOT NULL THEN
-            SELECT scope_type_id INTO v_parent_scope_type_id
-            FROM context.scopes WHERE id = NEW.parent_scope_id;
-            IF v_parent_scope_type_id IS DISTINCT FROM NEW.scope_type_id THEN
-                RAISE EXCEPTION 'Cross-type nesting is not allowed for this type';
-            END IF;
-        END IF;
-    END IF;
-
-    RETURN NEW;
-END;
-$function$
-;
-GRANT EXECUTE ON FUNCTION ctx_validate_scope_parent() TO PUBLIC;
-GRANT EXECUTE ON FUNCTION ctx_validate_scope_parent() TO anon;
-GRANT EXECUTE ON FUNCTION ctx_validate_scope_parent() TO authenticated;
-GRANT EXECUTE ON FUNCTION ctx_validate_scope_parent() TO service_role;
-
-
-CREATE OR REPLACE FUNCTION public.ctx_validate_value_scope_type()
- RETURNS trigger
- LANGUAGE plpgsql
-AS $function$
-DECLARE
-  v_item_type_id uuid;
-  v_scope_type_id uuid;
-BEGIN
-  SELECT scope_type_id INTO v_item_type_id
-  FROM context.context_items WHERE id = NEW.context_item_id;
-
-  SELECT scope_type_id INTO v_scope_type_id
-  FROM context.scopes WHERE id = NEW.scope_id;
-
-  IF v_item_type_id IS NULL THEN
-    raise exception 'context_item_id does not exist' using errcode = 'P0001', detail = jsonb_build_object('context_item_id', NEW.context_item_id)::text;
-  END IF;
-
-  IF v_scope_type_id IS NULL THEN
-    raise exception 'scope_id does not exist' using errcode = 'P0001', detail = jsonb_build_object('scope_id', NEW.scope_id)::text;
-  END IF;
-
-  IF v_scope_type_id IS DISTINCT FROM v_item_type_id THEN
-    raise exception 'Scope/item type mismatch: the scope is of another type than the one the item is defined on' using errcode = 'P0001', detail = jsonb_build_object('scope_type_id', v_scope_type_id, 'item_type_id', v_item_type_id)::text;
-  END IF;
-
-  RETURN NEW;
-END;
-$function$
-;
-GRANT EXECUTE ON FUNCTION ctx_validate_value_scope_type() TO PUBLIC;
-GRANT EXECUTE ON FUNCTION ctx_validate_value_scope_type() TO anon;
-GRANT EXECUTE ON FUNCTION ctx_validate_value_scope_type() TO authenticated;
-GRANT EXECUTE ON FUNCTION ctx_validate_value_scope_type() TO service_role;
-
-
-CREATE OR REPLACE FUNCTION public.ctx_version_context_item_value()
- RETURNS trigger
- LANGUAGE plpgsql
-AS $function$
-DECLARE next_version int;
-BEGIN
-  -- Demote previous current value for the same cell (item × scope)
-  UPDATE context.context_item_values
-  SET is_current = false
-  WHERE context_item_id = NEW.context_item_id
-    AND scope_id = NEW.scope_id
-    AND is_current = true
-    AND id <> NEW.id;
-
-  -- Compute next version for this cell
-  SELECT COALESCE(MAX(version), 0) + 1 INTO next_version
-  FROM context.context_item_values
-  WHERE context_item_id = NEW.context_item_id
-    AND scope_id = NEW.scope_id
-    AND id <> NEW.id;
-
-  NEW.version := next_version;
-  NEW.is_current := true;
-
-  -- Compute char_count / data_point_count / has_nested_objects
-  IF NEW.value_text IS NOT NULL THEN
-    NEW.char_count := char_length(NEW.value_text);
-  ELSIF NEW.value_json IS NOT NULL THEN
-    NEW.char_count := char_length(NEW.value_json::text);
-    IF jsonb_typeof(NEW.value_json) = 'object' THEN
-      SELECT count(*) INTO NEW.data_point_count
-      FROM jsonb_object_keys(NEW.value_json);
-      NEW.has_nested_objects := EXISTS (
-        SELECT 1 FROM jsonb_each(NEW.value_json)
-        WHERE jsonb_typeof(value) IN ('object', 'array')
-      );
-    ELSIF jsonb_typeof(NEW.value_json) = 'array' THEN
-      NEW.data_point_count := jsonb_array_length(NEW.value_json);
-    END IF;
-  ELSE
-    NEW.char_count := 0;
-  END IF;
-
-  RETURN NEW;
-END;
-$function$
-;
-GRANT EXECUTE ON FUNCTION ctx_version_context_item_value() TO PUBLIC;
-GRANT EXECUTE ON FUNCTION ctx_version_context_item_value() TO anon;
-GRANT EXECUTE ON FUNCTION ctx_version_context_item_value() TO authenticated;
-GRANT EXECUTE ON FUNCTION ctx_version_context_item_value() TO service_role;
-
 
 CREATE OR REPLACE FUNCTION public.delete_context_item(p_item_id uuid)
  RETURNS jsonb
@@ -1237,64 +895,41 @@ $function$
 GRANT EXECUTE ON FUNCTION update_scope(uuid,text,text,jsonb,text,smallint) TO service_role;
 REVOKE ALL ON FUNCTION update_scope(uuid,text,text,jsonb,text,smallint) FROM PUBLIC;
 
-CREATE TRIGGER _stamp_actor_tier BEFORE INSERT OR UPDATE ON context.context_item_values FOR EACH ROW EXECUTE FUNCTION platform._stamp_actor_tier();
-CREATE TRIGGER custom_fields_validation BEFORE INSERT OR UPDATE OF custom_fields ON context.context_item_values FOR EACH ROW EXECUTE FUNCTION custom._entity_custom_fields_guard('context_item_value');
-CREATE TRIGGER trg_ctx_validate_value_scope_type BEFORE INSERT OR UPDATE OF context_item_id, scope_id ON context.context_item_values FOR EACH ROW EXECUTE FUNCTION ctx_validate_value_scope_type();
-CREATE TRIGGER trg_ctx_version_context_item_value BEFORE INSERT ON context.context_item_values FOR EACH ROW EXECUTE FUNCTION ctx_version_context_item_value();
-CREATE TRIGGER zz_follow_to_the_copy AFTER INSERT OR DELETE OR UPDATE ON context.context_item_values FOR EACH ROW EXECUTE FUNCTION context._follow_to_the_copy();
-CREATE TRIGGER _gc_assoc_harddelete AFTER DELETE ON context.context_items FOR EACH ROW EXECUTE FUNCTION platform._gc_entity_associations('context_item');
-CREATE TRIGGER _gc_assoc_softdelete AFTER UPDATE OF deleted_at ON context.context_items FOR EACH ROW EXECUTE FUNCTION platform._gc_entity_associations('context_item');
-CREATE TRIGGER _guard_soft_delete_parent BEFORE INSERT OR UPDATE ON context.context_items FOR EACH ROW EXECUTE FUNCTION platform._guard_soft_delete_parent();
-CREATE TRIGGER _history AFTER INSERT OR DELETE OR UPDATE ON context.context_items FOR EACH ROW EXECUTE FUNCTION platform._version_capture('context_item');
-CREATE TRIGGER _stamp_actor BEFORE INSERT OR UPDATE ON context.context_items FOR EACH ROW EXECUTE FUNCTION platform._stamp_actor();
-CREATE TRIGGER _stamp_actor_tier BEFORE INSERT OR UPDATE ON context.context_items FOR EACH ROW EXECUTE FUNCTION platform._stamp_actor_tier();
-CREATE TRIGGER _touch_row BEFORE INSERT OR UPDATE ON context.context_items FOR EACH ROW EXECUTE FUNCTION platform._touch_row();
-CREATE TRIGGER context_items_compute_review BEFORE INSERT ON context.context_items FOR EACH ROW EXECUTE FUNCTION compute_context_item_review_date();
-CREATE TRIGGER context_items_updated_at BEFORE UPDATE ON context.context_items FOR EACH ROW EXECUTE FUNCTION update_context_item_timestamp();
-CREATE TRIGGER custom_fields_validation BEFORE INSERT OR UPDATE OF custom_fields ON context.context_items FOR EACH ROW EXECUTE FUNCTION custom._entity_custom_fields_guard('context_item');
-CREATE TRIGGER enforce_context_item_reference_source BEFORE INSERT OR UPDATE OF reference_source, value_type, allowed_reference_types, max_items, scope_type_id ON context.context_items FOR EACH ROW EXECUTE FUNCTION context.enforce_context_item_reference_source();
-CREATE TRIGGER ensure_slug BEFORE INSERT OR UPDATE ON context.context_items FOR EACH ROW EXECUTE FUNCTION context.ensure_slug();
-CREATE TRIGGER provision_scope_datasets_on_item AFTER INSERT OR UPDATE OF reference_source, is_active, deleted_at ON context.context_items FOR EACH ROW EXECUTE FUNCTION context.provision_scope_datasets_trigger();
-CREATE TRIGGER trg_sweep_notify_context_item AFTER INSERT ON context.context_items FOR EACH ROW EXECUTE FUNCTION _notify_suggestion_sweep_context_item();
-CREATE TRIGGER zz_follow_to_the_copy AFTER INSERT OR DELETE OR UPDATE ON context.context_items FOR EACH ROW EXECUTE FUNCTION context._follow_to_the_copy();
-CREATE TRIGGER _stamp_actor_tier BEFORE INSERT OR UPDATE ON context.context_value_refs FOR EACH ROW EXECUTE FUNCTION platform._stamp_actor_tier();
-CREATE TRIGGER custom_fields_validation BEFORE INSERT OR UPDATE OF custom_fields ON context.context_value_refs FOR EACH ROW EXECUTE FUNCTION custom._entity_custom_fields_guard('context_value_refs');
-CREATE TRIGGER _stamp_actor_tier BEFORE INSERT OR UPDATE ON context.scope_dataset_instances FOR EACH ROW EXECUTE FUNCTION platform._stamp_actor_tier();
-CREATE TRIGGER custom_fields_validation BEFORE INSERT OR UPDATE OF custom_fields ON context.scope_dataset_instances FOR EACH ROW EXECUTE FUNCTION custom._entity_custom_fields_guard('scope_dataset_instance');
-CREATE TRIGGER _cascade_softdelete AFTER UPDATE OF deleted_at ON context.scope_types FOR EACH ROW EXECUTE FUNCTION platform._cascade_soft_delete();
-CREATE TRIGGER _gc_assoc_harddelete AFTER DELETE ON context.scope_types FOR EACH ROW EXECUTE FUNCTION platform._gc_entity_associations('scope_type');
-CREATE TRIGGER _gc_assoc_softdelete AFTER UPDATE OF deleted_at ON context.scope_types FOR EACH ROW EXECUTE FUNCTION platform._gc_entity_associations('scope_type');
-CREATE TRIGGER _guard_soft_delete_parent BEFORE INSERT OR UPDATE ON context.scope_types FOR EACH ROW EXECUTE FUNCTION platform._guard_soft_delete_parent();
-CREATE TRIGGER _history AFTER INSERT OR DELETE OR UPDATE ON context.scope_types FOR EACH ROW EXECUTE FUNCTION platform._version_capture('scope_type');
-CREATE TRIGGER _search_item_sync AFTER INSERT OR DELETE OR UPDATE ON context.scope_types FOR EACH ROW EXECUTE FUNCTION platform._search_item_sync_scope_type();
-CREATE TRIGGER _stamp_actor BEFORE INSERT OR UPDATE ON context.scope_types FOR EACH ROW EXECUTE FUNCTION platform._stamp_actor();
-CREATE TRIGGER _stamp_actor_tier BEFORE INSERT OR UPDATE ON context.scope_types FOR EACH ROW EXECUTE FUNCTION platform._stamp_actor_tier();
-CREATE TRIGGER _touch_row BEFORE INSERT OR UPDATE ON context.scope_types FOR EACH ROW EXECUTE FUNCTION platform._touch_row();
-CREATE TRIGGER custom_fields_validation BEFORE INSERT OR UPDATE OF custom_fields ON context.scope_types FOR EACH ROW EXECUTE FUNCTION custom._entity_custom_fields_guard('scope_type');
-CREATE TRIGGER ensure_slug BEFORE INSERT OR UPDATE ON context.scope_types FOR EACH ROW EXECUTE FUNCTION context.ensure_slug();
-CREATE TRIGGER set_updated_at BEFORE UPDATE ON context.scope_types FOR EACH ROW EXECUTE FUNCTION set_updated_at();
-CREATE TRIGGER trg_sweep_notify_scope_type AFTER INSERT ON context.scope_types FOR EACH ROW EXECUTE FUNCTION _notify_suggestion_sweep_scope_type();
-CREATE TRIGGER zz_follow_to_the_copy AFTER INSERT OR DELETE OR UPDATE ON context.scope_types FOR EACH ROW EXECUTE FUNCTION context._follow_to_the_copy();
-CREATE TRIGGER _a0_t13_dual_write BEFORE INSERT OR UPDATE ON context.scopes FOR EACH ROW EXECUTE FUNCTION platform._t13_transitional_dual_write('shown_to');
-CREATE TRIGGER _cascade_softdelete AFTER UPDATE OF deleted_at ON context.scopes FOR EACH ROW EXECUTE FUNCTION platform._cascade_soft_delete();
-CREATE TRIGGER _gc_assoc_harddelete AFTER DELETE ON context.scopes FOR EACH ROW EXECUTE FUNCTION platform._gc_entity_associations('scope');
-CREATE TRIGGER _gc_assoc_softdelete AFTER UPDATE OF deleted_at ON context.scopes FOR EACH ROW EXECUTE FUNCTION platform._gc_entity_associations('scope');
-CREATE TRIGGER _gc_scope_assoc AFTER DELETE ON context.scopes FOR EACH ROW EXECUTE FUNCTION platform._gc_scope_associations();
-CREATE TRIGGER _guard_governance BEFORE UPDATE ON context.scopes FOR EACH ROW EXECUTE FUNCTION iam._guard_governance_columns('scope');
-CREATE TRIGGER _guard_soft_delete_parent BEFORE INSERT OR UPDATE ON context.scopes FOR EACH ROW EXECUTE FUNCTION platform._guard_soft_delete_parent();
-CREATE TRIGGER _history AFTER INSERT OR DELETE OR UPDATE ON context.scopes FOR EACH ROW EXECUTE FUNCTION platform._version_capture('scope');
-CREATE TRIGGER _search_item_sync AFTER INSERT OR DELETE OR UPDATE ON context.scopes FOR EACH ROW EXECUTE FUNCTION platform._search_item_sync_scope();
-CREATE TRIGGER _stamp_actor BEFORE INSERT OR UPDATE ON context.scopes FOR EACH ROW EXECUTE FUNCTION platform._stamp_actor();
-CREATE TRIGGER _stamp_actor_tier BEFORE INSERT OR UPDATE ON context.scopes FOR EACH ROW EXECUTE FUNCTION platform._stamp_actor_tier();
-CREATE TRIGGER _t13_count_row_column_writes AFTER INSERT OR UPDATE ON context.scopes FOR EACH STATEMENT EXECUTE FUNCTION platform._t13_transitional_flush_writes();
-CREATE TRIGGER _touch_row BEFORE INSERT OR UPDATE ON context.scopes FOR EACH ROW EXECUTE FUNCTION platform._touch_row();
-CREATE TRIGGER custom_fields_validation BEFORE INSERT OR UPDATE OF custom_fields ON context.scopes FOR EACH ROW EXECUTE FUNCTION custom._entity_custom_fields_guard('scope');
-CREATE TRIGGER ensure_slug BEFORE INSERT OR UPDATE ON context.scopes FOR EACH ROW EXECUTE FUNCTION context.ensure_slug();
-CREATE TRIGGER provision_scope_datasets_on_scope AFTER INSERT ON context.scopes FOR EACH ROW EXECUTE FUNCTION context.provision_scope_datasets_trigger();
-CREATE TRIGGER set_updated_at BEFORE UPDATE ON context.scopes FOR EACH ROW EXECUTE FUNCTION set_updated_at();
-CREATE TRIGGER trg_ctx_validate_scope_parent BEFORE INSERT OR UPDATE ON context.scopes FOR EACH ROW EXECUTE FUNCTION ctx_validate_scope_parent();
-CREATE TRIGGER trg_sweep_notify_scope AFTER INSERT ON context.scopes FOR EACH ROW EXECUTE FUNCTION _notify_suggestion_sweep_scope();
-CREATE TRIGGER zz_follow_to_the_copy AFTER INSERT OR DELETE OR UPDATE ON context.scopes FOR EACH ROW EXECUTE FUNCTION context._follow_to_the_copy();
+-- No client reaches them (as production held them), and their door rows come back.
+REVOKE ALL ON FUNCTION context.provision_scope_dataset(uuid,uuid) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION delete_scope(uuid) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION delete_scope_type(uuid) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION context.index_reference_value(uuid,uuid,uuid,text) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION context.write_context_value(uuid,uuid,text,numeric,boolean,jsonb,date,text,timestamp with time zone,time without time zone,text,text,uuid) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION set_scope_context_value(uuid,uuid,text,numeric,boolean,jsonb,text,date,timestamp with time zone,time without time zone,text) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION update_scope_type(uuid,text,text,text,text,smallint,smallint,text,text) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION create_scope_type(uuid,text,text,uuid,text,text,smallint,smallint,text[],text,text) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION create_scope(uuid,uuid,text,uuid,text,jsonb,text,smallint) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION update_scope(uuid,text,text,jsonb,text,smallint) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION create_context_item(uuid,text,text,context_value_type,text,text,context_fetch_hint,context_sensitivity,text[],text,smallint,text[],integer,uuid[],jsonb) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION delete_context_item(uuid) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION restore_context_item(uuid) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION set_context_value(jsonb) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION restore_scope(uuid) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION restore_scope_type(uuid) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION update_context_item(uuid,text,text,text,context_value_type,context_fetch_hint,context_sensitivity,text[],smallint,context_item_status,text) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION context.validate_reference_value(uuid,text) FROM PUBLIC, anon, authenticated;
+insert into platform.client_callable_door select * from jsonb_populate_record(null::platform.client_callable_door, '{"id": "8b1b5d65-d5b9-4d95-8d6f-2f36e8477c9e", "reason": "Signed-in door (DD-169 batch 3, B-75). SECURITY DEFINER; writes; 15 client call site(s) found across matrx-frontend / aidream / matrx-extend / matrx-local. The caller is resolved inside the body by `auth.uid()` — that literal is what D6 checks is still there. Triaged from the 608 grandfathered signed-in definers B-64 left behind; `anon` holds no EXECUTE on it.", "probe_args": null, "declared_at": "2026-09-13T08:48:49.614866+00:00", "declared_by": "DD-169 batch 3 / B-75", "schema_name": "public", "refusal_only": false, "function_name": "set_context_value", "identity_args": "p_payload jsonb", "argument_rules": null, "contract_probe": null, "gate_predicate": "auth.uid()", "non_client_lane": "server_only: retired as a client door by SCOPES-OLD-WRITERS (2026-09-29). Clients write scopes, scope types, context items, values, templates and tags through the record store''s scope doors (custom.context_type_write / _archive / _restore, custom.context_scope_write / _archive / _restore, custom.context_item_write / _archive / _restore, custom.context_value_write, custom.context_template_apply, custom.context_tags_set), which reach this function in the owner''s right. The server (service_role) and the definer functions that call it keep it.", "anonymous_callers": false, "anonymous_purpose": null, "identity_argtypes": ["3802"], "signed_in_callers": false}');
+insert into platform.client_callable_door select * from jsonb_populate_record(null::platform.client_callable_door, E'{"id": "7b832fc5-5c71-4b2e-b97c-1e2562bd2b38", "reason": "SIGNED-IN door (authenticated only; anon revoked by this migration). Written for a signed-in caller (auth.uid()); an anonymous caller can do nothing here.", "probe_args": null, "declared_at": "2026-09-13T07:34:35.434514+00:00", "declared_by": "DD-169 / B-63", "schema_name": "context", "refusal_only": false, "function_name": "provision_scope_dataset", "identity_args": "p_item_id uuid, p_scope_id uuid", "argument_rules": {"version": 1, "arguments": {"p_item_id": {"type": "uuid", "check": "DERIVED. It is resolved from context.context_items and then bound to the scope: the body returns null unless item.scope_type_id = scope.scope_type_id, and the template it names must belong to the SCOPE''s organization or to the platform system organization. Everything it writes is keyed to v_scope.organization_id, which is the id the caller is now asked about.", "access": "decided through p_scope_id", "entity": "context_item", "foreign": {"note": "null, identical to an invented item id", "not_a_leak": true, "same_as_invented": true}, "position": 1, "verified": "static reading 2026-09-21"}, "p_scope_id": {"type": "uuid", "check": "iam.has_org_access(v_scope.organization_id) — the scope is resolved, then the CALLER is asked about the organization it belongs to, before the dataset, its fields, the instance row and the context value are made there (ARGS-RULED 2026-09-21). Until that migration this door made all four in whatever tenant the scope named, with no access decision at all, and both arguments carried a DECLARED {\\"unchecked\\": true} rule.", "access": "member of the scope''s organization", "entity": "scope", "foreign": {"note": "a scope that does not resolve still answers null (a deleted scope legitimately does); a scope that resolves in another organization is refused 42501 by name", "sqlstate": "42501", "same_as_invented": false}, "position": 2, "verified": "static reading 2026-09-21; the ladder itself measured from test@test.com''s authenticated seat, scripts/campaign-tests/argsruled_green.sql clause 9. The door''s own arm carries the iam.is_trusted_backend escape a server lane needs and is therefore not measurable from a direct connection."}}, "declared_at": "2026-09-21 lane ARGS-RULED, per-door reading of the body", "declared_by": "argsruled_the_eighteen_doors_outside_the_store.sql"}, "contract_probe": null, "gate_predicate": null, "non_client_lane": null, "anonymous_callers": false, "anonymous_purpose": null, "identity_argtypes": ["2950", "2950"], "signed_in_callers": true}');
+insert into platform.client_callable_door select * from jsonb_populate_record(null::platform.client_callable_door, '{"id": "caf639d0-97c7-40d0-873a-c7f31f9f4a82", "reason": "The undo half of delete_scope_type, called from the scopes page''s archive disclosure. SECURITY DEFINER for the same reason as delete_scope_type: the membership test runs inside the body (owner/admin of the type''s organization) instead of granting the client iam.memberships, and the cascade it triggers has to reach RLS-protected children.", "probe_args": null, "declared_at": "2026-09-21T18:31:17.908672+00:00", "declared_by": "matrx-frontend/migrations/scope_types_soft_delete_cascade_and_restore.sql (F6)", "schema_name": "public", "refusal_only": false, "function_name": "restore_scope_type", "identity_args": "p_type_id uuid", "argument_rules": null, "contract_probe": null, "gate_predicate": null, "non_client_lane": "server_only: retired as a client door by SCOPES-OLD-WRITERS (2026-09-29). Clients write scopes, scope types, context items, values, templates and tags through the record store''s scope doors (custom.context_type_write / _archive / _restore, custom.context_scope_write / _archive / _restore, custom.context_item_write / _archive / _restore, custom.context_value_write, custom.context_template_apply, custom.context_tags_set), which reach this function in the owner''s right. The server (service_role) and the definer functions that call it keep it.", "anonymous_callers": false, "anonymous_purpose": null, "identity_argtypes": ["2950"], "signed_in_callers": false}');
+insert into platform.client_callable_door select * from jsonb_populate_record(null::platform.client_callable_door, '{"id": "6e448141-237b-4547-8b9d-303946e44a27", "reason": "Signed-in door (DD-169 batch 3, B-75). SECURITY DEFINER; writes; 6 client call site(s) found across matrx-frontend / aidream / matrx-extend / matrx-local. The caller is resolved inside the body by `auth.uid()` — that literal is what D6 checks is still there. Triaged from the 608 grandfathered signed-in definers B-64 left behind; `anon` holds no EXECUTE on it.", "probe_args": {"args": {"p_value_type": "literal:string", "p_scope_type_id": "other_row:context.scope_types"}, "note": "Creating a context item under ANOTHER organization scope type is a cross-boundary write; p_value_type is an enum and string is its plainest label."}, "declared_at": "2026-09-13T08:46:33.816567+00:00", "declared_by": "DD-169 batch 3 / B-75", "schema_name": "public", "refusal_only": false, "function_name": "create_context_item", "identity_args": "p_scope_type_id uuid, p_key text, p_display_name text, p_value_type context_value_type, p_description text, p_category text, p_fetch_hint context_fetch_hint, p_sensitivity context_sensitivity, p_tags text[], p_slug text, p_sort_order smallint, p_allowed_reference_types text[], p_max_items integer, p_allowed_scope_type_ids uuid[], p_reference_source jsonb", "argument_rules": {"version": 1, "arguments": {"p_key": {"type": "text", "foreign": {"not_an_id": true}, "optional": false, "position": 2, "null_rule": {}}, "p_slug": {"type": "text", "foreign": {"not_an_id": true}, "optional": true, "position": 10, "null_rule": {}, "sql_default": "NULL::text"}, "p_tags": {"type": "text[]", "foreign": {"not_an_id": true}, "optional": true, "position": 9, "null_rule": {}, "sql_default": "''{}''::text[]"}, "p_category": {"type": "text", "foreign": {"not_an_id": true}, "optional": true, "position": 6, "null_rule": {}, "sql_default": "NULL::text"}, "p_max_items": {"type": "integer", "foreign": {"not_an_id": true}, "optional": true, "position": 13, "null_rule": {}, "sql_default": "1"}, "p_fetch_hint": {"type": "context_fetch_hint", "foreign": {"not_an_id": true}, "optional": true, "position": 7, "null_rule": {}, "sql_default": "''on_demand''::context_fetch_hint"}, "p_sort_order": {"type": "smallint", "foreign": {"not_an_id": true}, "optional": true, "position": 11, "null_rule": {}, "sql_default": "NULL::smallint"}, "p_value_type": {"type": "context_value_type", "foreign": {"not_an_id": true}, "optional": false, "position": 4, "null_rule": {}}, "p_description": {"type": "text", "foreign": {"not_an_id": true}, "optional": true, "position": 5, "null_rule": {}, "sql_default": "''''::text"}, "p_sensitivity": {"type": "context_sensitivity", "foreign": {"not_an_id": true}, "optional": true, "position": 8, "null_rule": {}, "sql_default": "''internal''::context_sensitivity"}, "p_display_name": {"type": "text", "foreign": {"not_an_id": true}, "optional": false, "position": 3, "null_rule": {}}, "p_scope_type_id": {"type": "uuid", "check": "p_scope_type_id -> iam.has_org_admin(...)", "foreign": {"note": "decision found by the static reading with helper closure: p_scope_type_id -> iam.has_org_admin(...)", "decided_before_read": true}, "optional": false, "position": 1, "verified": "static reading 2026-09-17", "null_rule": {}}, "p_reference_source": {"type": "jsonb", "foreign": {"not_an_id": true}, "optional": true, "position": 15, "null_rule": {}, "sql_default": "NULL::jsonb"}, "p_allowed_scope_type_ids": {"type": "uuid[]", "check": "stored on the item as a constraint list; never read through here", "foreign": {"note": "stored on the item as a constraint list; never read through here", "stored_reference": true}, "optional": true, "position": 14, "verified": "static reading 2026-09-17", "null_rule": {}, "sql_default": "NULL::uuid[]"}, "p_allowed_reference_types": {"type": "text[]", "foreign": {"not_an_id": true}, "optional": true, "position": 12, "null_rule": {}, "sql_default": "NULL::text[]"}}, "declared_by": "0851_every_door_names_every_argument.sql"}, "contract_probe": null, "gate_predicate": "auth.uid()", "non_client_lane": "server_only: retired as a client door by SCOPES-OLD-WRITERS (2026-09-29). Clients write scopes, scope types, context items, values, templates and tags through the record store''s scope doors (custom.context_type_write / _archive / _restore, custom.context_scope_write / _archive / _restore, custom.context_item_write / _archive / _restore, custom.context_value_write, custom.context_template_apply, custom.context_tags_set), which reach this function in the owner''s right. The server (service_role) and the definer functions that call it keep it.", "anonymous_callers": false, "anonymous_purpose": null, "identity_argtypes": ["2950", "25", "25", "1698626", "25", "25", "1698558", "1698602", "1009", "25", "21", "1009", "23", "2951", "3802"], "signed_in_callers": false}');
+insert into platform.client_callable_door select * from jsonb_populate_record(null::platform.client_callable_door, '{"id": "52c1f978-b93e-4b36-a9ea-d0c6a20d563b", "reason": "SIGNED-IN door (authenticated only; anon revoked by this migration). Written for a signed-in caller (auth.uid()); an anonymous caller can do nothing here.", "probe_args": null, "declared_at": "2026-09-13T07:34:35.434514+00:00", "declared_by": "DD-169 / B-63", "schema_name": "public", "refusal_only": false, "function_name": "create_scope", "identity_args": "p_org_id uuid, p_type_id uuid, p_name text, p_parent_scope_id uuid, p_description text, p_settings jsonb, p_slug text, p_sort_order smallint", "argument_rules": {"version": 1, "arguments": {"p_name": {"type": "text", "foreign": {"not_an_id": true}, "optional": false, "position": 3, "null_rule": {}}, "p_slug": {"type": "text", "foreign": {"not_an_id": true}, "optional": true, "position": 7, "null_rule": {}, "sql_default": "NULL::text"}, "p_org_id": {"type": "uuid", "check": "p_org_id -> iam.has_org_access(...)", "foreign": {"note": "decision found by the static reading with helper closure: p_org_id -> iam.has_org_access(...)", "decided_before_read": true}, "optional": false, "position": 1, "verified": "static reading 2026-09-17", "null_rule": {}}, "p_type_id": {"type": "uuid", "check": "0850: must be a scope type of p_org_id", "access": "decided before existence (0850)", "entity": "scope_type", "foreign": {"note": "0850: must be a scope type of p_org_id", "sqlstate": "22023", "same_as_invented": true}, "optional": false, "position": 2, "verified": "live 2026-09-17, as the non-member test account", "null_rule": {}}, "p_settings": {"type": "jsonb", "foreign": {"not_an_id": true}, "optional": true, "position": 6, "null_rule": {}, "sql_default": "''{}''::jsonb"}, "p_sort_order": {"type": "smallint", "foreign": {"not_an_id": true}, "optional": true, "position": 8, "null_rule": {}, "sql_default": "NULL::smallint"}, "p_description": {"type": "text", "foreign": {"not_an_id": true}, "optional": true, "position": 5, "null_rule": {}, "sql_default": "''''::text"}, "p_parent_scope_id": {"type": "uuid", "check": "0850: must be a scope of p_org_id", "access": "decided before existence (0850)", "entity": "scope", "foreign": {"note": "0850: must be a scope of p_org_id", "sqlstate": "22023", "same_as_invented": true}, "optional": true, "position": 4, "verified": "live 2026-09-17, as the non-member test account", "null_rule": {}, "sql_default": "NULL::uuid"}}, "declared_by": "0851_every_door_names_every_argument.sql"}, "contract_probe": null, "gate_predicate": null, "non_client_lane": "server_only: retired as a client door by SCOPES-OLD-WRITERS (2026-09-29). Clients write scopes, scope types, context items, values, templates and tags through the record store''s scope doors (custom.context_type_write / _archive / _restore, custom.context_scope_write / _archive / _restore, custom.context_item_write / _archive / _restore, custom.context_value_write, custom.context_template_apply, custom.context_tags_set), which reach this function in the owner''s right. The server (service_role) and the definer functions that call it keep it.", "anonymous_callers": false, "anonymous_purpose": null, "identity_argtypes": ["2950", "2950", "25", "2950", "25", "3802", "25", "21"], "signed_in_callers": false}');
+insert into platform.client_callable_door select * from jsonb_populate_record(null::platform.client_callable_door, '{"id": "37c2e763-b7d0-40c5-8bd0-859ec169208e", "reason": "Signed-in door (DD-169 batch 3, B-75). SECURITY DEFINER; writes; 6 client call site(s) found across matrx-frontend / aidream / matrx-extend / matrx-local. The caller is resolved inside the body by `iam.has_org_access` — that literal is what D6 checks is still there. Triaged from the 608 grandfathered signed-in definers B-64 left behind; `anon` holds no EXECUTE on it.", "probe_args": null, "declared_at": "2026-09-13T08:46:33.816567+00:00", "declared_by": "DD-169 batch 3 / B-75", "schema_name": "public", "refusal_only": false, "function_name": "create_scope_type", "identity_args": "p_org_id uuid, p_label_singular text, p_label_plural text, p_parent_type_id uuid, p_icon text, p_description text, p_sort_order smallint, p_max_assignments smallint, p_default_variable_keys text[], p_color text, p_slug text", "argument_rules": {"version": 1, "arguments": {"p_icon": {"type": "text", "foreign": {"not_an_id": true}, "optional": true, "position": 5, "null_rule": {}, "sql_default": "''folder''::text"}, "p_slug": {"type": "text", "foreign": {"not_an_id": true}, "optional": true, "position": 11, "null_rule": {}, "sql_default": "NULL::text"}, "p_color": {"type": "text", "foreign": {"not_an_id": true}, "optional": true, "position": 10, "null_rule": {}, "sql_default": "NULL::text"}, "p_org_id": {"type": "uuid", "check": "p_org_id -> iam.has_org_access(...)", "foreign": {"note": "decision found by the static reading with helper closure: p_org_id -> iam.has_org_access(...)", "decided_before_read": true}, "optional": false, "position": 1, "verified": "static reading 2026-09-17", "null_rule": {}}, "p_sort_order": {"type": "smallint", "foreign": {"not_an_id": true}, "optional": true, "position": 7, "null_rule": {}, "sql_default": "0"}, "p_description": {"type": "text", "foreign": {"not_an_id": true}, "optional": true, "position": 6, "null_rule": {}, "sql_default": "''''::text"}, "p_label_plural": {"type": "text", "foreign": {"not_an_id": true}, "optional": false, "position": 3, "null_rule": {}}, "p_label_singular": {"type": "text", "foreign": {"not_an_id": true}, "optional": false, "position": 2, "null_rule": {}}, "p_parent_type_id": {"type": "uuid", "check": "0850: must be a scope type of p_org_id", "access": "decided before existence (0850)", "entity": "scope_type", "foreign": {"note": "0850: must be a scope type of p_org_id", "sqlstate": "22023", "same_as_invented": true}, "optional": true, "position": 4, "verified": "live 2026-09-17, as the non-member test account", "null_rule": {}, "sql_default": "NULL::uuid"}, "p_max_assignments": {"type": "smallint", "foreign": {"not_an_id": true}, "optional": true, "position": 8, "null_rule": {}, "sql_default": "NULL::smallint"}, "p_default_variable_keys": {"type": "text[]", "foreign": {"not_an_id": true}, "optional": true, "position": 9, "null_rule": {}, "sql_default": "''{}''::text[]"}}, "declared_by": "0851_every_door_names_every_argument.sql"}, "contract_probe": null, "gate_predicate": "iam.has_org_access", "non_client_lane": "server_only: retired as a client door by SCOPES-OLD-WRITERS (2026-09-29). Clients write scopes, scope types, context items, values, templates and tags through the record store''s scope doors (custom.context_type_write / _archive / _restore, custom.context_scope_write / _archive / _restore, custom.context_item_write / _archive / _restore, custom.context_value_write, custom.context_template_apply, custom.context_tags_set), which reach this function in the owner''s right. The server (service_role) and the definer functions that call it keep it.", "anonymous_callers": false, "anonymous_purpose": null, "identity_argtypes": ["2950", "25", "25", "2950", "25", "25", "21", "21", "1009", "25", "25"], "signed_in_callers": false}');
+insert into platform.client_callable_door select * from jsonb_populate_record(null::platform.client_callable_door, '{"id": "ee68223d-7d26-4c45-a537-c311696af86e", "reason": "Org admins archive (is_active=false, values retained) a context item on their own org''s scope types; org resolved from the row and checked via iam.has_org_admin.", "probe_args": null, "declared_at": "2026-08-29T16:51:26.567228+00:00", "declared_by": "ctx_context_item_update_delete_rpcs", "schema_name": "public", "refusal_only": false, "function_name": "delete_context_item", "identity_args": "p_item_id uuid", "argument_rules": null, "contract_probe": null, "gate_predicate": null, "non_client_lane": "server_only: retired as a client door by SCOPES-OLD-WRITERS (2026-09-29). Clients write scopes, scope types, context items, values, templates and tags through the record store''s scope doors (custom.context_type_write / _archive / _restore, custom.context_scope_write / _archive / _restore, custom.context_item_write / _archive / _restore, custom.context_value_write, custom.context_template_apply, custom.context_tags_set), which reach this function in the owner''s right. The server (service_role) and the definer functions that call it keep it.", "anonymous_callers": false, "anonymous_purpose": null, "identity_argtypes": ["2950"], "signed_in_callers": false}');
+insert into platform.client_callable_door select * from jsonb_populate_record(null::platform.client_callable_door, '{"id": "1ae3a5b9-8b68-4ad7-bb16-aa023e57ea29", "reason": "Signed-in door (DD-169 batch 3, B-75). SECURITY DEFINER; writes; 5 client call site(s) found across matrx-frontend / aidream / matrx-extend / matrx-local. The caller is resolved inside the body by `auth.uid()` — that literal is what D6 checks is still there. Triaged from the 608 grandfathered signed-in definers B-64 left behind; `anon` holds no EXECUTE on it.", "probe_args": null, "declared_at": "2026-09-13T08:46:33.816567+00:00", "declared_by": "DD-169 batch 3 / B-75", "schema_name": "public", "refusal_only": false, "function_name": "delete_scope", "identity_args": "p_scope_id uuid", "argument_rules": null, "contract_probe": null, "gate_predicate": "auth.uid()", "non_client_lane": "server_only: retired as a client door by SCOPES-OLD-WRITERS (2026-09-29). Clients write scopes, scope types, context items, values, templates and tags through the record store''s scope doors (custom.context_type_write / _archive / _restore, custom.context_scope_write / _archive / _restore, custom.context_item_write / _archive / _restore, custom.context_value_write, custom.context_template_apply, custom.context_tags_set), which reach this function in the owner''s right. The server (service_role) and the definer functions that call it keep it.", "anonymous_callers": false, "anonymous_purpose": null, "identity_argtypes": ["2950"], "signed_in_callers": false}');
+insert into platform.client_callable_door select * from jsonb_populate_record(null::platform.client_callable_door, '{"id": "0913d994-5d69-42ea-9610-22c42aed26ee", "reason": "Signed-in door (DD-169 batch 3, B-75). SECURITY DEFINER; writes; 5 client call site(s) found across matrx-frontend / aidream / matrx-extend / matrx-local. The caller is resolved inside the body by `auth.uid()` — that literal is what D6 checks is still there. Triaged from the 608 grandfathered signed-in definers B-64 left behind; `anon` holds no EXECUTE on it.", "probe_args": null, "declared_at": "2026-09-13T08:46:33.816567+00:00", "declared_by": "DD-169 batch 3 / B-75", "schema_name": "public", "refusal_only": false, "function_name": "delete_scope_type", "identity_args": "p_type_id uuid", "argument_rules": null, "contract_probe": null, "gate_predicate": "auth.uid()", "non_client_lane": "server_only: retired as a client door by SCOPES-OLD-WRITERS (2026-09-29). Clients write scopes, scope types, context items, values, templates and tags through the record store''s scope doors (custom.context_type_write / _archive / _restore, custom.context_scope_write / _archive / _restore, custom.context_item_write / _archive / _restore, custom.context_value_write, custom.context_template_apply, custom.context_tags_set), which reach this function in the owner''s right. The server (service_role) and the definer functions that call it keep it.", "anonymous_callers": false, "anonymous_purpose": null, "identity_argtypes": ["2950"], "signed_in_callers": false}');
+insert into platform.client_callable_door select * from jsonb_populate_record(null::platform.client_callable_door, '{"id": "a1e1bf02-40e6-4a8e-b22d-bbbc4e8b907a", "reason": "The undo half of delete_context_item, called from Trash through entity_undelete / org_trash_restore. SECURITY DEFINER; p_item_id must be a context item of a scope type whose organization the caller administers (iam.has_org_admin), 42501 otherwise. Clears deleted_at and sets is_active back on.", "probe_args": null, "declared_at": "2026-09-26T08:40:41.03514+00:00", "declared_by": "migrations/campaign/trashcoverage2_every_archivable_thing_a_person_sees_is_in_trash.sql (lane TRASH-COVERAGE-2)", "schema_name": "public", "refusal_only": false, "function_name": "restore_context_item", "identity_args": "p_item_id uuid", "argument_rules": null, "contract_probe": null, "gate_predicate": null, "non_client_lane": "server_only: retired as a client door by SCOPES-OLD-WRITERS (2026-09-29). Clients write scopes, scope types, context items, values, templates and tags through the record store''s scope doors (custom.context_type_write / _archive / _restore, custom.context_scope_write / _archive / _restore, custom.context_item_write / _archive / _restore, custom.context_value_write, custom.context_template_apply, custom.context_tags_set), which reach this function in the owner''s right. The server (service_role) and the definer functions that call it keep it.", "anonymous_callers": false, "anonymous_purpose": null, "identity_argtypes": ["2950"], "signed_in_callers": false}');
+insert into platform.client_callable_door select * from jsonb_populate_record(null::platform.client_callable_door, '{"id": "717f9d9e-a100-4ff4-84a4-813f3eb8fef0", "reason": "The undo half of delete_scope, called from Trash through entity_undelete / org_trash_restore. SECURITY DEFINER; p_scope_id must be an archived scope of an organization the caller owns or administers (iam.memberships owner/admin, or a platform admin), 42501 otherwise. Clears deleted_at; the declared cascade brings back child scopes archived in the same act.", "probe_args": null, "declared_at": "2026-09-26T08:40:41.03514+00:00", "declared_by": "migrations/campaign/trashcoverage2_every_archivable_thing_a_person_sees_is_in_trash.sql (lane TRASH-COVERAGE-2)", "schema_name": "public", "refusal_only": false, "function_name": "restore_scope", "identity_args": "p_scope_id uuid", "argument_rules": null, "contract_probe": null, "gate_predicate": null, "non_client_lane": "server_only: retired as a client door by SCOPES-OLD-WRITERS (2026-09-29). Clients write scopes, scope types, context items, values, templates and tags through the record store''s scope doors (custom.context_type_write / _archive / _restore, custom.context_scope_write / _archive / _restore, custom.context_item_write / _archive / _restore, custom.context_value_write, custom.context_template_apply, custom.context_tags_set), which reach this function in the owner''s right. The server (service_role) and the definer functions that call it keep it.", "anonymous_callers": false, "anonymous_purpose": null, "identity_argtypes": ["2950"], "signed_in_callers": false}');
+insert into platform.client_callable_door select * from jsonb_populate_record(null::platform.client_callable_door, '{"id": "3216a73b-0038-4cf7-b5c5-36895b469292", "reason": "SIGNED-IN door (authenticated only; anon revoked by this migration). Written for a signed-in caller (auth.uid()); an anonymous caller can do nothing here.", "probe_args": null, "declared_at": "2026-09-13T07:34:35.434514+00:00", "declared_by": "DD-169 / B-63", "schema_name": "public", "refusal_only": false, "function_name": "set_scope_context_value", "identity_args": "p_scope_id uuid, p_context_item_id uuid, p_value_text text, p_value_number numeric, p_value_boolean boolean, p_value_json jsonb, p_value_document_url text, p_value_date date, p_value_timestamp timestamp with time zone, p_value_time time without time zone, p_change_summary text", "argument_rules": {"version": 1, "arguments": {"p_scope_id": {"type": "uuid", "check": "p_scope_id -> public.set_scope_context_value.p_scope_id: p_scope_id -> context._assert_scope_readable.p_scope_id: p_scope_id -> context._scope_readable.p_scope_id: p_scope_id -> iam.has_access(...)", "foreign": {"note": "decision found by the static reading with helper closure: p_scope_id -> public.set_scope_context_value.p_scope_id: p_scope_id -> context._assert_scope_readable.p_scope_id: p_scope_id -> context._scope_readable.p_scope_id: p_scope_id -> iam.has_access(...)", "decided_before_read": true}, "optional": false, "position": 1, "verified": "static reading 2026-09-17", "null_rule": {}}, "p_value_date": {"type": "date", "foreign": {"not_an_id": true}, "optional": true, "position": 8, "null_rule": {}, "sql_default": "NULL::date"}, "p_value_json": {"type": "jsonb", "foreign": {"not_an_id": true}, "optional": true, "position": 6, "null_rule": {}, "sql_default": "NULL::jsonb"}, "p_value_text": {"type": "text", "foreign": {"not_an_id": true}, "optional": true, "position": 3, "null_rule": {}, "sql_default": "NULL::text"}, "p_value_time": {"type": "time without time zone", "foreign": {"not_an_id": true}, "optional": true, "position": 10, "null_rule": {}, "sql_default": "NULL::time without time zone"}, "p_value_number": {"type": "numeric", "foreign": {"not_an_id": true}, "optional": true, "position": 4, "null_rule": {}, "sql_default": "NULL::numeric"}, "p_value_boolean": {"type": "boolean", "foreign": {"not_an_id": true}, "optional": true, "position": 5, "null_rule": {}, "sql_default": "NULL::boolean"}, "p_change_summary": {"type": "text", "foreign": {"not_an_id": true}, "optional": true, "position": 11, "null_rule": {}, "sql_default": "NULL::text"}, "p_context_item_id": {"type": "uuid", "check": "must belong to the gated scope''s type (22023) before any write", "foreign": {"note": "must belong to the gated scope''s type (22023) before any write", "decided_before_read": true}, "optional": false, "position": 2, "verified": "static reading 2026-09-17", "null_rule": {}}, "p_value_timestamp": {"type": "timestamp with time zone", "foreign": {"not_an_id": true}, "optional": true, "position": 9, "null_rule": {}, "sql_default": "NULL::timestamp with time zone"}, "p_value_document_url": {"type": "text", "foreign": {"not_an_id": true}, "optional": true, "position": 7, "null_rule": {}, "sql_default": "NULL::text"}}, "declared_by": "0851_every_door_names_every_argument.sql"}, "contract_probe": null, "gate_predicate": null, "non_client_lane": "server_only: retired as a client door by SCOPES-OLD-WRITERS (2026-09-29). Clients write scopes, scope types, context items, values, templates and tags through the record store''s scope doors (custom.context_type_write / _archive / _restore, custom.context_scope_write / _archive / _restore, custom.context_item_write / _archive / _restore, custom.context_value_write, custom.context_template_apply, custom.context_tags_set), which reach this function in the owner''s right. The server (service_role) and the definer functions that call it keep it.", "anonymous_callers": false, "anonymous_purpose": null, "identity_argtypes": ["2950", "2950", "25", "1700", "16", "3802", "25", "1082", "1184", "1083", "25"], "signed_in_callers": false}');
+insert into platform.client_callable_door select * from jsonb_populate_record(null::platform.client_callable_door, '{"id": "9d8e63ca-cddb-4bfd-8fb3-e6f8341f9a36", "reason": "Org admins edit a context item definition (rename, description, type, ordering) on their own org''s scope types; the function resolves the item''s org itself and requires iam.has_org_admin on it.", "probe_args": null, "declared_at": "2026-08-29T16:51:26.567228+00:00", "declared_by": "ctx_context_item_update_delete_rpcs", "schema_name": "public", "refusal_only": false, "function_name": "update_context_item", "identity_args": "p_item_id uuid, p_display_name text, p_description text, p_category text, p_value_type context_value_type, p_fetch_hint context_fetch_hint, p_sensitivity context_sensitivity, p_tags text[], p_sort_order smallint, p_status context_item_status, p_status_note text", "argument_rules": null, "contract_probe": null, "gate_predicate": null, "non_client_lane": "server_only: retired as a client door by SCOPES-OLD-WRITERS (2026-09-29). Clients write scopes, scope types, context items, values, templates and tags through the record store''s scope doors (custom.context_type_write / _archive / _restore, custom.context_scope_write / _archive / _restore, custom.context_item_write / _archive / _restore, custom.context_value_write, custom.context_template_apply, custom.context_tags_set), which reach this function in the owner''s right. The server (service_role) and the definer functions that call it keep it.", "anonymous_callers": false, "anonymous_purpose": null, "identity_argtypes": ["2950", "25", "25", "25", "1698626", "1698558", "1698602", "1009", "21", "1698570", "25"], "signed_in_callers": false}');
+insert into platform.client_callable_door select * from jsonb_populate_record(null::platform.client_callable_door, '{"id": "80b318b6-de88-4005-ac2b-db32fb010954", "reason": "SIGNED-IN door (authenticated only; anon revoked by this migration). Called only from signed-in surfaces (3 call sites).", "probe_args": null, "declared_at": "2026-09-13T07:34:35.434514+00:00", "declared_by": "DD-169 / B-63", "schema_name": "public", "refusal_only": false, "function_name": "update_scope", "identity_args": "p_scope_id uuid, p_name text, p_description text, p_settings jsonb, p_slug text, p_sort_order smallint", "argument_rules": null, "contract_probe": null, "gate_predicate": null, "non_client_lane": "server_only: retired as a client door by SCOPES-OLD-WRITERS (2026-09-29). Clients write scopes, scope types, context items, values, templates and tags through the record store''s scope doors (custom.context_type_write / _archive / _restore, custom.context_scope_write / _archive / _restore, custom.context_item_write / _archive / _restore, custom.context_value_write, custom.context_template_apply, custom.context_tags_set), which reach this function in the owner''s right. The server (service_role) and the definer functions that call it keep it.", "anonymous_callers": false, "anonymous_purpose": null, "identity_argtypes": ["2950", "25", "25", "3802", "25", "21"], "signed_in_callers": false}');
+insert into platform.client_callable_door select * from jsonb_populate_record(null::platform.client_callable_door, '{"id": "6432f3c3-dff8-4756-82a6-b805a9d5cdc5", "reason": "Signed-in door (DD-169 batch 3, B-75). SECURITY DEFINER; writes; 6 client call site(s) found across matrx-frontend / aidream / matrx-extend / matrx-local. The caller is resolved inside the body by `auth.role` — that literal is what D6 checks is still there. Triaged from the 608 grandfathered signed-in definers B-64 left behind; `anon` holds no EXECUTE on it.", "probe_args": null, "declared_at": "2026-09-13T08:48:49.614866+00:00", "declared_by": "DD-169 batch 3 / B-75", "schema_name": "public", "refusal_only": false, "function_name": "update_scope_type", "identity_args": "p_type_id uuid, p_label_singular text, p_label_plural text, p_icon text, p_description text, p_sort_order smallint, p_max_assignments smallint, p_color text, p_slug text", "argument_rules": null, "contract_probe": null, "gate_predicate": "auth.role", "non_client_lane": "server_only: retired as a client door by SCOPES-OLD-WRITERS (2026-09-29). Clients write scopes, scope types, context items, values, templates and tags through the record store''s scope doors (custom.context_type_write / _archive / _restore, custom.context_scope_write / _archive / _restore, custom.context_item_write / _archive / _restore, custom.context_value_write, custom.context_template_apply, custom.context_tags_set), which reach this function in the owner''s right. The server (service_role) and the definer functions that call it keep it.", "anonymous_callers": false, "anonymous_purpose": null, "identity_argtypes": ["2950", "25", "25", "25", "25", "21", "21", "25", "25"], "signed_in_callers": false}');
+
 
 CREATE OR REPLACE FUNCTION custom.context_type_write(p_organization_id uuid, p_type_id uuid, p_spec jsonb)
  RETURNS jsonb

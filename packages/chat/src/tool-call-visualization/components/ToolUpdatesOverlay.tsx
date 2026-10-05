@@ -42,6 +42,7 @@ import {
   InputView,
   RawDataView,
 } from "./ToolTabBodies";
+import { ToolConversationProvider } from "./ToolConversationContext";
 import {
   buildToolEntriesSummary,
   entryHasError,
@@ -195,6 +196,8 @@ export interface ToolUpdatesOverlayProps {
    *                                    and opens the first tab.
    */
   initialTab?: string;
+  /** Conversation the entries belong to; cards (ask_person) need it. */
+  conversationId?: string | null;
 }
 
 export const ToolUpdatesOverlay: React.FC<ToolUpdatesOverlayProps> = ({
@@ -202,6 +205,7 @@ export const ToolUpdatesOverlay: React.FC<ToolUpdatesOverlayProps> = ({
   onClose,
   entries,
   initialTab,
+  conversationId,
 }) => {
   const requestedCallId = useMemo(() => {
     if (!initialTab) return null;
@@ -320,16 +324,18 @@ export const ToolUpdatesOverlay: React.FC<ToolUpdatesOverlayProps> = ({
   }, [entries]);
 
   return (
-    <FullScreenOverlay
-      isOpen={isOpen}
-      onClose={onClose}
-      title={title}
-      description="Tool results, input, and raw data"
-      tabs={tabs}
-      initialTab={resolvedTopTab}
-      width="95vw"
-      height="95dvh"
-    />
+    <ToolConversationProvider>
+      <FullScreenOverlay
+        isOpen={isOpen}
+        onClose={onClose}
+        title={title}
+        description="Tool results, input, and raw data"
+        tabs={tabs}
+        initialTab={resolvedTopTab}
+        width="95vw"
+        height="95dvh"
+      />
+    </ToolConversationProvider>
   );
 };
 

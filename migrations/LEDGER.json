@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-05T06:55:26.706Z",
+  "generated_at": "2026-10-05T07:08:54.446Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -5372,6 +5372,12 @@
       "checksum": "5ebb36ba497927fb6f7047e759e294ab7f93085ed26e4dcb85d05a208bf87db5",
       "applied_at": "2026-10-05 06:31:09.962507+00"
     },
+    "migrations/campaign/scopesfts1f_the_scope_doors_write_no_old_row.sql": {
+      "source": "matrx-frontend",
+      "filename": "scopesfts1f_the_scope_doors_write_no_old_row.sql",
+      "checksum": "ff7bc58a80d82c805e9543bd0b74819de8b83c2ff9a836182f599c8fe517fdbd",
+      "applied_at": "2026-10-05 07:03:03.259471+00"
+    },
     "migrations/campaign/scopesg_the_agent_handoff_reads_each_tables_fields_by_its_own_key.sql": {
       "source": "matrx-frontend",
       "filename": "scopesg_the_agent_handoff_reads_each_tables_fields_by_its_own_key.sql",
@@ -7303,6 +7309,12 @@
       "filename": "templates7_c_an_uninstall_keeps_a_home_others_still_use.sql",
       "checksum": "5ac3edffe1cac9254c55697f7e10f78981a9dcbbe442b5afdd97f820657e3448",
       "applied_at": "2026-10-05 04:19:38.902712+00"
+    },
+    "migrations/campaign/templates7_d_a_scope_template_is_installed_from_the_one_gallery.sql": {
+      "source": "matrx-frontend",
+      "filename": "templates7_d_a_scope_template_is_installed_from_the_one_gallery.sql",
+      "checksum": "fd57b12a8788ae0ed0124a8f43ffb1cdd64653a818bccd1a02a99fe89516fe5c",
+      "applied_at": "2026-10-05 07:08:52.637067+00"
     },
     "migrations/campaign/tidy_one_freshness_ceiling.sql": {
       "source": "matrx-frontend",

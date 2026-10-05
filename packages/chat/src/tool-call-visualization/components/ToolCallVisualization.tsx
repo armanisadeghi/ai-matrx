@@ -783,6 +783,7 @@ const ToolCallVisualizationInner: React.FC<{
         }}
         entries={entries}
         initialTab={initialOverlayTab}
+        conversationId={conversationId}
       />
     </div>
   );

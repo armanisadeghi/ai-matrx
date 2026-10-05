@@ -46,24 +46,9 @@ export interface KitBinding extends Omit<MergeFieldBinding, "table_id" | "record
   record_index?: number;
 }
 
-/**
- * THE BINDING WRITTEN ONTO THE FORKED AGENT's `variable_definitions[i].binding` —
- * the server's merge-field declaration (owner contract change, 2026-09-25).
- */
-export interface MergeFieldBinding {
-  kind: "merge_field";
-  source: "record";
-  semantic_type: "collection" | "reference" | "value";
-  table_id: string;
-  record_id?: string;
-  field_key?: string;
-  match?: Record<string, unknown>;
-  limit?: number;
-  sort?: { field: string; dir: "asc" | "desc" };
-  transform?: { name: string; template?: string; join?: string; max?: number };
-  missing?: string;
-  override_policy?: string;
-}
+/** THE BINDING WRITTEN ONTO THE FORKED AGENT — one type, owned by the shared builder. */
+import type { MergeFieldBinding } from "@/features/make/gallery/mergeBinding";
+export type { MergeFieldBinding };
 
 export interface KitAgent {
   key: string;

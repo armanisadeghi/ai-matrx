@@ -36,8 +36,8 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@ai-matrx/design-system";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { templateAgentArchiver, templateAgentCopier } from "@/features/kits/templateAgentCopyHost";
-import { addInstalledAgent, agentStillToCopy, agentsLeftBy } from "./installAgent";
+import { templateAgentArchiver, templateAgentCopier, templateWorkflowCreator } from "@/features/kits/templateAgentCopyHost";
+import { addInstalledAgent, agentsLeftBy, hostStepsPending } from "./installAgent";
 import { selectActiveOrganizationName } from "@/features/scopes/redux/selectors/active-context";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
@@ -248,18 +248,21 @@ export function TemplatePreview({ templateId }: { templateId: string }) {
   const [agentNote, setAgentNote] = useState<string | null>(null);
 
   const addAgent = async (answer: TemplateDoorAnswer, orgId: string) => {
-    if (!agentStillToCopy(answer)) return;
+    if (!hostStepsPending(answer)) return;
     setAgent({ phase: "copying" });
     const supabase = createClient();
     const result = await addInstalledAgent(answer, orgId, {
       copier: templateAgentCopier(dispatch),
-      note: async (installId, agentId, label) => {
+      // Extra agents (Kits → Template merge) are copied as the kit copied them: no records tool added.
+      extraCopier: templateAgentCopier(dispatch, { attachRecordsTool: false }),
+      createWorkflow: templateWorkflowCreator(dispatch),
+      note: async (installId, agentId, label, kind) => {
         const { data, error } = await supabase
           .schema("custom")
           .rpc("template_install_note", {
             p_organization_id: orgId,
             p_install_id: installId,
-            p_kind: "agent",
+            p_kind: kind ?? "agent",
             p_id: agentId,
             p_label: label,
           });

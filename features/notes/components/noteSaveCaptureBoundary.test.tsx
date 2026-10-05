@@ -10,6 +10,7 @@
 import React, { act } from "react";
 import { Provider } from "react-redux";
 import { configureStore } from "@reduxjs/toolkit";
+import storeReadsReducer from "@/lib/redux/slices/storeReadsSlice";
 import { enableMapSet } from "immer";
 import { createRoot } from "react-dom/client";
 import notesReducer, { upsertNoteFromServer, setNoteField } from "../redux/slice";
@@ -66,7 +67,7 @@ const row = (): Note => ({
 describe("save-failure capture boundary (behaviour)", () => {
   it("a rejected Save on the phone shows the already-captured notice, never a fresh toast.error", async () => {
     const store = configureStore({
-      reducer: { notes: notesReducer, userAuth: (s = { id: ACTOR, authReady: true }) => s },
+      reducer: { notes: notesReducer, storeReads: storeReadsReducer, userAuth: (s = { id: ACTOR, authReady: true }) => s },
       middleware: (gdm) => gdm({ serializableCheck: false, immutableCheck: false }),
     });
     store.dispatch(upsertNoteFromServer({ note: row(), fetchStatus: "full" }));

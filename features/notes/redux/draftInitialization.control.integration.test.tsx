@@ -79,6 +79,7 @@ jest.mock("./thunks", () => {
 
 import { AlchemyActionsTestHost } from "@/test-utils/alchemy-actions-host";
 import { configureStore } from "@reduxjs/toolkit";
+import storeReadsReducer from "@/lib/redux/slices/storeReadsSlice";
 import { enableMapSet } from "immer";
 import { Provider } from "react-redux";
 import { act } from "react";
@@ -236,7 +237,7 @@ function store(activeOrganizationId = ORG_A) {
   const userAuthReducer = (state: Pick<UserAuthState, "id"> = { id: USER }) => state;
   return configureStore({
     reducer: {
-      notes: notesReducer,
+      notes: notesReducer, storeReads: storeReadsReducer,
       appContext: appContextReducer, scopesTree: scopesTreeReducer, userPreferences: userPreferencesReducer,
       userAuth: userAuthReducer,
       agentShortcut: agentShortcutReducer,
@@ -259,7 +260,7 @@ function switchableStore(activeOrganizationId = ORG_A) {
     action.type === "test/switch-user" ? { id: "other-user" } : state;
   return configureStore({
     reducer: {
-      notes: notesReducer, appContext: appContextReducer, scopesTree: scopesTreeReducer, userPreferences: userPreferencesReducer, userAuth: userAuthReducer,
+      notes: notesReducer, storeReads: storeReadsReducer, appContext: appContextReducer, scopesTree: scopesTreeReducer, userPreferences: userPreferencesReducer, userAuth: userAuthReducer,
       agentShortcut: agentShortcutReducer, agentShortcutCategory: agentShortcutCategoryReducer, skl: sklReducer,
       diffCompare: diffCompareReducer,
       adminDebug: adminDebugReducer,

@@ -10,6 +10,8 @@ import { supabase } from "@/utils/supabase/client";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import { duplicateAgent, saveAgentField } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import { nameCopiedAgent, writeAgent } from "./installer";
+import { callApi } from "@/lib/api/call-api";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 import {
   createTemplateAgentArchiver,
   createTemplateAgentCopier,
@@ -88,4 +90,32 @@ export function templateAgentCopier(dispatch: AppDispatch, options?: TemplateAge
     },
     options,
   );
+}
+
+/**
+ * A template's workflow: aidream `POST /workflows` in the captured organization, as the person
+ * (the same door the kit installer uses). Answers the workflow's id.
+ */
+export function templateWorkflowCreator(
+  dispatch: AppDispatch,
+): (organizationId: string, workflow: { name: string; description: string; definition: unknown }) => Promise<string> {
+  return async (organizationId, workflow) => {
+    const result = await dispatch(
+      callApi({
+        path: "/workflows",
+        method: "POST",
+        scopeOverrides: { organization_id: organizationId },
+        body: {
+          name: workflow.name,
+          description: workflow.description,
+          definition: workflow.definition as components["schemas"]["CreateWorkflowRequest"]["definition"],
+        },
+      }),
+    );
+    if (result.error) throw new Error(`Could not create the workflow "${workflow.name}": ${result.error.message}`);
+    const created = result.data as components["schemas"]["DefinitionRecord"] | undefined;
+    const id = created?.id ?? created?.definition_id ?? null;
+    if (!id) throw new Error(`The workflow "${workflow.name}" was created but the server sent back no id.`);
+    return id;
+  };
 }

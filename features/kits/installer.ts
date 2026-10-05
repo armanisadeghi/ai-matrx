@@ -45,6 +45,7 @@ import { duplicateAgent } from "@ai-matrx/chat/agents/redux/agent-definition/thu
 import { callApi } from "@/lib/api/call-api";
 import type { components } from "@ai-matrx/agents/generated/api-types";
 import { setWorkflowFlag } from "@/features/workflow-runtime/browse/service";
+import { buildMergeFieldBinding, resolveIdPlaceholders } from "@/features/make/gallery/mergeBinding";
 import { saveAgentField } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import { KIT_INSTALLS_TABLE, KIT_ROUTES, KIT_WORD } from "./constants";
 import type {
@@ -369,29 +370,24 @@ function resolveSeedValue(value: unknown, steps: KitInstallSteps): unknown {
 
 export function resolveBinding(binding: KitBinding, steps: KitInstallSteps): MergeFieldBinding {
   const { table_key, record_index, ...rest } = binding;
-  const tableId = steps.tables?.[table_key];
-  if (!tableId) throw new InstallError(`The binding names the kit's "${table_key}" table, which was not created.`);
-  const out: MergeFieldBinding = { ...rest, table_id: tableId };
-  if (typeof record_index === "number") {
-    const recordId = steps.records?.[table_key]?.[record_index];
-    if (!recordId) {
-      throw new InstallError(`The binding names row ${record_index + 1} of "${table_key}", which was not created.`);
-    }
-    out.record_id = recordId;
+  try {
+    // THE ONE builder (features/make/gallery/mergeBinding.ts), shared with the template install.
+    return buildMergeFieldBinding(rest, table_key, record_index, {
+      tableId: (key) => steps.tables?.[key],
+      recordId: (key, row) => (typeof row === "number" ? steps.records?.[key]?.[row] : undefined),
+    }, "kit");
+  } catch (err) {
+    throw new InstallError(err instanceof Error ? err.message : String(err));
   }
-  return out;
 }
 
 /** `{{table:<key>}}` / `{{agent:<key>}}` → the ids this install created. */
 function resolvePlaceholders(definition: unknown, steps: KitInstallSteps): unknown {
-  const text = JSON.stringify(definition ?? {});
-  const replaced = text.replace(/\{\{(table|agent|workflow):([a-zA-Z0-9_\-]+)\}\}/g, (_m, kind: string, key: string) => {
-    const bag = kind === "table" ? steps.tables : kind === "agent" ? steps.agents : steps.workflows;
-    const id = bag?.[key];
-    if (!id) throw new InstallError(`The workflow names the kit's ${kind} "${key}", which was not created.`);
-    return id;
-  });
-  return JSON.parse(replaced) as unknown;
+  try {
+    return resolveIdPlaceholders(definition, { table: steps.tables, agent: steps.agents, workflow: steps.workflows }, "kit");
+  } catch (err) {
+    throw new InstallError(err instanceof Error ? err.message : String(err));
+  }
 }
 
 function fieldSpecs(manifest: KitManifest, tableKey: string, steps: KitInstallSteps): NewFieldSpec[] {

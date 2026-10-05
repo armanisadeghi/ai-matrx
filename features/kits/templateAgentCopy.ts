@@ -43,6 +43,7 @@ import type { Json } from "@/types/database.types";
 import type { CustomDataBinding } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import { tableReferenceValue, tableVariableTypeOf } from "@ai-matrx/chat/agents/utils/table-variable";
 import type { AgentRow } from "./installer";
+import type { MergeFieldBinding } from "@/features/make/gallery/mergeBinding";
 
 // ─── the contract (structurally identical to @ai-matrx/records templates/install.ts) ──
 // The package does not export its templates entry yet, so the request is declared here
@@ -53,6 +54,11 @@ export interface TemplateAgentBinding {
   tableToken: string;
   tableId: string;
   describes: string;
+  /**
+   * The full, resolved merge-field binding (Kits → Template merge: one row, one field, a list
+   * transform…). When present it is written as it is; absent, the whole-table default below.
+   */
+  binding?: MergeFieldBinding;
 }
 
 export interface TemplateAgentCopyRequest {
@@ -133,6 +139,11 @@ export function bindTemplateVariables(
       throw new Error(`The copied agent has no "${b.variable.replace(/_/g, " ")}" input to connect.`);
     }
     const def = defs[idx] as Record<string, unknown>;
+    if (b.binding) {
+      def.binding = b.binding;
+      def.defaultValue = null;
+      continue;
+    }
     const tableType = tableVariableTypeOf(isRecord(def.customComponent) ? def.customComponent : null);
     if (tableType) {
       const ids = referenced.get(idx) ?? [];

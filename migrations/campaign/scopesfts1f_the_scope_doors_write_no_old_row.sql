@@ -1,4 +1,4 @@
--- chair-step: the scope doors stop writing the old rows: the type, scope and context-field write, archive and restore doors write only the store (its own side effects run with that write) and answer from the Record (ADDS custom.scope_row_of and custom.context_item_row_of, no client grant); the trash restores (public.entity_undelete, public.org_trash_restore) call the store's restore doors; the 58 old-row triggers on the six old scope tables and the 25 old write functions and old-row trigger functions are dropped (0 callers: bodies, triggers, views, policies, cron, five repos; the web's last callers, scopesService's old methods, were removed in the same commit). Same answer, rolled back on live, admin in Cedar Ridge and test@test.com in its own organization: every door's answer and store effect equal before and after except the scope answer gains search_engine_indexed and the context-field answer is the shape the field lists already read. Guard scripts/campaign-tests/scopesfts1f_the_scope_doors_write_no_old_row_red_green.sql RED (3 old rows per seat) then GREEN; the FTS-1d/1e/1f scope guards green with the file.
+-- chair-step: the scope doors stop writing the old rows: the type, scope and context-field write, archive and restore doors write only the store (its own side effects run with that write) and answer from the Record (ADDS custom.scope_row_of and custom.context_item_row_of, no client grant); the trash restores (public.entity_undelete, public.org_trash_restore) call the store's restore doors; the 18 old write functions are dropped with their door rows (the 58 old-row triggers and their 7 functions go in the window file scopesfts1f_the_old_scope_rows_lose_their_triggers.sql) (0 callers: bodies, triggers, views, policies, cron, five repos; the web's last callers, scopesService's old methods, were removed in the same commit). Same answer, rolled back on live, admin in Cedar Ridge and test@test.com in its own organization: every door's answer and store effect equal before and after except the scope answer gains search_engine_indexed and the context-field answer is the shape the field lists already read. Guard scripts/campaign-tests/scopesfts1f_the_scope_doors_write_no_old_row_red_green.sql RED (3 old rows per seat) then GREEN; the FTS-1d/1e/1f scope guards green with the file.
 -- lane: FINISH-THE-SWITCH (FTS-1f, old-row writes off, item 3)
 -- based-on: custom.context_type_write(uuid, uuid, jsonb) fccdc383fbaa6e6502773f097e75c2d05d9b3d31e6396cc33dd44a3aa26f0ddc
 -- based-on: custom.context_type_archive(uuid) 3952049f5449fc85d5795660215b4a68479565428862f9d8b2cf5efa319225f7
@@ -13,13 +13,13 @@
 -- based-on: public.entity_undelete(text, uuid) 9c504b79cc56ccb4a506bb24a170e67ad12f95b46c4fca7fe54085b2a0bf5f34
 -- based-on: public.org_trash_restore(uuid, text, uuid) 21f0ce4664ba8167c4d5259032c77ef631870c38dc689df73826477e863143fe
 -- lock: custom,public,context
+-- window-class: none — function bodies, DROP FUNCTION and door-row deletes only; no DDL on any table.
 --
 -- Inverse: migrations/inverse/scopesfts1f_the_scope_doors_write_no_old_row_down.sql.
 --
 -- THE USE CASE. Cedar Ridge Physical Therapy adds a "Referral Source" type, a source and a "Fax Number" field;
 -- each lands in the store alone, the one home the scope pages read.
 
-SET LOCAL lock_timeout = '10s';
 
 CREATE OR REPLACE FUNCTION custom._ctx_type_subtree_follows(p_org uuid, p_root uuid, p_when timestamptz, p_restore boolean)
  RETURNS integer
@@ -1385,81 +1385,32 @@ begin
 end;
 $function$;
 
--- THE OLD ROWS' TRIGGERS ON THE SIX TABLES: nothing writes those rows any more.
-DROP TRIGGER _stamp_actor_tier ON context.context_item_values;
-DROP TRIGGER custom_fields_validation ON context.context_item_values;
-DROP TRIGGER trg_ctx_validate_value_scope_type ON context.context_item_values;
-DROP TRIGGER trg_ctx_version_context_item_value ON context.context_item_values;
-DROP TRIGGER zz_follow_to_the_copy ON context.context_item_values;
-DROP TRIGGER _gc_assoc_harddelete ON context.context_items;
-DROP TRIGGER _gc_assoc_softdelete ON context.context_items;
-DROP TRIGGER _guard_soft_delete_parent ON context.context_items;
-DROP TRIGGER _history ON context.context_items;
-DROP TRIGGER _stamp_actor ON context.context_items;
-DROP TRIGGER _stamp_actor_tier ON context.context_items;
-DROP TRIGGER _touch_row ON context.context_items;
-DROP TRIGGER context_items_compute_review ON context.context_items;
-DROP TRIGGER context_items_updated_at ON context.context_items;
-DROP TRIGGER custom_fields_validation ON context.context_items;
-DROP TRIGGER enforce_context_item_reference_source ON context.context_items;
-DROP TRIGGER ensure_slug ON context.context_items;
-DROP TRIGGER provision_scope_datasets_on_item ON context.context_items;
-DROP TRIGGER trg_sweep_notify_context_item ON context.context_items;
-DROP TRIGGER zz_follow_to_the_copy ON context.context_items;
-DROP TRIGGER _stamp_actor_tier ON context.context_value_refs;
-DROP TRIGGER custom_fields_validation ON context.context_value_refs;
-DROP TRIGGER _stamp_actor_tier ON context.scope_dataset_instances;
-DROP TRIGGER custom_fields_validation ON context.scope_dataset_instances;
-DROP TRIGGER _cascade_softdelete ON context.scope_types;
-DROP TRIGGER _gc_assoc_harddelete ON context.scope_types;
-DROP TRIGGER _gc_assoc_softdelete ON context.scope_types;
-DROP TRIGGER _guard_soft_delete_parent ON context.scope_types;
-DROP TRIGGER _history ON context.scope_types;
-DROP TRIGGER _search_item_sync ON context.scope_types;
-DROP TRIGGER _stamp_actor ON context.scope_types;
-DROP TRIGGER _stamp_actor_tier ON context.scope_types;
-DROP TRIGGER _touch_row ON context.scope_types;
-DROP TRIGGER custom_fields_validation ON context.scope_types;
-DROP TRIGGER ensure_slug ON context.scope_types;
-DROP TRIGGER set_updated_at ON context.scope_types;
-DROP TRIGGER trg_sweep_notify_scope_type ON context.scope_types;
-DROP TRIGGER zz_follow_to_the_copy ON context.scope_types;
-DROP TRIGGER _a0_t13_dual_write ON context.scopes;
-DROP TRIGGER _cascade_softdelete ON context.scopes;
-DROP TRIGGER _gc_assoc_harddelete ON context.scopes;
-DROP TRIGGER _gc_assoc_softdelete ON context.scopes;
-DROP TRIGGER _gc_scope_assoc ON context.scopes;
-DROP TRIGGER _guard_governance ON context.scopes;
-DROP TRIGGER _guard_soft_delete_parent ON context.scopes;
-DROP TRIGGER _history ON context.scopes;
-DROP TRIGGER _search_item_sync ON context.scopes;
-DROP TRIGGER _stamp_actor ON context.scopes;
-DROP TRIGGER _stamp_actor_tier ON context.scopes;
-DROP TRIGGER _t13_count_row_column_writes ON context.scopes;
-DROP TRIGGER _touch_row ON context.scopes;
-DROP TRIGGER custom_fields_validation ON context.scopes;
-DROP TRIGGER ensure_slug ON context.scopes;
-DROP TRIGGER provision_scope_datasets_on_scope ON context.scopes;
-DROP TRIGGER set_updated_at ON context.scopes;
-DROP TRIGGER trg_ctx_validate_scope_parent ON context.scopes;
-DROP TRIGGER trg_sweep_notify_scope ON context.scopes;
-DROP TRIGGER zz_follow_to_the_copy ON context.scopes;
 
--- THE OLD WRITE FUNCTIONS AND THE OLD ROWS' TRIGGER FUNCTIONS: no caller left (bodies, triggers, views, policies, cron, repos).
-DROP FUNCTION _notify_suggestion_sweep_context_item();
-DROP FUNCTION context._follow_to_the_copy();
-DROP FUNCTION context.enforce_context_item_reference_source();
+-- Their door rows go with them (platform.client_callable_door: no client lane to a function that is gone).
+delete from platform.client_callable_door where id = '8b1b5d65-d5b9-4d95-8d6f-2f36e8477c9e';
+delete from platform.client_callable_door where id = '7b832fc5-5c71-4b2e-b97c-1e2562bd2b38';
+delete from platform.client_callable_door where id = 'caf639d0-97c7-40d0-873a-c7f31f9f4a82';
+delete from platform.client_callable_door where id = '6e448141-237b-4547-8b9d-303946e44a27';
+delete from platform.client_callable_door where id = '52c1f978-b93e-4b36-a9ea-d0c6a20d563b';
+delete from platform.client_callable_door where id = '37c2e763-b7d0-40c5-8bd0-859ec169208e';
+delete from platform.client_callable_door where id = 'ee68223d-7d26-4c45-a537-c311696af86e';
+delete from platform.client_callable_door where id = '1ae3a5b9-8b68-4ad7-bb16-aa023e57ea29';
+delete from platform.client_callable_door where id = '0913d994-5d69-42ea-9610-22c42aed26ee';
+delete from platform.client_callable_door where id = 'a1e1bf02-40e6-4a8e-b22d-bbbc4e8b907a';
+delete from platform.client_callable_door where id = '717f9d9e-a100-4ff4-84a4-813f3eb8fef0';
+delete from platform.client_callable_door where id = '3216a73b-0038-4cf7-b5c5-36895b469292';
+delete from platform.client_callable_door where id = '9d8e63ca-cddb-4bfd-8fb3-e6f8341f9a36';
+delete from platform.client_callable_door where id = '80b318b6-de88-4005-ac2b-db32fb010954';
+delete from platform.client_callable_door where id = '6432f3c3-dff8-4756-82a6-b805a9d5cdc5';
+
+-- THE OLD WRITE FUNCTIONS: no caller left (bodies, triggers, views, policies, cron, repos).
 DROP FUNCTION context.index_reference_value(uuid,uuid,uuid,text);
 DROP FUNCTION context.provision_scope_dataset(uuid,uuid);
-DROP FUNCTION context.provision_scope_datasets_trigger();
 DROP FUNCTION context.validate_reference_value(uuid,text);
 DROP FUNCTION context.write_context_value(uuid,uuid,text,numeric,boolean,jsonb,date,text,timestamp with time zone,time without time zone,text,text,uuid);
 DROP FUNCTION create_context_item(uuid,text,text,context_value_type,text,text,context_fetch_hint,context_sensitivity,text[],text,smallint,text[],integer,uuid[],jsonb);
 DROP FUNCTION create_scope_type(uuid,text,text,uuid,text,text,smallint,smallint,text[],text,text);
 DROP FUNCTION create_scope(uuid,uuid,text,uuid,text,jsonb,text,smallint);
-DROP FUNCTION ctx_validate_scope_parent();
-DROP FUNCTION ctx_validate_value_scope_type();
-DROP FUNCTION ctx_version_context_item_value();
 DROP FUNCTION delete_context_item(uuid);
 DROP FUNCTION delete_scope_type(uuid);
 DROP FUNCTION delete_scope(uuid);

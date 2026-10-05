@@ -12,6 +12,7 @@
 import React, { act } from "react";
 import { Provider, useSelector } from "react-redux";
 import { configureStore } from "@reduxjs/toolkit";
+import storeReadsReducer from "@/lib/redux/slices/storeReadsSlice";
 import { enableMapSet } from "immer";
 import { createRoot } from "react-dom/client";
 import workingCopiesReducer from "@/lib/working-copy/workingCopySlice";
@@ -113,6 +114,7 @@ const makeStore = () =>
   configureStore({
     reducer: {
       notes: notesReducer,
+      storeReads: storeReadsReducer,
       // The note's working copy (lib/working-copy) — every editor view reads it.
       workingCopies: workingCopiesReducer,
       userAuth: (state = { id: ACTOR, authReady: true }) => state,
