@@ -74,7 +74,7 @@ export function PageMenu({
         </button>
       </PopoverTrigger>
       <PopoverContent surface="solid" align="end" className="w-[260px] p-1">
-        <p className="px-2 pb-1 pt-1.5 text-xs text-muted-foreground">Style</p>
+        <p className="px-2 pb-1 pt-1.5 type-secondary text-muted-foreground">Style</p>
         <div className="grid grid-cols-3 gap-1 px-1 pb-1">
           {FONTS.map((f) => (
             <button
@@ -87,7 +87,7 @@ export function PageMenu({
               <span style={{ fontFamily: f.family }} className="text-2xl">
                 Ag
               </span>
-              <span className="text-xs text-muted-foreground">{f.label}</span>
+              <span className="type-secondary text-muted-foreground">{f.label}</span>
             </button>
           ))}
         </div>
@@ -107,7 +107,7 @@ export function PageMenu({
         <Row icon={<Trash2 size={16} />} label="Move to Trash" onClick={act(onDelete)} danger />
         <div className="my-1 border-t border-border" />
         <Row icon={<Undo2 size={16} />} label="Undo" onClick={act(onUndo)} />
-        <p className="px-2 pb-1.5 pt-2 text-xs text-muted-foreground">{updatedLabel}</p>
+        <p className="px-2 pb-1.5 pt-2 type-secondary text-muted-foreground">{updatedLabel}</p>
       </PopoverContent>
     </Popover>
   );

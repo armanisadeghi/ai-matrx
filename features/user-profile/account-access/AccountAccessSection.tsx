@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { KeyRound, Loader2, LogOut, Mail } from "lucide-react";
+import { KeyRound, LogOut, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system/controls";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
@@ -11,6 +11,7 @@ import { SettingsReadOnlyValue } from "@/components/official/settings/layout/Set
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
 import { readAccountAccess, requestEmailChange, signOutOtherSessions, type AccountAccessState } from "./accountAccess";
 
+import { Spinner } from "@/components/ui/loaders/Spinner";
 type Operation = "email" | "sessions" | null;
 
 export function AccountAccessSection() {
@@ -73,8 +74,8 @@ export function AccountAccessSection() {
     <SettingsSection title="Account access">
       <div className="space-y-4 p-4">
         {error ? <ErrorNotice message={error} size="inline" /> : null}
-        {notice ? <p className="text-sm text-emerald-700 dark:text-emerald-400">{notice}</p> : null}
-        {!account && !error ? <div className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" aria-hidden />Loading account…</div> : null}
+        {notice ? <p className="type-body text-success">{notice}</p> : null}
+        {!account && !error ? <div className="flex items-center gap-2 type-body text-muted-foreground"><Spinner size="xs" className="text-current" />Loading account…</div> : null}
         {account ? (
           <>
             <SettingsReadOnlyValue label="Primary email" value={account.email} />
@@ -82,12 +83,12 @@ export function AccountAccessSection() {
             <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
               <label className="sr-only" htmlFor="account-email">New email address</label>
               <Input id="account-email" type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} disabled={operation !== null} />
-              <Button icon={operation === "email" ? <Loader2 className="animate-spin" aria-hidden /> : <Mail aria-hidden />} variant="primary" type="button" onClick={() => void submitEmail()} disabled={operation !== null || emailUnchanged}> Change email
+              <Button icon={operation === "email" ? <Spinner size="xs" className="text-current" /> : <Mail aria-hidden />} variant="primary" type="button" onClick={() => void submitEmail()} disabled={operation !== null || emailUnchanged}> Change email
               </Button>
             </div>
             <div className="flex flex-wrap items-center gap-2 border-t border-border pt-4">
               <Button asChild variant="outline"><Link href="/forgot-password?redirectTo=%2Fuser-settings%2Faccount"><KeyRound className="h-4 w-4" aria-hidden />Reset password</Link></Button>
-              <Button icon={operation === "sessions" ? <Loader2 className="animate-spin" aria-hidden /> : <LogOut aria-hidden />} type="button" variant="outline" onClick={() => void endOtherSessions()} disabled={operation !== null}> Sign out other sessions
+              <Button icon={operation === "sessions" ? <Spinner size="xs" className="text-current" /> : <LogOut aria-hidden />} type="button" variant="outline" onClick={() => void endOtherSessions()} disabled={operation !== null}> Sign out other sessions
               </Button>
               <InfoHint label="About other sessions" text="Other sessions lose refresh access; issued access tokens remain valid until they expire." />
             </div>

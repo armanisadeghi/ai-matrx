@@ -191,7 +191,7 @@ function ParticipantRow({
   if (!participant) {
     return (
       <tr className="border-b border-border/60" data-participant={row.id}>
-        <td colSpan={5} className="px-2 py-1 text-xs text-destructive">
+        <td colSpan={5} className="px-2 py-1 type-secondary text-destructive">
           {row.error ?? "Unreadable participant"}
         </td>
       </tr>
@@ -221,10 +221,10 @@ function ParticipantRow({
       data-clickable
     >
       <td className="px-2 py-1">
-        <div className="truncate text-xs font-medium text-foreground">{participantName(participant)}</div>
-        {problem ? <div className="truncate text-[11px] text-destructive">{problem}</div> : null}
+        <div className="truncate type-secondary font-medium text-foreground">{participantName(participant)}</div>
+        {problem ? <div className="truncate type-meta text-destructive">{problem}</div> : null}
       </td>
-      <td className="px-1 py-1 text-xs tabular-nums text-muted-foreground">{round ?? "—"}</td>
+      <td className="px-1 py-1 type-secondary tabular-nums text-muted-foreground">{round ?? "—"}</td>
       <td className="px-1 py-1" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center gap-1">
           <Select
@@ -270,7 +270,7 @@ function ParticipantRow({
           ]}
         />
       </td>
-      <td className="px-2 py-1 text-right text-[11px] tabular-nums text-muted-foreground" title="Policy version">
+      <td className="px-2 py-1 text-right type-meta tabular-nums text-muted-foreground" title="Policy version">
         {saving ? "…" : `v${participant.policy_version ?? 1}`}
       </td>
     </tr>
@@ -278,7 +278,7 @@ function ParticipantRow({
       <td colSpan={5} className="px-2 pb-1" onClick={(e) => e.stopPropagation()}>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
           <div className="flex items-center gap-1">
-            <span className="text-[11px] text-muted-foreground">Reveal</span>
+            <span className="type-meta text-muted-foreground">Reveal</span>
             <Select
               value={full.reveal}
               onValueChange={(v) => change({ reveal: v as FullPolicy["reveal"], revealRounds: full.revealRounds ?? 1 })}
@@ -304,7 +304,7 @@ function ParticipantRow({
             ) : null}
           </div>
           <div className="flex items-center gap-1">
-            <span className="text-[11px] text-muted-foreground">Cadence</span>
+            <span className="type-meta text-muted-foreground">Cadence</span>
             <Select
               value={full.cadence}
               onValueChange={(v) => change({ cadence: v as FullPolicy["cadence"], cadenceRounds: full.cadenceRounds ?? 1 })}
@@ -330,7 +330,7 @@ function ParticipantRow({
             ) : null}
           </div>
           <div className="flex items-center gap-1">
-            <span className="text-[11px] text-muted-foreground">Budget</span>
+            <span className="type-meta text-muted-foreground">Budget</span>
             <CountInput
               ariaLabel="Budget (characters)"
               step={1000}
@@ -354,12 +354,12 @@ function TurnDetail({
   nameOf: (key: string) => string;
 }) {
   if (!turn || turn.status === "loading") return <Skeleton className="mx-2 my-2 h-16" />;
-  if (turn.status === "error") return <p className="px-2 py-1 text-xs text-destructive">{turn.message}</p>;
-  if (!turn.turn) return <p className="px-2 py-1 text-xs text-muted-foreground">No turn yet</p>;
+  if (turn.status === "error") return <p className="px-2 py-1 type-secondary text-destructive">{turn.message}</p>;
+  if (!turn.turn) return <p className="px-2 py-1 type-secondary text-muted-foreground">No turn yet</p>;
   const { turn: t } = turn;
   return (
     <div className="flex min-w-0 flex-col">
-      <h3 className="px-2 pt-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Shown</h3>
+      <h3 className="px-2 pt-2 type-meta font-semibold uppercase tracking-wide text-muted-foreground">Shown</h3>
       <RoomViewReceipt
         conversationId={t.conversationId}
         messageId={t.messageId}
@@ -367,9 +367,9 @@ function TurnDetail({
         speakerName={nameOf}
         withheldText={t.withheldText}
       />
-      <h3 className="px-2 pt-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Said</h3>
+      <h3 className="px-2 pt-2 type-meta font-semibold uppercase tracking-wide text-muted-foreground">Said</h3>
       {t.reply && hitOutputLimit(t.finishReason) ? (
-        <p className="px-2 pt-1 text-[11px] font-medium text-destructive" data-finish-reason={t.finishReason}>
+        <p className="px-2 pt-1 type-meta font-medium text-destructive" data-finish-reason={t.finishReason}>
           Cut off at the output limit
         </p>
       ) : null}
@@ -378,7 +378,7 @@ function TurnDetail({
           <RichDocument imagePolicy="ai" content={stripControlLines(t.reply)} source={{ type: "raw" }} hideCopyButton contentClassName="text-xs" />
         </div>
       ) : (
-        <p className="px-2 py-1 text-xs text-muted-foreground">No reply yet</p>
+        <p className="px-2 py-1 type-secondary text-muted-foreground">No reply yet</p>
       )}
     </div>
   );
@@ -407,8 +407,8 @@ export function GroupChatInspector({ anchorType, anchorId, initialKey }: { ancho
   );
 
   if (state.status === "loading") return <Skeleton className="m-2 h-40" />;
-  if (state.status === "missing") return <p className="px-3 py-2 text-xs text-muted-foreground">No group chat in this room yet</p>;
-  if (state.status === "error") return <p className="px-3 py-2 text-xs text-destructive">{state.message}</p>;
+  if (state.status === "missing") return <p className="px-3 py-2 type-secondary text-muted-foreground">No group chat in this room yet</p>;
+  if (state.status === "error") return <p className="px-3 py-2 type-secondary text-destructive">{state.message}</p>;
 
   const groupKeys = rows.flatMap((r) => (r.participant ? [r.participant.key] : []));
   const nameOf = (key: string) => {
@@ -420,7 +420,7 @@ export function GroupChatInspector({ anchorType, anchorId, initialKey }: { ancho
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-background" data-group-chat={anchorId}>
-      <div className="flex shrink-0 items-center gap-2 border-b border-border px-2 py-1 text-xs">
+      <div className="flex shrink-0 items-center gap-2 border-b border-border px-2 py-1 type-secondary">
         <span className="font-medium text-foreground">Round {state.group.round}</span>
         <span className="text-muted-foreground">{rows.length} participants</span>
         <button
@@ -440,7 +440,7 @@ export function GroupChatInspector({ anchorType, anchorId, initialKey }: { ancho
         <div className="overflow-x-auto">
           <table className="w-full border-collapse">
             <thead>
-              <tr className="border-b border-border text-left text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+              <tr className="border-b border-border text-left type-meta font-medium uppercase tracking-wide text-muted-foreground">
                 <th className="px-2 py-1 font-medium">Participant</th>
                 <th className="px-1 py-1 font-medium" title="Round of its latest turn">Round</th>
                 <th className="px-1 py-1 font-medium">Sees</th>
@@ -464,7 +464,7 @@ export function GroupChatInspector({ anchorType, anchorId, initialKey }: { ancho
               ))}
               {anchorType === "interview_session" ? (
                 <tr className="border-b border-border/60" data-participant="scribe">
-                  <td className="px-2 py-1 text-xs text-muted-foreground" colSpan={5}>
+                  <td className="px-2 py-1 type-secondary text-muted-foreground" colSpan={5}>
                     Scribe · background pass, not a group participant
                   </td>
                 </tr>
@@ -474,7 +474,7 @@ export function GroupChatInspector({ anchorType, anchorId, initialKey }: { ancho
         </div>
         {selected ? (
           <section className="border-t border-border" data-latest-turn={selected.participant?.key}>
-            <div className="px-2 pt-2 text-xs font-medium text-foreground">
+            <div className="px-2 pt-2 type-secondary font-medium text-foreground">
               {selected.participant ? participantName(selected.participant) : "Participant"} · latest turn
             </div>
             <TurnDetail turn={turns[selected.conversation_id]} nameOf={nameOf} />

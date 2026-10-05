@@ -151,12 +151,12 @@ function KvRow({
 }) {
   return (
     <div className="flex items-start gap-2 py-0.5 min-w-0">
-      <span className="w-44 shrink-0 text-[11px] text-muted-foreground text-right">
+      <span className="w-44 shrink-0 type-meta text-muted-foreground text-right">
         {label}
       </span>
       <span
         className={cn(
-          "text-xs flex-1 min-w-0 truncate",
+          "type-secondary flex-1 min-w-0 truncate",
           mono && "font-mono",
           dim && "text-muted-foreground",
         )}
@@ -172,7 +172,7 @@ function KvRow({
 function SectionHeader({ title }: { title: string }) {
   return (
     <div className="px-3 py-1 mt-2 first:mt-0">
-      <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">
+      <span className="type-meta font-semibold text-muted-foreground uppercase tracking-widest">
         {title}
       </span>
     </div>
@@ -226,7 +226,7 @@ function OverviewTab({
 
   if (!agent)
     return (
-      <div className="p-4 text-xs text-muted-foreground">Agent not found</div>
+      <div className="p-4 type-secondary text-muted-foreground">Agent not found</div>
     );
 
   const statusVariant = (s?: string) => {
@@ -253,7 +253,7 @@ function OverviewTab({
         <KvRow
           label="description"
           value={
-            <span className="text-[11px] text-muted-foreground whitespace-normal leading-snug">
+            <span className="type-meta text-muted-foreground whitespace-normal leading-snug">
               {agent.description?.slice(0, 120) ?? "—"}
             </span>
           }
@@ -343,7 +343,7 @@ function OverviewTab({
       {!conversationId && (
         <>
           <SectionHeader title="Instance" />
-          <div className="px-3 py-2 text-xs text-muted-foreground">
+          <div className="px-3 py-2 type-secondary text-muted-foreground">
             No instance selected — click an instance in the sidebar to inspect
             it.
           </div>
@@ -377,7 +377,7 @@ function InstancesTab({
   return (
     <div className="flex flex-col h-full min-h-0">
       <div className="flex items-center gap-2 px-3 py-1.5 border-b border-border shrink-0">
-        <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider flex-1">
+        <span className="type-meta font-semibold text-muted-foreground uppercase tracking-wider flex-1">
           conversations
         </span>
         {/* read-gate-exempt: in-memory Redux agent instance state, not a server read */}
@@ -405,7 +405,7 @@ function InstancesTab({
           ))}
           {allInstances.length === 0 && (
             // read-gate-exempt: debug inspector of the in-memory redux instance state; it shows what the store holds, not a read's answer
-            <div className="p-4 text-xs text-muted-foreground">
+            <div className="p-4 type-secondary text-muted-foreground">
               No instances
             </div>
           )}
@@ -432,7 +432,7 @@ function VariablesTab({ conversationId }: { conversationId: string | null }) {
 
   if (!conversationId)
     return (
-      <div className="p-4 text-xs text-muted-foreground">
+      <div className="p-4 type-secondary text-muted-foreground">
         Select an instance
       </div>
     );
@@ -494,7 +494,7 @@ function UserInputTab({ conversationId }: { conversationId: string | null }) {
 
   if (!conversationId)
     return (
-      <div className="p-4 text-xs text-muted-foreground">
+      <div className="p-4 type-secondary text-muted-foreground">
         Select an instance
       </div>
     );
@@ -504,21 +504,21 @@ function UserInputTab({ conversationId }: { conversationId: string | null }) {
       <SectionHeader title="Text" />
       <div className="px-3 pb-2">
         {text ? (
-          <pre className="text-xs font-mono text-foreground whitespace-pre-wrap bg-muted/10 rounded p-2">
+          <pre className="type-secondary font-mono text-foreground whitespace-pre-wrap bg-muted/10 rounded p-2">
             {text}
           </pre>
         ) : (
-          <span className="text-xs text-muted-foreground">(empty)</span>
+          <span className="type-secondary text-muted-foreground">(empty)</span>
         )}
       </div>
       <SectionHeader title="Content Blocks" />
       <div className="px-3 pb-2">
         {blocks ? (
-          <pre className="text-xs font-mono text-foreground whitespace-pre-wrap bg-muted/10 rounded p-2">
+          <pre className="type-secondary font-mono text-foreground whitespace-pre-wrap bg-muted/10 rounded p-2">
             {formatJson(blocks, 2)}
           </pre>
         ) : (
-          <span className="text-xs text-muted-foreground">(null)</span>
+          <span className="type-secondary text-muted-foreground">(null)</span>
         )}
       </div>
     </div>
@@ -533,7 +533,7 @@ function UIStateTab({ conversationId }: { conversationId: string | null }) {
   );
   if (!conversationId)
     return (
-      <div className="p-4 text-xs text-muted-foreground">
+      <div className="p-4 type-secondary text-muted-foreground">
         Select an instance
       </div>
     );
@@ -579,13 +579,13 @@ function MessageCard({
         ) : (
           <ChevronRight className="h-3 w-3 text-muted-foreground shrink-0" />
         )}
-        <span className={cn("text-xs font-semibold w-16 shrink-0", roleColor)}>
+        <span className={cn("type-secondary font-semibold w-16 shrink-0", roleColor)}>
           {record.role}
         </span>
-        <span className="text-xs text-muted-foreground flex-1 min-w-0 truncate">
+        <span className="type-secondary text-muted-foreground flex-1 min-w-0 truncate">
           {preview}
         </span>
-        <span className="text-[10px] text-muted-foreground/50 shrink-0">
+        <span className="type-meta text-muted-foreground/50 shrink-0">
           #{index}
         </span>
         <button
@@ -597,14 +597,14 @@ function MessageCard({
           className="opacity-0 group-hover:opacity-100 h-4 w-4 flex items-center justify-center rounded text-muted-foreground hover:text-foreground transition-all shrink-0"
         >
           {copied ? (
-            <Check className="h-3 w-3 text-emerald-500" />
+            <Check className="h-3 w-3 text-success" />
           ) : (
             <Copy className="h-3 w-3" />
           )}
         </button>
       </div>
       {open && (
-        <pre className="px-4 pb-3 text-xs font-mono text-foreground whitespace-pre-wrap leading-relaxed bg-muted/10">
+        <pre className="px-4 pb-3 type-secondary font-mono text-foreground whitespace-pre-wrap leading-relaxed bg-muted/10">
           {json}
         </pre>
       )}
@@ -625,7 +625,7 @@ function HistoryTab({ conversationId }: { conversationId: string | null }) {
 
   if (!conversationId)
     return (
-      <div className="p-4 text-xs text-muted-foreground">
+      <div className="p-4 type-secondary text-muted-foreground">
         Select an instance
       </div>
     );
@@ -633,7 +633,7 @@ function HistoryTab({ conversationId }: { conversationId: string | null }) {
   return (
     <div className="flex flex-col h-full min-h-0">
       <div className="flex items-center gap-2 px-3 py-1.5 border-b border-border shrink-0">
-        <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider flex-1">
+        <span className="type-meta font-semibold text-muted-foreground uppercase tracking-wider flex-1">
           messages
         </span>
         <Badge label={`mode: ${mode}`} variant="info" />
@@ -644,7 +644,7 @@ function HistoryTab({ conversationId }: { conversationId: string | null }) {
           <div className="flex flex-col items-center justify-center h-32 text-muted-foreground gap-1">
             <MessageSquare className="h-6 w-6 opacity-20" />
             {/* read-gate-exempt: debug inspector of the in-memory redux conversation state; it shows what the store holds, not a read's answer */}
-            <span className="text-xs">No messages yet</span>
+            <span className="type-secondary">No messages yet</span>
           </div>
         ) : (
           messages.map((record, i) => (
@@ -722,9 +722,9 @@ function AgentSidebarItem({
             isSelected ? "text-primary" : "text-muted-foreground",
           )}
         />
-        <span className="text-xs flex-1 min-w-0 truncate">{agent.name}</span>
+        <span className="type-secondary flex-1 min-w-0 truncate">{agent.name}</span>
         {agent.hasInstances && (
-          <span className="text-[10px] font-mono text-muted-foreground/60 shrink-0">
+          <span className="type-meta font-mono text-muted-foreground/60 shrink-0">
             {agent.instanceIds.length}
           </span>
         )}
@@ -738,7 +738,7 @@ function AgentSidebarItem({
           title="Copy agent ID"
         >
           {copied ? (
-            <Check className="h-3 w-3 text-emerald-500" />
+            <Check className="h-3 w-3 text-success" />
           ) : (
             <Copy className="h-3 w-3" />
           )}
@@ -807,7 +807,7 @@ function InstanceSidebarRow({
       />
       <span
         className={cn(
-          "text-[11px] font-mono flex-1 min-w-0 truncate",
+          "type-meta font-mono flex-1 min-w-0 truncate",
           isSelected ? "text-primary" : "text-foreground",
         )}
       >
@@ -815,7 +815,7 @@ function InstanceSidebarRow({
       </span>
       {instance?.status && (
         <span
-          className={cn("text-[10px] shrink-0", statusColor(instance.status))}
+          className={cn("type-meta shrink-0", statusColor(instance.status))}
         >
           {instance.status}
         </span>
@@ -840,7 +840,7 @@ function InstanceSidebarRow({
         title="Copy conversation ID"
       >
         {copied ? (
-          <Check className="h-3 w-3 text-emerald-500" />
+          <Check className="h-3 w-3 text-success" />
         ) : (
           <Copy className="h-3 w-3" />
         )}
@@ -883,7 +883,7 @@ function AgentDebugSidebar({
       {withInstances.length > 0 && (
         <>
           <div className="px-2 pt-2 pb-1 shrink-0">
-            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">
+            <span className="type-meta font-semibold text-muted-foreground uppercase tracking-widest">
               Active ({withInstances.length})
             </span>
           </div>
@@ -908,7 +908,7 @@ function AgentDebugSidebar({
       {withoutInstances.length > 0 && (
         <>
           <div className="px-2 pt-2 pb-1 shrink-0">
-            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">
+            <span className="type-meta font-semibold text-muted-foreground uppercase tracking-widest">
               Agents ({withoutInstances.length})
             </span>
           </div>
@@ -930,7 +930,7 @@ function AgentDebugSidebar({
       {withInstances.length === 0 && withoutInstances.length === 0 && (
         <div className="flex flex-col items-center justify-center flex-1 gap-2 text-muted-foreground">
           <AlertCircle className="h-6 w-6 opacity-20" />
-          <span className="text-xs">No agents loaded</span>
+          <span className="type-secondary">No agents loaded</span>
         </div>
       )}
     </div>
@@ -1126,10 +1126,10 @@ function AgentDebugWindowInner({
         <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
           <Cpu className="h-10 w-10 opacity-15" />
           {/* read-gate-exempt: selection prompt in the debug inspector; nothing is being read here */}
-          <p className="text-sm font-medium text-foreground">
+          <p className="type-title text-foreground">
             No agent selected
           </p>
-          <p className="text-xs opacity-60">
+          <p className="type-secondary opacity-60">
             Select an agent from the sidebar to inspect.
           </p>
         </div>

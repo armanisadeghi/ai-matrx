@@ -118,7 +118,7 @@ export function QuickFind() {
           />
         </div>
         <div ref={listRef} className="max-h-[min(60vh,480px)] overflow-y-auto p-1">
-          <p className="px-3 pb-1 pt-2 text-xs font-medium text-muted-foreground">{q ? "Best matches" : "Recent"}</p>
+          <p className="px-3 pb-1 pt-2 type-secondary font-medium text-muted-foreground">{q ? "Best matches" : "Recent"}</p>
           {hits.map((hit, i) => {
             const s = byId.get(hit.id);
             if (!s) return null;
@@ -137,17 +137,17 @@ export function QuickFind() {
                   <SpaceIcon media={s.icon} size={18} />
                 </span>
                 <span className="min-w-0 flex-1 text-left">
-                  <span className="block truncate text-sm">
+                  <span className="block truncate type-body">
                     {s.title || "Untitled"}
                     {parents.length ? <span className="text-muted-foreground"> — {parents.map((p) => p.title || "Untitled").join(" / ")}</span> : null}
                   </span>
-                  {hit.snippet ? <span className="block truncate text-xs text-muted-foreground">{hit.snippet}</span> : null}
+                  {hit.snippet ? <span className="block truncate type-secondary text-muted-foreground">{hit.snippet}</span> : null}
                 </span>
                 {i === active ? <CornerDownLeft size={14} className="shrink-0 text-muted-foreground" /> : null}
               </button>
             );
           })}
-          {hits.length === 0 ? <p className="px-3 py-6 text-center text-sm text-muted-foreground">No results</p> : null}
+          {hits.length === 0 ? <p className="px-3 py-6 text-center type-body text-muted-foreground">No results</p> : null}
         </div>
       </DialogContent>
     </Dialog>

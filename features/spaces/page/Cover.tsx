@@ -77,7 +77,7 @@ function CoverPicker({ onPick, children }: { onPick: (cover: CoverValue | null) 
         </div>
         {tab === "gallery" ? (
           <div className="p-3">
-            <p className="mb-2 text-xs text-muted-foreground">Color &amp; gradient</p>
+            <p className="mb-2 type-secondary text-muted-foreground">Color &amp; gradient</p>
             <div className="grid grid-cols-4 gap-2">
               {GALLERY_KEYS.map((key) => (
                 <button
@@ -106,7 +106,7 @@ function CoverPicker({ onPick, children }: { onPick: (cover: CoverValue | null) 
                 }}
               />
             </label>
-            <p className="text-xs text-muted-foreground">Images wider than 1500 pixels work best.</p>
+            <p className="type-secondary text-muted-foreground">Images wider than 1500 pixels work best.</p>
           </div>
         ) : null}
         {tab === "link" ? (

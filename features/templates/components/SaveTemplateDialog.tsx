@@ -10,7 +10,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Check, Loader2 } from "lucide-react";
+import { Check } from "lucide-react";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,7 @@ import { useScopedTemplateKnobs } from "../knobs";
 import { TEMPLATES_CHANGED_EVENT } from "../events";
 import { agentsReading, readSetupAgents, saveAsTemplate, tablesReadBy, type SavedTemplate, type SetupAgent } from "../saveAsTemplate";
 
+import { Spinner } from "@/components/ui/loaders/Spinner";
 export interface SaveTemplateDialogProps {
   isOpen: boolean;
   onClose: () => void;
@@ -121,11 +122,11 @@ export function SaveTemplateDialog({ isOpen, onClose, initialAgentId }: SaveTemp
 
         {saved ? (
           <div className="space-y-3" data-save-template-saved={saved.templateId}>
-            <p className="flex items-center gap-2 text-sm text-foreground">
+            <p className="flex items-center gap-2 type-body text-foreground">
               <Check className="h-4 w-4 text-primary" /> {`Saved in ${orgName ?? "your organization"}`}
             </p>
             {saved.left.length > 0 ? (
-              <ul className="space-y-1 text-xs text-muted-foreground">
+              <ul className="space-y-1 type-secondary text-muted-foreground">
                 {saved.left.map((l) => (
                   <li key={l}>{`Not carried: ${l}`}</li>
                 ))}
@@ -157,16 +158,16 @@ export function SaveTemplateDialog({ isOpen, onClose, initialAgentId }: SaveTemp
                 </Button>
               }
             />
-            {found && "error" in found ? <p className="text-sm text-destructive">{found.error}</p> : null}
+            {found && "error" in found ? <p className="type-body text-destructive">{found.error}</p> : null}
             {agentId && !found ? (
-              <p className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" /> Reading its tables
+              <p className="flex items-center gap-2 type-body text-muted-foreground">
+                <Spinner size="xs" className="text-current" /> Reading its tables
               </p>
             ) : null}
             {ok ? (
               <>
                 <div className="space-y-1.5">
-                  <p className="text-xs font-medium text-muted-foreground">Agents</p>
+                  <p className="type-secondary font-medium text-muted-foreground">Agents</p>
                   {ok.agents.map((a, i) => (
                     <label key={a.id} className="flex items-center gap-2 text-sm">
                       <Checkbox
@@ -186,9 +187,9 @@ export function SaveTemplateDialog({ isOpen, onClose, initialAgentId }: SaveTemp
                   ))}
                 </div>
                 <div className="space-y-1.5">
-                  <p className="text-xs font-medium text-muted-foreground">Tables</p>
+                  <p className="type-secondary font-medium text-muted-foreground">Tables</p>
                   {tableIds.map((t) => (
-                    <p key={t} className="truncate text-sm">
+                    <p key={t} className="truncate type-body">
                       {rowsOf.get(t)?.table_name ?? "Table"}
                     </p>
                   ))}
@@ -199,11 +200,11 @@ export function SaveTemplateDialog({ isOpen, onClose, initialAgentId }: SaveTemp
                 </div>
                 <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" data-save-template-name="" />
                 <Textarea value={describes} onChange={(e) => setDescribes(e.target.value)} placeholder="Who it is for" rows={2} />
-                {orgs.size > 1 ? <p className="text-sm text-destructive">These tables live in different organizations — pick agents from one</p> : null}
-                {organizationId ? <p className="text-xs text-muted-foreground">{`Saved in ${orgName ?? "its organization"}`}</p> : null}
+                {orgs.size > 1 ? <p className="type-body text-destructive">These tables live in different organizations — pick agents from one</p> : null}
+                {organizationId ? <p className="type-secondary text-muted-foreground">{`Saved in ${orgName ?? "its organization"}`}</p> : null}
               </>
             ) : null}
-            {error ? <p className="text-sm text-destructive" role="alert">{error}</p> : null}
+            {error ? <p className="type-body text-destructive" role="alert">{error}</p> : null}
           </div>
         )}
 
@@ -213,7 +214,7 @@ export function SaveTemplateDialog({ isOpen, onClose, initialAgentId }: SaveTemp
               Close
             </Button>
           ) : (
-            <Button icon={saving ? <Loader2 className="animate-spin" /> : null} variant="primary" onClick={() => void save()} disabled={!ok || !organizationId || !name.trim() || saving} data-save-template-save="">
+            <Button icon={saving ? <Spinner size="xs" className="text-current" /> : null} variant="primary" onClick={() => void save()} disabled={!ok || !organizationId || !name.trim() || saving} data-save-template-save="">
               Save
             </Button>
           )}

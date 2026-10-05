@@ -100,7 +100,7 @@ export function IconPicker({
                   </button>
                 );
               })}
-              {names.length === 0 ? <p className="col-span-12 py-6 text-center text-sm text-muted-foreground">No results</p> : null}
+              {names.length === 0 ? <p className="col-span-12 py-6 text-center type-body text-muted-foreground">No results</p> : null}
             </div>
           </div>
         ) : null}
@@ -118,7 +118,7 @@ export function IconPicker({
                 }}
               />
             </label>
-            <p className="text-xs text-muted-foreground">Recommended size is 280 × 280 pixels</p>
+            <p className="type-secondary text-muted-foreground">Recommended size is 280 × 280 pixels</p>
           </div>
         ) : null}
         {tab === "link" ? (

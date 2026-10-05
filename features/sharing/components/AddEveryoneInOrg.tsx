@@ -192,10 +192,10 @@ export function AddEveryoneInOrg({
       data-add-everyone-in-org
     >
       <div>
-        <h3 className="text-sm font-medium mb-1">
+        <h3 className="type-title mb-1">
           Add everyone in {orgId ? orgName : "an organization"}
         </h3>
-        <p className="text-xs text-muted-foreground">
+        <p className="type-secondary text-muted-foreground">
           Each person below is given access by name. People who join later are
           not added.
         </p>
@@ -216,7 +216,7 @@ export function AddEveryoneInOrg({
                   <Building2 className="w-3 h-3" />
                   <span>{org.name}</span>
                   {detail.get(org.id) && (
-                    <span className="text-[10px] text-muted-foreground">
+                    <span className="type-meta text-muted-foreground">
                       {detail.get(org.id)}
                     </span>
                   )}
@@ -228,19 +228,19 @@ export function AddEveryoneInOrg({
       </div>
 
       {orgId && loadError ? (
-        <p className="text-xs text-destructive">
+        <p className="type-secondary text-destructive">
           The people in {orgName} could not be listed: {loadError}
           <ErrorAlchemyMenu error={loadError} />
         </p>
       ) : null}
       {orgId && !loadError && members === null ? (
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <div className="flex items-center gap-2 type-secondary text-muted-foreground">
           <Loader2 className="w-3 h-3 animate-spin" /> Listing the people in{" "}
           {orgName}…
         </div>
       ) : null}
       {members && members.length === 0 ? (
-        <p className="text-xs text-muted-foreground">
+        <p className="type-secondary text-muted-foreground">
           Nobody else is in {orgName}.
         </p>
       ) : null}
@@ -253,7 +253,7 @@ export function AddEveryoneInOrg({
             return (
               <li
                 key={m.userId}
-                className="flex items-center gap-2 text-sm"
+                className="flex items-center gap-2 type-body"
                 data-member={m.email}
               >
                 <Checkbox
@@ -268,13 +268,13 @@ export function AddEveryoneInOrg({
                 >
                   <span className="block truncate">{m.name}</span>
                   {m.email && m.email !== m.name ? (
-                    <span className="block truncate text-xs text-muted-foreground">
+                    <span className="block truncate type-secondary text-muted-foreground">
                       {m.email}
                     </span>
                   ) : null}
                 </label>
                 {has && !outcome ? (
-                  <span className="text-xs text-muted-foreground">
+                  <span className="type-secondary text-muted-foreground">
                     Already has access
                   </span>
                 ) : null}
@@ -297,7 +297,7 @@ export function AddEveryoneInOrg({
       ) : null}
 
       {members && members.length > 0 && chosen.length === 0 && !running ? (
-        <p className="text-xs text-muted-foreground">
+        <p className="type-secondary text-muted-foreground">
           {Object.values(outcomes).some((o) => o.ok) ||
           members.every((m) => already.has(m.userId))
             ? `Everyone listed in ${orgName} has access now.`
