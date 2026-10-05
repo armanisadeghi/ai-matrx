@@ -198,7 +198,10 @@ import { ConnectorMark as HostConnectorMark } from "@/features/connectors/Connec
 import { connectorDefinitionFromMcp as hostConnectorDefinitionFromMcp } from "@/features/connectors/live-connectors";
 import { useAttachResourcePicker as hostUseAttachResourcePicker } from "@/features/connectors/useAttachResourcePicker";
 // The app registers its attach-picker door (providers/chatUiRegistration.ts); the mock above stands in for it.
+import { useConversationAttachments as hostUseConversationAttachments } from "@/features/connectors/useConversationAttachments";
+// The app registers it (providers/chatUiRegistration.ts); the package throws without it.
 registerChatUiForPanel({
+  useConversationAttachments: hostUseConversationAttachments,
   ConnectorMark: HostConnectorMark,
   connectorDefinitionFromMcp: hostConnectorDefinitionFromMcp,
   useAttachResourcePicker: hostUseAttachResourcePicker,

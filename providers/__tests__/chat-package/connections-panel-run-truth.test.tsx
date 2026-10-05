@@ -104,4 +104,8 @@ describe("Connections preserve per-chat access and run truth", () => {
 import { registerChatUi as registerChatUiForPanel } from "@ai-matrx/chat/host/ui-slots";
 import { ConnectorMark as HostConnectorMark } from "@/features/connectors/ConnectorMark";
 import { connectorDefinitionFromMcp as hostConnectorDefinitionFromMcp } from "@/features/connectors/live-connectors";
-registerChatUiForPanel({ ConnectorMark: HostConnectorMark, connectorDefinitionFromMcp: hostConnectorDefinitionFromMcp });
+import { useConversationAttachments as hostUseConversationAttachments } from "@/features/connectors/useConversationAttachments";
+// The app registers it (providers/chatUiRegistration.ts); the package throws without it.
+registerChatUiForPanel({
+  useConversationAttachments: hostUseConversationAttachments,
+  ConnectorMark: HostConnectorMark, connectorDefinitionFromMcp: hostConnectorDefinitionFromMcp });
