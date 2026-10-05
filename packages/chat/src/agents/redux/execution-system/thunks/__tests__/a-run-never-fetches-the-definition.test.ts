@@ -43,6 +43,7 @@ jest.mock("../../../../../host/identity", () => ({
 jest.mock("uuid", () => ({ v4: () => "unused-generated-id" }));
 
 import { configureStore } from "@reduxjs/toolkit";
+import { hasField } from "@ai-matrx/agents/field-flags";
 import agentDefinitionReducer, {
   mergePartialAgent,
 } from "../../../agent-definition/slice";
@@ -149,9 +150,10 @@ describe("a run never fetches the definition", () => {
     expect(tier.isReady).toBe(true);
     expect(tier.modelId).toBe("default-model");
     expect(tier.toolIds).toEqual(["tool-a"]);
-    expect(
-      store.getState().agentDefinition.agents[AGENT_ID]?.settings ?? null,
-    ).toBeFalsy();
+    // The definition's settings were never read.
+    const record = store.getState().agentDefinition.agents[AGENT_ID];
+    expect(hasField(record?._loadedFields, "settings")).toBe(false);
+    expect(hasField(record?._loadedFields, "customTools")).toBe(false);
   });
 
   it("a ready run tier is not refetched; a forced refresh refetches it", async () => {

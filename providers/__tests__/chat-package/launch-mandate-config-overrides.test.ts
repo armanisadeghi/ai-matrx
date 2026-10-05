@@ -149,6 +149,8 @@ const agentRecord = {
     customTools: true,
     modelId: true,
   },
+  // Readiness is the FETCH STATUS (P24 run tier), never field presence alone.
+  _fetchStatus: "customExecution",
   _error: null,
 };
 
