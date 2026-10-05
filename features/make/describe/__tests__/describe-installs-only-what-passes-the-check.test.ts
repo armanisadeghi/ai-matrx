@@ -76,6 +76,31 @@ describe("the describe box installs only what passes the store's check", () => {
     expect(checkDescribeSpec(describeSpec(lean))).toEqual({ ok: true });
   });
 
+  it("fills an omitted sensitivity up to the store's floor — an address is confidential, a person's birth date restricted", () => {
+    // The live run of 2026-10-05 ("track my crews' jobs from quote to paid") left "Job site address" without
+    // a sensitivity; the ordinary default would have been refused for it.
+    const spec = describeSpec({
+      id: "crew-jobs",
+      tables: [
+        { token: "job", name: "Jobs", labelSingular: "Job", subject: "thing", titleField: "title", fields: [
+          { key: "title", label: "Job", parityType: "text" },
+          { key: "job_site_address", label: "Job site address", parityType: "text" },
+          { key: "client_phone", label: "Client phone", parityType: "phone" },
+        ] },
+        { token: "patient", name: "Patients", labelSingular: "Patient", subject: "person", titleField: "name", fields: [
+          { key: "name", label: "Name", parityType: "text", sensitivity: "confidential", contextPolicy: "summarize" },
+          { key: "date_of_birth", label: "Date of birth", parityType: "datetime" },
+        ] },
+      ],
+    });
+    const f = (t: number, k: string) => spec.tables[t]!.fields.find((x) => x.key === k)! as unknown as Record<string, unknown>;
+    expect([f(0, "title").sensitivity, f(0, "title").contextPolicy]).toEqual(["internal", "include"]);
+    expect([f(0, "job_site_address").sensitivity, f(0, "job_site_address").contextPolicy]).toEqual(["confidential", "exclude"]);
+    expect([f(0, "client_phone").sensitivity, f(0, "client_phone").format]).toEqual(["confidential", "phone"]);
+    expect([f(1, "date_of_birth").sensitivity, f(1, "date_of_birth").contextPolicy]).toEqual(["restricted", "exclude"]);
+    expect([f(1, "name").sensitivity, f(1, "name").contextPolicy]).toEqual(["confidential", "summarize"]);
+  });
+
   it("declares a checked spec with its own catalogue id and an install plan the door can run", () => {
     const spec = describeSpec(goldReduced as unknown as Record<string, unknown>);
     const d = describeDeclaration(spec, "00000000-0000-4000-8000-000000000001", "K3X9");

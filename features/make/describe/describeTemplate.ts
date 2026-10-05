@@ -32,6 +32,7 @@ import {
   DEFAULT_TEMPLATE_AGENT,
   capabilitiesUsed,
   INDUSTRY_GROUPS,
+  sensitivityFloorOf,
   TEACHES_FEATURES,
   TEMPLATE_AUDIENCES,
   TEMPLATE_JOBS,
@@ -135,14 +136,17 @@ export function describeSpec(template: Record<string, unknown>): TemplateSpec {
 /**
  * SPEED (lane CHAIR-DESCRIBE-4): every token the mandate writes is ~8 ms the person waits, so the
  * mandate leaves out what is always the same and this fills it — a table's shape keys, and a field's
- * sensitivity and context policy when it is the ordinary internal/include (a phone or email is
- * confidential/exclude, with its format). What the model DID write always wins.
+ * sensitivity and context policy: the store's own floor for what the field holds (sensitivityFloorOf —
+ * an address or phone is confidential, a person's health fact restricted; both kept from the AI), else
+ * the ordinary internal/include. A phone or email gets its format. What the model DID write always wins.
  */
 const TABLE_DEFAULTS = { type: "entity", display: "grid", weight: "light", ordered: false } as const;
 const CONTACT_KINDS = new Set(["phone", "email"]);
 
 function describeTable(t: Record<string, unknown>): Record<string, unknown> {
-  const fields = Array.isArray(t.fields) ? (t.fields as Array<Record<string, unknown>>).map(describeField) : t.fields;
+  const own = Array.isArray(t.fields) ? (t.fields as Array<Record<string, unknown>>) : null;
+  const shape = { token: String(t.token ?? ""), labelSingular: String(t.labelSingular ?? ""), subject: t.subject, fields: own ?? [] } as unknown as Parameters<typeof sensitivityFloorOf>[0];
+  const fields = own ? own.map((f) => describeField(f, shape)) : t.fields;
   return {
     ...TABLE_DEFAULTS,
     ...t,
@@ -152,12 +156,13 @@ function describeTable(t: Record<string, unknown>): Record<string, unknown> {
   };
 }
 
-function describeField(f: Record<string, unknown>): Record<string, unknown> {
+function describeField(f: Record<string, unknown>, table: Parameters<typeof sensitivityFloorOf>[0]): Record<string, unknown> {
   const contact = CONTACT_KINDS.has(String(f.parityType ?? ""));
+  const floor = sensitivityFloorOf(table, { key: String(f.key ?? ""), label: String(f.label ?? ""), parityType: String(f.parityType ?? "") } as never);
   return {
     ...(contact ? { format: f.parityType } : {}),
-    sensitivity: contact ? "confidential" : "internal",
-    contextPolicy: contact ? "exclude" : "include",
+    sensitivity: floor ?? "internal",
+    contextPolicy: floor ? "exclude" : "include",
     ...f,
   };
 }
