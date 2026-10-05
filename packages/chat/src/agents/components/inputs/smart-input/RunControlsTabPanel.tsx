@@ -123,7 +123,9 @@ function pickerTab(id: "tools" | "connections" | "skills"): RunControlsTabDef {
   return { id, label: item.label, icon: item.icon as RunControlsTabDef["icon"] };
 }
 
-const BASE_TABS: RunControlsTabDef[] = [
+// Built at render, never at module load: the item list is a host slot the app installs after
+// this module evaluates, so a module-level lookup threw and took down every page importing it.
+const baseTabs = (): RunControlsTabDef[] => [
   // Tools / Connections / Skills are attach-menu doors: label and icon come
   // from the ONE item list, never typed twice.
   pickerTab("tools"),
@@ -194,8 +196,8 @@ export function useRunControlsState(
     overrideState?.overrides && "model" in overrideState.overrides
   );
   const baseTabsForRun: RunControlsTabDef[] = sandboxBlocked
-    ? BASE_TABS.filter((tab) => tab.id !== "sandbox")
-    : BASE_TABS;
+    ? baseTabs().filter((tab) => tab.id !== "sandbox")
+    : baseTabs();
   const tabs: RunControlsTabDef[] = [
     QUICKSET_TAB,
     ...(includeAttach ? [ATTACH_TAB] : []),
