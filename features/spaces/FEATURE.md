@@ -26,7 +26,7 @@ Notion code, fonts or logos.
 
 | Port | Now | Later (owner session) |
 |---|---|---|
-| `SpacesStore` | in-memory store inside the fence, shows a "sample data — not saved" marker | Supabase table, realtime |
+| `SpacesStore` | the database store (`store-db/`, owner's) wrapped by `state/live-store.ts` (active org via `ensureOrgId` for new top-level pages, change events for the tree) | realtime merge |
 | `SpacesDataPort` | `templatePreview(spec).config` over a realistic template spec | live config + built-in modules via drill doors |
 | `SpacesAiPort` | `wired: false` → the AI surface opens and says AI is not connected yet | our agents |
 
@@ -52,3 +52,8 @@ Block document: a tree of `SpaceBlock` (`id`, `type`, `text: RichSpan[]`, `color
   columns, `slot`; `convert.ts` is the only engine↔SpaceBlock boundary), `page/`, `sidebar/`, `nav/QuickFind`,
   `workspace/`, `spaces.css`. Column widths are written as CSS keyed by block id — never onto ProseMirror's DOM
   (a style write there re-renders the node view in a loop and hung the tab).
+- 2026-10-05 — builder round 2: saves are real (memory store removed). `state/live-store.ts` wraps `store-db`;
+  `SpacePage` autosaves on the integer `version` (Saving… / Edited, a stale save reloads the latest and says so);
+  Templates → "Add the Traveling SMM™ OS sample" creates it through the store (`store/sample.ts`); uploads go
+  through the file handler (`page/media.ts`). Adopted: `useClaimSearchKeys` (Cmd+K/P), `surface="solid"` popovers,
+  the shell's Cmd+\ opt-out. Editor menus close instantly and the slash menu prefers below (`editor/floating.ts`).
