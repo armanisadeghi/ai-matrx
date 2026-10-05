@@ -15,6 +15,7 @@ import {
 import { usePlanCatalog } from "../catalog/usePlanCatalog";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ScheduledPlanChange } from "./ScheduledPlanChange";
 
 interface InvoiceRecovery {
   url: string | null;
@@ -123,6 +124,18 @@ export function BillingSummary({ scope }: { scope: BillingScope }) {
       {periodEnd ? <p className="mt-3 text-sm text-muted-foreground">{periodEndLabel(activeRead.subscription.status, activeRead.subscription.cancel_at_period_end)} {periodEnd}</p> : null}
       {recovering ? <p className="mt-2 text-sm text-destructive">Payment needs attention.</p> : null}
       {recoveryError?.scope === scopeKey ? <ErrorNotice size="inline" message={recoveryError.reason} actions={<Button variant="outline" onClick={retry}>Retry</Button>} /> : null}
+      {scope.kind === "personal" && catalog.status === "ready" ? (
+        <ScheduledPlanChange
+          currentPlanKey={activeRead.subscription.plan_key}
+          currentInterval={
+            activeRead.price?.interval === "month" ||
+            activeRead.price?.interval === "year"
+              ? activeRead.price.interval
+              : null
+          }
+          plans={catalog.plans}
+        />
+      ) : null}
       <div className="mt-4 flex flex-wrap gap-2">
         {invoiceUrl ? <Button variant="primary" onClick={() => window.location.assign(invoiceUrl)}>{invoice?.requiresAction ? "Complete payment" : "Pay invoice"}</Button> : null}
         <SubscriptionControls livemode={livemode} scope={scope.kind === "personal" ? { kind: "personal" } : { kind: "organization", organizationId: scope.organizationId }} label="Manage billing" />
