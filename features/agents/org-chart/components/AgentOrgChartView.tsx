@@ -95,7 +95,6 @@ import { DefineSeatJobDialog } from "./DefineSeatJobDialog";
 import { MakeOrchestraDialog, type MakeOrchestraRequest } from "./MakeOrchestraDialog";
 import { selectSeatJobs } from "@/features/agents/redux/orchestras/selectors";
 import { useOpenMandateWindow } from "@/features/overlays/openers/mandateWindow";
-import { storedMandateKey } from "@ai-matrx/agents/mandates";
 import { INTELLIGENCE_ICON } from "@/components/icons/domain-icons";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
