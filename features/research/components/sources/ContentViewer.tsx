@@ -68,7 +68,7 @@ export function ContentViewer({
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <h3 className="text-sm font-semibold">Content</h3>
+          <h3 className="type-title">Content</h3>
           {content.capture_version != null && (
             <Badge variant="secondary" className="text-[10px]">
               v{content.capture_version}
@@ -128,14 +128,14 @@ export function ContentViewer({
         />
       ) : (
         <div className="rounded-lg border border-border bg-muted/30 p-4 max-h-[500px] overflow-y-auto">
-          <pre /* rich-content-exempt: verbatim transcript or extracted document text, not authored markdown */ className="whitespace-pre-wrap text-xs font-mono leading-relaxed text-foreground">
+          <pre /* rich-content-exempt: verbatim transcript or extracted document text, not authored markdown */ className="whitespace-pre-wrap type-secondary font-mono leading-relaxed text-foreground">
             {content.content}
           </pre>
         </div>
       )}
 
       {content.failure_reason && (
-        <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3 text-sm text-destructive">
+        <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3 type-body text-destructive">
           <span className="font-medium">Failure reason: </span>
           {content.failure_reason}
           <ErrorAlchemyMenu error={content.failure_reason} />

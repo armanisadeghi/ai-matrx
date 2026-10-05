@@ -219,7 +219,7 @@ function scrapeOutcomeFor(status: string | null | undefined): {
 function ScrapeOutcomeCell({ status }: { status: string | null | undefined }) {
   const { label, tone } = scrapeOutcomeFor(status);
   return (
-    <span className="inline-flex items-center gap-1.5 text-[11px] font-medium whitespace-nowrap text-muted-foreground">
+    <span className="inline-flex items-center gap-1.5 type-meta font-medium whitespace-nowrap text-muted-foreground">
       <span
         className={cn(
           "h-1.5 w-1.5 shrink-0 rounded-full",
@@ -259,7 +259,7 @@ function AnalysisOutcomeCell({ source }: { source: ResearchSource }) {
   const state = analysisStateFor(source);
   if (state === "analyzed") {
     return (
-      <span className="inline-flex items-center gap-1.5 text-[11px] font-medium whitespace-nowrap text-muted-foreground">
+      <span className="inline-flex items-center gap-1.5 type-meta font-medium whitespace-nowrap text-muted-foreground">
         <CheckCircle2 className="h-3 w-3 shrink-0 text-blue-500/80" />
         Analyzed
       </span>
@@ -267,7 +267,7 @@ function AnalysisOutcomeCell({ source }: { source: ResearchSource }) {
   }
   if (state === "failed") {
     return (
-      <span className="inline-flex items-center gap-1.5 text-[11px] font-medium whitespace-nowrap text-amber-600/90 dark:text-amber-400/90">
+      <span className="inline-flex items-center gap-1.5 type-meta font-medium whitespace-nowrap text-amber-600/90 dark:text-amber-400/90">
         <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500/80" />
         Failed
         <ErrorAlchemyMenu />
@@ -275,7 +275,7 @@ function AnalysisOutcomeCell({ source }: { source: ResearchSource }) {
     );
   }
   return (
-    <span className="inline-flex items-center gap-1.5 text-[11px] font-medium whitespace-nowrap text-muted-foreground">
+    <span className="inline-flex items-center gap-1.5 type-meta font-medium whitespace-nowrap text-muted-foreground">
       <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-muted-foreground/50" />
       Not analyzed
     </span>
@@ -578,7 +578,7 @@ function SourceRow({
             <Link
               href={`/research/topics/${topicId}/sources/${source.id}`}
               onClick={(e) => !anyNavigating && onNavigate(source.id, e)}
-              className="block font-medium text-sm leading-snug line-clamp-2 break-words group-hover:text-primary transition-colors"
+              className="block type-title leading-snug line-clamp-2 break-words group-hover:text-primary transition-colors"
             >
               {source.title || source.url}
             </Link>
@@ -590,19 +590,19 @@ function SourceRow({
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
               title={`Open ${source.url} in a new tab`}
-              className="mt-0.5 block text-xs text-muted-foreground break-all line-clamp-1 hover:text-foreground "
+              className="mt-0.5 block type-secondary text-muted-foreground break-all line-clamp-1 hover:text-foreground "
             >
               {source.url}
             </a>
             {source.description && (
-              <div className="text-xs text-muted-foreground/80 mt-0.5 line-clamp-2 leading-relaxed break-words">
+              <div className="type-secondary text-muted-foreground/80 mt-0.5 line-clamp-2 leading-relaxed break-words">
                 {source.description}
               </div>
             )}
             {(source.hostname || source.redundancy_group) && (
               <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
                 {source.hostname && (
-                  <span className="text-[11px] text-muted-foreground truncate max-w-48 inline-block">
+                  <span className="type-meta text-muted-foreground truncate max-w-48 inline-block">
                     {source.hostname}
                   </span>
                 )}
@@ -652,7 +652,7 @@ function SourceRow({
         >
           <div className="flex flex-col items-start gap-1.5">
             {analyzing ? (
-              <span className="inline-flex items-center gap-1.5 text-[11px] font-medium whitespace-nowrap text-muted-foreground">
+              <span className="inline-flex items-center gap-1.5 type-meta font-medium whitespace-nowrap text-muted-foreground">
                 <Loader2 className="h-3 w-3 shrink-0 animate-spin text-blue-500/80" />
                 Analyzing…
               </span>
@@ -709,7 +709,7 @@ function SourceRow({
 
         {/* Age */}
         <td className={cn("px-2 py-2.5 w-16 align-top", cellBase)}>
-          <span className="text-[11px] text-muted-foreground whitespace-nowrap">
+          <span className="type-meta text-muted-foreground whitespace-nowrap">
             {pageAgeDisplay}
           </span>
         </td>
@@ -834,7 +834,7 @@ function SourceRow({
               {hasReasoning && (
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    <span className="type-meta font-semibold uppercase tracking-wide text-muted-foreground">
                       Authority reasoning
                     </span>
                     {tierFromSource(source) && (
@@ -845,21 +845,21 @@ function SourceRow({
                       />
                     )}
                   </div>
-                  <p className="mt-1 text-xs text-foreground/80 leading-relaxed">
+                  <p className="mt-1 type-secondary text-foreground/80 leading-relaxed">
                     {source.authority_reasoning}
                   </p>
                 </div>
               )}
               {hasSnippets && (
                 <div>
-                  <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  <span className="type-meta font-semibold uppercase tracking-wide text-muted-foreground">
                     Snippets
                   </span>
                   <div className="mt-1 space-y-1.5">
                     {snippets.map((snippet, i) => (
                       <p
                         key={i}
-                        className="text-xs text-foreground/70 leading-relaxed"
+                        className="type-secondary text-foreground/70 leading-relaxed"
                       >
                         {snippet}
                       </p>
@@ -1349,7 +1349,7 @@ export default function SourceList() {
                 Knowledge hub's job (KNOWLEDGE-HUB §6, H6b); triage, ranking and export stay here. */}
             <Link
               href={researchTopicHubHref(topicId)}
-              className="hidden whitespace-nowrap text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline sm:inline"
+              className="hidden whitespace-nowrap type-secondary text-muted-foreground underline-offset-2 hover:text-foreground hover:underline sm:inline"
               title="This topic's captured pages in the Knowledge hub, beside everything else you know"
             >
               Find in Knowledge
@@ -1370,7 +1370,7 @@ export default function SourceList() {
       {/* Desktop Table */}
       {!isMobile ? (
         <div className="rounded-xl border border-border/60 bg-card/40 backdrop-blur-sm overflow-x-auto">
-          <table className="w-full text-sm border-collapse">
+          <table className="w-full type-body border-collapse">
             <thead>
               <tr className="bg-muted/40 [&>th]:border-b [&>th]:border-r [&>th]:border-border/60 [&>th:last-child]:border-r-0">
                 {/* Select */}
@@ -1430,7 +1430,7 @@ export default function SourceList() {
                 </th>
                 {/* Analysis — always-visible trigger paired with Scrape */}
                 <th className="w-32 px-2 py-2 text-left">
-                  <span className="text-xs font-medium text-muted-foreground">
+                  <span className="type-secondary font-medium text-muted-foreground">
                     Analysis
                   </span>
                 </th>
@@ -1576,11 +1576,11 @@ export default function SourceList() {
                 onRetry={refetchSources}
               />
             ) : sourcesLoading ? (
-              <div className="flex items-center justify-center py-12 text-muted-foreground text-sm">
+              <div className="flex items-center justify-center py-12 text-muted-foreground type-body">
                 Loading sources…
               </div>
             ) : (
-              <div className="flex items-center justify-center py-12 text-muted-foreground text-sm">
+              <div className="flex items-center justify-center py-12 text-muted-foreground type-body">
                 No sources found. Run a search to discover sources.
               </div>
             ))}
@@ -1634,7 +1634,7 @@ export default function SourceList() {
                   {/* Rank badge overlay — real best rank across keywords */}
                   {imp?.bestRank != null && (
                     <span
-                      className="absolute top-1.5 left-1.5 text-[10px] font-mono font-bold bg-black/60 text-white px-1.5 py-0.5 rounded-md tabular-nums"
+                      className="absolute top-1.5 left-1.5 type-meta font-mono font-bold bg-black/60 text-white px-1.5 py-0.5 rounded-md tabular-nums"
                       title={`importance ${imp.score} · ${imp.keywordCount} keyword(s)`}
                     >
                       #{imp.bestRank}
@@ -1659,10 +1659,10 @@ export default function SourceList() {
                   {/* Title + toggle row */}
                   <div className="flex items-start gap-2">
                     <div className="flex-1 min-w-0">
-                      <div className="font-medium text-sm leading-snug line-clamp-2 break-words">
+                      <div className="type-title leading-snug line-clamp-2 break-words">
                         {source.title || source.url}
                       </div>
-                      <div className="text-[11px] text-muted-foreground truncate mt-0.5">
+                      <div className="type-meta text-muted-foreground truncate mt-0.5">
                         {source.hostname}
                       </div>
                       {videoIdentityFor(source) && (
@@ -1682,13 +1682,13 @@ export default function SourceList() {
                   </div>
 
                   {source.description && (
-                    <div className="text-xs text-muted-foreground/70 line-clamp-2 leading-relaxed">
+                    <div className="type-secondary text-muted-foreground/70 line-clamp-2 leading-relaxed">
                       {source.description}
                     </div>
                   )}
 
-                  <div className="flex items-center gap-2 flex-wrap text-[10px] tabular-nums text-muted-foreground">
-                    <span className="text-sm font-bold tabular-nums">
+                  <div className="flex items-center gap-2 flex-wrap type-meta tabular-nums text-muted-foreground">
+                    <span className="type-body font-bold tabular-nums">
                       {PRIORITY_SCORE_LABEL}{" "}
                       <span
                         className={
@@ -1723,7 +1723,7 @@ export default function SourceList() {
                     <StatusBadge status={source.scrape_status} />
                     <OriginBadge origin={sourceOriginFromDb(source.origin)} />
                     {source.page_age && (
-                      <span className="text-[10px] text-muted-foreground">
+                      <span className="type-meta text-muted-foreground">
                         {pageAgeDisplay}
                       </span>
                     )}
@@ -1784,11 +1784,11 @@ export default function SourceList() {
                 onRetry={refetchSources}
               />
             ) : sourcesLoading ? (
-              <div className="flex items-center justify-center py-12 text-muted-foreground text-sm">
+              <div className="flex items-center justify-center py-12 text-muted-foreground type-body">
                 Loading sources…
               </div>
             ) : (
-              <div className="flex items-center justify-center py-12 text-muted-foreground text-sm">
+              <div className="flex items-center justify-center py-12 text-muted-foreground type-body">
                 No sources found.
               </div>
             ))}
@@ -1799,7 +1799,7 @@ export default function SourceList() {
           fetch cap, so the table never silently lies about its real size. */}
       {fetchCapped && (
         <div className="flex items-center justify-center pt-1">
-          <span className="text-[10px] text-muted-foreground">
+          <span className="type-meta text-muted-foreground">
             Showing first {FETCH_ALL_LIMIT.toLocaleString()} sources of this
             topic.
           </span>
@@ -1820,7 +1820,7 @@ export default function SourceList() {
           >
             Prev
           </button>
-          <span className="text-[10px] text-muted-foreground tabular-nums px-1">
+          <span className="type-meta text-muted-foreground tabular-nums px-1">
             {pageOffset + 1}–{pageOffset + pagedSources.length} of{" "}
             <UntrustedCount
               read={readOf({ isLoading: sourcesLoading, error: sourcesError })}

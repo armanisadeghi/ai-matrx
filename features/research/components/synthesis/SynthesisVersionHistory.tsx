@@ -81,7 +81,7 @@ export function SynthesisVersionHistory({
       {open && !loading && (
         <div className="space-y-2 px-3 pb-3">
           {versions && versions.length === 0 ? (
-            <p className="text-[11px] text-muted-foreground">
+            <p className="type-meta text-muted-foreground">
               No earlier versions — this is the first one written.
             </p>
           ) : (
@@ -90,7 +90,7 @@ export function SynthesisVersionHistory({
                 key={v.id}
                 className="rounded-lg border border-border/50 bg-muted/20"
               >
-                <summary className="cursor-pointer px-2.5 py-1.5 text-[11px] text-muted-foreground">
+                <summary className="cursor-pointer px-2.5 py-1.5 type-meta text-muted-foreground">
                   <span className="font-medium text-foreground/80">
                     v{v.capture_version ?? "—"}
                   </span>
@@ -116,7 +116,7 @@ export function SynthesisVersionHistory({
                   ) : (
                     // An empty body is a real "produced nothing" outcome, not a
                     // loading state — render it as such.
-                    <p className="text-[11px] text-muted-foreground">
+                    <p className="type-meta text-muted-foreground">
                       This version produced no text.
                     </p>
                   )}

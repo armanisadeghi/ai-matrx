@@ -34,7 +34,7 @@ export function ScrapeWorthinessFlag({
       <TooltipTrigger asChild>
         <span
           className={cn(
-            "inline-flex items-center gap-1 rounded-md border border-amber-500/30 bg-amber-500/[0.06] px-1.5 py-px text-[10px] font-medium whitespace-nowrap text-amber-700 dark:text-amber-400/90",
+            "inline-flex items-center gap-1 rounded-md border border-amber-500/30 bg-amber-500/[0.06] px-1.5 py-px type-meta font-medium whitespace-nowrap text-amber-700 dark:text-amber-400/90",
             className,
           )}
         >
@@ -43,10 +43,10 @@ export function ScrapeWorthinessFlag({
         </span>
       </TooltipTrigger>
       <TooltipContent className="max-w-xs">
-        <p className="text-xs font-semibold">
+        <p className="type-secondary font-semibold">
           Scrape worthiness: {Math.round(scrapeWorthiness as number)}/100
         </p>
-        <p className="mt-0.5 text-xs text-muted-foreground">
+        <p className="mt-0.5 type-secondary text-muted-foreground">
           Predicted unlikely to return usable article text (paywall, login
           wall, JS-only page, or an aggregator stub) — not a judgment on
           quality. The scraper skips sources below 20 automatically.

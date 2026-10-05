@@ -144,7 +144,7 @@ function SynthesisCard({
       >
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-xs font-semibold truncate">{label}</span>
+            <span className="type-secondary font-semibold truncate">{label}</span>
             <Badge
               variant="secondary"
               className={cn(
@@ -154,11 +154,11 @@ function SynthesisCard({
             >
               {synthesis.status}
             </Badge>
-            <span className="text-[10px] text-muted-foreground capitalize">
+            <span className="type-meta text-muted-foreground capitalize">
               {synthesis.scope}
             </span>
           </div>
-          <p className="text-[10px] text-muted-foreground mt-0.5">
+          <p className="type-meta text-muted-foreground mt-0.5">
             {synthesis.created_at
               ? new Date(synthesis.created_at).toLocaleDateString()
               : "Unknown date"}
@@ -264,14 +264,14 @@ function SynthesisCard({
             </div>
           ) : synthesis.error ? (
             // No content at all + an error → a real failure.
-            <div className="flex items-start gap-2 rounded-lg bg-destructive/10 border border-destructive/20 px-2.5 py-1.5 text-xs text-destructive">
+            <div className="flex items-start gap-2 rounded-lg bg-destructive/10 border border-destructive/20 px-2.5 py-1.5 type-secondary text-destructive">
               <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
               {synthesis.error}
               <ErrorAlchemyMenu error={synthesis.error} />
             </div>
           ) : isTerminalStatus(synthesis.status) ? (
             // Terminal but empty — be explicit instead of an endless spinner.
-            <div className="flex items-start gap-2 rounded-lg bg-amber-500/10 border border-amber-500/20 px-2.5 py-2 text-xs text-amber-700 dark:text-amber-400">
+            <div className="flex items-start gap-2 rounded-lg bg-amber-500/10 border border-amber-500/20 px-2.5 py-2 type-secondary text-amber-700 dark:text-amber-400">
               <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
               <span>
                 This synthesis completed but produced no text output. Re-run the
@@ -279,7 +279,7 @@ function SynthesisCard({
               </span>
             </div>
           ) : (
-            <div className="flex items-center gap-2 py-3 text-xs text-muted-foreground">
+            <div className="flex items-center gap-2 py-3 type-secondary text-muted-foreground">
               <Loader2 className="h-3 w-3 animate-spin" />
               Processing...
             </div>
@@ -686,7 +686,7 @@ export default function SynthesisList() {
         {reportStale && (
           <div className="flex flex-wrap items-center gap-2 rounded-xl border border-amber-500/35 bg-amber-500/[0.05] p-2.5">
             <AlertCircle className="h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
-            <p className="min-w-0 flex-1 text-[11px] leading-snug text-muted-foreground">
+            <p className="min-w-0 flex-1 type-meta leading-snug text-muted-foreground">
               <span className="font-medium text-foreground">
                 Your topic report is out of date.
               </span>{" "}
@@ -723,7 +723,7 @@ export default function SynthesisList() {
           <div className="rounded-xl border border-primary/30 bg-card/60 overflow-hidden">
             <div className="flex items-center gap-2 px-3 py-2 border-b border-border">
               <Loader2 className="h-3.5 w-3.5 text-primary animate-spin shrink-0" />
-              <span className="text-xs font-medium text-primary">
+              <span className="type-secondary font-medium text-primary">
                 {streamingLabel
                   ? `Synthesizing ${streamingLabel}…`
                   : "Synthesizing…"}
@@ -763,10 +763,10 @@ export default function SynthesisList() {
               <Layers className="h-6 w-6 text-primary/40" />
             </div>
             <div>
-              <p className="text-xs font-medium text-foreground/70">
+              <p className="type-secondary font-medium text-foreground/70">
                 {synthList.length === 0 ? "No syntheses yet" : "No matches"}
               </p>
-              <p className="text-[10px] text-muted-foreground mt-1 max-w-[240px]">
+              <p className="type-meta text-muted-foreground mt-1 max-w-[240px]">
                 {synthList.length === 0
                   ? "Synthesize the content you've read and your analyses into cohesive research summaries."
                   : "Try adjusting your search or filters to find what you're looking for."}
@@ -793,7 +793,7 @@ export default function SynthesisList() {
               <section className="space-y-2">
                 <div className="flex items-center gap-1.5 px-0.5">
                   <Layers className="h-3 w-3 text-muted-foreground" />
-                  <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                  <span className="type-meta font-semibold text-muted-foreground uppercase tracking-wider">
                     Topic Report
                   </span>
                   <Badge variant="secondary" className="text-[9px] h-4 px-1.5">
@@ -814,7 +814,7 @@ export default function SynthesisList() {
               <section className="space-y-2">
                 <div className="flex items-center gap-1.5 px-0.5">
                   <Layers className="h-3 w-3 text-muted-foreground" />
-                  <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                  <span className="type-meta font-semibold text-muted-foreground uppercase tracking-wider">
                     Keyword Syntheses
                   </span>
                   <Badge variant="secondary" className="text-[9px] h-4 px-1.5">

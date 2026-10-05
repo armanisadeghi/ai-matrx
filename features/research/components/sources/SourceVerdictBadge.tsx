@@ -184,7 +184,7 @@ export function SourceVerdictBadge({
     return (
       <span
         className={cn(
-          "inline-flex items-center whitespace-nowrap text-[10px] font-medium uppercase tracking-wide text-muted-foreground/60",
+          "inline-flex items-center whitespace-nowrap type-meta font-medium uppercase tracking-wide text-muted-foreground/60",
           className,
         )}
       >
@@ -208,7 +208,7 @@ export function SourceVerdictBadge({
       {!scoreHidden && roundedScore != null && (
         <span
           className={cn(
-            "text-[13px] font-semibold leading-none tabular-nums text-foreground",
+            "type-title leading-none tabular-nums text-foreground",
             presentation?.deemphasized && "line-through decoration-1",
           )}
         >
@@ -218,7 +218,7 @@ export function SourceVerdictBadge({
       {presentation && (
         <span
           className={cn(
-            "inline-flex items-center gap-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground",
+            "inline-flex items-center gap-1 type-meta font-medium uppercase tracking-wide text-muted-foreground",
             presentation.deemphasized && "line-through decoration-1",
           )}
         >
@@ -246,7 +246,7 @@ export function SourceVerdictBadge({
     <Tooltip>
       <TooltipTrigger asChild>{badge}</TooltipTrigger>
       <TooltipContent className="max-w-xs">
-        <p className="text-xs font-semibold">
+        <p className="type-secondary font-semibold">
           {presentation?.label ?? "Source verdict"}
           {roundedScore != null && (
             <span className="font-normal text-muted-foreground">
@@ -256,7 +256,7 @@ export function SourceVerdictBadge({
           )}
         </p>
         {tooltipLines.map((line, i) => (
-          <p key={i} className="mt-0.5 text-xs text-muted-foreground">
+          <p key={i} className="mt-0.5 type-secondary text-muted-foreground">
             {line}
           </p>
         ))}

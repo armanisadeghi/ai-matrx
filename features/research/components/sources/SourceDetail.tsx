@@ -150,11 +150,11 @@ function MetaRow({
 }) {
   return (
     <div className="flex items-start justify-between gap-3 py-1.5 border-b border-border/50 last:border-0">
-      <span className="text-xs text-muted-foreground flex items-center gap-1.5 shrink-0 pt-0.5">
+      <span className="type-secondary text-muted-foreground flex items-center gap-1.5 shrink-0 pt-0.5">
         {icon}
         {label}
       </span>
-      <div className="text-xs font-medium text-right">{children}</div>
+      <div className="type-secondary font-medium text-right">{children}</div>
     </div>
   );
 }
@@ -199,10 +199,10 @@ function ScoreBar({
   return (
     <div className="space-y-1" title={hint}>
       <div className="flex items-baseline justify-between gap-2">
-        <span className="text-[11px] text-muted-foreground leading-none">
+        <span className="type-meta text-muted-foreground leading-none">
           {label}
         </span>
-        <span className="text-xs font-semibold tabular-nums text-foreground leading-none">
+        <span className="type-secondary font-semibold tabular-nums text-foreground leading-none">
           {fmtScore(score)}
         </span>
       </div>
@@ -230,7 +230,7 @@ function AnalysisBlock({
 }) {
   return (
     <section className="space-y-2.5">
-      <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+      <div className="flex items-center gap-1.5 type-meta font-semibold uppercase tracking-wide text-muted-foreground">
         {icon}
         {title}
         {count != null && count > 0 && (
@@ -247,7 +247,7 @@ function AnalysisBlock({
 /** One evidence-signal row: a ✓ (present) or ✗ (absent), then the plain label. */
 function SignalRow({ present, label }: { present: boolean; label: string }) {
   return (
-    <div className="flex items-center gap-2 text-xs">
+    <div className="flex items-center gap-2 type-secondary">
       {present ? (
         <Check className="h-3.5 w-3.5 shrink-0 text-emerald-600/80 dark:text-emerald-400/80" />
       ) : (
@@ -255,7 +255,7 @@ function SignalRow({ present, label }: { present: boolean; label: string }) {
       )}
       <span
         className={
-          present ? "text-sm text-foreground" : "text-sm text-muted-foreground"
+          present ? "type-body text-foreground" : "type-body text-muted-foreground"
         }
       >
         {label}
@@ -267,7 +267,7 @@ function SignalRow({ present, label }: { present: boolean; label: string }) {
 /** A neutral entity chip — monochrome, never coloured (one per entity string). */
 function EntityChip({ value }: { value: string }) {
   return (
-    <span className="inline-flex max-w-[18rem] truncate rounded-md border border-border/60 bg-background px-2 py-0.5 text-xs text-foreground">
+    <span className="inline-flex max-w-[18rem] truncate rounded-md border border-border/60 bg-background px-2 py-0.5 type-secondary text-foreground">
       {value}
     </span>
   );
@@ -286,7 +286,7 @@ function EntityGroup({
   if (items.length === 0) return null;
   return (
     <div className="space-y-1.5">
-      <div className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground/70">
+      <div className="flex items-center gap-1.5 type-meta font-medium uppercase tracking-wide text-muted-foreground/70">
         {icon}
         {label}
         <span className="text-muted-foreground/50 tabular-nums">
@@ -308,11 +308,11 @@ function FindingCard({ finding }: { finding: PageFinding }) {
     finding.confidence == null ? null : Math.round(finding.confidence);
   return (
     <div className="rounded-lg border border-border/60 bg-card/60 p-3 space-y-2">
-      <p className="text-sm font-medium leading-relaxed text-foreground">
+      <p className="type-title leading-relaxed text-foreground">
         {finding.finding}
       </p>
       {finding.supporting_text && (
-        <p className="border-l-2 border-primary/30 pl-2.5 text-sm italic leading-relaxed text-foreground/80">
+        <p className="border-l-2 border-primary/30 pl-2.5 type-body italic leading-relaxed text-foreground/80">
           {finding.supporting_text}
         </p>
       )}
@@ -321,21 +321,21 @@ function FindingCard({ finding }: { finding: PageFinding }) {
         finding.finding_type) && (
         <div className="flex flex-wrap items-center gap-3 pt-0.5">
           {confidencePct != null && (
-            <span className="inline-flex items-baseline gap-1 text-[10px] uppercase tracking-wide text-muted-foreground">
+            <span className="inline-flex items-baseline gap-1 type-meta uppercase tracking-wide text-muted-foreground">
               Confidence
-              <span className="text-[11px] font-semibold tabular-nums text-foreground">
+              <span className="type-meta font-semibold tabular-nums text-foreground">
                 {confidencePct}%
               </span>
             </span>
           )}
           {finding.importance && (
-            <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wide text-muted-foreground">
+            <span className="inline-flex items-center gap-1 type-meta uppercase tracking-wide text-muted-foreground">
               <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-muted-foreground/50" />
               {finding.importance}
             </span>
           )}
           {finding.finding_type && (
-            <span className="text-[10px] uppercase tracking-wide text-muted-foreground/70">
+            <span className="type-meta uppercase tracking-wide text-muted-foreground/70">
               {finding.finding_type}
             </span>
           )}
@@ -410,11 +410,11 @@ function PageAnalysisDocument({
               <Brain className="h-4 w-4 text-primary/70" />
             </div>
             <div>
-              <h3 className="text-sm font-semibold leading-none">
+              <h3 className="type-title leading-none">
                 Page analysis
               </h3>
               {analysis.page_type && (
-                <p className="mt-1 text-[11px] text-muted-foreground">
+                <p className="mt-1 type-meta text-muted-foreground">
                   {analysis.page_type}
                 </p>
               )}
@@ -429,7 +429,7 @@ function PageAnalysisDocument({
         {analysis.should_reject && analysis.rejection_reason && (
           <div className="flex items-start gap-2 rounded-lg border border-rose-500/30 bg-rose-500/[0.05] px-3 py-2">
             <ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-rose-500/70" />
-            <p className="text-sm leading-relaxed text-foreground">
+            <p className="type-body leading-relaxed text-foreground">
               <span className="font-medium text-foreground/70">
                 Recommended for rejection:{" "}
               </span>
@@ -501,7 +501,7 @@ function PageAnalysisDocument({
             {analysis.key_facts.map((fact, i) => (
               <li
                 key={i}
-                className="flex items-start gap-2.5 text-sm leading-relaxed"
+                className="flex items-start gap-2.5 type-body leading-relaxed"
               >
                 <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary/70" />
                 <span className="text-foreground">{fact}</span>
@@ -524,11 +524,11 @@ function PageAnalysisDocument({
                 key={i}
                 className="rounded-lg border-l-2 border-primary/40 bg-muted/20 px-3 py-2.5"
               >
-                <p className="text-sm italic leading-relaxed text-foreground">
+                <p className="type-body italic leading-relaxed text-foreground">
                   &ldquo;{q.quote}&rdquo;
                 </p>
                 {q.speaker && (
-                  <footer className="mt-1.5 text-xs font-medium text-foreground/70">
+                  <footer className="mt-1.5 type-secondary font-medium text-foreground/70">
                     — {q.speaker}
                   </footer>
                 )}
@@ -574,12 +574,12 @@ function PageAnalysisDocument({
                   ) : (
                     <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary/50" />
                   )}
-                  <p className="text-sm font-medium leading-relaxed text-foreground">
+                  <p className="type-title leading-relaxed text-foreground">
                     {c.claim}
                   </p>
                 </div>
                 {c.support_assessment && (
-                  <p className="pl-5.5 text-sm leading-relaxed text-foreground/80">
+                  <p className="pl-5.5 type-body leading-relaxed text-foreground/80">
                     {c.support_assessment}
                   </p>
                 )}
@@ -618,7 +618,7 @@ function PageAnalysisDocument({
             {activeBias.map(({ key, label }) => (
               <span
                 key={key}
-                className="inline-flex items-center gap-1.5 rounded-md border border-amber-500/30 bg-amber-500/[0.06] px-2 py-1 text-[11px] text-amber-700 dark:text-amber-400/90"
+                className="inline-flex items-center gap-1.5 rounded-md border border-amber-500/30 bg-amber-500/[0.06] px-2 py-1 type-meta text-amber-700 dark:text-amber-400/90"
               >
                 <AlertTriangle className="h-3 w-3 shrink-0 opacity-70" />
                 {label}
@@ -691,7 +691,7 @@ function PageAnalysisDocument({
           icon={<FileText className="h-3 w-3" />}
           title="Analysis notes"
         >
-          <p className="rounded-xl border border-border/60 bg-card/60 px-4 py-3 text-sm leading-relaxed text-foreground">
+          <p className="rounded-xl border border-border/60 bg-card/60 px-4 py-3 type-body leading-relaxed text-foreground">
             {analysis.analysis_notes}
           </p>
         </AnalysisBlock>
@@ -712,7 +712,7 @@ function HeadlineScore({
 }) {
   return (
     <div className="space-y-1">
-      <span className="block text-[10px] uppercase tracking-wide text-muted-foreground">
+      <span className="block type-meta uppercase tracking-wide text-muted-foreground">
         {label}
       </span>
       <span
@@ -733,8 +733,8 @@ function HeadlineScore({
 function DateRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-3 border-b border-border/40 py-2 last:border-0">
-      <span className="text-[11px] text-muted-foreground">{label}</span>
-      <span className="text-sm font-medium text-foreground">{value}</span>
+      <span className="type-meta text-muted-foreground">{label}</span>
+      <span className="type-title text-foreground">{value}</span>
     </div>
   );
 }
@@ -1106,14 +1106,14 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
           <div className="flex items-center justify-between gap-2">
             <Link
               href={`/research/topics/${topicId}/sources`}
-              className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              className="inline-flex items-center gap-1 type-body text-muted-foreground hover:text-foreground transition-colors"
             >
               <ChevronLeft className="h-4 w-4" />
               Sources
             </Link>
             {sourceIds.length > 1 && (
               <div className="flex items-center gap-1">
-                <span className="text-xs text-muted-foreground tabular-nums">
+                <span className="type-secondary text-muted-foreground tabular-nums">
                   {currentIndex + 1}/{sourceIds.length}
                 </span>
                 <Button
@@ -1168,7 +1168,7 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
                   <SourceTypeIcon
                     type={sourceTypeFromDb(typedSource.source_type)}
                   />
-                  <h2 className="font-semibold text-sm leading-snug">
+                  <h2 className="type-title leading-snug">
                     {typedSource.title || "Untitled"}
                   </h2>
                 </div>
@@ -1179,7 +1179,7 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
                   href={typedSource.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs text-primary hover:underline flex items-start gap-1 break-all"
+                  className="type-secondary text-primary hover:underline flex items-start gap-1 break-all"
                 >
                   {typedSource.url}
                   <ExternalLink className="h-3 w-3 shrink-0 mt-0.5" />
@@ -1266,7 +1266,7 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
                         reasoning={typedSource.authority_reasoning}
                       />
                       {typedSource.authority_reasoning && (
-                        <span className="max-w-[16rem] text-right text-[11px] font-normal text-muted-foreground">
+                        <span className="max-w-[16rem] text-right type-meta font-normal text-muted-foreground">
                           {typedSource.authority_reasoning}
                         </span>
                       )}
@@ -1313,7 +1313,7 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
                         </span>
                       </TooltipTrigger>
                       <TooltipContent className="max-w-xs">
-                        <p className="text-xs">
+                        <p className="type-secondary">
                           Predicted likelihood that <b>fetching</b> this URL
                           returns usable article text — page delivery, not
                           quality. A great paywalled source can still score low
@@ -1339,7 +1339,7 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
                       </span>
                     </TooltipTrigger>
                     <TooltipContent className="max-w-xs">
-                      <p className="text-xs">
+                      <p className="type-secondary">
                         Confidence this source is about the topic&rsquo;s
                         actual subject rather than a namesake.
                       </p>
@@ -1359,7 +1359,7 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
                       </span>
                     </TooltipTrigger>
                     <TooltipContent className="max-w-xs">
-                      <p className="text-xs">
+                      <p className="type-secondary">
                         Topical usefulness judged from the search snippet
                         alone — available for nearly every source, including
                         the ones never fetched.
@@ -1432,7 +1432,7 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
 
               {/* Search ranking — total importance + per-keyword ranks (no hiding) */}
               <div className="space-y-2 rounded-lg border border-border p-3">
-                <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                <div className="flex items-center gap-1.5 type-meta font-semibold uppercase tracking-wide text-muted-foreground">
                   <TrendingUp className="h-3 w-3" />
                   Search ranking
                 </div>
@@ -1441,7 +1441,7 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
 
               {/* Tags — assign this source to dimensions for consolidation */}
               <div className="space-y-2 rounded-lg border border-border p-3">
-                <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                <div className="flex items-center gap-1.5 type-meta font-semibold uppercase tracking-wide text-muted-foreground">
                   <Tag className="h-3 w-3" />
                   Tags
                 </div>
@@ -1451,7 +1451,7 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
               {/* Content version details */}
               {contentVersions.length > 0 && (
                 <div className="rounded-lg border border-border p-3 space-y-2">
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  <p className="type-secondary font-medium text-muted-foreground uppercase tracking-wide">
                     Content Versions
                   </p>
                   {contentVersions.length > 1 ? (
@@ -1463,7 +1463,7 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
                       >
                         &larr;
                       </Button>
-                      <span className="text-xs tabular-nums text-center">
+                      <span className="type-secondary tabular-nums text-center">
                         v
                         {contentVersions[selectedVersion]?.capture_version ??
                           selectedVersion + 1}{" "}
@@ -1478,12 +1478,12 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
                       </Button>
                     </div>
                   ) : (
-                    <div className="text-xs text-muted-foreground">
+                    <div className="type-secondary text-muted-foreground">
                       1 version available
                     </div>
                   )}
                   {currentContent && (
-                    <div className="space-y-0 text-xs">
+                    <div className="space-y-0 type-secondary">
                       <div className="flex justify-between py-1 border-b border-border/50">
                         <span className="text-muted-foreground">Chars</span>
                         <span className="font-mono">
@@ -1554,7 +1554,7 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
               {/* Extracted links count */}
               {currentContent &&
                 jsonArrayLength(currentContent.extracted_links) > 0 && (
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-2 type-secondary text-muted-foreground">
                     <Link2 className="h-3 w-3" />
                     <span>
                       {jsonArrayLength(currentContent.extracted_links)}{" "}
@@ -1565,7 +1565,7 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
 
               {/* Description */}
               {typedSource.description && (
-                <p className="text-xs leading-relaxed text-foreground/80">
+                <p className="type-secondary leading-relaxed text-foreground/80">
                   {typedSource.description}
                 </p>
               )}
@@ -1576,7 +1576,7 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
                   {extraSnippets.map((snippet, i) => (
                     <p
                       key={i}
-                      className="text-xs text-foreground/70 leading-relaxed"
+                      className="type-secondary text-foreground/70 leading-relaxed"
                     >
                       {snippet}
                     </p>
@@ -1595,7 +1595,7 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
                     {showRawSearch ? "Hide" : "Show"} raw search result
                   </button>
                   {showRawSearch && (
-                    <pre className="text-xs bg-muted rounded-lg p-3 overflow-x-auto max-h-64 overflow-y-auto leading-relaxed whitespace-pre-wrap break-all">
+                    <pre className="type-secondary bg-muted rounded-lg p-3 overflow-x-auto max-h-64 overflow-y-auto leading-relaxed whitespace-pre-wrap break-all">
                       {JSON.stringify(typedSource.raw_search_result, null, 2)}
                     </pre>
                   )}
@@ -1689,7 +1689,7 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
         {isScraping && scrapeStream.messages.length > 0 && (
           <div className="rounded-lg border border-border/50 bg-muted/30 px-3 py-2 space-y-1">
             {scrapeStream.messages.slice(-3).map((msg) => (
-              <p key={msg.id} className="text-[10px] text-muted-foreground">
+              <p key={msg.id} className="type-meta text-muted-foreground">
                 {msg.message}
               </p>
             ))}
@@ -1710,10 +1710,10 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-muted/50">
                   <Brain className="h-5 w-5 text-muted-foreground/30" />
                 </div>
-                <p className="text-sm font-medium text-foreground/70">
+                <p className="type-title text-foreground/70">
                   Not analyzed yet
                 </p>
-                <p className="max-w-[280px] text-[11px] leading-relaxed text-muted-foreground">
+                <p className="max-w-[280px] type-meta leading-relaxed text-muted-foreground">
                   Once this page is read and analyzed, the full per-page
                   breakdown — scores, key facts, findings, quotes, claims, and
                   the use verdict — appears here.
@@ -1726,7 +1726,7 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
         {/* Content Section */}
         <div className="min-h-[220px]">
           {contentError ? (
-            <div className="mb-2 flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+            <div className="mb-2 flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 type-secondary text-destructive">
               <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
               <span className="flex-1">
                 This page&apos;s text could not be loaded: {contentError}
@@ -1742,7 +1742,7 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
             </div>
           ) : null}
           {currentContent && !contentSourceId ? (
-            <p className="mb-2 text-[11px] text-muted-foreground">
+            <p className="mb-2 type-meta text-muted-foreground">
               Not yet a Source — edits stay in research until it lands.
             </p>
           ) : null}
@@ -1759,11 +1759,11 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
                   <div className="h-10 w-10 rounded-xl bg-primary/8 flex items-center justify-center">
                     <Loader2 className="h-5 w-5 text-primary/60 animate-spin" />
                   </div>
-                  <p className="text-xs font-medium text-foreground/70">
+                  <p className="type-secondary font-medium text-foreground/70">
                     Reading…
                   </p>
                   {scrapeStream.messages.length > 0 && (
-                    <p className="text-[10px] text-muted-foreground max-w-[240px]">
+                    <p className="type-meta text-muted-foreground max-w-[240px]">
                       {
                         scrapeStream.messages[scrapeStream.messages.length - 1]
                           .message
@@ -1777,10 +1777,10 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
                     <AlertTriangle className="h-5 w-5 text-destructive/60" />
                   </div>
                   <div>
-                    <p className="text-xs font-medium text-foreground/70">
+                    <p className="type-secondary font-medium text-foreground/70">
                       Read failed
                     </p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5 max-w-[240px]">
+                    <p className="type-meta text-muted-foreground mt-0.5 max-w-[240px]">
                       We couldn&apos;t retrieve this page. Try
                       re-reading or paste content manually.
                     </p>
@@ -1809,10 +1809,10 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
                     <Download className="h-5 w-5 text-primary/60" />
                   </div>
                   <div>
-                    <p className="text-xs font-medium text-foreground/70">
+                    <p className="type-secondary font-medium text-foreground/70">
                       No content yet
                     </p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5 max-w-[240px]">
+                    <p className="type-meta text-muted-foreground mt-0.5 max-w-[240px]">
                       Read this source to fetch its page content, or paste
                       content manually.
                     </p>
@@ -1838,7 +1838,7 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
               )}
             </div>
           ) : (
-            <div className="rounded-xl border border-dashed border-border/50 bg-card/30 min-h-[220px] flex items-center justify-center text-muted-foreground text-xs">
+            <div className="rounded-xl border border-dashed border-border/50 bg-card/30 min-h-[220px] flex items-center justify-center text-muted-foreground type-secondary">
               <Loader2 className="h-4 w-4 animate-spin mr-2" />
               Loading source...
             </div>
@@ -1848,7 +1848,7 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
         {/* Analysis Section */}
         <div className="space-y-2 min-h-[180px]">
           <div className="flex items-center justify-between px-0.5">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <span className="type-meta font-semibold uppercase tracking-wider text-muted-foreground">
               Analysis
               {currentAnalyses.length > 0 && (
                 <span className="ml-1.5 text-muted-foreground">
@@ -1886,10 +1886,10 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
                   <div className="flex items-start gap-2 px-4 py-2.5 border-b border-amber-500/20">
                     <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
                     <div className="min-w-0 flex-1">
-                      <p className="text-xs font-semibold text-amber-700 dark:text-amber-400">
+                      <p className="type-secondary font-semibold text-amber-700 dark:text-amber-400">
                         The AI provider stopped early — content kept
                       </p>
-                      <p className="text-[11px] text-muted-foreground mt-0.5 break-words">
+                      <p className="type-meta text-muted-foreground mt-0.5 break-words">
                         {interrupted.reason}
                       </p>
                     </div>
@@ -1909,7 +1909,7 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
               {staleAnalysisVersion != null && currentAnalyses.length > 0 && (
                 <div className="rounded-lg border border-amber-500/40 bg-amber-500/[0.06] px-3 py-2 flex items-start gap-2">
                   <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0 mt-0.5" />
-                  <p className="text-[11px] text-amber-700 dark:text-amber-400 leading-relaxed">
+                  <p className="type-meta text-amber-700 dark:text-amber-400 leading-relaxed">
                     {staleAnalysisSentence(
                       staleAnalysisVersion,
                       currentContent?.capture_version ?? null,
@@ -1946,7 +1946,7 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
               <div className="h-10 w-10 rounded-xl bg-muted/50 flex items-center justify-center">
                 <Brain className="h-5 w-5 text-muted-foreground/30" />
               </div>
-              <p className="text-[10px] text-muted-foreground max-w-[200px]">
+              <p className="type-meta text-muted-foreground max-w-[200px]">
                 Read content first, then run analysis to extract insights.
               </p>
             </div>

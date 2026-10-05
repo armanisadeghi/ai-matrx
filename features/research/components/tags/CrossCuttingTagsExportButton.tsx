@@ -137,7 +137,7 @@ export function CrossCuttingTagsExportButton({
         <DropdownMenuLabel className="text-xs text-muted-foreground">
           Run the agent yourself
         </DropdownMenuLabel>
-        <p className="px-2 pb-1.5 text-[11px] leading-snug text-muted-foreground">
+        <p className="px-2 pb-1.5 type-meta leading-snug text-muted-foreground">
           You can paste this into the Cross-Cutting Tag Generator agent yourself,
           and add your own prompt at the end to steer it.
         </p>

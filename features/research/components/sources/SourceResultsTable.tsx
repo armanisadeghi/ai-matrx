@@ -153,7 +153,7 @@ export function SourceResultsTable({
       frozen: true,
       align: "right",
       cell: (source) => (
-        <span className="font-mono text-[11px] tabular-nums text-muted-foreground">
+        <span className="font-mono type-meta tabular-nums text-muted-foreground">
           {rankFor(source) ?? "—"}
         </span>
       ),
@@ -178,7 +178,7 @@ export function SourceResultsTable({
                 name={source.title || source.hostname || source.url}
                 href={`/research/topics/${topicId}/sources/${source.id}`}
                 showIcon={false}
-                className="block max-w-[20rem] truncate whitespace-nowrap text-xs font-medium"
+                className="block max-w-[20rem] truncate whitespace-nowrap type-secondary font-medium"
               />
               {(source.hostname || source.redundancy_group || source.url) && (
                 <div
@@ -188,7 +188,7 @@ export function SourceResultsTable({
                     .join(" · ")}
                 >
                   {source.hostname && (
-                    <span className="max-w-[20rem] truncate whitespace-nowrap text-[10px] text-muted-foreground">
+                    <span className="max-w-[20rem] truncate whitespace-nowrap type-meta text-muted-foreground">
                       {source.hostname}
                     </span>
                   )}
@@ -210,7 +210,7 @@ export function SourceResultsTable({
               )}
               {video && (
                 <span
-                  className="mt-0.5 block truncate whitespace-nowrap text-[11px] text-muted-foreground"
+                  className="mt-0.5 block truncate whitespace-nowrap type-meta text-muted-foreground"
                   title={videoSummary(video)}
                 >
                   {videoSummary(video)}
@@ -229,7 +229,7 @@ export function SourceResultsTable({
       filter: false,
       width: 84,
       cell: () => (
-        <span className="inline-flex whitespace-nowrap rounded-full bg-green-100 px-1.5 py-px text-[10px] font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400">
+        <span className="inline-flex whitespace-nowrap rounded-full bg-green-100 px-1.5 py-px type-meta font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400">
           <span className="mr-1 h-1 w-1 rounded-full bg-green-500" />
           Found
         </span>
@@ -301,7 +301,7 @@ export function SourceResultsTable({
       width: 120,
       cell: (source) => (
         <span
-          className="whitespace-nowrap text-[11px] text-muted-foreground"
+          className="whitespace-nowrap type-meta text-muted-foreground"
           title={SOURCE_TYPE_CONFIG[sourceTypeFromDb(source.source_type)].label}
         >
           {SOURCE_TYPE_CONFIG[sourceTypeFromDb(source.source_type)].label}
@@ -364,7 +364,7 @@ export function SourceResultsTable({
         return (
           <span
             className={cn(
-              "inline-flex whitespace-nowrap rounded-full px-1.5 py-px text-[10px] font-medium",
+              "inline-flex whitespace-nowrap rounded-full px-1.5 py-px type-meta font-medium",
               ANALYSIS_CLASS[analysis],
             )}
           >
@@ -388,7 +388,7 @@ export function SourceResultsTable({
         return (
           <span
             className={cn(
-              "font-mono text-[11px] tabular-nums whitespace-nowrap",
+              "font-mono type-meta tabular-nums whitespace-nowrap",
               size != null && size >= 1000
                 ? "text-muted-foreground"
                 : "text-muted-foreground/50",

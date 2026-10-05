@@ -205,8 +205,8 @@ export default function TagManager() {
   return (
     <div className="p-3 sm:p-4 space-y-3">
       <div className="flex items-center gap-2 rounded-full matrx-glass-thin-border px-3 py-1.5">
-        <span className="text-xs font-medium text-foreground/80">Tags</span>
-        <span className="text-[10px] text-muted-foreground tabular-nums">
+        <span className="type-secondary font-medium text-foreground/80">Tags</span>
+        <span className="type-meta text-muted-foreground tabular-nums">
           <UntrustedCount
             read={readOf({ isLoading: tagsLoading, error: tagsError })}
             value={`${filtered.length}/${tagList.length}`}
@@ -249,7 +249,7 @@ export default function TagManager() {
       ) : tagsLoading && tagList.length === 0 ? (
         <div
           role="status"
-          className="flex min-h-[280px] items-center justify-center text-xs text-muted-foreground"
+          className="flex min-h-[280px] items-center justify-center type-secondary text-muted-foreground"
         >
           Loading tags…
         </div>
@@ -259,10 +259,10 @@ export default function TagManager() {
             <Layers className="h-6 w-6 text-primary/40" />
           </div>
           <div>
-            <p className="text-xs font-medium text-foreground/70">
+            <p className="type-secondary font-medium text-foreground/70">
               {tagList.length === 0 ? "No tags yet" : "No matches"}
             </p>
-            <p className="text-[10px] text-muted-foreground mt-1 max-w-[240px]">
+            <p className="type-meta text-muted-foreground mt-1 max-w-[240px]">
               {tagList.length === 0
                 ? "Create tags to categorize and organize your research sources into themes."
                 : "Try adjusting your search to find what you're looking for."}
@@ -289,18 +289,18 @@ export default function TagManager() {
               <div className="flex-1 min-w-0">
                 <Link
                   href={`/research/topics/${topicId}/tags/${tag.id}`}
-                  className="font-medium text-sm hover:text-primary transition-colors"
+                  className="type-title hover:text-primary transition-colors"
                 >
                   {tag.name}
                 </Link>
                 {tag.description && (
-                  <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
+                  <p className="type-secondary text-muted-foreground mt-0.5 line-clamp-1">
                     {tag.description}
                   </p>
                 )}
               </div>
               {tag.source_count != null && (
-                <span className="text-xs text-muted-foreground shrink-0">
+                <span className="type-secondary text-muted-foreground shrink-0">
                   {tag.source_count} sources
                 </span>
               )}
@@ -331,7 +331,7 @@ export default function TagManager() {
       {isMobile ? (
         <Drawer open={createOpen} onOpenChange={setCreateOpen}>
           <DrawerContent className="max-h-[75dvh]">
-            <DrawerTitle className="px-4 pt-3 text-sm font-semibold">
+            <DrawerTitle className="px-4 pt-3 type-title">
               {editTag ? "Edit Tag" : "Create Tag"}
             </DrawerTitle>
             <div className="pb-safe">{formContent}</div>
@@ -341,7 +341,7 @@ export default function TagManager() {
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
           <DialogContent className="max-w-sm">
             <DialogHeader>
-              <DialogTitle className="text-sm">
+              <DialogTitle className="type-body">
                 {editTag ? "Edit Tag" : "Create Tag"}
               </DialogTitle>
             </DialogHeader>

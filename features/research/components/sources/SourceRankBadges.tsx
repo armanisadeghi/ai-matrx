@@ -18,7 +18,7 @@ export function SourceRankBadges({
 }) {
   if (!importance || importance.keywordCount === 0) {
     return (
-      <span className="text-[11px] text-muted-foreground">
+      <span className="type-meta text-muted-foreground">
         Not ranked for any keyword
       </span>
     );
@@ -31,13 +31,13 @@ export function SourceRankBadges({
       <div className="flex items-center gap-2 flex-wrap">
         <span
           title="Composite of this source's search ranks across all keywords — rewards ranking well for many keywords, so breadth can beat a single #1."
-          className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-1.5 py-0.5 text-[11px] font-semibold text-primary"
+          className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-1.5 py-0.5 type-meta font-semibold text-primary"
         >
           <TrendingUp className="h-3 w-3" />
           Importance {score}
         </span>
         {bestRank != null && (
-          <span className="text-[11px] text-muted-foreground tabular-nums">
+          <span className="type-meta text-muted-foreground tabular-nums">
             best #{bestRank} · {perKeyword.length} keyword
             {perKeyword.length === 1 ? "" : "s"}
           </span>
@@ -48,7 +48,7 @@ export function SourceRankBadges({
           <span
             key={k.keyword_id}
             title={`Rank ${k.rank ?? "—"} for "${k.keyword}"`}
-            className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-muted/30 px-1.5 py-0.5 text-[10px]"
+            className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-muted/30 px-1.5 py-0.5 type-meta"
           >
             <span className="font-mono tabular-nums text-foreground/80">
               #{k.rank ?? "—"}

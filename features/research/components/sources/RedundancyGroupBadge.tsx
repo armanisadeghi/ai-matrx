@@ -34,7 +34,7 @@ export function RedundancyGroupBadge({
       <TooltipTrigger asChild>
         <span
           className={cn(
-            "inline-flex items-center gap-1 rounded border border-dashed border-border px-1.5 py-px text-[10px] font-medium whitespace-nowrap text-muted-foreground",
+            "inline-flex items-center gap-1 rounded border border-dashed border-border px-1.5 py-px type-meta font-medium whitespace-nowrap text-muted-foreground",
             className,
           )}
         >
@@ -43,7 +43,7 @@ export function RedundancyGroupBadge({
         </span>
       </TooltipTrigger>
       <TooltipContent className="max-w-xs">
-        <p className="text-xs">
+        <p className="type-secondary">
           Part of a near-duplicate cluster (
           <span className="font-mono">{group}</span>) — sources this similar
           are grouped so analysis spreads its quota across clusters instead of

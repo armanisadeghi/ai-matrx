@@ -30,7 +30,7 @@ function confidencePct(confidence: number): number {
 /** Small neutral chip for a spanned keyword. */
 function KeywordChip({ label }: { label: string }) {
   return (
-    <span className="inline-flex items-center rounded-full border border-border/60 bg-muted/40 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+    <span className="inline-flex items-center rounded-full border border-border/60 bg-muted/40 px-2 py-0.5 type-meta font-medium text-muted-foreground">
       {label}
     </span>
   );
@@ -47,7 +47,7 @@ function ConfidenceMeter({ confidence }: { confidence: number }) {
           style={{ width: `${pct}%` }}
         />
       </div>
-      <span className="text-[10px] font-medium tabular-nums text-muted-foreground w-8 text-right">
+      <span className="type-meta font-medium tabular-nums text-muted-foreground w-8 text-right">
         {pct}%
       </span>
     </div>
@@ -92,7 +92,7 @@ function SuggestionRow({
 
       <div className="flex-1 min-w-0 space-y-1.5">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-sm font-medium text-foreground">
+          <span className="type-title text-foreground">
             {suggestion.name}
           </span>
           {created && (
@@ -106,7 +106,7 @@ function SuggestionRow({
         </div>
 
         {suggestion.reason && (
-          <p className="text-xs text-muted-foreground leading-snug">
+          <p className="type-secondary text-muted-foreground leading-snug">
             {suggestion.reason}
           </p>
         )}
@@ -258,10 +258,10 @@ export function CrossCuttingTagsPanel({
           <Network className="h-4 w-4 text-primary/70" />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-semibold text-foreground">
+          <h3 className="type-title text-foreground">
             Cross-cutting tags
           </h3>
-          <p className="text-[11px] text-muted-foreground leading-snug mt-0.5">
+          <p className="type-meta text-muted-foreground leading-snug mt-0.5">
             Discover tag dimensions that span several keywords, then pick which to
             create.
           </p>
@@ -303,7 +303,7 @@ export function CrossCuttingTagsPanel({
                 : "Discover cross-cutting tags"}
           </Button>
           {topic?.tag_suggestions?.generated_at && !generating && (
-            <span className="text-[10px] text-muted-foreground">
+            <span className="type-meta text-muted-foreground">
               Last run{" "}
               {new Date(topic.tag_suggestions.generated_at).toLocaleDateString()}
             </span>
@@ -313,7 +313,7 @@ export function CrossCuttingTagsPanel({
 
       {/* Streaming progress */}
       {generating && (
-        <div className="flex items-center gap-2 rounded-lg border border-border/40 bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+        <div className="flex items-center gap-2 rounded-lg border border-border/40 bg-muted/30 px-3 py-2 type-secondary text-muted-foreground">
           <Loader2 className="h-3.5 w-3.5 animate-spin" />
           Reading keywords and search results…
         </div>
@@ -321,7 +321,7 @@ export function CrossCuttingTagsPanel({
 
       {/* Empty result */}
       {showEmptyHint && (
-        <p className="text-xs text-muted-foreground px-1 py-2">
+        <p className="type-secondary text-muted-foreground px-1 py-2">
           No cross-cutting dimensions surfaced. Try adding guidance above, or run
           a search first so there are results to analyze.
         </p>
@@ -341,7 +341,7 @@ export function CrossCuttingTagsPanel({
                   ? "Clear selection"
                   : "Select all"}
               </button>
-              <span className="text-[10px] text-muted-foreground tabular-nums">
+              <span className="type-meta text-muted-foreground tabular-nums">
                 {/* read-gate-exempt: selection count over tag suggestions this panel generated or the topic prop carried; no read happens here */}
                 {selectedCount} of {pending.length} selected
               </span>

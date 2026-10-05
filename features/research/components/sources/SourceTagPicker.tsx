@@ -236,7 +236,7 @@ export function SourceTagPicker({
           })}
         </div>
       ) : visibleSuggestions.length === 0 ? (
-        <p className="text-[11px] text-muted-foreground leading-relaxed">
+        <p className="type-meta text-muted-foreground leading-relaxed">
           No tags yet. Create tags on the{" "}
           <Link
             href={`/research/topics/${topicId}/tags`}
@@ -252,7 +252,7 @@ export function SourceTagPicker({
       {/* AI-suggested tags — accept to create+assign, dismiss to drop */}
       {visibleSuggestions.length > 0 && (
         <div className="space-y-1.5">
-          <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+          <span className="type-meta font-semibold uppercase tracking-wide text-muted-foreground">
             Suggested
           </span>
           <div className="flex flex-wrap gap-1.5">
@@ -261,7 +261,7 @@ export function SourceTagPicker({
               return (
                 <span
                   key={s.name}
-                  className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/[0.06] pl-1.5 pr-0.5 py-0.5 text-[11px]"
+                  className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/[0.06] pl-1.5 pr-0.5 py-0.5 type-meta"
                 >
                   <button
                     type="button"
@@ -279,7 +279,7 @@ export function SourceTagPicker({
                       {s.name}
                     </span>
                     {pct(s.confidence) && (
-                      <span className="text-[10px] text-muted-foreground tabular-nums">
+                      <span className="type-meta text-muted-foreground tabular-nums">
                         {pct(s.confidence)}
                       </span>
                     )}

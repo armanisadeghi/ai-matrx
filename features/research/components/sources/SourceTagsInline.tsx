@@ -72,7 +72,7 @@ export function SourceTagsInline({
       {assigned.map((t) => (
         <span
           key={t.id}
-          className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 pl-1.5 pr-0.5 py-px text-[10px] font-medium text-primary"
+          className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 pl-1.5 pr-0.5 py-px type-meta font-medium text-primary"
         >
           <span className="truncate max-w-[7rem]">{t.name}</span>
           <button
@@ -143,7 +143,7 @@ export function SourceTagsInline({
             );
           })}
           {tags.length === 0 && (
-            <div className="px-2 py-1.5 text-[11px] text-muted-foreground">
+            <div className="px-2 py-1.5 type-meta text-muted-foreground">
               No tags yet — create one above.
             </div>
           )}
