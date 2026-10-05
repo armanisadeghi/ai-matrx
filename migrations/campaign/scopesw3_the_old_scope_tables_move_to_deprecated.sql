@@ -14,7 +14,26 @@ begin
   select count(*), string_agg(n2.nspname || '.' || p.proname, ', ' order by 1) into n, v
     from pg_proc p join pg_namespace n2 on n2.oid = p.pronamespace
    where n2.nspname not in ('pg_catalog', 'information_schema', 'deprecated')
-     and p.prosrc ~ 'context\.(scopes|scope_types|context_items|context_item_values|context_value_refs|scope_dataset_instances)\M';
+     and p.prosrc ~ 'context\.(scopes|scope_types|context_items|context_item_values|context_value_refs|scope_dataset_instances)\M'
+     -- PROVENANCE ALLOWLIST (FTS-1g, 2026-10-05): these bodies name an old table only as the string label
+     -- metadata.moved_from.table carried by 10,602 Records (history: where a Record came from), never as a relation;
+     -- the move leaves the label true. Each is named; a new body is never let through by a pattern.
+     and n2.nspname || '.' || p.proname not in (
+       'custom._ctx_store_type',   -- stamps/reads metadata.moved_from.table on a type's Records (history label, a string)
+       'custom._ctx_store_scope',   -- stamps the scope-column Fields' moved_from label and finds them by it
+       'custom._ctx_store_item',   -- stamps a context field's moved_from label and finds the type's fields by it
+       'custom._ctx_store_value',   -- names the old value store in a value's source stamp (history label)
+       'custom._ctx_scope_columns',   -- stamps the scope-column Fields' moved_from label
+       'custom._ctx_scope_settings',   -- finds a type's settings Fields by their moved_from label
+       'custom._ctx_type_subtree_follows',   -- finds a type's context fields by their moved_from label
+       'custom.scope_rows_of',   -- finds the scope-column Fields by their moved_from label
+       'custom.scope_items_of',   -- leaves out the scope-column Fields by their moved_from label
+       'custom.context_item_write',   -- finds a context field Record by its moved_from label
+       'custom.context_item_archive',   -- finds a context field Record by its moved_from label
+       'custom.context_item_restore',   -- finds a context field Record by its moved_from label
+       'custom.context_type_restore',   -- finds the type's context fields by their moved_from label
+       'platform.entity_row_access_attrs'   -- finds a context field Record by its moved_from label; two comments name the old type table
+     );
   if n > 0 then
     raise exception 'scopesw3: % function bodies still name an old scope table by its old name; move them first: %', n, left(v, 3000);
   end if;
