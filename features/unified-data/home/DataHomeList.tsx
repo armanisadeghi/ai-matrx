@@ -12,7 +12,7 @@
 // the ACTIVE organization is only where New table lands (the page header, and the making controls
 // in the footer). Nothing in this file reads the active organization for a read.
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { foundHighlightOf } from "@ai-matrx/kit/reversible";
 import { useRecordsClient } from "@ai-matrx/records/react";
@@ -58,6 +58,9 @@ import { DATA_HOME_DEFAULT_VIEW_KNOB, resolveDataHomeView } from "./dataHomeKnob
 import { tokensToFilters, updatedBucket } from "./dataHomeQuery";
 import { DataHomeRecent, recentRows } from "./DataHomeRecent";
 
+const withoutHidden = (rows: DataHomeRow[], hidden: ReadonlySet<string>) =>
+  hidden.size === 0 ? rows : rows.filter((row) => !hidden.has(row.id));
+
 export const DATA_HOME_SURFACE_KEY = "data-home";
 
 export interface DataHomeListProps {
@@ -86,6 +89,21 @@ export function DataHomeList({ dataSource, footer, sharedOnlyHere = false }: Dat
   const [corpusVersion, setCorpusVersion] = useState(0);
   // A restore (Undo, ⌘Z, Restore) on this page lists the table again at once.
   const restoredVersion = useReadAgainOnRestore();
+  // OPTIMISTIC ARCHIVE: a table being archived (or archived this visit) leaves the list the moment
+  // it is pressed, from the rows already in hand — no re-read, no loading state. A refusal or an
+  // Undo takes its id out again. The next full read simply no longer has the row.
+  const [hiddenIds, setHiddenIds] = useState<ReadonlySet<string>>(() => new Set());
+  const hideRow = useCallback((id: string) => setHiddenIds((now) => new Set(now).add(id)), []);
+  const unhideRow = useCallback(
+    (id: string) =>
+      setHiddenIds((now) => {
+        if (!now.has(id)) return now;
+        const next = new Set(now);
+        next.delete(id);
+        return next;
+      }),
+    [],
+  );
   // THE CORPUS (rows in hand) and the server search beside it — dataHomeCorpus.ts.
   const corpus = useMemo(
     () => createDataHomeCorpus(client, dataSource, { includeAppTables: showAppTables }),
@@ -128,20 +146,25 @@ export function DataHomeList({ dataSource, footer, sharedOnlyHere = false }: Dat
     starred: starredSet,
     onOpened: (row) => marks.opened(row.id),
     onChanged: () => setCorpusVersion((v) => v + 1),
+    onHide: hideRow,
+    onUnhide: unhideRow,
   });
 
   const service = useMemo(
     () =>
       createDataHomeService({
-        load: corpus.load,
-        loaded: corpus.loaded,
+        load: () => corpus.load().then((rows) => withoutHidden(rows, hiddenIds)),
+        loaded: () => {
+          const rows = corpus.loaded();
+          return rows && withoutHidden(rows, hiddenIds);
+        },
         // The Archived filter's rows, a store page at a time, only when it asks (TABLE-ACTIONS item 10).
         readArchived: (page, sort) => readArchivedDataHomePage(dataSource, page, userId, sort),
         server: corpus.server,
         isStarred: (row) => starredSet.has(row.id),
         ownerLabel,
       }),
-    [corpus, starredSet, dataSource, userId],
+    [corpus, starredSet, dataSource, userId, hiddenIds],
   );
 
   // Defaults stay knobs (person / platform tier; never the active organization).
@@ -171,7 +194,7 @@ export function DataHomeList({ dataSource, footer, sharedOnlyHere = false }: Dat
       // organizations the viewer belongs to or holds a grant in), so System is absent, not empty.
       lanes: { system: false },
       service,
-      serviceKey: `${starredKey}|${serverVersion}|${showAppTables ? "app" : ""}|${corpusVersion}.${restoredVersion}`,
+      serviceKey: `${starredKey}|${serverVersion}|${showAppTables ? "app" : ""}|${corpusVersion}.${restoredVersion}|${[...hiddenIds].join(",")}`,
       columns,
       prefsVersion: 1,
       prefsDefaults: {

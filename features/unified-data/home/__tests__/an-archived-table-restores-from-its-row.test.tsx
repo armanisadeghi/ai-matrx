@@ -51,7 +51,7 @@ let menuFor: ((row: DataHomeRow) => () => ItemMenuConfig) | null = null;
 const onChanged = jest.fn();
 
 function Probe() {
-  const menus = useDataHomeRowMenus({ starred: new Set(), onOpened: () => undefined, onChanged });
+  const menus = useDataHomeRowMenus({ starred: new Set(), onOpened: () => undefined, onChanged, onHide: () => undefined, onUnhide: () => undefined });
   const result = menus.useRowActions({ rows: [] } as unknown as EntityListController<DataHomeRow>);
   menuFor = result.actions.menuFor as unknown as typeof menuFor;
   return null;

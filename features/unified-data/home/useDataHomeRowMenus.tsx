@@ -44,6 +44,7 @@ import { toast } from "@/lib/toast";
 import { toItemMenuConfig } from "@/features/unified-data/actions/tableActionAdapters";
 import { useStarToggle } from "@/features/unified-data/actions/useTableFavorite";
 import type { DataHomeRow } from "./dataHomeRows";
+import { archiveTableFromHome } from "./archiveTableFromHome";
 
 /** How many table ids one `custom.my_levels` call asks about. */
 const LEVELS_PER_CALL = 200;
@@ -199,10 +200,16 @@ export function useDataHomeRowMenus({
   starred,
   onOpened,
   onChanged,
+  onHide,
+  onUnhide,
 }: {
   starred: ReadonlySet<string>;
   onOpened: (row: DataHomeRow) => void;
   onChanged: () => void;
+  /** An archive is under way: the row leaves the list now (optimistic). */
+  onHide: (rowId: string) => void;
+  /** The archive failed or was undone: the row is listed again. */
+  onUnhide: (rowId: string) => void;
 }): DataHomeRowMenus {
   const router = useRouter();
   const client = useRecordsClient();
@@ -212,6 +219,24 @@ export function useDataHomeRowMenus({
   const ask = (what: Asked["what"], row: DataHomeRow) =>
     setAsked((now) => ({ what, row, count: (now?.count ?? 0) + 1 }));
   const close = () => setAsked(null);
+  // ARCHIVE FROM THE LIST: the size look decides before anything is drawn. Small → the row leaves,
+  // the archive runs, the toast announces it with Undo (no dialog). Big → the counted confirm.
+  const archiveNow = async (row: DataHomeRow, tableId: string) => {
+    const inOrganization = row.organizationId
+      ? createRecordsClient({ ...client.config, organizationId: row.organizationId })
+      : client;
+    const result = await archiveTableFromHome({
+      client: inOrganization,
+      tableId,
+      notify: recordsUi.notify,
+      fallbackName: row.name,
+      onOptimisticHide: () => onHide(row.id),
+      onRollback: () => onUnhide(row.id),
+      onRestored: () => onUnhide(row.id),
+    });
+    if (result.outcome === "needs-confirm") ask("archive", row);
+    else if (result.outcome === "refused") toast.error(result.sentence);
+  };
   const origin = typeof window !== "undefined" ? window.location.origin : undefined;
 
   const forTable = (
@@ -251,7 +276,7 @@ export function useDataHomeRowMenus({
         addColumn: () => go("rail=field"),
         settings: () => go("rail=settings"),
         openBuiltOn: (destination) => go(BUILT_ON_ADDRESS[destination]),
-        archive: () => ask("archive", row),
+        archive: () => void archiveNow(row, tableId),
         unavailableReasons: {
           history: NO_TABLE_HISTORY_REASON,
           "make-default": "Open the table to choose",
@@ -381,7 +406,16 @@ export function useDataHomeRowMenus({
         />,
       )
     ) : (
-      <Dialog open onOpenChange={(open) => (open ? null : close())}>
+      // Only a BIG table reaches this counted confirm. The panel never says it finished, so the
+      // list reads again whenever the dialog closes (an archive that ran, or none, both list true).
+      <Dialog
+        open
+        onOpenChange={(open) => {
+          if (open) return;
+          close();
+          onChanged();
+        }}
+      >
         <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg" data-data-home-archive="">
           <DialogHeader>
             <DialogTitle>{row.name}</DialogTitle>
@@ -390,10 +424,6 @@ export function useDataHomeRowMenus({
             <TableSettings
               tableId={tableId}
               archiveAsked={asked.count}
-              onDeleted={() => {
-                close();
-                onChanged();
-              }}
             />,
           )}
         </DialogContent>
