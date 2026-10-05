@@ -93,7 +93,6 @@ jest.mock("@ai-matrx/chat/agents/components/messages-display/user/ResourceAttach
 }));
 
 import { WebpageBody } from "@ai-matrx/chat/agents/components/context-items/bodies/WebpageBody";
-import { BlockHoverPreview } from "@/features/agents/components/previews/BlockHoverPreview";
 import { MessageAttachmentStrip } from "@ai-matrx/chat/agents/components/messages-display/MessageAttachmentStrip";
 
 const snapshot: PreFetchedUrl = {

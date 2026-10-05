@@ -4,7 +4,7 @@ import {
   serializeParams,
   withUnresolvedTokens,
 } from "../url-sync/UrlPanelManager";
-import { resolveAgentPanelDisplayMode } from "../url-sync/initUrlHydration";
+import { resolveAgentPanelDisplayMode } from "@ai-matrx/chat/window-panels/windows/agents/agentPanelSurfaceAddress";
 import { resolveWindowUrlSyncKey } from "../utils/urlSyncIdentity";
 
 describe("UrlPanelManager URL helpers", () => {
