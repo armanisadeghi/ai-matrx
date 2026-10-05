@@ -15,6 +15,7 @@ import {
   Building2,
   Gauge,
   Gift,
+  GraduationCap,
   KeyRound,
   Loader2,
   Mail,
@@ -72,6 +73,7 @@ import {
 import { periodLabel } from "@/features/admin/limits/types";
 import { UserResearchDialog } from "./UserResearchDialog";
 import { GiveFreeMonthsDialog, type FreeMonthsPerson } from "./GiveFreeMonthsDialog";
+import { SendTutorialDialog, type TutorialRecipient } from "@/features/guided-tutorials/admin/SendTutorialDialog";
 import { readUserResearch } from "../service/userResearch";
 import { sendDirectMessage } from "../service/coupons";
 import { RELATIONSHIP_LABELS, CONTACT_STATE_LABELS, feedbackDmKey, type UserResearch } from "../lib/userResearch";
@@ -173,6 +175,7 @@ export function AccountsTableClient() {
   const [plansError, setPlansError] = useState<string | null>(null);
   const [planTarget, setPlanTarget] = useState<ChangePlanSubject | null>(null);
   const [freeMonthsPeople, setFreeMonthsPeople] = useState<FreeMonthsPerson[] | null>(null);
+  const [tutorialPerson, setTutorialPerson] = useState<TutorialRecipient | null>(null);
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const researchOwnerId = useAppSelector(state => state.userAuth.id);
   const costDisplay = useCostDisplay();
@@ -1023,6 +1026,14 @@ export function AccountsTableClient() {
                 >
                   <Gift className="mr-2 h-4 w-4" /> Give free months…
                 </DropdownMenuItem>
+                <DropdownMenuItem
+                  disabled={row.is_anonymous}
+                  onClick={() =>
+                    setTutorialPerson({ id: row.id, label: row.display_name ?? row.email ?? row.id, email: row.email })
+                  }
+                >
+                  <GraduationCap className="mr-2 h-4 w-4" /> Send a tutorial…
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={() => void toggleMcpFullAccess(row)}
@@ -1216,6 +1227,7 @@ export function AccountsTableClient() {
         onClose={() => setFreeMonthsPeople(null)}
         onApplied={() => setRefreshKey((key) => key + 1)}
       />
+      <SendTutorialDialog person={tutorialPerson} onClose={() => setTutorialPerson(null)} />
       <ChangePlanDialog
         subject={planTarget}
         onClose={() => setPlanTarget(null)}

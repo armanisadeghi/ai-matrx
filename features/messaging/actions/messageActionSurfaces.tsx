@@ -67,6 +67,7 @@ import { useOpenItemPresentation } from "@/features/item-presentation/useOpenIte
 import { SettingRequestActionButtons } from "@/features/access-gate/components/SettingRequestActionButtons";
 import { ResourceActionRequestButtons } from "@/features/access-gate/components/ResourceActionRequestButtons";
 import { isJsonObject } from "@/types/json";
+import { TutorialMessageCard } from "@/features/guided-tutorials/TutorialMessageCard";
 
 interface SurfaceProps<TPayload> {
   payload: TPayload;
@@ -464,6 +465,7 @@ export const MESSAGE_ACTION_SURFACES: readonly MessageActionRenderer<never>[] =
   [
     { kind: "access_request", versions: [1], render: AccessRequestChips },
     { kind: "agent_drift", versions: [1], render: AgentDriftChips },
+    { kind: "guided_tutorial", versions: [1], render: TutorialMessageCard },
     { kind: "open_link", versions: [1], render: OpenLinkChip },
     { kind: "resource_shared", versions: [1], render: ResourceSharedCard },
     {

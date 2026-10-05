@@ -164,6 +164,7 @@ export const defaultUserPreferences: UserPreferences = {
     viewedAnnouncements: [],
     feedbackFeatureViewCount: 0,
     showCostInUsd: false,
+    completedTutorials: [],
   },
   messaging: {
     notificationSoundEnabled: true,

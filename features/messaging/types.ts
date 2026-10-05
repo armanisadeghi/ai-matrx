@@ -70,6 +70,18 @@ export interface TaskReminderActionPayload {
   recurrence_rule?: string | null;
 }
 
+/**
+ * Payload for `kind: "guided_tutorial"` — "Show me how": opens `href` and runs
+ * the guided tutorial `tutorial_id` (features/guided-tutorials/registry.ts).
+ */
+export interface GuidedTutorialActionPayload {
+  tutorial_id: string;
+  /** Title at send time; the card prefers the live registry's. */
+  title: string;
+  /** In-app path carrying `?tutorial=<id>`. */
+  href: string;
+}
+
 /** Payload for `kind: "resource_shared"` — "X shared a Note with you". */
 export interface ResourceSharedActionPayload {
   /** Registry entity token (e.g. "note", "agent"). */

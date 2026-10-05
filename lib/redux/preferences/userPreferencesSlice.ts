@@ -366,6 +366,8 @@ export interface SystemPreferences {
   /** System admins only: show AI costs in dollars instead of points. Ignored
    *  for everyone else (components/cost/useCostDisplay.ts). Default false. */
   showCostInUsd: boolean;
+  /** Guided tutorial ids this person finished (features/guided-tutorials). */
+  completedTutorials: string[];
 }
 
 export interface MessagingPreferences {
@@ -1288,6 +1290,7 @@ export const initializeUserPreferencesState = (
       viewedAnnouncements: [],
       feedbackFeatureViewCount: 0,
       showCostInUsd: false,
+      completedTutorials: [],
     },
     messaging: {
       notificationSoundEnabled: true,
