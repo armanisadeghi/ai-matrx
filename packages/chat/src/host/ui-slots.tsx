@@ -754,7 +754,6 @@ export const publishedToWebPatch = slotFn("publishedToWebPatch");
 
 export const isUuidValue = slotFn("isUuidValue");
 
-export const toastDoor = slotFn("toastDoor");
 
 export const dismissDriftAlert = slotFn("dismissDriftAlert");
 export const fetchDriftAlerts = slotFn("fetchDriftAlerts");
