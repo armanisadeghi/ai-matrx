@@ -255,7 +255,7 @@ export function ComposerPlusMenu({
         >
           <div className="flex flex-col p-1.5">
             <ComposerMenuLabel>Attach from AI Matrx</ComposerMenuLabel>
-            {WORKSPACE_ROWS.map((row) => (
+            {workspaceRows().map((row) => (
               <ComposerSubmenu key={row.view} row={{ icon: row.icon, label: row.label }}>
                 {(back) => picker(row.view, back)}
               </ComposerSubmenu>
@@ -263,7 +263,7 @@ export function ComposerPlusMenu({
           </div>
         </ComposerSubmenu>
         <ComposerSubmenu
-          row={{ icon: CONTEXT_VALUES_ITEM.icon, label: CONTEXT_VALUES_ITEM.label }}
+          row={{ icon: contextValuesItem().icon, label: contextValuesItem().label }}
           panelClassName={PICKER_PANEL}
         >
           {(closeCascade) => picker("context_values", closeCascade)}
@@ -511,11 +511,17 @@ function pickerItem(view: Exclude<ResourcePickerViewId, null>) {
   if (!item) throw new Error(`ComposerPlusMenu: no picker item "${view}"`);
   return item;
 }
-const WORKSPACE_ROWS = WORKSPACE_VIEWS.map((view) => {
-  const { label, icon } = pickerItem(view);
-  return { view, label, icon };
-});
-const CONTEXT_VALUES_ITEM = pickerItem("context_values");
+// Read at render, never at module load: the item list is a host slot the app installs after
+// this module evaluates, so a module-level lookup threw and took down every page that imports it.
+function workspaceRows() {
+  return WORKSPACE_VIEWS.map((view) => {
+    const { label, icon } = pickerItem(view);
+    return { view, label, icon };
+  });
+}
+function contextValuesItem() {
+  return pickerItem("context_values");
+}
 
 /**
  * Environment (brief §6) — where the agent runs, as ONE flat list: Cloud, then
