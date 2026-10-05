@@ -66,7 +66,6 @@ export interface ScopeTreeOrganization {
   id: string;
   name: string;
   scope_types: ScopeTypeNode[];
-  [field: string]: unknown;
 }
 
 export interface ContextItemValue {
@@ -205,7 +204,7 @@ export interface ChatScopesSource {
   addActiveScope: (scopeId: string) => { type: string; payload?: unknown };
   removeActiveScope: (scopeId: string) => { type: string; payload?: unknown };
   // Tree, catalog, values
-  selectScopeById: Selector<ScopeNode | null>;
+  selectScopeById: Selector<ScopeNode | undefined>;
   selectScopesByType: Selector<ScopeNode[]>;
   selectScopesLoadedForType: Selector<boolean>;
   makeSelectResolvedContext: () => Selector<any>;
@@ -313,7 +312,7 @@ const GENERIC_SCOPES: Partial<ChatScopesSource> = {
   selectAppContext: () => NO_APP_CONTEXT,
   addActiveScope: noAction,
   removeActiveScope: noAction,
-  selectScopeById: () => null,
+  selectScopeById: () => undefined,
   selectScopesByType: () => NO_SCOPES,
   selectScopesLoadedForType: () => true,
   makeSelectResolvedContext: () => () => null,

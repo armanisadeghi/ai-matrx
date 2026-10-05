@@ -75,7 +75,6 @@ export interface SandboxCreateDefaults {
   tier?: "ec2" | "hosted";
   ttl_seconds?: number;
   labels: Record<string, string>;
-  [field: string]: unknown;
 }
 
 /** A sandbox row as the host's sandbox API returns it (decorated DB row). */
@@ -106,8 +105,8 @@ export interface ChatComputeTargetsSource {
   describeBoundTargetState: (view: BoundTargetView) => { label: string; remedy: string | null };
   sandboxDisplayName: (parts: any) => string;
   splitIdentifyingName: (label: string) => { head: string; tail: string };
-  getEffectiveStatus: (instance: SandboxInstance) => string;
-  statusPillClasses: (status: string) => string;
+  getEffectiveStatus(instance: SandboxInstance): string;
+  statusPillClasses(status: string): string;
   STATUS_LABELS: Record<string, string>;
   ACTIVE_EFFECTIVE_STATUSES: string[];
   resolveSandboxCreateDefaults: (organizationId: string, userId: string | null) => Promise<SandboxCreateDefaults>;
@@ -120,7 +119,7 @@ export interface ChatComputeTargetsSource {
   };
   useSandboxInstances: AnyFn;
   useVerifiedSandboxBinding: (conversationId: string | null) => {
-    ref: { rowId: string; kind?: ComputeTargetKind; name?: string; [field: string]: unknown } | null;
+    ref: { rowId: string; kind?: ComputeTargetKind; name?: string } | null;
     source: "override" | "surface" | null;
     status: string;
     target: ComputeTarget | null;
