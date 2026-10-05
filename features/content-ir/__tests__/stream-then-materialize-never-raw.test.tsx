@@ -48,6 +48,7 @@ jest.mock("@/features/canvas/hooks/useCanvasItem", () => ({
 jest.mock("@/features/canvas/services/canvasArtifactService", () => ({
   canvasArtifactService: {
     isReadableById: async () => true,
+    upsertDiscoveryIndex: async () => undefined,
     upsertForSource: async () => ({ id: "0b6f4c1e-7a2d-4e8b-9c3f-5d1a2e7b8c90", version: 1, conversation_id: null }),
   },
 }));
