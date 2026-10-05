@@ -39,6 +39,17 @@ export const FLOATING_BOTTOM_SELECTOR = [
 /** The CSS variable FloatingClearanceSync writes on <html>. */
 export const FLOATING_MEASURED_VAR = "--matrx-floating-measured";
 
+/**
+ * The same measure WITHOUT chrome that follows the page (`data-matrx-floating-follows-page`:
+ * the assists pill rests above a list's pager via --page-bottom-dock-h). A non-scrolling page
+ * surface (`[data-matrx-page-end]`, lib/layout/page-rhythm.ts) pads its foot by this one, so
+ * the pager and the pill never push each other up.
+ */
+export const FLOATING_FIXED_MEASURED_VAR = "--matrx-floating-fixed-measured";
+
+/** Marks floating chrome that positions itself above the page's own bottom bar. */
+export const FLOATING_FOLLOWS_PAGE_ATTR = "data-matrx-floating-follows-page";
+
 /** An element counts as bottom-anchored when its bottom edge is this close to the viewport's. */
 const BOTTOM_ANCHOR_SLACK_PX = 160;
 /** Something taller than this share of the viewport is a window, not a bar — never clearance. */

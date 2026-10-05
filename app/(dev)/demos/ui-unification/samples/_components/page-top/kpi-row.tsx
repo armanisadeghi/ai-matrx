@@ -34,7 +34,7 @@ export function KpiRow({ items, ariaLabel = "Key numbers", className }: { items:
     <section
       aria-label={ariaLabel}
       className={cn(
-        "-mx-3 flex snap-x scroll-px-3 gap-2 overflow-x-auto px-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+        "-mx-[var(--matrx-page-gutter)] flex snap-x scroll-px-[var(--matrx-page-gutter)] gap-2 overflow-x-auto px-[var(--matrx-page-gutter)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
         "sm:mx-0 sm:grid sm:overflow-visible sm:px-0",
         COLS[Math.min(6, Math.max(1, items.length))],
         className,

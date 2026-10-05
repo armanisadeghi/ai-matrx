@@ -147,9 +147,9 @@ function DriftDoor() {
 /** The page top: the feature cards. */
 function AgentsPageTop() {
   return (
-    // pb: the space BETWEEN the page-top block and the list (owner: space
-    // goes between big blocks, never padding inside padding).
-    <div className="flex flex-col gap-3 pb-4">
+    // The space BETWEEN this block and the list is the list's page-rhythm block gap
+    // (lib/layout/page-rhythm.ts) — never padding of its own.
+    <div className="flex flex-col gap-3">
       <FeatureCards items={FEATURES} rotating={ROTATING} ariaLabel="Agent features" />
     </div>
   );

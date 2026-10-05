@@ -1239,10 +1239,12 @@ export function EntityListPage<TRow>({
           // select-all bar on a desktop) still made its sibling "not last"
           // under space-y and pushed the table down 8px the moment rows
           // arrived (page-pass /connected-sources, 2026-09-27).
-          "flex shrink-0 flex-col gap-1.5 px-3 pb-2 sm:gap-2",
+          // PAGE RHYTHM (lib/layout/page-rhythm.ts): the gutter and the page top come from the
+          // one scale; the controls inside keep their own dense set gap.
+          "flex shrink-0 flex-col gap-1.5 px-[var(--matrx-page-gutter)] pb-2 sm:gap-2",
           clearsShellHeader
-            ? "pt-[calc(var(--shell-header-h)+0.5rem)]"
-            : "pt-2",
+            ? "pt-[calc(var(--shell-header-h)+var(--matrx-page-top))]"
+            : "pt-[var(--matrx-page-top)]",
         )}
       >
         {/*
@@ -1262,7 +1264,9 @@ export function EntityListPage<TRow>({
           cap, so nothing about them changes.
         */}
         {notice && (
-          <div className="max-h-[42dvh] overflow-y-auto">
+          // The page top (feature cards, a KPI row, a banner) is a BIG block: the block gap
+          // separates it from the list's controls — the header's own 6/8px set gap included.
+          <div className="mb-[calc(var(--matrx-page-block-gap)-0.375rem)] max-h-[42dvh] overflow-y-auto sm:mb-[calc(var(--matrx-page-block-gap)-0.5rem)]">
             {typeof notice === "function" ? notice(list) : notice}
           </div>
         )}
@@ -1466,7 +1470,12 @@ export function EntityListPage<TRow>({
         below a workable slice of table — the second half of the guard above.
         `min-h-0` alone trusts every notice to stay small; this trusts nothing.
       */}
-      <div ref={bodyRef} className="min-h-[16rem] flex-1 overflow-y-auto px-3 pb-4">
+      {/*
+        data-matrx-page-end: the list is the page's end. Its foot is the page end once — plus
+        whatever floats over the bottom that does not already rest above the pager — so the pager
+        is never under the floating chat and never padded twice (styles/shell.css, page rhythm).
+      */}
+      <div ref={bodyRef} data-matrx-page-end="" className="min-h-[16rem] flex-1 overflow-y-auto px-[var(--matrx-page-gutter)]">
         {view === "table" ? (
           // A page FOOTER waits below the fold: the table pane is one screen tall (a definite
           // height, so the table keeps its own virtualized scroll), and the body scrolls on to the
@@ -1593,7 +1602,7 @@ export function EntityListPage<TRow>({
             onPage={list.setPage}
           />
         )}
-        {footer ? <div className="shrink-0 pt-4">{footer}</div> : null}
+        {footer ? <div className="shrink-0 pt-[var(--matrx-page-block-gap)]">{footer}</div> : null}
       </div>
 
       {modals}

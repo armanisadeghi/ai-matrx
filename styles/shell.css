@@ -1895,10 +1895,34 @@ body[style*="pointer-events: none"] {
    Opt out ONLY with data-floating-clearance="off" plus a `// ui-exception:`
    reason (pnpm check:floating-clearance). Runtime guard + class:
    lib/layout/floating-chrome.ts. */
+/* PAGE RHYTHM — the ONE spacing scale for page STRUCTURE (owner, 2026-10-05):
+   the gutter, the space above the first block, the gap BETWEEN big blocks
+   (page top → list) and the page's total bottom space (= the gutter: one even
+   frame around the content). Controls
+   stay dense; the space between big blocks is generous. Numbers + rules:
+   lib/layout/page-rhythm.ts (its test pins these values to that module). */
+:root {
+  --matrx-page-gutter: 0.75rem;
+  --matrx-page-top: 1rem;
+  --matrx-page-block-gap: 1rem;
+  --matrx-page-end: var(--matrx-page-gutter);
+}
+
+@media (min-width: 640px) {
+  :root {
+    --matrx-page-gutter: 1rem;
+    --matrx-page-top: 1.5rem;
+    --matrx-page-block-gap: 1.5rem;
+  }
+}
+
+/* The runway IS the page end — the page's whole bottom space, once: what
+   floats (or the safe area) plus --matrx-page-end. Never stacked on the
+   page's own padding (the scroller's own bottom padding is dropped below). */
 :root {
   --matrx-floating-clearance: calc(
     max(var(--matrx-floating-measured, 0px), env(safe-area-inset-bottom, 0px)) +
-      1.5rem
+      var(--matrx-page-end)
   );
 }
 
@@ -1923,6 +1947,48 @@ body[style*="pointer-events: none"] {
     var(--shell-fixed-alert-clearance, 0px)
   );
   pointer-events: none;
+}
+
+/* NO STACKING: a scroller that takes the runway gives up its own bottom
+   padding — the runway is the page end. (A `p-6` scroller used to end 24px
+   of its own padding + the runway above the floor: the doubled bottom the
+   owner saw on 2026-10-05.) Padding on a wrapper INSIDE the scroller still
+   stacks; the dev guard names it as `[page-rhythm]`. */
+.shell-main
+  > .h-full:is(.overflow-y-auto, .overflow-auto):not(
+    .scroll-page-end-space,
+    [data-floating-clearance="off"],
+    :has(> .h-full),
+    [data-matrx-viewport-surface]
+  ),
+.shell-main
+  > .contents
+  > .h-full:is(.overflow-y-auto, .overflow-auto):not(
+    .scroll-page-end-space,
+    [data-floating-clearance="off"]
+  ),
+.shell-main
+  :is(main, [data-matrx-page-scroll]):is(.overflow-y-auto, .overflow-auto):not(
+    .scroll-page-end-space,
+    .education-scroll-boundary > *,
+    [data-floating-clearance="off"]
+  ) {
+  padding-block-end: 0;
+}
+
+/* A page that does NOT scroll — a list whose table fills the height with its
+   own pager (EntityListPage) — gets no runway at all. Its page surface
+   declares `data-matrx-page-end` and pads its foot by the page end plus what
+   floats, so its last element (the pager) ends --matrx-page-end above the
+   floating chat, never under it, and never twice. It reads the FIXED
+   measure: chrome that already rests above the page's own pager (the assists
+   pill, `data-matrx-floating-follows-page`) is left out, or the pager would
+   lift the pill, the pill the pager, without end. */
+[data-matrx-page-end] {
+  padding-block-end: calc(
+    max(var(--matrx-floating-fixed-measured, 0px), env(safe-area-inset-bottom, 0px)) +
+      var(--matrx-page-end)
+  );
 }
 
 /* A full-height route body owns its own layout: .shell-main has nothing to

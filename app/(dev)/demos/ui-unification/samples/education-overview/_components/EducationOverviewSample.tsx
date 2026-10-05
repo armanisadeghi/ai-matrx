@@ -675,7 +675,9 @@ export function EducationOverviewSample() {
         >
           <ControlScope className="h-full">
             <main className="h-full overflow-y-auto bg-textured">
-              <div className="mx-auto flex w-full max-w-6xl flex-col gap-7 px-3 py-3 sm:px-6 sm:py-4">
+              {/* PAGE RHYTHM: gutter, page top and the block gap from the one scale; no bottom
+                  padding — the shell's runway under this <main> is the page end, once. */}
+              <div className="mx-auto flex w-full max-w-6xl flex-col gap-[var(--matrx-page-block-gap)] px-[var(--matrx-page-gutter)] pt-[var(--matrx-page-top)]">
                 {/* PAGE TOP — provenance + the page's two actions, then the KPI row. */}
                 <div className="flex flex-col gap-3">
                   <div className="flex min-h-7 flex-wrap items-center gap-y-1">
