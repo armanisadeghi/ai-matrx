@@ -25,7 +25,13 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system/controls";
+import {
+  Badge,
+  Button as ControlButton,
+  Chip,
+  ChipSet,
+  Input,
+} from "@ai-matrx/design-system/controls";
 import { cn } from "@/lib/utils";
 
 import { slugify, type ExpandedArchetype } from "../archetypes";
@@ -141,7 +147,11 @@ export function SetupWorkOrderColumn({
     <div className="flex flex-col gap-5 p-4 md:h-full md:min-h-0 md:overflow-y-auto">
       <SetupSection title="Work order" level={2}>
         <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-stretch">
-          <Stat value={expanded.pageCount} label="pages in shape" tone="primary" />
+          <Stat
+            value={expanded.pageCount}
+            label="pages in shape"
+            tone="primary"
+          />
           <Stat value={readiness.planNodesLive} label="pages planned" />
           <Stat value={newCount} label="still to create" />
           <Stat
@@ -249,11 +259,7 @@ export function SetupWorkOrderColumn({
                             count only
                           </span>
                         ) : null}
-                        {dirty ? (
-                          <span className="shrink-0 rounded bg-primary/15 px-1.5 py-0.5 text-[11px] font-medium leading-none text-primary">
-                            changed
-                          </span>
-                        ) : null}
+                        {dirty ? <Badge tone="primary">changed</Badge> : null}
                       </div>
                       <div className="mt-0.5 flex items-center gap-2 font-mono text-[11px] text-muted-foreground">
                         <span className="truncate">{family.route}/…</span>
@@ -290,7 +296,10 @@ export function SetupWorkOrderColumn({
                         aria-label={`One fewer ${family.label}`}
                         disabled={family.count <= 0}
                         onClick={() =>
-                          onCountChange(family.key, Math.max(0, family.count - 1))
+                          onCountChange(
+                            family.key,
+                            Math.max(0, family.count - 1),
+                          )
                         }
                       />
                       <Input
@@ -301,7 +310,10 @@ export function SetupWorkOrderColumn({
                         value={counts[family.key] ?? family.count}
                         aria-label={`${family.label} count`}
                         onChange={(event) => {
-                          const parsed = Number.parseInt(event.target.value, 10);
+                          const parsed = Number.parseInt(
+                            event.target.value,
+                            10,
+                          );
                           if (Number.isNaN(parsed)) {
                             onCountChange(family.key, 0);
                             return;
@@ -320,7 +332,9 @@ export function SetupWorkOrderColumn({
                         variant="outline"
                         aria-label={`One more ${family.label}`}
                         disabled={family.count >= MAX_COUNT}
-                        onClick={() => onCountChange(family.key, family.count + 1)}
+                        onClick={() =>
+                          onCountChange(family.key, family.count + 1)
+                        }
                       />
                     </div>
                   </div>
@@ -328,23 +342,23 @@ export function SetupWorkOrderColumn({
                   {family.materialize === "pages" ? (
                     <div className="mt-1.5 flex items-center gap-2">
                       {supplied && userNamedKeys.has(family.key) ? (
-                        <span className="inline-flex items-center gap-1 rounded bg-success/15 px-1.5 py-0.5 text-[11px] font-medium leading-none text-success">
-                          {supplied.length} named
-                          <button
-                            type="button"
+                        <span className="inline-flex items-center">
+                          <Chip
+                            tone="success"
+                            label={`${supplied.length} named`}
+                          />
+                          <ControlButton
+                            variant="quiet"
+                            icon={<X />}
                             aria-label={`Clear the ${family.label} names`}
                             onClick={() => onNamesChange(family.key, null)}
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
+                          />
                         </span>
                       ) : supplied ? (
-                        <span
-                          className="rounded bg-muted px-1.5 py-0.5 text-[11px] font-medium leading-none text-muted-foreground"
+                        <Chip
+                          label={`${supplied.length} from the plan`}
                           title="These names come from the pages already in the plan, so re-running this shape adopts them instead of adding placeholders beside them."
-                        >
-                          {supplied.length} from the plan
-                        </span>
+                        />
                       ) : null}
                       <span className="ml-auto inline-flex items-center gap-3">
                         {onAiNames ? (
@@ -353,11 +367,13 @@ export function SetupWorkOrderColumn({
                           // names exist it steps back to a quiet re-run link.
                           aiReady && !supplied ? (
                             <Button
-                              icon={aiNamingKey === family.key ? (
-                                <Loader2 className="animate-spin" />
-                              ) : (
-                                <Lightbulb />
-                              )}
+                              icon={
+                                aiNamingKey === family.key ? (
+                                  <Loader2 className="animate-spin" />
+                                ) : (
+                                  <Lightbulb />
+                                )
+                              }
                               type="submit"
                               variant="primary"
                               disabled={aiBusy}
@@ -365,7 +381,10 @@ export function SetupWorkOrderColumn({
                               onClick={() => onAiNames(family.key)}
                             >
                               Name with AI
-                              <span className="sr-only"> for {family.label}</span>
+                              <span className="sr-only">
+                                {" "}
+                                for {family.label}
+                              </span>
                             </Button>
                           ) : (
                             <button
@@ -385,7 +404,10 @@ export function SetupWorkOrderColumn({
                                 <Lightbulb className="h-3 w-3" />
                               )}
                               AI names
-                              <span className="sr-only"> for {family.label}</span>
+                              <span className="sr-only">
+                                {" "}
+                                for {family.label}
+                              </span>
                             </button>
                           )
                         ) : null}
@@ -411,9 +433,13 @@ export function SetupWorkOrderColumn({
                       aiReady={aiReady}
                       busy={aiNamingKey === family.key}
                       anyBusy={aiBusy}
-                      onRun={onAiTopics ? () => onAiTopics(family.key) : undefined}
+                      onRun={
+                        onAiTopics ? () => onAiTopics(family.key) : undefined
+                      }
                       onClear={
-                        onClearTopics ? () => onClearTopics(family.key) : undefined
+                        onClearTopics
+                          ? () => onClearTopics(family.key)
+                          : undefined
                       }
                       onApply={
                         onApplyTopics && plannedRoutes?.has(family.route)
@@ -435,7 +461,10 @@ export function SetupWorkOrderColumn({
                       initial={supplied ?? family.childLabels}
                       onCancel={() => setNamingOpen(null)}
                       onApply={(list) => {
-                        onNamesChange(family.key, list.length > 0 ? list : null);
+                        onNamesChange(
+                          family.key,
+                          list.length > 0 ? list : null,
+                        );
                         setNamingOpen(null);
                       }}
                     />
@@ -463,7 +492,9 @@ export function SetupWorkOrderColumn({
                 )}
               >
                 <span className="font-medium">{page.label}</span>
-                <span className="font-mono text-[11px] opacity-70">{page.route}</span>
+                <span className="font-mono text-[11px] opacity-70">
+                  {page.route}
+                </span>
               </li>
             ))}
           </ul>
@@ -486,7 +517,11 @@ export function SetupWorkOrderColumn({
             value={readiness.planNodesLive - readiness.nodesWithoutKeyword}
             label="have a keyword"
           />
-          <Stat value={readiness.nodesWithoutBrief} label="brief missing" tone="muted" />
+          <Stat
+            value={readiness.nodesWithoutBrief}
+            label="brief missing"
+            tone="muted"
+          />
           <Stat
             value={readiness.nodesWithoutKeyword}
             label="keyword missing"
@@ -532,7 +567,8 @@ function ConceptRow({
   const namable = item.concept !== "home" && !multiTopPages;
   const effectiveName = item.name ?? chosen;
   const isCustom =
-    effectiveName !== null && !options.some((option) => option === effectiveName);
+    effectiveName !== null &&
+    !options.some((option) => option === effectiveName);
 
   return (
     <li className="bg-card px-2.5 py-1.5">
@@ -550,12 +586,12 @@ function ConceptRow({
             </span>
           ) : null}
           {isHub ? (
-            <span
-              className="shrink-0 rounded bg-primary/15 px-1.5 py-0.5 text-[11px] font-medium leading-none text-primary"
+            <Badge
+              tone="primary"
               title="Content hub: the educational trees in this shape nest under this section's route."
             >
               hub
-            </span>
+            </Badge>
           ) : null}
         </span>
         <span className="shrink-0 truncate text-[11px] text-muted-foreground">
@@ -569,39 +605,37 @@ function ConceptRow({
       ) : null}
       {namable ? (
         <div className="mt-1 flex flex-wrap items-center gap-1">
-          {options.map((option) => {
-            const active = effectiveName === option;
-            return (
-              <button
-                key={option}
-                type="button"
-                aria-pressed={active}
-                title={`/${slugify(option)}`}
-                className={cn(
-                  "rounded border px-1.5 py-0.5 text-[11px] leading-4 transition-colors",
-                  active
-                    ? "border-primary/50 bg-primary/15 font-medium text-primary"
-                    : "border-border text-muted-foreground hover:bg-accent",
-                )}
-                onClick={() => {
-                  setCustomOpen(false);
-                  onPick(active ? null : option);
-                }}
-              >
-                {option}
-              </button>
-            );
-          })}
+          <ChipSet>
+            {options.map((option) => {
+              const active = effectiveName === option;
+              return (
+                <Chip
+                  key={option}
+                  asChild
+                  pressed={active}
+                  label={option}
+                  title={`/${slugify(option)}`}
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCustomOpen(false);
+                      onPick(active ? null : option);
+                    }}
+                  />
+                </Chip>
+              );
+            })}
+          </ChipSet>
           {isCustom && !customOpen ? (
-            <span className="inline-flex items-center gap-1 rounded border border-primary/50 bg-primary/15 px-1.5 py-0.5 text-[11px] font-medium leading-4 text-primary">
-              {effectiveName}
-              <button
-                type="button"
+            <span className="inline-flex items-center">
+              <Chip pressed label={effectiveName ?? ""} />
+              <ControlButton
+                variant="quiet"
+                icon={<X />}
                 aria-label={`Clear the custom ${item.label} name`}
                 onClick={() => onPick(null)}
-              >
-                <X className="h-3 w-3" />
-              </button>
+              />
             </span>
           ) : null}
           {customOpen ? (
@@ -610,7 +644,8 @@ function ConceptRow({
               onSubmit={(event) => {
                 event.preventDefault();
                 const field = event.currentTarget.elements.namedItem("custom");
-                const raw = field instanceof HTMLInputElement ? field.value.trim() : "";
+                const raw =
+                  field instanceof HTMLInputElement ? field.value.trim() : "";
                 onPick(raw ? raw : null);
                 setCustomOpen(false);
               }}
@@ -685,13 +720,16 @@ function CountOnlyTopics({
     <div className="mt-1.5">
       <div className="flex items-center gap-2">
         {topics && topics.length > 0 ? (
-          <button
-            type="button"
-            className="inline-flex items-center gap-1 rounded bg-success/15 px-1.5 py-0.5 text-[11px] font-medium leading-none text-success"
-            onClick={() => setOpen((current) => !current)}
+          <Chip
+            asChild
+            tone="success"
+            label={`${topics.length} topic${topics.length === 1 ? "" : "s"} planned`}
           >
-            {topics.length} topic{topics.length === 1 ? "" : "s"} planned
-          </button>
+            <button
+              type="button"
+              onClick={() => setOpen((current) => !current)}
+            />
+          </Chip>
         ) : (
           <span className="text-[11px] text-muted-foreground">
             Only the hub page is created — the titles are the work order.
@@ -753,7 +791,10 @@ function CountOnlyTopics({
       {open && topics ? (
         <ul className="mt-1 space-y-0.5 rounded-md border border-border bg-muted/30 px-2 py-1.5">
           {topics.map((topic, index) => (
-            <li key={`${topic}-${index}`} className="text-[11px] text-foreground">
+            <li
+              key={`${topic}-${index}`}
+              className="text-[11px] text-foreground"
+            >
               {topic}
             </li>
           ))}
@@ -804,18 +845,14 @@ function NameBox({
         className="min-h-0 resize-y text-base sm:text-sm"
       />
       <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-        One per line. This sets both the count and the slugs — the routes rewrite
-        live in the preview.
+        One per line. This sets both the count and the slugs — the routes
+        rewrite live in the preview.
       </p>
       <div className="mt-1.5 flex gap-1.5">
         <Button variant="primary" type="submit">
           Use these names
         </Button>
-        <Button
-          type="button"
-          variant="quiet"
-          onClick={onCancel}
-        >
+        <Button type="button" variant="quiet" onClick={onCancel}>
           Cancel
         </Button>
       </div>

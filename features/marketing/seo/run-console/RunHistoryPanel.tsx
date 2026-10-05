@@ -37,7 +37,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system/controls";
+import { Badge, Chip, ChipSet, Input } from "@ai-matrx/design-system/controls";
 import {
   Select,
   SelectContent,
@@ -141,28 +141,24 @@ function StatusBadge({
   group?: string | null;
 }) {
   const g = (group as StatusGroup | "other" | null) ?? groupOfStatus(status);
+  const tone =
+    g === "succeeded" ? "primary" : g === "failed" ? "destructive" : g === "interrupted" ? "warning" : "neutral";
   return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1 rounded border px-1.5 py-px text-[10px] font-medium uppercase tracking-wide",
-        g === "succeeded" && "border-primary/40 bg-primary/10 text-primary",
-        g === "failed" && "border-destructive/50 bg-destructive/10 text-destructive",
-        g === "interrupted" && "border-warning/50 bg-warning/10 text-warning",
-        (g === "running" || g === "other") &&
-          "border-border bg-muted/40 text-muted-foreground",
-      )}
-    >
-      {g === "succeeded" ? (
-        <CheckCircle2 className="h-3 w-3" />
-      ) : g === "failed" ? (
-        <XCircle className="h-3 w-3" />
-      ) : g === "interrupted" ? (
-        <CircleSlash className="h-3 w-3" />
-      ) : g === "running" ? (
-        <Loader2 className="h-3 w-3 animate-spin" />
-      ) : null}
-      {status ?? "unknown"}
-    </span>
+    <Chip
+      tone={tone}
+      label={status ?? "unknown"}
+      icon={
+        g === "succeeded" ? (
+          <CheckCircle2 />
+        ) : g === "failed" ? (
+          <XCircle />
+        ) : g === "interrupted" ? (
+          <CircleSlash />
+        ) : g === "running" ? (
+          <Loader2 className="animate-spin" />
+        ) : undefined
+      }
+    />
   );
 }
 
@@ -353,7 +349,7 @@ function RunDetail({
         </span>
       </div>
       {run.error_text ? (
-        <p className="mx-2 mt-2 rounded border border-destructive/50 bg-destructive/10 px-2 py-1 text-[11px] text-destructive">
+        <p className="mx-2 mt-2 block rounded border border-destructive/50 bg-destructive/10 px-2 py-1 text-[11px] text-destructive">
           {run.error_text}
           <ErrorAlchemyMenu error={run.error_text} />
         </p>
@@ -526,27 +522,16 @@ function FilterBar({
         </SelectContent>
       </Select>
 
-      <div className="flex items-center gap-0.5" role="group" aria-label="Status">
+      <ChipSet role="group" aria-label="Status">
         {STATUS_GROUPS.map((s) => {
           const on = filters.statuses.includes(s);
           return (
-            <button
-              key={s}
-              type="button"
-              aria-pressed={on}
-              onClick={() => toggleStatus(s)}
-              className={cn(
-                "h-7 rounded border px-1.5 text-[11px]",
-                on
-                  ? "border-primary/50 bg-primary/10 text-primary"
-                  : "border-border text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {STATUS_GROUP_LABEL[s]}
-            </button>
+            <Chip key={s} asChild pressed={on} label={STATUS_GROUP_LABEL[s]}>
+              <button type="button" onClick={() => toggleStatus(s)} />
+            </Chip>
           );
         })}
-      </div>
+      </ChipSet>
 
       <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
         <Input
@@ -709,9 +694,9 @@ function RunRow({
         {RUN_KIND_LABEL[run.execution_kind as RunKind] ?? run.source}
       </span>
       {run.ai_call_count > 0 ? (
-        <span className="rounded border border-primary/40 bg-primary/10 px-1 py-px text-[10px] tabular-nums text-primary">
+        <Badge tone="primary">
           {run.ai_call_count} AI call{run.ai_call_count === 1 ? "" : "s"}
-        </span>
+        </Badge>
       ) : null}
       <span className="font-mono text-[10px] text-muted-foreground">
         {run.execution_id?.slice(0, 8)}
