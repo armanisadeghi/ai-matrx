@@ -69,6 +69,9 @@
     "scroll-chain-clipped-tables-lists": {
       "no_accept": "scripts/check-scroll-chain.ts has no allowlist or baseline: every item is new."
     },
+    "binder-errors-duplicate-declarations-missing-exports": {
+      "no_accept": "scripts/check-binder.mjs has no allowlist or baseline: every item is new — fix the declaration or the import."
+    },
     "floating-clearance": {
       "no_accept": "Only an inline `// ui-exception:` reason beside data-floating-clearance=\"off\" (scripts/check-floating-clearance.mjs) — no key list; every item is new."
     },

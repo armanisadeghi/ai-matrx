@@ -78,6 +78,10 @@ if $STRICT; then
         # `pnpm check:parse --fix` repairs the injected-import class;
         # `pnpm check:parse:self-test` proves the guard can still fail.
         "Every TypeScript file parses|pnpm check:parse"
+        # BINDER ERRORS parse cannot see (duplicate top-level declaration = the 2026-10-05 toastDoor
+        # build break; import of a name its target does not export). LOUD, never blocking: exits 0.
+        "Binder errors (duplicate declarations, missing exports)|pnpm check:binder"
+        "Binder errors — self-test|pnpm check:binder:self-test"
         # EVERY NAMED @ai-matrx IMPORT EXISTS IN THE INSTALLED PACKAGE. On
         # 2026-09-25 kind-schema-source.ts imported `createKindValidator` from
         # @ai-matrx/content-ir/registry while the lockfile installed 0.18.6,
@@ -1042,6 +1046,10 @@ else
         # `pnpm check:parse --fix` repairs the injected-import class;
         # `pnpm check:parse:self-test` proves the guard can still fail.
         "Every TypeScript file parses|pnpm check:parse"
+        # BINDER ERRORS parse cannot see (duplicate top-level declaration = the 2026-10-05 toastDoor
+        # build break; import of a name its target does not export). LOUD, never blocking: exits 0.
+        "Binder errors (duplicate declarations, missing exports)|pnpm check:binder"
+        "Binder errors — self-test|pnpm check:binder:self-test"
         # EVERY NAMED @ai-matrx IMPORT EXISTS IN THE INSTALLED PACKAGE. On
         # 2026-09-25 kind-schema-source.ts imported `createKindValidator` from
         # @ai-matrx/content-ir/registry while the lockfile installed 0.18.6,

@@ -146,6 +146,12 @@ export const FINDINGS_CHECKS = [
     ...fromRules("scroll-chain-clipped-tables-lists"),
   },
   {
+    id: "binder-errors-duplicate-declarations-missing-exports",
+    watch: /\.tsx?$/,
+    fix: "Delete or rename the second top-level declaration / duplicate import, or import a name the target module really exports (pnpm check:binder names the file and line).",
+    ...fromRules("binder-errors-duplicate-declarations-missing-exports"),
+  },
+  {
     id: "floating-clearance",
     watch: featureRegExp(/^(app|features|components|lib)\/.*\.tsx$/),
     fix: "Delete the page scroller's hand-written bottom clearance (pb-safe / pb-[…safe-area…] / pb-16+) — the shell's floating-clearance runway owns it (lib/layout/floating-chrome.ts) — or give a data-floating-clearance=\"off\" opt-out its `// ui-exception:` reason.",

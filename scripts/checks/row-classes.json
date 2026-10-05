@@ -5,7 +5,7 @@
     "repo-only": "reads the repository and nothing else"
   },
   "counts": {
-    "repo-only": 140,
+    "repo-only": 143,
     "live-db": 63
   },
   "rows": {
@@ -147,6 +147,20 @@
       "class": "repo-only",
       "cmd": "pnpm check:parse",
       "reason": "no database access in 1 file(s) reached",
+      "evidence": []
+    },
+    "binder-errors-duplicate-declarations-missing-exports": {
+      "label": "Binder errors (duplicate declarations, missing exports)",
+      "class": "repo-only",
+      "cmd": "pnpm check:binder",
+      "reason": "no database access in 2 file(s) reached",
+      "evidence": []
+    },
+    "binder-errors-self-test": {
+      "label": "Binder errors — self-test",
+      "class": "repo-only",
+      "cmd": "pnpm check:binder:self-test",
+      "reason": "no database access in 2 file(s) reached",
       "evidence": []
     },
     "every-ai-matrx-import-exists-in-the-installed-package": {
@@ -1270,6 +1284,13 @@
       "reason": "no database access in 9 file(s) reached",
       "evidence": []
     },
+    "a-use-client-door-re-exports-a-package-root-beside-its-subpa": {
+      "label": "A use-client door re-exports a package root beside its subpath (crashes a Turbopack build)",
+      "class": "repo-only",
+      "cmd": "pnpm check:client-door-reexports",
+      "reason": "no database access in 1 file(s) reached",
+      "evidence": []
+    },
     "a-doc-or-skill-teaches-a-hand-rolled-recipe-the-package-owns": {
       "label": "A doc or skill teaches a hand-rolled recipe the package owns",
       "class": "repo-only",
@@ -1743,7 +1764,7 @@
       "label": "Content IR / kinds test suite",
       "class": "repo-only",
       "cmd": "pnpm test:content-ir",
-      "reason": "no database access in 204 file(s) reached",
+      "reason": "no database access in 214 file(s) reached",
       "evidence": []
     },
     "whole-jest-suite-every-suite-not-ci-s-four-scopes": {
