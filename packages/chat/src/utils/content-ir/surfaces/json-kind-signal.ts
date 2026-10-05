@@ -743,6 +743,10 @@ export function scanKindSpellingRegions(
   // A `{` whose grammar already ended before a key can own no later key: it is
   // never re-read (round 10, linear time — one early brace, many mentions).
   let deadBraceFloor = from;
+  // Round 11 (F2): looking past a broken region for its balanced close is the
+  // one step whose cost is not the region's own length — capped per call so
+  // many broken regions never each read to the end of the text.
+  const reach: ReachBudget = { left: REACH_BUDGET_FACTOR * text.length + REACH_BUDGET_FLOOR };
   let hit = nextKindHit(text, from, zeroWidth);
   while (hit >= 0 && regions.length < MAX_REGIONS_PER_CALL) {
     const windowStart = Math.max(cursor, hit - KEY_LOOKBEHIND);
@@ -780,7 +784,7 @@ export function scanKindSpellingRegions(
     }
     const markdown = /\\_/.test(core) || (family === "escaped" && /\\{2}_/.test(core));
     const plan = decodePlan(family, levels, markdown);
-    const region = boundRegion(text, brace, keyAt, plan);
+    const region = boundRegion(text, brace, keyAt, plan, reach);
     if (!region) {
       deadBraceFloor = brace + 1;
       hit = next();
@@ -908,6 +912,19 @@ const markdownStep: SpellingStep = (raw, i) => (raw[i] === "\\" && raw[i + 1] ==
 const FIRST_WINDOW = 128;
 
 /**
+ * Characters one scan may read BEYOND broken regions' grammar breaks, looking
+ * for their balanced closes (round 11, F2): `4 × text + 64 KB`. A real message
+ * holds a few malformed objects and never comes near it; '{"a":[1,{"__kind":"x" 1 [ '
+ * × 6 000 read the rest of the text per region (23.5 s). Once spent, a broken
+ * region ends at its own break (its honest broken bound).
+ */
+const REACH_BUDGET_FACTOR = 4;
+const REACH_BUDGET_FLOOR = 65_536;
+interface ReachBudget {
+  left: number;
+}
+
+/**
  * Decode and bound the region whose `{` is at `brace`: windowed, so the work is
  * proportional to the region, never to the rest of the text. Null when the
  * grammar fails before the key (the `{` is not the key's object).
@@ -917,6 +934,7 @@ function boundRegion(
   brace: number,
   keyAt: number,
   plan: DecodePlan,
+  reach: ReachBudget = { left: Number.POSITIVE_INFINITY },
 ): { end: number; status: KindSpellingRegion["status"]; decoded: string } | null {
   for (let width = FIRST_WINDOW; ; width *= 4) {
     const hi = Math.min(text.length, brace + width);
@@ -936,7 +954,14 @@ function boundRegion(
         // span reads as JSON once trailing commas go (round 10 — a stray `}`
         // later in the prose never extends it); otherwise it ends at its cut.
         const end = balancedEnd(decoded.text, plan.grammar !== "json");
-        if (end === null && !atEnd) continue;
+        if (end === null && !atEnd) {
+          // Each wider window re-reads the span past the break: charge it.
+          const past = hi - brace - verdict.at;
+          if (reach.left > past) {
+            reach.left -= past;
+            continue;
+          }
+        }
         if (end !== null && end > keyDecoded && lenientlyParses(decoded.text.slice(0, end), plan.grammar)) {
           return { end: brace + decoded.map[end]!, status: "complete", decoded: decoded.text.slice(0, end) };
         }
@@ -953,6 +978,35 @@ function boundRegion(
     if (!atEnd) continue;
     return { end: text.length, status: "prefix", decoded: decoded.text };
   }
+}
+
+/**
+ * Past this many characters an open bare-JSON region is not re-read for a
+ * prose break (a hot-path budget: the check is linear in the region, run per
+ * line / fragment). A fragment that breaks into prose does so within its first
+ * lines; a long region is real JSON streaming.
+ */
+export const BARE_REGION_GRAMMAR_BUDGET = 16_384;
+
+/**
+ * Whether an open bare-JSON region's text has BROKEN INTO PROSE by its own JSON
+ * grammar (round 10, C1): `{"status": "ok", "items": [` then a line of words,
+ * `{\"__kind\":…} and the rest`, `{ some code`. Such a region was never JSON:
+ * it reads as text. THE one answer the live accumulator (per line, budgeted)
+ * and the reload splitter (whole region, `firstBudget` — the same first 16 KB
+ * the live check reads) share, so live ≡ reload (round 11, H1). A region still
+ * validly open (or complete) is not broken.
+ */
+export function bareRegionBreaksIntoProse(text: string, options: { firstBudget?: boolean } = {}): boolean {
+  let region = text;
+  if (region.length > BARE_REGION_GRAMMAR_BUDGET) {
+    if (!options.firstBudget) return false;
+    region = region.slice(0, BARE_REGION_GRAMMAR_BUDGET);
+  }
+  const start = region.search(/\S/);
+  if (start < 0) return false;
+  const verdict = kindGrammar(region, "json", start);
+  return verdict.status === "broken" && verdict.prose;
 }
 
 /** Whether a balanced span reads as JSON (or as its dialect) once trailing commas are dropped. */
