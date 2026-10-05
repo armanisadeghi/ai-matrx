@@ -21,12 +21,12 @@ import type { BoardAccent, ItemStatus, ItemStatusTone } from "../items/types";
 import { useBoardCameraStore } from "../engine/react";
 import { type StatusFrom, type TileStatus, useTileStatus } from "../streams/useSourceStatus";
 
-export const TONE_DOT: Record<ItemStatusTone, string> = {
-  neutral: "bg-muted-foreground/60",
-  active: "bg-primary",
-  attention: "bg-warning",
-  success: "bg-success",
-  danger: "bg-destructive",
+const TONE_INK: Record<ItemStatusTone, string> = {
+  neutral: "text-muted-foreground/70",
+  active: "text-primary",
+  attention: "text-warning",
+  success: "text-success",
+  danger: "text-destructive",
 };
 
 /** A stream tile's phase in the same words and tones as an item's status. */
@@ -66,14 +66,19 @@ export function StatusChip({
         status.tone === "danger" && "text-destructive",
       )}
     >
-      <span
+      {/* The dot is drawn ink (an svg), so the pill guard measures it as content. */}
+      <svg
+        viewBox="0 0 8 8"
+        aria-hidden
         className={cn(
-          "shrink-0 rounded-full",
+          "shrink-0",
           variant === "header" ? "h-1.5 w-1.5" : "h-[0.6em] w-[0.6em]",
-          TONE_DOT[status.tone],
+          TONE_INK[status.tone],
           animate && status.tone === "active" && "animate-pulse",
         )}
-      />
+      >
+        <circle cx="4" cy="4" r="4" fill="currentColor" />
+      </svg>
       <span className="truncate">{status.label}</span>
     </span>
   );

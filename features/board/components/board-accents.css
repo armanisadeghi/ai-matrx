@@ -45,8 +45,8 @@
   container-type: size;
   contain: strict;
   --face-pad: min(calc(10px / var(--board-z, 1)), 7cqmin);
-  --face-kind: min(calc(10.5px / var(--board-z, 1)), 11cqh, 8cqw);
-  --face-title: min(calc(14px / var(--board-z, 1)), 15cqh, 10cqw);
+  --face-kind: min(calc(10.5px / var(--board-z, 1)), 11cqh, 9.5cqw);
+  --face-title: min(calc(14px / var(--board-z, 1)), 15cqh, 13cqw);
   background:
     linear-gradient(180deg, hsl(var(--tile-accent) / 0.16), hsl(var(--tile-accent) / 0.05) 70%),
     hsl(var(--card));
@@ -89,4 +89,19 @@
 
 .board-face[data-selected] {
   box-shadow: inset 0 0 0 max(2px, calc(2.5px / var(--board-z, 1))) hsl(var(--primary));
+}
+
+/* A short, wide tile (a label, a one-line strip): the title alone, as large as the strip allows. */
+@container (aspect-ratio > 3) {
+  .board-face-kind,
+  .board-face-foot {
+    display: none;
+  }
+  .board-face-body {
+    justify-content: center;
+  }
+  .board-face-title {
+    font-size: min(calc(14px / var(--board-z, 1)), 48cqh, 13cqw);
+    -webkit-line-clamp: 1;
+  }
 }
