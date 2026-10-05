@@ -58,6 +58,7 @@ import {
 import {
   isJsonFenceLanguage,
   jsonKindSignal,
+  bareRegionBreaksIntoProse,
 } from "@/features/content-ir/surfaces/json-kind-signal";
 import { liftQuotedKindRegions } from "@/features/content-ir/surfaces/quoted-kind-lift";
 import {
@@ -1510,6 +1511,29 @@ function detectCodeBlock(line: string): {
 }
 
 /**
+ * A ```json body line as the fence reader should see it (round 11, H2): a JSON
+ * string never holds a raw newline, so a line that ends INSIDE a string
+ * (`{\"__kind\":\"note\"}` — escaped quotes, a cut value) ends that string.
+ * The reader carries string state across lines, so such a line swallowed the
+ * closing ``` and the rest of the message; closing the string at the line end
+ * (reader input only — the body keeps its bytes) restores the per-line rule.
+ * Lines holding ``` are left alone (the reader decides those itself).
+ */
+function jsonLineForFenceReader(line: string): string {
+  if (line.includes("```")) return line;
+  let inString = false;
+  let escaped = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (escaped) escaped = false;
+    else if (ch === "\\" && inString) escaped = true;
+    else if (ch === '"') inString = !inString;
+  }
+  if (!inString) return line;
+  return escaped ? `${line}x"` : `${line}"`;
+}
+
+/**
  * A backtick fence's body and where it ends — THE one closer
  * (`closeFence`, @ai-matrx/content-ir/source): the nested-fence rule for
  * ```markdown with the strict-CommonMark retry, the line-end closer (`}````),
@@ -1522,8 +1546,9 @@ function extractCodeBlock(
   lines: string[],
   fenceChar: "`" | "~" = "`",
 ): ExtractionResult & { closedCleanly: boolean } {
+  const jsonBody = fenceChar === "`" && (language ?? "") === "json";
   const end = closeFence(
-    { count: lines.length, line: (k) => lines[k] ?? "" },
+    { count: lines.length, line: (k) => (jsonBody ? jsonLineForFenceReader(lines[k] ?? "") : (lines[k] ?? "")) },
     startIndex - 1,
     { char: fenceChar, ticks: openTicks, lang: language ?? "" },
   );
@@ -2702,7 +2727,15 @@ export const splitContentIntoBlocksWith = (
           i = j;
           continue;
         }
-      } else if (openCount > closeCount) {
+      } else if (
+        openCount > closeCount &&
+        // Round 11 (H1): a region whose own grammar already broke into prose
+        // (`{\"__kind\":…}`, `{ some code`) was never JSON — the live
+        // accumulator draws it as text (same check), so reload does too. Its
+        // brace count never balancing must not carry the region to the end
+        // of the message, where a LATER real kind made it "a kind region".
+        !bareRegionBreaksIntoProse(jsonLines.join("\n"), { firstBudget: true })
+      ) {
         // Incomplete bare JSON — more `{` than `}`, so the object is still
         // streaming in (no closing brace collected before content ran out).
         // If the partial content already reveals a known typed-block root key,

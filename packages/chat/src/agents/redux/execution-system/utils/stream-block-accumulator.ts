@@ -31,6 +31,7 @@ import {
   jsonKindSignal,
   kindGrammar,
   kindObjectProseBreak,
+  bareRegionBreaksIntoProse,
 } from "@ai-matrx/chat/utils/content-ir/surfaces/json-kind-signal";
 import {
   findBalancedXmlClose,
@@ -391,28 +392,8 @@ function isFenceCloserLine(line: string, fence: { char: string; ticks: number })
 
 const BARE_JSON_OPEN_RE = /^\{\s*"[^"]*"\s*:/;
 
-/**
- * Past this many characters an open bare-JSON region is not re-read for a
- * prose break (a hot-path budget: the check is linear in the region, run per
- * line / fragment). A fragment that breaks into prose does so within its first
- * lines; a long region is real JSON streaming.
- */
-const BARE_REGION_GRAMMAR_BUDGET = 16_384;
-
-/**
- * Whether an open bare-JSON region's text has BROKEN INTO PROSE by its own JSON
- * grammar (round 10, C1): `{"status": "ok", "items": [` then a line of words,
- * `{\"__kind\":…} and the rest`, `{ some code`. Such a region was never JSON:
- * it reads as text, exactly as a reload of the same text draws it. A region
- * still validly open (or complete) is not broken.
- */
-function regionBreaksIntoProse(text: string): boolean {
-  if (text.length > BARE_REGION_GRAMMAR_BUDGET) return false;
-  const start = text.search(/\S/);
-  if (start < 0) return false;
-  const verdict = kindGrammar(text, "json", start);
-  return verdict.status === "broken" && verdict.prose;
-}
+/** Round 11: shared with the reload splitter (`bareRegionBreaksIntoProse`) so live ≡ reload. */
+const regionBreaksIntoProse = bareRegionBreaksIntoProse;
 
 /** Where the first literal kind key in `text` starts (its quote), or -1. */
 const LITERAL_KIND_KEY_AT = /(?<!\\)"(?:__kind|\\u005[fF]_kind)"\s*:/;
