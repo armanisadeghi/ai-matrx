@@ -18,11 +18,6 @@ import MarketingLanding from "@/features/auth/components/module-landing/landings
 import { MarketingPageShell } from "@/features/shell/components/MarketingPageShell";
 import { getMarketingRouteMetadata } from "@/features/marketing/lib/route-metadata";
 import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
-import { ChatCanvasWorkspace } from "@ai-matrx/chat/canvas/workspace/ChatCanvasWorkspace";
-import { readCanvasWorkspaceLayout } from "@ai-matrx/chat/next/server/workspace-cookies.server";
-import { readComposerModeCookie } from "@ai-matrx/chat/next/server/composer-mode.server";
-
-const MARKETING_WORKSPACE_ID = "marketing";
 
 export async function generateMetadata() {
   const pathname = (await headers()).get("x-pathname") ?? "/marketing";
