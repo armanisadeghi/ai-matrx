@@ -404,7 +404,6 @@ export function MeetingsHome() {
                   checked={planning.showExternalEvents}
                   onCheckedChange={(v) => void toggleExternal(v)}
                   aria-label="Show calendar events"
-                  className="scale-90"
                 />
                 Calendar events
               </label>

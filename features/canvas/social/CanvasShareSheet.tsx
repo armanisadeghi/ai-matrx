@@ -334,7 +334,7 @@ function ShareFormContent({
               value={visibility}
               onValueChange={(v: CanvasVisibility) => setVisibility(v)}
             >
-              <SelectTrigger className="[&>span]:flex [&>span]:items-center">
+              <SelectTrigger>
                 <SelectValue>
                   {visibility === "public" && (
                     <>

@@ -327,7 +327,7 @@ export function InlineBindingEditor({
           }}
           disabled={disabled}
           title="Required"
-          className="shrink-0 scale-90"
+          className="shrink-0"
         />
       )}
 

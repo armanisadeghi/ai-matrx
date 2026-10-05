@@ -335,7 +335,6 @@ export default function TasksContextSidebar() {
               <Switch
                 checked={showCompleted}
                 onCheckedChange={(v) => dispatch(setShowCompleted(!!v))}
-                className="w-7 [&>span]:w-3 [&>span]:data-[state=checked]:translate-x-3"
               />
             </div>
           </CollapsibleSidebarSection>

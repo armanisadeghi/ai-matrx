@@ -351,6 +351,10 @@ function convertElement(sf, el, door, part, edits) {
       if (/^(h|min-h|max-h)-\[[\d.]+(dvh|vh|svh|lvh|%)\]$/.test(b)) return false; // viewport-relative box: placement
       if (door === "textarea" && /^(resize-\w+|field-sizing-\w+)$/.test(b)) return false;
       if (door === "textarea" && /^(h-full|min-h-0|flex-1)$/.test(b)) return false; // fills its box: placement
+      // `[&>span]:…` / `[&_svg]:…` reach INSIDE the control — never placement (one-ui-system rule 2).
+      if (/\[&/.test(variantOf(tok))) return true;
+      // A switch has one fixed size: its width is not placement.
+      if (door === "switch" && /^(w-|min-w-|max-w-|size-|translate-|scale-)/.test(b)) return true;
       if (/^(w-|min-w-|max-w-)/.test(b)) return false;
       if (variantOf(tok) && /^(group|peer)/.test(variantOf(tok))) return isVisual(tok);
       return isVisual(tok);

@@ -183,7 +183,7 @@ function SettingToggle({
         id={id}
         checked={checked}
         onCheckedChange={onChange}
-        className="scale-90 origin-right shrink-0"
+        className="origin-right shrink-0"
       />
     </div>
   );

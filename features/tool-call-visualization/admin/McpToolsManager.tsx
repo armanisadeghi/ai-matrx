@@ -1685,7 +1685,6 @@ export function McpToolsManager() {
                                   ? `Saving ${tool.name}`
                                   : `${tool.is_active ? "Deactivate" : "Activate"} ${tool.name}`
                               }
-                              className="scale-75"
                             />
                             <Button
                               icon={<FlaskConical />} aria-label="View Samples"

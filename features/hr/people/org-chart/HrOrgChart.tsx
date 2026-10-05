@@ -308,7 +308,7 @@ export function HrOrgChart() {
                 checked={showDotted}
                 onCheckedChange={setShowDotted}
                 aria-label="Show dotted-line reporting"
-                className="relative w-11 before:absolute before:left-1 before:top-1/2 before:w-9 before:-translate-y-1/2 before:content-[''] lg:w-9 lg:before:hidden"
+                className="relative before:absolute before:left-1 before:top-1/2 before:-translate-y-1/2 before:content-[''] lg:before:hidden"
               />
               <Label
                 htmlFor="hr-dotted-lines"

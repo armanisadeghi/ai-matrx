@@ -230,7 +230,6 @@ export function BatchStudio() {
               <Switch
                 checked={attentionOnly}
                 onCheckedChange={setAttentionOnly}
-                className="scale-90"
               />
             </label>
           </div>

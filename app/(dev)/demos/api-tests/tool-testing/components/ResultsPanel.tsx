@@ -208,7 +208,7 @@ function SaveSamplePopover({
               id="use-for-component"
               checked={useForComponent}
               onCheckedChange={setUseForComponent}
-              className="scale-75 origin-right"
+              className="origin-right"
             />
           </div>
 

@@ -232,7 +232,7 @@ function InlineEditRow({ sample, onUpdate }: InlineEditRowProps) {
                     id={`ufc-${sample.id}`}
                     checked={useForComponent}
                     onCheckedChange={setUseForComponent}
-                    className="scale-75 origin-right"
+                    className="origin-right"
                 />
             </div>
 

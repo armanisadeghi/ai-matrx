@@ -303,7 +303,6 @@ export function TemplateEditor({ template, mode }: TemplateEditorProps) {
                 id="template-published-to-web"
                 checked={isPublic}
                 onCheckedChange={setIsPublic}
-                className="scale-90"
               />
               <label
                 htmlFor="template-published-to-web"

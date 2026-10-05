@@ -356,7 +356,7 @@ function MiniToggle({
       <Switch
         checked={on}
         onCheckedChange={onChange}
-        className="scale-75 origin-left"
+        className="origin-left"
       />
       {label}
     </label>

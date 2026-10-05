@@ -2914,7 +2914,6 @@ export default function CleanupPad({
               activeSlot && patchSlot(activeSlot.id, { autoRun: on })
             }
             disabled={!activeSlot?.agentId}
-            className="scale-75"
             aria-label="Auto-run this slot"
           />
           Auto-run

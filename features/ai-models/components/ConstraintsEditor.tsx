@@ -286,7 +286,6 @@ function InlineValue({
         <Switch
           checked={value}
           onCheckedChange={onChange}
-          className="scale-75"
         />
         <span className="text-xs font-mono w-10">{String(value)}</span>
         <button

@@ -434,7 +434,6 @@ function BindingRow({
               disabled={pending}
               aria-busy={pending || undefined}
               aria-label={pending ? "Saving" : row.is_active ? "Turn off" : "Turn on"}
-              className="scale-75"
             />
             <span>{pending ? "Saving…" : "Active"}</span>
           </label>

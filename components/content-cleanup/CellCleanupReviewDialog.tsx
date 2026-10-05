@@ -221,7 +221,6 @@ export function CellCleanupReviewDialog({
                       <Switch
                         checked={on}
                         onCheckedChange={(v) => toggle(card.id, v)}
-                        className="scale-90"
                         aria-label={`${on ? "Skip" : "Apply"} ${card.human}`}
                       />
                     </div>

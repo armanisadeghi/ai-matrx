@@ -187,7 +187,7 @@ export function CleanupOptionsPopover({
                         id={`cleanup-${m.id}`}
                         checked={on}
                         onCheckedChange={(v) => onToggle(m.id, v)}
-                        className="mt-0.5 scale-90"
+                        className="mt-0.5"
                       />
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5">

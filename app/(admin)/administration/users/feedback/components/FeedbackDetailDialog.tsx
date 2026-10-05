@@ -1147,7 +1147,7 @@ export default function FeedbackDetailDialog({
           <div className="px-4 sm:px-6 pt-2 flex-shrink-0">
             {/* Six triggers do not fit a phone: the strip scrolls sideways and
                 no trigger may shrink into an unreadable sliver. */}
-            <TabsList className="w-full justify-start overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&>*]:shrink-0">
+            <TabsList className="w-full justify-start overflow-x-auto overscroll-x-contain [scrollbar-width:none]">
               <TabsTrigger value="submission">
                 <MessageSquare className="w-3.5 h-3.5" />
                 Submission

@@ -77,7 +77,7 @@ function ModeControls({
         <Switch
           checked={single}
           onCheckedChange={setSingle}
-          className="scale-75 origin-left"
+          className="origin-left"
         />
         single-select
       </label>
