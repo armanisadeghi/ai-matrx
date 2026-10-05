@@ -9,7 +9,7 @@ export default function GenerateAgentPage() {
     <div className="h-full w-full flex flex-col overflow-hidden">
       <div className="flex items-center gap-2 px-3 py-2 border-b flex-shrink-0">
         <Link href="/agents/new">
-          <Button type="submit" variant="quiet" className="w-7">
+          <Button type="submit" variant="quiet">
             <ArrowLeft className="h-3.5 w-3.5" />
           </Button>
         </Link>

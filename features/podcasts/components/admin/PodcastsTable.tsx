@@ -381,12 +381,11 @@ export function PodcastsTable({
               </>
             )}
         <Button
+          icon={<RefreshCw />} aria-label="Refresh"
           variant="outline"
           onClick={onRefresh}
           title="Refresh"
-        >
-          <RefreshCw className="h-3.5 w-3.5" />
-        </Button>
+        />
         <Button icon={<Plus />} variant="primary" onClick={onCreate}>
           New {activeTab === "shows" ? "Show" : "Episode"}
         </Button>

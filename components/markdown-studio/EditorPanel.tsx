@@ -143,15 +143,13 @@ export function EditorPanel({
             {stats.chars} chars
           </Badge>
           <Button
+            icon={<RotateCcw />}
             variant="quiet"
-            className="w-6"
             onClick={onClear}
             aria-label="Clear editor"
             title="Clear editor"
             disabled={!content}
-          >
-            <RotateCcw className="h-3 w-3" />
-          </Button>
+          />
           {onShowPreview && (
             <button
               type="button"

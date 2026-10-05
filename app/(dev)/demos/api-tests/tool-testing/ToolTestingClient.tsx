@@ -395,6 +395,9 @@ export default function ToolTestingClient() {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
+                    icon={<RefreshCw
+                      className={`h-3 w-3 ${loadingTools ? "animate-spin" : ""}`}
+                    />}
                     variant="outline"
                     onClick={loadTools}
                     disabled={loadingTools}
@@ -403,11 +406,7 @@ export default function ToolTestingClient() {
                         ? "Reloading active tools"
                         : "Reload active tools"
                     }
-                  >
-                    <RefreshCw
-                      className={`h-3 w-3 ${loadingTools ? "animate-spin" : ""}`}
-                    />
-                  </Button>
+                  />
                 </TooltipTrigger>
                 <TooltipContent className="text-xs">
                   {loadingTools

@@ -432,8 +432,12 @@ export function MembersPanel({
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Button
+                                icon={messageLoading === member.userId ? (
+                                  <Loader2 className="animate-spin" />
+                                ) : (
+                                  <MessageSquare className="text-blue-500" />
+                                )} aria-label="Send message"
                                 variant="quiet"
-                                className="w-8"
                                 onClick={() =>
                                   handleSendMessage(
                                     member.userId,
@@ -441,13 +445,7 @@ export function MembersPanel({
                                   )
                                 }
                                 disabled={messageLoading === member.userId}
-                              >
-                                {messageLoading === member.userId ? (
-                                  <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                  <MessageSquare className="h-4 w-4 text-blue-500" />
-                                )}
-                              </Button>
+                              />
                             </TooltipTrigger>
                             <TooltipContent>Send message</TooltipContent>
                           </Tooltip>
@@ -457,8 +455,8 @@ export function MembersPanel({
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Button
+                                icon={<Mail className="text-green-500" />} aria-label="Send email"
                                 variant="quiet"
-                                className="w-8"
                                 onClick={() =>
                                   setEmailRecipient({
                                     id: member.userId,
@@ -469,9 +467,7 @@ export function MembersPanel({
                                       "",
                                   })
                                 }
-                              >
-                                <Mail className="h-4 w-4 text-green-500" />
-                              </Button>
+                              />
                             </TooltipTrigger>
                             <TooltipContent>Send email</TooltipContent>
                           </Tooltip>

@@ -298,34 +298,28 @@ function EditorBody({
             readOnly ? null : (
               <div className="flex items-center">
                 <Button
+                  icon={<ArrowUp />}
                   type="button"
                   variant="quiet"
-                  className="w-7"
                   aria-label="Move up"
                   disabled={index === 0}
                   onClick={() => moveAction(index, -1)}
-                >
-                  <ArrowUp className="h-3.5 w-3.5" />
-                </Button>
+                />
                 <Button
+                  icon={<ArrowDown />}
                   type="button"
                   variant="quiet"
-                  className="w-7"
                   aria-label="Move down"
                   disabled={index === spec.actions.length - 1}
                   onClick={() => moveAction(index, 1)}
-                >
-                  <ArrowDown className="h-3.5 w-3.5" />
-                </Button>
+                />
                 <Button
+                  icon={<Trash2 />}
                   type="button"
                   variant="quiet"
-                  className="w-7"
                   aria-label="Remove step"
                   onClick={() => removeAction(index)}
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
+                />
               </div>
             )
           }
@@ -476,18 +470,17 @@ function ColumnValueRows({
           />
           {readOnly ? null : (
             <Button
+              icon={<Trash2 />}
               type="button"
               variant="quiet"
-              className="w-8 justify-self-end"
+              className="justify-self-end"
               aria-label="Remove value"
               onClick={() => {
                 const { [key]: _gone, ...rest } = value;
                 void _gone;
                 onChange(rest);
               }}
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </Button>
+            />
           )}
         </div>
       ))}

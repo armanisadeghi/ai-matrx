@@ -910,13 +910,11 @@ export default function DeprecatedModelsAudit({
                   </Button>
                 )}
                 <Button
+                  icon={<X />}
                   variant="quiet"
-                  className="w-8"
                   onClick={onClose}
                   aria-label="Close deprecated models audit"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
+                />
               </div>
             ),
           }}

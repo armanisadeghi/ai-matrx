@@ -522,6 +522,17 @@ export function StockSourcesView({
                         </a>
                       </Button>
                       <Button
+                        icon={savingId === photo.id ? (
+                          <Loader2 className="animate-spin" />
+                        ) : (
+                          <FolderPlus
+                            className={
+                              saved ? "h-3 w-3 text-emerald-500" : "h-3 w-3"
+                            }
+                          />
+                        )} aria-label={saved
+                            ? "Already saved to the library"
+                            : "Save to the brand library"}
                         variant="quiet"
                         disabled={savingId !== null || saved}
                         title={
@@ -530,17 +541,7 @@ export function StockSourcesView({
                             : "Save to the brand library"
                         }
                         onClick={() => void saveToLibrary(photo)}
-                      >
-                        {savingId === photo.id ? (
-                          <Loader2 className="h-3 w-3 animate-spin" />
-                        ) : (
-                          <FolderPlus
-                            className={
-                              saved ? "h-3 w-3 text-emerald-500" : "h-3 w-3"
-                            }
-                          />
-                        )}
-                      </Button>
+                      />
                     </div>
                   </div>
                 </div>

@@ -448,21 +448,22 @@ export default function AiModelsContainer() {
                 >
                   <div className="h-full border-l-2 border-l-primary/20 flex flex-col overflow-hidden relative">
                     <Button
+                      icon={panelMaximized ? (
+                        <Minimize2 />
+                      ) : (
+                        <Maximize2 />
+                      )} aria-label={panelMaximized
+                          ? "Restore split view"
+                          : "Maximize detail panel"}
                       variant="quiet"
-                      className="w-6 absolute top-2 right-10 z-10"
+                      className="absolute top-2 right-10 z-10"
                       onClick={() => setPanelMaximized((v) => !v)}
                       title={
                         panelMaximized
                           ? "Restore split view"
                           : "Maximize detail panel"
                       }
-                    >
-                      {panelMaximized ? (
-                        <Minimize2 className="h-3.5 w-3.5" />
-                      ) : (
-                        <Maximize2 className="h-3.5 w-3.5" />
-                      )}
-                    </Button>
+                    />
                     <AiModelDetailPanel
                       model={selectedModel}
                       isNew={isNewModel}

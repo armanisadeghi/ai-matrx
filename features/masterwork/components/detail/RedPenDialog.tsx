@@ -764,6 +764,7 @@ export function RedPenDialog({
                         ) : null}
                       </div>
                       <Button
+                        icon={<Trash2 aria-hidden />}
                         variant="quiet"
                         aria-label={`Remove correction ${index + 1}`}
                         onClick={() =>
@@ -771,9 +772,7 @@ export function RedPenDialog({
                             list.filter((c) => c.id !== correction.id),
                           )
                         }
-                      >
-                        <Trash2 className="size-3.5" aria-hidden />
-                      </Button>
+                      />
                     </div>
                   </li>
                 ))}

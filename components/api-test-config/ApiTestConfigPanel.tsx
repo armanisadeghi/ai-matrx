@@ -157,18 +157,14 @@ export function ApiTestConfigPanel({
                   </span>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button variant="quiet" onClick={() => { setTempToken(config.authToken); setIsEditingToken(true); }} className="w-6">
-                        <Pencil className="h-3 w-3" />
-                      </Button>
+                      <Button icon={<Pencil />} aria-label="Override with manual token" variant="quiet" onClick={() => { setTempToken(config.authToken); setIsEditingToken(true); }} />
                     </TooltipTrigger>
                     <TooltipContent>Override with manual token</TooltipContent>
                   </Tooltip>
                   {!config.isSessionToken && (
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Button variant="quiet" onClick={handleClearToken} className="w-6">
-                          <X className="h-3 w-3" />
-                        </Button>
+                        <Button icon={<X />} aria-label="Clear cookie token" variant="quiet" onClick={handleClearToken} />
                       </TooltipTrigger>
                       <TooltipContent>Clear cookie token</TooltipContent>
                     </Tooltip>
@@ -189,18 +185,14 @@ export function ApiTestConfigPanel({
                   />
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button variant="primary" onClick={handleSaveToken} disabled={!tempToken.trim()} className="w-6">
-                        <Check className="h-3 w-3" />
-                      </Button>
+                      <Button icon={<Check />} aria-label="Save token" variant="primary" onClick={handleSaveToken} disabled={!tempToken.trim()} />
                     </TooltipTrigger>
                     <TooltipContent>Save token</TooltipContent>
                   </Tooltip>
                   {config.hasToken && (
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Button variant="quiet" onClick={handleCancelEdit} className="w-6">
-                          <X className="h-3 w-3" />
-                        </Button>
+                        <Button icon={<X />} aria-label="Cancel" variant="quiet" onClick={handleCancelEdit} />
                       </TooltipTrigger>
                       <TooltipContent>Cancel</TooltipContent>
                     </Tooltip>

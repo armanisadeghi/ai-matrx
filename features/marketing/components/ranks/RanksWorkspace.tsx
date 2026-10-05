@@ -1053,6 +1053,7 @@ export function RanksWorkspace() {
                             : "Check now"}
                       </Button>
                       <Button
+                        icon={<Trash2 />}
                         variant="quiet"
                         aria-label={`Remove ${item.keyword}`}
                         onClick={async () => {
@@ -1065,9 +1066,7 @@ export function RanksWorkspace() {
                             });
                           }
                         }}
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
+                      />
                     </div>
                     {state?.status === "running" ? (
                       <p

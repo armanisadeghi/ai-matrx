@@ -324,12 +324,11 @@ function VersionRow({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
+                  icon={<ShieldAlert />} aria-label="Mark this version as a contract break the hashes cannot see (e.g. a prompt-level output change)"
                   variant="quiet"
                   className="opacity-0 transition-opacity group-hover:opacity-100 max-sm:opacity-100"
                   title="Mark this version as a contract break the hashes cannot see (e.g. a prompt-level output change)"
-                >
-                  <ShieldAlert className="h-2.5 w-2.5" />
-                </Button>
+                />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start">
                 <DropdownMenuItem onClick={() => void declareBreak("input")}>

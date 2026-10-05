@@ -296,17 +296,15 @@ export function UserMessage({
                 </Button>
               )}
               <Button
+                icon={isCopied ? (
+                  <Check />
+                ) : (
+                  <Copy />
+                )} aria-label="Copy"
                 variant="quiet"
                 onClick={handleCopy}
-                className="w-6"
                 title="Copy"
-              >
-                {isCopied ? (
-                  <Check className="w-3.5 h-3.5" />
-                ) : (
-                  <Copy className="w-3.5 h-3.5" />
-                )}
-              </Button>
+              />
             </div>
 
             <div className="space-y-2">
@@ -331,32 +329,28 @@ export function UserMessage({
                       <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-muted via-muted/60 to-transparent pointer-events-none" />
                       <div className="absolute -bottom-2 left-0 right-0 flex justify-center">
                         <Button
+                          icon={<ChevronDown />} aria-label="Expand message"
                           variant="quiet"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleToggleCollapse();
                           }}
-                          className="w-6"
                           title="Expand message"
-                        >
-                          <ChevronDown className="w-4 h-4" />
-                        </Button>
+                        />
                       </div>
                     </>
                   )}
                   {shouldBeCollapsible && !isCollapsed && (
                     <div className="flex justify-center mt-1">
                       <Button
+                        icon={<ChevronUp />} aria-label="Collapse message"
                         variant="quiet"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleToggleCollapse();
                         }}
-                        className="w-6"
                         title="Collapse message"
-                      >
-                        <ChevronUp className="w-4 h-4" />
-                      </Button>
+                      />
                     </div>
                   )}
                 </div>

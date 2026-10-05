@@ -121,18 +121,17 @@ export function EmploymentPicker({
         </span>
         {!disabled ? (
           <Button
+            icon={<X />}
             type="button"
             variant="quiet"
-            className="w-8 shrink-0"
+            className="shrink-0"
             aria-label="Clear the selected person"
             onClick={() => {
               setChosen(null);
               onChange(null);
               setQuery("");
             }}
-          >
-            <X className="h-4 w-4" />
-          </Button>
+          />
         ) : null}
       </div>
     );

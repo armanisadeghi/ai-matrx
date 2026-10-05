@@ -1721,14 +1721,12 @@ function JsonRecordEditor({
                   </span>
                 )}
                 <Button
+                  icon={<X />}
                   variant="quiet"
                   onClick={() => removeKey(key)}
                   disabled={busy}
-                  className="w-5"
                   aria-label={`Remove ${key}`}
-                >
-                  <X className="h-3 w-3" />
-                </Button>
+                />
               </div>
             </div>
             <Textarea

@@ -257,13 +257,12 @@ const ConfigBuilder = ({ initialConfig, onConfigChange, className }: ConfigBuild
                             placeholder={getPlaceholder()}
                         />
                         <Button
+                            icon={<AlignLeft />} aria-label="Format JSON"
                             variant="quiet"
                             onClick={handleFormatValue}
-                            className="absolute top-0 right-0 w-6"
+                            className="absolute top-0 right-0"
                             title="Format JSON"
-                        >
-                            <AlignLeft className="h-3 w-3" />
-                        </Button>
+                        />
                     </div>
                 );
             default:

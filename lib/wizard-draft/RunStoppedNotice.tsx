@@ -39,13 +39,12 @@ export function RunStoppedNotice({
       </Button>
       {onDismiss ? (
         <Button
+          icon={<X />}
           type="button"
           variant="quiet"
           onClick={onDismiss}
           aria-label="Hide this message"
-        >
-          <X className="h-4 w-4" />
-        </Button>
+        />
       ) : null}
     </div>
   );

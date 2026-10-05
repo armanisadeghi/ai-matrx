@@ -380,6 +380,7 @@ export function FindingActions({
       />
       {showWindowDoor && (
         <Button
+          icon={<AppWindow />}
           variant="outline"
           title="Open the full finding in a window"
           aria-label="Open the full finding in a window"
@@ -392,9 +393,7 @@ export function FindingActions({
             })
           }
           data-testid="hindsight-open-window"
-        >
-          <AppWindow className="h-3.5 w-3.5" />
-        </Button>
+        />
       )}
       <Button
         icon={<MessageSquare />}
@@ -422,14 +421,13 @@ export function FindingActions({
                 : "Accept"}
           </Button>
           <Button
+            icon={<X />} aria-label="Reject this finding"
             variant="outline"
             disabled={busy}
             onClick={() => reject.mutate()}
             title="Reject this finding"
             data-testid="hindsight-reject"
-          >
-            <X className="h-3.5 w-3.5" />
-          </Button>
+          />
         </>
       )}
     </div>

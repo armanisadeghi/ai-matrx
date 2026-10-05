@@ -346,14 +346,13 @@ export function ScopeMappingEditor({
               </div>
               <div className="flex-1 min-w-0">{renderScopeControl(row)}</div>
               <Button
+                icon={<X className="text-muted-foreground hover:text-destructive" />}
                 type="button"
                 variant="quiet"
                 onClick={() => removeRow(row)}
                 className={iconBtnClass}
                 aria-label="Remove mapping"
-              >
-                <X className="h-3 w-3 text-muted-foreground hover:text-destructive" />
-              </Button>
+              />
             </div>
           ))}
         </div>

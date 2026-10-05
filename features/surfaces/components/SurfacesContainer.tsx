@@ -553,13 +553,11 @@ export function SurfacesContainer() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
+                icon={<MoreHorizontal />}
                 variant="outline"
-                className="w-7"
                 aria-label={isMobile ? "Registry actions" : "More registry actions"}
                 title={isMobile ? "Registry actions" : "New client, Candidates"}
-              >
-                <MoreHorizontal className="h-3.5 w-3.5" />
-              </Button>
+              />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="min-w-[200px]">
               {actions

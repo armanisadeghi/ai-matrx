@@ -385,7 +385,7 @@ function KVEditor({
           <Button
             variant="quiet"
             onClick={() => remove(i)}
-            className="w-6 flex-shrink-0"
+            className="flex-shrink-0"
           >
             <Trash2 className="h-3 w-3" />
           </Button>
@@ -958,7 +958,7 @@ export default function DynamicApiClient() {
                                   saved.filter((r) => r.id !== req.id),
                                 )
                               }
-                              className="w-5 opacity-0 group-hover:opacity-100"
+                              className="opacity-0 group-hover:opacity-100"
                             >
                               <X className="h-3 w-3" />
                             </Button>
@@ -1147,7 +1147,6 @@ export default function DynamicApiClient() {
                     variant="quiet"
                     onClick={clearResponse}
                     disabled={isRunning}
-                    className="w-6"
                   >
                     <RotateCcw className="h-3 w-3" />
                   </Button>

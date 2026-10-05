@@ -226,7 +226,6 @@ export function ContextPolicyMappingEditor({
                   type="button"
                   variant="quiet"
                   onClick={() => removeCustomScope(scopeName)}
-                  className={compact ? "w-6" : "w-7"}
                 >
                   <X className="h-3 w-3 text-muted-foreground hover:text-destructive" />
                 </Button>

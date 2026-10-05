@@ -540,14 +540,13 @@ export function ToolComponentPreview({
               </SelectContent>
             </Select>
             <Button
+              icon={<RefreshCw />}
               variant="quiet"
               onClick={loadSamples}
               aria-label="Reload samples"
               title="Reload samples"
-              className="w-11 shrink-0 sm:w-8"
-            >
-              <RefreshCw className="h-3.5 w-3.5" />
-            </Button>
+              className="shrink-0"
+            />
           </div>
         )}
       </div>

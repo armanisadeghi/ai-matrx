@@ -128,18 +128,16 @@ export function PdfPresetPicker({ fileId, className }: PdfPresetPickerProps) {
                       </span>
                     </span>
                     <Button
+                      icon={runningId === preset.id ? (
+                        <Loader2 className="animate-spin" />
+                      ) : (
+                        <Play />
+                      )}
                       variant="quiet"
-                      className="w-6"
                       aria-label={`Run preset: ${preset.name}`}
                       disabled={runningId !== null}
                       onClick={() => void runPreset(preset.id)}
-                    >
-                      {runningId === preset.id ? (
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                      ) : (
-                        <Play className="h-3 w-3" />
-                      )}
-                    </Button>
+                    />
                   </li>
                 ))}
               </ul>

@@ -72,14 +72,13 @@ export function BulkOutcome({ outcome, sentence, onDismiss }: BulkOutcomeProps) 
           </span>
         )}
         <Button
+          icon={<X aria-hidden />}
           type="button"
           variant="quiet"
           className="ml-auto"
           aria-label="Dismiss this result"
           onClick={onDismiss}
-        >
-          <X className="h-3.5 w-3.5" aria-hidden />
-        </Button>
+        />
       </div>
       <p className="text-[11px] text-muted-foreground">{sentence}</p>
       {expanded ? (

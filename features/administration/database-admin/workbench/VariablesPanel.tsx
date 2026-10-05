@@ -99,13 +99,12 @@ export function VariablesPanel({
                       className="h-7 text-xs font-mono bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 min-w-0 flex-1"
                     />
                     <Button
+                      icon={<Trash2 />} aria-label="Remove variable"
                       onClick={() => onRemove(v.id)}
                       variant="quiet"
-                      className="w-7 shrink-0"
+                      className="shrink-0"
                       title="Remove variable"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
+                    />
                   </div>
                   <Input
                     placeholder="value"

@@ -57,7 +57,7 @@ const MatrxPanelHeader: React.FC<MatrxPanelHeaderProps> = (
                 <Button
                     variant="quiet"
                     onClick={onBack}
-                    className={cn("w-6 flex-shrink-0", buttonStyles)}
+                    className={cn("flex-shrink-0", buttonStyles)}
                 >
                     <ArrowLeft className="h-4 w-4"/>
                 </Button>

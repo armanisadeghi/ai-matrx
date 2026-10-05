@@ -83,7 +83,7 @@ function IconButton({
             variant="quiet"
             onClick={onClick}
             disabled={disabled}
-            className="w-7 shrink-0"
+            className="shrink-0"
           >
             <Icon className="h-3.5 w-3.5" />
           </Button>
@@ -237,13 +237,11 @@ export function QueryBlock({
             </TooltipProvider>
             {showResolved && (
               <Button
+                icon={<Copy />} aria-label="Copy resolved"
                 variant="outline"
                 onClick={copyResolved}
-                className="w-6"
                 title="Copy resolved"
-              >
-                <Copy className="h-3 w-3" />
-              </Button>
+              />
             )}
           </div>
         )}

@@ -926,6 +926,11 @@ export function MessageTemplateManager({
                         {(previewMode === "json" ||
                           previewMode === "stream") && (
                           <Button
+                            icon={isProcessing ? (
+                              <Loader2 className="animate-spin" />
+                            ) : (
+                              <RefreshCw />
+                            )} aria-label="Re-run"
                             variant="quiet"
                             onClick={() =>
                               runBlockProcessing(
@@ -937,13 +942,7 @@ export function MessageTemplateManager({
                               isProcessing || !(editData.content || "").trim()
                             }
                             title="Re-run"
-                          >
-                            {isProcessing ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                              <RefreshCw className="w-4 h-4" />
-                            )}
-                          </Button>
+                          />
                         )}
                       </div>
                     </div>

@@ -399,9 +399,9 @@ export function LeaveCalendarSurface() {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-1">
               <Button
+                icon={<ChevronLeft />}
                 type="button"
                 variant="quiet"
-                className="w-11 sm:w-8"
                 aria-label={
                   view === "month" ? "Previous month" : "Previous week"
                 }
@@ -412,16 +412,14 @@ export function LeaveCalendarSurface() {
                       : addDays(anchor, -step),
                   )
                 }
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
+              />
               <span className="min-w-36 flex-1 text-center text-sm font-semibold text-foreground sm:min-w-44 sm:flex-none">
                 {view === "month" ? monthLabel(anchor) : weekLabel(anchor)}
               </span>
               <Button
+                icon={<ChevronRight />}
                 type="button"
                 variant="quiet"
-                className="w-11 sm:w-8"
                 aria-label={view === "month" ? "Next month" : "Next week"}
                 onClick={() =>
                   goTo(
@@ -430,9 +428,7 @@ export function LeaveCalendarSurface() {
                       : addDays(anchor, step),
                   )
                 }
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
+              />
               <Button
                 type="button"
                 variant="quiet"

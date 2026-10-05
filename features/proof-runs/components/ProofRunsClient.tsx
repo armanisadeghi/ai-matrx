@@ -608,13 +608,11 @@ export default function ProofRunsClient() {
                       Edit
                     </Button>
                     <Button
+                      icon={<Trash2 />}
                       variant="quiet"
                       onClick={() => void removeScenario(scenario.slug)}
-                      className="w-7"
                       aria-label={`Delete ${scenario.slug}`}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
+                    />
                   </div>
                 </li>
               ))}

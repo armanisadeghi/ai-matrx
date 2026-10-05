@@ -1195,12 +1195,11 @@ export function SetDetailView({
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button
+                            icon={<ChevronDown />}
                             variant="primary"
                             disabled={isPending}
                             aria-label="More ways to study"
-                          >
-                            <ChevronDown className="h-4 w-4" />
-                          </Button>
+                          />
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="start" className="w-72 p-1.5">
                           <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">

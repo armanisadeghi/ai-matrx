@@ -66,14 +66,13 @@ export function KioskNumericKeypad({
         </Button>
       ))}
       <Button
+        icon={<X />}
         type="button"
         variant="quiet"
         disabled={busy}
         onClick={onCancel}
         aria-label="Cancel"
-      >
-        <X className="size-9" />
-      </Button>
+      />
       <Button
         type="button"
         variant="outline"
@@ -83,14 +82,13 @@ export function KioskNumericKeypad({
         0
       </Button>
       <Button
+        icon={<Delete />}
         type="button"
         variant="quiet"
         disabled={busy || !canDelete}
         onClick={onDelete}
         aria-label="Delete last digit"
-      >
-        <Delete className="size-9" />
-      </Button>
+      />
     </div>
   );
 }

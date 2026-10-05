@@ -65,18 +65,16 @@ export function CategoryColorPicker({
       <Popover open={isOpen} onOpenChange={setIsOpen}>
         <PopoverTrigger asChild>
           <Button
+            icon={<Pipette
+              className="opacity-0 hover:opacity-100 transition-opacity"
+              style={{ color: iconColor }}
+            />}
             type="button"
             variant="outline"
             disabled={disabled}
-            className="w-10"
             style={{ backgroundColor: fallbackColor }}
             aria-label="Pick color"
-          >
-            <Pipette
-              className="w-4 h-4 opacity-0 hover:opacity-100 transition-opacity"
-              style={{ color: iconColor }}
-            />
-          </Button>
+          />
         </PopoverTrigger>
         <PopoverContent /* sizing: fixed — content already decides its own width; no fixed box to remove */ className="w-auto p-3" align="start">
           <div className="space-y-3">

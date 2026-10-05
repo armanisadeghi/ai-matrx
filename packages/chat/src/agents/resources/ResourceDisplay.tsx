@@ -129,7 +129,6 @@ export function ResourceDisplay({ resource, className }: ResourceDisplayProps) {
                 {url && (
                     <Button
                         variant="quiet"
-                        className="w-6"
                         onClick={(e) => {
                             e.stopPropagation();
                             window.open(url, '_blank');

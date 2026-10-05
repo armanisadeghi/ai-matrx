@@ -168,52 +168,44 @@ function SectionCard({
         />
         <div className="flex shrink-0 items-center gap-0.5">
           <Button
+            icon={<ChevronUp />}
             type="button"
             variant="quiet"
-            className="w-8"
             disabled={index === 0}
             onClick={() => onMove(-1)}
             aria-label={`Move "${section.heading || "section"}" up`}
             title="Move this section up"
-          >
-            <ChevronUp className="h-3.5 w-3.5" />
-          </Button>
+          />
           <Button
+            icon={<ChevronDown />}
             type="button"
             variant="quiet"
-            className="w-8"
             disabled={index === total - 1}
             onClick={() => onMove(1)}
             aria-label={`Move "${section.heading || "section"}" down`}
             title="Move this section down"
-          >
-            <ChevronDown className="h-3.5 w-3.5" />
-          </Button>
+          />
           <Button
+            icon={reviseBusy ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <PenLine />
+            )}
             type="button"
             variant="quiet"
-            className="w-8"
             disabled={reviseBusy}
             onClick={onRevise}
             aria-label={`Ask AI to revise "${section.heading || "this section"}"`}
             title={`Ask AI to revise this section — it reads the whole page (including your edits), rewrites this part, and saves the result as a new version you can undo.`}
-          >
-            {reviseBusy ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <PenLine className="h-3.5 w-3.5" />
-            )}
-          </Button>
+          />
           <Button
+            icon={<Trash2 />}
             type="button"
             variant="quiet"
-            className="w-8"
             onClick={onRemove}
             aria-label={`Remove "${section.heading || "section"}"`}
             title="Remove this section"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
+          />
         </div>
       </div>
 

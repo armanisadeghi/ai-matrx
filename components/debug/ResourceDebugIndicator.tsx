@@ -401,7 +401,6 @@ export const ResourceDebugIndicator: React.FC<ResourceDebugIndicatorProps> = ({
                       </div>
                       <Button
                         variant="quiet"
-                        className="w-5"
                         onClick={(e) => {
                           e.stopPropagation();
                           void copyToClipboard(payload, index);

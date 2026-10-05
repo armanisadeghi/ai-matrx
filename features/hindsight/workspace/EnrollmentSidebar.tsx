@@ -147,18 +147,18 @@ export function EnrollmentSidebar({
             className="self-center"
           />
           <Button
+            icon={paused ? (
+              <Play />
+            ) : (
+              <Pause />
+            )} aria-label={paused ? "Resume reviews" : "Pause reviews"}
             variant="outline"
             disabled={toggleStatus.isPending}
             title={paused ? "Resume reviews" : "Pause reviews"}
             onClick={() => toggleStatus.mutate(paused ? "active" : "paused")}
-          >
-            {paused ? (
-              <Play className="h-3.5 w-3.5" />
-            ) : (
-              <Pause className="h-3.5 w-3.5" />
-            )}
-          </Button>
+          />
           <Button
+            icon={<Archive />} aria-label="Stop reviewing this agent"
             variant="outline"
             title="Stop reviewing this agent"
             disabled={archive.isPending}
@@ -171,9 +171,7 @@ export function EnrollmentSidebar({
               });
               if (ok) archive.mutate();
             }}
-          >
-            <Archive className="h-3.5 w-3.5" />
-          </Button>
+          />
         </div>
 
         {paused && (

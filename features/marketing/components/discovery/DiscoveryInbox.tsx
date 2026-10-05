@@ -1279,14 +1279,12 @@ function DiscoveryRow({
             Dismiss
           </Button>
           <Button
+            icon={<Trash2 />} aria-label="Delete discovery"
             variant="quiet"
-            className="w-8"
             title="Delete discovery"
             disabled={busy}
             onClick={() => setConfirmingDelete(true)}
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
+          />
         </div>
       )}
 

@@ -682,14 +682,13 @@ export function SandboxVersionHealthCard({
             </Button>
           )}
           <Button
+            icon={<RefreshCw />}
             variant="quiet"
             aria-label="Check sandbox image freshness"
             title="Check sandbox image freshness"
             onClick={() => void refresh(lifecycleRef.current.generation)}
             disabled={updating}
-          >
-            <RefreshCw className="h-3.5 w-3.5" />
-          </Button>
+          />
         </div>
         {migrationNotice && (
           <p className="basis-full text-[11px] text-muted-foreground">

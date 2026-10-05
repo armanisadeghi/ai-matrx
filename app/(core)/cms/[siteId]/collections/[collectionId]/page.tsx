@@ -862,16 +862,14 @@ export default function CollectionItemsPage() {
                         onClick={(e) => e.stopPropagation()}
                       >
                         <Button
+                          icon={<Pencil />}
                           variant="quiet"
-                          className="w-7"
                           aria-label="Edit item"
                           onClick={() => {
                             setEditingItem(item);
                             setItemEditorOpen(true);
                           }}
-                        >
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
+                        />
                       </TableCell>
                     </TableRow>
                   );
@@ -888,23 +886,19 @@ export default function CollectionItemsPage() {
               Page {page} of {totalPages}
             </span>
             <Button
+              icon={<ChevronLeft />}
               variant="outline"
-              className="w-7"
               disabled={page <= 1 || itemsLoading}
               onClick={() => setPage(page - 1)}
               aria-label="Previous page"
-            >
-              <ChevronLeft className="h-3.5 w-3.5" />
-            </Button>
+            />
             <Button
+              icon={<ChevronRight />}
               variant="outline"
-              className="w-7"
               disabled={page >= totalPages || itemsLoading}
               onClick={() => setPage(page + 1)}
               aria-label="Next page"
-            >
-              <ChevronRight className="h-3.5 w-3.5" />
-            </Button>
+            />
           </div>
         )}
       </div>

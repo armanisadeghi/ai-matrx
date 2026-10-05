@@ -73,13 +73,12 @@ export function ConversationShell({
           </div>
           {onClose && (
             <Button
+              icon={<X />}
               variant="quiet"
               onClick={onClose}
-              className="w-7 flex-shrink-0"
+              className="flex-shrink-0"
               aria-label="Close"
-            >
-              <X className="h-4 w-4" />
-            </Button>
+            />
           )}
         </div>
       )}

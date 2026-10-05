@@ -597,9 +597,7 @@ export function LeaveQueueSurface() {
                 </Button>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button type="button" variant="quiet" aria-label="More decisions">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
+                    <Button icon={<MoreHorizontal />} type="button" variant="quiet" aria-label="More decisions" />
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem

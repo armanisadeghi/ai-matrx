@@ -169,7 +169,6 @@ export function CategoryTree({
           {hasChildren ? (
             <Button
               variant="quiet"
-              className="w-5"
               onClick={() => toggleExpand(node.id)}
             >
               {isExpanded ? (
@@ -230,72 +229,62 @@ export function CategoryTree({
             <div className="flex items-center gap-1">
               {onCreate && (
                 <Button
+                  icon={<Plus />} aria-label="Add subcategory"
                   variant="quiet"
-                  className="w-7"
                   onClick={(e) => {
                     e.stopPropagation();
                     onCreate(node);
                   }}
                   title="Add subcategory"
-                >
-                  <Plus className="h-3 w-3" />
-                </Button>
+                />
               )}
               {onEdit && (
                 <Button
+                  icon={<Edit2 />} aria-label="Edit"
                   variant="quiet"
-                  className="w-7"
                   onClick={(e) => {
                     e.stopPropagation();
                     onEdit(node);
                   }}
                   title="Edit"
-                >
-                  <Edit2 className="h-3 w-3" />
-                </Button>
+                />
               )}
               {onDuplicate && (
                 <Button
+                  icon={<Copy />} aria-label="Duplicate"
                   variant="quiet"
-                  className="w-7"
                   onClick={(e) => {
                     e.stopPropagation();
                     onDuplicate(node);
                   }}
                   title="Duplicate"
-                >
-                  <Copy className="h-3 w-3" />
-                </Button>
+                />
               )}
               {onToggleActive && (
                 <Button
+                  icon={node.isActive ? (
+                    <EyeOff />
+                  ) : (
+                    <Eye />
+                  )} aria-label={node.isActive ? "Deactivate" : "Activate"}
                   variant="quiet"
-                  className="w-7"
                   onClick={(e) => {
                     e.stopPropagation();
                     onToggleActive(node);
                   }}
                   title={node.isActive ? "Deactivate" : "Activate"}
-                >
-                  {node.isActive ? (
-                    <EyeOff className="h-3 w-3" />
-                  ) : (
-                    <Eye className="h-3 w-3" />
-                  )}
-                </Button>
+                />
               )}
               {onDelete && (
                 <Button
+                  icon={<Trash2 />} aria-label="Delete"
                   variant="quiet"
-                  className="w-7"
                   onClick={(e) => {
                     e.stopPropagation();
                     onDelete(node);
                   }}
                   title="Delete"
-                >
-                  <Trash2 className="h-3 w-3" />
-                </Button>
+                />
               )}
             </div>
           )}

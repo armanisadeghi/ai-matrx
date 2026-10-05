@@ -188,16 +188,15 @@ export default function ApiKeysTab() {
                 {created.api_key}
               </code>
               <Button
+                icon={copied ? (
+                  <Check />
+                ) : (
+                  <Copy />
+                )}
                 variant="outline"
                 aria-label={copied ? "Copied" : "Copy key"}
                 onClick={() => void handleCopy()}
-              >
-                {copied ? (
-                  <Check className="h-4 w-4" />
-                ) : (
-                  <Copy className="h-4 w-4" />
-                )}
-              </Button>
+              />
             </div>
             {created.expiry_capped && created.expires_at && (
               <p className="text-xs text-muted-foreground">

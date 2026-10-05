@@ -1023,7 +1023,7 @@ export function ToolUiComponentGenerator({
           </Button>
           <Button
             variant="quiet"
-            className="w-7 flex-shrink-0"
+            className="flex-shrink-0"
             onClick={() => {
               clearDraft(selectedToolName || preselectedToolName || "");
               setHasDraft(false);

@@ -576,14 +576,13 @@ function DetailPanel({
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
+              icon={<X />}
               type="button"
               variant="quiet"
-              className="w-7 shrink-0"
+              className="shrink-0"
               aria-label="Close details"
               onClick={onClose}
-            >
-              <X className="h-4 w-4" />
-            </Button>
+            />
           </TooltipTrigger>
           <TooltipContent>Close details</TooltipContent>
         </Tooltip>

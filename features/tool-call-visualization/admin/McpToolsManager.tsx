@@ -1689,49 +1689,39 @@ export function McpToolsManager() {
                               className="scale-75"
                             />
                             <Button
+                              icon={<FlaskConical />} aria-label="View Samples"
                               variant="quiet"
                               onClick={() => navigateTo(toolHref(tool.id))}
                               title="View Samples"
-                              className="w-7"
-                            >
-                              <FlaskConical className="h-3.5 w-3.5" />
-                            </Button>
+                            />
                             <Button
+                              icon={<Zap />} aria-label="UI Component"
                               variant="quiet"
                               onClick={() => navigateTo(toolUiHref(tool.id))}
                               title="UI Component"
-                              className="w-7"
-                            >
-                              <Zap className="h-3.5 w-3.5" />
-                            </Button>
+                            />
                             <Button
+                              icon={<Bug />} aria-label="Incidents"
                               variant="quiet"
                               onClick={() =>
                                 navigateTo(toolIncidentsHref(tool.id))
                               }
                               title="Incidents"
-                              className="w-7"
-                            >
-                              <Bug className="h-3.5 w-3.5" />
-                            </Button>
+                            />
                             <Button
+                              icon={<Edit />} aria-label="Edit Tool"
                               variant="quiet"
                               onClick={() => navigateTo(toolEditHref(tool.id))}
                               title="Edit Tool"
-                              className="w-7"
-                            >
-                              <Edit className="h-3.5 w-3.5" />
-                            </Button>
+                            />
                             <Button
+                              icon={<Trash2 />} aria-label="Move to Trash"
                               variant="quiet"
                               onClick={() =>
                                 handleDeleteTool(tool.id, tool.name)
                               }
                               title="Move to Trash"
-                              className="w-7"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
+                            />
                           </div>
                         </td>
                       </tr>

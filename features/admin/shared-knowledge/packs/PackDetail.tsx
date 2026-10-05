@@ -241,11 +241,10 @@ export function PackDetail({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
+                  icon={<ChevronDown />}
                   variant="quiet"
                   aria-label="More actions"
-                >
-                  <ChevronDown className="size-4" />
-                </Button>
+                />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={() => fork.mutate()} disabled={busy}>

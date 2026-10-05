@@ -146,15 +146,14 @@ export function ListCard({
           </div>
         </Link>
         <Button
+          icon={<MoreHorizontal />}
           type="button"
           variant="quiet"
-          className="w-11 shrink-0 lg:hidden"
+          className="shrink-0 lg:hidden"
           aria-label={`Actions for ${list.list_name}`}
           aria-haspopup="menu"
           onClick={() => openContextMenuForElement(cardRef.current)}
-        >
-          <MoreHorizontal className="h-4 w-4" />
-        </Button>
+        />
       </div>
     </NonEditableContextMenu>
   );

@@ -213,7 +213,7 @@ export function ExecutorSurfaceDetailPanel({
             <Button
               variant="quiet"
               onClick={onClose}
-              className="w-6 shrink-0"
+              className="shrink-0"
             >
               <X className="h-3.5 w-3.5" />
             </Button>
@@ -439,13 +439,11 @@ function BindingRow({
             <span>{pending ? "Saving…" : "Active"}</span>
           </label>
           <Button
+            icon={<Trash2 />} aria-label="Remove binding"
             variant="quiet"
             onClick={() => onRemove(row)}
-            className="w-6"
             title="Remove binding"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
+          />
         </div>
       </div>
     </div>

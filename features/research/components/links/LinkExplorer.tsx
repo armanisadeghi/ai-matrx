@@ -153,7 +153,7 @@ export default function LinkExplorer() {
                                 variant="quiet"
                                 onClick={() => handleAddToScope([link.url])}
                                 disabled={adding}
-                                className="shrink-0 w-7"
+                                className="shrink-0"
                             >
                                 <Plus className="h-3.5 w-3.5" />
                             </Button>

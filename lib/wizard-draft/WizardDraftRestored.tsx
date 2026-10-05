@@ -60,13 +60,12 @@ export function WizardDraftRestored({
         {startFreshLabel}
       </Button>
       <Button
+        icon={<X />}
         type="button"
         variant="quiet"
         onClick={onDismiss}
         aria-label="Keep it and hide this message"
-      >
-        <X className="h-4 w-4" />
-      </Button>
+      />
     </div>
   );
 }

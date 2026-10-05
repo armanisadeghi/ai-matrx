@@ -179,13 +179,12 @@ export function IndustryCuratorsPanel({ industry }: { industry: Industry }) {
                 </span>
               </span>
               <Button
+                icon={<X />}
                 variant="quiet"
                 className="shrink-0"
                 onClick={() => setRevokeTarget(c)}
                 aria-label={`Revoke curator ${c.email ?? c.userId}`}
-              >
-                <X className="h-3.5 w-3.5" />
-              </Button>
+              />
             </li>
           ))}
         </ul>

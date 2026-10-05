@@ -588,27 +588,23 @@ export default function LSIMarkdownGenerator({
                         </CardTitle>
                         <div className="flex gap-1">
                           <Button
+                            icon={<Plus />} aria-label="Add keyword"
                             type="submit"
                             variant="quiet"
                             onClick={() => addKeyword(category)}
-                            className="w-8"
                             title="Add keyword"
-                          >
-                            <Plus className="w-4 h-4" />
-                          </Button>
+                          />
                           <Button
+                            icon={copiedCategory === category ? (
+                              <Check />
+                            ) : (
+                              <Copy />
+                            )} aria-label="Copy category"
                             type="submit"
                             variant="quiet"
                             onClick={() => copyCategory(category, keywords)}
-                            className="w-8"
                             title="Copy category"
-                          >
-                            {copiedCategory === category ? (
-                              <Check className="w-4 h-4" />
-                            ) : (
-                              <Copy className="w-4 h-4" />
-                            )}
-                          </Button>
+                          />
                         </div>
                       </div>
                     </CardHeader>
@@ -649,7 +645,6 @@ export default function LSIMarkdownGenerator({
                                     type="submit"
                                     variant="quiet"
                                     onClick={() => saveEdit(category, index)}
-                                    className="w-8"
                                   >
                                     <Check className="w-3 h-3" />
                                   </Button>
@@ -657,7 +652,6 @@ export default function LSIMarkdownGenerator({
                                     type="submit"
                                     variant="quiet"
                                     onClick={() => cancelEdit(category, index)}
-                                    className="w-8"
                                   >
                                     <X className="w-3 h-3" />
                                   </Button>
@@ -669,27 +663,23 @@ export default function LSIMarkdownGenerator({
                                   </span>
                                   <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
                                     <Button
+                                      icon={<Edit2 />} aria-label="Edit"
                                       type="submit"
                                       variant="quiet"
                                       onClick={() =>
                                         startEdit(category, index, keyword)
                                       }
-                                      className="w-7"
                                       title="Edit"
-                                    >
-                                      <Edit2 className="w-3 h-3" />
-                                    </Button>
+                                    />
                                     <Button
+                                      icon={<X />} aria-label="Remove"
                                       type="submit"
                                       variant="quiet"
                                       onClick={() =>
                                         removeKeyword(category, index)
                                       }
-                                      className="w-7"
                                       title="Remove"
-                                    >
-                                      <X className="w-3 h-3" />
-                                    </Button>
+                                    />
                                   </div>
                                 </>
                               )}

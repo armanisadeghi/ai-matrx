@@ -1734,9 +1734,7 @@ export function KnowledgeHubPage({
         onClick={() => void doTrash(selectedHits)}
       > Trash
       </Button>
-      <Button variant="quiet" className="ml-auto w-7" aria-label="Clear selection (Esc)" onClick={() => setSelected(new Set())}>
-        <X className="h-3.5 w-3.5" />
-      </Button>
+      <Button icon={<X />} variant="quiet" className="ml-auto" aria-label="Clear selection (Esc)" onClick={() => setSelected(new Set())} />
     </div>
   ) : null;
 
@@ -1747,9 +1745,7 @@ export function KnowledgeHubPage({
     <>
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="quiet" className="w-8 @2xl:hidden" aria-label={`Layout: ${LAYOUT_LABEL[state.layout]}. Change`}>
-          <LayoutIcon className="h-4 w-4" />
-        </Button>
+        <Button icon={<LayoutIcon />} variant="quiet" className="@2xl:hidden" aria-label={`Layout: ${LAYOUT_LABEL[state.layout]}. Change`} />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-40">
         <DropdownMenuLabel className="text-xs">Layout</DropdownMenuLabel>
@@ -1870,9 +1866,7 @@ export function KnowledgeHubPage({
           />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="quiet" className="w-8" aria-label="Search settings" title="Search settings">
-                <Settings2 className="h-4 w-4" />
-              </Button>
+              <Button icon={<Settings2 />} variant="quiet" aria-label="Search settings" title="Search settings" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-64">
               <DropdownMenuLabel>Rerank results</DropdownMenuLabel>

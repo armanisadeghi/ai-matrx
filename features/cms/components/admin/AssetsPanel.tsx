@@ -302,29 +302,25 @@ export default function AssetsPanel({ sites }: { sites: ClientSiteSummary[] }) {
                                         </div>
                                         <div className="flex items-center gap-0.5 pt-0.5">
                                             <Button
+                                                icon={copiedId === asset.id ? (
+                                                    <Check className="text-emerald-500" />
+                                                ) : (
+                                                    <Copy />
+                                                )} aria-label="Copy durable URL"
                                                 variant="quiet"
-                                                className="w-6"
                                                 title="Copy durable URL"
                                                 onClick={() => handleCopy(asset)}
-                                            >
-                                                {copiedId === asset.id ? (
-                                                    <Check className="h-3 w-3 text-emerald-500" />
-                                                ) : (
-                                                    <Copy className="h-3 w-3" />
-                                                )}
-                                            </Button>
+                                            />
                                             <Button
+                                                icon={<Pencil />} aria-label="Edit alt text"
                                                 variant="quiet"
-                                                className="w-6"
                                                 title="Edit alt text"
                                                 onClick={() => openEdit(asset)}
-                                            >
-                                                <Pencil className="h-3 w-3" />
-                                            </Button>
+                                            />
                                             <div className="flex-1" />
                                             <Button
+                                                icon={<Trash2 />} aria-label="Archive (usage-guarded)"
                                                 variant="quiet"
-                                                className="w-6"
                                                 title="Archive (usage-guarded)"
                                                 onClick={() =>
                                                     setDeleteState({
@@ -334,9 +330,7 @@ export default function AssetsPanel({ sites }: { sites: ClientSiteSummary[] }) {
                                                         inUse: false,
                                                     })
                                                 }
-                                            >
-                                                <Trash2 className="h-3 w-3" />
-                                            </Button>
+                                            />
                                         </div>
                                     </div>
                                 </div>

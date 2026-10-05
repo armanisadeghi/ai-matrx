@@ -595,13 +595,12 @@ function FeedbackItem({
 
           {canEdit && !isEditing && (
             <Button
+              icon={<Pencil />} aria-label="Edit this submission"
               variant="quiet"
-              className="w-6 flex-shrink-0"
+              className="flex-shrink-0"
               onClick={handleStartEdit}
               title="Edit this submission"
-            >
-              <Pencil className="h-3 w-3" />
-            </Button>
+            />
           )}
         </div>
 

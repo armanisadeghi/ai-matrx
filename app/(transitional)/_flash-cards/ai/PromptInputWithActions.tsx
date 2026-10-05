@@ -81,13 +81,11 @@ const PromptInputWithActions: React.FC<PromptInputWithActionsProps> = ({ onSend 
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <Button
+                                        icon={<ArrowUp />} aria-label="Send message"
                                         variant="primary"
-                                        className="w-8"
                                         disabled={!prompt}
                                         onClick={handleSend}
-                                    >
-                                        <ArrowUp className="h-4 w-4" />
-                                    </Button>
+                                    />
                                 </TooltipTrigger>
                                 <TooltipContent>Send message</TooltipContent>
                             </Tooltip>

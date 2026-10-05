@@ -906,13 +906,12 @@ function ExtraInputRow({
           <option value="literal">Value</option>
         </select>
         <Button
+          icon={<X />} aria-label="Remove this input"
           variant="quiet"
-          className="w-6 shrink-0 ml-auto"
+          className="shrink-0 ml-auto"
           onClick={onRemove}
           title="Remove this input"
-        >
-          <X className="w-3 h-3" />
-        </Button>
+        />
       </div>
       {isLiteral ? (
         <Input

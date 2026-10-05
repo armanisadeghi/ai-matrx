@@ -324,6 +324,11 @@ export function LintDebtConsole({
         const key = `${f.file}:${f.line}:${f.column}:${f.rule}`;
         return (
           <Button
+            icon={copiedKey === key ? (
+              <Check />
+            ) : (
+              <Copy />
+            )}
             variant="quiet"
             title="Copy a paste-ready repair brief for an agent"
             aria-label={`Copy a repair brief for ${f.file}:${f.line}`}
@@ -331,13 +336,7 @@ export function LintDebtConsole({
               e.stopPropagation();
               void copy(key, fixPromptForFinding(f), "Repair brief");
             }}
-          >
-            {copiedKey === key ? (
-              <Check className="h-3 w-3" />
-            ) : (
-              <Copy className="h-3 w-3" />
-            )}
-          </Button>
+          />
         );
       },
     },
@@ -844,14 +843,13 @@ function ClassCard({
               </button>
               {count > 0 && (
                 <Button
+                  icon={<Copy />}
                   variant="quiet"
                   className="shrink-0"
                   title={`Copy a sweep brief for every ${CLASS_TITLES[klass].toLowerCase()} finding`}
                   aria-label={`Copy a sweep brief for ${CLASS_TITLES[klass]}`}
                   onClick={() => onCopy(klass)}
-                >
-                  <Copy className="h-3 w-3" />
-                </Button>
+                />
               )}
             </div>
           );
@@ -922,14 +920,13 @@ function BucketCard({
               <ExternalLink className="h-3 w-3" />
             </AppLink>
             <Button
+              icon={<Copy />}
               variant="quiet"
               className="shrink-0"
               title="Copy a sweep brief for this bucket"
               aria-label={`Copy a sweep brief for ${b.key}`}
               onClick={() => onCopy(b.key)}
-            >
-              <Copy className="h-3 w-3" />
-            </Button>
+            />
           </div>
         ))}
       </div>
@@ -973,13 +970,12 @@ function RuleLegend({
             </span>
           </button>
           <Button
+            icon={<Copy />}
             variant="quiet"
             title={`Copy a sweep brief for every ${b.rule} finding`}
             aria-label={`Copy a sweep brief for ${b.rule}`}
             onClick={() => onCopy(b.rule)}
-          >
-            <Copy className="h-2.5 w-2.5" />
-          </Button>
+          />
         </div>
       ))}
     </div>

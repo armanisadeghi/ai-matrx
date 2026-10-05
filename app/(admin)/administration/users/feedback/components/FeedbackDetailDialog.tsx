@@ -1695,13 +1695,12 @@ export default function FeedbackDetailDialog({
                           arrow next to a record we can plainly resolve. */}
                       {onOpenFeedback ? (
                         <Button
+                          icon={<ArrowRight />} aria-label="Open parent ticket"
                           type="button"
                           variant="quiet"
                           onClick={() => onOpenFeedback(parentId)}
                           title="Open parent ticket"
-                        >
-                          <ArrowRight className="w-4 h-4" />
-                        </Button>
+                        />
                       ) : (
                         <a
                           href={feedbackHref(parentId)}
@@ -1723,13 +1722,12 @@ export default function FeedbackDetailDialog({
                         <ExternalLink className="w-4 h-4" />
                       </a>
                       <Button
+                        icon={<Unlink />} aria-label="Unlink parent"
                         type="button"
                         variant="quiet"
                         onClick={() => setParentId("none")}
                         title="Unlink parent"
-                      >
-                        <Unlink className="w-4 h-4" />
-                      </Button>
+                      />
                     </div>
                   ) : (
                     <div className="relative">
@@ -2201,7 +2199,7 @@ export default function FeedbackDetailDialog({
                     variant="primary"
                     onClick={handleSendComment}
                     disabled={!newComment.trim() || isSendingComment}
-                    className="absolute right-2 bottom-2 w-8"
+                    className="absolute right-2 bottom-2"
                   >
                     {isSendingComment ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
@@ -2832,6 +2830,11 @@ export default function FeedbackDetailDialog({
                     />
                     <div className="absolute right-2 bottom-2 flex items-center gap-1">
                       <Button
+                        icon={isUploadingReply ? (
+                          <Loader2 className="animate-spin" />
+                        ) : (
+                          <Paperclip />
+                        )} aria-label="Attach image"
                         type="button"
                         variant="quiet"
                         onClick={() =>
@@ -2841,15 +2844,8 @@ export default function FeedbackDetailDialog({
                           )
                         }
                         disabled={isSendingUserReply || isUploadingReply}
-                        className="w-8"
                         title="Attach image"
-                      >
-                        {isUploadingReply ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <Paperclip className="w-4 h-4" />
-                        )}
-                      </Button>
+                      />
                       <Button
                         variant="primary"
                         onClick={handleAdminReplyUserMessage}
@@ -2858,7 +2854,6 @@ export default function FeedbackDetailDialog({
                           isSendingUserReply ||
                           isUploadingReply
                         }
-                        className="w-8"
                       >
                         {isSendingUserReply ? (
                           <Loader2 className="w-4 h-4 animate-spin" />

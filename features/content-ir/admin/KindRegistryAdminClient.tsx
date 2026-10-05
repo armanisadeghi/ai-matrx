@@ -347,13 +347,12 @@ export default function KindRegistryAdminClient() {
           />
         </div>
         <Button
+          icon={<RefreshCw />} aria-label="Reload the catalog"
           type="button"
           variant="outline"
           onClick={() => setReloadTick((tick) => tick + 1)}
           title="Reload the catalog"
-        >
-          <RefreshCw className="h-3.5 w-3.5" />
-        </Button>
+        />
       </header>
 
       {loadError && (

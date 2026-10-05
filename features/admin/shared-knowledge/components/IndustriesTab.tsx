@@ -306,41 +306,35 @@ export function IndustriesTab({
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
                   <Button
+                    icon={<Pencil />}
                     variant="quiet"
-                    className="w-9 sm:w-auto"
                     onClick={(e) => {
                       e.stopPropagation();
                       openEdit(i);
                     }}
                     aria-label={`Edit ${i.name}`}
-                  >
-                    <Pencil className="h-3.5 w-3.5" />
-                  </Button>
+                  />
                   {i.isActive ? (
                     <Button
+                      icon={<Archive />}
                       variant="quiet"
-                      className="w-9 sm:w-auto"
                       onClick={(e) => {
                         e.stopPropagation();
                         setDeactivateTarget(i);
                       }}
                       aria-label={`Deactivate ${i.name}`}
-                    >
-                      <Archive className="h-3.5 w-3.5" />
-                    </Button>
+                    />
                   ) : (
                     <Button
+                      icon={<ArchiveRestore />}
                       variant="quiet"
-                      className="w-9 sm:w-auto"
                       disabled={activeBusy}
                       onClick={(e) => {
                         e.stopPropagation();
                         void setActive(i, true);
                       }}
                       aria-label={`Reactivate ${i.name}`}
-                    >
-                      <ArchiveRestore className="h-3.5 w-3.5" />
-                    </Button>
+                    />
                   )}
                 </div>
               </li>
@@ -423,15 +417,14 @@ export function IndustriesTab({
                       ) : null}
                     </span>
                     <Button
+                      icon={<X />}
                       variant="quiet"
                       className="shrink-0"
                       onClick={() =>
                         setUnassignTarget({ orgId: a.orgId, orgName: a.orgName })
                       }
                       aria-label={`Unassign ${a.orgName}`}
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </Button>
+                    />
                   </li>
                 ))}
               </ul>

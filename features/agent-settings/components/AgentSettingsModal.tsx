@@ -101,7 +101,6 @@ function ModalPortal({
           </div>
           <Button
             variant="quiet"
-            className="w-6"
             onClick={handleClose}
           >
             <X className="w-3 h-3" />

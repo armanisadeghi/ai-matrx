@@ -85,14 +85,12 @@ export function TextContent({ results, onJumpToPage, initialPage = 1 }: Props) {
       <div className="flex flex-wrap items-center gap-2 border-b border-border bg-card/40 px-3 py-2">
         <div className="flex items-center gap-1">
           <Button
+            icon={<ChevronLeft />}
             variant="quiet"
             disabled={active <= 1}
             onClick={() => setActive((n) => Math.max(1, n - 1))}
-            className="w-6"
             aria-label="Previous page"
-          >
-            <ChevronLeft className="h-3.5 w-3.5" />
-          </Button>
+          />
           <select
             value={active}
             onChange={(e) => setActive(Number.parseInt(e.target.value, 10))}
@@ -108,14 +106,12 @@ export function TextContent({ results, onJumpToPage, initialPage = 1 }: Props) {
             of {merged.length}
           </span>
           <Button
+            icon={<ChevronRight />}
             variant="quiet"
             disabled={active >= merged.length}
             onClick={() => setActive((n) => Math.min(merged.length, n + 1))}
-            className="w-6"
             aria-label="Next page"
-          >
-            <ChevronRight className="h-3.5 w-3.5" />
-          </Button>
+          />
         </div>
         <SourceBadge source={page.source} confidence={page.ocr_confidence ?? null} />
         <span className="ml-auto text-[10px] tabular-nums text-muted-foreground">

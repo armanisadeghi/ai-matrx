@@ -34,6 +34,8 @@
  *
  * Usage:
  *   node scripts/ui-rollout/button-door-codemod.mjs --dry-run            # census only
+ *   node scripts/ui-rollout/button-door-codemod.mjs --dry-run --from-head  # census of HEAD's code
+ *   node scripts/ui-rollout/button-door-codemod.mjs --dry-run --from-rev <rev>  # … of any revision
  *   node scripts/ui-rollout/button-door-codemod.mjs --write [files...]   # rewrite working copy
  *   node scripts/ui-rollout/button-door-codemod.mjs --head-index <out>   # transform HEAD blobs,
  *        write them to the object store and print `update-index --index-info` lines to <out>
@@ -716,8 +718,19 @@ export function transform(text, file, ctx) {
       if (b) return { surface: `block-child:${b}` };
     }
 
+    // A Button whose whole content is one glyph IS icon-only, whatever its old size.
+    const isSrOnlySpan = (k) => {
+      if (!ts.isJsxElement(k) || k.openingElement.tagName.getText(sf) !== "span") return false;
+      const c = getAttr(k.openingElement, "className");
+      const l = c && literalOf(c.initializer);
+      return Boolean(l && l.kind === "lit" && /(^|\s)sr-only(\s|$)/.test(l.value));
+    };
+    const visibleKids = kids.filter((k) => !isSrOnlySpan(k));
+    const glyphOnly =
+      !iconOnly && !asChildA && !getAttr(open, "icon") && !getAttr(open, "iconEnd") && visibleKids.length === 1 && isGlyphExpr(visibleKids[0]);
+
     // className
-    const cls = planClassName(classA, iconOnly);
+    const cls = planClassName(classA, iconOnly || glyphOnly);
     if (cls.signals.length) return { surface: `row-or-tile:${cls.signals.slice(0, 4).join(" ")}` };
     if (cls.unknown?.length) return { surface: `unclassified-class:${cls.unknown.slice(0, 4).join(" ")}` };
     if (cls.dynamic) out.notes.push("dynamic-class");
@@ -752,7 +765,7 @@ export function transform(text, file, ctx) {
     }
 
     // icon-only
-    if (iconOnly) {
+    if (iconOnly || glyphOnly) {
       let label = null;
       if (ariaA) label = "existing";
       else if (titleA) {
@@ -798,6 +811,10 @@ export function transform(text, file, ctx) {
         else if (t.length === 1 && ts.isJsxExpression(t[0]) && t[0].expression) label = `{${t[0].expression.getText(sf)}}`;
       }
       if (!label) label = tooltipLabel(open);
+      if (!label && glyphOnly) {
+        out.notes.push("glyph-only-no-label");
+        return out;
+      }
       if (!label) return { surface: "icon-only-no-label" };
       const iconSrc = glyphText(glyph);
       const parts = [`icon={${iconSrc}}`];
@@ -898,6 +915,10 @@ function main() {
   const args = process.argv.slice(2);
   const dry = args.includes("--dry-run");
   const write = args.includes("--write");
+  // --from-head: census of the ORIGINAL (HEAD) code — the run that decided each site.
+  const fromIdx = args.indexOf("--from-rev");
+  const fromRev = fromIdx >= 0 ? args[fromIdx + 1] : args.includes("--from-head") ? "HEAD" : null;
+  const fromHead = Boolean(fromRev);
   const headIdx = args.indexOf("--head-index");
   const headOut = headIdx >= 0 ? args[headIdx + 1] : null;
   const censusIdx = args.indexOf("--census");
@@ -908,7 +929,7 @@ function main() {
     console.log(`builder closure: ${list.length} files → ${path.relative(ROOT, BUILDER_CLOSURE_FILE)}`);
     return;
   }
-  const explicit = args.filter((a, i) => !a.startsWith("--") && args[i - 1] !== "--head-index" && args[i - 1] !== "--census");
+  const explicit = args.filter((a, i) => !a.startsWith("--") && args[i - 1] !== "--head-index" && args[i - 1] !== "--census" && args[i - 1] !== "--from-rev");
   const builder = new Set(loadJson(BUILDER_CLOSURE_FILE, []));
   const overrides = loadJson(OVERRIDES_FILE, {});
   const files = explicit.length ? explicit : listFiles();
@@ -938,7 +959,9 @@ function main() {
     }
     let src;
     try {
-      src = fs.readFileSync(abs, "utf8");
+      src = fromHead
+        ? execFileSync("git", ["show", `${fromRev}:${file}`], { cwd: ROOT, encoding: "utf8", maxBuffer: 64 * 1024 * 1024, stdio: ["ignore", "pipe", "ignore"] })
+        : fs.readFileSync(abs, "utf8");
     } catch {
       continue;
     }
@@ -991,7 +1014,9 @@ function main() {
       excluded: allSites.filter((s) => s.kind === "excluded").map((s) => s.file),
       errors: allSites.filter((s) => s.kind === "error").map((s) => `${s.file}: ${s.reason}`),
     };
-    if (!explicit.length) fs.writeFileSync(censusPath, `${JSON.stringify(census, null, 1)}\n`);
+    // The census describes a decision run: write it from --dry-run / --from-head, never from a
+    // --write re-run (which only sees what is left).
+    if (!explicit.length && !write) fs.writeFileSync(censusPath, `${JSON.stringify(census, null, 1)}\n`);
   }
 }
 

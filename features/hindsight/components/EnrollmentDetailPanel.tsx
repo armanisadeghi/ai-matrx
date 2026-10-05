@@ -166,6 +166,11 @@ export function EnrollmentDetailPanel({
               className="self-center"
             />
             <Button
+              icon={enrollment.status === "active" ? (
+                <Pause />
+              ) : (
+                <Play />
+              )} aria-label={enrollment.status === "active" ? "Pause reviews" : "Resume reviews"}
               variant="outline"
               disabled={toggleStatus.isPending}
               title={enrollment.status === "active" ? "Pause reviews" : "Resume reviews"}
@@ -174,14 +179,9 @@ export function EnrollmentDetailPanel({
                   enrollment.status === "active" ? "paused" : "active",
                 )
               }
-            >
-              {enrollment.status === "active" ? (
-                <Pause className="h-3.5 w-3.5" />
-              ) : (
-                <Play className="h-3.5 w-3.5" />
-              )}
-            </Button>
+            />
             <Button
+              icon={<Archive />} aria-label="Archive this enrollment"
               variant="outline"
               title="Archive this enrollment"
               disabled={archive.isPending}
@@ -194,9 +194,7 @@ export function EnrollmentDetailPanel({
                 });
                 if (ok) archive.mutate();
               }}
-            >
-              <Archive className="h-3.5 w-3.5" />
-            </Button>
+            />
           </div>
         </div>
 

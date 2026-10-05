@@ -71,9 +71,7 @@ export function NoticeDetail({
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex h-11 shrink-0 items-center gap-1 border-b border-border px-2">
         {onBack ? (
-          <Button type="button" variant="quiet" className="w-8 @2xl:hidden" onClick={onBack} aria-label="Back to list">
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
+          <Button icon={<ArrowLeft />} type="button" variant="quiet" className="@2xl:hidden" onClick={onBack} aria-label="Back to list" />
         ) : null}
         {triage && !done ? (
           <Button icon={<Check />} type="button" variant="quiet" onClick={() => handlers.onDone(group)} title="Done (E)">
@@ -111,13 +109,9 @@ export function NoticeDetail({
           </Button>
         ) : null}
         <span className="flex-1" />
-        <Button type="button" variant="quiet" className="w-8" onClick={() => handlers.onMuteType(group)} title="Turn off this type" aria-label="Turn off this type">
-          <BellOff className="h-4 w-4" />
-        </Button>
+        <Button icon={<BellOff />} type="button" variant="quiet" onClick={() => handlers.onMuteType(group)} title="Turn off this type" aria-label="Turn off this type" />
         {row.deep_link ? (
-          <Button type="button" variant="quiet" className="w-8" onClick={() => handlers.onOpenInNewTab(group)} title="Open in new tab" aria-label="Open in new tab">
-            <ExternalLink className="h-4 w-4" />
-          </Button>
+          <Button icon={<ExternalLink />} type="button" variant="quiet" onClick={() => handlers.onOpenInNewTab(group)} title="Open in new tab" aria-label="Open in new tab" />
         ) : null}
       </div>
 

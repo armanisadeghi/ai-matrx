@@ -412,7 +412,7 @@ export default function OfferingsContainer() {
                     </div>
                     <Button
                       variant="quiet"
-                      className="w-7 shrink-0"
+                      className="shrink-0"
                       onClick={requestClose}
                     >
                       <X className="h-4 w-4" />

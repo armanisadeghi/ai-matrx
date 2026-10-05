@@ -77,33 +77,27 @@ const UUIDArrayField = () => {
                     />
                     <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1">
                         <Button
+                            icon={<Zap />} aria-label="Generate UUID"
                             type="button"
                             variant="quiet"
-                            className="w-7"
                             onClick={generateUUID}
                             title="Generate UUID"
-                        >
-                            <Zap className="h-4 w-4" />
-                        </Button>
+                        />
                         <Button
+                            icon={<Plus />} aria-label="Add UUID"
                             type="button"
                             variant="quiet"
-                            className="w-7"
             onClick={handleAdd}
             title="Add UUID"
             disabled={!inputValue}
-          >
-            <Plus className="h-4 w-4" />
-          </Button>
+          />
           <Button
+            icon={showExternal ? <ChevronUp /> : <ChevronDown />} aria-label={showExternal ? "Show inline" : "Show external"}
             type="button"
             variant="quiet"
-            className="w-7"
             onClick={() => setShowExternal(!showExternal)}
             title={showExternal ? "Show inline" : "Show external"}
-          >
-            {showExternal ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-          </Button>
+          />
         </div>
 
         {/* Inline Dropdown */}
@@ -124,7 +118,6 @@ const UUIDArrayField = () => {
                   <div className="flex gap-1 ml-2">
                     <Button
                       variant="quiet"
-                      className="w-6"
                       onClick={(e) => copyToClipboard(uuid, e)}
                     >
                       {copiedId === uuid ? (
@@ -135,7 +128,6 @@ const UUIDArrayField = () => {
                     </Button>
                     <Button
                       variant="quiet"
-                      className="w-6"
                       onClick={(e) => handleRemove(uuid, e)}
                     >
                       <X className="h-3 w-3" />
@@ -160,7 +152,6 @@ const UUIDArrayField = () => {
               <div className="flex gap-1">
                 <Button
                   variant="quiet"
-                  className="w-6"
                   onClick={(e) => copyToClipboard(uuid, e)}
                 >
                   {copiedId === uuid ? (
@@ -171,7 +162,6 @@ const UUIDArrayField = () => {
                 </Button>
                 <Button
                   variant="quiet"
-                  className="w-6"
                   onClick={(e) => handleRemove(uuid, e)}
                 >
                   <X className="h-3 w-3" />

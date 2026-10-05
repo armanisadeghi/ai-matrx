@@ -411,7 +411,7 @@ export default function ToolsDemoClient() {
               <Button
                 variant="quiet"
                 onClick={() => setLoadError(null)}
-                className="w-5 flex-shrink-0"
+                className="flex-shrink-0"
               >
                 <X className="h-3 w-3" />
               </Button>
@@ -579,14 +579,12 @@ export default function ToolsDemoClient() {
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
+                          icon={<RotateCcw />} aria-label="Reset to defaults"
                           variant="outline"
                           onClick={() =>
                             setArgValues(buildDefaults(selectedTool.parameters))
                           }
-                          className="w-8"
-                        >
-                          <RotateCcw className="h-3.5 w-3.5" />
-                        </Button>
+                        />
                       </TooltipTrigger>
                       <TooltipContent className="text-xs">
                         Reset to defaults

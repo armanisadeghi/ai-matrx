@@ -254,7 +254,6 @@ export default function WorkQueueTab() {
                                     <div className="flex flex-col items-center gap-0.5 flex-shrink-0">
                                         <Button
                                             variant="quiet"
-                                            className="w-5"
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 handleMovePriority(item.id, 'up');
@@ -268,7 +267,6 @@ export default function WorkQueueTab() {
                                         </span>
                                         <Button
                                             variant="quiet"
-                                            className="w-5"
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 handleMovePriority(item.id, 'down');
@@ -355,7 +353,7 @@ export default function WorkQueueTab() {
                                     />
                                     <Button
                                         variant="quiet"
-                                        className="flex-shrink-0 w-8"
+                                        className="flex-shrink-0"
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             handleViewDetails(item);

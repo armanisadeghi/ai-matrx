@@ -93,13 +93,12 @@ export function PlanRealityBar({
         </span>
       ) : null}
       <Button
+        icon={<X />}
         variant="quiet"
-        className="w-6 shrink-0"
+        className="shrink-0"
         aria-label="Dismiss reality overlay"
         onClick={onDismiss}
-      >
-        <X className="h-3.5 w-3.5" />
-      </Button>
+      />
 
       <Sheet open={orphansOpen} onOpenChange={setOrphansOpen}>
         <SheetContent side="right" className="w-full sm:w-[480px] sm:max-w-[480px]">

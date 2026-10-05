@@ -508,9 +508,7 @@ export function InboxWorkspace({ mode, initialTab = "inbox", orgFilter, onOrgFil
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : null}
-            <Button type="button" variant="quiet" className="w-7" onClick={() => setChecked(new Set())} aria-label="Clear selection">
-              <X className="h-3.5 w-3.5" />
-            </Button>
+            <Button icon={<X />} type="button" variant="quiet" onClick={() => setChecked(new Set())} aria-label="Clear selection" />
           </div>
         ) : (
           <div className="flex h-11 shrink-0 items-center gap-1.5 border-b border-border px-2">
@@ -551,9 +549,7 @@ export function InboxWorkspace({ mode, initialTab = "inbox", orgFilter, onOrgFil
             {triage ? (
               <EntityOrgFilter orgId={orgFilter} onChange={onOrgFilterChange} className="max-w-[9.5rem] shrink-0" />
             ) : null}
-            <Button type="button" variant="quiet" className="hidden w-8 @2xl:inline-flex" onClick={() => setHelpOpen(true)} aria-label="Keyboard shortcuts" title="Keyboard shortcuts (?)">
-              <Keyboard className="h-4 w-4" />
-            </Button>
+            <Button icon={<Keyboard />} type="button" variant="quiet" className="hidden @2xl:inline-flex" onClick={() => setHelpOpen(true)} aria-label="Keyboard shortcuts" title="Keyboard shortcuts (?)" />
           </div>
         )}
 

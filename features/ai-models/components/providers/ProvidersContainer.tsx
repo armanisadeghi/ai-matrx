@@ -278,13 +278,12 @@ function ProviderDetailPanel({
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
+                  icon={<X />}
                   variant="quiet"
-                  className="w-7 shrink-0"
+                  className="shrink-0"
                   aria-label="Close provider details"
                   onClick={requestClose}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
+                />
               </TooltipTrigger>
               <TooltipContent side="left" className="text-xs">
                 Close panel

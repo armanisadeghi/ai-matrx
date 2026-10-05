@@ -860,13 +860,12 @@ function ContextItemListRow({
       </div>
       {canManage && (
         <Button
+          icon={<Pencil />}
           variant="quiet"
           onClick={onEdit}
           className="shrink-0 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
           aria-label={`Edit ${item.display_name}`}
-        >
-          <Pencil className="h-3.5 w-3.5" />
-        </Button>
+        />
       )}
     </div>
   );

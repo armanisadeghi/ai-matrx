@@ -875,6 +875,11 @@ export function RunHistoryPanel() {
           </Button>
         ) : null}
         <Button
+          icon={runs.isFetching ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <RefreshCw />
+          )}
           variant="quiet"
           className="ml-auto"
           aria-label="Refresh run history"
@@ -882,13 +887,7 @@ export function RunHistoryPanel() {
             void runs.refetch();
             void facets.refetch();
           }}
-        >
-          {runs.isFetching ? (
-            <Loader2 className="h-3 w-3 animate-spin" />
-          ) : (
-            <RefreshCw className="h-3 w-3" />
-          )}
-        </Button>
+        />
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto p-2">
         {showGroups ? (

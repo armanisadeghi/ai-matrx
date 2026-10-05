@@ -431,7 +431,6 @@ export function LabelBatchDetail({
                 <div className="flex items-center gap-1 text-xs text-muted-foreground">
                   <Button
                     variant="quiet"
-                    className="w-7"
                     disabled={pageIndex === 0}
                     onClick={() => setPageIndex((p) => Math.max(0, p - 1))}
                   >
@@ -442,7 +441,6 @@ export function LabelBatchDetail({
                   </span>
                   <Button
                     variant="quiet"
-                    className="w-7"
                     disabled={pageIndex >= pageCount - 1}
                     onClick={() =>
                       setPageIndex((p) => Math.min(pageCount - 1, p + 1))

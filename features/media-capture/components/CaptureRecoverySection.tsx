@@ -171,13 +171,12 @@ export function CaptureRecoverySection({
                 )}
               </Button>
               <Button
+                icon={<Trash2 />}
                 variant="quiet"
                 disabled={busy !== null}
                 onClick={() => void handleDiscard(entry.manifest.capture_id)}
                 aria-label="Discard recovered recording"
-              >
-                <Trash2 className="h-3 w-3" />
-              </Button>
+              />
             </div>
           );
         })}

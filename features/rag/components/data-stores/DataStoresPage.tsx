@@ -1141,7 +1141,6 @@ function MemberTable({
                 <Button
                   type="submit"
                   variant="quiet"
-                  className="w-7"
                   onClick={async () => {
                     const ok = await confirm({
                       title: "Remove member",

@@ -1121,13 +1121,11 @@ function ConfigsTab({
                   Edit
                 </Button>
                 <Button
+                  icon={<XCircle />}
                   variant="quiet"
                   onClick={() => void onDelete(c)}
-                  className="w-7"
                   aria-label="Delete config"
-                >
-                  <XCircle className="h-3.5 w-3.5" />
-                </Button>
+                />
               </div>
             </div>
             <div className="text-[11px] font-mono text-muted-foreground space-y-0.5">

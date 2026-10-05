@@ -218,7 +218,7 @@ export default function ProviderForm({
               />
               <Button
                 variant="quiet"
-                className="w-7 shrink-0"
+                className="shrink-0"
                 onClick={() =>
                   onChange({
                     ...data,

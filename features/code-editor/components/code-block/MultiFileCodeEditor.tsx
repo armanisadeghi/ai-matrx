@@ -427,13 +427,12 @@ export default function MultiFileCodeEditor({
                 {/* Left: Sidebar Toggle + File Info */}
                 <div className="flex items-center gap-2 min-w-0">
                   <Button
+                    icon={<PanelLeftClose />} aria-label="Hide sidebar"
                     variant="quiet"
                     onClick={() => setSidebarVisible(false)}
-                    className="w-6 flex-shrink-0"
+                    className="flex-shrink-0"
                     title="Hide sidebar"
-                  >
-                    <PanelLeftClose className="h-3.5 w-3.5" />
-                  </Button>
+                  />
                   {getLanguageIcon(currentFile)}
                   <span className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">
                     {currentFile.name}
@@ -507,13 +506,12 @@ export default function MultiFileCodeEditor({
               {/* Left: Sidebar Toggle + File Info */}
               <div className="flex items-center gap-2 min-w-0">
                 <Button
+                  icon={<PanelLeft />} aria-label="Show sidebar"
                   variant="quiet"
                   onClick={() => setSidebarVisible(true)}
-                  className="w-6 flex-shrink-0"
+                  className="flex-shrink-0"
                   title="Show sidebar"
-                >
-                  <PanelLeft className="h-3.5 w-3.5" />
-                </Button>
+                />
                 {getLanguageIcon(currentFile)}
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">
                   {currentFile.name}

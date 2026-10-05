@@ -185,12 +185,11 @@ export function LibraryPublishPanel({
                     ) : null}
                   </span>
                   <Button
+                    icon={<X />}
                     variant="quiet"
                     onClick={() => onRevoke(g.id)}
                     aria-label="Revoke access"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </Button>
+                  />
                 </li>
               ))}
             </ul>

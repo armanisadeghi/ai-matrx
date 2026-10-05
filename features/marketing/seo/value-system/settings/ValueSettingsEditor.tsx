@@ -282,6 +282,7 @@ export function ValueSettingsEditor({
                   </td>
                   <td className="py-1.5 text-right">
                     <Button
+                      icon={<Trash2 aria-hidden />}
                       variant="quiet"
                       disabled={readOnly || !removable}
                       aria-label={`Remove ${level.label ?? level.value}`}
@@ -295,9 +296,7 @@ export function ValueSettingsEditor({
                       onClick={() =>
                         setLevels(effectiveLevels.filter((_, i) => i !== index))
                       }
-                    >
-                      <Trash2 className="h-3 w-3" aria-hidden />
-                    </Button>
+                    />
                   </td>
                 </tr>
               );

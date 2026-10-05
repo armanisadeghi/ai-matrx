@@ -282,19 +282,17 @@ export function SetupWorkOrderColumn({
 
                     <div className="flex shrink-0 items-center gap-1">
                       <Button
+                        icon={<Minus />}
                         type="submit"
                         variant="outline"
                         /* Phones get a real tap target; desktop keeps the
                            dense 28px control. */
-                        className="w-9 md:w-7"
                         aria-label={`One fewer ${family.label}`}
                         disabled={family.count <= 0}
                         onClick={() =>
                           onCountChange(family.key, Math.max(0, family.count - 1))
                         }
-                      >
-                        <Minus className="h-3.5 w-3.5" />
-                      </Button>
+                      />
                       <Input
                         type="number"
                         inputMode="numeric"
@@ -317,15 +315,13 @@ export function SetupWorkOrderColumn({
                         className="h-9 w-16 px-1.5 text-center text-base tabular-nums md:h-7 md:text-sm"
                       />
                       <Button
+                        icon={<Plus />}
                         type="submit"
                         variant="outline"
-                        className="w-9 md:w-7"
                         aria-label={`One more ${family.label}`}
                         disabled={family.count >= MAX_COUNT}
                         onClick={() => onCountChange(family.key, family.count + 1)}
-                      >
-                        <Plus className="h-3.5 w-3.5" />
-                      </Button>
+                      />
                     </div>
                   </div>
 

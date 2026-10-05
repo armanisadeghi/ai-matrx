@@ -718,13 +718,11 @@ export function PlanSitesList({
         cell: (row) => (
           <ItemMenu config={() => buildRowMenu(row)}>
             <Button
+              icon={<MoreVertical />}
               variant="quiet"
-              className="w-7"
               aria-label="Row actions"
               onClick={(event) => event.stopPropagation()}
-            >
-              <MoreVertical className="h-4 w-4" />
-            </Button>
+            />
           </ItemMenu>
         ),
         width: 44,

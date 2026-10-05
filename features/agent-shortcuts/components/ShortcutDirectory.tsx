@@ -386,12 +386,11 @@ export function ShortcutDirectory({
             rel="noopener noreferrer"
           >
             <Button
+              icon={<ExternalLink />}
               type="submit"
               variant="outline"
               aria-label={`Open ${row.label}`}
-            >
-              <ExternalLink className="size-3" />
-            </Button>
+            />
           </Link>
         ) }]}
         getRowId={(row) => row.id}

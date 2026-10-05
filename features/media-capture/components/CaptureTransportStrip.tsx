@@ -123,13 +123,12 @@ export function CaptureTransportStrip() {
             )}
           </Button>
           <Button
+            icon={<Trash2 />}
             variant="quiet"
             disabled={retrying !== null}
             onClick={() => dismissCaptureFailure(f.id)}
             aria-label="Dismiss failed upload"
-          >
-            <Trash2 className="h-3 w-3" />
-          </Button>
+          />
         </div>
       ))}
       {tusPending.length > 0 && (

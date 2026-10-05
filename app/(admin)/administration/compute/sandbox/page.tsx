@@ -941,7 +941,7 @@ export default function AdminSandboxManagementPage() {
                       onClick={() =>
                         copyToClipboard(sshAccess.ssh_command, "command")
                       }
-                      className="shrink-0 w-8"
+                      className="shrink-0"
                     >
                       {copiedField === "command" ? (
                         <Check className="w-3.5 h-3.5 text-green-500" />

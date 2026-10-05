@@ -24,16 +24,15 @@ export function PublicHeaderThemeToggle() {
 
     return (
         <Button
+            icon={theme === 'dark' ? (
+                <Sun className="text-zinc-600 dark:text-zinc-400" />
+            ) : (
+                <Moon className="text-zinc-600 dark:text-zinc-400" />
+            )}
             variant="quiet"
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
             className={PUBLIC_HEADER_ICON_BUTTON}
             aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
-        >
-            {theme === 'dark' ? (
-                <Sun className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
-            ) : (
-                <Moon className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
-            )}
-        </Button>
+        />
     );
 }

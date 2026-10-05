@@ -562,14 +562,12 @@ export function SiteMap({
         </Button>
         <div className="flex items-center gap-0.5">
           <Button
+            icon={<ZoomOut />}
             variant="quiet"
-            className="w-7"
             aria-label="Zoom out"
             disabled={zoom <= ZOOM_MIN}
             onClick={() => setZoom((current) => clampZoom(current - ZOOM_STEP))}
-          >
-            <ZoomOut className="h-3.5 w-3.5" />
-          </Button>
+          />
           <button
             type="button"
             className="w-10 rounded text-center text-[11px] tabular-nums text-muted-foreground hover:bg-accent hover:text-foreground"
@@ -579,14 +577,12 @@ export function SiteMap({
             {Math.round(zoom * 100)}%
           </button>
           <Button
+            icon={<ZoomIn />}
             variant="quiet"
-            className="w-7"
             aria-label="Zoom in"
             disabled={zoom >= ZOOM_MAX}
             onClick={() => setZoom((current) => clampZoom(current + ZOOM_STEP))}
-          >
-            <ZoomIn className="h-3.5 w-3.5" />
-          </Button>
+          />
         </div>
         <CopyButtons
           size="icon"

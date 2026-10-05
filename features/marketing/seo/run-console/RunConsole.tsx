@@ -280,6 +280,7 @@ function buildBrandColumns({
       width: 40,
       cell: (r) => (
         <Button
+          icon={<Play />} aria-label={`Run ${TOPIC_PLACEMENT_ENGINE.label} on ${r.site.name}`}
           variant="quiet"
           disabled={running}
           onClick={(event) => {
@@ -287,9 +288,7 @@ function buildBrandColumns({
             onRunOne(r.site.id);
           }}
           title={`Run ${TOPIC_PLACEMENT_ENGINE.label} on ${r.site.name}`}
-        >
-          <Play className="h-3 w-3" />
-        </Button>
+        />
       ),
     },
   ];
@@ -891,6 +890,7 @@ function TopicPlacementConsole({
                     : "All"}
                 </Button>
                 <Button
+                  icon={<RefreshCw />} aria-label="Re-read coverage"
                   variant="quiet"
                   title="Re-read coverage"
                   onClick={() =>
@@ -898,9 +898,7 @@ function TopicPlacementConsole({
                       queryKey: ["seo", "topics", "placement-status"],
                     })
                   }
-                >
-                  <RefreshCw className="h-3 w-3" />
-                </Button>
+                />
               </div>
 
               <div className="flex min-h-0 flex-1 flex-col">

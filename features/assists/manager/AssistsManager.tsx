@@ -201,25 +201,23 @@ export function AssistsManager() {
         filter: false,
         cell: (row) => (
           <Button
-            variant="quiet"
-            aria-label={
-              row.isStarred ? "Unflag this assist" : "Flag this assist"
-            }
-            className="w-7"
-            onClick={() => {
-              void setStarred(row.id, !row.isStarred).catch(() =>
-                toast.error("Could not update the flag — try again"),
-              );
-            }}
-          >
-            <Star
+            icon={<Star
               className={
                 row.isStarred
                   ? "h-3.5 w-3.5 fill-amber-400 text-amber-500"
                   : "h-3.5 w-3.5 text-muted-foreground"
               }
-            />
-          </Button>
+            />}
+            variant="quiet"
+            aria-label={
+              row.isStarred ? "Unflag this assist" : "Flag this assist"
+            }
+            onClick={() => {
+              void setStarred(row.id, !row.isStarred).catch(() =>
+                toast.error("Could not update the flag — try again"),
+              );
+            }}
+          />
         ),
       },
       {

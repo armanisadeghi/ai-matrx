@@ -179,7 +179,7 @@ export default function AnnouncementTable() {
                     Numbered pagination follows Arman's stable-footer instruction. */}
                 <MatrxDataTable
                     data={announcements}
-                    columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (announcement) => <div className="flex items-center gap-2"><Badge className={announcementTypeColors[announcement.announcement_type]}>{announcement.announcement_type}</Badge><Button variant="quiet" onClick={() => handleView(announcement)} title="View details"><Eye className="w-4 h-4" /></Button><Button variant="quiet" onClick={() => { setAnnouncementToDelete(announcement.id); setDeleteDialogOpen(true); }} title="Move announcement to Trash"><Trash2 className="w-4 h-4" /></Button></div> }]}
+                    columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (announcement) => <div className="flex items-center gap-2"><Badge className={announcementTypeColors[announcement.announcement_type]}>{announcement.announcement_type}</Badge><Button icon={<Eye />} aria-label="View details" variant="quiet" onClick={() => handleView(announcement)} title="View details" /><Button icon={<Trash2 />} aria-label="Move announcement to Trash" variant="quiet" onClick={() => { setAnnouncementToDelete(announcement.id); setDeleteDialogOpen(true); }} title="Move announcement to Trash" /></div> }]}
                     getRowId={(announcement) => announcement.id}
                     onRowOpen={handleEdit}
                     viewTabs={false}

@@ -226,13 +226,12 @@ export function ScraperKeywordSearchCompactControls({
         </Button>
         {flatResults.length > 0 && (
           <Button
+            icon={<X />} aria-label="Clear"
             type="button"
             variant="outline"
             onClick={handleClear}
             title="Clear"
-          >
-            <X className="w-3 h-3" />
-          </Button>
+          />
         )}
       </div>
       {statusMessage && isLoading && (

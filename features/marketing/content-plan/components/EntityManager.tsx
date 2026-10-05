@@ -953,13 +953,12 @@ export function EntityManager({
                     </span>
                   ) : null}
                   <Button
+                    icon={<X />}
                     variant="quiet"
-                    className="w-7 opacity-0 focus-visible:opacity-100 group-hover:opacity-100"
+                    className="opacity-0 focus-visible:opacity-100 group-hover:opacity-100"
                     aria-label={`Unlink ${party.display_name} from this site`}
                     onClick={() => setUnlinking(party)}
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </Button>
+                  />
                 </div>
               ))}
             </div>
@@ -1058,23 +1057,21 @@ export function EntityManager({
                     {entity.label}
                   </span>
                   <Button
+                    icon={<Pencil />}
                     variant="quiet"
-                    className="w-7 opacity-0 focus-visible:opacity-100 group-hover:opacity-100"
+                    className="opacity-0 focus-visible:opacity-100 group-hover:opacity-100"
                     aria-label="Edit entity"
                     onClick={() => {
                       openEditor(entity);
                     }}
-                  >
-                    <Pencil className="h-3.5 w-3.5" />
-                  </Button>
+                  />
                   <Button
+                    icon={<Trash2 />}
                     variant="quiet"
-                    className="w-7 opacity-0 focus-visible:opacity-100 group-hover:opacity-100"
+                    className="opacity-0 focus-visible:opacity-100 group-hover:opacity-100"
                     aria-label="Delete entity"
                     onClick={() => setDeleting(entity)}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
+                  />
                 </div>
               ))}
             </div>

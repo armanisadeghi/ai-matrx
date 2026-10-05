@@ -180,28 +180,24 @@ export default function ModelAuditDashboard() {
             </label>
             <div className="w-px h-4 bg-border" />
             <Button
+              icon={loading ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <RefreshCcw />
+              )} aria-label="Refresh models"
               variant="quiet"
-              className="w-7"
               onClick={loadModels}
               disabled={loading}
               title="Refresh models"
-            >
-              {loading ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <RefreshCcw className="h-3.5 w-3.5" />
-              )}
-            </Button>
+            />
             <Button
+              icon={<Settings2 />} aria-label="Configure audit rules"
               variant={activeTab === "settings" ? "primary" : "quiet"}
-              className="w-7"
               onClick={() =>
                 setActiveTab(activeTab === "settings" ? "overview" : "settings")
               }
               title="Configure audit rules"
-            >
-              <Settings2 className="h-3.5 w-3.5" />
-            </Button>
+            />
           </div>
         </div>
 

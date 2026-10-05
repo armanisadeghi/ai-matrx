@@ -509,7 +509,6 @@ export default function AgentAppsCategoriesAdminPage() {
                 <div className="flex flex-col gap-0.5">
                   <Button
                     variant="quiet"
-                    className="w-5"
                     onClick={(e) => {
                       e.stopPropagation();
                       void moveUp(c);
@@ -520,7 +519,6 @@ export default function AgentAppsCategoriesAdminPage() {
                   </Button>
                   <Button
                     variant="quiet"
-                    className="w-5"
                     onClick={(e) => {
                       e.stopPropagation();
                       void moveDown(c);

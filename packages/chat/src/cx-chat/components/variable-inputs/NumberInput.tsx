@@ -77,7 +77,6 @@ export function NumberInput({
           variant="outline"
           onClick={handleDecrement}
           disabled={!canDecrement}
-          className={compact ? "w-7" : "w-10"}
         >
           <Minus className={compact ? "w-3 h-3" : "w-4 h-4"} />
         </Button>
@@ -95,7 +94,6 @@ export function NumberInput({
           variant="outline"
           onClick={handleIncrement}
           disabled={!canIncrement}
-          className={compact ? "w-7" : "w-10"}
         >
           <Plus className={compact ? "w-3 h-3" : "w-4 h-4"} />
         </Button>

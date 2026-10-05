@@ -23,8 +23,14 @@ export function WatchButton({
 }) {
   return (
     <Button
+      icon={pending ? (
+        <Loader2 className="animate-spin" />
+      ) : watched ? (
+        <Eye />
+      ) : (
+        <EyeOff />
+      )}
       variant="quiet"
-      className="w-6"
       aria-label={watched ? `Stop watching this ${noun}` : `Watch this ${noun}`}
       title={
         watched
@@ -36,14 +42,6 @@ export function WatchButton({
         e.stopPropagation();
         onToggle();
       }}
-    >
-      {pending ? (
-        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-      ) : watched ? (
-        <Eye className="h-3.5 w-3.5" />
-      ) : (
-        <EyeOff className="h-3.5 w-3.5" />
-      )}
-    </Button>
+    />
   );
 }

@@ -298,14 +298,13 @@ function CanonicalFlashcardPlayer({ deck, style }: CanonicalPlayerProps) {
           </span>
         </div>
         <Button
+          icon={<X />}
           type="button"
           variant="outline"
-          className="w-11 shrink-0"
+          className="shrink-0"
           aria-label="Close demo player"
           onClick={() => setActionsOpen(false)}
-        >
-          <X className="h-5 w-5" />
-        </Button>
+        />
       </div>
 
       <button
@@ -517,14 +516,12 @@ function CanonicalFlashcardPlayer({ deck, style }: CanonicalPlayerProps) {
               </p>
             </div>
             <Button
+              icon={<X />}
               type="button"
               variant="quiet"
-              className="w-11"
               onClick={() => setJumpOpen(false)}
               aria-label="Close card filmstrip"
-            >
-              <X className="h-4 w-4" />
-            </Button>
+            />
           </div>
           <div className="flex gap-2 overflow-x-auto overscroll-contain pb-2 scrollbar-thin">
             {cards.map((item, cardIndex) => (

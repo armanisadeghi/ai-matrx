@@ -137,13 +137,11 @@ export function VariableDefaultsEditor({
           Variables
         </Label>
         <Button
+          icon={<Plus />} aria-label="Add variable"
           variant="quiet"
-          className="w-5"
           onClick={openAdd}
           title="Add variable"
-        >
-          <Plus className="w-3.5 h-3.5" />
-        </Button>
+        />
       </div>
 
       {variables.length === 0 && settingsError ? (

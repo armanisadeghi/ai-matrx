@@ -448,17 +448,16 @@ const TranscriptViewer = ({
                     </div>
                     
                     <Button
+                      icon={copiedSegmentId === segment.id ? (
+                        <CheckCheck className="text-green-500" />
+                      ) : (
+                        <Copy />
+                      )}
                       variant="quiet"
-                      className="w-7 opacity-100 transition-opacity sm:[@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100"
+                      className="opacity-100 transition-opacity sm:[@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100"
                       onClick={() => handleCopySegment(segment.text, segment.id)}
                       aria-label="Copy segment"
-                    >
-                      {copiedSegmentId === segment.id ? (
-                        <CheckCheck className="h-4 w-4 text-green-500" />
-                      ) : (
-                        <Copy className="h-4 w-4" />
-                      )}
-                    </Button>
+                    />
                   </div>
                   
                   {/* Line separator */}

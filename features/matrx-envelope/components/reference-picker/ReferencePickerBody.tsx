@@ -474,12 +474,11 @@ function StepHeader({
     <div className="flex shrink-0 flex-col gap-3">
       <div className="flex items-center gap-2">
         <Button
+          icon={<ArrowLeft />}
           variant="quiet"
           onClick={onBack}
           aria-label="Back to types"
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
+        />
         <type.Icon className="h-4 w-4 text-muted-foreground" />
         <span className="text-sm font-medium">{type.label}</span>
         {mode === "insert" && (

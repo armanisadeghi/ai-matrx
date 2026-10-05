@@ -248,13 +248,11 @@ export function MappingRow({
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
+              icon={<MoreHorizontal aria-hidden="true" />}
               variant="quiet"
-              className="w-7"
               disabled={busy}
               aria-label="More options for this folder"
-            >
-              <MoreHorizontal className="h-3.5 w-3.5" aria-hidden="true" />
-            </Button>
+            />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-64">
             <DropdownMenuLabel className="text-xs">Direction</DropdownMenuLabel>

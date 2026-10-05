@@ -363,13 +363,12 @@ export function AiVisibilityPanelsView({
             </Button>
           ) : null}
           <Button
+            icon={<RefreshCw className={cn("h-3.5 w-3.5", isLoading && "animate-spin")} />}
             variant="quiet"
             aria-label="Reload panels"
             onClick={() => void load()}
             disabled={isLoading}
-          >
-            <RefreshCw className={cn("h-3.5 w-3.5", isLoading && "animate-spin")} />
-          </Button>
+          />
         </div>
       </div>
 

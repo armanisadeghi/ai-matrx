@@ -53,13 +53,12 @@ const ConfigJSONViewer = ({
         }}
       >
         <Button
+          icon={copied ? <Check /> : <Copy />} aria-label="Copy to clipboard"
           variant="quiet"
           onClick={onCopy}
-          className="absolute top-0 right-0 w-6"
+          className="absolute top-0 right-0"
           title="Copy to clipboard"
-        >
-          {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-        </Button>
+        />
         <pre className="text-xs leading-tight whitespace-pre-wrap font-mono text-muted-foreground pr-6">
           {JSON.stringify(cleanedData, null, 2)}
         </pre>

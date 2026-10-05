@@ -332,6 +332,11 @@ export function DeadEndsConsole({
         const key = `${f.file}:${f.line}:${f.column}`;
         return (
           <Button
+            icon={copiedKey === key ? (
+              <Check />
+            ) : (
+              <Copy />
+            )}
             variant="quiet"
             title="Copy a paste-ready repair brief for an agent"
             aria-label={`Copy a repair brief for ${f.file}:${f.line}`}
@@ -339,13 +344,7 @@ export function DeadEndsConsole({
               e.stopPropagation();
               void copy(key, fixPromptForFinding(f), "Repair brief");
             }}
-          >
-            {copiedKey === key ? (
-              <Check className="h-3 w-3" />
-            ) : (
-              <Copy className="h-3 w-3" />
-            )}
-          </Button>
+          />
         );
       },
     },

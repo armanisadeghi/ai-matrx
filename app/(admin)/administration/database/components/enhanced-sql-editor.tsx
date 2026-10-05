@@ -379,12 +379,11 @@ export const EnhancedSQLEditor = ({
               </Badge>
             )}
             <Button
+              icon={<Copy />} aria-label="Copy query"
               onClick={() => copyToClipboard(sqlQuery)}
               variant="outline"
               title="Copy query"
-            >
-              <Copy className="h-4 w-4" />
-            </Button>
+            />
             <Button
               iconEnd={<Play />}
               variant="primary"
@@ -455,14 +454,12 @@ export const EnhancedSQLEditor = ({
                       />
                     </div>
                     <Button
+                      icon={<Trash2 />} aria-label="Remove"
                       onClick={() => removeReplacementPair(pair.id)}
                       variant="quiet"
                       disabled={replacementPairs.length === 1}
-                      className="w-9"
                       title="Remove"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    />
                   </div>
                 ))}
               </div>
@@ -512,16 +509,15 @@ export const EnhancedSQLEditor = ({
                               </Badge>
                             )}
                             <Button
+                              icon={<Copy />}
                               variant="quiet"
-                              className="w-6 opacity-100 transition-opacity sm:[@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100"
+                              className="opacity-100 transition-opacity sm:[@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 copyToClipboard(item.query);
                               }}
                               aria-label="Copy query"
-                            >
-                              <Copy className="h-3 w-3" />
-                            </Button>
+                            />
                           </div>
                         </div>
                         <div className="font-mono truncate">{item.query}</div>

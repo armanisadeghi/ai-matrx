@@ -203,13 +203,12 @@ export function PlanToolbar({
           — {bulkDeepen.failures[0]?.route}: {bulkDeepen.failures[0]?.error}
         </span>
         <Button
+          icon={<X />}
           variant="quiet"
-          className="w-5 shrink-0"
+          className="shrink-0"
           aria-label="Dismiss"
           onClick={onBulkDeepenDismiss}
-        >
-          <X className="h-3 w-3" />
-        </Button>
+        />
         <ErrorAlchemyMenu />
       </span>
     ) : run.status === "error" ? (
@@ -218,13 +217,12 @@ export function PlanToolbar({
           Plan generation failed: {run.error}
         </span>
         <Button
+          icon={<X />}
           variant="quiet"
-          className="w-5 shrink-0"
+          className="shrink-0"
           aria-label="Dismiss"
           onClick={onDismiss}
-        >
-          <X className="h-3 w-3" />
-        </Button>
+        />
         <ErrorAlchemyMenu error={run.error} />
       </span>
     ) : null;

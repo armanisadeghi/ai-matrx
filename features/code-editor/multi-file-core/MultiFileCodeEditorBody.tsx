@@ -121,13 +121,12 @@ export function MultiFileCodeEditorBody({
         <div className="flex items-center gap-2 min-w-0">
           {onToggleSidebar && (
             <Button
+              icon={<PanelLeftClose />} aria-label={sidebarVisible ? "Hide sidebar" : "Show sidebar"}
               variant="quiet"
               onClick={onToggleSidebar}
-              className="w-6 flex-shrink-0"
+              className="flex-shrink-0"
               title={sidebarVisible ? "Hide sidebar" : "Show sidebar"}
-            >
-              <PanelLeftClose className="h-3.5 w-3.5" />
-            </Button>
+            />
           )}
           {getLanguageIconNode(currentFile.language, false, currentFile.icon)}
           <span className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">

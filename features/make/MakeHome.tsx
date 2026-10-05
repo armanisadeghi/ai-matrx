@@ -368,9 +368,7 @@ export function MakeFlowSheet(props: MakeFlowSheetProps) {
   return (
     <>
       <div className="flex shrink-0 items-center gap-2">
-        <Button variant="quiet" className="w-8" onClick={onBack} aria-label="Back">
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
+        <Button icon={<ArrowLeft />} variant="quiet" onClick={onBack} aria-label="Back" />
         <KindIcon kind={tile.kind} className="h-4 w-4 text-muted-foreground" />
         <DialogTitle className="truncate text-base font-medium">
           {tile.asksForTable && !chosen

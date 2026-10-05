@@ -211,7 +211,6 @@ function RunLogCard({
                 </span>
                 <Button
                   variant="quiet"
-                  className="w-5"
                   onClick={() => onCopy(log.textOutput)}
                 >
                   <Copy className="w-3 h-3" />
@@ -229,7 +228,6 @@ function RunLogCard({
               </span>
               <Button
                 variant="quiet"
-                className="w-5"
                 onClick={() => onCopy(JSON.stringify(log.events, null, 2))}
               >
                 <Copy className="w-3 h-3" />
@@ -713,7 +711,6 @@ export default function AgentTestClient() {
                 )}
                 <Button
                   variant="quiet"
-                  className="w-5"
                   onClick={() => {
                     setLiveText("");
                     setLiveEvents([]);
@@ -724,7 +721,6 @@ export default function AgentTestClient() {
                 </Button>
                 <Button
                   variant="quiet"
-                  className="w-5"
                   onClick={() => copyToClipboard(liveText)}
                   disabled={!liveText}
                 >

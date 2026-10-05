@@ -313,7 +313,6 @@ function IncidentCard({
           <div className="flex items-center gap-1 flex-shrink-0">
             <Button
               variant="quiet"
-              className="w-7"
               onClick={onToggleExpanded}
             >
               {isExpanded ? (

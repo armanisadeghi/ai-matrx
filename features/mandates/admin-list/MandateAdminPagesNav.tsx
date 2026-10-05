@@ -86,9 +86,7 @@ export function MandateAdminPagesNav() {
       </div>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" className="w-8" aria-label="More mandate pages">
-            <MoreHorizontal className="h-4 w-4" />
-          </Button>
+          <Button icon={<MoreHorizontal />} variant="outline" aria-label="More mandate pages" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-52">
           <div className="lg:hidden">

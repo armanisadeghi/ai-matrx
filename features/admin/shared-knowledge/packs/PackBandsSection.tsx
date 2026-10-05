@@ -221,12 +221,8 @@ function AreaEditor({
 function RowActions({ onEdit, onDelete, label }: { onEdit: () => void; onDelete: () => void; label: string }) {
   return (
     <div className="flex shrink-0 items-center">
-      <Button variant="quiet" className="opacity-100 transition-opacity [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100" onClick={onEdit} aria-label={`Edit ${label}`}>
-        <Pencil className="size-3.5" />
-      </Button>
-      <Button variant="quiet" className="opacity-100 transition-opacity [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100" onClick={onDelete} aria-label={`Remove ${label}`}>
-        <Trash2 className="size-3.5" />
-      </Button>
+      <Button icon={<Pencil />} variant="quiet" className="opacity-100 transition-opacity [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100" onClick={onEdit} aria-label={`Edit ${label}`} />
+      <Button icon={<Trash2 />} variant="quiet" className="opacity-100 transition-opacity [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100" onClick={onDelete} aria-label={`Remove ${label}`} />
     </div>
   );
 }

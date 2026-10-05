@@ -729,21 +729,17 @@ function BindingRow({
           Shortcut
         </Button>
         <Button
+          icon={<Pencil />}
           variant="quiet"
           onClick={onEdit}
-          className="w-6"
           aria-label="Edit binding"
-        >
-          <Pencil className="h-3 w-3" />
-        </Button>
+        />
         <Button
+          icon={<Trash2 />}
           variant="quiet"
           onClick={onDelete}
-          className="w-6"
           aria-label="Remove binding"
-        >
-          <Trash2 className="h-3 w-3" />
-        </Button>
+        />
       </div>
     </div>
   );

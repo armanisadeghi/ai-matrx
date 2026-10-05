@@ -977,13 +977,12 @@ export function CaptureStudio({
                 )}
               </Button>
               <Button
+                icon={<Trash2 />}
                 variant="quiet"
                 disabled={recovering !== null}
                 onClick={() => void handleDiscardRecovery(entry.manifest.capture_id)}
                 aria-label="Discard recovered recording"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </Button>
+              />
             </div>
           ))}
         </div>

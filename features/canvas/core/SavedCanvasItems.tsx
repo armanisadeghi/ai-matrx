@@ -193,14 +193,13 @@ export function SavedCanvasItems() {
 
           {/* Refresh */}
           <Button
+            icon={<RefreshCw className={cn("w-4 h-4", isLoading && "animate-spin")} />}
             variant="outline"
             onClick={() => load()}
             disabled={isLoading}
             aria-label="Refresh"
             className="shrink-0"
-          >
-            <RefreshCw className={cn("w-4 h-4", isLoading && "animate-spin")} />
-          </Button>
+          />
         </div>
 
         {/* Stats */}

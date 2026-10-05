@@ -324,12 +324,8 @@ export function PackTopicsSection({ detail, onChanged }: { detail: AdminPackDeta
                     <span className="text-sm font-semibold tabular-nums text-foreground">{t.weight ?? "—"}</span>
                     {canAuthor ? (
                       <>
-                        <Button variant="quiet" className="opacity-100 transition-opacity [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100" onClick={() => setEditingId(t.item_id)} aria-label={`Edit ${t.name}`}>
-                          <Pencil className="size-3.5" />
-                        </Button>
-                        <Button variant="quiet" className="opacity-100 transition-opacity [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100" onClick={() => setDeleteTarget(t)} aria-label={`Remove ${t.name}`}>
-                          <Trash2 className="size-3.5" />
-                        </Button>
+                        <Button icon={<Pencil />} variant="quiet" className="opacity-100 transition-opacity [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100" onClick={() => setEditingId(t.item_id)} aria-label={`Edit ${t.name}`} />
+                        <Button icon={<Trash2 />} variant="quiet" className="opacity-100 transition-opacity [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100" onClick={() => setDeleteTarget(t)} aria-label={`Remove ${t.name}`} />
                       </>
                     ) : null}
                   </div>

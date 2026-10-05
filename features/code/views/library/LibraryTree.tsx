@@ -286,18 +286,17 @@ const MyFilesRoot: React.FC<MyFilesRootProps> = ({
           <FolderHeart size={14} className="shrink-0 text-emerald-500" />
           <span className="min-w-0 flex-1 truncate">My Files</span>
           <Button
+            icon={<MoreHorizontal />}
             type="button"
             variant="quiet"
-            className="w-11 shrink-0 lg:hidden"
+            className="shrink-0 lg:hidden"
             aria-label="Actions for My Files"
             aria-haspopup="menu"
             onClick={(event) => {
               event.stopPropagation();
               openContextMenuForElement(event.currentTarget.parentElement);
             }}
-          >
-            <MoreHorizontal className="h-4 w-4" />
-          </Button>
+          />
         </div>
       </NonEditableContextMenu>
 

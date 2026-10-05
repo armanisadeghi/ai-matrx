@@ -428,23 +428,19 @@ export default function AdminSystemAppsListPage() {
                         </Button>
                       )}
                       <Button
+                        icon={<ArrowUpRight />} aria-label="Open editor"
                         variant="quiet"
-                        className="w-7"
                         disabled={isPending}
                         onClick={() => handleOpenEditor(app.id)}
                         title="Open editor"
-                      >
-                        <ArrowUpRight className="h-3.5 w-3.5" />
-                      </Button>
+                      />
                       <Button
+                        icon={<Trash2 />} aria-label="Move system app to Trash"
                         variant="quiet"
-                        className="w-7"
                         disabled={busyIds.has(app.id) || deleting}
                         onClick={() => setDeleteTarget(app)}
                         title="Move system app to Trash"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
+                      />
                     </div>
                   ) }]}
                   getRowId={(app) => app.id}

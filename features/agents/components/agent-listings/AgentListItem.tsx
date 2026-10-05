@@ -254,7 +254,6 @@ export function AgentListItem({
             <DropdownMenuTrigger asChild>
               <Button
                 variant="quiet"
-                className="w-7"
                 disabled={isDisabled}
               >
                 <MoreVertical className="h-4 w-4" />

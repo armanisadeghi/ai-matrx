@@ -337,18 +337,16 @@ function TaskEditorInner({
                 </Button>
               ) : null}
               <Button
+                icon={isDeleting ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <Trash2 />
+                )} aria-label="Delete task"
                 variant="quiet"
                 onClick={handleDelete}
                 disabled={isDeleting || isOperating}
-                className="w-7"
                 title="Delete task"
-              >
-                {isDeleting ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <Trash2 className="w-3.5 h-3.5" />
-                )}
-              </Button>
+              />
             </div>
           </div>
         )}

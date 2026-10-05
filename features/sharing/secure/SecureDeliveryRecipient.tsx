@@ -276,15 +276,15 @@ function FieldRow({ label, value, secret }: { label: string; value: string; secr
         <div className="flex items-center gap-1">
           {secret ? (
             <Button
+              icon={shown ? <EyeOff /> : <Eye />}
               type="submit"
               variant="quiet"
               onClick={() => setShown((s) => !s)}
               aria-label={shown ? `Hide ${label}` : `Show ${label}`}
-            >
-              {shown ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </Button>
+            />
           ) : null}
           <Button
+            icon={copied ? <Check /> : <Copy />}
             type="submit"
             variant="quiet"
             aria-label={`Copy ${label}`}
@@ -293,9 +293,7 @@ function FieldRow({ label, value, secret }: { label: string; value: string; secr
               setCopied(true);
               setTimeout(() => setCopied(false), 1500);
             }}
-          >
-            {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-          </Button>
+          />
         </div>
       </div>
       <div className={`mt-1 break-words font-mono text-sm ${multiline ? "whitespace-pre-wrap" : ""}`}>

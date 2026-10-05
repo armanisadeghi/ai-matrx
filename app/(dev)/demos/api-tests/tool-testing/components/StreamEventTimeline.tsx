@@ -171,7 +171,7 @@ function TimelineEntry({
             <div className="ml-7 mr-2 mb-1 rounded border border-border bg-muted/30 p-2 relative">
               <Button
                 variant="quiet"
-                className="absolute top-1 right-1 w-6"
+                className="absolute top-1 right-1"
                 onClick={handleCopy}
               >
                 {copied ? (

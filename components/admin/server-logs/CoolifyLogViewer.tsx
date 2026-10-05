@@ -1263,19 +1263,17 @@ export default function CoolifyLogViewer({
           </span>
 
           <Button
+            icon={<ChevronUp />} aria-label="Scroll to top"
             variant="quiet"
             onClick={scrollToTop}
             title="Scroll to top"
-          >
-            <ChevronUp className="h-3.5 w-3.5" />
-          </Button>
+          />
           <Button
+            icon={<ChevronDown />} aria-label="Scroll to bottom"
             variant="quiet"
             onClick={scrollToBottom}
             title="Scroll to bottom"
-          >
-            <ChevronDown className="h-3.5 w-3.5" />
-          </Button>
+          />
 
           {/* Range toggle */}
           <Button

@@ -82,17 +82,17 @@ export function ToolSelectorPanel({
         <Popover>
           <PopoverTrigger asChild>
             <Button
+              icon={<Plus />} aria-label={modelSupportsTools
+                  ? "Add tool"
+                  : "This model does not support tools"}
               variant="quiet"
-              className="w-5"
               disabled={!modelSupportsTools}
               title={
                 modelSupportsTools
                   ? "Add tool"
                   : "This model does not support tools"
               }
-            >
-              <Plus className="w-3.5 h-3.5" />
-            </Button>
+            />
           </PopoverTrigger>
           <PopoverContent
             sizing="content"

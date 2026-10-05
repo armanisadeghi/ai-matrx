@@ -150,14 +150,13 @@ export function AudioPlayerButton({
 
       {(isPlaying || isPaused) && (
         <Button
+          icon={<VolumeX />} aria-label="Stop"
           type="button"
           variant="quiet"
           onClick={handleStop}
-          className={cn("w-7", className)}
+          className={className}
           title="Stop"
-        >
-          <VolumeX className="h-3.5 w-3.5" />
-        </Button>
+        />
       )}
     </div>
   );

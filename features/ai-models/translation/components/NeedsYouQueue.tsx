@@ -196,27 +196,23 @@ export default function NeedsYouQueue({
             </Button>
           ) : null}
           <Button
+            icon={<Pencil />}
             type="button"
             variant="quiet"
-            className="w-7"
             disabled={busy}
             aria-label={r.cell ? "Change" : "Write rule"}
             title={r.cell ? "Change" : "Write rule"}
             onClick={() => onOpen(r)}
-          >
-            <Pencil className="h-3.5 w-3.5" />
-          </Button>
+          />
           <Button
+            icon={<SkipForward />}
             type="button"
             variant="quiet"
-            className="w-7"
             disabled={busy}
             aria-label="Skip"
             title="Skip"
             onClick={() => onSkip(r)}
-          >
-            <SkipForward className="h-3.5 w-3.5" />
-          </Button>
+          />
         </div>
       ),
     },

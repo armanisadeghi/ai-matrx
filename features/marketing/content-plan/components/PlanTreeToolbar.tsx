@@ -277,12 +277,11 @@ export function PlanTreeToolbar({
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
+              icon={<ArrowUpDown />}
               variant={sortMode !== "tree" ? "outline" : "quiet"}
               aria-label={`Sort: ${sortLabel}`}
               title={`Sort: ${sortLabel}`}
-            >
-              <ArrowUpDown className="h-3.5 w-3.5" />
-            </Button>
+            />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start">
             {TREE_SORT_MODES.map((mode) => (
@@ -344,23 +343,21 @@ export function PlanTreeToolbar({
         {trailing}
 
         <Button
+          icon={<ChevronsUpDown />}
           variant="quiet"
-          className="w-6 shrink-0"
+          className="shrink-0"
           aria-label="Expand all"
           title="Expand all"
           onClick={onExpandAll}
-        >
-          <ChevronsUpDown className="h-3.5 w-3.5" />
-        </Button>
+        />
         <Button
+          icon={<ChevronsDownUp />}
           variant="quiet"
-          className="w-6 shrink-0"
+          className="shrink-0"
           aria-label="Collapse all"
           title="Collapse all — Home and its first-tier pages stay visible"
           onClick={onCollapseAll}
-        >
-          <ChevronsDownUp className="h-3.5 w-3.5" />
-        </Button>
+        />
       </div>
     </div>
   );

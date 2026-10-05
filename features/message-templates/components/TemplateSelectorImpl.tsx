@@ -50,7 +50,6 @@ export function TemplateSelectorImpl({
         <PopoverTrigger asChild>
           <Button
             variant="quiet"
-            className="w-7"
             onMouseDown={(e) => {
               e.preventDefault();
               e.stopPropagation();

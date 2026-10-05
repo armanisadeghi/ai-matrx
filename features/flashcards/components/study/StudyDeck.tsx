@@ -828,14 +828,13 @@ export function StudyDeck(props: StudyDeckProps) {
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
+            icon={<SlidersHorizontal />}
             type="button"
             variant="quiet"
             className={STUDY_TOOL_BUTTON}
             title="Study options"
             aria-label="Study options"
-          >
-            <SlidersHorizontal className="h-3.5 w-3.5" />
-          </Button>
+          />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-60">
           <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">

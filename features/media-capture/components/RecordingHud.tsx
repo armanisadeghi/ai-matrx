@@ -190,12 +190,11 @@ export function RecordingHud({
           Stop
         </Button>
         <Button
+          icon={<X />}
           variant="outline"
           onClick={onCancel}
           aria-label="Discard recording"
-        >
-          <X className="h-4 w-4" />
-        </Button>
+        />
       </div>
     </div>
   );

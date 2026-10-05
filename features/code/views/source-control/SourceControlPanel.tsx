@@ -1012,6 +1012,7 @@ function RepositoryPanel({
                   {status.staged.length ? ` (${status.staged.length})` : ""}
                 </Button>
                 <Button
+                  icon={<ArrowUpFromLine />}
                   variant="outline"
                   aria-label="Commit and push"
                   title="Commit and push"
@@ -1023,9 +1024,7 @@ function RepositoryPanel({
                     !repo.remotes.length
                   }
                   onClick={() => void commit(true)}
-                >
-                  <ArrowUpFromLine className="h-3.5 w-3.5" />
-                </Button>
+                />
               </div>
             </div>
             {status.conflicted.length > 0 && (

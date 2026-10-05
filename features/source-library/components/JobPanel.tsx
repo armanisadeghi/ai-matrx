@@ -478,13 +478,12 @@ export function JobPanel({
                 </div>
                 {onDismiss && (
                     <Button
+                        icon={<X aria-hidden />}
                         variant="quiet"
-                        className="w-9 shrink-0"
+                        className="shrink-0"
                         onClick={onDismiss}
                         aria-label="Close this job panel"
-                    >
-                        <X className="h-4 w-4" aria-hidden />
-                    </Button>
+                    />
                 )}
             </div>
         </div>

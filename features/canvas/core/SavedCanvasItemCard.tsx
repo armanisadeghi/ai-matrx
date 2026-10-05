@@ -171,64 +171,54 @@ export function SavedCanvasItemCard({
 
         <div className={SAVED_CARD_LAYOUT.inlineActions} data-saved-card-inline-actions="">
           <Button
-            variant="quiet"
-            onClick={onToggleFavorite}
-            aria-label={favoriteLabel}
-            title={favoriteLabel}
-            className="w-7"
-          >
-            <Star
+            icon={<Star
               className={cn(
                 "h-3.5 w-3.5",
                 item.is_favorited ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground",
               )}
-            />
-          </Button>
+            />}
+            variant="quiet"
+            onClick={onToggleFavorite}
+            aria-label={favoriteLabel}
+            title={favoriteLabel}
+          />
           <Button
+            icon={<Share2 className="text-muted-foreground" />}
             variant="quiet"
             onClick={onShare}
             aria-label="Share"
             title="Share"
-            className="w-7"
-          >
-            <Share2 className="h-3.5 w-3.5 text-muted-foreground" />
-          </Button>
+          />
           <Button
-            variant="quiet"
-            onClick={onToggleArchive}
-            aria-label={archiveLabel}
-            title={archiveLabel}
-            className="w-7"
-          >
-            <ArchiveIcon
+            icon={<ArchiveIcon
               className={cn(
                 "h-3.5 w-3.5",
                 item.is_archived ? "text-orange-500 dark:text-orange-400" : "text-muted-foreground",
               )}
-            />
-          </Button>
+            />}
+            variant="quiet"
+            onClick={onToggleArchive}
+            aria-label={archiveLabel}
+            title={archiveLabel}
+          />
           <Button
+            icon={<Trash2 />}
             variant="quiet"
             onClick={onDelete}
             aria-label="Delete"
             title="Delete"
-            className="w-7"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
+          />
         </div>
 
         <div className={SAVED_CARD_LAYOUT.overflowMenu} data-saved-card-overflow="">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
+                icon={<MoreHorizontal className="text-muted-foreground" />}
                 variant="quiet"
                 aria-label="More actions"
                 title="More actions"
-                className="w-7"
-              >
-                <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
-              </Button>
+              />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onSelect={onToggleFavorite}>

@@ -149,13 +149,12 @@ export function ImportShortcutsBrowserModal({
           />
         </div>
         <Button
+          icon={<RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />} aria-label="Refresh"
           variant="outline"
           onClick={() => void loadRows()}
           disabled={loading || !isAdmin}
           title="Refresh"
-        >
-          <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-        </Button>
+        />
       </div>
 
       <div className="flex flex-wrap items-center gap-1.5">

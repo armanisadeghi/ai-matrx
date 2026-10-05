@@ -209,13 +209,12 @@ export function SurfaceDetailPanel({
           </div>
         </div>
         <Button
+          icon={<X />}
           variant="quiet"
           onClick={onClose}
-          className="w-7 shrink-0"
+          className="shrink-0"
           aria-label="Close detail panel"
-        >
-          <X className="h-4 w-4" />
-        </Button>
+        />
       </div>
 
       {/* Tabs */}
@@ -267,16 +266,15 @@ export function SurfaceDetailPanel({
                   )}
                 </p>
                 <Button
+                  icon={<Edit2 />}
                   variant="quiet"
                   onClick={() => {
                     setDesc(surface.description ?? "");
                     setEditingDesc(true);
                   }}
-                  className="w-6 shrink-0"
+                  className="shrink-0"
                   aria-label="Edit description"
-                >
-                  <Edit2 className="h-3 w-3" />
-                </Button>
+                />
               </div>
             ) : (
               <div className="flex items-start gap-1.5">
@@ -293,7 +291,6 @@ export function SurfaceDetailPanel({
                     variant="primary"
                     onClick={() => void onSaveDesc()}
                     disabled={busy}
-                    className="w-6"
                   >
                     {busy ? (
                       <Loader2 className="h-3 w-3 animate-spin" />
@@ -305,7 +302,6 @@ export function SurfaceDetailPanel({
                     variant="quiet"
                     onClick={() => setEditingDesc(false)}
                     disabled={busy}
-                    className="w-6"
                   >
                     <X className="h-3 w-3" />
                   </Button>

@@ -618,18 +618,17 @@ export const FileTreeNode: React.FC<FileTreeNodeProps> = ({
           )}
           {!renaming && (
             <Button
+              icon={<MoreHorizontal />}
               type="button"
               variant="quiet"
-              className="w-11 shrink-0 lg:hidden"
+              className="shrink-0 lg:hidden"
               aria-label={`Actions for ${node.name}`}
               aria-haspopup="menu"
               onClick={(e) => {
                 e.stopPropagation();
                 openContextMenuForElement(rowRef.current);
               }}
-            >
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
+            />
           )}
         </div>
       </NonEditableContextMenu>

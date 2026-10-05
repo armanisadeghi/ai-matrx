@@ -277,27 +277,23 @@ export function OrgPrivacyTab({ organizationId, canEdit }: OrgPrivacyTabProps) {
                     autoFocus
                   />
                   <Button
+                    icon={pref.saving ? (
+                      <Loader2 className="animate-spin" />
+                    ) : (
+                      <Check />
+                    )}
                     variant="quiet"
                     onClick={handleSaveBudget}
                     disabled={pref.saving}
                     aria-label="Save budget"
-                    className="w-7"
-                  >
-                    {pref.saving ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <Check className="h-3.5 w-3.5" />
-                    )}
-                  </Button>
+                  />
                   <Button
+                    icon={<X />}
                     variant="quiet"
                     onClick={handleCancelEditingBudget}
                     disabled={pref.saving}
                     aria-label="Cancel"
-                    className="w-7"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </Button>
+                  />
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
@@ -306,14 +302,12 @@ export function OrgPrivacyTab({ organizationId, canEdit }: OrgPrivacyTabProps) {
                   </span>
                   {canEdit && (
                     <Button
+                      icon={<Pencil />}
                       ref={editBudgetButtonRef}
                       variant="quiet"
                       onClick={handleStartEditingBudget}
                       aria-label="Edit budget"
-                      className="w-7"
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
+                    />
                   )}
                 </div>
               )}

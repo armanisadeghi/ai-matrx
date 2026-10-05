@@ -328,31 +328,25 @@ export default function ShellPage() {
                       </span>
                       <div className="flex items-center gap-1 shrink-0">
                         <Button
+                          icon={<RefreshCw />} aria-label="Read latest output"
                           variant="quiet"
-                          className="w-6"
                           onClick={() => refreshShell(shell)}
                           title="Read latest output"
-                        >
-                          <RefreshCw className="w-3 h-3" />
-                        </Button>
+                        />
                         {shell.status === "running" && (
                           <Button
+                            icon={<Square />} aria-label="Stop process"
                             variant="quiet"
-                            className="w-6"
                             onClick={() => stopShell(shell)}
                             title="Stop process"
-                          >
-                            <Square className="w-3 h-3" />
-                          </Button>
+                          />
                         )}
                         <Button
+                          icon={<Trash2 />} aria-label="Remove"
                           variant="quiet"
-                          className="w-6"
                           onClick={() => removeShell(shell.id)}
                           title="Remove"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </Button>
+                        />
                       </div>
                     </div>
                     <div className="text-[10px] text-muted-foreground px-3 py-1 border-b bg-muted/20">

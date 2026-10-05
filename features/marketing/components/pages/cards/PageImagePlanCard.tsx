@@ -434,12 +434,11 @@ export function PageImagePlanCard({ page }: { page: MarketingPage }) {
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button
+                              icon={<ChevronDown />}
                               variant="outline"
                               disabled={generating}
                               aria-label="More generation options"
-                            >
-                              <ChevronDown className="h-3.5 w-3.5" />
-                            </Button>
+                            />
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="start">
                             <DropdownMenuItem

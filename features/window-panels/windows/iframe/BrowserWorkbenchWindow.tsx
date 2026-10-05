@@ -331,13 +331,12 @@ function BrowserWorkbenchWindowInner({
           Bookmarks
         </span>
         <Button
+          icon={<Plus />} aria-label="Save active tab to your bookmarks"
           type="button"
           variant="quiet"
           onClick={bookmarkActive}
           title="Save active tab to your bookmarks"
-        >
-          <Plus className="h-3.5 w-3.5" />
-        </Button>
+        />
       </div>
       <ScrollArea className="min-h-0 flex-1">
         {allBookmarks.length === 0 ? (
@@ -435,17 +434,16 @@ function BrowserWorkbenchWindowInner({
                 {t.label}
               </button>
               <Button
+                icon={<X />}
                 type="button"
                 variant="quiet"
-                className="w-7 shrink-0"
+                className="shrink-0"
                 onClick={(e) => {
                   e.stopPropagation();
                   closeTab(t.id);
                 }}
                 aria-label={`Close ${t.label}`}
-              >
-                <X className="h-3 w-3" />
-              </Button>
+              />
             </div>
           ))}
         </div>

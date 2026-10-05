@@ -330,13 +330,12 @@ export function ScopesList({
           {canManage && (
             <div className="flex items-center gap-2 shrink-0">
               <Button
+                icon={<Settings2 />}
                 variant="quiet"
                 onClick={() => setEditingType(true)}
                 title="Quick edit"
                 aria-label={`Quick edit ${scopeType.label_singular} settings`}
-              >
-                <Settings2 className="h-3.5 w-3.5" />
-              </Button>
+              />
             </div>
           )}
         </div>
@@ -766,24 +765,22 @@ function ContextItemRow({
       {canManage && (
         <div className="order-3 flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
           <Button
+            icon={<Pencil />}
             variant="quiet"
             onClick={onEdit}
             aria-label={`Edit ${item.display_name}`}
-          >
-            <Pencil className="h-3.5 w-3.5" />
-          </Button>
+          />
           <Button
+            icon={deleting ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Trash2 />
+            )}
             variant="quiet"
             onClick={onDelete}
             disabled={deleting}
             aria-label={`Delete ${item.display_name}`}
-          >
-            {deleting ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Trash2 className="h-3.5 w-3.5" />
-            )}
-          </Button>
+          />
         </div>
       )}
       {/* Visually left, but last in DOM so the primary link/edit actions come

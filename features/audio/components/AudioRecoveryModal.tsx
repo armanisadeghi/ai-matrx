@@ -211,13 +211,11 @@ function RecoveryItem({ item, onDismiss, onClose }: RecoveryItemProps) {
           </span>
         </div>
         <Button
+          icon={<Trash2 />} aria-label="Delete this recording"
           variant="quiet"
           onClick={() => onDismiss(item.id)}
-          className="w-7"
           title="Delete this recording"
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-        </Button>
+        />
       </div>
 
       {/* Empty state — recording was cut off before any data was captured */}

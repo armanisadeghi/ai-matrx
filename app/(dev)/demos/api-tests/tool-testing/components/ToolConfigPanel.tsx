@@ -182,12 +182,11 @@ export function ToolConfigPanel({
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
+                icon={<RotateCcw />} aria-label="Reset to defaults"
                 onClick={onReset}
                 variant="outline"
                 disabled={isRunning}
-              >
-                <RotateCcw className="h-3.5 w-3.5" />
-              </Button>
+              />
             </TooltipTrigger>
             <TooltipContent className="text-xs">Reset to defaults</TooltipContent>
           </Tooltip>

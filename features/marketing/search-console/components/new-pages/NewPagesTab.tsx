@@ -326,13 +326,11 @@ export function NewPagesTab({
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
+              icon={<MoreHorizontal />}
               variant="quiet"
-              className="w-6"
               aria-label={`Actions for ${row.url}`}
               onClick={(e) => e.stopPropagation()}
-            >
-              <MoreHorizontal className="h-3.5 w-3.5" />
-            </Button>
+            />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
             <DropdownMenuItem onSelect={() => openQueriesPanel(row)}>

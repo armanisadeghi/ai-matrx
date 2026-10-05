@@ -66,12 +66,10 @@ const PositionControl: React.FC<PositionControlProps> = ({
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
+              icon={<GripVertical className="text-muted-foreground" />}
               variant="quiet"
-              className="w-8"
               aria-label="Change panel position"
-            >
-              <GripVertical className="h-3 w-3 text-muted-foreground" />
-            </Button>
+            />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="z-[200]" sideOffset={8}>
             {(Object.keys(POSITION_MENU_ICONS) as PanelPosition[]).map(
@@ -395,21 +393,19 @@ const MatrxDynamicPanel: React.FC<MatrxDynamicPanelProps> = ({
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
+                        icon={isFullScreen ? (
+                          <Minimize2 />
+                        ) : (
+                          <Maximize2 />
+                        )}
                         variant="quiet"
                         onClick={handleFullScreenToggle}
-                        className="w-8"
                         aria-label={
                           isFullScreen
                             ? "Exit panel full screen"
                             : "Enter panel full screen"
                         }
-                      >
-                        {isFullScreen ? (
-                          <Minimize2 className="h-3 w-3" />
-                        ) : (
-                          <Maximize2 className="h-3 w-3" />
-                        )}
-                      </Button>
+                      />
                     </TooltipTrigger>
                     <TooltipContent>
                       {isFullScreen ? "Exit full screen" : "Enter full screen"}
@@ -420,13 +416,11 @@ const MatrxDynamicPanel: React.FC<MatrxDynamicPanelProps> = ({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
+                    icon={<ChevronIcon />}
                     variant="quiet"
                     onClick={handleToggle}
-                    className="w-8"
                     aria-label="Collapse panel"
-                  >
-                    <ChevronIcon className="h-3 w-3" />
-                  </Button>
+                  />
                 </TooltipTrigger>
                 <TooltipContent>Collapse panel</TooltipContent>
               </Tooltip>

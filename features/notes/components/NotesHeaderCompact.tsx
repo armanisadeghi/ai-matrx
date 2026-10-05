@@ -36,14 +36,12 @@ export function NotesHeaderCompact({
             <TooltipProvider>
                 <Tooltip>
                     <TooltipTrigger asChild>
-                        <Button 
-                            variant="quiet" 
-                            className="w-6"
+                        <Button
+                            icon={<Plus />} aria-label="New Note" 
+                            variant="quiet"
                             onClick={onCreateNote}
                             title="New Note"
-                        >
-                            <Plus className="h-3.5 w-3.5" />
-                        </Button>
+                        />
                     </TooltipTrigger>
                     <TooltipContent>New Note</TooltipContent>
                 </Tooltip>
@@ -53,14 +51,12 @@ export function NotesHeaderCompact({
             <TooltipProvider>
                 <Tooltip>
                     <TooltipTrigger asChild>
-                        <Button 
-                            variant="quiet" 
-                            className="w-6"
+                        <Button
+                            icon={<FolderPlus />} aria-label="New Folder" 
+                            variant="quiet"
                             onClick={onCreateFolder}
                             title="New Folder"
-                        >
-                            <FolderPlus className="h-3.5 w-3.5" />
-                        </Button>
+                        />
                     </TooltipTrigger>
                     <TooltipContent>New Folder</TooltipContent>
                 </Tooltip>
@@ -72,17 +68,15 @@ export function NotesHeaderCompact({
                     <DropdownMenu>
                         <TooltipTrigger asChild>
                             <DropdownMenuTrigger asChild>
-                                <Button 
-                                    variant="quiet" 
-                                    className="w-6"
-                                    title="Sort Options"
-                                >
-                                    {sortConfig.order === 'asc' ? (
-                                        <SortAsc className="h-3.5 w-3.5" />
+                                <Button
+                                    icon={sortConfig.order === 'asc' ? (
+                                        <SortAsc />
                                     ) : (
-                                        <SortDesc className="h-3.5 w-3.5" />
-                                    )}
-                                </Button>
+                                        <SortDesc />
+                                    )} aria-label="Sort Options" 
+                                    variant="quiet"
+                                    title="Sort Options"
+                                />
                             </DropdownMenuTrigger>
                         </TooltipTrigger>
                         <TooltipContent>Sort Options</TooltipContent>

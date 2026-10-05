@@ -726,12 +726,10 @@ function HtmlPageActions({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
+          icon={<MoreHorizontal />}
           variant="quiet"
-          className="w-7"
           aria-label={`Actions for ${page.meta_title || "Untitled"}`}
-        >
-          <MoreHorizontal className="h-4 w-4" />
-        </Button>
+        />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuItem asChild>

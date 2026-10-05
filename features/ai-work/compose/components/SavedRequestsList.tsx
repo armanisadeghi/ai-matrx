@@ -155,13 +155,12 @@ export function SavedRequestsList() {
                 <Link href={`/work/new?request=${request.id}`}>Open</Link>
               </Button>
               <Button
+                icon={<Trash2 />}
                 type="button"
                 variant="quiet"
                 onClick={() => setPendingDelete(request)}
                 aria-label={`Delete ${request.label}`}
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </Button>
+              />
             </li>
           ))}
         </ul>

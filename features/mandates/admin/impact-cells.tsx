@@ -584,14 +584,13 @@ export function AdvanceResultsCard({
           </Button>
         ) : null}
         <Button
+          icon={<X />}
           variant="quiet"
           className={`h-7 w-7 p-0 ${latest.action === "advance" && stillRevertable(latest).length > 0 ? "" : "ml-auto"}`}
           aria-label="Dismiss batch results"
           title="Hide results; they stay recorded"
           onClick={onDismiss}
-        >
-          <X className="h-3.5 w-3.5" />
-        </Button>
+        />
       </div>
       <ul className="max-h-64 space-y-1 overflow-y-auto">
         {(latest.results ?? []).map((row) => {

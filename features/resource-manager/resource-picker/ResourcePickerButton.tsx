@@ -52,14 +52,12 @@ export function ResourcePickerButton({
 
   const trigger = (
     <Button
+      icon={<Database />} aria-label="Add resource"
       variant="quiet"
-      className="w-7"
       tabIndex={-1}
       title="Add resource"
       onClick={useWindowMode ? () => setIsOpen(true) : undefined}
-    >
-      <Database className="w-3.5 h-3.5" />
-    </Button>
+    />
   );
 
   if (useWindowMode) {

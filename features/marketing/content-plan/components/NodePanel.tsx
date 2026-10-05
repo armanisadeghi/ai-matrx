@@ -857,22 +857,18 @@ export function NodePanel({
             {update.isPending ? "Saving…" : "Save"}
           </Button>
           <Button
+            icon={<Trash2 />}
             variant="quiet"
-            className="w-7"
             aria-label="Delete node"
             onClick={() => setConfirmDelete(true)}
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
+          />
           {onClose ? (
             <Button
+              icon={<X />}
               variant="quiet"
-              className="w-7"
               aria-label="Close page detail"
               onClick={onClose}
-            >
-              <X className="h-3.5 w-3.5" />
-            </Button>
+            />
           ) : null}
         </div>
 

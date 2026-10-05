@@ -200,7 +200,6 @@ export default function ModelPricingEditor({
                 </div>
                 <Button
                   variant="quiet"
-                  className="w-6"
                   onClick={() => removeTier(i)}
                 >
                   <Trash2 className="h-3.5 w-3.5" />

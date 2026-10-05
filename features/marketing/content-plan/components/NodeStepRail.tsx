@@ -601,6 +601,13 @@ export function NodeStepRail({
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
+                      icon={busyHere ? (
+                        <Loader2 className="animate-spin" aria-hidden />
+                      ) : opens ? (
+                        <RotateCw aria-hidden />
+                      ) : (
+                        <Play aria-hidden />
+                      )}
                       type="button"
                       variant="quiet"
                       // A truly `disabled` button swallows hover, so the reason
@@ -613,15 +620,7 @@ export function NodeStepRail({
                       }
                       aria-label={`${RUNNABLE_STEP_ACTIONS[runnable].action} for this page`}
                       className={STEP_RUN_BUTTON_CLASS}
-                    >
-                      {busyHere ? (
-                        <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
-                      ) : opens ? (
-                        <RotateCw className="h-3 w-3" aria-hidden />
-                      ) : (
-                        <Play className="h-3 w-3" aria-hidden />
-                      )}
-                    </Button>
+                    />
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs space-y-1">
                     <p className="font-medium text-popover-foreground">
@@ -648,6 +647,13 @@ export function NodeStepRail({
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
+                      icon={override.busy ? (
+                        <Loader2 className="animate-spin" aria-hidden />
+                      ) : status === "done" ? (
+                        <RotateCw aria-hidden />
+                      ) : (
+                        <Play aria-hidden />
+                      )}
                       type="button"
                       variant="quiet"
                       disabled={override.busy}
@@ -655,15 +661,7 @@ export function NodeStepRail({
                       onClick={() => !override.blockedReason && override.run()}
                       aria-label={`${override.action} for this page`}
                       className={STEP_RUN_BUTTON_CLASS}
-                    >
-                      {override.busy ? (
-                        <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
-                      ) : status === "done" ? (
-                        <RotateCw className="h-3 w-3" aria-hidden />
-                      ) : (
-                        <Play className="h-3 w-3" aria-hidden />
-                      )}
-                    </Button>
+                    />
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs space-y-1">
                     <p className="font-medium text-popover-foreground">

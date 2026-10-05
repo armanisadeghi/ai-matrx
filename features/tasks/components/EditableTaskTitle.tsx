@@ -90,7 +90,6 @@ export default function EditableTaskTitle({
           variant="primary"
           onClick={handleSave}
           disabled={isSaving || !editedTitle.trim()}
-          className="w-8"
         >
           {isSaving ? (
             <Loader2 size={16} className="animate-spin" />
@@ -102,7 +101,6 @@ export default function EditableTaskTitle({
           variant="outline"
           onClick={handleCancel}
           disabled={isSaving}
-          className="w-8"
         >
           <X size={16} />
         </Button>

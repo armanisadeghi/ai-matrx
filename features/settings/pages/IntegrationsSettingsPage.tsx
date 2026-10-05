@@ -1225,13 +1225,12 @@ function ServerCard({
 
           {!isConnected && (
             <Button
+              icon={<Settings2 />}
               variant="quiet"
-              className="w-10 shrink-0"
+              className="shrink-0"
               onClick={onToggleExpand}
               aria-label={isExpanded ? `Hide ${entry.name} settings` : `Open ${entry.name} settings`}
-            >
-              <Settings2 className="h-4 w-4" />
-            </Button>
+            />
           )}
         </div>
 
@@ -1304,17 +1303,15 @@ function ServerCard({
               />
               <div className="absolute right-1 top-1/2 -translate-y-1/2 flex gap-1">
                 <Button
+                  icon={showToken ? (
+                    <EyeOff />
+                  ) : (
+                    <Eye />
+                  )}
                   variant="quiet"
-                  className="w-11 sm:w-6"
                   onClick={() => setShowToken(!showToken)}
                   aria-label={showToken ? "Hide token" : "Show token"}
-                >
-                  {showToken ? (
-                    <EyeOff className="h-3 w-3" />
-                  ) : (
-                    <Eye className="h-3 w-3" />
-                  )}
-                </Button>
+                />
                 <Button
                   variant="primary"
                   onClick={handleTokenSubmit}

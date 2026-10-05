@@ -461,31 +461,25 @@ export function CollectionEditorDialog({
                       </label>
                       <div className="flex items-center ml-auto">
                         <Button
+                          icon={<ArrowUp />}
                           variant="quiet"
-                          className="w-7"
                           disabled={i === 0}
                           onClick={() => moveField(i, -1)}
                           aria-label="Move up"
-                        >
-                          <ArrowUp className="h-3.5 w-3.5" />
-                        </Button>
+                        />
                         <Button
+                          icon={<ArrowDown />}
                           variant="quiet"
-                          className="w-7"
                           disabled={i === form.fields.length - 1}
                           onClick={() => moveField(i, 1)}
                           aria-label="Move down"
-                        >
-                          <ArrowDown className="h-3.5 w-3.5" />
-                        </Button>
+                        />
                         <Button
+                          icon={<Trash2 />}
                           variant="quiet"
-                          className="w-7"
                           onClick={() => removeField(i)}
                           aria-label="Remove field"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
+                        />
                       </div>
                     </div>
                     {(TEXTISH_TYPES.includes(field.type) ||

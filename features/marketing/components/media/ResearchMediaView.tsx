@@ -304,13 +304,12 @@ export function ResearchMediaView({
                     </Button>
                     {own ? (
                       <Button
+                        icon={<FolderPlus />} aria-label="Add to the brand library"
                         variant="quiet"
                         disabled={promotingId === row.id}
                         title="Add to the brand library"
                         onClick={() => void promote(row)}
-                      >
-                        <FolderPlus className="h-3 w-3" />
-                      </Button>
+                      />
                     ) : null}
                   </div>
                 </div>

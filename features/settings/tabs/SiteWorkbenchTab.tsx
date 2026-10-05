@@ -136,14 +136,13 @@ export default function SiteWorkbenchTab() {
                   </div>
                 </div>
                 <Button
+                  icon={<Trash2 />}
                   type="button"
                   variant="quiet"
                   className="shrink-0"
                   onClick={() => removeBookmark(bookmark.id)}
                   aria-label={`Remove ${bookmark.label}`}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                />
               </div>
             ))
           )}

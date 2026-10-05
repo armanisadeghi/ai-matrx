@@ -290,17 +290,16 @@ function JsonResultCard({
           )}
           <div className="relative">
             <Button
+              icon={copied ? (
+                <CheckCircle2 className="text-green-500" />
+              ) : (
+                <Copy />
+              )}
               variant="quiet"
               className="absolute right-1 top-1 z-10"
               onClick={() => void handleCopy()}
               aria-label="Copy JSON"
-            >
-              {copied ? (
-                <CheckCircle2 className="h-3 w-3 text-green-500" />
-              ) : (
-                <Copy className="h-3 w-3" />
-              )}
-            </Button>
+            />
             <pre className="max-h-80 overflow-auto bg-muted/20 p-2.5 font-mono text-[11px] leading-snug">
               {jsonStr}
             </pre>

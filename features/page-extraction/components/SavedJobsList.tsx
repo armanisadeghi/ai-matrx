@@ -164,37 +164,35 @@ export function SavedJobsList({ fileId }: { fileId: string }) {
 
               {/* Trash + play. No pencil — clicking the row loads it. */}
               <Button
+                icon={deletingJobId === job.id ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <Trash2 />
+                )} aria-label="Delete template (data stays)"
                 variant="quiet"
-                className="w-7 shrink-0"
+                className="shrink-0"
                 title="Delete template (data stays)"
                 disabled={deletingJobId === job.id}
                 onClick={(e) => {
                   e.stopPropagation();
                   void handleDelete(job);
                 }}
-              >
-                {deletingJobId === job.id ? (
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                ) : (
-                  <Trash2 className="w-3 h-3" />
-                )}
-              </Button>
+              />
               <Button
+                icon={runningJobId === job.id ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <Play />
+                )} aria-label="Run a new extraction with this template"
                 variant="primary"
-                className="w-7 shrink-0"
+                className="shrink-0"
                 title="Run a new extraction with this template"
                 disabled={running || runningJobId === job.id}
                 onClick={(e) => {
                   e.stopPropagation();
                   void handleRunAgain(job);
                 }}
-              >
-                {runningJobId === job.id ? (
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                ) : (
-                  <Play className="w-3 h-3" />
-                )}
-              </Button>
+              />
             </li>
           );
   };

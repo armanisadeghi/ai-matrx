@@ -573,16 +573,15 @@ export function InvitationsPanel({
             )}
             {invitations.length > 0 && onRefresh && (
               <Button
+                icon={<RefreshCw
+                  className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`}
+                />} aria-label="Refresh"
                 type="submit"
                 variant="quiet"
                 onClick={onRefresh}
                 disabled={refreshing}
                 title="Refresh"
-              >
-                <RefreshCw
-                  className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`}
-                />
-              </Button>
+              />
             )}
           </div>
         </div>
@@ -694,15 +693,13 @@ export function InvitationsPanel({
                         {isExpired ? "Renew" : "Resend"}
                       </Button>
                       <Button
+                        icon={<X />} aria-label="Cancel invitation"
                         type="submit"
                         variant="quiet"
                         onClick={() => setInvitationToCancel(invitation)}
                         disabled={operationLoading}
-                        className="min-w-11 lg:min-w-0"
                         title="Cancel invitation"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
+                      />
                     </div>
                   )}
                 </div>

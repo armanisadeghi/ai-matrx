@@ -152,23 +152,19 @@ export function MandatePeek({
       >
         <div className="flex items-center gap-1.5 pr-6">
           <Button
+            icon={<ChevronLeft />}
             variant="quiet"
-            className="w-7"
             onClick={() => hasPrev && setCurrentId(rows[index - 1].id)}
             disabled={!hasPrev}
             aria-label="Previous (←)"
-          >
-            <ChevronLeft />
-          </Button>
+          />
           <Button
+            icon={<ChevronRight />}
             variant="quiet"
-            className="w-7"
             onClick={() => hasNext && setCurrentId(rows[index + 1].id)}
             disabled={!hasNext}
             aria-label="Next (→)"
-          >
-            <ChevronRight />
-          </Button>
+          />
           <DialogTitle className="min-w-0 truncate text-base font-semibold">
             <Link href={href} onClick={onClose} className="hover:underline">
               {row.name}

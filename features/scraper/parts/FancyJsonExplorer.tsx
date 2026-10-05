@@ -152,20 +152,18 @@ const FancyJsonExplorer = ({ pageData }: FancyJsonExplorerProps) => {
           </div>
         </div>
         <div className="flex gap-2">
-          <Button 
+          <Button
+            icon={<RefreshCw />} aria-label="Reset" 
             variant="quiet" 
             onClick={handleReset}
             title="Reset"
-          >
-            <RefreshCw className="w-4 h-4" />
-          </Button>
-          <Button 
+          />
+          <Button
+            icon={<CopyIcon />} aria-label="Copy JSON" 
             variant="quiet" 
             onClick={() => copyToClipboard(jsonStr)}
             title="Copy JSON"
-          >
-            <CopyIcon className="w-4 h-4" />
-          </Button>
+          />
         </div>
       </div>
       

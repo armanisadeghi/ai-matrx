@@ -296,6 +296,7 @@ function ThreadTaskBody({
             onOpenLinkedTask={onDrillTask}
             footerAppend={
               <Button
+                icon={<ListTree />}
                 type="button"
                 variant={railOpen ? "outline" : "quiet"}
                 onClick={() => {
@@ -310,13 +311,11 @@ function ThreadTaskBody({
                     setRailAutoFocus(true);
                   }
                 }}
-                className="w-6 shrink-0"
+                className="shrink-0"
                 aria-pressed={railOpen}
                 title={railOpen ? "Hide subtasks" : "Add / open subtasks"}
                 aria-label={railOpen ? "Hide subtasks" : "Add / open subtasks"}
-              >
-                <ListTree className="size-3.5" />
-              </Button>
+              />
             }
           />
         </div>

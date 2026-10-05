@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { wrap } from "popmotion";
-import { Button } from "@ai-matrx/design-system";
+import { Button as SurfaceButton } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import { X, Download, Heart, Share2, Info, Check } from "lucide-react";
 import type { UnsplashDisplayPhoto } from "./MobileUnsplashGallery";
 
@@ -149,7 +150,7 @@ export function MobileUnsplashViewer({
         <div className="absolute top-0 left-0 right-0 pt-safe">
           <div className="flex justify-end p-4">
             <Button
-              className="rounded-full w-12 h-12 p-0 bg-black/50 text-white backdrop-blur-sm border border-white/20 shadow-md"
+              variant="primary"
               onClick={onClose}
             >
               <X className="h-6 w-6" />
@@ -165,16 +166,16 @@ export function MobileUnsplashViewer({
         </p>
 
         <div className="flex justify-around">
-          <Button
+          <SurfaceButton
             variant="ghost"
             size="icon"
             className="rounded-full h-12 w-12"
             onClick={() => onDownload(photos[imageIndex])}
           >
             <Download className="h-6 w-6" />
-          </Button>
+          </SurfaceButton>
 
-          <Button
+          <SurfaceButton
             variant="ghost"
             size="icon"
             className="rounded-full h-12 w-12"
@@ -183,9 +184,9 @@ export function MobileUnsplashViewer({
             <Heart
               className={`h-6 w-6 ${isFavorite(photos[imageIndex]) ? "fill-current text-red-500" : ""}`}
             />
-          </Button>
+          </SurfaceButton>
 
-          <Button
+          <SurfaceButton
             variant="ghost"
             size="icon"
             className="rounded-full h-12 w-12"
@@ -196,16 +197,16 @@ export function MobileUnsplashViewer({
             ) : (
               <Share2 className="h-6 w-6" />
             )}
-          </Button>
+          </SurfaceButton>
 
-          <Button
+          <SurfaceButton
             variant="ghost"
             size="icon"
             className="rounded-full h-12 w-12"
             onClick={() => onInfo(photos[imageIndex])}
           >
             <Info className="h-6 w-6" />
-          </Button>
+          </SurfaceButton>
         </div>
 
         <div className="mt-4">

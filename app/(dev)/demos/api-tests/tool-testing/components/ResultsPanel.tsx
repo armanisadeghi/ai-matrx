@@ -136,13 +136,11 @@ function SaveSamplePopover({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
+          icon={<Save />} aria-label="Save sample"
           variant="outline"
-          className="w-6"
           disabled={disabled}
           title="Save sample"
-        >
-          <Save className="h-3 w-3" />
-        </Button>
+        />
       </PopoverTrigger>
       <PopoverContent sizing="content" className="p-3" align="end">
         <div className="space-y-3">

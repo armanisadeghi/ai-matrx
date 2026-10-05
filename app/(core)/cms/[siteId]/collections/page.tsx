@@ -100,25 +100,21 @@ function SiteDataKeyCard() {
               {revealed ? key : maskKey(key)}
             </code>
             <Button
+              icon={revealed ? (
+                <EyeOff />
+              ) : (
+                <Eye />
+              )}
               variant="quiet"
-              className="w-8"
               onClick={() => setRevealed((r) => !r)}
               aria-label={revealed ? "Hide key" : "Reveal key"}
-            >
-              {revealed ? (
-                <EyeOff className="h-3.5 w-3.5" />
-              ) : (
-                <Eye className="h-3.5 w-3.5" />
-              )}
-            </Button>
+            />
             <Button
+              icon={<Copy />}
               variant="quiet"
-              className="w-8"
               onClick={handleCopy}
               aria-label="Copy key"
-            >
-              <Copy className="h-3.5 w-3.5" />
-            </Button>
+            />
             <Button
               icon={<RefreshCw />}
               variant="outline"
@@ -411,30 +407,26 @@ export default function CollectionsPage() {
                       Edit
                     </Button>
                     <Button
+                      icon={archivingId === collection.id ? (
+                        <Loader2 className="animate-spin" />
+                      ) : collection.status === "archived" ? (
+                        <ArchiveRestore />
+                      ) : (
+                        <Archive />
+                      )}
                       variant="quiet"
-                      className="w-8"
                       disabled={archivingId === collection.id}
                       onClick={() => handleToggleArchive(collection)}
                       aria-label={
                         collection.status === "archived" ? "Restore" : "Archive"
                       }
-                    >
-                      {archivingId === collection.id ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      ) : collection.status === "archived" ? (
-                        <ArchiveRestore className="h-3.5 w-3.5" />
-                      ) : (
-                        <Archive className="h-3.5 w-3.5" />
-                      )}
-                    </Button>
+                    />
                     <Button
+                      icon={<Trash2 />}
                       variant="quiet"
-                      className="w-8"
                       onClick={() => setDeleteTarget(collection)}
                       aria-label="Delete"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
+                    />
                   </div>
                 </div>
               </div>

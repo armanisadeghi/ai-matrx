@@ -70,6 +70,7 @@ export function ThreadEmbeddedTaskView({
             onOpenLinkedTask={onDrillTask}
             footerAppend={
               <Button
+                icon={<ListTree />}
                 type="button"
                 variant={showRail ? "outline" : "quiet"}
                 onClick={() => {
@@ -81,13 +82,11 @@ export function ThreadEmbeddedTaskView({
                     setRailAutoFocus(true);
                   }
                 }}
-                className="w-6 shrink-0"
+                className="shrink-0"
                 aria-pressed={showRail}
                 title={showRail ? "Hide subtasks" : "Add / open subtasks"}
                 aria-label={showRail ? "Hide subtasks" : "Add / open subtasks"}
-              >
-                <ListTree className="size-3.5" />
-              </Button>
+              />
             }
           />
         </div>

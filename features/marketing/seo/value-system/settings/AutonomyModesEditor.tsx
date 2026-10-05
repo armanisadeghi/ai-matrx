@@ -336,6 +336,7 @@ export function AutonomyModesEditor({
 
                   {scope !== "platform" && isOwn ? (
                     <Button
+                      icon={<RotateCcw aria-hidden />} aria-label={`Follow ${parentWord}`}
                       variant="quiet"
                       title={`Follow ${parentWord}`}
                       disabled={readOnly || save.isPending}
@@ -347,9 +348,7 @@ export function AutonomyModesEditor({
                           clear: true,
                         })
                       }
-                    >
-                      <RotateCcw className="h-3 w-3" aria-hidden />
-                    </Button>
+                    />
                   ) : null}
                   {save.isPending ? (
                     <Loader2

@@ -45,18 +45,17 @@ export function JsonViewer({
       )}
     >
       <Button
+        icon={copied ? (
+          <Check />
+        ) : (
+          <Copy />
+        )}
         type="button"
         variant="quiet"
-        className="absolute right-1 top-1 w-7"
+        className="absolute right-1 top-1"
         onClick={handleCopy}
         aria-label="Copy JSON"
-      >
-        {copied ? (
-          <Check className="h-3.5 w-3.5" />
-        ) : (
-          <Copy className="h-3.5 w-3.5" />
-        )}
-      </Button>
+      />
       <pre
         className={cn(
           "overflow-auto rounded-md p-3 pr-10 font-mono text-xs leading-relaxed text-foreground",

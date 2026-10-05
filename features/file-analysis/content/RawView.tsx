@@ -90,21 +90,17 @@ export function RawView({
           {formatCount(jsonText.length)} chars
         </span>
         <Button
+          icon={copied ? <Check /> : <Copy />} aria-label="Copy as JSON"
           variant="quiet"
           onClick={() => void handleCopy()}
-          className="w-6"
           title="Copy as JSON"
-        >
-          {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-        </Button>
+        />
         <Button
+          icon={<Download />} aria-label="Download JSON"
           variant="quiet"
           onClick={handleDownload}
-          className="w-6"
           title="Download JSON"
-        >
-          <Download className="h-3 w-3" />
-        </Button>
+        />
       </div>
       <div className="min-h-0 flex-1 overflow-auto">
         {raw ? (

@@ -173,13 +173,12 @@ export function ContextItemHub({
           {canManage && (
             <div className="flex items-center gap-2 shrink-0">
               <Button
+                icon={<Pencil />}
                 variant="quiet"
                 onClick={() => setEditing(true)}
                 title="Quick edit"
                 aria-label={`Quick edit ${item.display_name}`}
-              >
-                <Pencil className="h-3.5 w-3.5" />
-              </Button>
+              />
             </div>
           )}
         </div>

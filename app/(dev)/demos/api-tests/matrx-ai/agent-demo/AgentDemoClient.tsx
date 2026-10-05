@@ -212,7 +212,7 @@ function KVEditor({
           <Button
             variant="quiet"
             onClick={() => remove(i)}
-            className="w-6 flex-shrink-0"
+            className="flex-shrink-0"
           >
             <Trash2 className="h-3 w-3" />
           </Button>
@@ -743,13 +743,11 @@ export default function AgentDemoClient() {
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
+                        icon={<RotateCcw />} aria-label="Clear results"
                         variant="outline"
                         onClick={clearResults}
                         disabled={isRunning}
-                        className="w-8"
-                      >
-                        <RotateCcw className="h-3.5 w-3.5" />
-                      </Button>
+                      />
                     </TooltipTrigger>
                     <TooltipContent className="text-xs">
                       Clear results
@@ -793,7 +791,6 @@ export default function AgentDemoClient() {
                     variant="quiet"
                     onClick={clearResults}
                     disabled={isRunning}
-                    className="w-6"
                   >
                     <X className="h-3 w-3" />
                   </Button>

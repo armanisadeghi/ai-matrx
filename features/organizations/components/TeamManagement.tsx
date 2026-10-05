@@ -327,9 +327,7 @@ function TeamRow({
         {hasMenu && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="quiet" disabled={busy} aria-label={`${team.name} actions`}>
-                <MoreVertical className="h-4 w-4" />
-              </Button>
+              <Button icon={<MoreVertical />} variant="quiet" disabled={busy} aria-label={`${team.name} actions`} />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               {team.canManage && !archived && (

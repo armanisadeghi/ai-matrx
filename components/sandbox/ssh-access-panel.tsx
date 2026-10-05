@@ -204,7 +204,7 @@ export function SshAccessPanel({
             <Button
               variant="quiet"
               onClick={() => copyToClipboard(localSshCommand, "command")}
-              className="shrink-0 w-8"
+              className="shrink-0"
             >
               {copiedField === "command" ? (
                 <Check className="w-3.5 h-3.5 text-green-500" />

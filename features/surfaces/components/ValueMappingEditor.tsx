@@ -376,14 +376,13 @@ function MappingRow({
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
+                icon={<X />}
                 variant="quiet"
-                className="w-6 shrink-0"
+                className="shrink-0"
                 onClick={() => onChange(null)}
                 disabled={disabled}
                 aria-label="Clear mapping"
-              >
-                <X className="h-3.5 w-3.5" />
-              </Button>
+              />
             </TooltipTrigger>
             <TooltipContent>Reset to auto</TooltipContent>
           </Tooltip>

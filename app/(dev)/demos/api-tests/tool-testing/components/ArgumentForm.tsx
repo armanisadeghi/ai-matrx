@@ -206,7 +206,7 @@ function ParameterField({
                 </div>
                 <Button
                   variant="quiet"
-                  className="w-10 flex-shrink-0 sm:w-8"
+                  className="flex-shrink-0"
                   onClick={() => {
                     const updated = arrValue.filter((_, i) => i !== idx);
                     onChange(updated);

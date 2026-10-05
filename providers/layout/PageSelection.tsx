@@ -5,7 +5,7 @@ import Link from 'next/link';
 import {useRouter, usePathname} from 'next/navigation';
 import {motion} from 'motion/react';
 import {ChevronLeft, Home} from 'lucide-react';
-import {Button} from '@/components/ui/button';
+import {Button} from "@ai-matrx/design-system";
 import {
     Select,
     SelectContent,

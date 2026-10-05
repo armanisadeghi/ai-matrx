@@ -166,13 +166,11 @@ function ExpectationRow({
           ) : null}
         </div>
         <Button
+          icon={<Trash2 />}
           variant="quiet"
           onClick={onRemove}
-          className="w-7"
           aria-label="Remove rule"
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-        </Button>
+        />
       </div>
 
       {open ? (
@@ -648,6 +646,7 @@ export function ScenarioEditor({
                 className="h-7 font-mono text-[11px]"
               />
               <Button
+                icon={<X />}
                 variant="quiet"
                 onClick={() =>
                   setScenario((s) => ({
@@ -655,11 +654,8 @@ export function ScenarioEditor({
                     allowed_routes: s.allowed_routes.filter((_, j) => j !== i),
                   }))
                 }
-                className="w-7"
                 aria-label="Remove route"
-              >
-                <X className="h-3.5 w-3.5" />
-              </Button>
+              />
             </div>
           ))}
         </div>

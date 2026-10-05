@@ -709,13 +709,11 @@ function GatingSection({
                   )}
                 </div>
                 <Button
+                  icon={<X />}
                   variant="quiet"
                   onClick={() => onRemove(idx)}
-                  className="w-7"
                   aria-label="Remove gate"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </Button>
+                />
               </div>
               <div className="space-y-1">
                 <Label className="text-[11px] text-muted-foreground">

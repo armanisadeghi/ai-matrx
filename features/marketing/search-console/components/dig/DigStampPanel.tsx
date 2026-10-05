@@ -255,29 +255,25 @@ export function DigStampPanel({
             </span>
             <AsOfLabel value={row.as_of ?? row.last_evaluated_at} />
             <Button
-              variant="quiet"
-              className="w-5"
-              aria-label={`Re-evaluate ${row.value_label}`}
-              title="Re-evaluate now"
-              disabled={mutations.evaluate.isPending}
-              onClick={() => void reevaluate(row.matcher_id, row.value_label)}
-            >
-              <RefreshCw
+              icon={<RefreshCw
                 className={
                   mutations.evaluate.isPending
                     ? "h-3 w-3 animate-spin"
                     : "h-3 w-3"
                 }
-              />
-            </Button>
-            <Button
+              />}
               variant="quiet"
-              className="w-5"
+              aria-label={`Re-evaluate ${row.value_label}`}
+              title="Re-evaluate now"
+              disabled={mutations.evaluate.isPending}
+              onClick={() => void reevaluate(row.matcher_id, row.value_label)}
+            />
+            <Button
+              icon={<Trash2 />}
+              variant="quiet"
               aria-label={`Stop filling ${row.value_label}`}
               onClick={() => void detach(row.matcher_id, row.value_label)}
-            >
-              <Trash2 className="h-3 w-3" />
-            </Button>
+            />
           </span>
         ))}
         {!adding && canStamp ? (

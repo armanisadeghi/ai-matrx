@@ -195,13 +195,11 @@ export function ConversationSelector({
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
+                icon={<Check />} aria-label="Apply"
                 variant="primary"
                 onClick={handleApplyExisting}
                 disabled={!inputValue.trim()}
-                className="w-10 sm:w-6"
-              >
-                <Check className="h-3 w-3" />
-              </Button>
+              />
             </TooltipTrigger>
             <TooltipContent className="text-xs">Apply</TooltipContent>
           </Tooltip>

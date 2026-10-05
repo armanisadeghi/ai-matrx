@@ -461,6 +461,7 @@ export function DefaultRulesEditor() {
                         Edit
                       </Button>
                       <Button
+                        icon={<Trash2 />}
                         variant="quiet"
                         aria-label={`Delete ${rule.label}`}
                         onClick={() => {
@@ -474,9 +475,7 @@ export function DefaultRulesEditor() {
                             if (ok) remove.mutate(rule.id);
                           });
                         }}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
+                      />
                     </div>
                   </td>
                 </tr>

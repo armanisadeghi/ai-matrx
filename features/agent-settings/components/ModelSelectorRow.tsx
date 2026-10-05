@@ -144,17 +144,16 @@ export function ModelSelectorRow({
         />
 
         <Button
+          icon={hasPendingSwitch ? (
+            <AlertTriangle className="text-amber-500" />
+          ) : (
+            <Settings2 />
+          )} aria-label="Model settings"
           variant="outline"
-          className="w-7 shrink-0"
+          className="shrink-0"
           onClick={onSettingsClick}
           title="Model settings"
-        >
-          {hasPendingSwitch ? (
-            <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
-          ) : (
-            <Settings2 className="w-3.5 h-3.5" />
-          )}
-        </Button>
+        />
       </div>
 
       {/* Active settings badges */}

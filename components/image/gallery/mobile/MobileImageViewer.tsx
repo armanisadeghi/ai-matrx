@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { wrap } from "popmotion";
-import { Button } from "@ai-matrx/design-system";
+import { Button as SurfaceButton } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import { X, Download, Heart, Share2, Check } from "lucide-react";
 
 interface SimplePhoto {
@@ -163,7 +164,8 @@ export function MobileImageViewer({
 
         {/* Close button - repositioned to top right */}
         <Button
-          className="absolute top-safe right-4 z-10 rounded-full w-12 h-12 p-0 bg-black/50 text-white backdrop-blur-sm border border-white/20 shadow-md"
+          variant="primary"
+          className="absolute top-safe right-4 z-10"
           onClick={onClose}
         >
           <X className="h-6 w-6" />
@@ -177,16 +179,16 @@ export function MobileImageViewer({
         </p>
 
         <div className="flex justify-around">
-          <Button
+          <SurfaceButton
             variant="ghost"
             size="icon"
             className="rounded-full h-12 w-12"
             onClick={() => onDownload(photos[imageIndex])}
           >
             <Download className="h-6 w-6" />
-          </Button>
+          </SurfaceButton>
 
-          <Button
+          <SurfaceButton
             variant="ghost"
             size="icon"
             className="rounded-full h-12 w-12"
@@ -195,9 +197,9 @@ export function MobileImageViewer({
             <Heart
               className={`h-6 w-6 ${isFavorite(photos[imageIndex]) ? "fill-current text-red-500" : ""}`}
             />
-          </Button>
+          </SurfaceButton>
 
-          <Button
+          <SurfaceButton
             variant="ghost"
             size="icon"
             className="rounded-full h-12 w-12"
@@ -208,7 +210,7 @@ export function MobileImageViewer({
             ) : (
               <Share2 className="h-6 w-6" />
             )}
-          </Button>
+          </SurfaceButton>
         </div>
       </div>
     </motion.div>

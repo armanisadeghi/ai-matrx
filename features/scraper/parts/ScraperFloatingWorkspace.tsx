@@ -413,22 +413,22 @@ export function ScraperFloatingWorkspace({
     <>
       {showWebMain && selectedHit?.url && (
         <Button
+          icon={quickApi.isLoading ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Zap />
+          )} aria-label="Scrape selected result"
           type="button"
           variant="quiet"
           onClick={() => void handleScrapeFromWebHit()}
           disabled={isAnyLoading}
           title="Scrape selected result"
           className={iconBtn}
-        >
-          {quickApi.isLoading ? (
-            <Loader2 className="h-3 w-3 animate-spin" />
-          ) : (
-            <Zap className="h-3 w-3" />
-          )}
-        </Button>
+        />
       )}
       {showWebMain && selectedHit?.url && (
         <Button
+          icon={<ArrowUpRight />} aria-label="Open result"
           type="button"
           variant="quiet"
           onClick={() =>
@@ -436,12 +436,11 @@ export function ScraperFloatingWorkspace({
           }
           title="Open result"
           className={iconBtn}
-        >
-          <ArrowUpRight className="h-3 w-3" />
-        </Button>
+        />
       )}
       {showScrapeMain && selectedScraped && (
         <Button
+          icon={<ArrowUpRight />} aria-label="Open in browser"
           type="button"
           variant="quiet"
           onClick={() =>
@@ -449,9 +448,7 @@ export function ScraperFloatingWorkspace({
           }
           title="Open in browser"
           className={iconBtn}
-        >
-          <ArrowUpRight className="h-3 w-3" />
-        </Button>
+        />
       )}
     </>
   );
@@ -463,29 +460,27 @@ export function ScraperFloatingWorkspace({
     <div className="flex items-center gap-0.5">
       {showScrapeMain && selectedScraped && hasImages && (
         <Button
+          icon={<ImageIcon />} aria-label="View images"
           type="button"
           variant="quiet"
           onClick={openImages}
           title="View images"
           className={iconBtn}
-        >
-          <ImageIcon className="h-3 w-3" />
-        </Button>
+        />
       )}
       {showScrapeMain && selectedScraped && (
         <Button
+          icon={copied ? (
+            <CheckCircle className="text-emerald-500" />
+          ) : (
+            <Copy />
+          )} aria-label={copied ? "Copied" : "Copy text"}
           type="button"
           variant="quiet"
           onClick={handleCopy}
           title={copied ? "Copied" : "Copy text"}
           className={iconBtn}
-        >
-          {copied ? (
-            <CheckCircle className="h-3 w-3 text-emerald-500" />
-          ) : (
-            <Copy className="h-3 w-3" />
-          )}
-        </Button>
+        />
       )}
       {showScrapeMain && selectedScraped && (
         // Scraped pages don't have a row id in any FE table — the page URL
@@ -509,14 +504,13 @@ export function ScraperFloatingWorkspace({
       )}
       {(scrapedResults.length > 0 || keywordForm.flatResults.length > 0) && (
         <Button
+          icon={<RotateCcw />} aria-label="Reset"
           type="button"
           variant="quiet"
           onClick={handleReset}
           title="Reset"
           className={iconBtn}
-        >
-          <RotateCcw className="h-3 w-3" />
-        </Button>
+        />
       )}
     </div>
   );

@@ -81,13 +81,12 @@ export function PublicHeaderAuth() {
 
         {/* Dashboard Button */}
         <Button
+          icon={<LayoutDashboard />}
           variant="primary"
           onClick={() => router.push("/dashboard")}
           aria-label="Open dashboard"
           className={PUBLIC_HEADER_ICON_BUTTON}
-        >
-          <LayoutDashboard className="h-3.5 w-3.5" />
-        </Button>
+        />
       </div>
     );
   }

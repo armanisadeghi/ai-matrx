@@ -121,27 +121,23 @@ function AuthTokenWidget({ config }: { config: UseServerConfigReturn }) {
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
+              icon={<Pencil />} aria-label="Edit token"
               variant="quiet"
               onClick={() => {
                 setTemp(config.authToken);
                 setEditing(true);
               }}
-              className="w-5"
-            >
-              <Pencil className="h-2.5 w-2.5" />
-            </Button>
+            />
           </TooltipTrigger>
           <TooltipContent className="text-xs">Edit token</TooltipContent>
         </Tooltip>
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
+              icon={<X />} aria-label="Clear token"
               variant="quiet"
               onClick={clear}
-              className="w-5"
-            >
-              <X className="h-2.5 w-2.5" />
-            </Button>
+            />
           </TooltipTrigger>
           <TooltipContent className="text-xs">Clear token</TooltipContent>
         </Tooltip>
@@ -168,13 +164,12 @@ function AuthTokenWidget({ config }: { config: UseServerConfigReturn }) {
       <Tooltip>
         <TooltipTrigger asChild>
           <Button
+            icon={<Check />} aria-label="Save token"
             variant="primary"
             onClick={save}
             disabled={!temp.trim()}
-            className="w-7 flex-shrink-0"
-          >
-            <Check className="h-3 w-3" />
-          </Button>
+            className="flex-shrink-0"
+          />
         </TooltipTrigger>
         <TooltipContent className="text-xs">Save token</TooltipContent>
       </Tooltip>
@@ -182,15 +177,14 @@ function AuthTokenWidget({ config }: { config: UseServerConfigReturn }) {
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
+              icon={<X />} aria-label="Cancel"
               variant="quiet"
               onClick={() => {
                 setTemp(config.authToken);
                 setEditing(false);
               }}
-              className="w-7 flex-shrink-0"
-            >
-              <X className="h-3 w-3" />
-            </Button>
+              className="flex-shrink-0"
+            />
           </TooltipTrigger>
           <TooltipContent className="text-xs">Cancel</TooltipContent>
         </Tooltip>

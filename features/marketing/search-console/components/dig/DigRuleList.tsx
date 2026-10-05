@@ -125,21 +125,17 @@ export function DigRuleList({
       {section("My rules", own, (rule) => (
         <>
           <Button
+            icon={<Pencil />}
             variant="quiet"
-            className="w-11 lg:w-6"
             aria-label={`Edit ${rule.name}`}
             onClick={() => onEdit(rule)}
-          >
-            <Pencil className="h-3 w-3" />
-          </Button>
+          />
           <Button
+            icon={<Trash2 />}
             variant="quiet"
-            className="w-11 lg:w-6"
             aria-label={`Delete ${rule.name}`}
             onClick={() => onDelete(rule)}
-          >
-            <Trash2 className="h-3 w-3" />
-          </Button>
+          />
         </>
       ))}
       {section("Shared with my orgs", shared, () => null)}

@@ -435,32 +435,26 @@ function ExtraSources({
               )}
               <div className="ml-auto flex items-center gap-0.5">
                 <Button
+                  icon={<ArrowUp />}
                   variant="quiet"
-                  className="w-6"
                   disabled={disabled || index === 0}
                   aria-label={`Move ${handle} earlier in ${targetName}`}
                   onClick={() => onMove(index, -1)}
-                >
-                  <ArrowUp className="h-3 w-3" />
-                </Button>
+                />
                 <Button
+                  icon={<ArrowDown />}
                   variant="quiet"
-                  className="w-6"
                   disabled={disabled || index === sources.length - 1}
                   aria-label={`Move ${handle} later in ${targetName}`}
                   onClick={() => onMove(index, 1)}
-                >
-                  <ArrowDown className="h-3 w-3" />
-                </Button>
+                />
                 <Button
+                  icon={<X />}
                   variant="quiet"
-                  className="w-6"
                   disabled={disabled}
                   aria-label={`Remove ${handle} from ${targetName}`}
                   onClick={() => onRemove(index)}
-                >
-                  <X className="h-3 w-3" />
-                </Button>
+                />
               </div>
             </div>
             {/* P9 — a source that is not guaranteed declares its absence answer.

@@ -289,8 +289,8 @@ export function DigRuleEditor({
               aria-label={`Condition ${index + 1} value`}
             />
             <Button
+              icon={<Trash2 />}
               variant="quiet"
-              className="w-7"
               aria-label={`Remove condition ${index + 1}`}
               onClick={() => {
                 // Drafts are index-keyed; removal shifts indices — drop them
@@ -300,9 +300,7 @@ export function DigRuleEditor({
                   conditions: content.conditions.filter((_, i) => i !== index),
                 });
               }}
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </Button>
+            />
           </div>
         ))}
         <Button

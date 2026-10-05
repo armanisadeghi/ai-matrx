@@ -253,6 +253,7 @@ export function CouponsAdminClient() {
         cell: (r) => (
           <div className="flex items-center gap-1">
             <Button
+              icon={<Send />}
               variant="quiet"
               disabled={r.status !== "active" || r.kind === "new_account"}
               title={r.kind === "new_account" ? "Links can be sent only when made" : "Send"}
@@ -261,10 +262,9 @@ export function CouponsAdminClient() {
                 e.stopPropagation();
                 openSend(r);
               }}
-            >
-              <Send className="h-3.5 w-3.5" />
-            </Button>
+            />
             <Button
+              icon={<Ban />}
               variant="quiet"
               disabled={r.status === "revoked"}
               title="Revoke"
@@ -273,9 +273,7 @@ export function CouponsAdminClient() {
                 e.stopPropagation();
                 void revoke(r);
               }}
-            >
-              <Ban className="h-3.5 w-3.5" />
-            </Button>
+            />
           </div>
         ),
         width: 90,

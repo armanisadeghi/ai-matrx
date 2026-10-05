@@ -203,14 +203,13 @@ export function SelfServiceAddressField({
           </address>
         )}
         <Button
+          icon={<PencilLine />}
           type="button"
           variant="quiet"
-          className="w-8 shrink-0 opacity-100 transition-opacity [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100"
+          className="shrink-0 opacity-100 transition-opacity [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100"
           aria-label={`Change ${heading.toLowerCase()}`}
           onClick={() => setEditing(true)}
-        >
-          <PencilLine className="h-3.5 w-3.5" />
-        </Button>
+        />
       </div>
       <p className="text-[0.6875rem] text-muted-foreground">
         Needs approval — an address change moves your jurisdiction.

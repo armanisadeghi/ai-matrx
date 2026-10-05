@@ -146,9 +146,7 @@ export function HubPeek({
       <aside className="flex h-full flex-col gap-3 p-4" aria-label="Peek">
         <div className="flex items-center justify-between">
           <span className="text-sm text-muted-foreground">This item is not in the current results.</span>
-          <Button variant="quiet" onClick={onClose} aria-label="Close peek (Esc)">
-            <X className="h-4 w-4" />
-          </Button>
+          <Button icon={<X />} variant="quiet" onClick={onClose} aria-label="Close peek (Esc)" />
         </div>
         {href ? (
           <a className="text-sm underline" href={href}>
@@ -279,20 +277,16 @@ export function HubPeek({
           ) : null}
           {onToggleFavorite ? (
             <Button
+              icon={<Star className={isFavorite ? "h-4 w-4 fill-amber-400 text-amber-500" : "h-4 w-4"} />}
               variant="quiet"
-              className="w-7"
               aria-pressed={isFavorite}
               aria-label={isFavorite ? "Remove from Favorites" : "Add to Favorites"}
               title={isFavorite ? "Remove from Favorites" : "Add to Favorites"}
               onClick={() => onToggleFavorite(hit)}
-            >
-              <Star className={isFavorite ? "h-4 w-4 fill-amber-400 text-amber-500" : "h-4 w-4"} />
-            </Button>
+            />
           ) : null}
           {extraActions}
-          <Button variant="quiet" className="w-7" onClick={onClose} aria-label="Close peek (Esc)" title="Close (Esc)">
-            <X className="h-4 w-4" />
-          </Button>
+          <Button icon={<X />} variant="quiet" onClick={onClose} aria-label="Close peek (Esc)" title="Close (Esc)" />
         </div>
       </div>
       {embed ? (

@@ -217,13 +217,12 @@ export function GazetteerPlaceDetectionConsole({
                 queue to tick.
               </p>
               <Button
+                icon={<RefreshCw />} aria-label="Re-read the corpus scoreboard"
                 variant="quiet"
                 className="ml-auto"
                 title="Re-read the corpus scoreboard"
                 onClick={() => void status.refetch()}
-              >
-                <RefreshCw className="h-3 w-3" />
-              </Button>
+              />
             </div>
 
             {status.isError ? (

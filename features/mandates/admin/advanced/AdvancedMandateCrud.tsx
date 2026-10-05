@@ -277,13 +277,12 @@ export function AdvancedMandateCrud() {
           columns={[...(tableColumns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: relation?.writable && pk && relation.softDeletes
               ? (row) => (
                   <Button
+                    icon={<Trash2 />}
                     variant="quiet"
                     onClick={() => doDelete(row)}
                     title="Move to Trash (restorable)"
                     aria-label="Move to Trash"
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </Button>
+                  />
                 )
               : undefined }]}
           getRowId={(row) => (pk ? String(row[pk]) : JSON.stringify(row))}

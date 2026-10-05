@@ -1317,12 +1317,11 @@ export default function AiModelDetailPanel({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
+                    icon={<X />} aria-label="Close panel"
                     variant="quiet"
-                    className="w-7 shrink-0"
+                    className="shrink-0"
                     onClick={requestClose}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
+                  />
                 </TooltipTrigger>
                 <TooltipContent side="left" className="text-xs">
                   Close panel

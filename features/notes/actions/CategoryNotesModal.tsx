@@ -406,14 +406,10 @@ export function CategoryNotesModal({
                                                         </Button>
                                                     )}
                                                     {allowEdit && (
-                                                        <Button variant="quiet" onClick={() => handleStartEdit(selectedNote)} title="Edit">
-                                                            <Pencil className="h-4 w-4" />
-                                                        </Button>
+                                                        <Button icon={<Pencil />} aria-label="Edit" variant="quiet" onClick={() => handleStartEdit(selectedNote)} title="Edit" />
                                                     )}
                                                     {allowDelete && (
-                                                        <Button variant="quiet" onClick={() => handleDelete(selectedNote.id)} title="Move to Trash">
-                                                            <Trash2 className="h-4 w-4" />
-                                                        </Button>
+                                                        <Button icon={<Trash2 />} aria-label="Move to Trash" variant="quiet" onClick={() => handleDelete(selectedNote.id)} title="Move to Trash" />
                                                     )}
                                                 </div>
                                             </div>

@@ -103,17 +103,16 @@ export function KeywordPicker({
         />
         {clearable && value ? (
           <Button
+            icon={<X />}
             type="button"
             variant="quiet"
-            className="w-9 shrink-0"
+            className="shrink-0"
             aria-label="Clear keyword"
             onClick={() => {
               setDraftPhrase("");
               void onChange(null);
             }}
-          >
-            <X className="h-3.5 w-3.5" />
-          </Button>
+          />
         ) : null}
       </div>
       {siteValue ? (

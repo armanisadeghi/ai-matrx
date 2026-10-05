@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Shield, Server, ChevronDown, Loader2, CheckCircle2, XCircle } from 'lucide-react';
+import { Shield, Server, Loader2, CheckCircle2, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
@@ -70,9 +70,7 @@ export function AdminMenu() {
                     variant="quiet"
                     aria-label="Open admin settings"
                     className={PUBLIC_HEADER_ICON_BUTTON}
-                >
-                    <ChevronDown className="h-3 w-3 opacity-50" />
-                </Button>
+                />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-52">
                 <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">

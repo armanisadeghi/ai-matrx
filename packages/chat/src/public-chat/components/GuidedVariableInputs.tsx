@@ -4,7 +4,7 @@ import React, { useState, useCallback, useRef, useEffect } from "react";
 import { ChevronLeft, ChevronRight, ChevronDown, Check } from "lucide-react";
 import { Textarea } from "@ai-matrx/design-system";
 import { Input } from "@ai-matrx/design-system";
-import { Button } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import { Checkbox } from "@host/components/ui/checkbox";
 import { Minus, Plus } from "lucide-react";
 import { variableRunLabel } from "@ai-matrx/agents";
@@ -378,10 +378,8 @@ function GuidedNumber({
         <Button
           type="button"
           variant="outline"
-          size="lg"
           onClick={() => canDec && onChange((num - step).toString())}
           disabled={!canDec}
-          className="h-12 w-12 p-0 rounded-full"
         >
           <Minus className="w-5 h-5" />
         </Button>
@@ -400,10 +398,8 @@ function GuidedNumber({
         <Button
           type="button"
           variant="outline"
-          size="lg"
           onClick={() => canInc && onChange((num + step).toString())}
           disabled={!canInc}
-          className="h-12 w-12 p-0 rounded-full"
         >
           <Plus className="w-5 h-5" />
         </Button>

@@ -559,18 +559,17 @@ function AiActionsPanel({
               disabled={asking}
             />
             <Button
+              icon={asking ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <ArrowRight />
+              )}
               variant="primary"
               className="shrink-0"
               disabled={!question.trim() || asking}
               onClick={() => void ask(question)}
               aria-label="Ask"
-            >
-              {asking ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <ArrowRight className="w-3.5 h-3.5" />
-              )}
-            </Button>
+            />
           </div>
           <div className="grid grid-cols-2 gap-1">
             {SUGGESTED_QUESTIONS.map((q) => (

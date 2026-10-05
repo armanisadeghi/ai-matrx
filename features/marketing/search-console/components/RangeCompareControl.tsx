@@ -149,12 +149,11 @@ export function RangeCompareControl({
             Apply
           </Button>
           <Button
+            icon={<X />}
             variant="quiet"
             aria-label="Cancel custom range"
             onClick={() => setCustomOpen(false)}
-          >
-            <X className="h-3 w-3" />
-          </Button>
+          />
         </div>
       ) : null}
 

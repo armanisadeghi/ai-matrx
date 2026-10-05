@@ -709,13 +709,12 @@ function TreeRow({
         </div>
       </div>
       <Button
+        icon={<Plus />}
         variant="quiet"
-        className="w-5 shrink-0 opacity-0 focus-visible:opacity-100 group-hover:opacity-100"
+        className="shrink-0 opacity-0 focus-visible:opacity-100 group-hover:opacity-100"
         aria-label="Add child node"
         onClick={onAddChild}
-      >
-        <Plus className="h-3 w-3" />
-      </Button>
+      />
     </div>
   );
 }

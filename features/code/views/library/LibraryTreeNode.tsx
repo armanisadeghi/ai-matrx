@@ -184,18 +184,17 @@ export const PersistedLibraryFileRow: React.FC<
           />
         )}
         <Button
+          icon={<MoreHorizontal />}
           type="button"
           variant="quiet"
-          className="w-11 shrink-0 lg:hidden"
+          className="shrink-0 lg:hidden"
           aria-label={`Actions for ${file.name}`}
           aria-haspopup="menu"
           onClick={(event) => {
             event.stopPropagation();
             openContextMenuForElement(event.currentTarget.parentElement);
           }}
-        >
-          <MoreHorizontal className="h-4 w-4" />
-        </Button>
+        />
       </div>
     </NonEditableContextMenu>
   );
@@ -381,18 +380,17 @@ export const LibraryTreeNode: React.FC<LibraryTreeNodeProps> = ({
             className="min-w-0 flex-1"
           />
           <Button
+            icon={<MoreHorizontal />}
             type="button"
             variant="quiet"
-            className="w-11 shrink-0 lg:hidden"
+            className="shrink-0 lg:hidden"
             aria-label={`Actions for ${folder.name}`}
             aria-haspopup="menu"
             onClick={(event) => {
               event.stopPropagation();
               openContextMenuForElement(event.currentTarget.parentElement);
             }}
-          >
-            <MoreHorizontal className="h-4 w-4" />
-          </Button>
+          />
         </div>
       </NonEditableContextMenu>
 

@@ -70,21 +70,20 @@ function ConvIdCopyButton({ text }: { text: string }) {
     <Tooltip>
       <TooltipTrigger asChild>
         <Button
+          icon={copied ? (
+            <Check className="text-green-500" />
+          ) : (
+            <Copy />
+          )} aria-label={copied ? "Copied!" : "Copy conversation ID"}
           variant="outline"
-          className="w-7 flex-shrink-0"
+          className="flex-shrink-0"
           disabled={!text}
           onClick={async () => {
             await navigator.clipboard.writeText(text).catch(() => null);
             setCopied(true);
             setTimeout(() => setCopied(false), 1800);
           }}
-        >
-          {copied ? (
-            <Check className="h-3 w-3 text-green-500" />
-          ) : (
-            <Copy className="h-3 w-3" />
-          )}
-        </Button>
+        />
       </TooltipTrigger>
       <TooltipContent className="text-xs">
         {copied ? "Copied!" : "Copy conversation ID"}
@@ -488,12 +487,11 @@ export default function ConversationDemoClient() {
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
+                          icon={<Shuffle />} aria-label="Generate new UUID"
                           variant="outline"
                           onClick={() => setConversationId(generateUUID())}
-                          className="w-7 flex-shrink-0"
-                        >
-                          <Shuffle className="h-3 w-3" />
-                        </Button>
+                          className="flex-shrink-0"
+                        />
                       </TooltipTrigger>
                       <TooltipContent className="text-xs">
                         Generate new UUID
@@ -591,13 +589,11 @@ export default function ConversationDemoClient() {
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
+                        icon={<RotateCcw />} aria-label="Clear history + results (keeps conversation ID)"
                         variant="outline"
                         onClick={() => clearAll()}
                         disabled={isRunning}
-                        className="w-8"
-                      >
-                        <RotateCcw className="h-3.5 w-3.5" />
-                      </Button>
+                      />
                     </TooltipTrigger>
                     <TooltipContent className="text-xs">
                       Clear history + results (keeps conversation ID)
@@ -637,7 +633,6 @@ export default function ConversationDemoClient() {
                     variant="quiet"
                     onClick={() => clearAll()}
                     disabled={isRunning}
-                    className="w-6"
                   >
                     <X className="h-3 w-3" />
                   </Button>

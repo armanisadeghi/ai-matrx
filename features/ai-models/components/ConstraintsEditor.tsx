@@ -526,7 +526,7 @@ function UnconditionalRow({
         </Select>
         <Button
           variant="quiet"
-          className="w-6 shrink-0"
+          className="shrink-0"
           onClick={onDelete}
         >
           <Trash2 className="h-3 w-3" />
@@ -623,7 +623,7 @@ function ConditionalRow({
         </Select>
         <Button
           variant="quiet"
-          className="w-6 shrink-0"
+          className="shrink-0"
           onClick={onDelete}
         >
           <Trash2 className="h-3 w-3" />

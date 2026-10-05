@@ -306,6 +306,7 @@ export function SituationalRefreshConsole({
       width: 40,
       cell: (r) => (
         <Button
+          icon={<Play />} aria-label={`Refresh ${r.site.name}'s situational segments`}
           variant="quiet"
           disabled={running}
           onClick={(event) => {
@@ -313,9 +314,7 @@ export function SituationalRefreshConsole({
             void startRun([r.site.id]);
           }}
           title={`Refresh ${r.site.name}'s situational segments`}
-        >
-          <Play className="h-3 w-3" />
-        </Button>
+        />
       ),
     },
   ];
@@ -360,6 +359,7 @@ export function SituationalRefreshConsole({
                   : "All"}
               </Button>
               <Button
+                icon={<RefreshCw />} aria-label="Re-read how stale each brand is"
                 variant="quiet"
                 title="Re-read how stale each brand is"
                 onClick={() =>
@@ -367,9 +367,7 @@ export function SituationalRefreshConsole({
                     queryKey: ["seo", "situational", "refresh-status"],
                   })
                 }
-              >
-                <RefreshCw className="h-3 w-3" />
-              </Button>
+              />
               <Button
                 icon={running ? (
                   <Loader2 className="animate-spin" />

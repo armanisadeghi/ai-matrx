@@ -479,21 +479,19 @@ export function PackMeaningSection({
                     {canAuthor ? (
                       <>
                         <Button
+                          icon={<Pencil />}
                           variant="quiet"
                           className="opacity-100 transition-opacity [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100"
                           onClick={() => setEditingId(item.item_id)}
                           aria-label={`Edit ${item.label}`}
-                        >
-                          <Pencil className="size-3.5" />
-                        </Button>
+                        />
                         <Button
+                          icon={<Trash2 />}
                           variant="quiet"
                           className="opacity-100 transition-opacity [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100"
                           onClick={() => setDeleteTarget(item)}
                           aria-label={`Remove ${item.label}`}
-                        >
-                          <Trash2 className="size-3.5" />
-                        </Button>
+                        />
                       </>
                     ) : null}
                   </div>

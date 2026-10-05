@@ -277,27 +277,23 @@ export function SampleLibrarySheet({
                       </div>
                       <div className="flex flex-col gap-0.5 opacity-0 group-hover:opacity-100 shrink-0">
                         <Button
+                          icon={<Edit2 />} aria-label="Rename"
                           variant="quiet"
-                          className="w-6"
                           onClick={(e) => {
                             e.stopPropagation();
                             setRenaming(sample);
                           }}
                           title="Rename"
-                        >
-                          <Edit2 className="h-3 w-3" />
-                        </Button>
+                        />
                         <Button
+                          icon={<Trash2 className="text-destructive" />} aria-label="Delete"
                           variant="quiet"
-                          className="w-6"
                           onClick={(e) => {
                             e.stopPropagation();
                             void handleDelete(sample);
                           }}
                           title="Delete"
-                        >
-                          <Trash2 className="h-3 w-3 text-destructive" />
-                        </Button>
+                        />
                       </div>
                     </div>
                   </button>
@@ -347,8 +343,9 @@ export function SampleLibrarySheet({
                           )}
                           {canManageShared && onArchiveShared && (
                             <Button
+                              icon={<Trash2 className="text-destructive" />}
                               variant="quiet"
-                              className="ml-auto w-6 shrink-0 opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
+                              className="ml-auto shrink-0 opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
                               onClick={async (e) => {
                                 e.stopPropagation();
                                 const ok = await confirm({
@@ -368,9 +365,7 @@ export function SampleLibrarySheet({
                               }}
                               title="Remove from the shared library"
                               aria-label={`Remove ${sample.name} from the shared library`}
-                            >
-                              <Trash2 className="h-3 w-3 text-destructive" />
-                            </Button>
+                            />
                           )}
                         </div>
                         {sample.description && (

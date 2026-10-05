@@ -1390,7 +1390,7 @@ export default function DocumentsPage() {
                           ) : (
                             <Button
                               variant="quiet"
-                              className="w-5 shrink-0 ml-2"
+                              className="shrink-0 ml-2"
                               onClick={() => setDeletingShareId(id)}
                             >
                               <Trash2 className="w-3 h-3" />
@@ -1463,7 +1463,7 @@ export default function DocumentsPage() {
                           ) : (
                             <Button
                               variant="quiet"
-                              className="w-5 shrink-0 ml-2"
+                              className="shrink-0 ml-2"
                               onClick={() => setDeletingMappingId(id)}
                             >
                               <Trash2 className="w-3 h-3" />

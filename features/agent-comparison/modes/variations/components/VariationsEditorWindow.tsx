@@ -183,12 +183,11 @@ export function VariationsEditorWindow({
                 Save as agent
               </Button>
               <Button
+                icon={<Trash2 />} aria-label="Remove this variation"
                 variant="quiet"
                 onClick={() => setRemoveConfirm(true)}
                 title="Remove this variation"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-              </Button>
+              />
             </div>
 
             {/* Bounded height for the builder panel's own internal scroll. */}

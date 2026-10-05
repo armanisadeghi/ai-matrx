@@ -103,8 +103,9 @@ export function OpenDetailButton({ onClick }: { onClick: () => void }) {
   const canvas = useOptionalCanvas();
   return (
     <Button
+      icon={<ArrowUpRight />} aria-label="Open full model editor"
       variant="quiet"
-      className="w-6 shrink-0"
+      className="shrink-0"
       onClick={(e) => {
         e.stopPropagation();
         onClick();
@@ -114,8 +115,6 @@ export function OpenDetailButton({ onClick }: { onClick: () => void }) {
         }
       }}
       title="Open full model editor"
-    >
-      <ArrowUpRight className="h-3.5 w-3.5" />
-    </Button>
+    />
   );
 }

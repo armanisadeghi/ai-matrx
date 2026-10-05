@@ -285,19 +285,17 @@ export function MaskOverlay({ canvasAreaRef, mask, sourceDims }: Props) {
           </span>
         </div>
         <Button
+          icon={<Trash2 />} aria-label="Clear mask"
           variant="quiet"
           onClick={clear}
           title="Clear mask"
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-        </Button>
+        />
         <Button
+          icon={<X />} aria-label="Close mask"
           variant="quiet"
           onClick={() => setMode("off")}
           title="Close mask"
-        >
-          <X className="h-3.5 w-3.5" />
-        </Button>
+        />
       </div>
     </>
   );

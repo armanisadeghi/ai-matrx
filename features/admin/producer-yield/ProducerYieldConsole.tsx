@@ -366,9 +366,7 @@ export function ProducerYieldConsole() {
                   {showIdle ? "Hide" : "Show"} {idleCount} idle
                 </Button>
               )}
-              <Button variant="outline" aria-label="Refresh yield register" onClick={() => void register.refetch()} disabled={refreshing}>
-                <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
-              </Button>
+              <Button icon={<RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />} variant="outline" aria-label="Refresh yield register" onClick={() => void register.refetch()} disabled={refreshing} />
             </>
           ),
         }}

@@ -76,8 +76,7 @@ export const PreviewTab: React.FC = () => {
               <div className="absolute top-2 right-2">
                 <Button 
                   variant="quiet" 
-                  onClick={copyToClipboard} 
-                  className="w-8"
+                  onClick={copyToClipboard}
                 >
                   {copied ? 
                     <CheckIcon className="h-4 w-4 text-green-500" /> : 

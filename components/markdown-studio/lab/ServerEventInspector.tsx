@@ -527,8 +527,8 @@ export default function ServerEventInspector({ content: controlled }: ServerEven
                 </Button>
               )}
               <Button
+                icon={<Trash2 className="text-muted-foreground" />} aria-label="Clear output"
                 variant="quiet"
-                className="w-5"
                 onClick={() => {
                   setJsonResult(null);
                   setRawEvents([]);
@@ -537,24 +537,20 @@ export default function ServerEventInspector({ content: controlled }: ServerEven
                 }}
                 disabled={isRunning || !hasOutput}
                 title="Clear output"
-              >
-                <Trash2 className="w-3 h-3 text-muted-foreground" />
-              </Button>
+              />
               {outputTab === "raw" && (
                 <Button
-                  variant="quiet"
-                  className="w-5"
-                  onClick={() => copyText(rawOutputText)}
-                  disabled={!rawOutputText}
-                  title="Copy raw output"
-                >
-                  <Copy
+                  icon={<Copy
                     className={cn(
                       "w-3 h-3",
                       copied ? "text-green-500" : "text-muted-foreground",
                     )}
-                  />
-                </Button>
+                  />} aria-label="Copy raw output"
+                  variant="quiet"
+                  onClick={() => copyText(rawOutputText)}
+                  disabled={!rawOutputText}
+                  title="Copy raw output"
+                />
               )}
             </div>
           </div>

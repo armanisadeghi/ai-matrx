@@ -93,12 +93,11 @@ const FullscreenMarkdownEditor = ({
           <div className="flex items-center justify-between p-2 border-b border-border">
             <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Creator Content Admin View</h2>
             <Button
+              icon={<X />}
               variant="quiet" 
               onClick={() => closeEditor()}
               aria-label="Close"
-            >
-              <X className="h-5 w-5" />
-            </Button>
+            />
           </div>
           <div className="flex-1 overflow-hidden">
             <MarkdownClassificationTester 
@@ -139,12 +138,11 @@ const FullscreenMarkdownEditor = ({
             <div className="flex items-center justify-between p-2 border-b border-border">
               <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">{triggerLabel || "Content Processing & Classification"}</h2>
               <Button
+                icon={<X />}
                 variant="quiet" 
                 onClick={() => closeEditor()}
                 aria-label="Close"
-              >
-                <X className="h-5 w-5" />
-              </Button>
+              />
             </div>
             <div className="flex-1 overflow-hidden">
               <MarkdownClassificationTester 
