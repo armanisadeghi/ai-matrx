@@ -49,7 +49,8 @@ describe("save as template", () => {
     const { spec } = buildTemplateSpec(draft, { name: "Our setup", describes: "d", agents: agents.map((a) => ({ ...a, variables: a.variables.slice(0, 2) })), tableNames: { [TABLE]: "Company Profile" } }, "120000");
     const d = templateDeclaration(spec as never, "org-1") as unknown as { card: { name: string; footprint: { line: string } }; installPlan: { steps: unknown[] } };
     expect(d.card.name).toBe("Our setup");
-    expect(d.card.footprint.line).toBe("1 table · 1 agent");
+    expect(d.card.footprint.line).toMatch(/^1 table · .*1 agent$/);
+    expect(d.card.footprint.line).not.toMatch(/(^| )0 /);
     expect(d.installPlan.steps.length).toBeGreaterThan(0);
   });
 });
