@@ -1,5 +1,13 @@
 # CHANGELOG — Board (`features/board`)
 
+## 2026-10-04 — Every item's basics are always in the agent's first request
+
+- Owner: "the agent should instantly know the basics of what I have on my board and if I have one selected, then it should have the full data for that one ... it always sees enough to know what I'm talking about and has id references."
+- Cause (live, test@test.com, 6-item board reloaded, nothing selected): `board_items` had no `inlineUpTo`, so the server (default: inline under 200 chars) deferred it and the agent had to call `board_read`; asleep tiles read "Not loaded yet" because basics came only from a mounted tile's capture.
+- `board_items` `inlineUpTo: 24_000` (`BOARD_ITEMS_INLINE_CHARS`, `contextBudgetApproval` quotes the ruling); the value is fitted to it. Last-known basics persist per node (`BoardNode.basics`), sampled from awake tiles, written only on change; never-woken tiles carry add-time `{type, name}` marked `basics_stale`. Merge treats basics as a sample, not an edit.
+- Frames: clicking a frame's label selects it; its trash button or Delete / Backspace removes the frame (tiles stay), one undo step, Undo toast.
+- Guards: `__tests__/board-items-always-inline.test.ts` (6 of 7 failed first), `__tests__/frame-delete.test.tsx`; `feature-board-bridge.test.tsx` control updated (a capture-less tile now carries `{type, name}`, stale).
+
 ## 2026-10-04 — Multi-select, draggable frames, agent-working chip
 
 - Selection is a set (camera store `setSelection` / `toggleSelected` / `getSelection`; `getSelected()` = the lone selection only). Shift/⌘-click, marquee on empty board (Select tool, mouse/pen; a finger pans), ⌘A, Esc. One selection box; group drag = one undo step (`BoardStore.dragMany`, coalesced like a single drag; host registers `store.registerMover`), smart guides snap the group's bounds; arrows nudge (8px, shift ×10, grid cell with snap to grid); Delete on many = one step (`removeMany`). Resize stays single-tile.

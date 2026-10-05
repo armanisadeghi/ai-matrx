@@ -225,6 +225,21 @@ dormant; the host keeps them in an `ItemSurfaceIndex` (`BoardToolHost.itemSurfac
   `SELECTED_FULL_MAX_CHARS`) instead of basics. `BoardSurface` marks exactly one row `live` (it used
   to mark the selected, worked-in and focused tiles all live, so a dormant selected tile read "its
   full surface is in your context" when it was not).
+- **Always inline, every item known (Arman 2026-10-04).** "The agent should instantly know the basics of
+  what I have on my board and if I have one selected, then it should have the full data for that one."
+  `board_items` declares `inlineUpTo: 24_000` (= `BOARD_ITEMS_INLINE_CHARS`; the server's default
+  inlines only values under 200 chars, so before this the whole list was deferred behind a lookup;
+  `contextBudgetApproval` records the ruling) and `boardItemsOverview` never outgrows it: a board too
+  big sheds the compact tail, then the non-live selected tile's full values (12,000 → 6,000 → 3,000),
+  then the basics budget, then listed items. **Last-known basics** ride in the saved board per node
+  (`BoardNode.basics = {values, at, stale?}`): `UserBoard` samples every awake tile's brief every
+  `ITEM_BASICS_SAMPLE_MS` (10 s, tab visible) with `sampleItemBasics`, which returns only CHANGED
+  basics (never a write loop), written `history: false` (undo never sees them) through the debounced
+  autosave. A tile asleep, not loaded, or never mounted is listed with those basics fitted to its
+  share (`fitStoredBasics`) plus `basics_at`; a tile never awake anywhere carries what the add knew
+  (`{type, name}`, `basics_stale: true`). Two tabs: a basics-only change never overrides the other
+  tab's move and is never a conflict; the later sample wins (`board/merge.ts`). Guard:
+  `__tests__/board-items-always-inline.test.ts`.
 - **Request two, same turn — `board_open_item(id)`**: the item's declared values (with descriptions,
   capped) and controls — write-target lines from `describeAgentWritableTargets` (the injected
   `apply_surface_write` wording) and client tools with schemas — and it selects the item (a parked
