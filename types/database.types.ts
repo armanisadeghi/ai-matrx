@@ -38803,6 +38803,17 @@ export type Database = {
         }
         Returns: Json
       }
+      template_install_claim: {
+        Args: {
+          p_install_id: string
+          p_kind: string
+          p_label: string
+          p_lease_seconds?: number
+          p_organization_id: string
+          p_source_id?: string
+        }
+        Returns: Json
+      }
       template_install_note: {
         Args: {
           p_id: string
@@ -110568,9 +110579,11 @@ export type Database = {
           category_reason: string | null
           common_name: string | null
           content_selector: string | null
-          created_at: string | null
+          created_at: string
+          deleted_at: string | null
           id: string
           is_public: boolean | null
+          metadata: Json
           min_content_chars: number | null
           min_real_content_chars: number | null
           policy_action: string | null
@@ -110584,9 +110597,11 @@ export type Database = {
           category_reason?: string | null
           common_name?: string | null
           content_selector?: string | null
-          created_at?: string | null
+          created_at?: string
+          deleted_at?: string | null
           id?: string
           is_public?: boolean | null
+          metadata?: Json
           min_content_chars?: number | null
           min_real_content_chars?: number | null
           policy_action?: string | null
@@ -110600,9 +110615,11 @@ export type Database = {
           category_reason?: string | null
           common_name?: string | null
           content_selector?: string | null
-          created_at?: string | null
+          created_at?: string
+          deleted_at?: string | null
           id?: string
           is_public?: boolean | null
+          metadata?: Json
           min_content_chars?: number | null
           min_real_content_chars?: number | null
           policy_action?: string | null
@@ -110877,9 +110894,11 @@ export type Database = {
           category: string | null
           category_reason: string | null
           content_selector: string | null
-          created_at: string | null
+          created_at: string
+          deleted_at: string | null
           id: string
           is_public: boolean | null
+          metadata: Json
           min_content_chars: number | null
           min_real_content_chars: number | null
           path_pattern: string | null
@@ -110892,9 +110911,11 @@ export type Database = {
           category?: string | null
           category_reason?: string | null
           content_selector?: string | null
-          created_at?: string | null
+          created_at?: string
+          deleted_at?: string | null
           id?: string
           is_public?: boolean | null
+          metadata?: Json
           min_content_chars?: number | null
           min_real_content_chars?: number | null
           path_pattern?: string | null
@@ -110907,9 +110928,11 @@ export type Database = {
           category?: string | null
           category_reason?: string | null
           content_selector?: string | null
-          created_at?: string | null
+          created_at?: string
+          deleted_at?: string | null
           id?: string
           is_public?: boolean | null
+          metadata?: Json
           min_content_chars?: number | null
           min_real_content_chars?: number | null
           path_pattern?: string | null
@@ -126714,7 +126737,7 @@ export type Database = {
         Row: {
           biggest_obstacle: string | null
           company: string
-          created_at: string | null
+          created_at: string
           created_by: string | null
           current_ai_systems: string | null
           custom_fields: Json
@@ -126724,7 +126747,7 @@ export type Database = {
           id: string
           metadata: Json
           notes: string | null
-          organization_id: string | null
+          organization_id: string
           phone: string | null
           published_to_web: boolean
           published_to_web_at: string | null
@@ -126736,7 +126759,7 @@ export type Database = {
           shown_to: Database["platform"]["Enums"]["shown_to"] | null
           status: string
           step_completed: number
-          updated_at: string | null
+          updated_at: string
           updated_by: string | null
           use_case: string
           user_type: string
@@ -126747,7 +126770,7 @@ export type Database = {
         Insert: {
           biggest_obstacle?: string | null
           company: string
-          created_at?: string | null
+          created_at?: string
           created_by?: string | null
           current_ai_systems?: string | null
           custom_fields?: Json
@@ -126757,7 +126780,7 @@ export type Database = {
           id?: string
           metadata?: Json
           notes?: string | null
-          organization_id?: string | null
+          organization_id: string
           phone?: string | null
           published_to_web?: boolean
           published_to_web_at?: string | null
@@ -126769,7 +126792,7 @@ export type Database = {
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           status?: string
           step_completed?: number
-          updated_at?: string | null
+          updated_at?: string
           updated_by?: string | null
           use_case: string
           user_type: string
@@ -126780,7 +126803,7 @@ export type Database = {
         Update: {
           biggest_obstacle?: string | null
           company?: string
-          created_at?: string | null
+          created_at?: string
           created_by?: string | null
           current_ai_systems?: string | null
           custom_fields?: Json
@@ -126790,7 +126813,7 @@ export type Database = {
           id?: string
           metadata?: Json
           notes?: string | null
-          organization_id?: string | null
+          organization_id?: string
           phone?: string | null
           published_to_web?: boolean
           published_to_web_at?: string | null
@@ -126802,7 +126825,7 @@ export type Database = {
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           status?: string
           step_completed?: number
-          updated_at?: string | null
+          updated_at?: string
           updated_by?: string | null
           use_case?: string
           user_type?: string
@@ -133155,26 +133178,32 @@ export type Database = {
       }
       schema_templates: {
         Row: {
-          created_at: string | null
+          created_at: string
+          deleted_at: string | null
           description: string | null
           fields: Json
           id: string
+          metadata: Json
           template_name: string
           version: number
         }
         Insert: {
-          created_at?: string | null
+          created_at?: string
+          deleted_at?: string | null
           description?: string | null
           fields: Json
           id?: string
+          metadata?: Json
           template_name: string
           version?: number
         }
         Update: {
-          created_at?: string | null
+          created_at?: string
+          deleted_at?: string | null
           description?: string | null
           fields?: Json
           id?: string
+          metadata?: Json
           template_name?: string
           version?: number
         }

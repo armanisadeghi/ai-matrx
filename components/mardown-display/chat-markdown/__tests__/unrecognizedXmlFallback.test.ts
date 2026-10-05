@@ -445,7 +445,10 @@ describe("unrecognized XML accumulator remainders", () => {
   });
 });
 
-it("keeps a complete kind-looking object literal inside a generic XML fence interrupted by a tool", () => {
+// Ruling (b), round 3 (X1): an XML TAG is structure, not quoted source — a
+// kind inside it leaves the card as its own block, even when a tool call split
+// the tag's text. The XML pieces left behind carry no envelope.
+it("lifts a kind inside a generic XML fence interrupted by a tool (ruling b)", () => {
   const latest = new Map<string, RenderBlockPayload>();
   const accumulator = new StreamBlockAccumulator(
     "xml-code-continuation",
@@ -463,24 +466,25 @@ it("keeps a complete kind-looking object literal inside a generic XML fence inte
   );
   accumulator.finalize(dispatch);
   const blocks = [...latest.values()].filter((block) => block.content);
-  expect(blocks).toHaveLength(2);
-  expect(blocks.every((block) => block.data?.language === "xml")).toBe(true);
-  expect(blocks.every((block) => block.metadata?.__ir === undefined)).toBe(
-    true,
-  );
+  const kinds = blocks.filter((block) => block.metadata?.__ir !== undefined);
+  expect(kinds.map((block) => block.content)).toEqual([
+    '{"__kind":"flashcard_set","cards":[]}',
+  ]);
+  const xml = blocks.filter((block) => block.metadata?.__ir === undefined);
+  expect(xml.every((block) => block.data?.language === "xml")).toBe(true);
+  expect(xml.some((block) => block.content?.includes("__kind"))).toBe(false);
 });
 
-it("keeps directive-like JSON inside incomplete generic XML on the XML-code path", () => {
+it("lifts directive JSON out of incomplete generic XML, live = reload (ruling b)", () => {
   const source = '<x>\n{"__kind":"directive_v","value":"kept?"}';
   const staticBlocks = splitContentIntoBlocksV2(source);
-  expect(staticBlocks).toEqual([
+  expect(staticBlocks.map((block) => block.type)).toEqual(["code", "matrx"]);
+  expect(staticBlocks[0]).toEqual(
     expect.objectContaining({
-      type: "code",
-      content: source,
       language: "xml",
-      metadata: { isComplete: false, genericXmlContainer: true },
+      metadata: { genericXmlContainer: true },
     }),
-  ]);
+  );
   expect(expandTextBlocksInList(staticBlocks)).toEqual(staticBlocks);
 
   const latest = new Map<string, RenderBlockPayload>();
@@ -495,17 +499,13 @@ it("keeps directive-like JSON inside incomplete generic XML on the XML-code path
   accumulator.ingest(`${source}\n`, dispatch);
   accumulator.finalize(dispatch);
   const live = [...latest.values()].filter((block) => block.content);
-  expect(live).toEqual([
-    expect.objectContaining({
-      type: "code",
-      content: source,
-      data: { language: "xml" },
-      metadata: undefined,
-    }),
-  ]);
+  expect(live.map((block) => (block.content ?? "").trim())).toEqual(
+    staticBlocks.map((block) => block.content.trim()),
+  );
+  expect(live[0]?.metadata).toEqual({ genericXmlContainer: true });
 });
 
-it("keeps incomplete generic XML fragments unpromoted across a tool boundary", () => {
+it("lifts a kind out of incomplete generic XML across a tool boundary (ruling b)", () => {
   const latest = new Map<string, RenderBlockPayload>();
   const accumulator = new StreamBlockAccumulator(
     "xml-incomplete-tool",
@@ -520,13 +520,7 @@ it("keeps incomplete generic XML fragments unpromoted across a tool boundary", (
   accumulator.ingest('{"__kind":"directive_v","value":"kept?"}\n', dispatch);
   accumulator.finalize(dispatch);
   const blocks = [...latest.values()].filter((block) => block.content);
-  expect(blocks).toHaveLength(2);
-  expect(
-    blocks.every(
-      (block) => block.type === "code" && block.data?.language === "xml",
-    ),
-  ).toBe(true);
-  expect(blocks.every((block) => block.metadata?.__ir === undefined)).toBe(
-    true,
-  );
+  const xml = blocks.filter((block) => block.data?.language === "xml");
+  expect(xml.map((block) => (block.content ?? "").trim())).toEqual(["<x>"]);
+  expect(blocks.some((block) => block.data?.language !== "xml" && block.content?.includes("directive_v"))).toBe(true);
 });

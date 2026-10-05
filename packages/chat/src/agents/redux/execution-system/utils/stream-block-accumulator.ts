@@ -1629,6 +1629,7 @@ export class StreamBlockAccumulator {
     if (fragment.includes(`</${this.subState.tracker.rootTag}`)) return;
     const candidate = this.subState.kindCandidate ?? null;
     if (!candidate && !BARE_JSON_OPEN_RE.test(fragment.trimStart())) return;
+    if (!candidate && endsInsideXmlLiteral(this.currentBlockContent)) return;
     const text = candidate
       ? genericCandidateBody({ ...candidate, lines: [...candidate.lines, fragment] })
       : fragment;
