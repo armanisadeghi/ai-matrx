@@ -38,6 +38,11 @@ describe("a table citation opens AT its row", () => {
     const filter = JSON.parse(decodeURIComponent(t!.href.split("filter=")[1]!));
     expect(filter).toEqual({ material: "Batteries", weight_lbs: "331.89", pickup_ref_link: "PU-1022" });
   });
+  it("a row line that names its row id opens that row", () => {
+    const row = "11111111-2222-4333-8444-555555555555";
+    const t = recordCitationTarget(cite({ recordKind: "table", sourceId: `${ID}:r2-2`, excerpt: `id: ${row} | material: Tin` }));
+    expect(t?.href).toBe(`/data/${ID}?record=${row}`);
+  });
   it("a row range is 'Rows a–b'", () => {
     expect(recordCitationTarget(cite({ recordKind: "table", sourceId: `${ID}:r1-40` }))?.label).toBe("Rows 1–40");
   });
@@ -53,10 +58,10 @@ describe("a table citation opens AT its row", () => {
 describe("a pick list citation targets the cited choice", () => {
   it("opens the list page filtered to the choice and names it", () => {
     const t = recordCitationTarget(
-      cite({ recordKind: "pick_list", sourceId: `${ID}:r3-3`, excerpt: "name: Aluminum | group: Metals" }),
+      cite({ recordKind: "pick_list", sourceId: `${ID}:r3-3`, excerpt: "Aluminum: Light metal, recycled by weight" }),
     );
     expect(t?.label).toBe("Choice 3");
-    expect(t?.href.startsWith(`/lists/${ID}?filter=`)).toBe(true);
+    expect(t?.href).toBe(`/lists/${ID}?filter=${encodeURIComponent('{"name":"Aluminum"}')}`);
   });
 });
 

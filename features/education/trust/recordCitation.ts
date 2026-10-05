@@ -94,6 +94,14 @@ export function cellsOfExcerpt(excerpt: string | null | undefined): Record<strin
   return cells;
 }
 
+/** A pick list line is `label: description`; the choice is found by its name (the label). */
+export function choiceNameOfExcerpt(excerpt: string | null | undefined): string | null {
+  const line = (excerpt ?? "").split("\n")[0]!.trim();
+  if (!line) return null;
+  const at = line.indexOf(": ");
+  return (at > 0 ? line.slice(0, at) : line).trim() || null;
+}
+
 /** What a record citation opens: its place, its door, and (conversation) its message range. */
 export interface RecordCitationTarget {
   kind: RecordCitationKind;
@@ -132,7 +140,15 @@ export function recordCitationHref(
     case "table":
     case "pick_list": {
       const base = kind === "table" ? `/data/${id}` : `/lists/${id}`;
+      if (kind === "pick_list") {
+        const name = choiceNameOfExcerpt(excerpt);
+        return name ? `${base}?filter=${encodeURIComponent(JSON.stringify({ name }))}` : base;
+      }
       const cells = cellsOfExcerpt(excerpt);
+      // A row line carries its own row id: open that row's panel.
+      if (cells.id && new RegExp(`^${UUID}$`, "i").test(cells.id)) {
+        return `${base}?record=${encodeURIComponent(cells.id)}`;
+      }
       return Object.keys(cells).length
         ? `${base}?filter=${encodeURIComponent(JSON.stringify(cells))}`
         : base;
