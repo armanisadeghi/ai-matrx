@@ -23,6 +23,7 @@ import {
   ArrowDownToLine,
   ArrowRightLeft,
   ArrowUpToLine,
+  ClipboardList,
   Stethoscope,
   Focus,
   LinkIcon,
@@ -90,6 +91,11 @@ import { loadOrgDirectory } from "../useBoxIdentity";
 import type { OrgPosition } from "../positionsService";
 import { AgentOrgCard, boxHref } from "./AgentOrgCard";
 import { OrgBoxPicker } from "./OrgBoxPicker";
+import { DefineSeatJobDialog } from "./DefineSeatJobDialog";
+import { selectSeatJobs } from "@/features/agents/redux/orchestras/selectors";
+import { useOpenMandateWindow } from "@/features/overlays/openers/mandateWindow";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
+import { INTELLIGENCE_ICON } from "@/components/icons/domain-icons";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type CrossKind = Exclude<RecordedLinkKind, "reports_to">;
@@ -147,6 +153,18 @@ export function AgentOrgChartView({
   const [selection, setSelection] = useState<string[]>([]);
   const [pick, setPick] = useState<PickMode | null>(null);
   const [renaming, setRenaming] = useState<OrgPosition | null>(null);
+  const [defining, setDefining] = useState<OrgPosition | null>(null);
+  const seatJobs = useAppSelector(selectSeatJobs);
+  const openMandateWindow = useOpenMandateWindow();
+  /** The seat's job, in place: goal writer, building its agent and testing all live there. */
+  const openSeatJob = (p: OrgPosition) => {
+    const job = p.mandateId ? seatJobs[p.mandateId] : undefined;
+    if (!job) {
+      toast.error("This position's job is still loading. Try again in a moment.");
+      return;
+    }
+    openMandateWindow({ initialMandateKey: storedMandateKey(job.mandateKey), mandateKeys: [storedMandateKey(job.mandateKey)] });
+  };
   const [dropMenu, setDropMenu] = useState<{ x: number; y: number; title: string; actions: ChartAction[] } | null>(
     null,
   );
@@ -169,7 +187,7 @@ export function AgentOrgChartView({
     spreadWarnAt,
     isOpenPosition: (id) => {
       const p = positions.find((x) => x.id === id);
-      return Boolean(p && !p.filledByUserId);
+      return Boolean(p && !p.filledByUserId && !(p.mandateId && seatJobs[p.mandateId]?.holderAgentId));
     },
   });
   const seriousCount = health.filter((h) => h.serious).reduce((n, h) => n + h.keys.length, 0);
@@ -563,6 +581,17 @@ export function AgentOrgChartView({
           <>
             <Sep />
             <Label className="text-xs text-muted-foreground">Position</Label>
+            {position.mandateId ? (
+              <Item onSelect={() => openSeatJob(position)}>
+                <INTELLIGENCE_ICON className="mr-2 h-4 w-4" />
+                {seatJobs[position.mandateId]?.holderAgentId ? "Open its job" : "Build its agent…"}
+              </Item>
+            ) : (
+              <Item onSelect={() => setDefining(position)}>
+                <ClipboardList className="mr-2 h-4 w-4" />
+                Define the job…
+              </Item>
+            )}
             <Item onSelect={() => setRenaming(position)}>
               <PencilLine className="mr-2 h-4 w-4" />
               Rename…
@@ -898,6 +927,17 @@ export function AgentOrgChartView({
           )}
         </DialogContent>
       </Dialog>
+
+      <DefineSeatJobDialog
+        position={defining}
+        onClose={() => setDefining(null)}
+        onDefined={(job) => {
+          const p = defining;
+          setDefining(null);
+          toast.success(`${p?.name ?? "The position"} now has a job. Next, build its agent.`);
+          openMandateWindow({ initialMandateKey: storedMandateKey(job.mandateKey), mandateKeys: [storedMandateKey(job.mandateKey)] });
+        }}
+      />
 
       <TextInputDialog
         open={renaming !== null}

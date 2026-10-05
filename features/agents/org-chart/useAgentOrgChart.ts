@@ -16,7 +16,7 @@ import { useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectAllAgents } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { fetchOrchestras, loadOrchestra } from "@/features/agents/redux/orchestras/thunks";
-import { loadManualOrgEdges, loadOrgPositions } from "@/features/agents/redux/orchestras/orgChartThunks";
+import { loadManualOrgEdges, loadOrgPositions, loadSeatJobs } from "@/features/agents/redux/orchestras/orgChartThunks";
 import {
   selectManualOrgEdges,
   selectManualOrgError,
@@ -27,6 +27,7 @@ import {
   selectOrgPositions,
   selectOrgPositionsStatus,
 } from "@/features/agents/redux/orchestras/selectors";
+import { onMandateCacheInvalidated } from "@ai-matrx/chat/mandates/service";
 import { useEnsureAgentsLoaded } from "@/features/agents/orchestras/hooks/useEnsureAgentsLoaded";
 import { buildAgentOrgForest, type OrchestraShape } from "./buildAgentOrgForest";
 import { boxId, parseBoxId } from "./constants";
@@ -122,6 +123,16 @@ export function useAgentOrgChart(opts: { rootIds?: string[] } = {}) {
     if (!boxKey) return;
     dispatch(loadManualOrgEdges(boxKey.split(","), { direction: "both" }));
   }, [dispatch, boxKey]);
+
+  // The job behind every defined seat (where it stands on the ladder).
+  const seatMandates = [...new Set(positions.map((p) => p.mandateId).filter((m): m is string => Boolean(m)))].sort().join(",");
+  useEffect(() => {
+    if (!seatMandates) return;
+    const ids = seatMandates.split(",");
+    dispatch(loadSeatJobs(ids));
+    // A job changes in its own window (an agent built, a Holder set): re-read then.
+    return onMandateCacheInvalidated(() => void dispatch(loadSeatJobs(ids)));
+  }, [dispatch, seatMandates]);
 
   const positionById = new Map(positions.map((p) => [p.id, p]));
   const nameOf = (id: string) => {

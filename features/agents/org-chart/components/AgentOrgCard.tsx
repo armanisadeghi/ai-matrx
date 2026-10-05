@@ -183,6 +183,7 @@ export function AgentOrgCard({
 
       <div className="mt-auto flex min-w-0 flex-wrap items-center gap-1 pt-1.5">
         {activity && <ActivityBadge activity={activity} />}
+        {who.seat && !who.detail?.startsWith("Filled") && <SeatBadge stage={who.seat} />}
         {d.otherPlacements > 0 && (
           <span
             className={cn(
@@ -280,6 +281,22 @@ function ActivityBadge({ activity }: { activity: AgentActivity }) {
     >
       <span className={cn("h-1.5 w-1.5 rounded-full", s.dot)} />
       {text}
+    </span>
+  );
+}
+
+const SEAT_STYLE: Record<NonNullable<ReturnType<typeof useBoxIdentity>["seat"]>, { chip: string; label: string; title: string }> = {
+  noted: { chip: "bg-muted text-muted-foreground", label: "Noted", title: "Next: define its job" },
+  defined: { chip: "bg-warning/15 text-warning", label: "Needs an agent", title: "Its job is defined. Next: build its agent" },
+  staffed: { chip: "bg-success/15 text-success", label: "Agent at work", title: "An agent does this job" },
+  retired: { chip: "bg-destructive/10 text-destructive", label: "Job off", title: "Its job was removed or switched off" },
+};
+
+function SeatBadge({ stage }: { stage: keyof typeof SEAT_STYLE }) {
+  const s = SEAT_STYLE[stage];
+  return (
+    <span className={cn("inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium", s.chip)} title={s.title}>
+      {s.label}
     </span>
   );
 }
