@@ -9073,7 +9073,6 @@ export type Database = {
           organization_id: string
           updated_at: string
           updated_by: string | null
-          user_id: string
           version: number
         }
         Insert: {
@@ -9087,7 +9086,6 @@ export type Database = {
           organization_id: string
           updated_at?: string
           updated_by?: string | null
-          user_id: string
           version?: number
         }
         Update: {
@@ -9101,7 +9099,6 @@ export type Database = {
           organization_id?: string
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
           version?: number
         }
         Relationships: [
@@ -9135,7 +9132,6 @@ export type Database = {
           reply_count: number | null
           updated_at: string
           updated_by: string | null
-          user_id: string | null
           username: string
           version: number
         }
@@ -9159,7 +9155,6 @@ export type Database = {
           reply_count?: number | null
           updated_at?: string
           updated_by?: string | null
-          user_id?: string | null
           username: string
           version?: number
         }
@@ -9183,7 +9178,6 @@ export type Database = {
           reply_count?: number | null
           updated_at?: string
           updated_by?: string | null
-          user_id?: string | null
           username?: string
           version?: number
         }
@@ -9403,7 +9397,6 @@ export type Database = {
           organization_id: string
           updated_at: string
           updated_by: string | null
-          user_id: string
           version: number
         }
         Insert: {
@@ -9417,7 +9410,6 @@ export type Database = {
           organization_id: string
           updated_at?: string
           updated_by?: string | null
-          user_id: string
           version?: number
         }
         Update: {
@@ -9431,7 +9423,6 @@ export type Database = {
           organization_id?: string
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
           version?: number
         }
         Relationships: [
@@ -47072,7 +47063,6 @@ export type Database = {
           max_consecutive_failures: number
           metadata: Json
           organization_id: string
-          owner_id: string
           resource_types: string[] | null
           secret: string
           target_url: string
@@ -47095,7 +47085,6 @@ export type Database = {
           max_consecutive_failures?: number
           metadata?: Json
           organization_id: string
-          owner_id: string
           resource_types?: string[] | null
           secret: string
           target_url: string
@@ -47118,7 +47107,6 @@ export type Database = {
           max_consecutive_failures?: number
           metadata?: Json
           organization_id?: string
-          owner_id?: string
           resource_types?: string[] | null
           secret?: string
           target_url?: string
@@ -47323,7 +47311,6 @@ export type Database = {
           max_consecutive_failures: number
           metadata: Json
           organization_id: string
-          owner_id: string
           resource_types: string[] | null
           secret: string
           target_url: string
@@ -132750,7 +132737,7 @@ export type Database = {
           content: string | null
           content_hash: string | null
           content_preview: string | null
-          created_at: string | null
+          created_at: string
           created_by: string | null
           custom_fields: Json
           deleted_at: string | null
@@ -132760,7 +132747,7 @@ export type Database = {
           id: string
           label: string
           last_device_id: string | null
-          metadata: Json | null
+          metadata: Json
           organization_id: string
           position: number | null
           project_id: string | null
@@ -132772,7 +132759,7 @@ export type Database = {
           sync_version: number
           tags: string[] | null
           task_id: string | null
-          updated_at: string | null
+          updated_at: string
           updated_by: string | null
           version: number
           visibility: Database["platform"]["Enums"]["visibility"]
@@ -132781,7 +132768,7 @@ export type Database = {
           content?: string | null
           content_hash?: string | null
           content_preview?: string | null
-          created_at?: string | null
+          created_at?: string
           created_by?: string | null
           custom_fields?: Json
           deleted_at?: string | null
@@ -132791,7 +132778,7 @@ export type Database = {
           id?: string
           label?: string
           last_device_id?: string | null
-          metadata?: Json | null
+          metadata?: Json
           organization_id: string
           position?: number | null
           project_id?: string | null
@@ -132803,7 +132790,7 @@ export type Database = {
           sync_version?: number
           tags?: string[] | null
           task_id?: string | null
-          updated_at?: string | null
+          updated_at?: string
           updated_by?: string | null
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
@@ -132812,7 +132799,7 @@ export type Database = {
           content?: string | null
           content_hash?: string | null
           content_preview?: string | null
-          created_at?: string | null
+          created_at?: string
           created_by?: string | null
           custom_fields?: Json
           deleted_at?: string | null
@@ -132822,7 +132809,7 @@ export type Database = {
           id?: string
           label?: string
           last_device_id?: string | null
-          metadata?: Json | null
+          metadata?: Json
           organization_id?: string
           position?: number | null
           project_id?: string | null
@@ -132834,7 +132821,7 @@ export type Database = {
           sync_version?: number
           tags?: string[] | null
           task_id?: string | null
-          updated_at?: string | null
+          updated_at?: string
           updated_by?: string | null
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]

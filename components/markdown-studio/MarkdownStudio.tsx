@@ -486,12 +486,8 @@ export function MarkdownStudio() {
       toast.info("Nothing to copy yet");
       return;
     }
-    try {
-      await navigator.clipboard.writeText(content);
-      toast.success(`Copied ${formatCount(content.length)} characters of source`);
-    } catch {
-      toast.error("The clipboard refused the copy — select the text and copy it instead.");
-    }
+    // The studio's source IS markdown: "Copy markdown" through the one copy module.
+    await copyRichContent(content, "markdown", { toast: `Copied ${formatCount(content.length)} characters of source` });
   };
 
   const handleRestoreDraft = async () => {

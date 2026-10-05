@@ -97,6 +97,7 @@ import { usePreparedNoteContentSource } from "../usePreparedNoteContentSource";
 import { NoteWorkingCopyAlert } from "./NoteWorkingCopyAlert";
 import { authoredBy } from "@/components/rich-content/prose/remote-image-policy";
 import { insertAtRichCaret } from "@/components/rich-editor/caretInsert";
+import { copyRichContent } from "@/components/matrx/buttons/markdown-copy-utils";
 
 interface NoteContentEditorProps {
   noteId: string;
@@ -458,7 +459,7 @@ export function NoteContentEditor({
   }, []);
 
   const handleShareClipboard = useCallback(() => {
-    navigator.clipboard.writeText(localContent).catch(() => {});
+    void copyRichContent(localContent, "default");
   }, [localContent]);
 
   const handleMove = useCallback(() => {

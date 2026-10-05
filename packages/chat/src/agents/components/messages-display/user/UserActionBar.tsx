@@ -39,7 +39,7 @@ import {
   TapTargetButtonForGroup,
   TapTargetButtonGroup,
 } from "@ai-matrx/tap-target";
-import { copyToClipboard } from "@host/components/matrx/buttons/markdown-copy-utils";
+import { copyRichContent } from "@host/components/matrx/buttons/markdown-copy-utils";
 import { SpeakerButton } from "@host/features/tts/components/SpeakerButton";
 import { useAppDispatch, useAppSelector, useAppStore } from "../../../../store/hooks";
 import { useOpenFullScreenMarkdownEditorBridge } from "@host/features/overlays/openers/fullScreenEditor";
@@ -167,13 +167,11 @@ export function UserActionBar({
   );
 
   const handleCopy = async () => {
-    await copyToClipboard(content, {
-      onSuccess: () => {
-        setIsCopied(true);
-        setTimeout(() => setIsCopied(false), 2000);
-      },
-      onError: (err) => console.error("Failed to copy:", err),
-    });
+    // THE one copy (formatted + markdown); Copy markdown / Copy text are in the ⋯ menu's Copy as.
+    if (await copyRichContent(content, "default", { toast: false })) {
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000);
+    }
   };
 
   // Route a footer action from the edit modal to its flow — the shared

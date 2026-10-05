@@ -24,6 +24,10 @@ import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { useAdminCost } from "@/components/cost/useAdminCost";
 import { splitAdminCostColumns } from "@/components/cost/adminCostColumns";
 import { useEffect, useState } from "react";
+import {
+  serverTableInitialState,
+  useServerTable,
+} from "@/features/admin/shared/server-table/useServerTable";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { ADMIN_KNOWLEDGE_SURFACE_NAME, createAdminKnowledgeScope } from "@/features/surfaces/manifests/admin-knowledge.manifest";
@@ -58,7 +62,7 @@ import { AppLink } from "@/components/navigation/AppLink";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import {
   getKgCostSummary,
-  listOrgCosts,
+  searchOrgCosts,
   getOrgCostDetail,
   listPendingBatches,
   getBatchDetail,
@@ -188,23 +192,18 @@ function KpiTiles({
 // Org leaderboard
 // ---------------------------------------------------------------------------
 
+const ORG_INITIAL_STATE = serverTableInitialState({ id: "daily_auto_rag_cost_used_usd", direction: "desc" });
+
+/** Search, column filters, sort and paging are answered by `admin_kg_cost_orgs` over EVERY organization. */
 function OrgLeaderboard({
-  orgs,
-  loading,
-  refreshing,
-  total,
+  tableProps,
   onPick,
-  read,
 }: {
-  orgs: OrgCostRow[];
-  loading: boolean;
-  refreshing: boolean;
-  total: number | null;
+  tableProps: ReturnType<typeof useServerTable<OrgCostRow>>["tableProps"];
   onPick: (orgId: string) => void;
-  read: ReadOutcome;
 }) {
   const fmtUsd = useAdminCost();
-  const columns: MatrxColumnDef<OrgCostRow>[] = splitAdminCostColumns<OrgCostRow>([
+  const costColumns: MatrxColumnDef<OrgCostRow>[] = splitAdminCostColumns<OrgCostRow>([
     {
       id: "organization",
       header: "Organization",
@@ -271,21 +270,22 @@ function OrgLeaderboard({
       ),
     },
   ], ["daily_auto_rag_cost_used_usd", "daily_auto_rag_budget_usd"]);
+  // The "points" twin is the USD value times a rate the browser holds: the database cannot filter it
+  // (filter the USD column), and it sorts exactly like its USD column.
+  const columns = costColumns.map((c) =>
+    typeof c.id === "string" && c.id.endsWith("_points") ? { ...c, filter: false as const } : c,
+  );
 
   return (
     <MatrxDataTable
       tableId="administration/kg-cost/organizations"
-      data={orgs}
+      {...tableProps}
       columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: () => (
         <ChevronRight className="h-4 w-4 text-muted-foreground" />
       ) }]}
       getRowId={(row) => row.organization_id}
-      isLoading={loading}
-      isFetching={refreshing}
-      read={read}
       density="condensed"
       stickyHeader
-      pageSize={0}
       toolbar={{
         title: "Organizations",
         search: true,
@@ -293,7 +293,6 @@ function OrgLeaderboard({
       }}
       detail={{ enabled: false }}
       window={{ enabled: false }}
-      coverage={{ noun: "organization", total: total ?? undefined, cap: 200, answeredBy: "source" }}
       onRowOpen={(row) => onPick(row.organization_id)}
 
       emptyState={{
@@ -1017,11 +1016,16 @@ export function KgCostDashboard() {
   const [summaryLoading, setSummaryLoading] = useState(true);
   const [summaryError, setSummaryError] = useState<string | null>(null);
 
-  const [orgs, setOrgs] = useState<OrgCostRow[]>([]);
-  const [orgsLoading, setOrgsLoading] = useState(true);
-  const [orgsRefreshing, setOrgsRefreshing] = useState(false);
-  const [orgsTotal, setOrgsTotal] = useState<number | null>(null);
-  const [orgsError, setOrgsError] = useState<string | null>(null);
+  const orgTable = useServerTable<OrgCostRow>(
+    async (state) => {
+      const page = await searchOrgCosts(state);
+      return { rows: page.items, total: page.total };
+    },
+    ORG_INITIAL_STATE,
+    "organizations",
+  );
+  const orgs = orgTable.rows;
+  const reloadOrgs = orgTable.reload;
 
   const [batches, setBatches] = useState<BatchRow[]>([]);
   const [batchesLoading, setBatchesLoading] = useState(true);
@@ -1049,18 +1053,10 @@ export function KgCostDashboard() {
     return () => controller.abort();
   }, [refreshTick]);
 
+  // The header Refresh re-reads the organization page too.
   useEffect(() => {
-    const controller = new AbortController();
-    if (orgs.length === 0) setOrgsLoading(true); else setOrgsRefreshing(true);
-    setOrgsError(null);
-    listOrgCosts({ limit: 200 }, { signal: controller.signal })
-      .then((r) => { setOrgs(r.items); setOrgsTotal(r.total); })
-      .catch((error: unknown) => { if (!controller.signal.aborted) setOrgsError(readFailureMessage(error, "organizations")); })
-      .finally(() => {
-        if (!controller.signal.aborted) { setOrgsLoading(false); setOrgsRefreshing(false); }
-      });
-    return () => controller.abort();
-  }, [refreshTick]);
+    if (refreshTick > 0) reloadOrgs();
+  }, [refreshTick, reloadOrgs]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -1112,7 +1108,7 @@ export function KgCostDashboard() {
             variant="outline"
             size="sm"
             onClick={() => setRefreshTick((t) => t + 1)}
-            disabled={summaryLoading || orgsLoading || batchesLoading}
+            disabled={summaryLoading || orgTable.loading || batchesLoading}
           >
             <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
             Refresh
@@ -1130,14 +1126,7 @@ export function KgCostDashboard() {
           </section>
 
           <section>
-            <OrgLeaderboard
-              read={readOf({ loading: orgsLoading, error: orgsError }, { what: "organizations", onRetry: () => setRefreshTick((t) => t + 1) })}
-              orgs={orgs}
-              loading={orgsLoading}
-              refreshing={orgsRefreshing}
-              total={orgsTotal}
-              onPick={setOpenOrgId}
-            />
+            <OrgLeaderboard tableProps={orgTable.tableProps} onPick={setOpenOrgId} />
           </section>
 
           <section>

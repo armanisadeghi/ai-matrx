@@ -60,6 +60,7 @@ import {
 import { guardRoutingOf } from "../result-fields/guard-routing";
 import { resultAsObject } from "../renderers/_shared";
 import { RecordChangeApprovalCard } from "@host/features/record-change-approvals/RecordChangeApprovalCard";
+import { SHOW_PARKED_ASK_EVENT } from "../../agents/runtime-reconnect/show-parked-ask";
 import { ParkedOnPersonCard } from "@host/features/action-requests/components/ParkedOnPersonCard";
 import {
   heldWriteHeadline,
@@ -336,8 +337,21 @@ const ToolCallVisualizationInner: React.FC<{
 
   // Card chrome follows the same one-way rule: a live card is open and stays
   // open; a fresh-session persisted card mounts collapsed. User click sticks.
+  // A stay-open tool (an open ask waiting on the person) is never folded away
+  // by a fresh mount: its form is the demand for action.
   const cardOpen =
-    userChoice ?? (!isPersisted || wasToolCardLive(primaryCallId));
+    userChoice ??
+    (effectiveMode === "stay-open" ||
+      !isPersisted ||
+      wasToolCardLive(primaryCallId));
+  // "Show" on the waiting-for-you banner opens a folded ask card first.
+  useEffect(() => {
+    if (effectiveMode !== "stay-open") return;
+    const open = () => setUserChoice(true);
+    window.addEventListener(SHOW_PARKED_ASK_EVENT, open);
+    return () => window.removeEventListener(SHOW_PARKED_ASK_EVENT, open);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [effectiveMode, primaryCallId]);
   const toggleCard = () => setUserChoice(!cardOpen);
 
   // Mount the body once it has EVER been open, so the collapse can animate and a

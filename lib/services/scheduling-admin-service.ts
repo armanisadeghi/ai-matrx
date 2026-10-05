@@ -99,15 +99,22 @@ export async function fetchAllTasksAdmin(
 
 /**
  * One page of the admin Tasks table, answered by the database over EVERY scheduled task:
- * search (title, description, owner email), the column filters, sort and paging all run in the
- * query; `total` is the server's exact count. Owner email search resolves emails to user ids first
- * (get_user_ids_by_email-style lookup is not exposed, so the owner is matched through the
- * `user_email` search of the admin directory when present).
+ * search (title, description, owner name/email), the column filters (title, owner, dates), sort
+ * and paging all run in the query; `total` is the server's exact count. Owner matching goes
+ * through `admin_user_ids_matching` (super-admin door) because the task row only holds the id.
  */
 export async function fetchTasksAdminPage(
   state: MatrxDataTableQueryState,
 ): Promise<{ rows: AdminTaskRow[]; total: number }> {
-  const base = schedulerDb(supabase)
+  const ownerFilter = state.columnFilters.owner;
+  const ownerTerm = ownerFilter?.kind === "text" ? ownerFilter.value.trim() : "";
+  const searchTerm = state.search.trim();
+  const [searchOwners, filterOwners] = await Promise.all([
+    searchTerm ? ownerIdsMatching(searchTerm) : Promise.resolve([] as string[]),
+    ownerTerm ? ownerIdsMatching(ownerTerm) : Promise.resolve(null),
+  ]);
+
+  let base = schedulerDb(supabase)
     .schema("scheduler").from("sch_task")
     .select(
       `
@@ -118,15 +125,27 @@ export async function fetchTasksAdminPage(
       { count: "exact" },
     )
     .eq("kind", "agent");
-  const { data, error, count } = await applyServerTableState(base, state, TASK_TABLE_SPEC);
+  // The owner column filter narrows to the matched people (none matched = no rows).
+  if (filterOwners) base = base.in("user_id", filterOwners.length ? filterOwners : [NO_USER]);
+  const { data, error, count } = await applyServerTableState(base, state, TASK_TABLE_SPEC, {
+    searchOrExtra: searchOwners.length ? [`user_id.in.(${searchOwners.join(",")})`] : [],
+  });
   if (error) throw pgErrorToError(error);
   return { rows: await withTaskOwners(data), total: count ?? 0 };
+}
+
+const NO_USER = "00000000-0000-0000-0000-000000000000";
+
+async function ownerIdsMatching(term: string): Promise<string[]> {
+  const { data, error } = await supabase.rpc("admin_user_ids_matching", { p_term: term });
+  if (error) throw pgErrorToError(error);
+  return (data ?? []) as string[];
 }
 
 const TASK_TABLE_SPEC = {
   searchColumns: ["title", "description"],
   text: { title: "title" },
-  select: {},
+  select: { state: "enabled" },
   date: { next_due_at: "next_due_at", updated_at: "updated_at" },
   sort: { title: "title", next_due_at: "next_due_at", updated_at: "updated_at", state: "enabled" },
   defaultSort: { column: "updated_at", ascending: false },

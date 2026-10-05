@@ -3,10 +3,8 @@
 
 import React, { useState, useRef, useLayoutEffect } from "react";
 import { createPortal } from "react-dom";
-import { Copy, ChevronDown, FileText, Code, Brain } from "lucide-react";
-import { FcGoogle } from "react-icons/fc";
-import { FaMicrosoft } from "react-icons/fa";
-import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
+import { Copy, ChevronDown, FileCode2, FileText, Code, Brain } from "lucide-react";
+import { copyRichContent, copyToClipboard, type CopyFlavor } from "@/components/matrx/buttons/markdown-copy-utils";
 
 interface CopyDropdownButtonProps {
   content: string;
@@ -71,28 +69,11 @@ export function CopyDropdownButton({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleCopyPlainText = async () => {
-    await copyToClipboard(content, {
-      isMarkdown: true,
-      formatForGoogleDocs: false,
-      onSuccess: handleSuccess,
-    });
-  };
-
-  const handleCopyGoogleDocs = async () => {
-    await copyToClipboard(content, {
-      isMarkdown: true,
-      formatForGoogleDocs: true,
-      onSuccess: handleSuccess,
-    });
-  };
-
-  const handleCopyMicrosoftWord = async () => {
-    await copyToClipboard(content, {
-      isMarkdown: true,
-      formatForGoogleDocs: true,
-      onSuccess: handleSuccess,
-    });
+  // THE one copy module (markdown-copy-utils.ts): Copy = formatted + markdown
+  // (knob), then the two explicit flavors. "Google Docs" and "Microsoft Word"
+  // wrote the same bytes as the formatted copy, so they are that one row.
+  const copyAs = async (flavor: CopyFlavor) => {
+    if (await copyRichContent(content, flavor)) handleSuccess();
   };
 
   const handleHtmlPreview = async () => {
@@ -109,12 +90,7 @@ export function CopyDropdownButton({
   };
 
   const handleCopyWithThinking = async () => {
-    await copyToClipboard(content, {
-      isMarkdown: true,
-      formatForGoogleDocs: false,
-      includeThinking: true,
-      onSuccess: handleSuccess,
-    });
+    if (await copyRichContent(content, "default", { includeThinking: true, toast: "Copied with thinking" })) handleSuccess();
   };
 
   return (
@@ -153,25 +129,25 @@ export function CopyDropdownButton({
               className="z-[9999] bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg"
             >
               <button
-                onClick={handleCopyPlainText}
+                onClick={() => copyAs("default")}
                 className="flex items-center w-full px-3 py-2 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors first:rounded-t-lg"
               >
+                <Copy className="h-4 w-4 mr-2" />
+                Copy
+              </button>
+              <button
+                onClick={() => copyAs("markdown")}
+                className="flex items-center w-full px-3 py-2 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors border-t border-zinc-100 dark:border-zinc-600"
+              >
+                <FileCode2 className="h-4 w-4 mr-2" />
+                Copy markdown
+              </button>
+              <button
+                onClick={() => copyAs("text")}
+                className="flex items-center w-full px-3 py-2 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors border-t border-zinc-100 dark:border-zinc-600"
+              >
                 <FileText className="h-4 w-4 mr-2" />
-                Plain Text
-              </button>
-              <button
-                onClick={handleCopyGoogleDocs}
-                className="flex items-center w-full px-3 py-2 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors border-t border-zinc-100 dark:border-zinc-600"
-              >
-                <FcGoogle className="h-4 w-4 mr-2" />
-                Google Docs
-              </button>
-              <button
-                onClick={handleCopyMicrosoftWord}
-                className="flex items-center w-full px-3 py-2 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors border-t border-zinc-100 dark:border-zinc-600"
-              >
-                <FaMicrosoft className="h-4 w-4 mr-2 text-blue-500" />
-                Microsoft Word
+                Copy text
               </button>
               {onShowHtmlPreview && (
                 <button

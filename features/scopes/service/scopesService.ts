@@ -61,21 +61,11 @@ import {
   mapPgErrorPair,
   ok,
 } from "@/features/scopes/service/rpcResult";
-import {
-  decodeContextItemRow,
-  decodeScopeNode,
-  decodeScopeTypeNode,
-  resolveSlug,
-} from "@/features/scopes/service/scopeRows";
 import type {
-  ApplyTemplateResult,
   ArchivedScopeTypeRow,
   ContextItemRow,
   ContextItemValue,
   ContextTemplate,
-  CreateContextItemParams,
-  CreateScopeParams,
-  CreateScopeTypeParams,
   OrgNode,
   ProjectNode,
   ReferencingContextValue,
@@ -83,21 +73,15 @@ import type {
   ResolvedSuggestionTarget,
   ResolvedSuggestionValue,
   EntityType,
-  ScopeNode,
   ScopeRow,
   ScopeTreeResponse,
   ScopeTypeNode,
   ScopeTypeRow,
-  ScopesRpcError,
   ScopesRpcResult,
   ScopeWithType,
-  SetContextValuePayload,
-  SetContextValueResult,
   TaskBucketLevel,
   TaskNode,
   TemplateScopeTypeDetail,
-  UpdateScopeParams,
-  UpdateScopeTypeParams,
 } from "@/features/scopes/types";
 import type { EntityTypeToken } from "@ai-matrx/associations";
 
@@ -1353,70 +1337,6 @@ export const scopesService = {
   //  the create paths take an explicit org — nothing here assigns one.
   // ──────────────────────────────────────────────────────────────────
 
-  /** `create_scope_type` — org-explicit, org-access checked inside. */
-  async createScopeType(
-    params: CreateScopeTypeParams,
-  ): Promise<ScopesRpcResult<ScopeTypeNode>> {
-    try {
-      requireUserId();
-      const slug = resolveSlug(
-        params.slug,
-        params.label_plural || params.label_singular,
-      );
-      if (isScopesRpcErr(slug)) return slug;
-      const { data, error } = await supabase.rpc("create_scope_type", {
-        p_org_id: params.org_id,
-        p_label_singular: params.label_singular,
-        p_label_plural: params.label_plural,
-        p_parent_type_id: params.parent_type_id ?? undefined,
-        p_icon: params.icon ?? "folder",
-        p_description: params.description ?? "",
-        p_sort_order: params.sort_order ?? 0,
-        p_max_assignments: params.max_assignments ?? undefined,
-        p_default_variable_keys: params.default_variable_keys ?? [],
-        p_color: params.color ?? undefined,
-        p_slug: slug.data,
-      });
-      if (error) return err(...mapPgErrorPair(error));
-      return decodeScopeTypeNode(data, "create_scope_type");
-    } catch (e) {
-      return { ok: false, error: mapPgError(e) };
-    }
-  },
-
-  /** `update_scope_type` — org resolved from the row and checked inside. */
-  async updateScopeType(
-    params: UpdateScopeTypeParams,
-  ): Promise<ScopesRpcResult<ScopeTypeNode>> {
-    try {
-      requireUserId();
-      let slug: string | undefined;
-      if (params.slug !== undefined) {
-        const resolved = resolveSlug(
-          params.slug,
-          params.label_plural ?? params.label_singular ?? "",
-        );
-        if (isScopesRpcErr(resolved)) return resolved;
-        slug = resolved.data;
-      }
-      const { data, error } = await supabase.rpc("update_scope_type", {
-        p_type_id: params.type_id,
-        p_label_singular: params.label_singular,
-        p_label_plural: params.label_plural,
-        p_icon: params.icon,
-        p_description: params.description,
-        p_sort_order: params.sort_order,
-        p_max_assignments: params.max_assignments,
-        p_color: params.color,
-        p_slug: slug,
-      });
-      if (error) return err(...mapPgErrorPair(error));
-      return decodeScopeTypeNode(data, "update_scope_type");
-    } catch (e) {
-      return { ok: false, error: mapPgError(e) };
-    }
-  },
-
   // ──────────────────────────────────────────────────────────────────
   //  READ — ARCHIVED SCOPE TYPES (THE ARCHIVED-ITEMS LAW's reveal half)
   // ──────────────────────────────────────────────────────────────────
@@ -1446,213 +1366,9 @@ export const scopesService = {
     }
   },
 
-  /**
-   * `restore_scope_type` — clears the type's `deleted_at`; the platform
-   * soft-delete cascade brings back exactly the scopes and context items that
-   * THIS removal took (matched on the shared timestamp), never rows somebody
-   * had removed by hand beforehand.
-   */
-  async restoreScopeType(
-    typeId: string,
-  ): Promise<ScopesRpcResult<{ id: string }>> {
-    try {
-      requireUserId();
-      const { error } = await supabase.rpc("restore_scope_type", {
-        p_type_id: typeId,
-      });
-      if (error) return err(...mapPgErrorPair(error));
-      return ok({ id: typeId });
-    } catch (e) {
-      return { ok: false, error: mapPgError(e) };
-    }
-  },
-
-  /** `delete_scope_type` — soft archive; owner/admin membership checked inside. */
-  async deleteScopeType(
-    typeId: string,
-  ): Promise<ScopesRpcResult<{ id: string }>> {
-    try {
-      requireUserId();
-      const { error } = await supabase.rpc("delete_scope_type", {
-        p_type_id: typeId,
-      });
-      if (error) return err(...mapPgErrorPair(error));
-      return ok({ id: typeId });
-    } catch (e) {
-      return { ok: false, error: mapPgError(e) };
-    }
-  },
-
-  /** `create_scope` — org-explicit, org-access checked inside. */
-  async createScope(
-    params: CreateScopeParams,
-  ): Promise<ScopesRpcResult<ScopeNode>> {
-    try {
-      requireUserId();
-      const slug = resolveSlug(params.slug, params.name);
-      if (isScopesRpcErr(slug)) return slug;
-      const { data, error } = await supabase.rpc("create_scope", {
-        p_org_id: params.org_id,
-        p_type_id: params.type_id,
-        p_name: params.name,
-        p_parent_scope_id: params.parent_scope_id ?? undefined,
-        p_description: params.description ?? "",
-        p_settings: params.settings ?? {},
-        p_slug: slug.data,
-        p_sort_order: params.sort_order ?? undefined,
-      });
-      if (error) return err(...mapPgErrorPair(error));
-      return decodeScopeNode(data, "create_scope");
-    } catch (e) {
-      return { ok: false, error: mapPgError(e) };
-    }
-  },
-
-  /** `update_scope` — org resolved from the row and checked inside. */
-  async updateScope(
-    params: UpdateScopeParams,
-  ): Promise<ScopesRpcResult<ScopeNode>> {
-    try {
-      requireUserId();
-      let slug: string | undefined;
-      if (params.slug !== undefined) {
-        const resolved = resolveSlug(params.slug, params.name ?? "");
-        if (isScopesRpcErr(resolved)) return resolved;
-        slug = resolved.data;
-      }
-      const { data, error } = await supabase.rpc("update_scope", {
-        p_scope_id: params.scope_id,
-        p_name: params.name,
-        p_description: params.description,
-        p_settings: params.settings ?? undefined,
-        p_slug: slug,
-        p_sort_order: params.sort_order,
-      });
-      if (error) return err(...mapPgErrorPair(error));
-      return decodeScopeNode(data, "update_scope");
-    } catch (e) {
-      return { ok: false, error: mapPgError(e) };
-    }
-  },
-
-  /** `delete_scope` — soft archive; owner/admin membership checked inside. */
-  async deleteScope(scopeId: string): Promise<ScopesRpcResult<{ id: string }>> {
-    try {
-      requireUserId();
-      const { error } = await supabase.rpc("delete_scope", {
-        p_scope_id: scopeId,
-      });
-      if (error) return err(...mapPgErrorPair(error));
-      return ok({ id: scopeId });
-    } catch (e) {
-      return { ok: false, error: mapPgError(e) };
-    }
-  },
-
-  /** `create_context_item` — org resolved from the scope type, org-admin checked inside. */
-  async createContextItem(
-    params: CreateContextItemParams,
-  ): Promise<ScopesRpcResult<ContextItemRow>> {
-    try {
-      requireUserId();
-      const { data, error } = await supabase.rpc("create_context_item", {
-        p_scope_type_id: params.scope_type_id,
-        p_key: params.key,
-        p_display_name: params.display_name,
-        p_value_type: params.value_type ?? "string",
-        p_description: params.description ?? "",
-        p_category: params.category ?? undefined,
-        p_fetch_hint: params.fetch_hint ?? "on_demand",
-        p_sensitivity: params.sensitivity ?? "internal",
-        p_tags: params.tags ?? [],
-        p_slug: params.slug ?? undefined,
-        p_sort_order: params.sort_order ?? undefined,
-        p_allowed_reference_types: params.allowed_reference_types ?? undefined,
-        p_max_items: params.max_items ?? undefined,
-        p_allowed_scope_type_ids: params.allowed_scope_type_ids ?? undefined,
-        p_reference_source: params.reference_source ?? undefined,
-      });
-      if (error) return err(...mapPgErrorPair(error));
-      return decodeContextItemRow(data, "create_context_item");
-    } catch (e) {
-      return { ok: false, error: mapPgError(e) };
-    }
-  },
-
   // updateContextItem retired (lane SCOPES-OLD-WRITERS, 2026-09-29): a context field is edited only
   // through the store's scope door, scopeStore.updateContextItem (custom.context_item_write), which
   // decides the RPC-or-column split from the patch exactly as this method did.
-
-  /** `delete_context_item` — soft archive (`is_active=false`, values retained). */
-  async deleteContextItem(
-    itemId: string,
-  ): Promise<ScopesRpcResult<{ id: string }>> {
-    try {
-      requireUserId();
-      const { error } = await supabase.rpc("delete_context_item", {
-        p_item_id: itemId,
-      });
-      if (error) return err(...mapPgErrorPair(error));
-      return ok({ id: itemId });
-    } catch (e) {
-      return { ok: false, error: mapPgError(e) };
-    }
-  },
-
-  /**
-   * Write a value into a scope cell via the `set_context_value` SECURITY
-   * DEFINER RPC — the only sanctioned mutation path for
-   * `context.context_item_values` (atomic version-flip-then-insert, scope
-   * write-access checked inside the function). `auth.uid()` is the live user
-   * when called from the FE, so we never pass `acting_user_id`. Defaults
-   * `source_type` to `ai_enriched` (the RPC also defaults it, but we make the
-   * common KG-suggestion intent explicit).
-   */
-  async setContextValue(
-    payload: SetContextValuePayload,
-  ): Promise<ScopesRpcResult<SetContextValueResult>> {
-    try {
-      requireUserId();
-      const { data, error } = await supabase.rpc("set_context_value", {
-        p_payload: {
-          source_type: "ai_enriched",
-          ...payload,
-        } as never,
-      });
-      if (error) return err(...mapPgErrorPair(error));
-
-      // `set_context_value` returns `Json` (i.e. `unknown`) in the generated
-      // types, so decode through a single optional-field shape rather than a
-      // discriminated union (the latter doesn't narrow off an `unknown` cast).
-      const envelope = data as {
-        ok?: boolean;
-        data?: SetContextValueResult;
-        error?: { code?: string; message?: string };
-      } | null;
-
-      if (!envelope || typeof envelope !== "object") {
-        return err("internal", "set_context_value returned no result");
-      }
-      if (!envelope.ok) {
-        const code = envelope.error?.code;
-        const mapped: ScopesRpcError["code"] =
-          code === "unauthorized"
-            ? // access-errors: ok — passes through the code the set_context_value RPC itself returned; the server's verdict, not a guess
-              "unauthorized"
-            : code === "forbidden_org"
-              ? "forbidden_org"
-              : code === "not_found"
-                ? "not_found"
-                : code === "invalid_argument"
-                  ? "invalid_argument"
-                  : "internal";
-        return err(mapped, envelope.error?.message ?? "Could not set value");
-      }
-      return ok(envelope.data as SetContextValueResult);
-    } catch (e) {
-      return { ok: false, error: mapPgError(e) };
-    }
-  },
 
   // Value history operations — their RPCs do not exist yet; the surface
   // stays constant so callers compile today and light up when they ship.
@@ -1682,33 +1398,6 @@ export const scopesService = {
       if (error) return err(...mapPgErrorPair(error));
       const rows = Array.isArray(data) ? data : [];
       return ok(rows as unknown as ReferencingContextValue[]);
-    } catch (e) {
-      return { ok: false, error: mapPgError(e) };
-    }
-  },
-
-  /** `apply_template` — org-explicit; org-access checked inside the RPC. */
-  async applyTemplate(params: {
-    template_id: string;
-    org_id: string;
-  }): Promise<ScopesRpcResult<ApplyTemplateResult>> {
-    try {
-      requireUserId();
-      const { data, error } = await supabase.rpc("apply_template", {
-        p_template_id: params.template_id,
-        p_org_id: params.org_id,
-      });
-      if (error) return err(...mapPgErrorPair(error));
-      // Json-direct RPC (no row schema) — sanctioned two-step cast after a
-      // minimal runtime check; see the type-safety skill, Pattern 1.
-      const result =
-        data && typeof data === "object" && !Array.isArray(data)
-          ? (data as unknown as ApplyTemplateResult)
-          : null;
-      if (!result) {
-        return err("internal", "apply_template returned no result");
-      }
-      return ok(result);
     } catch (e) {
       return { ok: false, error: mapPgError(e) };
     }

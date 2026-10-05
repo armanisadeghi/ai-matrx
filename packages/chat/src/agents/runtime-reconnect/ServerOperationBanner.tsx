@@ -22,6 +22,7 @@ import {
   Play,
 } from "lucide-react";
 import { useState } from "react";
+import { showParkedAsk as showParkedAskFn } from "./show-parked-ask";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import type { ServerOperationState } from "./types";
 import { selectActivePendingAsksForConversation } from "../ui-first-tools/redux/pending-asks.slice";
@@ -80,11 +81,7 @@ export function ServerOperationBanner({
   // Parked on a person (an approve-spend ask): the call's own card holds the
   // form, and only the answer resumes the turn — no "Continue agent" here.
   const waitingOnPerson = waiting && operation.recoveryState === "waiting_on_person";
-  const showParkedAsk = () => {
-    document
-      .querySelector("[data-parked-ask]")
-      ?.scrollIntoView({ behavior: "smooth", block: "center" });
-  };
+  const showParkedAsk = showParkedAskFn;
   const shouldRecheck =
     !operation.userRequestId ||
     operation.recoveryState === "checking_for_prompt" ||
@@ -112,7 +109,11 @@ export function ServerOperationBanner({
   }
 
   return (
-    <div className="mb-1.5 flex items-center gap-2 rounded-lg border border-border bg-muted/60 px-3 py-2 text-sm text-muted-foreground">
+    <div
+      // The floating assists pill rests above this banner, never on its Show / Continue button.
+      data-assist-dock-avoid=""
+      className="mb-1.5 flex items-center gap-2 rounded-lg border border-border bg-muted/60 px-3 py-2 text-sm text-muted-foreground"
+    >
       {waiting && (hasQuestion || waitingOnPerson) ? (
         <MessageCircleQuestion className="h-4 w-4 shrink-0 text-primary" />
       ) : waiting ? (

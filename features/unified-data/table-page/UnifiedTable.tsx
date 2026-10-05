@@ -21,7 +21,7 @@
 import { useMemo, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { RecordsMount, TablePage, WhereItLives, personActor, recordsDataSource } from "@ai-matrx/records-ui";
-import type { PageView, RecordsMountProps, TablePageActionHost } from "@ai-matrx/records-ui";
+import type { PageView, RecordsMountProps, TablePageActionHost, ViewAddressState } from "@ai-matrx/records-ui";
 import type { RecordFilter } from "@ai-matrx/records";
 import { Button } from "@ai-matrx/design-system";
 
@@ -317,6 +317,8 @@ export function UnifiedTableBody({
   onLeave,
   onViewChanged,
   onShownViewChange,
+  viewAddress,
+  onViewAddressChange,
   content,
 }: {
   mount: UnifiedTableMount;
@@ -326,6 +328,9 @@ export function UnifiedTableBody({
   onLeave?: () => void;
   onViewChanged?: (view: PageView | string) => void;
   onShownViewChange?: (shown: ShownViewLike) => void;
+  /** The view in the address bar (FTS-5): what the address said on arrival, and where changes are written. */
+  viewAddress?: ViewAddressState | null;
+  onViewAddressChange?: (state: ViewAddressState | null) => void;
 }) {
   const router = useRouter();
   const { tableId, address, object, shared, pendingInvitation } = mount;
@@ -334,6 +339,10 @@ export function UnifiedTableBody({
   const shownViewReport: { onShownViewChange?: (shown: ShownViewLike) => void } = onShownViewChange
     ? { onShownViewChange }
     : {};
+  const viewInAddress: { viewAddress?: ViewAddressState | null; onViewAddressChange?: (state: ViewAddressState | null) => void } = {
+    ...(onViewAddressChange ? { onViewAddressChange } : {}),
+    ...(viewAddress !== undefined ? { viewAddress } : {}),
+  };
   const pageHeader: { header?: (chrome: { actions: ReactNode }) => ReactNode } = header ? { header } : {};
   const mountedTable = !mount.mountsTheTable ? null : content !== undefined ? (
     <>
@@ -352,6 +361,7 @@ export function UnifiedTableBody({
           activeView={address.view}
           activeGroupField={address.group}
           {...shownViewReport}
+          {...viewInAddress}
           cameFrom={address.from}
           filter={address.filter}
           onViewChanged={onViewChanged}

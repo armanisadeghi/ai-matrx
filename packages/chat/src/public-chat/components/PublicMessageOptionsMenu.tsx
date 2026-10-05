@@ -5,7 +5,7 @@
  */
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Copy,
   FileCode,
@@ -33,6 +33,7 @@ import { useSelector } from "react-redux";
 import { selectUser } from "@host/lib/redux/slices/userSlice";
 import { useAppDispatch } from "../../store/hooks";
 import { openOverlay, CHAT_WINDOWS } from "../../host/windows";
+import { kindTextToMarkdown } from "@host/features/content-ir/surfaces/kind-text-to-markdown";
 import { removeCodeSpans, replaceFences } from "@host/lib/markdown/code-ranges";
 import { selectOrganizationId, ensureOrganizationContext, isOrganizationSelectionCancelled } from "../../host/org";
 
@@ -64,7 +65,7 @@ interface PublicMessageOptionsMenuProps {
  * - TTS uses browser speechSynthesis (no auth required) with a fallback notice.
  */
 const PublicMessageOptionsMenu: React.FC<PublicMessageOptionsMenuProps> = ({
-  content,
+  content: answerContent,
   onClose,
   onShowHtmlPreview,
   onEditContent,
@@ -75,6 +76,10 @@ const PublicMessageOptionsMenu: React.FC<PublicMessageOptionsMenuProps> = ({
   metadata,
 }) => {
   const dispatch = useAppDispatch();
+  // Every row below is a human destination (clipboard, file, notes, task,
+  // email, speech): a kind in the answer goes out as its markdown, never as
+  // raw `{"__kind":…}` JSON. `answerContent` (the data) is never altered.
+  const content = useMemo(() => kindTextToMarkdown(answerContent), [answerContent]);
   const [showEmailDialog, setShowEmailDialog] = useState(false);
   const [showAuthGate, setShowAuthGate] = useState(false);
   const [isTtsPlaying, setIsTtsPlaying] = useState(false);

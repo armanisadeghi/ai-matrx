@@ -11,10 +11,9 @@
 
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { toast } from "@/lib/toast";
 import {
   Select,
   SelectContent,
@@ -28,16 +27,19 @@ import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableCo
 import { StatusPill } from "@/features/scheduling/components/shared/StatusPill";
 import { humanizeRelative } from "@/features/scheduling/utils/triggerHumanize";
 import {
-  fetchAllRunsAdmin,
+  fetchRunsAdminPage,
   type AdminRunRow,
 } from "@/lib/services/scheduling-admin-service";
+import {
+  serverTableInitialState,
+  useServerTable,
+} from "@/features/admin/shared/server-table/useServerTable";
 import { adminScheduleHref } from "@/features/scheduling/constants/routes";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import type { RunStatus, Surface } from "@/features/scheduling/types";
 import { SURFACE_VALUES } from "@/features/scheduling/constants/surfaces";
 import { useAdminSchedulingScopeSlice } from "@/features/scheduling/lib/admin-scheduling-scope";
 import { useScheduledRunMenuSection } from "@/features/scheduling/components/shared/scheduling-menu-sections";
-import { readOf } from "@/components/read-state/ReadGate";
 
 const STATUSES: RunStatus[] = [
   "queued",
@@ -49,46 +51,34 @@ const STATUSES: RunStatus[] = [
   "skipped",
 ];
 
+const INITIAL_STATE = serverTableInitialState({ id: "created_at", direction: "desc" });
+
 export default function AdminRunsPage() {
-  const [rows, setRows] = useState<AdminRunRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [fetching, setFetching] = useState(false);
-  // A failed read is not "No runs match" (RC-B12 r13).
-  const [loadError, setLoadError] = useState<unknown>(null);
   const [status, setStatus] = useState<"__all__" | RunStatus>("__all__");
   const [surface, setSurface] = useState<"__all__" | Surface>("__all__");
+
+  // Search, column filters, sort and paging — and the two pickers below — are answered by the
+  // database over EVERY run (fetchRunsAdminPage); the table holds one page and shows the server's total.
+  const { rows, total, loading, reload, tableProps } = useServerTable<AdminRunRow>(
+    (state) =>
+      fetchRunsAdminPage(state, {
+        status: status === "__all__" ? null : status,
+        surface: surface === "__all__" ? null : surface,
+      }),
+    INITIAL_STATE,
+    "runs",
+    `${status}|${surface}`,
+  );
+  const fetching = loading;
+  const load = reload;
 
   // The pickers' "__all__" sentinel is emitted as "any" — the vocabulary the
   // manifest declares and the word the UI actually shows ("Any status").
   useAdminSchedulingScopeSlice("runs", () => ({
     run_status_filter: status === "__all__" ? "any" : status,
     run_surface_filter: surface === "__all__" ? "any" : surface,
-    run_row_count: rows.length,
+    run_row_count: total,
   }));
-
-  const load = useCallback(async () => {
-    setFetching(true);
-    try {
-      setRows(
-        await fetchAllRunsAdmin({
-          status: status === "__all__" ? null : status,
-          surface: surface === "__all__" ? null : surface,
-          limit: 200,
-        }),
-      );
-      setLoadError(null);
-    } catch (err) {
-      setLoadError(err ?? new Error("The runs read failed"));
-      toast.error(err instanceof Error ? err.message : String(err));
-    } finally {
-      setLoading(false);
-      setFetching(false);
-    }
-  }, [status, surface]);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
 
   // ONE right-click menu for the whole pane, shared with orphan-leases (same
   // row shape — `useScheduledRunMenuSection` is the identity's ONE builder).
@@ -101,7 +91,7 @@ export default function AdminRunsPage() {
         `Status: ${r.status}`,
         `Surface: ${r.surface ?? "—"}`,
       ].join("\n"),
-    onMarkedFailed: () => void load(),
+    onMarkedFailed: () => load(),
   });
 
   const columns = useMemo((): MatrxColumnDef<AdminRunRow>[] => {
@@ -110,7 +100,8 @@ export default function AdminRunsPage() {
         id: "status",
         accessorKey: "status",
         header: "Status",
-        filter: "select",
+        // The Status picker in the toolbar owns this filter (server-side); a second one would disagree.
+        filter: false,
         width: 110,
         cell: (r) => <StatusPill status={r.status} />,
       },
@@ -118,6 +109,9 @@ export default function AdminRunsPage() {
         id: "task_id",
         header: "Task",
         accessorFn: (r) => r.task_title ?? r.task_id,
+        filter: "text",
+        // Sorting by an embedded task's title is not offered by the query.
+        sortable: false,
         width: 240,
         cell: (r) => (
           <EntityRef
@@ -132,7 +126,8 @@ export default function AdminRunsPage() {
         id: "surface",
         accessorKey: "surface",
         header: "Surface",
-        filter: "select",
+        // The Surface picker in the toolbar owns this filter (server-side).
+        filter: false,
         width: 130,
         cell: (r) => <span className="text-xs">{r.surface ?? "—"}</span>,
       },
@@ -140,6 +135,8 @@ export default function AdminRunsPage() {
         id: "started",
         header: "Started",
         accessorFn: (r) => r.started_at ?? r.claimed_at ?? r.created_at,
+        // Falls back across three columns; the database sorts started_at and filters Queued / Finished.
+        filter: false,
         cell: (r) => (
           <span className="text-xs">
             {humanizeRelative(r.started_at ?? r.claimed_at ?? r.created_at)}
@@ -151,14 +148,27 @@ export default function AdminRunsPage() {
         id: "finished_at",
         accessorKey: "finished_at",
         header: "Finished",
+        filter: "date",
         cell: (r) => (
           <span className="text-xs">{humanizeRelative(r.finished_at)}</span>
         ),
         width: 120,
       },
       {
+        id: "created_at",
+        accessorKey: "created_at",
+        header: "Queued",
+        filter: "date",
+        hidden: true,
+        width: 120,
+        cell: (r) => <span className="text-xs">{humanizeRelative(r.created_at)}</span>,
+      },
+      {
         id: "summary",
         header: "Summary",
+        // The toolbar search matches summary and error text in the database.
+        filter: false,
+        sortable: false,
         accessorFn: (r) => r.result_summary ?? r.error_message ?? "",
         cell: (r) => (
           <span className="block max-w-[24rem] truncate text-xs">
@@ -170,6 +180,8 @@ export default function AdminRunsPage() {
         id: "id",
         accessorKey: "id",
         header: "ID",
+        filter: false,
+        sortable: false,
         cellKind: "uuid",
         width: 110,
       },
@@ -187,18 +199,13 @@ export default function AdminRunsPage() {
           extraSections={rowMenu.sections}
         >
         <MatrxDataTable
-          urlState={{ id: "scheduling-runs" }}
-          data={rows}
+                    {...tableProps}
           columns={columns}
           getRowId={(r) => r.id}
-          isLoading={loading}
-          isFetching={fetching}
-          pageSize={50}
-          read={readOf({ loading, error: loadError }, { what: "runs", onRetry: () => void load() })}
           emptyState={{ title: "No runs match" }}
           toolbar={{
             search: true,
-            searchPlaceholder: "Search runs…",
+            searchPlaceholder: "Search task, summary, error or a run id…",
             facets: [
               {
                 type: "custom",
@@ -260,7 +267,7 @@ export default function AdminRunsPage() {
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => void load()}
+                onClick={() => load()}
                 disabled={fetching}
               >
                 {fetching ? (

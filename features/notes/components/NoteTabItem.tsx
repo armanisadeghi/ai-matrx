@@ -80,6 +80,7 @@ import { noteTabRecordMenuKey } from "./noteRecordMenu";
 import { MoveNoteDialog } from "./MoveNoteDialog";
 import { noteFolderReference, type FolderReference } from "../types";
 import { noteIdentityContentSource } from "../richDocumentSource";
+import { copyRichContent } from "@/components/matrx/buttons/markdown-copy-utils";
 
 interface NoteTabItemProps {
   noteId: string;
@@ -285,9 +286,9 @@ export function NoteTabItem({ noteId, instanceId, standalone = false }: NoteTabI
   }, [dispatch, isDirty, noteId]);
 
   const handleCopyContent = useCallback(() => {
-    navigator.clipboard
-      .writeText(content)
-      .then(() => {
+    // THE one copy (formatted + markdown); the Copy as rows offer markdown / text.
+    void copyRichContent(content, "default", { toast: "Note content copied" }).then((ok) => {
+        if (!ok) return;
         setContentCopied(true);
         if (copiedResetTimerRef.current)
           clearTimeout(copiedResetTimerRef.current);
@@ -295,9 +296,7 @@ export function NoteTabItem({ noteId, instanceId, standalone = false }: NoteTabI
           () => setContentCopied(false),
           1200,
         );
-        toast.success("Note content copied");
-      })
-      .catch(() => toast.error("Failed to copy note content"));
+    });
   }, [content]);
 
   const handleDuplicate = useCallback(async () => {

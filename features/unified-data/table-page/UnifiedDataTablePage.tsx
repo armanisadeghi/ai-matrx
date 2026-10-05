@@ -17,7 +17,8 @@ import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTable } from "@ai-matrx/records/react";
 import { SyncedTableBar } from "@/features/unified-data/connect-database/SyncedTableBar";
-import type { PageView } from "@ai-matrx/records-ui";
+import type { PageView, ViewAddressState } from "@ai-matrx/records-ui";
+import { VIEW_ADDRESS_KEYS, viewAddressFromParams, viewAddressToParams } from "@ai-matrx/records-ui";
 import type { RecordFilter } from "@ai-matrx/records";
 
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
@@ -179,6 +180,21 @@ export function UnifiedDataTablePage({ tableId }: { tableId: string }) {
     replaceAddressWithoutNavigating(currentPathWithSearch(next));
   }, []);
   /**
+   * THE VIEW IN THE ADDRESS (FTS-5): sort, column filters, search, hidden columns and page ride
+   * `?sort= &cf= &q= &hide= &page=`. Read ONCE on arrival (the package opens on it); every change
+   * the person makes is written back, replacing the entry, so a copied link opens the same look.
+   * Same history write as the layout above.
+   */
+  const [viewAddress] = useState<ViewAddressState | null>(() =>
+    viewAddressFromParams((key) => (typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get(key))),
+  );
+  const onViewAddressChange = useCallback((state: ViewAddressState | null) => {
+    const next = new URLSearchParams(typeof window === "undefined" ? "" : window.location.search);
+    for (const key of VIEW_ADDRESS_KEYS) next.delete(key);
+    for (const [key, value] of Object.entries(viewAddressToParams(state))) next.set(key, value);
+    replaceAddressWithoutNavigating(currentPathWithSearch(next));
+  }, []);
+  /**
    * THE SHELL HEADER BELIEVES THE TABLE (GATES-TAIL, VERIFIER-21 #7). The table named its own
    * organization, so the header's red "Choose org" would be a lie: nothing here waits for a choice.
    */
@@ -291,6 +307,8 @@ export function UnifiedDataTablePage({ tableId }: { tableId: string }) {
             header={header}
             onLeave={leaveTable}
             onViewChanged={onViewChanged}
+            viewAddress={viewAddress}
+            onViewAddressChange={onViewAddressChange}
             onShownViewChange={setShownView}
           />
         </div>

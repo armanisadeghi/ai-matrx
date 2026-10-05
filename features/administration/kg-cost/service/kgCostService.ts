@@ -2,13 +2,15 @@
  * features/administration/kg-cost/service/kgCostService.ts
  *
  * Direct-to-Supabase client for the read-only KG-cost dashboard.
- * `public.fn_kg_cost_summary` / `_list_orgs` / `_org_detail` /
+ * `public.fn_kg_cost_summary` / `_org_detail` /
  * `_pending_batches` / `_batch_detail` mirror the retired
  * `aidream/api/routers/kg_cost.py` endpoints exactly — admin-gated INSIDE
  * each function (public.is_super_admin()), identity from auth.uid() only.
  */
 import { makeAssertData } from "@/utils/errors";
 import { createClient } from "@/utils/supabase/client";
+import { dateFilterBounds } from "@ai-matrx/design-system/data-table";
+import type { MatrxDataTableQueryState } from "@ai-matrx/design-system/data-table/types";
 
 const assertData = makeAssertData("load the knowledge-graph cost data");
 
@@ -127,14 +129,60 @@ export async function getKgCostSummary(
   return assertData(data, error) as unknown as KgCostSummaryResponse;
 }
 
-export async function listOrgCosts(
-  params: { limit?: number; offset?: number } = {},
+/** Table column id → the database function's sort key (the "points" twin sorts like its USD column). */
+const ORG_SORT: Record<string, string> = {
+  organization: "organization",
+  daily_auto_rag_cost_used_usd: "used",
+  daily_auto_rag_cost_used_usd_points: "used",
+  daily_auto_rag_budget_usd: "budget",
+  daily_auto_rag_budget_usd_points: "budget",
+  percent_used: "percent_used",
+  last_charge_at: "last_charge_at",
+};
+
+/** The table's controlled query state → `admin_kg_cost_orgs`'s filter bag. */
+export function orgCostFilters(state: MatrxDataTableQueryState): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  if (state.search.trim()) out.search = state.search.trim();
+  const numberKey: Record<string, string> = {
+    daily_auto_rag_cost_used_usd: "used",
+    daily_auto_rag_budget_usd: "budget",
+    percent_used: "percent",
+  };
+  for (const [id, f] of Object.entries(state.columnFilters)) {
+    if (!f) continue;
+    if (id === "organization" && f.kind === "text" && f.value.trim()) out.organization = f.value.trim();
+    else if (numberKey[id] && f.kind === "number") {
+      const key = numberKey[id];
+      const op = f.op ?? "between";
+      if (op === "eq") {
+        if (f.min !== undefined) { out[`min_${key}`] = f.min; out[`max_${key}`] = f.min; }
+      } else {
+        if ((op === "between" || op === "gt") && f.min !== undefined) out[`min_${key}`] = f.min;
+        if ((op === "between" || op === "lt") && f.max !== undefined) out[`max_${key}`] = f.max;
+      }
+    } else if (id === "last_charge_at" && f.kind === "date") {
+      const bounds = dateFilterBounds(f);
+      if (bounds.since) out.last_charge_since = bounds.since;
+      if (bounds.until) out.last_charge_until = bounds.until;
+    }
+  }
+  return out;
+}
+
+/** One page of the organization cost table, searched/filtered/sorted by the database over EVERY organization. */
+export async function searchOrgCosts(
+  state: MatrxDataTableQueryState,
   opts: { signal?: AbortSignal } = {},
 ): Promise<OrgCostListResponse> {
   const supabase = createClient();
-  let query = supabase.rpc("fn_kg_cost_list_orgs", {
-    p_limit: params.limit ?? 100,
-    p_offset: params.offset ?? 0,
+  const sortKey = state.sort ? ORG_SORT[state.sort.id] : undefined;
+  let query = supabase.rpc("admin_kg_cost_orgs", {
+    p_filters: orgCostFilters(state) as never,
+    p_sort: sortKey ?? "used",
+    p_dir: sortKey ? (state.sort?.direction ?? "desc") : "desc",
+    p_limit: state.pageSize,
+    p_offset: (Math.max(state.page, 1) - 1) * state.pageSize,
   });
   if (opts.signal) query = query.abortSignal(opts.signal);
   const { data, error } = await query;

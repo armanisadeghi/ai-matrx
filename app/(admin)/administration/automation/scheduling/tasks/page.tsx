@@ -21,7 +21,7 @@
 
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { AlertCircle, Loader2, RefreshCw } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -32,9 +32,13 @@ import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import {
-  fetchAllTasksAdmin,
+  fetchTasksAdminPage,
   type AdminTaskRow,
 } from "@/lib/services/scheduling-admin-service";
+import {
+  serverTableInitialState,
+  useServerTable,
+} from "@/features/admin/shared/server-table/useServerTable";
 import {
   humanizeRelative,
   humanizeTrigger,
@@ -45,7 +49,6 @@ import { useDuplicateSchedules } from "@/features/scheduling/hooks/useDuplicateS
 import { useAdminSchedulingScopeSlice } from "@/features/scheduling/lib/admin-scheduling-scope";
 import { useScheduledTaskMenuSection } from "@/features/scheduling/components/shared/scheduling-menu-sections";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { readOf } from "@/components/read-state/ReadGate";
 
 function triggerText(r: AdminTaskRow): string {
   return r.trigger
@@ -56,25 +59,27 @@ function triggerText(r: AdminTaskRow): string {
     : "—";
 }
 
+const INITIAL_STATE = serverTableInitialState({ id: "updated_at", direction: "desc" });
+
 export default function AdminTasksPage() {
-  const [rows, setRows] = useState<AdminTaskRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [fetching, setFetching] = useState(false);
-  // A failed read is shown where the rows would be — a toast alone vanished
-  // and left an empty table that read as "no tasks" (RC-B12 round 4).
-  const [loadError, setLoadError] = useState<unknown>(null);
+  // Search, column filters, sort and paging are answered by the database over EVERY scheduled
+  // task (fetchTasksAdminPage) — the table holds one page and says the server's total.
+  const { rows, setRows, total, loading, reload, tableProps } = useServerTable<AdminTaskRow>(
+    fetchTasksAdminPage,
+    INITIAL_STATE,
+    "scheduled tasks",
+  );
+  const fetching = loading;
   const {
     groups: duplicateGroups,
     error: duplicateError,
     refetch: refetchDuplicates,
-  } = useDuplicateSchedules(rows.length);
+  } = useDuplicateSchedules(total);
 
-  // The RAW fetched count. The toolbar's search box and the State column's
-  // filter live inside MatrxDataTable and narrow the screen without telling
-  // this page, so there is deliberately no `task_search`/`task_enabled_filter`
-  // value — the surface cannot promise state it cannot read.
+  // The server's total, not the page length. The toolbar's search box and column filters are
+  // source-owned now, but the surface still does not claim their text: no `task_search` value.
   useAdminSchedulingScopeSlice("tasks", () => ({
-    task_row_count: rows.length,
+    task_row_count: total,
   }));
 
   // ONE right-click menu for the whole pane — the row is resolved from the
@@ -92,29 +97,13 @@ export default function AdminTasksPage() {
       setRows((prev) => prev.map((row) => (row.id === r.id ? { ...row, enabled: false } : row))),
   });
 
-  const load = useCallback(async () => {
-    setFetching(true);
-    try {
-      setRows(await fetchAllTasksAdmin({ limit: 200 }));
-      setLoadError(null);
-    } catch (err) {
-      setLoadError(err);
-    } finally {
-      setLoading(false);
-      setFetching(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
-
   const columns = useMemo((): MatrxColumnDef<AdminTaskRow>[] => {
     return [
       {
         id: "title",
         accessorKey: "title",
         header: "Title",
+        filter: "text",
         width: 260,
         cell: (r) => (
           <div className="min-w-0">
@@ -139,6 +128,10 @@ export default function AdminTasksPage() {
         // The row already carries the agent it runs — rendering it without a
         // door would be knowing the answer and withholding it.
         accessorFn: (r) => r.agent?.agent_id ?? "",
+        // The row holds only the agent's id (no name to match in the query), so there is nothing
+        // meaningful to filter or sort by.
+        filter: false,
+        sortable: false,
         cellKind: "uuid",
         fk: { token: "agent", label: "Agent" },
         width: 130,
@@ -147,6 +140,10 @@ export default function AdminTasksPage() {
         id: "owner",
         header: "Owner",
         accessorFn: (r) => r.user_email ?? r.user_id,
+        // Filter matches the person's name or email in the database; the email is resolved after
+        // the page is read, so there is nothing to sort by.
+        filter: "text",
+        sortable: false,
         // No `user` entity token and no `/users/<id>` route exist — the id
         // stays copyable rather than pointing at a route that isn't there.
         cell: (r) => (
@@ -165,6 +162,9 @@ export default function AdminTasksPage() {
         id: "trigger",
         header: "Trigger",
         accessorFn: triggerText,
+        // The trigger is a joined, humanized value (type + config) the query cannot filter or sort.
+        filter: false,
+        sortable: false,
         cell: (r) => <span className="text-xs">{triggerText(r)}</span>,
         width: 200,
       },
@@ -172,6 +172,7 @@ export default function AdminTasksPage() {
         id: "next_due_at",
         accessorKey: "next_due_at",
         header: "Next",
+        filter: "date",
         cell: (r) => (
           <span className="text-xs">{humanizeRelative(r.next_due_at)}</span>
         ),
@@ -181,6 +182,7 @@ export default function AdminTasksPage() {
         id: "updated_at",
         accessorKey: "updated_at",
         header: "Updated",
+        filter: "date",
         cell: (r) => (
           <span className="text-xs">{humanizeRelative(r.updated_at)}</span>
         ),
@@ -191,6 +193,10 @@ export default function AdminTasksPage() {
         header: "State",
         accessorFn: (r) => (r.enabled ? "Enabled" : "Paused"),
         filter: "select",
+        filterOptions: [
+          { value: "true", label: "Enabled" },
+          { value: "false", label: "Paused" },
+        ],
         width: 100,
         cell: (r) => (
           <Badge
@@ -205,6 +211,9 @@ export default function AdminTasksPage() {
         id: "id",
         accessorKey: "id",
         header: "ID",
+        // The toolbar search matches a pasted full id.
+        filter: false,
+        sortable: false,
         cellKind: "uuid",
         fk: { label: "Scheduled task", href: (id) => adminScheduleHref(id) },
         width: 110,
@@ -243,7 +252,7 @@ export default function AdminTasksPage() {
       <DuplicateScheduleBanner
         groups={duplicateGroups}
         onResolved={() => {
-          void load();
+          reload();
           void refetchDuplicates();
         }}
       />
@@ -256,23 +265,18 @@ export default function AdminTasksPage() {
           extraSections={rowMenu.sections}
         >
         <MatrxDataTable
-          urlState={{ id: "scheduling-tasks" }}
-          data={rows}
+                    {...tableProps}
           columns={columns}
           getRowId={(r) => r.id}
-          isLoading={loading}
-          isFetching={fetching}
-          pageSize={50}
-          read={readOf({ loading, error: loadError }, { what: "scheduled tasks", onRetry: () => void load() })}
           emptyState={{ title: "No tasks match" }}
           toolbar={{
             search: true,
-            searchPlaceholder: "Search title, owner, trigger…",
+            searchPlaceholder: "Search title, description or owner…",
             actions: (
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => void load()}
+                onClick={reload}
                 disabled={fetching}
               >
                 {fetching ? (

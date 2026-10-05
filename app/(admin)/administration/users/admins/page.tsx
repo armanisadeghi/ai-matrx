@@ -52,6 +52,14 @@ import { UserSearchField } from "@/features/user-search/UserSearchField";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import {
+  serverTableInitialState,
+  useServerTable,
+} from "@/features/admin/shared/server-table/useServerTable";
+import {
+  searchAdminAudit,
+  type AuditEntry,
+} from "@/features/admin/users/components/adminAuditService";
 
 const PAGE_LOCATION =
   "AI Matrx Admin — Admins & Levels (/administration/users/admins)";
@@ -69,24 +77,14 @@ interface AdminRow {
   last_sign_in_at: string | null;
 }
 
-interface AuditEntry {
-  id: string;
-  actor_user_id: string | null;
-  actor_email: string | null;
-  action: "promote" | "update" | "revoke";
-  target_user_id: string;
-  target_email: string | null;
-  before: Record<string, unknown> | null;
-  after: Record<string, unknown> | null;
-  created_at: string;
-}
-
 interface LookupResult {
   user_id: string;
   email: string;
   is_admin: boolean;
   admin_level: AdminLevel | null;
 }
+
+const AUDIT_INITIAL_STATE = serverTableInitialState({ id: "created_at", direction: "desc" }, 25);
 
 const LEVELS: AdminLevel[] = ["developer", "senior_admin", "super_admin"];
 
@@ -155,10 +153,17 @@ function AdminsManagementPageContent() {
   }, [focusedUserId]);
 
   const [admins, setAdmins] = useState<AdminRow[]>([]);
-  const [audit, setAudit] = useState<AuditEntry[]>([]);
+  // The audit log: search, filters, sort and paging answered by the database over every entry.
+  const {
+    rows: audit,
+    total: auditTotal,
+    error: auditError,
+    reload: reloadAudit,
+    tableProps: auditTableProps,
+  } = useServerTable<AuditEntry>(searchAdminAudit, AUDIT_INITIAL_STATE, "the audit log");
   const [loading, setLoading] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
-  const [auditFailed, setAuditFailed] = useState(false);
+  const auditFailed = auditError !== null;
 
   // The roster loaded and the linked person holds no admin row. Checked against
   // the FULL `admins` list, not the table's filtered view, so a search the user
@@ -220,32 +225,10 @@ function AdminsManagementPageContent() {
     }
   }, []);
 
-  // This used to be `if (!res.ok) return;` — a bare swallow. The audit log then
-  // rendered as an EMPTY, successfully-loaded table titled "Audit log (0)", on
-  // the one surface whose entire purpose is proving that every admin change was
-  // recorded. "No admin changes have been logged" and "we could not read the
-  // log" are opposite statements, and the swallow published the reassuring one.
+  // A failed audit read is shown by the table (read=) — never as "No audit entries yet."
   const fetchAudit = useCallback(async () => {
-    try {
-      const res = await fetch("/api/admin/admins/audit?limit=50");
-      if (!res.ok) {
-        const { error } = await res
-          .json()
-          .catch(() => ({ error: res.statusText }));
-        toast.error(`Failed to load audit log: ${error}`);
-        setAuditFailed(true);
-        return;
-      }
-      const { entries } = (await res.json()) as { entries: AuditEntry[] };
-      setAudit(entries);
-      setAuditFailed(false);
-    } catch (err) {
-      toast.error(
-        `Failed to load audit log: ${err instanceof Error ? err.message : "network error"}`,
-      );
-      setAuditFailed(true);
-    }
-  }, []);
+    reloadAudit();
+  }, [reloadAudit]);
 
   useEffect(() => {
     Promise.all([fetchAdmins(), fetchAudit()]).finally(() => setLoading(false));
@@ -439,6 +422,7 @@ function AdminsManagementPageContent() {
         id: "created_at",
         accessorKey: "created_at",
         header: "When",
+        filter: "date",
         width: 180,
         cell: (e) => (
           <span className="text-muted-foreground">
@@ -450,6 +434,7 @@ function AdminsManagementPageContent() {
         id: "actor",
         header: "Actor",
         accessorFn: (e) => e.actor_email ?? "system / service-role",
+        filter: "text",
         width: 220,
         cell: (e) =>
           e.actor_user_id ? (
@@ -465,6 +450,11 @@ function AdminsManagementPageContent() {
         accessorKey: "action",
         header: "Action",
         filter: "select",
+        filterOptions: [
+          { value: "promote", label: "promote" },
+          { value: "update", label: "update" },
+          { value: "revoke", label: "revoke" },
+        ],
         width: 110,
         cell: (e) => (
           <span className="rounded bg-muted px-2 py-0.5 text-xs font-medium uppercase text-foreground">
@@ -476,6 +466,7 @@ function AdminsManagementPageContent() {
         id: "target",
         header: "Target",
         accessorFn: (e) => e.target_email ?? e.target_user_id,
+        filter: "text",
         width: 240,
         cell: (e) => (
           <AdminUserRef userId={e.target_user_id} email={e.target_email} />
@@ -485,6 +476,9 @@ function AdminsManagementPageContent() {
         id: "change",
         header: "Change",
         accessorFn: auditChange,
+        // Derived from the before/after payloads in the browser; the query cannot filter or sort it.
+        filter: false,
+        sortable: false,
         width: 220,
         cell: (e) => (
           <span className="text-muted-foreground">{auditChange(e)}</span>
@@ -766,7 +760,7 @@ function AdminsManagementPageContent() {
         <section className="space-y-2">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-sm font-medium text-foreground">
-              Audit log{auditFailed ? "" : ` (${audit.length})`}
+              Audit log{auditFailed ? "" : ` (${auditTotal})`}
             </h2>
             {/* Every admin change is logged at the DB layer, including direct SQL. */}
           </div>
@@ -826,19 +820,13 @@ function AdminsManagementPageContent() {
               ]}
             >
             <MatrxDataTable
-              urlState={{ id: "admin-audit" }}
-              data={audit}
+              {...auditTableProps}
               columns={auditColumns}
               getRowId={(e) => e.id}
-              isLoading={loading}
-              pageSize={25}
-              // "No audit entries yet." on an unread log reads as proof nothing
-              // happened: the table shows the failure instead (RC-B12 r13).
-              read={{ status: auditFailed ? "error" : loading ? "loading" : "ready", error: auditFailed, onRetry: retryLoad, what: "the audit log" }}
               emptyState={{ title: "No audit entries yet." }}
               toolbar={{
                 search: true,
-                searchPlaceholder: "Search actor, action, target…",
+                searchPlaceholder: "Search actor, action, target or an id…",
               }}
               copy={{
                 label: "Audit entry",

@@ -34,6 +34,7 @@ import {
   type AvailabilityMap,
 } from "@/features/context-menu-v3/utils/availability";
 import { toast } from "@/lib/toast";
+import { copyRichContent } from "@/components/matrx/buttons/markdown-copy-utils";
 
 /** The one thing every flashcard surface can say about a right-clicked card. */
 export interface FlashcardMenuRow {
@@ -105,12 +106,8 @@ export function buildFlashcardMenuSection(opts: {
     const r = getRow();
     const value = text ?? (r ? (label === "Front" ? r.front : r.back) : null);
     if (!value) return;
-    try {
-      await navigator.clipboard.writeText(value);
-      toast.success(`${label} copied`);
-    } catch {
-      toast.error(`Couldn't copy ${label.toLowerCase()}`);
-    }
+    // Card faces are markdown: the one copy (formatted + markdown).
+    await copyRichContent(value, "default", { toast: `${label} copied` });
   };
 
   const items: ContextMenuExtraItem[] = [

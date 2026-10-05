@@ -1,7 +1,7 @@
 {
   "version": 1,
   "app": "matrx-frontend",
-  "routeCount": 1335,
+  "routeCount": 1338,
   "routes": [
     {
       "pattern": "/",
@@ -1804,6 +1804,11 @@
       "source": "app/(core)/approvals/page.tsx"
     },
     {
+      "pattern": "/apps/[app]/[[...path]]",
+      "status": "live",
+      "source": "app/(link)/apps/[app]/[[...path]]/page.tsx"
+    },
+    {
       "pattern": "/artifacts",
       "status": "live",
       "source": "app/(core)/artifacts/page.tsx"
@@ -2297,6 +2302,11 @@
       "pattern": "/data/connect",
       "status": "live",
       "source": "app/(core)/data/connect/page.tsx"
+    },
+    {
+      "pattern": "/data/dashboards",
+      "status": "live",
+      "source": "app/(core)/data/dashboards/page.tsx"
     },
     {
       "pattern": "/data/pages",
@@ -6280,6 +6290,11 @@
       "pattern": "/staff",
       "status": "live",
       "source": "app/(core)/staff/page.tsx"
+    },
+    {
+      "pattern": "/start",
+      "status": "live",
+      "source": "app/(core)/start/page.tsx"
     },
     {
       "pattern": "/suggestions",

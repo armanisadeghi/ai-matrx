@@ -74,3 +74,27 @@ it("a turn that genuinely needs action still offers to continue", () => {
   const el = render();
   expect(el.textContent).toContain("Continue agent");
 });
+
+it("the banner is a no-go zone for the floating assists pill, and Show opens a folded ask then scrolls to it", () => {
+  jest.useFakeTimers();
+  operation = { ...WAITING, recoveryState: "waiting_on_person" };
+  const el = render();
+  // The assists pill rests above this bar, never on its Show button.
+  expect(el.querySelector("[data-assist-dock-avoid]")).not.toBeNull();
+
+  const opened = jest.fn();
+  window.addEventListener("matrx:show-parked-ask", opened);
+  const target = document.createElement("div");
+  target.setAttribute("data-parked-ask", "");
+  target.scrollIntoView = jest.fn();
+  document.body.appendChild(target);
+  act(() => (el.querySelector("button") as HTMLButtonElement).click());
+  act(() => {
+    jest.advanceTimersByTime(200);
+  });
+  window.removeEventListener("matrx:show-parked-ask", opened);
+  expect(opened).toHaveBeenCalledTimes(1);
+  expect(target.scrollIntoView).toHaveBeenCalled();
+  target.remove();
+  jest.useRealTimers();
+});

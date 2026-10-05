@@ -17,7 +17,6 @@
  */
 
 import React, { useMemo, useState } from "react";
-import { toast } from "../../../host/notify";
 import {
     BookOpen,
     Check,
@@ -29,6 +28,7 @@ import {
 } from "lucide-react";
 import { cn } from "@ai-matrx/design-system";
 import MarkdownStream from "@host/components/MarkdownStream";
+import { copyRichContent } from "@host/components/matrx/buttons/markdown-copy-utils";
 import { RichDocument } from "@host/features/rich-document/RichDocument";
 import type { ContentSource } from "@host/features/rich-document/types";
 import { BasicMarkdownContent } from "@host/components/mardown-display/chat-markdown/BasicMarkdownContent";
@@ -205,12 +205,10 @@ export const ResearchSourcesTab: React.FC<ToolRendererProps> = ({ entry }) => {
     const [copied, setCopied] = useState<number | null>(null);
 
     const handleCopy = async (read: SearchRead, index: number) => {
-        try {
-            await navigator.clipboard.writeText(`${read.title ?? ""}\n${read.url}\n\n${read.text}`);
+        // THE one copy (formatted + markdown) — a read source is rich text.
+        if (await copyRichContent(`${read.title ?? ""}\n${read.url}\n\n${read.text}`, "default", { toast: false })) {
             setCopied(index);
             setTimeout(() => setCopied(null), 2000);
-        } catch {
-            toast.error("Couldn't copy to the clipboard — select the text and copy it by hand.");
         }
     };
 
@@ -289,12 +287,9 @@ export const ResearchFullTextTab: React.FC<ToolRendererProps> = ({ entry }) => {
     const [copied, setCopied] = useState(false);
 
     const handleCopyAll = async () => {
-        try {
-            await navigator.clipboard.writeText(fullText);
+        if (await copyRichContent(fullText, "default", { toast: false })) {
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
-        } catch {
-            // ignore
         }
     };
 

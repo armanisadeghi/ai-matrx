@@ -10,7 +10,7 @@
 //                (loader: ensureScopeTypeItems; writes: contextItemMutations)
 //   values       contextValues.byScope[<scope>]
 //                (loader: ensureContextValues; writes: setContextValue →
-//                 scopesService.setContextValue → `set_context_value`)
+//                 scopeStore.setContextValue → `custom.context_value_write`)
 //
 // so an edited field definition, an archived field, a new field and a saved
 // value all show in every open view at once, with no refetch and no
@@ -162,7 +162,7 @@ export const getScopeContext = createAsyncThunk<
 
 /**
  * A person's edit of one cell, through THE value door
- * (`scopesService.setContextValue` → `set_context_value`, source `manual`).
+ * (`scopeStore.setContextValue` → `custom.context_value_write`, source `manual`).
  * The written cell folds into the values store; the view updates everywhere.
  * Rejects with the database's sentence on a refusal.
  */

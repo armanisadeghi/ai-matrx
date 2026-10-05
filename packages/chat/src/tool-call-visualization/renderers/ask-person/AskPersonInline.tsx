@@ -87,11 +87,16 @@ export const AskPersonInline: React.FC<ToolRendererProps> = (props) => {
   }
 
   const open = lookup.phase === "open" ? lookup.request : null;
+  // A card with nothing to find the ask BY (no id on the call, no conversation
+  // — e.g. a bare inspector) cannot know it was answered: it never says so.
+  const cannotLook = !requestId && !conversationId;
   const title = open?.render.title ?? "Your agent needs you";
   const sub =
     lookup.phase === "loading"
       ? "Getting the form ready…"
-      : lookup.phase === "closed"
+      : lookup.phase === "closed" && cannotLook
+        ? "Open this ask from the chat to answer it"
+        : lookup.phase === "closed"
         ? isTerminal(entry) && !parked
           ? "Answered"
           : // read-gate-exempt: phase "closed" IS the lookup's successful answer; its failed read is phase "unreachable", shown by its own branch
@@ -101,7 +106,9 @@ export const AskPersonInline: React.FC<ToolRendererProps> = (props) => {
           : null;
 
   const body = open ? (
-    <ActionRequestInlineAnswer request={open} onAnswered={rereadConversation} />
+    <div data-parked-ask="">
+      <ActionRequestInlineAnswer request={open} onAnswered={rereadConversation} />
+    </div>
   ) : lookup.phase === "unreachable" ? (
     <div className="flex items-center justify-between gap-3 p-4">
       <p className="text-sm text-muted-foreground">
@@ -112,6 +119,10 @@ export const AskPersonInline: React.FC<ToolRendererProps> = (props) => {
         Try again
       </Button>
     </div>
+  ) : lookup.phase === "closed" && cannotLook ? (
+    <p className="p-4 text-sm text-muted-foreground">
+      Open this ask from the chat to answer it.
+    </p>
   ) : lookup.phase === "closed" ? (
     <p className="p-4 text-sm text-muted-foreground">
       {isTerminal(entry) && !parked

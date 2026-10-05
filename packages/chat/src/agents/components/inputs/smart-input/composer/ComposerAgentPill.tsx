@@ -75,6 +75,20 @@ export function composerPillClass(size: ComposerSize, open: boolean): string {
   );
 }
 
+/**
+ * Choosing the agent that is already answering is never silent: the pill says
+ * "Custom" when that agent holds the default-chat job, while the agent list
+ * names it by its own name — so the press answers who is in the seat.
+ */
+export function announceAlreadyAnswering(info: ComposerAgentInfo): void {
+  const name = info.agentName ?? "This agent";
+  toast.info(
+    info.isCustom
+      ? `${name} is your Custom chat, and it is already answering this conversation.`
+      : `${name} is already answering this conversation.`,
+  );
+}
+
 function pillLabel(info: ComposerAgentInfo, mode: ComposerMode): string {
   // "Custom" and the model are Chat's words; Work+ names the agent itself.
   if (!composerShows(mode, "agent.presets")) return info.agentName ?? "Agent";
@@ -141,6 +155,7 @@ export function ComposerAgentPill({ conversationId, mode, size, agentControl, me
               onSelect={(agentId: string) => {
                 setOpen(false);
                 if (agentId !== info.agentId) onSelectAgent(agentId);
+                else announceAlreadyAnswering(info);
               }}
               activeAgentId={info.agentId}
               agentFilter={agentFilter}
@@ -187,6 +202,7 @@ export function ComposerAgentPill({ conversationId, mode, size, agentControl, me
       <AgentListDropdown
         onSelect={(agentId: string) => {
           if (agentId !== info.agentId) onSelectAgent(agentId);
+          else announceAlreadyAnswering(info);
         }}
         activeAgentId={info.agentId}
         agentFilter={agentFilter}
@@ -262,6 +278,7 @@ function ChatPresetsPanel({
   const choose = (agentId: string) => {
     close();
     if (agentId !== info.agentId) onSelectAgent(agentId);
+    else announceAlreadyAnswering(info);
   };
   // Custom is the default-chat JOB: launching through it is what applies the
   // person's own default model (preferredChatModel.ts).

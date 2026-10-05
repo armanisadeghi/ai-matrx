@@ -4072,7 +4072,6 @@ export type ChatDatabase = {
           organization_id: string
           updated_at: string
           updated_by: string | null
-          user_id: string
           version: number
         }
         Insert: {
@@ -4086,7 +4085,6 @@ export type ChatDatabase = {
           organization_id: string
           updated_at?: string
           updated_by?: string | null
-          user_id: string
           version?: number
         }
         Update: {
@@ -4100,7 +4098,6 @@ export type ChatDatabase = {
           organization_id?: string
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
           version?: number
         }
         Relationships: [
@@ -4134,7 +4131,6 @@ export type ChatDatabase = {
           reply_count: number | null
           updated_at: string
           updated_by: string | null
-          user_id: string | null
           username: string
           version: number
         }
@@ -4158,7 +4154,6 @@ export type ChatDatabase = {
           reply_count?: number | null
           updated_at?: string
           updated_by?: string | null
-          user_id?: string | null
           username: string
           version?: number
         }
@@ -4182,7 +4177,6 @@ export type ChatDatabase = {
           reply_count?: number | null
           updated_at?: string
           updated_by?: string | null
-          user_id?: string | null
           username?: string
           version?: number
         }
@@ -4402,7 +4396,6 @@ export type ChatDatabase = {
           organization_id: string
           updated_at: string
           updated_by: string | null
-          user_id: string
           version: number
         }
         Insert: {
@@ -4416,7 +4409,6 @@ export type ChatDatabase = {
           organization_id: string
           updated_at?: string
           updated_by?: string | null
-          user_id: string
           version?: number
         }
         Update: {
@@ -4430,7 +4422,6 @@ export type ChatDatabase = {
           organization_id?: string
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
           version?: number
         }
         Relationships: [
@@ -43432,7 +43423,7 @@ export type ChatDatabase = {
           content: string | null
           content_hash: string | null
           content_preview: string | null
-          created_at: string | null
+          created_at: string
           created_by: string | null
           custom_fields: Json
           deleted_at: string | null
@@ -43442,7 +43433,7 @@ export type ChatDatabase = {
           id: string
           label: string
           last_device_id: string | null
-          metadata: Json | null
+          metadata: Json
           organization_id: string
           position: number | null
           project_id: string | null
@@ -43454,7 +43445,7 @@ export type ChatDatabase = {
           sync_version: number
           tags: string[] | null
           task_id: string | null
-          updated_at: string | null
+          updated_at: string
           updated_by: string | null
           version: number
           visibility: Database["platform"]["Enums"]["visibility"]
@@ -43463,7 +43454,7 @@ export type ChatDatabase = {
           content?: string | null
           content_hash?: string | null
           content_preview?: string | null
-          created_at?: string | null
+          created_at?: string
           created_by?: string | null
           custom_fields?: Json
           deleted_at?: string | null
@@ -43473,7 +43464,7 @@ export type ChatDatabase = {
           id?: string
           label?: string
           last_device_id?: string | null
-          metadata?: Json | null
+          metadata?: Json
           organization_id: string
           position?: number | null
           project_id?: string | null
@@ -43485,7 +43476,7 @@ export type ChatDatabase = {
           sync_version?: number
           tags?: string[] | null
           task_id?: string | null
-          updated_at?: string | null
+          updated_at?: string
           updated_by?: string | null
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
@@ -43494,7 +43485,7 @@ export type ChatDatabase = {
           content?: string | null
           content_hash?: string | null
           content_preview?: string | null
-          created_at?: string | null
+          created_at?: string
           created_by?: string | null
           custom_fields?: Json
           deleted_at?: string | null
@@ -43504,7 +43495,7 @@ export type ChatDatabase = {
           id?: string
           label?: string
           last_device_id?: string | null
-          metadata?: Json | null
+          metadata?: Json
           organization_id?: string
           position?: number | null
           project_id?: string | null
@@ -43516,7 +43507,7 @@ export type ChatDatabase = {
           sync_version?: number
           tags?: string[] | null
           task_id?: string | null
-          updated_at?: string | null
+          updated_at?: string
           updated_by?: string | null
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]

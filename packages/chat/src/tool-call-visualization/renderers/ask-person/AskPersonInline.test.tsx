@@ -284,4 +284,31 @@ describe("AskPersonInline — the in-chat ask", () => {
     expect(container.textContent).toContain("This ask is no longer open.");
     expect(container.querySelector("input")).toBeNull();
   });
+
+  it("never claims 'Done' when it has nothing to find the ask by (a bare inspector)", async () => {
+    fetchPending.mockResolvedValue([]);
+    const entry = { ...parkedEntry("questions"), status: "completed" as const, result: null };
+    await act(async () => {
+      root.render(<AskPersonInline entry={entry} />);
+    });
+    await flush();
+    const text = container.textContent ?? "";
+    expect(text).not.toContain("Done");
+    expect(text).not.toContain("has what it asked for");
+  });
+
+  it("marks the open form so the banner's Show can scroll to it", async () => {
+    fetchPending.mockResolvedValue([
+      pendingRow("questions", {
+        form: "questions",
+        title: "4 questions",
+        questions: [{ id: "a", prompt: "Who is it for?", component_type: "text" }],
+      }),
+    ]);
+    await act(async () => {
+      root.render(<AskPersonInline entry={parkedEntry("questions")} conversationId="conv-1" />);
+    });
+    await flush();
+    expect(container.querySelector("[data-parked-ask]")).not.toBeNull();
+  });
 });

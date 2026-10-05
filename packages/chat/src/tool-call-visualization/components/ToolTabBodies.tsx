@@ -312,7 +312,8 @@ export const RawDataView: React.FC<{ entry: ToolLifecycleEntry }> = ({
 
 export const EntryResultsBody: React.FC<{
   entry: ToolLifecycleEntry | null;
-}> = ({ entry }) => {
+  conversationId?: string | null;
+}> = ({ entry, conversationId }) => {
   if (!entry) {
     return (
       <div className="p-8">
@@ -330,6 +331,7 @@ export const EntryResultsBody: React.FC<{
       events: entry.events,
       toolGroupId: entry.callId,
       isPersisted: false,
+      conversationId: conversationId ?? undefined,
     });
   }
 
@@ -349,7 +351,8 @@ export const CustomOverlayBody: React.FC<{
   Component:
     | ToolOverlayTabSpec["Component"]
     | React.ComponentType<ToolRendererProps>;
-}> = ({ entry, Component }) => (
+  conversationId?: string | null;
+}> = ({ entry, Component, conversationId }) => (
   <div className="flex h-full flex-col">
     <div className="flex-1 overflow-auto">
       <Component
@@ -357,6 +360,7 @@ export const CustomOverlayBody: React.FC<{
         events={entry.events}
         toolGroupId={entry.callId}
         isPersisted={false}
+        conversationId={conversationId ?? undefined}
       />
     </div>
   </div>

@@ -1,8 +1,8 @@
 // features/scopes/redux/thunks/setContextValue.ts
 //
 // Value WRITE for one scope cell, through the ONE sanctioned mutation path:
-// `scopesService.setContextValue` → the `set_context_value` SECURITY DEFINER
-// RPC. On success the written cell is folded back into the contextValues
+// `scopeStore.setContextValue` → the store's value door
+// `custom.context_value_write`. On success the written cell is folded back into the contextValues
 // sidecar (`valueUpserted`) so every reader reflects it without a refetch.
 //
 // Never throws — returns the service's ScopesRpcResult envelope; callers

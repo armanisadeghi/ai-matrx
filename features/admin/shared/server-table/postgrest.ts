@@ -56,6 +56,8 @@ export function applyServerTableState<Q>(
   query: Q,
   state: MatrxDataTableQueryState,
   spec: ServerTableSpec,
+  /** `searchOrExtra`: more PostgREST `or` clauses OR-ed with the toolbar search (e.g. owners matched by a lookup). */
+  extra: { searchOrExtra?: string[] } = {},
 ): Q {
   let q = query as unknown as PostgrestChain<Q>;
   const next = (r: Q) => {
@@ -64,7 +66,8 @@ export function applyServerTableState<Q>(
 
   const search = state.search.trim();
   if (search && spec.searchColumns.length) {
-    next(q.or(buildSearchOr(search, spec.searchColumns, { idColumn: spec.idColumn })));
+    const parts = [buildSearchOr(search, spec.searchColumns, { idColumn: spec.idColumn }), ...(extra.searchOrExtra ?? [])];
+    next(q.or(parts.join(",")));
   }
 
   for (const [id, f] of Object.entries(state.columnFilters)) {

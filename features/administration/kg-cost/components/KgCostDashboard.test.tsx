@@ -4,7 +4,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import type { ReactNode } from "react";
 import type { MatrxDataTableProps } from "@ai-matrx/design-system/data-table";
-import { getOrgCostDetail, listOrgCosts } from "../service/kgCostService";
+import { getOrgCostDetail, searchOrgCosts } from "../service/kgCostService";
 import { KgCostDashboard } from "./KgCostDashboard";
 
 (
@@ -30,7 +30,7 @@ jest.mock("@/features/organizations/hooks/useOrgAutoRagPreference", () => ({
 
 jest.mock("../service/kgCostService", () => ({
   getKgCostSummary: jest.fn(() => new Promise(() => {})),
-  listOrgCosts: jest.fn(() => new Promise(() => {})),
+  searchOrgCosts: jest.fn(() => new Promise(() => {})),
   getOrgCostDetail: jest.fn(() => new Promise(() => {})),
   listPendingBatches: jest.fn(() => new Promise(() => {})),
 }));
@@ -63,35 +63,37 @@ describe("KgCostDashboard canonical tables", () => {
     host.remove();
   });
 
-  it("keeps the two remaining dashboard grids canonical and honestly scoped", () => {
+  it("keeps the batch grid canonical and honestly scoped", () => {
     act(() => root.render(<KgCostDashboard />));
 
-    for (const [id, title, answeredBy] of [
-      ["administration/kg-cost/organizations", "Organizations", "source"],
-      ["administration/kg-cost/pending-batches", "In-flight batches", "source"],
-    ]) {
-      const props = table(id);
-      expect(props.density).toBe("condensed");
-      expect(props.stickyHeader).toBe(true);
-      expect(props.hidePagination).toBeUndefined();
-      expect(props.pageSize).toBe(0);
-      expect(props.toolbar?.search).toBe(true);
-      expect(props.toolbar?.title).toBe(title);
-      expect(props.detail).toEqual({ enabled: false });
-      expect(props.window).toEqual({ enabled: false });
-      expect(props.coverage).toMatchObject({ answeredBy });
-    }
+    const props = table("administration/kg-cost/pending-batches");
+    expect(props.density).toBe("condensed");
+    expect(props.stickyHeader).toBe(true);
+    expect(props.hidePagination).toBeUndefined();
+    expect(props.pageSize).toBe(0);
+    expect(props.toolbar?.search).toBe(true);
+    expect(props.toolbar?.title).toBe("In-flight batches");
+    expect(props.detail).toEqual({ enabled: false });
+    expect(props.window).toEqual({ enabled: false });
+    expect(props.coverage).toMatchObject({ answeredBy: "source", cap: 100 });
   });
 
-  it("keeps each remaining grid's read cap honest", () => {
+  it("answers the organization grid's search, filters, sort and paging in the database", () => {
     act(() => root.render(<KgCostDashboard />));
 
-    expect(
-      table("administration/kg-cost/organizations").coverage,
-    ).toMatchObject({ cap: 200 });
-    expect(
-      table("administration/kg-cost/pending-batches").coverage,
-    ).toMatchObject({ cap: 100 });
+    const props = table("administration/kg-cost/organizations");
+    expect(props.density).toBe("condensed");
+    expect(props.stickyHeader).toBe(true);
+    expect(props.toolbar?.search).toBe(true);
+    expect(props.toolbar?.title).toBe("Organizations");
+    expect(props.detail).toEqual({ enabled: false });
+    expect(props.window).toEqual({ enabled: false });
+    // controlled + source-owned: nothing is filtered over a slice the browser holds
+    expect(props.query).toMatchObject({
+      mode: "controlled",
+      sourceProcessing: { search: "source", columnFilters: "source", sort: "source" },
+    });
+    expect(props.coverage).toBeUndefined();
   });
 
   it("renders unit economics only as the kg_cost explorer mount, never the old section", () => {
@@ -181,7 +183,7 @@ describe("KgCostDashboard canonical tables", () => {
 
   it("surfaces an organization-read failure with a retry while retaining the table", async () => {
     jest
-      .mocked(listOrgCosts)
+      .mocked(searchOrgCosts)
       .mockRejectedValueOnce(new Error("Organization receipt unavailable"));
 
     await act(async () => {

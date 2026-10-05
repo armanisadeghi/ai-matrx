@@ -572,7 +572,7 @@ const ToolCallWindowPanelBody: React.FC<{
         id: spec.id,
         label: spec.label,
         content: (
-          <CustomOverlayBody entry={selectedEntry} Component={spec.Component} />
+          <CustomOverlayBody entry={selectedEntry} Component={spec.Component} conversationId={conversationId} />
         ),
       }));
       return [...customTabDefs, ...adminTabs];
@@ -582,13 +582,14 @@ const ToolCallWindowPanelBody: React.FC<{
       {
         id: "results",
         label: "Results",
-        content: <EntryResultsBody entry={selectedEntry} />,
+        content: <EntryResultsBody entry={selectedEntry} conversationId={conversationId} />,
       },
       ...adminTabs,
     ];
   }, [
     customOverlayTabs,
     selectedEntry,
+    conversationId,
     conversationReadFailed,
     conversationLoadError,
     retryConversationEntries,
