@@ -420,7 +420,18 @@ const encoder = new TextEncoder();
 function isDevProductionLocalhost(host: string | null): boolean {
   return process.env.NODE_ENV === "development" &&
     pointsAtProduction(process.env.NEXT_PUBLIC_SUPABASE_URL) &&
-    Boolean(host && (host === "localhost" || host.startsWith("localhost:") || host.includes(".localhost:")));
+    Boolean(
+      host &&
+        (host === "localhost" ||
+          host.startsWith("localhost:") ||
+          host.includes(".localhost:") ||
+          // The gate parks EVERY local host, so the parking page must serve every one it can park,
+          // or a 127.0.0.1 / [::1] tab redirects to an unhandled /__dev-walk forever.
+          host === "127.0.0.1" ||
+          host.startsWith("127.0.0.1:") ||
+          host === "[::1]" ||
+          host.startsWith("[::1]:")),
+    );
 }
 
 function parkedPage(returnTo: string): string {

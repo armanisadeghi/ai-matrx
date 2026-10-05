@@ -265,6 +265,15 @@ describe("walk-cap dev endpoint framing and safe parking", () => {
     expect(endpointState.listeners.has("frame.localhost:3001")).toBe(false);
   });
 
+  it("serves the parking page to every loopback host the gate can park (no redirect loop)", async () => {
+    for (const host of ["127.0.0.1:3001", "[::1]:3001", "localhost:3001"]) {
+      const response = await walkCapDevEndpoint(
+        new Request(`http://${host}/__dev-walk?parked=1&returnTo=%2F`, { headers: { host } }),
+      );
+      expect([host, response?.status]).toEqual([host, 200]);
+    }
+  });
+
   it("parks with an escaped, same-origin-only return target", async () => {
     const response = await walkCapDevEndpoint(new Request("http://frame.localhost:3001/__dev-walk?parked=1&returnTo=%2F%5Cevil", { headers: { host: "frame.localhost:3001" } }));
     const html = await response?.text();
