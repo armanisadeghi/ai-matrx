@@ -68,3 +68,11 @@ Block document: a tree of `SpaceBlock` (`id`, `type`, `text: RichSpan[]`, `color
   value in the middle drawn here, bar / horizontal bar / line on `ChartBlock`, settings G2, overflow notice G3); the
   agency sample (`agency-spec.ts`, `templatePreview`) or a real table (`DataMount`, the table's own organization).
   "Add the sample" is idempotent and upgrades an older copy's slots in place.
+- 2026-10-05 — builder round 4 (visual parity): ring tiles measured on screenshot 1 (`data/ChartView.tsx` 112px ring,
+  5px stroke, Notion chart colors; `.spaces-chart-title` grey pill); the sample's charts read rows (never ask
+  `record_aggregate`) and its mount binds an honest no-op realtime port (`data/DataMount.tsx`; live tables use
+  `useAppRecordsConfig`); `page/TocRail.tsx` (A11); `page/gallery.ts` + `assets/` (bundled cover landscapes and a
+  portrait icon, stored as `gallery:<key>`); BlockNote's trailing line is off and the page ends in a click zone
+  (`.spaces-page-end`, page-rhythm clean); Esc drops the selection toolbar; "+ New page" writes a row in place;
+  select/status filter picklist; linked-view picker draws its list once. `embed/RecordBodySpace.tsx` — a row's
+  `row_body` Space in the Spaces editor (null when none; `useRowBodySpace` for a host that must decide synchronously).
