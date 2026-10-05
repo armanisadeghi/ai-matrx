@@ -39,6 +39,7 @@ import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableCo
 import { useHrContext } from "@/features/hr/shared/useHrContext";
 
 import { getPunchRegister } from "../api/service";
+import { HR_TIME_PAGE_SIZES } from "../api/timePage";
 import type { Paged, PunchRow } from "../api/types";
 import { formatLocalDate, formatStampedTimeWithZone, pluralize } from "../shared/format";
 import { HrTimeReadState } from "../shared/RefusalNotice";
@@ -75,15 +76,19 @@ export function PunchRegister({
   const mockCase = useHrMockCase();
   const { active, orgRef } = useHrContext();
   const organizationId = orgScope ? (active?.organization_id ?? null) : null;
-  const { prefs } = useListViewPrefs("hr-time-punches", { pageSize: DEFAULT_PAGE_SIZE });
+  const { prefs, setPrefs } = useListViewPrefs("hr-time-punches", { pageSize: DEFAULT_PAGE_SIZE });
+  const preferredPageSize = HR_TIME_PAGE_SIZES.includes(prefs.pageSize) ? prefs.pageSize : DEFAULT_PAGE_SIZE;
   const [query, setQuery] = useState<MatrxDataTableQueryState>({
     page: 1,
-    pageSize: DEFAULT_PAGE_SIZE,
+    pageSize: preferredPageSize,
     search: "",
     anyOf: "",
     columnFilters: {},
     sort: null,
   });
+  if (query.pageSize !== preferredPageSize) {
+    setQuery((current) => ({ ...current, page: 1, pageSize: preferredPageSize }));
+  }
   const [correcting, setCorrecting] = useState<{ punches: PunchRow[]; mode: PunchCorrectionMode } | null>(
     null,
   );
@@ -106,13 +111,10 @@ export function PunchRegister({
         {
           page: query.page,
           pageSize: query.pageSize,
-          sort: query.sort
-            ? [{ column: query.sort.id, direction: query.sort.direction }]
-            : [{ column: "occurred_at", direction: "desc" }],
         },
         { mockCase, signal },
       ),
-    [employmentId, organizationId, query, mockCase],
+    [employmentId, organizationId, query.page, query.pageSize, mockCase],
   );
 
   const rows = register.data?.rows ?? [];
@@ -215,15 +217,21 @@ export function PunchRegister({
                 data={rows}
                 columns={punchColumns(orgRef)}
                 getRowId={(row) => row.id}
+                searchText={(row) => [PUNCH_KIND_LABELS[row.punchKind], PUNCH_SOURCE_LABELS[row.source], ACTOR_TYPE_LABELS[row.actorType]].join(" ")}
                 isLoading={register.loading}
                 isFetching={register.refreshing}
                 query={{
                   mode: "controlled",
                   state: query,
                   totalItems: register.data?.totalRows ?? 0,
-                  onStateChange: setQuery,
+                  sourceProcessing: { search: "local", sort: "local", columnFilters: "local" },
+                  onStateChange: (next) => {
+                    setQuery(next);
+                    if (next.pageSize !== query.pageSize) setPrefs({ pageSize: next.pageSize });
+                  },
                 }}
-                pageSize={prefs.pageSize}
+                pageSizeOptions={HR_TIME_PAGE_SIZES}
+                coverage={{ answeredBy: "client", total: register.data?.totalRows, noun: "punch" }}
                 selection={
                   canEdit
                     ? {
@@ -296,6 +304,7 @@ function punchColumns(
       accessorKey: "punchKind",
       header: "Punch",
       filter: "select",
+      filterOptions: Object.entries(PUNCH_KIND_LABELS).map(([value, label]) => ({ value, label })),
       cell: (row) => (
         <span className={row.voidedAt ? "line-through decoration-2" : undefined}>
           {PUNCH_KIND_LABELS[row.punchKind]}
@@ -307,6 +316,7 @@ function punchColumns(
       accessorKey: "source",
       header: "Recorded on",
       filter: "select",
+      filterOptions: Object.entries(PUNCH_SOURCE_LABELS).map(([value, label]) => ({ value, label })),
       cell: (row) => PUNCH_SOURCE_LABELS[row.source],
     },
     {
@@ -314,6 +324,7 @@ function punchColumns(
       accessorKey: "actorType",
       header: "Recorded by",
       filter: "select",
+      filterOptions: Object.entries(ACTOR_TYPE_LABELS).map(([value, label]) => ({ value, label })),
       cell: (row) => (
         <span>
           {ACTOR_TYPE_LABELS[row.actorType]}
