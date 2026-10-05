@@ -104,7 +104,7 @@ export default function NavFlyoutGroup({
 }: NavFlyoutGroupProps) {
   const children = item.children ?? [];
   const pathname = usePathname() ?? "";
-  // Gated destinations (Make, Records, Kits) appear where their switch is on.
+  // Gated destinations (Make, Records) appear where their switch is on.
   const navActions = useNavActions();
   const navPanelActions = useNavPanelActions();
 

@@ -527,7 +527,7 @@ export const WORKSPACES_NAV_GROUP: ShellNavGroupDef = {
 };
 
 /**
- * Tables, Make, Kits and Pick Lists — the record store's rows in the Data domain (Workbooks are
+ * Tables, Make and Pick Lists — the record store's rows in the Data domain (Workbooks are
  * Univer spreadsheets, so they live in Content). NO ROW HERE IS EVER HIDDEN BEHIND A SWITCH
  * (Arman, 2026-10-03: "EVERYTHING IS ON by default … Don't limit what users can do"): the
  * record store is the only data system, so Make and Records always show, with or without an

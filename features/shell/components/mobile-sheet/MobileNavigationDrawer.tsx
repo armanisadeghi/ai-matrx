@@ -140,7 +140,7 @@ export default function MobileNavigationDrawer({
   const navActions = useNavActions();
   const navPanelActions = useNavPanelActions();
   const pathname = usePathname() ?? "";
-  // Gated destinations (Make, Records, Kits) appear where their switch is on.
+  // Gated destinations (Make, Records) appear where their switch is on.
   const settingsRoute = isUserSettingsPath(pathname);
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
 
