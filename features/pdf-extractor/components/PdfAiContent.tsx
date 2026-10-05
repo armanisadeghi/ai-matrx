@@ -1,6 +1,6 @@
 "use client";
 
-import MarkdownStream from "@/components/MarkdownStream";
+import { RichContent } from "@/components/rich-content/RichContent";
 
 /**
  * PdfAiContent — the ONE canonical renderer for AI-GENERATED PDF content.
@@ -30,9 +30,9 @@ export function PdfAiContent({
   className?: string;
 }) {
   return (
-    <MarkdownStream imagePolicy="ai"
-      content={content}
-      isStreamActive={isStreaming}
+    <RichContent level="full" imagePolicy="ai"
+      source={content}
+      isStreaming={isStreaming}
       hideCopyButton
       allowFullScreenEditor={false}
       className={className}
