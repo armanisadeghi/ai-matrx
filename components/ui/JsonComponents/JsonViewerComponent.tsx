@@ -124,7 +124,7 @@ const JsonViewerBody: React.FC<JsonViewerProps> = (
         return (
             <div
                 className={cn(
-                    "bg-background text-muted-foreground p-2 text-sm rounded-md border border-border/30 transition-all duration-300 ease-in-out",
+                    "bg-background text-muted-foreground p-2 type-body rounded-md border border-border/30 transition-all duration-300 ease-in-out",
                     className
                 )}
             >
@@ -221,7 +221,7 @@ export const FullJsonViewer: React.FC<FullJsonViewerProps> = (
         >
             {!hideTitle && (
                 <h3 className={cn(
-                    "text-xs font-semibold mb-1 transition-colors duration-200",
+                    "type-secondary font-semibold mb-1 transition-colors duration-200",
                     disabled ? "text-muted-foreground" : "text-foreground"
                 )}>
                     {title}
@@ -290,7 +290,7 @@ export const EnhancedJsonViewer: React.FC<EnhancedJsonViewerProps> = ({
             <Card className={cn("bg-card opacity-70 transition-all duration-300 ease-in-out", className)}>
                 {!hideHeader && (
                     <div className="flex justify-between items-center mb-1 p-1">
-                        <h3 className="text-sm font-semibold text-muted-foreground">{title}</h3>
+                        <h3 className="type-title text-muted-foreground">{title}</h3>
                     </div>
                 )}
                 <div className={cn(!hideHeader && "px-1 pb-1")}>
@@ -336,7 +336,7 @@ export const EnhancedJsonViewer: React.FC<EnhancedJsonViewerProps> = ({
                             {!hideHeader && (
                                 <div className="flex justify-between items-center mb-1">
                                     <h3 className={cn(
-                                        "text-sm font-semibold transition-colors duration-200",
+                                        "type-title transition-colors duration-200",
                                         disabled ? "text-muted-foreground" : "text-foreground"
                                     )}>
                                         {title}

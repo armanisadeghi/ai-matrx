@@ -139,13 +139,13 @@ export function SettingsFlatNavigation({
   empty?: ReactNode;
 }) {
   if (sections.length === 0) {
-    return <div className="px-3 py-6 text-sm text-muted-foreground">{empty ?? "No settings match."}</div>;
+    return <div className="px-3 py-6 type-body text-muted-foreground">{empty ?? "No settings match."}</div>;
   }
   return (
     <div className="flex flex-col gap-3 py-1">
       {sections.map((section) => (
         <section key={section.id} className="flex flex-col gap-0.5" aria-label={section.label ?? "Settings"}>
-          {section.label ? <h2 className={cn("m-0 px-2 py-1 text-xs font-medium leading-5 text-muted-foreground", section.id === activeId && "rounded bg-muted text-foreground")}>{section.label}</h2> : null}
+          {section.label ? <h2 className={cn("m-0 px-2 py-1 type-secondary font-medium leading-5 text-muted-foreground", section.id === activeId && "rounded bg-muted text-foreground")}>{section.label}</h2> : null}
           <div className="flex flex-col gap-px">
             {section.items.map((item) => (
               <div

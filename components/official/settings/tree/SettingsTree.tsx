@@ -74,7 +74,7 @@ export function SettingsTree({
               {unsaved ? <span aria-label="Unsaved changes" className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary" /> : null}
             </button>;
           }}
-        /> : !hasSearchResults ? <p className="px-3 py-6 text-sm text-muted-foreground">{query ? `No settings match "${query}".` : "No settings available."}</p> : null}
+        /> : !hasSearchResults ? <p className="px-3 py-6 type-body text-muted-foreground">{query ? `No settings match "${query}".` : "No settings available."}</p> : null}
       </div>
     </div>
   );

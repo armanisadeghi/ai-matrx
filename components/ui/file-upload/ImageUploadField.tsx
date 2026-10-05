@@ -119,17 +119,17 @@ const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
         ) : (
           <div className="h-full w-full flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
             <Image className="h-10 w-10 mb-2" />
-            <p className="text-sm">Click or drag to upload an image</p>
-            <p className="text-xs mt-1">Recommended size: 1200 × 630 pixels</p>
+            <p className="type-body">Click or drag to upload an image</p>
+            <p className="type-secondary mt-1">Recommended size: 1200 × 630 pixels</p>
           </div>
         )}
       </div>
 
       {error && (
-        <p className="text-red-500 text-xs mt-1">{error.message} <ErrorAlchemyMenu /></p>
+        <p className="text-red-500 type-secondary mt-1">{error.message} <ErrorAlchemyMenu /></p>
       )}
 
-      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+      <p className="type-secondary text-gray-500 dark:text-gray-400 mt-1">
         Upload an image for your app banner. This will be displayed on the app card.
       </p>
     </div>

@@ -178,7 +178,7 @@ export function TopicTree({
 
   const body =
     rows.length === 0 ? (
-      <div className="flex h-full w-full items-center justify-center p-6 text-xs text-muted-foreground">
+      <div className="flex h-full w-full items-center justify-center p-6 type-secondary text-muted-foreground">
         <ReadEmpty read={read}>{emptyState ?? "Nothing here yet."}</ReadEmpty>
       </div>
     ) : (
@@ -253,7 +253,7 @@ export function TopicTree({
       {tree}
       <DragOverlay>
         {dnd.activeRow ? (
-          <div className="rounded-sm border border-border bg-card px-2 py-1 text-xs text-foreground shadow-md">
+          <div className="rounded-sm border border-border bg-card px-2 py-1 type-secondary text-foreground shadow-md">
             {dnd.activeRow.label}
           </div>
         ) : null}
@@ -273,7 +273,7 @@ function RootDropStrip() {
     <div
       ref={setNodeRef}
       className={cn(
-        "flex h-7 shrink-0 items-center justify-center border-b border-primary/30 bg-primary/5 px-2 text-[11px] font-medium text-primary",
+        "flex h-7 shrink-0 items-center justify-center border-b border-primary/30 bg-primary/5 px-2 type-meta font-medium text-primary",
         isOver && "bg-primary/15",
       )}
     >

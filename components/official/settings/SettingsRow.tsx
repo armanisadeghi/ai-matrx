@@ -56,7 +56,7 @@ function BadgePill({ badge }: { badge: SettingsBadge }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded px-1.5 py-0 text-[10px] font-semibold uppercase tracking-wide leading-4",
+        "inline-flex items-center rounded px-1.5 py-0 type-meta font-semibold uppercase tracking-wide leading-4",
         badgeStyles[badge.variant],
       )}
     >
@@ -143,7 +143,7 @@ export function SettingsRow({
           <span
             id={labelId}
             className={cn(
-              "min-w-0 break-words text-sm font-medium leading-snug text-foreground",
+              "min-w-0 break-words type-title leading-snug text-foreground",
               disabled && "opacity-50",
             )}
           >
@@ -171,7 +171,7 @@ export function SettingsRow({
       {meta ? (
         <div
           className={cn(
-            "mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 break-words text-[11px] leading-snug text-muted-foreground [overflow-wrap:anywhere]",
+            "mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 break-words type-meta leading-snug text-muted-foreground [overflow-wrap:anywhere]",
             disabled && "opacity-50",
           )}
         >
@@ -181,7 +181,7 @@ export function SettingsRow({
       {description ? (
         <div
           className={cn(
-            "mt-0.5 break-words text-xs leading-snug text-muted-foreground",
+            "mt-0.5 break-words type-secondary leading-snug text-muted-foreground",
             disabled && "opacity-50",
           )}
         >
@@ -189,13 +189,13 @@ export function SettingsRow({
         </div>
       ) : null}
       {warning && (
-        <div className="mt-1 flex items-start gap-1.5 text-xs text-amber-600 dark:text-amber-400">
+        <div className="mt-1 flex items-start gap-1.5 type-secondary text-amber-600 dark:text-amber-400">
           <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
           <span className="break-words leading-snug">{warning}</span>
         </div>
       )}
       {error && (
-        <div className="mt-1 flex items-start gap-1.5 text-xs text-red-600 dark:text-red-400">
+        <div className="mt-1 flex items-start gap-1.5 type-secondary text-red-600 dark:text-red-400">
           <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
           <span className="break-words leading-snug">{error}</span>
           <ErrorAlchemyMenu error={error} />
@@ -308,7 +308,7 @@ export function CompactHelpPopover({
           side="bottom"
           align="start"
           sideOffset={6}
-          className="z-50 w-72 max-w-[calc(100vw-2rem)] break-words rounded-md border border-border bg-popover p-3 text-xs leading-snug text-popover-foreground shadow-md [overflow-wrap:anywhere]"
+          className="z-50 w-72 max-w-[calc(100vw-2rem)] break-words rounded-md border border-border bg-popover p-3 type-secondary leading-snug text-popover-foreground shadow-md [overflow-wrap:anywhere]"
         >
           {description && <div>{description}</div>}
           {helpText && (

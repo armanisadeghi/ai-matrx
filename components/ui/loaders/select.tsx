@@ -152,7 +152,7 @@ const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
                         {isIconVariant && (
                             <>
                                 {value && !isLoading && (
-                                    <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground">
+                                    <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary type-meta text-primary-foreground">
                                         <Check className="h-2.5 w-2.5" aria-hidden="true" />
                                     </span>
                                 )}
@@ -202,7 +202,7 @@ const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
                 </SelectPrimitive.Root>
 
                 {description && !isIconVariant && (
-                    <p className="text-sm text-muted-foreground">{description}</p>
+                    <p className="type-body text-muted-foreground">{description}</p>
                 )}
             </div>
         );

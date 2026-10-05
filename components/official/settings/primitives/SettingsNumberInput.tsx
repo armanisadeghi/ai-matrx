@@ -92,7 +92,7 @@ export function SettingsNumberInput({
           style={{ fontSize: size === "lg" ? "16px" : undefined }}
         />
         {unit && (
-          <span className="text-xs text-muted-foreground tabular-nums">
+          <span className="type-secondary text-muted-foreground tabular-nums">
             {unit}
           </span>
         )}

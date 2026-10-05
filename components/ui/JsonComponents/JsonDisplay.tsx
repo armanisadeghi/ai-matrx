@@ -54,7 +54,7 @@ const JsonDisplay: React.FC<JsonDisplayProps> = ({
       >
         {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
       </button>
-      <pre className="text-xs leading-tight whitespace-pre-wrap font-mono">
+      <pre className="type-secondary leading-tight whitespace-pre-wrap font-mono">
         {formattedJson}
       </pre>
     </div>

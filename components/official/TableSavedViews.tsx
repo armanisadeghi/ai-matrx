@@ -15,7 +15,7 @@ export function TableSavedViews(props: TableSavedViewsProps) {
   const userId = useAppSelector(selectUserId);
   const accessToken = useAppSelector(selectAccessToken);
   const organizationId = useAppSelector(selectOrganizationId);
-  if (!userId || !accessToken) return <span role="status" className="text-xs text-muted-foreground">Sign in to use saved views.</span>;
+  if (!userId || !accessToken) return <span role="status" className="type-secondary text-muted-foreground">Sign in to use saved views.</span>;
   return <PersonalViews key={`${userId}:${props.tableId}`} {...props} actor={{ userId, accessToken, organizationId }} />;
 }
 

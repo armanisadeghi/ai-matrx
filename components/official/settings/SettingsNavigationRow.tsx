@@ -60,18 +60,18 @@ export function SettingsNavigationRow({
               aria-hidden="true"
             />
           )}
-          <span className="truncate text-sm font-medium text-foreground">
+          <span className="truncate type-title text-foreground">
             {label}
           </span>
           {badge && <Badge badge={badge} />}
         </span>
         {description && (
-          <span className="mt-0.5 block text-xs leading-snug text-muted-foreground sm:truncate">
+          <span className="mt-0.5 block type-secondary leading-snug text-muted-foreground sm:truncate">
             {description}
           </span>
         )}
         {warning && (
-          <span className="mt-1 flex items-start gap-1.5 text-xs leading-snug text-amber-600 dark:text-amber-400">
+          <span className="mt-1 flex items-start gap-1.5 type-secondary leading-snug text-amber-600 dark:text-amber-400">
             <AlertTriangle
               className="mt-0.5 h-3.5 w-3.5 shrink-0"
               aria-hidden="true"
@@ -80,7 +80,7 @@ export function SettingsNavigationRow({
           </span>
         )}
         {error && (
-          <span className="mt-1 flex items-start gap-1.5 text-xs leading-snug text-red-600 dark:text-red-400">
+          <span className="mt-1 flex items-start gap-1.5 type-secondary leading-snug text-red-600 dark:text-red-400">
             <AlertCircle
               className="mt-0.5 h-3.5 w-3.5 shrink-0"
               aria-hidden="true"
@@ -91,7 +91,7 @@ export function SettingsNavigationRow({
         )}
       </span>
       {value && (
-        <span className="min-w-0 max-w-40 truncate text-sm text-muted-foreground">
+        <span className="min-w-0 max-w-40 truncate type-body text-muted-foreground">
           {value}
         </span>
       )}
@@ -137,7 +137,7 @@ export function SettingsNavigationRow({
 
 function Badge({ badge }: { badge: SettingsBadge }) {
   return (
-    <span className="rounded border border-border bg-muted px-1.5 py-0 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+    <span className="rounded border border-border bg-muted px-1.5 py-0 type-meta font-semibold uppercase tracking-wide text-muted-foreground">
       {badge.label}
     </span>
   );

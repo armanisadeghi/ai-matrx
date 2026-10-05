@@ -57,7 +57,7 @@ function ChangeDiffRow({ field }: { field: ChangeFieldDiff }) {
   if (field.block) {
     return (
       <div className="flex flex-col gap-1 rounded-lg border border-border/60 bg-background/60 p-2.5">
-        <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+        <div className="type-meta font-medium uppercase tracking-wide text-muted-foreground">
           {field.label}
         </div>
         {hasBefore ? (
@@ -73,8 +73,8 @@ function ChangeDiffRow({ field }: { field: ChangeFieldDiff }) {
   }
 
   return (
-    <div className="flex items-start gap-2 text-[13px]">
-      <div className="w-20 shrink-0 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+    <div className="flex items-start gap-2 type-body">
+      <div className="w-20 shrink-0 type-meta font-medium uppercase tracking-wide text-muted-foreground">
         {field.label}
       </div>
       <div className="flex min-w-0 flex-1 flex-wrap items-baseline gap-1.5">
@@ -157,11 +157,11 @@ function BlockSourceValue({
   return (
     <div className="min-w-0">
       {whitespaceOnly ? (
-        <div className="mb-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+        <div className="mb-1 type-meta font-medium uppercase tracking-wide text-muted-foreground">
           Whitespace only
         </div>
       ) : null}
-      <pre className="m-0 whitespace-pre-wrap break-words font-sans text-[13px] leading-relaxed text-foreground [overflow-wrap:anywhere]">
+      <pre className="m-0 whitespace-pre-wrap break-words font-sans type-body leading-relaxed text-foreground [overflow-wrap:anywhere]">
         {value}
       </pre>
     </div>
@@ -178,7 +178,7 @@ function BlockValue({
   return (
     <div
       className={cn(
-        "whitespace-pre-wrap break-words text-[13px] leading-relaxed [overflow-wrap:anywhere]",
+        "whitespace-pre-wrap break-words type-body leading-relaxed [overflow-wrap:anywhere]",
         value.empty ? "italic text-muted-foreground" : "text-foreground",
       )}
     >

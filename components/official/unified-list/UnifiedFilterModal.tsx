@@ -268,7 +268,7 @@ export function UnifiedFilterModal<T extends BaseListItem>({
                   }}
                   className="shrink-0"
                 />
-                <span className="text-sm">{option.label}</span>
+                <span className="type-body">{option.label}</span>
               </label>
             ))}
           </div>
@@ -324,7 +324,7 @@ export function UnifiedFilterModal<T extends BaseListItem>({
         {/* Empty state if no filters */}
         {customFilters.length === 0 && (
           <div className="pt-4 space-y-2">
-            <p className="text-xs text-muted-foreground text-center">
+            <p className="type-secondary text-muted-foreground text-center">
               More filter options coming soon
             </p>
           </div>

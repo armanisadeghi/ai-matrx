@@ -134,7 +134,7 @@ export function UnifiedActionBar<T extends BaseListItem>({
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                     <div className="bg-background/95 backdrop-blur-xl rounded-3xl border border-border/50 shadow-2xl p-8 flex flex-col items-center gap-4">
                         <TranscriptionLoader duration={duration} size="lg" />
-                        <div className="text-sm text-muted-foreground">Transcribing...</div>
+                        <div className="type-body text-muted-foreground">Transcribing...</div>
                     </div>
                 </div>
             </>
@@ -234,7 +234,7 @@ export function UnifiedActionBar<T extends BaseListItem>({
                             className="flex-1 flex items-center gap-2 h-10 px-3 rounded-full bg-muted/50 hover:bg-muted/70 transition-colors"
                         >
                             <Search className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm text-muted-foreground truncate">
+                            <span className="type-body text-muted-foreground truncate">
                                 {localSearchValue || config.search.placeholder}
                             </span>
                             {voiceEnabled && (
@@ -351,7 +351,7 @@ export function UnifiedActionBar<T extends BaseListItem>({
                                 <Icon className="h-5 w-5 mr-2" />
                                 {action.label}
                                 {action.badge && (
-                                    <span className="ml-2 px-2 py-0.5 text-xs bg-primary/20 rounded-full">
+                                    <span className="ml-2 px-2 py-0.5 type-secondary bg-primary/20 rounded-full">
                                         {action.badge}
                                     </span>
                                 )}

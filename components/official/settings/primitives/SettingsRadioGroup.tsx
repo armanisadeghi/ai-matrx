@@ -69,12 +69,12 @@ export function SettingsRadioGroup<T extends string = string>({
               <span className="flex-1 min-w-0">
                 <span className="flex items-center gap-1.5">
                   {opt.icon && <opt.icon className="h-3.5 w-3.5" />}
-                  <span className="text-sm font-medium text-foreground">
+                  <span className="type-title text-foreground">
                     {opt.label}
                   </span>
                 </span>
                 {opt.description && (
-                  <span className="block text-xs text-muted-foreground mt-0.5">
+                  <span className="block type-secondary text-muted-foreground mt-0.5">
                     {opt.description}
                   </span>
                 )}

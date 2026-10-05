@@ -62,7 +62,7 @@ export function SettingsTextarea({
           style={{ fontSize: "16px" }}
         />
         {showCount && maxLength && (
-          <div className="mt-1 text-right text-[11px] text-muted-foreground tabular-nums">
+          <div className="mt-1 text-right type-meta text-muted-foreground tabular-nums">
             {effective.length} / {maxLength}
           </div>
         )}

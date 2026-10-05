@@ -130,7 +130,7 @@ export function SettingsDrawerNav({
           {path.length === 0 ? (
             <div className="flex items-center gap-2 min-w-0">
               <SettingsIcon className="h-4 w-4 text-muted-foreground shrink-0" />
-              <span className="text-sm font-semibold truncate">{title}</span>
+              <span className="type-title truncate">{title}</span>
             </div>
           ) : (
             <button
@@ -144,7 +144,7 @@ export function SettingsDrawerNav({
           )}
           <div className="flex-1 flex items-center justify-center min-w-0 px-2">
             {path.length > 0 && (
-              <span className="text-sm font-semibold truncate">
+              <span className="type-title truncate">
                 {headerTitle}
               </span>
             )}
@@ -200,7 +200,7 @@ export function SettingsDrawerNav({
                 {searchMatches ? (
                   <div className="pb-safe">
                     {searchMatches.length === 0 ? (
-                      <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+                      <div className="px-4 py-8 text-center type-body text-muted-foreground">
                         No settings match "{query}".
                       </div>
                     ) : (
@@ -309,7 +309,7 @@ function DrawerRow({
       )}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5">
-          <span className="text-sm font-medium text-foreground truncate">
+          <span className="type-title text-foreground truncate">
             {node.label}
           </span>
           {hasUnsaved && (
@@ -320,7 +320,7 @@ function DrawerRow({
           )}
         </div>
         {node.description && (
-          <div className="text-xs text-muted-foreground truncate">
+          <div className="type-secondary text-muted-foreground truncate">
             {node.description}
           </div>
         )}

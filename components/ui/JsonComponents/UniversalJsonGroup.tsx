@@ -163,12 +163,12 @@ const ComponentItem: React.FC<ComponentItemProps> = ({
   const renderMetrics = () => {
     if (!metrics) {
       return (
-        <div className="text-xs text-muted-foreground">Loading metrics...</div>
+        <div className="type-secondary text-muted-foreground">Loading metrics...</div>
       );
     }
 
     return (
-      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+      <div className="flex items-center gap-2 type-secondary text-muted-foreground">
         <span title="Total Keys">{metrics?.keys ?? 0}k</span>
         <span title="Depth">{metrics?.depth ?? 0}d</span>
         <span title="Size">{metrics?.size ?? "0B"}</span>

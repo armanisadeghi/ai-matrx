@@ -37,7 +37,7 @@ const StructuredSectionCard: React.FC<StructuredSectionCardProps> = ({
         <div>
           <h3 className="text-rose-500 dark:text-rose-600 font-medium">{title}</h3>
           {description && (
-            <p className="text-gray-600 dark:text-gray-300 text-sm">{description}</p>
+            <p className="text-gray-600 dark:text-gray-300 type-body">{description}</p>
           )}
         </div>
         

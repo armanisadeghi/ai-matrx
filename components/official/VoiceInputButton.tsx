@@ -116,7 +116,7 @@ export function VoiceInputButton({
                 </Button>
               </div>
               {liveTranscript && (
-                <p className="text-xs text-muted-foreground leading-relaxed truncate max-w-[200px]">
+                <p className="type-secondary text-muted-foreground leading-relaxed truncate max-w-[200px]">
                   {liveTranscript.slice(-80)}
                 </p>
               )}
@@ -170,7 +170,7 @@ export function VoiceInputButton({
               </Button>
             </div>
             {liveTranscript && (
-              <p className="text-xs text-muted-foreground leading-relaxed mt-1 truncate">
+              <p className="type-secondary text-muted-foreground leading-relaxed mt-1 truncate">
                 {liveTranscript.slice(-100)}
               </p>
             )}

@@ -134,7 +134,7 @@ const JsonEditorItem: React.FC<JsonEditorItemProps> = ({
     return (
         <div
             className={cn(
-                "group text-sm",
+                "group type-body",
                 error && "bg-destructive/10 rounded-sm"
             )}
             style={{marginLeft: `${indent}px`}}
@@ -233,7 +233,7 @@ const JsonEditorItem: React.FC<JsonEditorItemProps> = ({
             </div>
 
             {error && (
-                <div className="text-destructive text-xs mt-0.5 ml-4">{error.message} <ErrorAlchemyMenu /></div>
+                <div className="text-destructive type-secondary mt-0.5 ml-4">{error.message} <ErrorAlchemyMenu /></div>
             )}
 
             {isObject && isExpanded && (

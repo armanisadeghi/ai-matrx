@@ -116,8 +116,8 @@ const TextArrayInput = ({
       <div className="flex flex-wrap gap-2">
         {value.length === 0 ? (
           <span
-            className="inline-flex items-center px-3 py-1 rounded-full text-sm 
-                        bg-muted text-muted-foreground"
+            className="inline-flex items-center px-3 py-1 rounded-full type-body 
+ bg-muted text-muted-foreground"
           >
             None Added
           </span>

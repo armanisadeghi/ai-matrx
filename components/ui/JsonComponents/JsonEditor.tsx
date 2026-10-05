@@ -286,11 +286,11 @@ export const EditableJsonViewer: React.FC<EditableJsonViewerProps> = ({
     >
       {validationErrors.length > 0 && (
         <div className="mb-2 p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded-sm">
-          <div className="text-xs text-yellow-800 dark:text-yellow-200">
+          <div className="type-secondary text-yellow-800 dark:text-yellow-200">
             Original Value:
             <ErrorAlchemyMenu />
           </div>
-          <pre className="mt-1 text-xs overflow-auto">
+          <pre className="mt-1 type-secondary overflow-auto">
             {typeof originalValue === "string"
               ? originalValue
               : JSON.stringify(originalValue, null, 2)}
@@ -368,7 +368,7 @@ export const EditableJsonViewer: React.FC<EditableJsonViewerProps> = ({
             ))
           ) : (
             <div className="flex items-center justify-between p-2 hover:bg-muted/50 rounded-sm">
-              <span className="text-muted-foreground text-sm">No data</span>
+              <span className="text-muted-foreground type-body">No data</span>
               {!readOnly && (
                 <button
                   onClick={handleAddFirstItem}
@@ -391,7 +391,7 @@ export const EditableJsonViewer: React.FC<EditableJsonViewerProps> = ({
       )}
 
       {validationErrors.length > 0 && (
-        <div className="mt-2 p-1.5 bg-destructive/10 rounded text-sm">
+        <div className="mt-2 p-1.5 bg-destructive/10 rounded type-body">
           <h4 className="text-destructive font-medium">Validation Errors:</h4>
           <ul className="list-disc pl-4 mt-1">
             {validationErrors.map((error, index) => (
@@ -421,7 +421,7 @@ export const FullEditableJsonViewer: React.FC<
   return (
     <Card className={cn("bg-card", className)}>
       <div className="px-3 py-2 border-b">
-        <h3 className="text-sm font-medium text-foreground">{title}</h3>
+        <h3 className="type-title text-foreground">{title}</h3>
       </div>
       <div className="p-3">
         <EditableJsonViewer
@@ -542,14 +542,14 @@ export const EnhancedEditableJsonViewer: React.FC<
       )}
       onClick={handleMinimizeToggle}
     >
-      <span className="text-sm font-medium truncate max-w-[200px]">
+      <span className="type-title truncate max-w-[200px]">
         {title}
       </span>
       {hasChanges && (
         <span className="w-1.5 h-1.5 rounded-full bg-orange-500" />
       )}
       {readOnly && (
-        <span className="text-xs text-muted-foreground">(Read Only)</span>
+        <span className="type-secondary text-muted-foreground">(Read Only)</span>
       )}
       <Maximize2 className="h-3.5 w-3.5 text-muted-foreground" />
     </motion.div>
@@ -567,7 +567,7 @@ export const EnhancedEditableJsonViewer: React.FC<
           <div className="px-3 py-2 border-b flex justify-between items-center">
             <div className="flex items-center gap-2">
               {readOnly && (
-                <span className="text-xs text-muted-foreground px-2 py-0.5 bg-muted rounded-full">
+                <span className="type-secondary text-muted-foreground px-2 py-0.5 bg-muted rounded-full">
                   Read Only
                 </span>
               )}

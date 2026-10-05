@@ -149,7 +149,7 @@ export function StructuredValueView({
       <ResultValue value={shown} density={resolved} />
 
       {footer ? (
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-border/50 pt-1.5 text-[11px] text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-border/50 pt-1.5 type-meta text-muted-foreground">
           {kind ? (
             <span title={kind}>
               {humanizeIdentifier(kind) || kind}

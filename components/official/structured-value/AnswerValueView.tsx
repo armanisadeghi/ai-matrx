@@ -96,7 +96,7 @@ export function AnswerValueView({
   if (!shown) {
     if (value != null)
       return <StructuredValueView value={value} density={density} />;
-    return <p className="text-sm text-muted-foreground">{emptyText}</p>;
+    return <p className="type-body text-muted-foreground">{emptyText}</p>;
   }
   return (
     <RichContent level="full"

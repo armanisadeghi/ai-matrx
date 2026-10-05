@@ -59,11 +59,11 @@ export function SettingsSlider({
     <SettingsRow {...rowProps} id={id} variant="stacked" last={last}>
       <div className="space-y-2">
         <div className="flex min-w-0 items-center justify-between gap-2">
-          <span className="min-w-0 break-words text-xs text-muted-foreground tabular-nums">
+          <span className="min-w-0 break-words type-secondary text-muted-foreground tabular-nums">
             {display}
             {unit}
           </span>
-          <span className="min-w-0 break-words text-right text-xs text-muted-foreground tabular-nums">
+          <span className="min-w-0 break-words text-right type-secondary text-muted-foreground tabular-nums">
             {min} – {max}
           </span>
         </div>
@@ -78,7 +78,7 @@ export function SettingsSlider({
           disabled={rowProps.disabled}
         />
         {(minLabel || midLabel || maxLabel) && (
-          <div className="flex min-w-0 justify-between gap-2 text-[11px] text-muted-foreground">
+          <div className="flex min-w-0 justify-between gap-2 type-meta text-muted-foreground">
             <span className="min-w-0 break-words">{minLabel}</span>
             <span className="hidden sm:inline">{midLabel}</span>
             <span className="min-w-0 break-words text-right">{maxLabel}</span>

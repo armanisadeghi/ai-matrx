@@ -78,7 +78,7 @@ export function StaleDataNotice({
     <div
       role="status"
       className={cn(
-        "flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm",
+        "flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 type-body",
         className,
       )}
     >

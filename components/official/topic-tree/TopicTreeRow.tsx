@@ -107,7 +107,7 @@ export function TopicTreeRow({
       onDoubleClick={onRowDoubleClick}
       style={{ height, paddingLeft: indent + 4 }}
       className={cn(
-        "group relative flex w-full cursor-default select-none items-center gap-1.5 pr-2 text-xs",
+        "group relative flex w-full cursor-default select-none items-center gap-1.5 pr-2 type-secondary",
         // Selection: a primary wash plus a left rail, the same treatment the
         // plan tree and the file tree use — unmistakable in both themes without
         // inventing a colour.
@@ -193,7 +193,7 @@ export function TopicTreeRow({
             <HoverCardContent
               align="start"
               side="right"
-              className="w-80 text-xs"
+              className="w-80 type-secondary"
             >
               {renderHover(row)}
             </HoverCardContent>

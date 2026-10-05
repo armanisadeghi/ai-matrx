@@ -103,7 +103,7 @@ export function SettingsSection({
         {action && <div className="ml-auto max-w-full shrink-0">{action}</div>}
       </header>
       {description && isOpen && (
-        <p className="px-4 text-xs text-muted-foreground mb-2 leading-snug">
+        <p className="px-4 type-secondary text-muted-foreground mb-2 leading-snug">
           {description}
         </p>
       )}

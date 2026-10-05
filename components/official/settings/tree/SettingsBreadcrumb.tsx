@@ -33,7 +33,7 @@ export function SettingsBreadcrumb({
     <nav
       aria-label="Breadcrumb"
       aria-busy={navigationPending}
-      className="flex min-w-0 items-center gap-1 overflow-x-auto text-xs text-muted-foreground"
+      className="flex min-w-0 items-center gap-1 overflow-x-auto type-secondary text-muted-foreground"
     >
       <Crumb
         label={rootLabel}

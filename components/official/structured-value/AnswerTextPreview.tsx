@@ -76,7 +76,7 @@ export function AnswerTextPreview({
         <span
           data-kind-loader={preview.pendingKind ?? ""}
           className={cn(
-            "flex items-center gap-1.5 text-xs text-muted-foreground",
+            "flex items-center gap-1.5 type-secondary text-muted-foreground",
             preview.text && "mt-1",
           )}
         >
@@ -88,7 +88,7 @@ export function AnswerTextPreview({
         <span
           data-kind-broken={preview.pendingKind ?? ""}
           className={cn(
-            "flex items-center gap-1.5 text-xs text-destructive",
+            "flex items-center gap-1.5 type-secondary text-destructive",
             preview.text && "mt-1",
           )}
         >

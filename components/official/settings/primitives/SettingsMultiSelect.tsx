@@ -67,7 +67,7 @@ export function SettingsMultiSelect<T extends string = string>({
             {selectedOptions.map((opt) => (
               <span
                 key={opt.value}
-                className="inline-flex max-w-full items-center gap-1 rounded-md border border-border bg-muted px-2 py-0.5 text-xs text-foreground"
+                className="inline-flex max-w-full items-center gap-1 rounded-md border border-border bg-muted px-2 py-0.5 type-secondary text-foreground"
               >
                 {opt.icon && <opt.icon className="h-3 w-3" />}
                 <span className="min-w-0 truncate">{opt.label}</span>

@@ -103,13 +103,13 @@ export const FileUpload = ({
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       layout
-                      className="rounded-lg px-2 py-1 w-fit flex-shrink-0 text-sm text-neutral-600 dark:bg-neutral-800 dark:text-white shadow-input"
+                      className="rounded-lg px-2 py-1 w-fit flex-shrink-0 type-body text-neutral-600 dark:bg-neutral-800 dark:text-white shadow-input"
                     >
                       {formatFileSize(file.size)}
                     </motion.p>
                   </div>
 
-                  <div className="flex text-sm md:flex-row flex-col items-start md:items-center w-full mt-2 justify-between text-neutral-600 dark:text-neutral-400">
+                  <div className="flex type-body md:flex-row flex-col items-start md:items-center w-full mt-2 justify-between text-neutral-600 dark:text-neutral-400">
                     <motion.p
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
@@ -306,7 +306,7 @@ export const MultiFileUpload = ({
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       layout
-                      className="rounded-lg px-2 py-1 w-fit flex-shrink-0 text-sm text-neutral-600 dark:bg-neutral-800 dark:text-white shadow-input"
+                      className="rounded-lg px-2 py-1 w-fit flex-shrink-0 type-body text-neutral-600 dark:bg-neutral-800 dark:text-white shadow-input"
                     >
                       {isFile(file)
                         ? formatFileSize(file.size)
@@ -316,7 +316,7 @@ export const MultiFileUpload = ({
                     </motion.p>
                   </div>
 
-                  <div className="flex text-sm md:flex-row flex-col items-start md:items-center w-full mt-2 justify-between text-neutral-600 dark:text-neutral-400">
+                  <div className="flex type-body md:flex-row flex-col items-start md:items-center w-full mt-2 justify-between text-neutral-600 dark:text-neutral-400">
                     <motion.p
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
@@ -458,7 +458,7 @@ export const MiniFileUpload = ({
         <div className="flex flex-col items-center justify-center">
           <div className="flex items-center space-x-2">
             <IconUpload className="h-4 w-4 text-neutral-600 dark:text-neutral-300" />
-            <p className="font-medium text-sm text-neutral-700 dark:text-neutral-300">
+            <p className="type-title text-neutral-700 dark:text-neutral-300">
               {isDragActive
                 ? `Drop ${multiple ? "files" : "file"}`
                 : `Upload ${multiple ? "files" : "file"}`}
@@ -466,7 +466,7 @@ export const MiniFileUpload = ({
           </div>
 
           {!displayedFiles.length && (
-            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
+            <p className="type-secondary text-neutral-500 dark:text-neutral-400 mt-1">
               Drag or click to upload
             </p>
           )}
@@ -481,7 +481,7 @@ export const MiniFileUpload = ({
                 key={`file-${idx}`}
                 initial={{ opacity: 0, y: 5 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-white dark:bg-neutral-800 p-2 mb-2 rounded-md shadow-sm text-xs"
+                className="bg-white dark:bg-neutral-800 p-2 mb-2 rounded-md shadow-sm type-secondary"
               >
                 <div className="flex justify-between items-center">
                   <p className="truncate max-w-[150px] text-neutral-700 dark:text-neutral-300">
@@ -489,7 +489,7 @@ export const MiniFileUpload = ({
                       ? file.name
                       : file.details?.filename || "Unknown file"}
                   </p>
-                  <span className="text-neutral-500 dark:text-neutral-400 text-xs ml-2">
+                  <span className="text-neutral-500 dark:text-neutral-400 type-secondary ml-2">
                     {isFile(file)
                       ? formatFileSize(file.size)
                       : file.details?.size
@@ -642,12 +642,12 @@ export const MultiFileUploadWithSpinner = ({
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       layout
-                      className="rounded-lg px-2 py-1 w-fit flex-shrink-0 text-sm text-neutral-600 dark:bg-neutral-800 dark:text-white shadow-input"
+                      className="rounded-lg px-2 py-1 w-fit flex-shrink-0 type-body text-neutral-600 dark:bg-neutral-800 dark:text-white shadow-input"
                     >
                       {formatFileSize(file.size)}
                     </motion.p>
                   </div>
-                  <div className="flex text-sm md:flex-row flex-col items-start md:items-center w-full mt-2 justify-between text-neutral-600 dark:text-neutral-400">
+                  <div className="flex type-body md:flex-row flex-col items-start md:items-center w-full mt-2 justify-between text-neutral-600 dark:text-neutral-400">
                     <motion.p
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}

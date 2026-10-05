@@ -97,12 +97,12 @@ export function DeleteConfirmationPopover({
             <div className="min-w-0 flex-1">
               <h2
                 id={titleId}
-                className="text-sm font-semibold text-foreground"
+                className="type-title text-foreground"
               >
                 {title}
               </h2>
               {itemLabel ? (
-                <p className="mt-0.5 line-clamp-2 text-xs font-medium leading-5 text-foreground/80">
+                <p className="mt-0.5 line-clamp-2 type-secondary font-medium leading-5 text-foreground/80">
                   {itemLabel}
                 </p>
               ) : null}
@@ -111,7 +111,7 @@ export function DeleteConfirmationPopover({
 
           <div
             id={descriptionId}
-            className="space-y-1.5 rounded-xl bg-muted/55 px-3 py-2.5 text-xs leading-5 text-muted-foreground"
+            className="space-y-1.5 rounded-xl bg-muted/55 px-3 py-2.5 type-secondary leading-5 text-muted-foreground"
           >
             <p>{description}</p>
             {reassurance ? (
@@ -123,7 +123,7 @@ export function DeleteConfirmationPopover({
           </div>
 
           {error ? (
-            <ErrorNotice size="inline" className="text-xs leading-5" message={error} />
+            <ErrorNotice size="inline" className="type-secondary leading-5" message={error} />
           ) : null}
 
           <div className="flex gap-2">
