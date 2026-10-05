@@ -80,15 +80,25 @@
 - Owner feedback: double bottom padding on table-footer pages; feature cards need more space above/below (top too busy); kit-card coloured chips all different sizes — annihilate; system page internal page-top (two lines + back chevron) busy; builder proposals OK.
 - Lanes running: page rhythm (spacing scale + clearance, no double padding); canonical chip + sweep; page-top templates (one-line internal) + rollout; table playground rebuild on controls + 12 flaws (APPROVED); app-wide rollout coordinator (doors → controls, codemods, census leftovers).
 
-## QUEUED for the next rollout wave (found 2026-10-05)
-- Marketing page headers (Rulebook, Industry packs, Setup) trip the tap guard (3px neighbour).
-- Quiz save-error copy menu at 375: 32px button (canon 38).
-- Chat timeline phase pills off-centre (14 vs 10).
-- Content-plan setup page at 1440 with chat open: middle work-order column squeezed to ~40px.
-- Agents table at 1024: Tags column starts under pinned ACTIONS until scrolled.
-- Wave-1 leftovers: dashboard "Create a note" wraps at 375; /tasks filter chips wrap at 1440; /chat 2px pill overflow + page-rhythm gap; /files td padding around a tap button.
-- Unverified by eye: chat flag chips, working-document view controls, flashcards block header/"Go deeper", admin limits numeric/mark inputs + Tile rows.
-- Remaining waves: tab rails onto TabsList overflow (27), raw buttons in packages/chat + mardown-display, chips app/(dev) 64 + content-ir 48 + 7 marketing, page-top raw headers 203 + sentences 380, census leftovers (spinners, text sizes → type-*, palette colours).
+## DONE 2026-10-05 — rollout wave 3
+- Guard `pnpm check:binder` (duplicate declarations/imports, missing named exports; ~4s, advisory, in release gates + findings): 0 findings.
+- Queued defects fixed at source: marketing header 3px clearance (EntityModeHeader + shell.css), ErrorAlchemyMenu 38px slot + clearance, RouteModeNav capsule, content-plan setup container-sized, pinned ACTIONS edge shadow (ruling: overlay + shadow, Sheets/Linear), notes search marked a field, ContextStatusButton transparent by default.
+- Review defects (cms tap groups, documents toggles, back-chevron clearance, admin limits table scroll, org-dialog footer + Cancel single ring in design-system 0.68.9, research hero by container, dark checkbox) fixed and re-shot.
+- packages/chat raw buttons 384 -> 122; composer all 28px; design-system Button `pressed`, `badge`, status glyph tones, `removes`; Tile `danger` (0.68.8/0.68.9).
+- Type scale codemod (components/official, ui, entity-list, shell, agents, research, rag, mandates): arbitrary-text-size 10627 -> 9443.
+- Page-top: 583 -> 433 (raw headers 203 -> 117, sentences 380 -> 316); RecordPageHeader/EntityModeHeader optional `backHref`.
+
+## QUEUED for the next rollout wave (updated 2026-10-05 end of wave 3)
+- Sync `@ai-matrx/agents` 0.45.5 once it publishes (rerun 37367162423), then `ConversationContextChip`: drop colour className, pass `variant="quiet"`; until then the "blind" pill loses its dashed border.
+- Usage-limit toast still sits over content at 375 when no dock/composer floats (/cms): clearance offset only applies with a floating dock. Make the toast always respect `--matrx-floating-clearance`.
+- Override pills (Feature knobs tab of /administration/users/limits): Badge whole-clamp not verified by eye.
+- Page-top: fold AdminModuleHeader + ScopesRouteHeader into CrumbTrailHeader (needs route-tree menu, injected items, org drawer, confirm-delete as named options); header-variant family (HeaderToggle, HeaderTabs, StudyDeckHeader, ExportsHeader); live-control headers; 117 raw headers + 316 sentences left.
+- Page rhythm: content left edges differ per page (84/85/137/190px at 1440); the 33px before titles is the owner-ruled chat-button room (shell.css `--shell-chat-toggle-room`), not a template slot.
+- packages/chat 122 raw buttons left (custom-shaped); section-disclosure header component to add to the package.
+- components/mardown-display raw buttons (~106 files) — not started.
+- Text sizes: responsive pairs / multi-size strings left for manual; packages/chat, mardown-display, marketing not run. Then spinners -> loading system; palette colours -> tokens (by reach).
+- Chips: 7 marketing sites (judgement), app/(dev) 64, features/content-ir 48. Surface Buttons (~66 CTAs on inviting pages): keep size, add a named package option.
+- Tab rails onto TabsList overflow (27).
 
 ## OPEN / NEXT
 - **The rollout, after the owner finalises the pages above:**
