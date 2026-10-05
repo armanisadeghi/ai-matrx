@@ -41,6 +41,9 @@ export interface CmsPageAccessRecord {
   id: string;
   client_id: string;
   title: string | null;
+  /** The plan node this page realizes (an SEO page) — read here so the writing gate costs no extra select. */
+  plan_node_id: string | null;
+  is_published: boolean | null;
 }
 
 export type CmsSiteAccessLookup =
@@ -94,7 +97,7 @@ export async function lookupCmsPageAccess(
   level: CmsAccessLevel = "editor",
 ): Promise<CmsPageAccessLookup> {
   const { data: page, error } = await onlyLive(
-    db.from("client_pages").select("id, client_id, title").eq("id", pageId),
+    db.from("client_pages").select("id, client_id, title, plan_node_id, is_published").eq("id", pageId),
     await archiveLive(db, "client_pages"),
   ).maybeSingle();
   if (error) return { status: "error", error };

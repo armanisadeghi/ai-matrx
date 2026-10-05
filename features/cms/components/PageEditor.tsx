@@ -35,6 +35,8 @@ import {
   type CmsWritingMustFix,
   writingBlockOf,
 } from "@/features/cms/services/cmsService";
+import { InfoHint } from "@/components/official/InfoHint";
+
 import { cmsPageEditorHref } from "@/features/cms/utils/cmsRoutes";
 import { CMS_PAGE_CONTEXT_MENU_PROPS } from "@/features/cms/agent-context/cmsPageContextMenuProps";
 import { createCmsPageExtraSections } from "@/features/cms/agent-context/cmsPageExtraSections";
@@ -87,6 +89,9 @@ import {
 } from "@/features/marketing/seo/serp/metrics";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
+
+/** A must-fix hint shows at most this many characters; the rest is behind InfoHint. */
+const WRITING_HINT_MAX = 60;
 
 interface PageEditorProps {
   siteId: string;
@@ -425,9 +430,22 @@ export default function PageEditor({
     });
   };
 
+  // Organization chose to block writing tells: the refusal's list, shown in a dialog.
+  const [writingBlock, setWritingBlock] = useState<CmsWritingMustFix[] | null>(null);
+
   const handleSaveLive = async () => {
     if (!page) return;
-    await onSave(page.id, {
+    try {
+      await saveLive(page.id);
+    } catch (err) {
+      const mustFix = writingBlockOf(err);
+      if (mustFix === null) throw err;
+      setWritingBlock(mustFix);
+    }
+  };
+
+  const saveLive = async (pageId: string) => {
+    await onSave(pageId, {
       title,
       slug,
       htmlContent,
@@ -453,9 +471,6 @@ export default function PageEditor({
         : null,
     });
   };
-
-  // Organization chose to block writing tells: the refusal's list, shown in a dialog.
-  const [writingBlock, setWritingBlock] = useState<CmsWritingMustFix[] | null>(null);
 
   const handlePublish = async () => {
     if (!page) return;
@@ -1438,16 +1453,28 @@ export default function PageEditor({
           content={
             <div className="space-y-2 text-sm">
               <ul className="space-y-1.5">
-                {(writingBlock ?? []).map((item, index) => (
-                  <li key={`${item.field}-${item.rule_id}-${index}`}>
-                    <span className="font-medium">&ldquo;{item.match}&rdquo;</span>{" "}
-                    <span className="text-muted-foreground">({item.field})</span>
-                    <div className="text-muted-foreground">{item.fix_hint}</div>
-                  </li>
-                ))}
+                {(writingBlock ?? []).map((item, index) => {
+                  const long = item.fix_hint.length > WRITING_HINT_MAX;
+                  return (
+                    <li key={`${item.field}-${item.rule_id}-${index}`}>
+                      <span className="font-medium">&ldquo;{item.match}&rdquo;</span>{" "}
+                      <span className="text-muted-foreground">({item.field})</span>
+                      <div className="flex items-center gap-1 text-muted-foreground">
+                        <span className="truncate">
+                          {long ? `${item.fix_hint.slice(0, WRITING_HINT_MAX - 1)}…` : item.fix_hint}
+                        </span>
+                        {long ? <InfoHint text={item.fix_hint.slice(0, 140)} label="Full hint" /> : null}
+                      </div>
+                    </li>
+                  );
+                })}
               </ul>
-              <p className="text-xs text-muted-foreground">
-                Or allow the words, turn off the rule, or set the check to warn in Brand voice settings.
+              <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                Or change your Brand voice settings.
+                <InfoHint
+                  text="Allow the words, turn off the rule, or set the writing check to warn."
+                  label="Ways to publish"
+                />
               </p>
             </div>
           }

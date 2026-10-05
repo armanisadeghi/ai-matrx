@@ -37,6 +37,7 @@ import type {
 import type { ItemValidationProblem } from "../collections/validateItem";
 import type { ColumnFilterMap } from "@/features/data-tables/column-filters";
 import type { ColumnFacets } from "@/features/data-tables/types";
+import { toast } from "@/lib/toast";
 
 export class SiteNotEmptyError extends Error {
   pageCount: number;
@@ -83,6 +84,18 @@ export function writingBlockOf(error: unknown): CmsWritingMustFix[] | null {
   return Array.isArray(items) ? (items as CmsWritingMustFix[]) : [];
 }
 
+/**
+ * Short things a CMS write must tell the person (e.g. "Writing check didn't run"
+ * when the organization blocks writing tells and the check could not reach the
+ * server). Every caller of a write gets them shown, never only a header.
+ */
+function showWriteNotices(data: unknown): void {
+  if (!isResponseObject(data) || !Array.isArray(data.notices)) return;
+  for (const notice of data.notices) {
+    if (typeof notice === "string" && notice.trim()) toast.warning(notice);
+  }
+}
+
 function isResponseObject(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
@@ -110,6 +123,7 @@ async function callApi<T = unknown>(
     throw new CmsApiError(message, response.status, code, body);
   }
 
+  showWriteNotices(data);
   return data as T;
 }
 

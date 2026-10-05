@@ -373,13 +373,20 @@ leading slash, no trailing slash, **arbitrary depth**. Sites are no longer cappe
 `POST /api/cms/pages {action: "save-draft"|"update"}` → ownership check
 (`verifyPageOwnership`) → DB write → `logCmsActivity(actor: "human")`. Publish goes through the
 `publish_page_draft` RPC the same way; discard likewise. Rollback goes through `version_restore`.
-**Writing gate:** for a page that realizes a plan node (an SEO page), "publish" — and an "update" that
-writes live text of a published page — first reads the organization's
-`brand_voice.writing_check_severity` from Supabase; only at `block` does it ask aidream
-`POST /cms/publish-check` (`app/api/cms/_lib/publishWritingCheck.ts`). Must-fix hits return 422
-`cms_writing_check_blocked` (`must_fix`, `lift`) and `PageEditor` shows them in a dialog with the
-three ways to lift the block. Warn/off never call the server; an unreachable check publishes with
-`X-Cms-Writing-Check: skipped`. Tests: `app/api/cms/cmsPublishWritingGate.test.ts`.
+**Writing gate:** for a page that realizes a plan node (an SEO page), "publish" — and an "update"
+that writes live text of a published page — reads the organization's
+`brand_voice.writing_check_severity` (ONE `knob_resolve`, in the site's organization the access lookup
+already loaded; normalized, garbage logged and read as warn). Only at `block` does it ask aidream
+`POST /cms/publish-check` (`app/api/cms/_lib/publishWritingCheck.ts`): must-fix → 422
+`cms_writing_check_blocked` (`must_fix`, `lift`), shown by `PageEditor` in a dialog (publish and the
+save-live button); server 403/404 → that status, `cms_writing_check_refused`; a check that can't run
+at block → the write proceeds with `notices: ["Writing check didn't run"]`, which `cmsService` shows as
+a toast. **Rollback is not gated** (emergency path; the text was live once) — it runs the check
+report-only and returns must-fix findings as a notice. Judged: title, excerpt, body, meta title, meta
+description; not judged: image alt text, component markup. The `/cms/publish-check` path is a local
+stand-in for `ENDPOINTS.cms.publishCheck` until the package release is adopted
+(`publishWritingCheck.parity.test.ts`). Tests: `app/api/cms/cmsPublishWritingGate.test.ts`,
+`features/cms/services/cmsWriteNotices.test.ts`.
 
 ### 1b. Human reads / restores a version
 

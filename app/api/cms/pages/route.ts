@@ -27,12 +27,12 @@ import {
 import { resolveCmsCaller, type CmsCaller } from "../_lib/cmsAccess";
 import { logCmsActivity } from "../_lib/activityLog";
 import {
-  cmsWritingBlockedResponse,
+  cmsWritingStopResponse,
   liveEditOf,
   publishWritingCheck,
   type PublishWritingCheckResult,
   supabaseWritingReads,
-  withWritingCheckHeader,
+  writingNotices,
 } from "../_lib/publishWritingCheck";
 import {
   splitHtmlDocument,
@@ -675,25 +675,22 @@ export async function POST(request: NextRequest) {
 
         // A save to a published page (or one that publishes it) puts text live
         // as surely as "publish": the same writing gate, judged on this edit.
-        const { data: liveRow } = await db
-          .from("client_pages")
-          .select("is_published, plan_node_id")
-          .eq("id", pageId)
-          .maybeSingle();
-        const live = liveRow as { is_published?: boolean; plan_node_id?: string | null } | null;
-        const goesLive = Boolean(live?.is_published) || updateData.is_published === true;
+        // No extra select: the access lookup above already read the page row.
+        const goesLive = Boolean(pageAccess.page.is_published) || updateData.is_published === true;
         const liveEdit = liveEditOf(updateData);
         let liveWritingCheck: PublishWritingCheckResult | null = null;
         if (goesLive && (liveEdit || updateData.is_published === true)) {
-          const writingCheck = await publishWritingCheck({
+          liveWritingCheck = await publishWritingCheck({
             pageId,
-            planNodeId: live?.plan_node_id,
+            planNodeId: pageAccess.page.plan_node_id,
+            organizationId: pageAccess.site.organization_id,
             accessToken,
             reads: supabaseWritingReads(mainSupabase),
             liveEdit: liveEdit ?? {},
           });
-          if (writingCheck.blocked) return respond(cmsWritingBlockedResponse(writingCheck));
-          liveWritingCheck = writingCheck;
+          if (liveWritingCheck.kind !== "allowed") {
+            return respond(cmsWritingStopResponse(liveWritingCheck));
+          }
         }
 
         const { data, error } = await writeOneRow(
@@ -724,7 +721,7 @@ export async function POST(request: NextRequest) {
         });
 
         return respond(
-          withWritingCheckHeader(NextResponse.json({ success: true, page: data }), liveWritingCheck),
+          NextResponse.json({ success: true, page: data, notices: writingNotices(liveWritingCheck) }),
         );
       }
 
@@ -950,7 +947,10 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        if (!(await verifyPageOwnership(db, pageId, caller))) {
+        // Full lookup, not the boolean wrapper: it carries the page's plan link
+        // and the site's organization, so the writing gate costs no extra select.
+        const publishAccess = await lookupCmsPageAccess(db, pageId, caller);
+        if (publishAccess.status !== "ok") {
           return NextResponse.json(
             { error: "Page not found or access denied" },
             { status: 403 },
@@ -959,19 +959,15 @@ export async function POST(request: NextRequest) {
 
         // The writing gate: an organization that set its writing check to
         // block gets a block on an SEO page (one realizing a plan node). Warn
-        // and off never reach the server. See _lib/publishWritingCheck.ts.
-        const { data: gateRow } = await db
-          .from("client_pages")
-          .select("plan_node_id")
-          .eq("id", pageId)
-          .maybeSingle();
+        // and off cost one setting read and never reach the server.
         const writingCheck = await publishWritingCheck({
           pageId,
-          planNodeId: (gateRow as { plan_node_id?: string | null } | null)?.plan_node_id,
+          planNodeId: publishAccess.page.plan_node_id,
+          organizationId: publishAccess.site.organization_id,
           accessToken,
           reads: supabaseWritingReads(mainSupabase),
         });
-        if (writingCheck.blocked) return cmsWritingBlockedResponse(writingCheck);
+        if (writingCheck.kind !== "allowed") return cmsWritingStopResponse(writingCheck);
 
         const { data, error } = await db.rpc("publish_page_draft", {
           page_uuid: pageId,
@@ -999,10 +995,12 @@ export async function POST(request: NextRequest) {
           userEmail: user.email,
         });
 
-        return withWritingCheckHeader(
-          NextResponse.json({ success: true, published: data, page }),
-          writingCheck,
-        );
+        return NextResponse.json({
+          success: true,
+          published: data,
+          page,
+          notices: writingNotices(writingCheck),
+        });
       }
 
       // ── Discard draft (RPC) ──────────────────────────────────────
@@ -1064,7 +1062,8 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        if (!(await verifyPageOwnership(db, pageId, caller))) {
+        const rollbackAccess = await lookupCmsPageAccess(db, pageId, caller);
+        if (rollbackAccess.status !== "ok") {
           return NextResponse.json(
             { error: "Page not found or access denied" },
             { status: 403 },
@@ -1102,7 +1101,30 @@ export async function POST(request: NextRequest) {
           },
         });
 
-        return NextResponse.json({ success: true, newVersion, page });
+        // ROLLBACK IS NOT GATED (decision 2026-10-05): it is the emergency path
+        // and the restored text was live once. `version_restore` writes the live
+        // columns, so the writing check runs REPORT-ONLY on the restored live
+        // text: it never refuses; must-fix findings come back as a notice.
+        const notices: string[] = [];
+        if (page?.is_published && rollbackAccess.page.plan_node_id) {
+          const report = await publishWritingCheck({
+            pageId,
+            planNodeId: rollbackAccess.page.plan_node_id,
+            organizationId: rollbackAccess.site.organization_id,
+            accessToken,
+            reads: supabaseWritingReads(mainSupabase),
+            liveEdit: {},
+          });
+          if (report.kind === "blocked") {
+            notices.push(
+              `Writing check: ${report.mustFix.length} must-fix item${report.mustFix.length === 1 ? "" : "s"} now live`,
+            );
+          } else {
+            notices.push(...writingNotices(report));
+          }
+        }
+
+        return NextResponse.json({ success: true, newVersion, page, notices });
       }
 
       // ── Delete page ──────────────────────────────────────────────
