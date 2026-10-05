@@ -27,11 +27,9 @@ jest.mock("../../../../store/hooks", () => ({
   useAppStore: () => ({ getState: () => state }),
 }));
 // The host code this test renders reads the app's own hooks (P3): one double covers both.
-jest.mock("@host/lib/redux/hooks", () => jest.requireMock("../../../../store/hooks"));
 
-jest.mock("@host/features/files/handler/hooks/useFileUpload", () => ({
-  useFileUpload: () => ({ upload }),
-}));
+
+
 
 jest.mock(
   "./attach-resource",
@@ -44,9 +42,7 @@ jest.mock("../../../redux/execution-system/utils/ids", () => ({
   generateResourceId: () => "resource-1",
 }));
 
-jest.mock("@host/features/files/handler/input/normalize", () => ({
-  normalize: () => ({ meta: { category: "DOCUMENT" }, url: null }),
-}));
+
 
 jest.mock("../../../../host/notify", () => ({
   toast: { error: jest.fn() },

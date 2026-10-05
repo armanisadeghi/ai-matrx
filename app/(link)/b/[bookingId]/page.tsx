@@ -36,7 +36,7 @@ import { notFound } from "next/navigation";
 import { PublicLinkNotice } from "@/components/public-link/PublicLinkNotice";
 import { publicBooking } from "@/features/booking/service";
 
-import { BookingPicker } from "./BookingPicker";
+import { BookingPicker } from "@/features/booking/BookingPicker";
 
 // What is free moves minute by minute, and nothing here is cacheable across people.
 export const dynamic = "force-dynamic";

@@ -18,12 +18,7 @@ jest.mock("../../host/diagnostics", () => ({
 }));
 // The subject still reaches the app's Error Inspector through other host
 // modules; both sinks share one mock so no capture escapes the assertions.
-jest.mock("@host/lib/diagnostics/errorCaptureStore", () => ({
-  // A PARTIAL MOCK OF A REAL MODULE DIES ON THE NEXT EXPORT (DD-239): spread
-  // the real store so a new export can never take this suite down at import.
-  ...jest.requireActual("@host/lib/diagnostics/errorCaptureStore"),
-  captureError: mockCaptureError,
-}));
+
 
 jest.mock("./registry", () => ({
   getManifest: mockGetManifest,
@@ -33,7 +28,10 @@ jest.mock("./registry", () => ({
 // over the app's `SchemaSourcePort`), `validateStructuralLeg`
 // and ajv all run for real — see the value-contract describe block below.
 const mockGetKindInputContract = jest.fn();
-
+jest.mock("@host/features/content-ir/registry/schema-source-kind-tables", () => ({
+  getKindInputContractBySlug: (kind: string) =>
+    mockGetKindInputContract(kind),
+}));
 
 import {
   applySurfaceWrite,

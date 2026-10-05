@@ -3,12 +3,14 @@
 // A TEMPLATE, SHOWN. Arman: "This should SHOW you actual data so you can visualize what it is."
 // Every published template carries its own invented business and sample rows; this file draws them
 // read-only, straight from the spec in memory — the tables as a grid, the board / calendar / timeline /
-// gallery views it declares, each form as a respondent sees it, the booking page and the dashboards.
+// gallery views it declares.
 // No install, no store read, no store write.
 //
 // Round 2 (lane CHAIR-GALLERY-2): the main view and the tables are now the SERVER SKELETON of
-// TemplateLivePreview, which swaps in the real records-ui screens on the in-memory store once loaded;
-// the forms, booking page and dashboards below are still drawn here.
+// TemplateLivePreview, which swaps in the real records-ui screens on the in-memory store once loaded.
+// Round 3 (lane CHAIR-GALLERY-3): the forms, booking pages and dashboards are drawn ONLY by the real
+// screens (FormRunner, BookingPicker, DashboardCanvas) — this file keeps just the crawlable fallback
+// (main view + table grids) and the card thumbnail. One renderer per thing.
 //
 // Server-safe on purpose (no hooks, no "use client"): /templates/<slug> renders it on the server, so a
 // crawler reads the table names and the sample rows as HTML. TemplateThumb is the gallery card's live
@@ -480,157 +482,6 @@ function ViewShow({ table, view, names, today }: { table: ShowTable; view: ShowV
 // Forms, booking, dashboards
 // ─────────────────────────────────────────────────────────────────────────────
 
-function Question({ field, q }: { field: ShowField | undefined; q: ShowFormField }) {
-  const label = q.ask ?? field?.label ?? q.fieldKey;
-  const input = "w-full rounded-md border border-input bg-background px-2.5 py-1.5 text-sm text-muted-foreground";
-  return (
-    <div className="flex flex-col gap-1">
-      <span className="text-sm font-medium text-foreground">
-        {label}
-        {q.required ? <span className="text-destructive"> *</span> : null}
-      </span>
-      {field?.choices?.length ? (
-        <span className="flex flex-wrap gap-1.5">
-          {field.choices.slice(0, 8).map((c) => (
-            <span key={c} className="rounded-full border border-border px-2.5 py-0.5 text-xs text-muted-foreground">
-              {c}
-            </span>
-          ))}
-        </span>
-      ) : field?.parityType === "long_text" ? (
-        <textarea disabled rows={2} className={input} aria-label={label} />
-      ) : (
-        <input disabled className={input} aria-label={label} />
-      )}
-      {q.help ?? field?.help ? <span className="text-xs text-muted-foreground">{q.help ?? field?.help}</span> : null}
-    </div>
-  );
-}
-
-export function FormShow({ title, describes, questions, table, submit }: { title: string; describes?: string; questions: ShowFormField[]; table: ShowTable | undefined; submit?: string }) {
-  return (
-    <div className="flex flex-col gap-3 p-4" data-template-show="form">
-      <div className="flex flex-col gap-0.5">
-        <span className="text-base font-semibold text-foreground">{title}</span>
-        {describes ? <span className="text-xs text-muted-foreground">{describes}</span> : null}
-      </div>
-      {questions.map((q) => (
-        <Question key={q.fieldKey} q={q} field={table?.fields.find((f) => f.key === q.fieldKey)} />
-      ))}
-      <span className="self-start rounded-md bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground opacity-80">{submit ?? "Submit"}</span>
-    </div>
-  );
-}
-
-const WEEKDAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-
-function BookingShow({ extra, table }: { extra: ShowExtra; table: ShowTable | undefined }) {
-  const a = extra.availability ?? {};
-  return (
-    <div className="grid gap-4 p-4 sm:grid-cols-2" data-template-show="booking">
-      <div className="flex flex-col gap-2">
-        <span className="text-base font-semibold text-foreground">{extra.title ?? extra.name}</span>
-        {a.slotMinutes ? <span className="text-xs text-muted-foreground">{a.slotMinutes} minutes</span> : null}
-        <ul className="flex flex-col gap-1 text-xs">
-          {(a.windows ?? []).map((w, i) => (
-            <li key={i} className="flex justify-between gap-3 rounded border border-border px-2 py-1">
-              <span>{WEEKDAY_NAMES[w.weekday] ?? w.weekday}</span>
-              <span className="tabular-nums text-muted-foreground">
-                {w.from} – {w.to}
-              </span>
-            </li>
-          ))}
-        </ul>
-      </div>
-      <FormShow title="Your details" questions={extra.questions ?? []} table={table} submit="Book" />
-    </div>
-  );
-}
-
-function measureOf(rows: ShowRow[], m: { op: string; key?: string } | undefined): number {
-  if (!m || m.op === "count" || !m.key) return rows.length;
-  const nums = rows.map((r) => r.values[m.key as string]).filter((v): v is number => typeof v === "number");
-  if (m.op === "sum") return nums.reduce((a, b) => a + b, 0);
-  if (m.op === "avg") return nums.length ? nums.reduce((a, b) => a + b, 0) / nums.length : 0;
-  if (m.op === "max") return nums.length ? Math.max(...nums) : 0;
-  if (m.op === "min") return nums.length ? Math.min(...nums) : 0;
-  return rows.length;
-}
-
-function weekOf(day: string): string {
-  const d = new Date(`${day}T00:00:00Z`);
-  d.setUTCDate(d.getUTCDate() - d.getUTCDay());
-  return d.toISOString().slice(0, 10);
-}
-
-function BlockShow({ block, table }: { block: ShowBlock; table: ShowTable }) {
-  let rows = table.rows ?? [];
-  for (const [k, want] of Object.entries(block.filter ?? {})) rows = rows.filter((r) => r.values[k] === want);
-  const measure = block.measures?.[0];
-  const money = measure?.key ? table.fields.find((f) => f.key === measure.key)?.parityType === "currency" : false;
-  const fmt = (n: number) => (money ? moneyText(n) : Number.isInteger(n) ? n.toLocaleString("en-US") : n.toFixed(1));
-  let groups: Array<{ label: string; value: number; color?: string }> = [];
-  if (block.bucket) {
-    const by = new Map<string, ShowRow[]>();
-    for (const r of rows) {
-      const d = dayOf(r.values[block.bucket.key]);
-      if (d) {
-        const w = weekOf(d);
-        by.set(w, [...(by.get(w) ?? []), r]);
-      }
-    }
-    groups = [...by.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([w, rs]) => ({ label: dateText(w), value: measureOf(rs, measure) }));
-  } else if (block.groupBy?.length) {
-    const key = block.groupBy[0];
-    const field = table.fields.find((f) => f.key === key);
-    const by = new Map<string, ShowRow[]>();
-    for (const r of rows) {
-      const raw = r.values[key];
-      const v = field?.parityType === "member" || field?.parityType === "relation" ? null : raw;
-      const label = v === null || v === undefined ? "" : String(v);
-      if (label) by.set(label, [...(by.get(label) ?? []), r]);
-    }
-    groups = [...by.entries()].map(([label, rs]) => ({ label, value: measureOf(rs, measure), color: field?.choiceColors?.[label] }));
-  }
-  return (
-    <div className={cn("flex min-w-0 flex-col gap-2 rounded-lg border border-border bg-background p-3", (block.span ?? 6) >= 8 ? "sm:col-span-2" : "")}>
-      <span className="truncate text-xs font-medium text-foreground">{block.title}</span>
-      {groups.length === 0 ? (
-        <span className="text-2xl font-semibold tabular-nums text-foreground">{fmt(measureOf(rows, measure))}</span>
-      ) : (
-        <ul className="flex flex-col gap-1">
-          {groups.slice(0, 8).map((g, i) => {
-            const max = Math.max(...groups.map((x) => x.value), 1);
-            return (
-              <li key={g.label} className="flex min-w-0 items-center gap-2 text-[11px]">
-                <span className="w-28 shrink-0 truncate text-muted-foreground">{g.label}</span>
-                <span className="relative h-3 min-w-0 flex-1 rounded bg-muted/50">
-                  <span className={cn("absolute inset-y-0 left-0 rounded", (g.color && BAR[g.color]) || BAR_CYCLE[i % BAR_CYCLE.length])} style={{ width: `${(g.value / max) * 100}%` }} />
-                </span>
-                <span className="w-16 shrink-0 text-right tabular-nums text-foreground">{fmt(g.value)}</span>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-    </div>
-  );
-}
-
-function DashboardShow({ extra, table }: { extra: ShowExtra; table: ShowTable }) {
-  return (
-    <div className="grid gap-2 p-2 sm:grid-cols-2" data-template-show="dashboard">
-      {(extra.blocks ?? []).map((b, i) => (
-        <BlockShow key={`${b.title}-${i}`} block={b} table={table} />
-      ))}
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// The page body and the card thumbnail
-// ─────────────────────────────────────────────────────────────────────────────
-
 const EXTRA_WORD: Record<string, string> = {
   portal: "Client portal",
   checklist: "Checklist",
@@ -653,11 +504,8 @@ export function mainViewOf(spec: ShowSpec): { table: ShowTable; view: ShowView |
 
 export function TemplateShowcase({ spec, today }: { spec: ShowSpec; today: string }) {
   const names = namesOf(spec);
-  const byToken = new Map(spec.tables.map((t) => [t.token, t]));
   const main = mainViewOf(spec);
   const extras = spec.extras ?? [];
-  const dashboards = extras.filter((e) => e.kind === "dashboard" && e.table && byToken.has(e.table));
-  const bookings = extras.filter((e) => e.kind === "booking");
   const rest = extras.filter((e) => EXTRA_WORD[e.kind]);
 
   return (
@@ -683,39 +531,6 @@ export function TemplateShowcase({ spec, today }: { spec: ShowSpec; today: strin
         </section>
         </div>
       </TemplateLivePreview>
-
-      {spec.forms?.length || bookings.length ? (
-        <section className="flex flex-col gap-4" aria-labelledby="template-forms">
-          <h2 id="template-forms" className="text-lg font-semibold tracking-tight">
-            Forms and booking
-          </h2>
-          <div className="grid gap-4 md:grid-cols-2">
-            {(spec.forms ?? []).map((f) => (
-              <Frame key={f.token} title={f.name} meta="Form">
-                <FormShow title={f.name} describes={f.describes} questions={f.fields} table={byToken.get(f.table)} submit={f.submitLabel} />
-              </Frame>
-            ))}
-          </div>
-          {bookings.map((b) => (
-            <Frame key={b.token} title={b.title ?? b.name ?? "Booking page"} meta="Booking page">
-              <BookingShow extra={b} table={b.table ? byToken.get(b.table) : undefined} />
-            </Frame>
-          ))}
-        </section>
-      ) : null}
-
-      {dashboards.length ? (
-        <section className="flex flex-col gap-4" aria-labelledby="template-dashboards">
-          <h2 id="template-dashboards" className="text-lg font-semibold tracking-tight">
-            Dashboards
-          </h2>
-          {dashboards.map((d) => (
-            <Frame key={d.token} title={d.name ?? "Dashboard"} meta={byToken.get(d.table as string)?.name}>
-              <DashboardShow extra={d} table={byToken.get(d.table as string) as ShowTable} />
-            </Frame>
-          ))}
-        </section>
-      ) : null}
 
       {rest.length ? (
         <section className="flex flex-col gap-2" aria-labelledby="template-more">

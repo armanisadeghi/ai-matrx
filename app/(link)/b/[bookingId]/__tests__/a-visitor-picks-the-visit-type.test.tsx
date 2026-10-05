@@ -10,9 +10,9 @@ import { createRoot } from "react-dom/client";
 
 jest.mock("@/components/errors/ErrorAlchemyMenu", () => ({ ErrorAlchemyMenu: () => null }));
 
-const PICKER_UNDER_TEST = process.env.BOOKING_PICKER_UNDER_TEST ?? "../BookingPicker";
+const PICKER_UNDER_TEST = process.env.BOOKING_PICKER_UNDER_TEST ?? "../../../../../features/booking/BookingPicker";
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const { BookingPicker } = require(PICKER_UNDER_TEST) as typeof import("../BookingPicker");
+const { BookingPicker } = require(PICKER_UNDER_TEST) as typeof import("../../../../../features/booking/BookingPicker");
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 

@@ -18,7 +18,7 @@ import { useEffect, useState, type ComponentType, type ReactNode } from "react";
 import type { TemplateSpec } from "@ai-matrx/records/templates";
 import type { TemplatePreviewProps } from "@ai-matrx/records-ui";
 
-import { BookingPicker } from "@/app/(link)/b/[bookingId]/BookingPicker";
+import { BookingPicker } from "@/features/booking/BookingPicker";
 import type { PublicBooking } from "@/features/booking/service";
 
 export function TemplateLivePreview({ spec, today, children }: { spec: TemplateSpec; today: string; children: ReactNode }) {

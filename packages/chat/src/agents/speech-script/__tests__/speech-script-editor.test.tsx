@@ -28,11 +28,24 @@ import {
 // VALUE is what this suite is about, so a plain textarea stands in for it.
 
 
-
+jest.mock("@host/features/podcasts/generator/useVoices", () => ({
+  useVoices: () => ({
+    voices: [
+      { provider_voice_id: "kore", name: "Kore", gender: "female", metadata: { models: ["gemini-2.5-flash-preview-tts"] } },
+      { provider_voice_id: "puck", name: "Puck", gender: "male", metadata: { models: ["gemini-2.5-flash-preview-tts"] } },
+      { provider_voice_id: "EXAVITQu4vr4xnSDxMaL", name: "Sarah", gender: "female", metadata: { models: ["eleven_v3"] } },
+    ],
+    loading: false,
+    error: null,
+    reload: () => {},
+  }),
+}));
 
 const mockSpeak = jest.fn();
-
-
+jest.mock("@host/features/audio/service/speak", () => ({
+  speak: (request: unknown) => mockSpeak(request),
+}));
+jest.mock("@host/features/audio/unlock", () => ({ primeAudioOutput: () => {} }));
 
 // eslint-disable-next-line import/first
 import { SpeechScriptEditor } from "@host/features/agents/components/builder/message-builders/SpeechScriptEditor";

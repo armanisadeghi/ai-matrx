@@ -1,6 +1,6 @@
 "use client";
 
-// app/(link)/b/[bookingId]/BookingPicker.tsx — THE ONLY CLIENT CODE ON THE PUBLIC
+// features/booking/BookingPicker.tsx (was app/(link)/b/[bookingId]/; moved so the template preview can draw it, lane CHAIR-GALLERY-3) — THE ONLY CLIENT CODE ON THE PUBLIC
 // BOOKING PAGE.
 //
 // THE ORDER IS HOLD FIRST, DETAILS SECOND, AND IT IS THE WHOLE DESIGN. A person

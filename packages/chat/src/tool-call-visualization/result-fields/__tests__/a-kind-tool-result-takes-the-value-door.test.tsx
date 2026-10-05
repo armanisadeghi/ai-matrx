@@ -28,11 +28,11 @@ jest.mock("next/dynamic", () => ({
   default: () =>
     jest.requireActual("@host/components/markdown-core/MarkdownCoreImpl").default,
 }));
-
-jest.mock("@host/components/MarkdownStream", () => ({
+jest.mock("@host/features/content-ir/studio/components/KindInstanceRender", () => ({
   __esModule: true,
-  default: () => <div data-markdown-stream="1" />,
+  default: ({ kind }: { kind: string }) => <div data-kind-route={kind} />,
 }));
+
 registerChatUi({ CopyButtons: () => null });
 jest.mock("@ai-matrx/media/react", () => ({ InlineMediaRef: () => null }));
 const mockCaptureError = jest.fn();
