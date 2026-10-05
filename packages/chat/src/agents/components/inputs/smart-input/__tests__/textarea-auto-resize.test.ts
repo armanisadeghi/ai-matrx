@@ -19,6 +19,10 @@ const connectionsStripSource = readFileSync(
   join(__dirname, "../ChatConnectionsStrip.tsx"),
   "utf8",
 );
+const composerChipSource = readFileSync(
+  join(__dirname, "../ComposerChip.tsx"),
+  "utf8",
+);
 const plusMenuSource = readFileSync(
   join(__dirname, "../PlusAttachMenu.tsx"),
   "utf8",
@@ -122,8 +126,12 @@ describe("AgentTextarea auto-resize", () => {
     expect(smartInputSource).not.toContain("<ChatConnectionsStrip");
     expect(plusMenuSource).toContain("<ChatConnectionsStrip");
     expect(smartInputSource).not.toContain("<ChatConnectorStrip");
-    expect(connectionsStripSource).toContain("flex h-4 w-full");
-    expect(connectionsStripSource).toContain("before:-inset-y-3");
+    // Since 2026-10-05 the connections are THE composer chip (one 24px face
+    // for every chip around the input); the chip itself carries the unseen
+    // 44px touch hit box, so the line keeps its mobile hit areas.
+    expect(connectionsStripSource).toContain("flex h-6 w-full");
+    expect(connectionsStripSource).toContain("<ComposerChip");
+    expect(composerChipSource).toContain("pointer-coarse:after:-inset-y-2.5");
     expect(connectorSource).toContain("flex h-4 w-full");
     expect(connectorSource).toContain("before:-inset-y-3");
   });
