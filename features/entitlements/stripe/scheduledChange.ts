@@ -22,6 +22,24 @@ export type ScheduledChangePreview = {
 };
 
 type PhaseInput = Stripe.SubscriptionScheduleUpdateParams.Phase;
+type PhaseItemInput = NonNullable<PhaseInput["items"]>[number];
+
+type ScheduleGateway = {
+  create: (
+    params: Stripe.SubscriptionScheduleCreateParams,
+    options?: Stripe.RequestOptions,
+  ) => Promise<{ id: string; phases: Stripe.SubscriptionSchedule.Phase[] }>;
+  update: (
+    scheduleId: string,
+    params: Stripe.SubscriptionScheduleUpdateParams,
+  ) => Promise<unknown>;
+  retrieve: (scheduleId: string) => Promise<{
+    customer: string | { id: string };
+    subscription: string | { id: string } | null;
+    metadata: Stripe.Metadata | null;
+  }>;
+  release: (scheduleId: string) => Promise<unknown>;
+};
 
 export type SchedulableSubscriptionItem = {
   id: string;
@@ -46,6 +64,43 @@ function idOf(
   value: string | { id: string } | null | undefined,
 ): string | null {
   return typeof value === "string" ? value : (value?.id ?? null);
+}
+
+function requiredId(
+  value: string | { id: string } | null | undefined,
+  label: string,
+) {
+  const id = idOf(value);
+  if (!id)
+    throw new ScheduledChangeError(
+      `This subscription has an unsupported ${label}, so its contract cannot be preserved. Manage it in billing instead.`,
+    );
+  return id;
+}
+
+function discountsInput(
+  discounts: Array<{
+    discount: string | { id: string } | null;
+    coupon: string | { id: string } | null;
+    promotion_code: string | { id: string } | null;
+  }>,
+) {
+  return discounts.map((discount) => {
+    if (idOf(discount.discount)) return { discount: idOf(discount.discount)! };
+    if (idOf(discount.coupon)) return { coupon: idOf(discount.coupon)! };
+    if (idOf(discount.promotion_code))
+      return { promotion_code: idOf(discount.promotion_code)! };
+    throw new ScheduledChangeError(
+      "This subscription has an unsupported discount, so its contract cannot be preserved. Manage it in billing instead.",
+    );
+  });
+}
+
+function idsInput(
+  values: Array<string | { id: string } | null | undefined>,
+  label: string,
+) {
+  return values.map((value) => requiredId(value, label));
 }
 
 /**
@@ -122,105 +177,161 @@ function phaseInput(
     throw new ScheduledChangeError(
       "The subscription price is unavailable. Refresh billing and try again.",
     );
-  const copy = <T>(value: T | null | undefined): T | undefined =>
-    value ?? undefined;
+  const present = <T>(value: T | null | undefined): value is T =>
+    value !== null && value !== undefined;
   if (item.billing_thresholds)
     throw new ScheduledChangeError(
       "This subscription uses billing thresholds, which cannot be safely carried into a scheduled plan change. Manage it in billing instead.",
     );
-  const phaseItem = {
+  const phaseItem: PhaseItemInput = {
     price: priceId,
     quantity: item.quantity ?? 1,
     ...(item.discounts.length
-      ? {
-          discounts: item.discounts.map((discount) => ({
-            ...(idOf(discount.discount)
-              ? { discount: idOf(discount.discount)! }
-              : {}),
-            ...(idOf(discount.coupon)
-              ? { coupon: idOf(discount.coupon)! }
-              : {}),
-            ...(idOf(discount.promotion_code)
-              ? { promotion_code: idOf(discount.promotion_code)! }
-              : {}),
-          })),
-        }
+      ? { discounts: discountsInput(item.discounts) }
       : {}),
-    ...(copy(item.metadata) ? { metadata: item.metadata! } : {}),
+    ...(present(item.metadata) ? { metadata: item.metadata } : {}),
     ...(item.tax_rates?.length
-      ? { tax_rates: item.tax_rates.map((rate) => idOf(rate)!).filter(Boolean) }
+      ? { tax_rates: idsInput(item.tax_rates, "tax rate") }
       : {}),
   };
   const result: PhaseInput = {
     items: [phaseItem],
     start_date: startDate,
     ...(endDate ? { end_date: endDate } : {}),
-    ...(copy(phase.application_fee_percent)
-      ? { application_fee_percent: phase.application_fee_percent! }
+    ...(present(phase.application_fee_percent)
+      ? { application_fee_percent: phase.application_fee_percent }
       : {}),
-    ...(copy(phase.automatic_tax)
-      ? { automatic_tax: phase.automatic_tax! }
+    ...(present(phase.automatic_tax)
+      ? {
+          automatic_tax: {
+            enabled: phase.automatic_tax.enabled,
+            ...(phase.automatic_tax.liability
+              ? {
+                  liability: {
+                    type: phase.automatic_tax.liability.type,
+                    ...(phase.automatic_tax.liability.account
+                      ? {
+                          account: requiredId(
+                            phase.automatic_tax.liability.account,
+                            "automatic tax account",
+                          ),
+                        }
+                      : {}),
+                  },
+                }
+              : {}),
+          },
+        }
       : {}),
-    ...(copy(phase.billing_cycle_anchor)
-      ? { billing_cycle_anchor: phase.billing_cycle_anchor! }
+    ...(present(phase.billing_cycle_anchor)
+      ? { billing_cycle_anchor: phase.billing_cycle_anchor }
       : {}),
-    ...(copy(phase.billing_thresholds)
-      ? { billing_thresholds: phase.billing_thresholds! }
+    ...(present(phase.billing_thresholds)
+      ? {
+          billing_thresholds: {
+            ...(present(phase.billing_thresholds.amount_gte)
+              ? { amount_gte: phase.billing_thresholds.amount_gte }
+              : {}),
+            ...(present(phase.billing_thresholds.reset_billing_cycle_anchor)
+              ? {
+                  reset_billing_cycle_anchor:
+                    phase.billing_thresholds.reset_billing_cycle_anchor,
+                }
+              : {}),
+          },
+        }
       : {}),
-    ...(copy(phase.collection_method)
-      ? { collection_method: phase.collection_method! }
+    ...(present(phase.collection_method)
+      ? { collection_method: phase.collection_method }
       : {}),
-    ...(copy(phase.currency) ? { currency: phase.currency } : {}),
+    ...(present(phase.currency) ? { currency: phase.currency } : {}),
     ...(idOf(phase.default_payment_method)
-      ? { default_payment_method: idOf(phase.default_payment_method)! }
+      ? {
+          default_payment_method: requiredId(
+            phase.default_payment_method,
+            "default payment method",
+          ),
+        }
       : {}),
     ...(phase.default_tax_rates?.length
       ? {
-          default_tax_rates: phase.default_tax_rates
-            .map((rate) => idOf(rate)!)
-            .filter(Boolean),
+          default_tax_rates: idsInput(
+            phase.default_tax_rates,
+            "default tax rate",
+          ),
         }
       : {}),
-    ...(copy(phase.description) ? { description: phase.description! } : {}),
+    ...(present(phase.description) ? { description: phase.description } : {}),
     ...(phase.discounts.length
+      ? { discounts: discountsInput(phase.discounts) }
+      : {}),
+    ...(present(phase.invoice_settings)
       ? {
-          discounts: phase.discounts.map((discount) => ({
-            ...(idOf(discount.discount)
-              ? { discount: idOf(discount.discount)! }
+          invoice_settings: {
+            ...(phase.invoice_settings.account_tax_ids?.length
+              ? {
+                  account_tax_ids: idsInput(
+                    phase.invoice_settings.account_tax_ids,
+                    "invoice tax ID",
+                  ),
+                }
               : {}),
-            ...(idOf(discount.coupon)
-              ? { coupon: idOf(discount.coupon)! }
+            ...(phase.invoice_settings.custom_fields?.length
+              ? { custom_fields: phase.invoice_settings.custom_fields }
               : {}),
-            ...(idOf(discount.promotion_code)
-              ? { promotion_code: idOf(discount.promotion_code)! }
+            ...(present(phase.invoice_settings.days_until_due)
+              ? { days_until_due: phase.invoice_settings.days_until_due }
               : {}),
-          })),
+            ...(present(phase.invoice_settings.description)
+              ? { description: phase.invoice_settings.description }
+              : {}),
+            ...(present(phase.invoice_settings.footer)
+              ? { footer: phase.invoice_settings.footer }
+              : {}),
+            ...(phase.invoice_settings.issuer
+              ? {
+                  issuer: {
+                    type: phase.invoice_settings.issuer.type,
+                    ...(phase.invoice_settings.issuer.account
+                      ? {
+                          account: requiredId(
+                            phase.invoice_settings.issuer.account,
+                            "invoice issuer",
+                          ),
+                        }
+                      : {}),
+                  },
+                }
+              : {}),
+          },
         }
       : {}),
-    ...(copy(phase.invoice_settings)
-      ? { invoice_settings: phase.invoice_settings! }
-      : {}),
-    ...(copy(phase.metadata) ? { metadata: phase.metadata! } : {}),
+    ...(present(phase.metadata) ? { metadata: phase.metadata } : {}),
     ...(idOf(phase.on_behalf_of)
-      ? { on_behalf_of: idOf(phase.on_behalf_of)! }
+      ? { on_behalf_of: requiredId(phase.on_behalf_of, "connected account") }
       : {}),
     proration_behavior: "none",
-    ...(copy(phase.transfer_data)
+    ...(present(phase.transfer_data)
       ? {
           transfer_data: {
-            ...phase.transfer_data!,
-            destination: idOf(phase.transfer_data!.destination)!,
+            ...(present(phase.transfer_data.amount_percent)
+              ? { amount_percent: phase.transfer_data.amount_percent }
+              : {}),
+            destination: requiredId(
+              phase.transfer_data!.destination,
+              "transfer destination",
+            ),
           },
         }
       : {}),
     ...(phase.trial ? { trial: true } : {}),
-    ...(phase.trial_end ? { trial_end: phase.trial_end } : {}),
+    ...(present(phase.trial_end) ? { trial_end: phase.trial_end } : {}),
   };
   return result;
 }
 
 export async function createScheduledPersonalChange(input: {
-  stripe: Pick<Stripe, "subscriptionSchedules">;
+  stripe: { subscriptionSchedules: ScheduleGateway };
   preview: ScheduledChangePreview;
   subscription: SchedulableSubscription;
   customerId: string;
@@ -288,7 +399,7 @@ export async function createScheduledPersonalChange(input: {
 }
 
 export async function undoScheduledPersonalChange(input: {
-  stripe: Pick<Stripe, "subscriptionSchedules">;
+  stripe: { subscriptionSchedules: ScheduleGateway };
   subscription: SchedulableSubscription;
   customerId: string;
 }): Promise<void> {
@@ -310,7 +421,7 @@ export async function undoScheduledPersonalChange(input: {
     await input.stripe.subscriptionSchedules.retrieve(scheduleId);
   if (
     idOf(schedule.customer) !== input.customerId ||
-    schedule.subscription !== input.subscription.id
+    idOf(schedule.subscription) !== input.subscription.id
   )
     throw new ScheduledChangeError(
       "This scheduled change does not belong to your billing account.",

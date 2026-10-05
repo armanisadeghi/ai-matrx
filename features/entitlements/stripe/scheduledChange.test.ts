@@ -5,6 +5,7 @@ import {
   undoScheduledPersonalChange,
   type SchedulableSubscription,
 } from "./scheduledChange";
+import type Stripe from "stripe";
 
 const subscription: SchedulableSubscription = {
   id: "sub_personal",
@@ -26,10 +27,10 @@ const subscription: SchedulableSubscription = {
   },
 };
 
-const phase = {
+const phase: Stripe.SubscriptionSchedule.Phase = {
   add_invoice_items: [],
   application_fee_percent: null,
-  automatic_tax: { enabled: true },
+  automatic_tax: { disabled_reason: null, enabled: true, liability: null },
   billing_cycle_anchor: "automatic",
   billing_thresholds: null,
   collection_method: "charge_automatically",
@@ -43,6 +44,7 @@ const phase = {
   items: [
     {
       price: "price_current",
+      plan: "price_current",
       quantity: 2,
       billing_thresholds: null,
       discounts: [],
@@ -97,8 +99,13 @@ describe("scheduled personal plan changes", () => {
     }));
     const update = jest.fn(async () => ({}));
     const release = jest.fn(async () => ({}));
+    const retrieve = jest.fn(async () => ({
+      customer: "cus_personal",
+      subscription: "sub_personal",
+      metadata: null,
+    }));
     await createScheduledPersonalChange({
-      stripe: { subscriptionSchedules: { create, update, release } } as never,
+      stripe: { subscriptionSchedules: { create, update, retrieve, release } },
       preview,
       subscription,
       customerId: "cus_personal",
@@ -135,6 +142,11 @@ describe("scheduled personal plan changes", () => {
 
   it("releases its new schedule if Stripe refuses the second, contract-preserving update", async () => {
     const release = jest.fn(async () => ({}));
+    const retrieve = jest.fn(async () => ({
+      customer: "cus_personal",
+      subscription: "sub_personal",
+      metadata: null,
+    }));
     await expect(
       createScheduledPersonalChange({
         stripe: {
@@ -146,15 +158,64 @@ describe("scheduled personal plan changes", () => {
             update: jest.fn(async () => {
               throw new Error("bad phase");
             }),
+            retrieve,
             release,
           },
-        } as never,
+        },
         preview,
         subscription,
         customerId: "cus_personal",
       }),
     ).rejects.toThrow("bad phase");
     expect(release).toHaveBeenCalledWith("sub_sched_ours");
+  });
+
+  it("creates a fresh operation after its own scheduled change is undone", async () => {
+    let sequence = 0;
+    const create = jest.fn(async () => ({
+      id: `sub_sched_operation_${++sequence}`,
+      phases: [phase],
+    }));
+    const update = jest.fn(async () => ({}));
+    const release = jest.fn(async () => ({}));
+    const retrieve = jest.fn(async (scheduleId: string) => ({
+      customer: "cus_personal",
+      subscription: "sub_personal",
+      metadata:
+        scheduleId === "sub_sched_operation_1"
+          ? { purpose: "matrx_personal_plan_change" }
+          : { purpose: "other" },
+    }));
+    const stripe = {
+      subscriptionSchedules: { create, update, retrieve, release },
+    };
+
+    const first = await createScheduledPersonalChange({
+      stripe,
+      preview,
+      subscription,
+      customerId: "cus_personal",
+    });
+    await undoScheduledPersonalChange({
+      stripe,
+      subscription: { ...subscription, schedule: first.scheduleId },
+      customerId: "cus_personal",
+    });
+    const second = await createScheduledPersonalChange({
+      stripe,
+      preview,
+      subscription,
+      customerId: "cus_personal",
+    });
+
+    expect(first.scheduleId).toBe("sub_sched_operation_1");
+    expect(second.scheduleId).toBe("sub_sched_operation_2");
+    expect(release).toHaveBeenCalledWith(first.scheduleId);
+    const [, firstOptions] = create.mock.calls[0];
+    const [, secondOptions] = create.mock.calls[1];
+    expect(firstOptions?.idempotencyKey).not.toBe(
+      secondOptions?.idempotencyKey,
+    );
   });
 
   it("releases only a schedule this surface owns", async () => {
@@ -169,7 +230,7 @@ describe("scheduled personal plan changes", () => {
           })),
           release,
         },
-      } as never,
+      },
       subscription: { ...subscription, schedule: "sub_sched_ours" },
       customerId: "cus_personal",
     });
@@ -185,7 +246,7 @@ describe("scheduled personal plan changes", () => {
             })),
             release,
           },
-        } as never,
+        },
         subscription: { ...subscription, schedule: "sub_sched_other" },
         customerId: "cus_personal",
       }),

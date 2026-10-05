@@ -259,7 +259,9 @@ export function ScheduledPlanChange({
 
   if (!current || !currentInterval) return null;
   if (scheduleLoading)
-    return <RegionSkeleton label="Loading scheduled plan changes" count={2} />;
+    return (
+      <RegionSkeleton aria-label="Loading scheduled plan changes" count={2} />
+    );
   if (managedElsewhere)
     return (
       <p className="mt-3 text-sm text-muted-foreground">
