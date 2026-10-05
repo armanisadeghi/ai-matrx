@@ -32,6 +32,8 @@ export interface ApprovalAutoApprove {
   scope: string;
   /** Human noun for the toggle, lowercase: "task changes", "note edits". */
   noun: string;
+  /** The toggle's whole sentence, when "Always approve {noun} on this tile" is not what it means. */
+  label?: string;
 }
 
 /**

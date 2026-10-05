@@ -179,11 +179,36 @@ async function decide(
   return outcome;
 }
 
-/** Apply exactly the change a person approved. */
+/**
+ * Apply exactly the change a person approved. `restOfChat`: the person also allowed the agent's
+ * other changes to this table in this conversation (`custom.agent_change_trust`), so the next
+ * ones go ahead without another card (AGENTS-ON-DATA item 2).
+ */
 export async function applyApprovedRecordChange(
   wait: RecordChangeWait,
+  options: { restOfChat?: boolean } = {},
 ): Promise<ApplyApprovedOutcome> {
-  return decide(wait, true);
+  const outcome = await decide(wait, true);
+  if (!options.restOfChat || outcome.status !== "applied" || !wait.approvalId) return outcome;
+  const trusted = await allowRestOfChat(wait.approvalId);
+  return {
+    ...outcome,
+    detail: trusted.ok
+      ? `${outcome.detail} Its other changes to this table in this chat go ahead without asking.`
+      : `${outcome.detail} Its other changes still ask: ${trusted.sentence}`,
+  };
+}
+
+/** Trust the agent with this approval's table for the rest of its conversation. */
+async function allowRestOfChat(approvalId: string): Promise<{ ok: true } | { ok: false; sentence: string }> {
+  const reached = await reachOrRefusal(approvalId);
+  if ("refused" in reached) return { ok: false, sentence: reached.refused };
+  const response = (await reached.rpc(
+    "agent_change_trust",
+    { p_organization_id: reached.organizationId, p_approval_id: approvalId },
+    { schema: "custom" },
+  )) as { data?: unknown; error?: unknown };
+  return response.error ? { ok: false, sentence: sentenceFor(response.error) } : { ok: true };
 }
 
 /** Record the decision when the person keeps things as they are. */

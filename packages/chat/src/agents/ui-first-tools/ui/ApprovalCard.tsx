@@ -62,7 +62,7 @@ interface ApprovalCardProps {
    * call. Set by a producer whose write is its own to make (a server-side
    * change a person is approving after the fact).
    */
-  onDecide?: (decision: "approve" | "decline") => void;
+  onDecide?: (decision: "approve" | "decline", options?: { remember: boolean }) => void;
   /**
    * What the card says once the decision has been taken — the outcome replaces
    * the action row, so a decided card never offers the decision again.
@@ -187,7 +187,7 @@ export function ApprovalCard({
 
   function approve() {
     if (onDecide) {
-      onDecide("approve");
+      onDecide("approve", { remember: remember && Boolean(change?.autoApprove) });
       return;
     }
     resolve({
@@ -286,7 +286,7 @@ export function ApprovalCard({
             checked={remember}
             onCheckedChange={(checked) => setRemember(checked === true)}
           />
-          Always approve {autoNoun} on this tile
+          {change.autoApprove?.label ?? `Always approve ${autoNoun} on this tile`}
         </label>
       )}
     </div>

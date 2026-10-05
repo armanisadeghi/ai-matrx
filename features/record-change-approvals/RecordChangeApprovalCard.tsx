@@ -155,7 +155,7 @@ export function RecordChangeApprovalCard({
   }, [tableId, knownTableName]);
 
   const decide = useCallback(
-    (choice: "approve" | "decline") => {
+    (choice: "approve" | "decline", options?: { remember: boolean }) => {
       setDecision({ state: "applying" });
       // BOTH ANSWERS GO THROUGH THE QUEUE. A decline used to be a sentence this
       // component drew and nothing else — so the wait stayed `pending` for
@@ -165,7 +165,7 @@ export function RecordChangeApprovalCard({
       // for no alike.
       const taken =
         choice === "approve"
-          ? applyApprovedRecordChange(wait)
+          ? applyApprovedRecordChange(wait, { restOfChat: options?.remember === true })
           : declineRecordChange(wait);
       void taken.then(
         (outcome: ApplyApprovedOutcome) => {
@@ -199,10 +199,23 @@ export function RecordChangeApprovalCard({
     kind: "approval",
     status: "pending",
     createdAtMs: 0,
-    approval: approvalChangeFor(wait, {
-      actor: actorName ?? null,
-      tableName,
-    }),
+    approval: {
+      ...approvalChangeFor(wait, {
+        actor: actorName ?? null,
+        tableName,
+      }),
+      // In a chat, the person may trust the agent with this table for the rest of it — the
+      // second, third… change of the same job then goes ahead without another card.
+      ...(conversationId && wait.approvalId && tableId
+        ? {
+            autoApprove: {
+              scope: "table-in-this-chat",
+              noun: "changes to this table",
+              label: "Also allow its other changes to this table in this chat",
+            },
+          }
+        : {}),
+    },
   };
 
   // The approval's own organization cannot be read, and the ACTIVE organization is never a
