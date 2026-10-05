@@ -15,7 +15,7 @@
 //
 // Pure parts are exported for the guard; the doors take a client.
 
-import { RESOLVABLE_FIELD_TYPE_WORDS } from "@ai-matrx/records/templates";
+import { RESOLVABLE_FIELD_TYPE_WORDS } from "@ai-matrx/records/use-cases";
 import {
   CONTEXT_POLICIES,
   FIELD_SENSITIVITIES,
@@ -155,7 +155,8 @@ export function bindReuses(spec: TemplateSpec, reuses: DescribeAnswer["reuses"],
     ...spec,
     tables: spec.tables.map((t) => {
       const e = want.get(t.token);
-      return e ? { ...t, bindsTo: { tableId: e.id, fields: e.fields.map((f) => f.key).filter(Boolean) } } : t;
+      // `bindsTo` is @ai-matrx/records' TemplateTable key (0.72.15+); the cast holds until the frontend adopts it.
+      return e ? ({ ...t, bindsTo: { tableId: e.id, fields: e.fields.map((f) => f.key).filter(Boolean) } } as typeof t) : t;
     }),
   };
 }
