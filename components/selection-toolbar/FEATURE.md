@@ -50,3 +50,5 @@
 - 2026-09-26 — Phone fit: the docked bar no longer scrolls sideways; lower-priority actions move to the registry overflow (More). Annotation cards carry `data-annotation-key` / `data-annotation-kind` so tests and cleanup act on a card by its own id, never by position.
 
 - 2026-09-26 — Built. Replaced three popups: the rich editor's Tiptap BubbleMenu, the annotation sidecar's toolbar, and the context menu's floating selection icon (which sat on top of the editor's bubble).
+
+- 2026-10-05 — **Caret followers use the one listener.** `subscribeEditableCaret` (selection-zones.ts) hears every collapsed caret move inside a contenteditable from the root's ONE `selectionchange` listener (`publishEditableCaret`); the Board's pan-the-caret-into-view moved onto it (its own document listener was a second selection listener in the census).
