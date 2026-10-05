@@ -394,11 +394,9 @@ accumulator), read through `isQuotedSourceXmlBlock` (`json-kind-signal.ts`) by X
       Plain text out; kindless JSON untouched. Guard `knowledge/hub/__tests__/snippetKindNeverRaw.test.tsx` (5 failed
       before, 6 pass). KNOWN GAP: a fragment cut so that it holds no `__kind` key at all (only cards' inner fields) is
       undetectable on the client — closed only at the source (S2).
-- [ ] S2. SOURCE (aidream, NOT run — needs a reindex). `chat.message_search_text(jsonb)` (1373) joins the raw `text`
-      parts, so a kind's JSON is both INDEXED (`cx_message_search_tsv_idx`, a GIN over
-      `chat.message_search_tsv(content)`) and headlined (`platform.search_messages` 1401 takes `substr(txt, at, 1600)`,
-      which cuts mid-JSON). Needed: (1) a SQL kind-to-readable-text step inside `message_search_text` (a `__kind`
-      object's string values / title, not keys or braces); (2) because the function is IMMUTABLE and backs a functional
-      index, changing its body does NOT update existing index entries — ship as `message_search_text_v2` + `_tsv_v2`, build
-      `CREATE INDEX CONCURRENTLY` on the v2 tsv over all `chat.message` rows (large; bodies up to 6 MB; autocommit lane,
-      off-hours), repoint `search_messages` to v2, then drop the old index. Nothing was applied.
+- [x] S2. SOURCE — done live 2026-10-05 (Supabase MCP + direct session connection, no file): new
+      `chat.kind_readable_text(text)`; `chat.message_search_text(jsonb)` now wraps its old body in it, so every
+      reader (search_messages, count_messages, cvx_deep_hits, conversation title fallbacks, the tsv index) sees a
+      kind's words, never its JSON. `REINDEX INDEX CONCURRENTLY chat.cx_message_search_tsv_idx` (180 s, no lock;
+      178→158 MB). Verified: index-backed search for a kind's word returns a clean headline. NOTE: the old body
+      lives in aidream migrations 1373/1401 — never re-apply those files (they would revert this).
