@@ -563,6 +563,55 @@ export function transform(text, file, ctx) {
     if (ts.isJsxExpression(node)) out = out.replace(/^\{\s*/, "").replace(/\s*\}$/, "");
     return out;
   }
+  /**
+   * WAVE 2 (--derive-labels): a truthful name for an icon-only button with no aria-label, title,
+   * sr-only text or tooltip — from what it DOES (its onClick handler's name: `handleZoomIn` →
+   * "Zoom in", `() => setOpen(false)` → nothing) and, failing that, from an unambiguous glyph
+   * (ZoomIn → "Zoom in"). Never a guess: an unknown handler and an ambiguous glyph stay a surface.
+   */
+  function derivedLabel(open, glyph) {
+    const humanize = (name) => {
+      const core = name.replace(/^(handle|on|do)(?=[A-Z])/, "");
+      if (!/^[a-z]/i.test(core) || /^(click|press|change|toggle|set[A-Z]?|select)$/i.test(core)) return null;
+      const words = core.replace(/([a-z0-9])([A-Z])/g, "$1 $2").toLowerCase().trim();
+      if (!/^[a-z][a-z ]+$/.test(words) || words.split(" ").length > 4) return null;
+      if (/^(set |toggle |update |change )/.test(words)) return null;
+      return JSON.stringify(words[0].toUpperCase() + words.slice(1));
+    };
+    const onClick = getAttr(open, "onClick");
+    let handler = null;
+    let e = onClick?.initializer && ts.isJsxExpression(onClick.initializer) ? onClick.initializer.expression : null;
+    if (e && ts.isIdentifier(e)) handler = e.text;
+    else if (e && ts.isPropertyAccessExpression(e)) handler = e.name.text;
+    else if (e && ts.isArrowFunction(e)) {
+      let b = e.body;
+      if (ts.isBlock(b) && b.statements.length === 1 && ts.isExpressionStatement(b.statements[0])) b = b.statements[0].expression;
+      if (ts.isCallExpression(b)) {
+        const c = b.expression;
+        if (ts.isIdentifier(c)) handler = c.text;
+        else if (ts.isPropertyAccessExpression(c)) handler = c.name.text;
+      }
+    }
+    const fromHandler = handler ? humanize(handler) : null;
+    if (fromHandler) return fromHandler;
+    let g = glyph;
+    if (ts.isJsxExpression(g)) g = g.expression;
+    while (g && ts.isParenthesizedExpression(g)) g = g.expression;
+    const tag = g && (ts.isJsxSelfClosingElement(g) ? g.tagName.getText(sf) : ts.isJsxElement(g) ? g.openingElement.tagName.getText(sf) : null);
+    const GLYPH_LABELS = {
+      ZoomIn: "Zoom in", ZoomOut: "Zoom out", Download: "Download", Upload: "Upload", Copy: "Copy",
+      RefreshCw: "Refresh", RotateCw: "Refresh", Search: "Search", Settings: "Settings", Settings2: "Settings",
+      Maximize2: "Expand", Minimize2: "Collapse", Share: "Share", Share2: "Share", Send: "Send",
+      ArrowLeft: "Back", ChevronLeft: "Previous", ChevronRight: "Next",
+      Trash: "Delete", Trash2: "Delete", Pencil: "Edit", Edit: "Edit", Edit2: "Edit", Edit3: "Edit",
+      Play: "Play", Pause: "Pause", Printer: "Print", ExternalLink: "Open in new tab", Info: "Details",
+      MoreHorizontal: "More actions", MoreVertical: "More actions", Ellipsis: "More actions", EllipsisVertical: "More actions",
+      X: "Close", Plus: "Add", Minus: "Decrease", Filter: "Filter", Eye: "Show", EyeOff: "Hide",
+      Volume2: "Play audio", Mic: "Record", Star: "Favourite", Heart: "Like", Save: "Save",
+    };
+    if (tag && GLYPH_LABELS[tag]) return JSON.stringify(GLYPH_LABELS[tag]);
+    return null;
+  }
   function tooltipLabel(open) {
     // <Tooltip><TooltipTrigger asChild><Button/></TooltipTrigger><TooltipContent>text</TooltipContent></Tooltip>
     const el = ts.isJsxOpeningElement(open) ? open.parent : open;
@@ -811,6 +860,7 @@ export function transform(text, file, ctx) {
         else if (t.length === 1 && ts.isJsxExpression(t[0]) && t[0].expression) label = `{${t[0].expression.getText(sf)}}`;
       }
       if (!label) label = tooltipLabel(open);
+      if (!label && ctx.deriveLabels) label = derivedLabel(open, glyph);
       if (!label && glyphOnly) {
         out.notes.push("glyph-only-no-label");
         return out;
@@ -941,7 +991,7 @@ function main() {
     const abs = path.join(ROOT, file);
     const excluded =
       builder.has(file) || EXCLUDED_PREFIXES.some((p) => file.startsWith(p)) || EXCLUDED_RE.some((re) => re.test(file));
-    const ctx = { excluded, overrides };
+    const ctx = { excluded, overrides, deriveLabels: args.includes("--derive-labels") };
     if (headOut) {
       let headText;
       try {
