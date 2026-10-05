@@ -64,14 +64,14 @@ export default function ResearchLanding() {
                         Enter a topic, and our AI pipeline searches the web, reads content, analyzes sources,
                         and generates a comprehensive research report — with you in control at every step.
                     </p>
-                    <div className="mt-10 flex flex-col @2xl:flex-row items-center justify-center gap-4">
-                        <Button variant="primary" className="w-full @2xl:w-auto" asChild>
+                    <div className="mt-10 flex flex-col items-stretch @2xl:flex-row @2xl:items-center justify-center gap-4">
+                        <Button variant="primary" asChild>
                             <Link href="/research/topics">
                                 Start Researching
                                 <ArrowRight className="h-4 w-4" />
                             </Link>
                         </Button>
-                        <Button variant="outline" className="w-full @2xl:w-auto" asChild>
+                        <Button variant="outline" asChild>
                             <Link href="#how-it-works">
                                 See How It Works
                             </Link>

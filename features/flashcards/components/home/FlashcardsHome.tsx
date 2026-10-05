@@ -16,6 +16,7 @@
 
 "use client";
 
+import { Badge } from "@/components/ui/badge";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -61,8 +62,9 @@ function StreakChip({ streak }: { streak: StudyStreakRow | null }) {
   if (!streak || streak.current_streak <= 0) return null;
   const days = streak.current_streak;
   return (
-    <span
-      className="mr-1 inline-flex shrink-0 items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300"
+    <Badge
+      variant="warning"
+      className="matrx-glyph-trim mr-1 shrink-0 rounded-full"
       title={`Study streak across every mode. Longest: ${streak.longest_streak} day${streak.longest_streak === 1 ? "" : "s"}`}
       aria-label={`Study streak: ${days} day${days === 1 ? "" : "s"}`}
     >
@@ -71,7 +73,7 @@ function StreakChip({ streak }: { streak: StudyStreakRow | null }) {
       {/* On a phone the number alone: the tab row needs the room for the
           Shared and Public lanes (page-pass 2026-09-27). */}
       <span className="max-sm:sr-only">day{days === 1 ? "" : "s"}</span>
-    </span>
+    </Badge>
   );
 }
 
