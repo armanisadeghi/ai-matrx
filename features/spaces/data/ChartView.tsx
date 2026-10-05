@@ -31,7 +31,8 @@ const CHOICE_HEX: Record<string, string> = {
   pink: "#e295bf",
   red: "#e08679",
 };
-const PALETTE = ["#5c9be3", "#b98fd5", "#73b98f", "#e9c26c", "#e08679", "#d69258", "#e295bf", "#b89a83", "#b4b2ad"];
+/** Groups with no option color, in Notion's order (its Avg NPS ring reads purple, green, yellow, blue). */
+const PALETTE = ["#b98fd5", "#73b98f", "#e9c26c", "#5c9be3", "#e08679", "#d69258", "#e295bf", "#b89a83", "#b4b2ad"];
 /** Past a couple dozen groups Notion draws one pale color in many thin slices. */
 const MANY_HEX = "#d3e9dc";
 

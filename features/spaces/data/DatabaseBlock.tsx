@@ -183,6 +183,7 @@ function DatabaseFrame({
                 view={v}
                 icon={<Icon size={isChart ? 16 : 14} strokeWidth={1.8} />}
                 active={v.id === active.id}
+                pill={isChart}
                 editable={editable}
                 onSelect={() => save({ activeViewId: v.id })}
                 onRename={(name) => save({ views: views.map((x) => (x.id === v.id ? { ...x, name } : x)), activeViewId: v.id })}
@@ -288,7 +289,7 @@ function DatabaseBody({
     <div className="spaces-db-body">
       <ViewSwitcher view={spec} chooser={false} onOpenRecord={onOpenRecord} filter={view.filters && Object.keys(view.filters).length ? view.filters : undefined} />
       {editable && (view.layout === "grid" || view.layout === "list") ? (
-        <Button variant="quiet" className="spaces-db-newrow" icon={<Plus size={14} strokeWidth={1.8} />} onClick={onNew}>
+        <Button variant="quiet" icon={<Plus size={14} strokeWidth={1.8} />} onClick={onNew}>
           New page
         </Button>
       ) : null}
@@ -305,9 +306,11 @@ function ViewTab({
   onRename,
   onDuplicate,
   onDelete,
+  pill,
 }: {
   view: SpaceDbView;
   icon: ReactNode;
+  pill?: boolean;
   active: boolean;
   editable: boolean;
   onSelect: () => void;
@@ -320,15 +323,23 @@ function ViewTab({
   return (
     <Popover open={menu} onOpenChange={(o) => (editable ? setMenu(o) : null)}>
       <PopoverTrigger asChild>
-        <Button variant="quiet" className="spaces-db-tab" role="tab" aria-selected={active} data-active={active ? "true" : undefined} onClick={(e) => {
-            if (!active) {
-              e.preventDefault();
-              onSelect();
-            }
-          }}>
-          {icon}
-          <span>{view.name}</span>
-        </Button>
+        {pill ? (
+          // A chart tile's title is the tile's own layout (Notion's grey pill), not a toolbar control.
+          <button type="button" className="spaces-chart-title" role="tab" aria-selected={active}>
+            {icon}
+            <span>{view.name}</span>
+          </button>
+        ) : (
+          <Button variant="quiet" role="tab" aria-selected={active} data-active={active ? "true" : undefined} onClick={(e) => {
+              if (!active) {
+                e.preventDefault();
+                onSelect();
+              }
+            }}>
+            {icon}
+            <span>{view.name}</span>
+          </Button>
+        )}
       </PopoverTrigger>
       <PopoverContent surface="solid" align="start" className="w-[240px] p-1">
         <div className="p-1">

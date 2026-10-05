@@ -22,6 +22,7 @@ import { Cover, randomCover } from "./Cover";
 import { IconPicker, randomIcon } from "./IconPicker";
 import { PageMenu } from "./PageMenu";
 import { SpaceIcon } from "./SpaceIcon";
+import { TocRail } from "./TocRail";
 import { editedAgo } from "./time";
 
 type Editable = Pick<SpaceDoc, "title" | "icon" | "cover" | "settings" | "blocks">;
@@ -89,6 +90,8 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
   const [editorRound, setEditorRound] = useState(0);
   const [focusTitle, setFocusTitle] = useState(false);
   const editorRef = useRef<SpacesEditor | null>(null);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const headerRef = useRef<HTMLDivElement | null>(null);
   /** The page as the person sees it, edits included — what the next save writes. */
   const docRef = useRef<SpaceDoc | null>(null);
   /** The stored version the local copy is based on: every save is a compare-and-swap against it. */
@@ -258,6 +261,21 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
     }
   };
 
+  const appendLine = () => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    const all = editor.document;
+    const last = all[all.length - 1];
+    const empty = last && last.type === "paragraph" && Array.isArray(last.content) && last.content.length === 0;
+    if (empty) {
+      editor.setTextCursorPosition(last.id, "end");
+    } else if (last) {
+      const [made] = editor.insertBlocks([{ type: "paragraph" }], last.id, "after");
+      if (made) editor.setTextCursorPosition(made.id, "end");
+    }
+    editor.focus();
+  };
+
   const moveBlocksTo = (ids: string[]) => {
     openQuickFind("pick", (targetId) => {
       const editor = editorRef.current;
@@ -362,7 +380,8 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
         />
       </header>
 
-      <div className="spaces-scroll" data-matrx-page-scroll="">
+      <div className="spaces-scroll" data-matrx-page-scroll="" ref={scrollRef}>
+        <TocRail blocks={doc.blocks} scrollerRef={scrollRef} anchorRef={headerRef} />
         {doc.isArchived ? (
           <div className="spaces-trash-banner">
             <span>This page is in Trash.</span>
@@ -386,11 +405,11 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
         {doc.cover ? <Cover cover={doc.cover} editable={editable} onChange={(cover) => update({ cover }, 0)} /> : null}
 
         <div className={`spaces-content ${fontClass}`}>
-          <div className="spaces-header" data-has-cover={doc.cover ? "true" : undefined} data-has-icon={doc.icon ? "true" : undefined}>
+          <div className="spaces-header" ref={headerRef} data-has-cover={doc.cover ? "true" : undefined} data-has-icon={doc.icon ? "true" : undefined}>
             {doc.icon ? (
               <IconPicker value={doc.icon} onChange={(icon) => update({ icon }, 0)} disabled={!editable}>
-                <button type="button" className="spaces-page-icon" aria-label="Change icon">
-                  <SpaceIcon media={doc.icon} size={78} />
+                <button type="button" className="spaces-page-icon" data-image={doc.icon && !("icon" in doc.icon) ? "true" : undefined} aria-label="Change icon">
+                  <SpaceIcon media={doc.icon} size={doc.icon && !("icon" in doc.icon) ? 136 : 78} />
                 </button>
               </IconPicker>
             ) : null}
@@ -434,6 +453,13 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
             menu={{ moveBlocksTo, askAi: () => toast.info("AI is not connected yet") }}
           />
           {sourcePicker}
+          {editable ? (
+            // Notion's page end: the room under the last block is a click target that puts the caret
+            // in an empty line at the end (making one when the last block is not an empty line).
+            <button type="button" tabIndex={-1} className="spaces-page-end" aria-label="Add a block at the end" onClick={appendLine} />
+          ) : (
+            <div className="spaces-page-end" aria-hidden />
+          )}
         </div>
       </div>
     </div>

@@ -18,6 +18,8 @@ export const b = {
   h1: (s: string | RichSpan[]): SpaceBlock => ({ id: bid(), type: "heading", text: spans(s), props: { level: 1 } }),
   h2: (s: string | RichSpan[], background?: SpaceColor): SpaceBlock => ({ id: bid(), type: "heading", text: spans(s), background, props: { level: 2 } }),
   h3: (s: string | RichSpan[]): SpaceBlock => ({ id: bid(), type: "heading", text: spans(s), props: { level: 3 } }),
+  /** Notion's "Toggle heading 3": a heading that folds its children. */
+  toggleH3: (s: string | RichSpan[], children: SpaceBlock[] = []): SpaceBlock => ({ id: bid(), type: "heading", text: spans(s), props: { level: 3, toggleable: true }, children }),
   bullet: (s: string | RichSpan[], children?: SpaceBlock[]): SpaceBlock => ({ id: bid(), type: "bulleted", text: spans(s), children }),
   numbered: (s: string | RichSpan[]): SpaceBlock => ({ id: bid(), type: "numbered", text: spans(s) }),
   todo: (s: string | RichSpan[], checked = false, color?: SpaceColor, children?: SpaceBlock[]): SpaceBlock => ({
@@ -59,13 +61,27 @@ export const b = {
     b.database(token, [{ id: "view-ring", name, icon, layout: "chart", chart: { centerValue: true, ...chart } }]),
 };
 
+/** The four chart rings' view names, as the page's owner typed them (in capitals). */
+export const RING_NAMES: Record<string, string> = {
+  "Active clients": "ACTIVE CLIENTS",
+  "Client wins": "CLIENT WINS",
+  "Avg NPS score": "AVG NPS SCORE",
+  "YTD tasks completed": "YTD TASKS COMPLETED",
+};
+
+/** The page's cover and icon: a warm landscape and a portrait, from the bundled gallery (page/gallery.ts). */
+export const SAMPLE_COVER = { url: "gallery:photo-golden-palms", offsetY: 62 };
+export const SAMPLE_ICON = { url: "gallery:portrait-founder" };
+/** The page's two columns, measured on the reference: 348px beside 1070px. */
+export const SAMPLE_COLUMNS = [0.245, 0.755] as const;
+
 /** The four chart rings of the acceptance page (Active clients, Client wins, Avg NPS score, YTD tasks). */
 export function sampleRings(): SpaceBlock {
   return b.columns(
-      { width: 0.25, blocks: [b.ring("client", "Active clients", "Users", { type: "donut", groupBy: "status", op: "count" })] },
-      { width: 0.25, blocks: [b.ring("client_win", "Client wins", "Trophy", { type: "donut", groupBy: "kind", op: "count" })] },
-      { width: 0.25, blocks: [b.ring("nps_survey", "Avg NPS score", "Gauge", { type: "donut", groupBy: "score", op: "avg", field: "score" })] },
-      { width: 0.25, blocks: [b.ring("task", "YTD tasks completed", "ListChecks", { type: "donut", groupBy: "task", op: "count" })] },
+      { width: 0.25, blocks: [b.ring("client", RING_NAMES["Active clients"], "Users", { type: "donut", groupBy: "status", op: "count" })] },
+      { width: 0.25, blocks: [b.ring("client_win", RING_NAMES["Client wins"], "Trophy", { type: "donut", groupBy: "kind", op: "count" })] },
+      { width: 0.25, blocks: [b.ring("nps_survey", RING_NAMES["Avg NPS score"], "Gauge", { type: "donut", groupBy: "score", op: "avg", field: "score" })] },
+      { width: 0.25, blocks: [b.ring("task", RING_NAMES["YTD tasks completed"], "ListChecks", { type: "donut", groupBy: "task", op: "count" })] },
     );
 }
 
@@ -340,18 +356,19 @@ export function seedSpaces(): SpaceDoc[] {
     b.text(""),
     b.text([t("Auto posting for social media: "), t("https://www.instagram.com/creators/", { link: "https://www.instagram.com/creators/" })]),
     b.text(""),
-    b.toggle([t("Other To Dos", { bold: true })], [b.todo("Renew the Metricool plan"), b.todo("Update the Offers page pricing")]),
-    b.toggle([t("Gina Notes", { bold: true })], [b.text("Gina wants a weekly Loom instead of the Friday call.")]),
-    b.toggle([t("JetQuest Notes", { bold: true })], [b.bullet("Captions 4-17 due Thursday"), b.bullet("Jonathon prefers voice notes over email")]),
-    b.toggle([t("Darlene Training Project", { bold: true })], [b.numbered("Caption formula walkthrough"), b.numbered("Daily winning formula review"), b.numbered("Shadow two client calls")]),
-    b.toggle([t("Upcoming", { bold: true })], [b.text("Pipe | Fitness Coaching kickoff on September 15.")]),
-    b.toggle([t("When New Clients Onboard", { bold: true })], [b.todo("Send the welcome packet"), b.todo("Create their page in Clients OS"), b.todo("Book the strategy call")]),
-    b.toggle([t("Analytics System", { bold: true })], [b.text("Metricool for organic, Ads Manager export for paid, both into the monthly report.")]),
-    b.toggle([t("AI Process", { bold: true })], [b.text("Draft captions with the brand voice prompt, then a human edit pass before scheduling.")]),
+    b.toggleH3("Other To Dos", [b.todo("Renew the Metricool plan"), b.todo("Update the Offers page pricing")]),
+    b.toggleH3("Gina Notes", [b.text("Gina wants a weekly Loom instead of the Friday call.")]),
+    b.toggleH3("JetQuest Notes", [b.bullet("Captions 4-17 due Thursday"), b.bullet("Jonathon prefers voice notes over email")]),
+    b.toggleH3("Darlene Training Project", [b.numbered("Caption formula walkthrough"), b.numbered("Daily winning formula review"), b.numbered("Shadow two client calls")]),
+    b.toggleH3("Upcoming", [b.text("Pipe | Fitness Coaching kickoff on September 15.")]),
+    b.toggleH3("When New Clients Onboard", [b.todo("Send the welcome packet"), b.todo("Create their page in Clients OS"), b.todo("Book the strategy call")]),
+    b.toggleH3("Analytics System", [b.text("Metricool for organic, Ads Manager export for paid, both into the monthly report.")]),
+    b.toggleH3("AI Process", [b.text("Draft captions with the brand voice prompt, then a human edit pass before scheduling.")]),
   ];
 
-  const root = make({ key: ROOT, title: "The Traveling SMM™ OS", icon: "TreePalm" }, null, "i", [b.columns({ width: 0.3, blocks: left }, { width: 0.7, blocks: right })], {
-    cover: { url: "gallery:gradient-sunset", offsetY: 50 },
+  const root = make({ key: ROOT, title: "The Traveling SMM™ OS", icon: "TreePalm" }, null, "i", [b.columns({ width: SAMPLE_COLUMNS[0], blocks: left }, { width: SAMPLE_COLUMNS[1], blocks: right })], {
+    icon: SAMPLE_ICON,
+    cover: SAMPLE_COVER,
     settings: { font: "default", smallText: false, fullWidth: true, locked: false },
   });
 

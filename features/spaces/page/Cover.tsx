@@ -3,14 +3,16 @@
 // features/spaces/page/Cover.tsx — the full-bleed cover (A4): gallery / upload / link, Change cover,
 // Reposition (drag, Save position / Cancel), Remove.
 //
-// The gallery is Notion's "Color & gradient" row drawn with CSS (`gallery:<key>`), so no photos ship.
-// Uploads go through our file handler and are stored as `{ fileId }`.
+// The gallery is Notion's: a "Color & gradient" row drawn with CSS and a row of landscape pictures
+// bundled with the feature (page/gallery.ts) — both stored as `gallery:<key>`. Uploads go through our
+// file handler and are stored as `{ fileId }`.
 
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { Button, Field, Tabs } from "@ai-matrx/design-system/controls";
 import { useRef, useState } from "react";
 
 import type { SpaceDoc } from "../contract";
+import { COVER_PHOTOS, galleryImage } from "./gallery";
 import { uploadSpaceImage, useSpaceMediaUrl } from "./media";
 
 type CoverValue = NonNullable<SpaceDoc["cover"]>;
@@ -31,13 +33,14 @@ export const COVER_GALLERY: Record<string, string> = {
 };
 
 const GALLERY_KEYS = Object.keys(COVER_GALLERY);
+const RANDOM_KEYS = [...COVER_PHOTOS.map((p) => p.key), ...GALLERY_KEYS];
 
 export function randomCover(): CoverValue {
-  return { url: `gallery:${GALLERY_KEYS[Math.floor(Math.random() * GALLERY_KEYS.length)]}`, offsetY: 50 };
+  return { url: `gallery:${RANDOM_KEYS[Math.floor(Math.random() * RANDOM_KEYS.length)]}`, offsetY: 50 };
 }
 
 function coverStyle(cover: CoverValue, url: string | null, offsetY: number): React.CSSProperties {
-  if ("url" in cover && cover.url.startsWith("gallery:")) {
+  if ("url" in cover && cover.url.startsWith("gallery:") && !galleryImage(cover.url)) {
     return { background: COVER_GALLERY[cover.url.slice("gallery:".length)] ?? COVER_GALLERY["solid-gray"] };
   }
   if (url) {
@@ -90,6 +93,20 @@ function CoverPicker({ onPick, children }: { onPick: (cover: CoverValue | null) 
                 />
               ))}
             </div>
+            <p className="mt-3 mb-2 type-secondary text-muted-foreground">Landscapes</p>
+            <div className="grid grid-cols-4 gap-2">
+              {COVER_PHOTOS.map((photo) => (
+                <button
+                  key={photo.key}
+                  type="button"
+                  aria-label={photo.label}
+                  title={photo.label}
+                  className="h-16 rounded bg-cover bg-center hover:opacity-85"
+                  style={{ backgroundImage: `url("${photo.src}")` }}
+                  onClick={() => pick({ url: `gallery:${photo.key}`, offsetY: 50 })}
+                />
+              ))}
+            </div>
           </div>
         ) : null}
         {tab === "upload" ? (
@@ -135,7 +152,7 @@ export function Cover({ cover, editable, onChange }: { cover: CoverValue; editab
   const [offset, setOffset] = useState(cover.offsetY ?? 50);
   const drag = useRef<{ y: number; start: number; height: number } | null>(null);
   const url = useSpaceMediaUrl(cover);
-  const isImage = "fileId" in cover || ("url" in cover && !cover.url.startsWith("gallery:"));
+  const isImage = "fileId" in cover || ("url" in cover && (!cover.url.startsWith("gallery:") || galleryImage(cover.url) !== null));
   const shown = repositioning ? offset : (cover.offsetY ?? 50);
 
   return (
