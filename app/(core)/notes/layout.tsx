@@ -75,6 +75,9 @@ export default async function NotesV2Layout({
     <>
       <div
         className="notes-root relative z-0 h-full overflow-y-auto overflow-x-hidden"
+        // An app viewport on every device: what floats over its foot is padding,
+        // never a scroll runway (styles/shell.css).
+        data-matrx-viewport-surface=""
         style={{ paddingTop: "var(--shell-header-h)" }}
       >
         <style dangerouslySetInnerHTML={{ __html: highlightStyles }} />

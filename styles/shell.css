@@ -1940,19 +1940,43 @@ body[style*="pointer-events: none"] {
    Such a surface clears what floats the only way that does not cover or slide
    it: the floating chrome's height is PADDING at its foot, so the workspace
    ends exactly above the box and nothing scrolls. Measured only — no box, no
-   padding. */
+   padding. A route body that is an app viewport in EVERY layout (the notes
+   phone view has no h-full child) says so with `data-matrx-viewport-surface`. */
 .shell-main
-  > .h-full:is(.overflow-y-auto, .overflow-auto):has(> .h-full):not(
-    [data-floating-clearance="off"]
-  ) {
+  > :is(
+    .h-full:is(.overflow-y-auto, .overflow-auto):has(> .h-full),
+    [data-matrx-viewport-surface]
+  ):not([data-floating-clearance="off"]) {
   box-sizing: border-box;
   padding-block-end: max(
     var(--matrx-floating-measured, 0px),
     var(--shell-fixed-alert-clearance, 0px)
   );
 }
-.shell-main > .h-full:is(.overflow-y-auto, .overflow-auto):has(> .h-full)::after {
+.shell-main
+  > :is(.h-full:is(.overflow-y-auto, .overflow-auto):has(> .h-full), [data-matrx-viewport-surface])::after {
   content: none;
+}
+
+/* A `display: contents` wrapper is not a box: its child IS the route body
+   (the Masterwork layout's touch-target wrapper). Without seeing through it,
+   .shell-main kept its own runway over a body that scrolls itself — a double
+   scroll (2026-10-04 walk: 122px of outer slack on /masterwork). */
+.shell-main:has(> .contents > .h-full)::after {
+  content: none;
+}
+.shell-main
+  > .contents
+  > .h-full:is(.overflow-y-auto, .overflow-auto):not(
+    .scroll-page-end-space,
+    [data-floating-clearance="off"]
+  )::after {
+  content: "";
+  display: block;
+  flex: none;
+  grid-column: 1 / -1;
+  block-size: max(var(--matrx-floating-clearance), var(--shell-fixed-alert-clearance, 0px));
+  pointer-events: none;
 }
 
 /* Natural-height reading/list surfaces keep a generous final runway so fixed
