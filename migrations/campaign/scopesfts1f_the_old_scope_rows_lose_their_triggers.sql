@@ -1,6 +1,5 @@
 -- chair-step: the six old scope tables lose their 58 old-row triggers (nothing writes those rows since scopesfts1f_the_scope_doors_write_no_old_row.sql) and the 7 functions only those triggers ran are dropped (0 callers: bodies, triggers on any other table, views, policies, cron, five repos). Effect: none on any door — the store writes are the only writes. Proven up → down → up in one rolled-back transaction on live (the clone is a restore from before tonight's scope files).
 -- lane: FINISH-THE-SWITCH (FTS-1f, old-row writes off, item 3)
--- draft: 58 DROP TRIGGER on context.* — apply only inside the 1–4 AM Pacific window; remove this line then.
 -- window-class: 58 DROP TRIGGER on the six context.* tables take each table's ACCESS EXCLUSIVE lock (plus the supautils set) for milliseconds; 01:00-04:00 Pacific at production, lock_timeout 5s, retry on timeout. Nothing on platform.associations or auth.*.
 -- lock: context,public
 --
