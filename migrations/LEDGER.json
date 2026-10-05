@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-05T04:19:40.397Z",
+  "generated_at": "2026-10-05T04:30:55.287Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -3020,6 +3020,18 @@
       "checksum": "71333e5c299b2fe9d382a218a85e64481ff760456f6b749661ad4a662e2220a7",
       "applied_at": "2026-10-05 04:15:38.012006+00"
     },
+    "migrations/campaign/fts4_d_the_tag_scope_types_and_their_store_copies_are_archived.sql": {
+      "source": "matrx-frontend",
+      "filename": "fts4_d_the_tag_scope_types_and_their_store_copies_are_archived.sql",
+      "checksum": "e3f212bb472f8249f77a69a227042a03af01cfa018dbd832e3633d955a70f02f",
+      "applied_at": "2026-10-05 04:25:18.199529+00"
+    },
+    "migrations/campaign/fts4_e_the_tag_scopes_are_archived.sql": {
+      "source": "matrx-frontend",
+      "filename": "fts4_e_the_tag_scopes_are_archived.sql",
+      "checksum": "de96e875bc3c8882b4e35f6f7701a2a41fe086c9ab4d53f37144df15ba88f7d5",
+      "applied_at": "2026-10-05 04:26:31.523062+00"
+    },
     "migrations/campaign/g0a_has_permission_for_declares_its_door.sql": {
       "source": "matrx-frontend",
       "filename": "g0a_has_permission_for_declares_its_door.sql",
@@ -3865,6 +3877,12 @@
       "filename": "lane12p7_b_a_readers_rule_reads_its_row_without_a_seat.sql",
       "checksum": "399430b3ca90190099d767ceb42560497c36c9e758345f9a74ca0b0b46556bc3",
       "applied_at": "2026-10-03 22:39:35.348973+00"
+    },
+    "migrations/campaign/lane7fts2b_a_a_crm_record_is_called_a_contact.sql": {
+      "source": "matrx-frontend",
+      "filename": "lane7fts2b_a_a_crm_record_is_called_a_contact.sql",
+      "checksum": "bb631190aeb0d9b74507166e9e52418df4666bc9692a6e0d3c830b40f1b3f6c8",
+      "applied_at": "2026-10-05 04:30:53.984689+00"
     },
     "migrations/campaign/lane7sec_a_standard_rows_fields_follow_the_field_rule.sql": {
       "source": "matrx-frontend",
