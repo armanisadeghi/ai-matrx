@@ -26,7 +26,7 @@ import { kindTextToMarkdown } from "@ai-matrx/chat/utils/content-ir/surfaces/kin
 import { extractFlatText } from "../redux/execution-system/messages/messages.selectors";
 import { selectConversationTitle } from "../redux/execution-system/conversations/conversations.selectors";
 import { isMessagePinned } from "../message-pins/pinned-messages-store";
-import { stripTurnTrust } from "@ai-matrx/chat/host/ui-slots";
+import { stripTurnTrust } from "./turn-trust-strip";
 import { openAlchemySession } from "../../agent-copy/alchemy-session";
 import { buildConversationMarkdown } from "./conversation-markdown";
 import { documentMarkdown } from "./document-markdown";

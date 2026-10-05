@@ -236,7 +236,6 @@ export interface ChatUiSlots {
   dispatchWarRoomTool: AnyFn;
   dispatchWarRoomMasterTool: AnyFn;
   resolveGmailSendConnection: AnyFn;
-  stripTurnTrust: AnyFn;
   voiceDisplayName: AnyFn;
   recognizeOurFileUrl: AnyFn;
   canvasGetVersionHistory: (canvasId: string) => Promise<CanvasItemRow[]>;
@@ -665,7 +664,6 @@ export const adoptCloudBrowserRunFromStream = slotFn("adoptCloudBrowserRunFromSt
 export const dispatchWarRoomTool = slotFn("dispatchWarRoomTool");
 export const dispatchWarRoomMasterTool = slotFn("dispatchWarRoomMasterTool");
 export const resolveGmailSendConnection = slotFn("resolveGmailSendConnection");
-export const stripTurnTrust = slotFn("stripTurnTrust", (s: string) => s);
 export const voiceDisplayName = slotFn("voiceDisplayName", (_set: string, id: string) => id);
 export const recognizeOurFileUrl = slotFn("recognizeOurFileUrl", () => null);
 export const canvasGetVersionHistory = slotFn("canvasGetVersionHistory");

@@ -1,5 +1,6 @@
 import React, { act } from "react";
 import { registerChatUi } from "@ai-matrx/chat/host/ui-slots";
+import { BlockHoverPreview } from "@/features/agents/components/previews/BlockHoverPreview";
 import { createRoot, type Root } from "react-dom/client";
 import type { ContextDrawerItem } from "@ai-matrx/chat/agents/components/context-items/types";
 import type { PreFetchedUrl } from "@ai-matrx/agents/generated/stream-events";
@@ -67,6 +68,7 @@ jest.mock("@ai-matrx/chat/agents/components/context-items/contextItemsTab", () =
 // The host registers its file chip (P16f slot); this test registers a recording double.
 beforeEach(() =>
   registerChatUi({
+    BlockHoverPreview,
     FileResourceChip: (props: { fileId: string; nameOverride?: string }) => {
       fileResourceChipProps(props);
       return <span>{props.fileId}</span>;

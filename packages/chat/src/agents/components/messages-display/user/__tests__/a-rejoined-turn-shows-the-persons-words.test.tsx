@@ -13,6 +13,7 @@
  * rejoin-shaped wire (no optimistic temp id); the real `AgentUserMessage`
  * renders it. Only the store hook is bound to that state.
  */
+import { registerChatUi } from "../../../../../host/ui-slots";
 import {
   TextDecoder as NodeTextDecoder,
   TextEncoder as NodeTextEncoder,
@@ -192,6 +193,11 @@ function renderUserRow(state: Record<string, unknown>) {
     },
   };
 }
+
+// The host materializes artifacts a turn produced (P20 slot); this test has none, so it registers an empty result.
+registerChatUi({
+  materializeMessageArtifacts: async () => ({ materializedCount: 0, rewrittenContent: null, errors: [] }),
+});
 
 describe("a turn rejoined mid-answer", () => {
   it("shows the person's own words and attachment names from the reservation frame", async () => {

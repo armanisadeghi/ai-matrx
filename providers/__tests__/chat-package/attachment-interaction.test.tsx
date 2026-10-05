@@ -4,7 +4,7 @@ import { createRoot, type Root } from "react-dom/client";
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean })
   .IS_REACT_ACT_ENVIRONMENT = true;
 
-jest.mock("../registry", () => ({
+jest.mock("@ai-matrx/chat/agents/components/context-items/registry", () => ({
   resolveContextItemDef: () => ({
     typeLabel: "Webpage",
     icon: () => null,
@@ -20,11 +20,11 @@ jest.mock("../registry", () => ({
 }));
 
 const toggle = jest.fn();
-jest.mock("../../../../host/canvas", () => ({
+jest.mock("@ai-matrx/chat/host/canvas", () => ({
   useChatCanvasTab: () => ({ isAvailable: true, isVisible: false, selected: null, toggle }),
 }));
 
-jest.mock("../../../../store/hooks", () => ({
+jest.mock("@ai-matrx/chat/store/hooks", () => ({
   useAppDispatch: () => jest.fn(),
 }));
 // The host code this test renders reads the app's own hooks (P3): one double covers both.
@@ -32,20 +32,27 @@ jest.mock("../../../../store/hooks", () => ({
 
 
 
-jest.mock("@host/features/agents/components/previews/WebpageHoverPreview", () => ({
+
+
+
+
+
+
+
+
+jest.mock("@/features/agents/components/previews/WebpageHoverPreview", () => ({
   WebpagePreviewContent: () => <div>Saved webpage preview</div>,
 }));
 
-
-
-
-
-
-
-import { MessageAttachmentStrip } from "../../messages-display/MessageAttachmentStrip";
-import { ContextItemViewer } from "../ContextItemViewer";
-import { readContextItemsTab } from "../contextItemsTab";
+import { registerChatUi } from "@ai-matrx/chat/host/ui-slots";
+import { BlockHoverPreview } from "@/features/agents/components/previews/BlockHoverPreview";
+import { MessageAttachmentStrip } from "@ai-matrx/chat/agents/components/messages-display/MessageAttachmentStrip";
+import { ContextItemViewer } from "@ai-matrx/chat/agents/components/context-items/ContextItemViewer";
+import { readContextItemsTab } from "@ai-matrx/chat/agents/components/context-items/contextItemsTab";
 import type { CanvasJson } from "@ai-matrx/canvas";
+
+// The app's hover card draws the webpage preview for an attachment chip (P20 slot).
+registerChatUi({ BlockHoverPreview });
 
 describe("attachment chip interaction", () => {
   let container: HTMLDivElement;

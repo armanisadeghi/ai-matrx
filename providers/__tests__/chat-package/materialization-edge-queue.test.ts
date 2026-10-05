@@ -19,6 +19,12 @@ import {
   reflectAgentMaterializedThunk,
 } from "@ai-matrx/chat/agents/redux/execution-system/instance-working-document/instance-working-document.thunks";
 
+import { registerChatUi } from "@ai-matrx/chat/host/ui-slots";
+import { generateLabelFromContent } from "@/features/notes/hooks/useAutoLabel";
+
+// The host owns the note title helper (P20 slot); this integration test registers the real one.
+registerChatUi({ generateLabelFromContent });
+
 const USER_ID = "4cf62e4e-2679-484f-b652-034e697418df";
 const AGENT_ID = "506a20fc-34a9-4038-b38b-6c71ab09b173";
 const ORG_ID = "3e790542-fdaf-40b2-8bf3-658bf94fe67f";

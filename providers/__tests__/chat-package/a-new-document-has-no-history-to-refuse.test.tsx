@@ -35,9 +35,12 @@ jest.mock("@ai-matrx/chat/agents/hooks/useWorkingDocument", () => ({
   useWorkingDocument: () => ({ draft: "", onChange: () => undefined, flush: () => undefined, viewOnly: false }),
 }));
 jest.mock("@/components/errors/ErrorAlchemyMenu", () => ({ ErrorAlchemyMenu: () => null }));
-jest.mock("@ai-matrx/chat/next/lazy/NoteVersionHistoryPanel", () => ({ NoteVersionHistoryPanel: () => null }));
 
+import { registerChatUi } from "@ai-matrx/chat/host/ui-slots";
 import { WorkingDocumentVersionHistory } from "@ai-matrx/chat/agents/components/working-document/WorkingDocumentVersionHistory";
+
+// The host draws the note version panel (P20 slot); this test registers an empty one.
+registerChatUi({ NoteVersionHistoryPanel: () => null });
 
 const flush = async () => {
   for (let i = 0; i < 5; i += 1) await act(async () => {});

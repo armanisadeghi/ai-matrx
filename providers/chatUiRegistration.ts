@@ -308,7 +308,6 @@ import { adoptCloudBrowserRunFromStream } from "@/features/cloud-browser/redux/a
 import { dispatchWarRoomTool } from "@/features/agents/war-room-tools/dispatcher/dispatch-war-room-tool.thunk";
 import { dispatchWarRoomMasterTool } from "@/features/agents/war-room-master-tools/dispatcher/dispatch-war-room-master-tool.thunk";
 import { resolveGmailSendConnection } from "@/features/google-workspace/connection";
-import { stripTurnTrust } from "@/features/education/tutor/turnTrust";
 import { voiceDisplayName } from "@/lib/voices/voiceSets";
 import { recognizeOurFileUrl } from "@/lib/media/our-file-sources";
 import { convertMarkdownToHtml } from "@/features/html-pages/utils/html-preview-utils";
@@ -375,7 +374,6 @@ registerChatUi({
   dispatchWarRoomTool,
   dispatchWarRoomMasterTool,
   resolveGmailSendConnection,
-  stripTurnTrust,
   voiceDisplayName,
   recognizeOurFileUrl,
   canvasGetVersionHistory: (id: string) => canvasArtifactService.getVersionHistory(id),

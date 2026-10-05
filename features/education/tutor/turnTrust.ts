@@ -28,7 +28,8 @@ import {
 /** The sentinel that opens the per-turn trust comment. Keep in sync with the
  *  tutor agent's system prompt (see FEATURE.md → Trust). Versioned so the format
  *  can evolve without silently mis-reading an old transcript. */
-export const TUTOR_TRUST_SENTINEL = "MATRX_TRUST_V1" as const;
+import { TUTOR_TRUST_SENTINEL, stripTurnTrust } from "@ai-matrx/chat/agents/conversation-export/turn-trust-strip";
+export { TUTOR_TRUST_SENTINEL, stripTurnTrust };
 
 // Matches `<!--MATRX_TRUST_V1 {…}-->`. Global + non-greedy so we can take the
 // LAST envelope in the message (a turn emits exactly one, but be robust).
@@ -134,7 +135,3 @@ export function extractTurnTrust(
  * renderer does, so the transcript itself needs no strip). Pure; safe on text
  * with no sentinel.
  */
-export function stripTurnTrust(content: string): string {
-  if (content.indexOf(TUTOR_TRUST_SENTINEL) === -1) return content;
-  return content.replace(TRUST_COMMENT_RE, "").trimEnd();
-}
