@@ -302,15 +302,11 @@ const TimelineBlock: React.FC<TimelineBlockProps> = ({
               icon={Printer}
               tooltip="Print / Save as PDF"
               onClick={handlePrint}
-              size="sm"
-              className="bg-slate-500 dark:bg-slate-600 text-white hover:bg-slate-600 dark:hover:bg-slate-700"
             />
-            <IconButton
+            <IconButton glyphTone="primary"
               icon={CheckSquare}
               tooltip="Import into Task Manager"
               onClick={() => setIsImportModalOpen(true)}
-              size="sm"
-              className="bg-primary text-primary-foreground hover:bg-primary/80"
             />
           </>
         }

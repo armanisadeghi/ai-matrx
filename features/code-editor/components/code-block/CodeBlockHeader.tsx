@@ -515,7 +515,6 @@ const CodeBlockButtons: React.FC<CodeBlockButtonsProps> = ({
         <IconButton
           icon={isFullScreen ? Minimize : Expand}
           tooltip={isFullScreen ? "Exit fullscreen" : "Fullscreen"}
-          size="sm"
           variant="ghost"
           onClick={toggleFullScreen}
           tooltipSide="bottom"
@@ -535,7 +534,6 @@ const CodeBlockButtons: React.FC<CodeBlockButtonsProps> = ({
                   ? "Expand code"
                   : "Collapse code"
           }
-          size="sm"
           variant="ghost"
           onClick={toggleCollapse}
           tooltipSide="bottom"
@@ -550,7 +548,6 @@ const CodeBlockButtons: React.FC<CodeBlockButtonsProps> = ({
       <IconButton
         icon={isCopied ? Check : Copy}
         tooltip={isCopied ? "Copied!" : "Copy code"}
-        size="sm"
         variant="ghost"
         onClick={(e) => {
           e.stopPropagation();
@@ -564,7 +561,6 @@ const CodeBlockButtons: React.FC<CodeBlockButtonsProps> = ({
         <IconButton
           icon={isEditing ? Eye : Edit2}
           tooltip={isEditing ? "Exit edit mode" : "Edit code"}
-          size="sm"
           variant="ghost"
           onClick={toggleEdit}
           tooltipSide="bottom"
@@ -576,7 +572,6 @@ const CodeBlockButtons: React.FC<CodeBlockButtonsProps> = ({
         <IconButton
           icon={MoreHorizontal}
           tooltip="More actions"
-          size="sm"
           variant="ghost"
           tooltipSide="bottom"
           onClick={() => {
@@ -612,11 +607,9 @@ export const EditButton = ({
       <IconButton
         icon={Edit2}
         tooltip="Edit code"
-        size="sm"
         variant="ghost"
         onClick={toggleEdit}
         tooltipSide="bottom"
-        className="shadow-sm hover:bg-neutral-200 dark:hover:bg-neutral-700"
       />
     </div>
   );

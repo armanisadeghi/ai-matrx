@@ -439,7 +439,6 @@ export function FindReplaceModal({ isOpen, onClose, targetElement, onReplace }: 
           <IconButton
             icon={showReplace ? ChevronDown : ChevronRight}
             tooltip={showReplace ? "Hide Replace" : "Show Replace"}
-            size="sm"
             onClick={() => setShowReplace(!showReplace)}
             disabled={searchScope === 'page'} // Replace not supported in page mode
           />
@@ -475,7 +474,6 @@ export function FindReplaceModal({ isOpen, onClose, targetElement, onReplace }: 
           <IconButton
             icon={ArrowUp}
             tooltip="Previous Match (Shift+Enter)"
-            size="sm"
             onClick={handlePrevious}
             disabled={searchScope === 'element' && matches.length === 0}
           />
@@ -483,7 +481,6 @@ export function FindReplaceModal({ isOpen, onClose, targetElement, onReplace }: 
           <IconButton
             icon={ArrowDown}
             tooltip="Next Match (Enter)"
-            size="sm"
             onClick={handleNext}
             disabled={searchScope === 'element' && matches.length === 0}
           />
@@ -493,7 +490,6 @@ export function FindReplaceModal({ isOpen, onClose, targetElement, onReplace }: 
           <IconButton
             icon={CaseSensitive}
             tooltip="Match Case"
-            size="sm"
             variant={caseSensitive ? "default" : "ghost"}
             onClick={() => setCaseSensitive(!caseSensitive)}
           />
@@ -501,7 +497,6 @@ export function FindReplaceModal({ isOpen, onClose, targetElement, onReplace }: 
           <IconButton
             icon={WholeWord}
             tooltip="Match Whole Word"
-            size="sm"
             variant={wholeWord ? "default" : "ghost"}
             onClick={() => setWholeWord(!wholeWord)}
             disabled={searchScope === 'page'} // Not supported in page mode
@@ -510,7 +505,6 @@ export function FindReplaceModal({ isOpen, onClose, targetElement, onReplace }: 
           <IconButton
             icon={Regex}
             tooltip="Use Regular Expression"
-            size="sm"
             variant={useRegex ? "default" : "ghost"}
             onClick={() => setUseRegex(!useRegex)}
             disabled={searchScope === 'page'} // Regex not supported in page mode
@@ -521,7 +515,6 @@ export function FindReplaceModal({ isOpen, onClose, targetElement, onReplace }: 
           <IconButton
             icon={searchScope === 'page' ? Minimize2 : Maximize2}
             tooltip={searchScope === 'page' ? "Search in Element Only" : "Search Entire Page"}
-            size="sm"
             variant={searchScope === 'page' ? "default" : "ghost"}
             onClick={() => setSearchScope(searchScope === 'page' ? 'element' : 'page')}
           />
@@ -531,7 +524,6 @@ export function FindReplaceModal({ isOpen, onClose, targetElement, onReplace }: 
           <IconButton
             icon={X}
             tooltip="Close (Esc)"
-            size="sm"
             onClick={handleClose}
           />
         </div>
@@ -564,7 +556,6 @@ export function FindReplaceModal({ isOpen, onClose, targetElement, onReplace }: 
             <IconButton
               icon={Replace}
               tooltip="Replace (Enter)"
-              size="sm"
               onClick={handleReplaceOne}
               disabled={currentIndex === -1}
             />
@@ -572,7 +563,6 @@ export function FindReplaceModal({ isOpen, onClose, targetElement, onReplace }: 
             <IconButton
               icon={ReplaceAll}
               tooltip="Replace All (Shift+Enter)"
-              size="sm"
               onClick={handleReplaceAll}
               disabled={matches.length === 0}
             />

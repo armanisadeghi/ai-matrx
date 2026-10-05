@@ -19,13 +19,11 @@ import { Copy } from 'lucide-react';
 
 <IconButton
   icon={Copy}
-  tooltip="Copy to clipboard" 
-  size="md"                   // Options: 'xs' | 'sm' | 'md' | 'lg' | 'xl' (default: 'sm')
+  tooltip="Copy to clipboard"                   // Options: 'xs' | 'sm' | 'md' | 'lg' | 'xl' (default: 'sm')
   variant="outline"           // Options: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link'
   tooltipSide="bottom"        // Options: 'top' | 'right' | 'bottom' | 'left' (default: 'bottom')
   tooltipAlign="center"       // Options: 'start' | 'center' | 'end' (default: 'center')
-  tooltipOffset={5}           // Number (default: 5)
-  iconClassName=""            // Additional classes for the icon
+  tooltipOffset={5}           // Number (default: 5)            // Additional classes for the icon
   onClick={() => {}}
   // Any other button props are also supported (disabled, etc.)
 />`;
@@ -39,7 +37,6 @@ import { Copy } from 'lucide-react';
       <IconButton
         icon={Copy}
         tooltip="Copy to clipboard"
-        size="md"
         variant="outline"
         onClick={() => {}}
       />

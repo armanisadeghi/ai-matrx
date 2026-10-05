@@ -3066,7 +3066,6 @@ const InteractiveDiagramBlock: React.FC<InteractiveDiagramBlockProps> = ({
                     tooltip={editing ? "Done editing" : "Edit this map"}
                     aria-label={editing ? "Done editing" : "Edit this map"}
                     onClick={toggleEditing}
-                    size="sm"
                     className={
                       editing
                         ? "bg-emerald-500 dark:bg-emerald-600 text-white hover:bg-emerald-600 dark:hover:bg-emerald-700"
@@ -3080,15 +3079,12 @@ const InteractiveDiagramBlock: React.FC<InteractiveDiagramBlockProps> = ({
                   tooltip="Print / Save as PDF"
                   aria-label="Print or save as PDF"
                   onClick={triggerPrint}
-                  size="sm"
-                  className="bg-slate-500 dark:bg-slate-600 text-white hover:bg-slate-600 dark:hover:bg-slate-700"
                 />
                 <IconButton
                   icon={Download}
                   tooltip="Export as JSON"
                   aria-label="Export map as JSON"
                   onClick={exportDiagramJSON}
-                  size="sm"
                   variant="outline"
                 />
                 <IconButton
@@ -3096,7 +3092,6 @@ const InteractiveDiagramBlock: React.FC<InteractiveDiagramBlockProps> = ({
                   tooltip="Exit full screen"
                   aria-label="Exit full screen"
                   onClick={() => setIsFullScreen(false)}
-                  size="sm"
                   variant="outline"
                 />
               </div>
@@ -3146,7 +3141,6 @@ const InteractiveDiagramBlock: React.FC<InteractiveDiagramBlockProps> = ({
                         tooltip={editing ? "Done editing" : "Edit this map"}
                         aria-label={editing ? "Done editing" : "Edit this map"}
                         onClick={toggleEditing}
-                        size="sm"
                         className={
                           editing
                             ? "bg-emerald-500 dark:bg-emerald-600 text-white hover:bg-emerald-600 dark:hover:bg-emerald-700"
@@ -3160,31 +3154,24 @@ const InteractiveDiagramBlock: React.FC<InteractiveDiagramBlockProps> = ({
                       tooltip="Print / Save as PDF"
                       aria-label="Print or save as PDF"
                       onClick={triggerPrint}
-                      size="sm"
-                      className="bg-slate-500 dark:bg-slate-600 text-white hover:bg-slate-600 dark:hover:bg-slate-700"
                     />
                     <IconButton
                       icon={ExternalLink}
                       tooltip="Open Canvas"
                       aria-label="Open in Canvas"
                       onClick={handleOpenCanvas}
-                      size="sm"
-                      className="bg-purple-500 dark:bg-purple-600 text-white hover:bg-purple-600 dark:hover:bg-purple-700"
                     />
                     <IconButton
                       icon={Maximize2}
                       tooltip="Expand to full screen"
                       aria-label="Expand to full screen"
                       onClick={() => setIsFullScreen(true)}
-                      size="sm"
-                      className="bg-blue-500 dark:bg-blue-600 text-white hover:bg-blue-600 dark:hover:bg-blue-700"
                     />
                     <IconButton
                       icon={Download}
                       tooltip="Export as JSON"
                       aria-label="Export map as JSON"
                       onClick={exportDiagramJSON}
-                      size="sm"
                       variant="outline"
                     />
                   </div>
@@ -3200,7 +3187,6 @@ const InteractiveDiagramBlock: React.FC<InteractiveDiagramBlockProps> = ({
                     tooltip="Print or save as PDF"
                     aria-label="Print or save as PDF"
                     onClick={triggerPrint}
-                    size="sm"
                     variant="ghost"
                   />
                   <IconButton
@@ -3208,7 +3194,6 @@ const InteractiveDiagramBlock: React.FC<InteractiveDiagramBlockProps> = ({
                     tooltip="Export map as JSON"
                     aria-label="Export map as JSON"
                     onClick={exportDiagramJSON}
-                    size="sm"
                     variant="ghost"
                   />
                 </div>

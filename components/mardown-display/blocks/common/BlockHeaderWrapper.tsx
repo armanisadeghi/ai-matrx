@@ -346,7 +346,6 @@ const BlockHeaderWrapper: React.FC<BlockHeaderWrapperProps> = ({
                             icon={Upload}
                             tooltip="Import from JSON file"
                             onClick={handleImportClick}
-                            size="sm"
                             className={actionButtonClassName}
                           />
                         )}
@@ -355,7 +354,6 @@ const BlockHeaderWrapper: React.FC<BlockHeaderWrapperProps> = ({
                             icon={Download}
                             tooltip="Save as JSON file"
                             onClick={handleExport}
-                            size="sm"
                             className={actionButtonClassName}
                           />
                         )}
@@ -365,7 +363,6 @@ const BlockHeaderWrapper: React.FC<BlockHeaderWrapperProps> = ({
                             icon={ExternalLink}
                             tooltip="Open Canvas"
                             onClick={handleCanvasOpen}
-                            size="sm"
                             className={canvasButtonClassName}
                           />
                         )}
@@ -374,7 +371,6 @@ const BlockHeaderWrapper: React.FC<BlockHeaderWrapperProps> = ({
                             icon={Maximize2}
                             tooltip="Expand to full screen"
                             onClick={() => setIsFullScreen(true)}
-                            size="sm"
                             className={actionButtonClassName}
                           />
                         ) : (
@@ -382,7 +378,6 @@ const BlockHeaderWrapper: React.FC<BlockHeaderWrapperProps> = ({
                             icon={Minimize2}
                             tooltip="Exit full screen"
                             onClick={() => setIsFullScreen(false)}
-                            size="sm"
                             className={actionButtonClassName}
                           />
                         )}
@@ -398,7 +393,6 @@ const BlockHeaderWrapper: React.FC<BlockHeaderWrapperProps> = ({
                             icon={Minimize2}
                             tooltip="Exit full screen"
                             onClick={() => setIsFullScreen(false)}
-                            size="sm"
                             className={actionButtonClassName}
                           />
                         ) : (
@@ -406,7 +400,6 @@ const BlockHeaderWrapper: React.FC<BlockHeaderWrapperProps> = ({
                             icon={Maximize2}
                             tooltip="Full screen"
                             onClick={() => setIsFullScreen(true)}
-                            size="sm"
                             className={actionButtonClassName}
                           />
                         )}
@@ -418,7 +411,6 @@ const BlockHeaderWrapper: React.FC<BlockHeaderWrapperProps> = ({
                               icon={MoreHorizontal}
                               tooltip="More options"
                               onClick={() => setMenuOpen((prev) => !prev)}
-                              size="sm"
                               className={actionButtonClassName}
                             />
                           </div>

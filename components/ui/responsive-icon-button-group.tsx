@@ -114,10 +114,9 @@ export function ResponsiveIconButtonGroup({
               key={button.id}
               icon={button.icon}
               tooltip={button.tooltip}
-              size={size}
               variant={button.variant || "ghost"}
               className={button.className}
-              iconClassName={button.iconClassName}
+              spinning={Boolean(button.iconClassName?.includes("animate-spin"))}
               onClick={button.onClick}
               onMouseDown={button.onMouseDown}
               disabled={button.disabled}
@@ -136,7 +135,6 @@ export function ResponsiveIconButtonGroup({
         <IconButton
           icon={MoreHorizontal}
           tooltip="More actions"
-          size={size}
           variant="ghost"
           onClick={() => setSheetOpen(true)}
           className={className}

@@ -563,14 +563,11 @@ const DecisionTreeBlock: React.FC<DecisionTreeBlockProps> = ({
                   tooltip={isPrinting ? "Saving…" : "Print / Save as PDF"}
                   onClick={handlePrint}
                   disabled={isPrinting}
-                  size="sm"
-                  className="bg-slate-500 dark:bg-slate-600 text-white hover:bg-slate-600 dark:hover:bg-slate-700"
                 />
                 <IconButton
                   icon={Minimize2}
                   tooltip="Exit full screen"
                   onClick={() => setIsFullScreen(false)}
-                  size="sm"
                   variant="outline"
                 />
               </div>
@@ -606,22 +603,16 @@ const DecisionTreeBlock: React.FC<DecisionTreeBlockProps> = ({
                         tooltip={isPrinting ? "Saving…" : "Print / Save as PDF"}
                         onClick={handlePrint}
                         disabled={isPrinting}
-                        size="sm"
-                        className="bg-slate-500 dark:bg-slate-600 text-white hover:bg-slate-600 dark:hover:bg-slate-700"
                       />
                       <IconButton
                         icon={ExternalLink}
                         tooltip="Open Canvas"
                         onClick={handleOpenCanvas}
-                        size="sm"
-                        className="bg-purple-500 dark:bg-purple-600 text-white hover:bg-purple-600 dark:hover:bg-purple-700"
                       />
                       <IconButton
                         icon={Maximize2}
                         tooltip="Expand to full screen"
                         onClick={() => setIsFullScreen(true)}
-                        size="sm"
-                        className="bg-indigo-500 dark:bg-indigo-600 text-white hover:bg-indigo-600 dark:hover:bg-indigo-700"
                       />
                     </div>
                   )}

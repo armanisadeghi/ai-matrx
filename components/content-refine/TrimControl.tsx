@@ -136,12 +136,10 @@ export function TrimControl({
 
           <IconButton
             icon={ChevronLeft}
-            size="sm"
             variant="outline"
             tooltip={`Decrease ${label} by one character`}
             onClick={() => updateExactValue(clampedValue - 1)}
             disabled={disabled || clampedValue === 0}
-            className="col-start-1 row-start-2 rounded-md @[600px]:col-start-2 @[600px]:row-start-1"
           />
 
           <SliderPrimitive.Root
@@ -194,12 +192,10 @@ export function TrimControl({
 
           <IconButton
             icon={ChevronRight}
-            size="sm"
             variant="outline"
             tooltip={`Increase ${label} by one character`}
             onClick={() => updateExactValue(clampedValue + 1)}
             disabled={disabled || clampedValue === safeMax}
-            className="col-start-3 row-start-2 rounded-md @[600px]:col-start-4 @[600px]:row-start-1"
           />
 
           <label className="sr-only" htmlFor={inputId}>
@@ -224,12 +220,10 @@ export function TrimControl({
 
           <IconButton
             icon={ZoomOut}
-            size="sm"
             variant="outline"
             tooltip="Restore the full trim range"
             onClick={() => setRange(FULL_RANGE)}
             disabled={!isZoomed}
-            className="col-start-3 row-start-1 rounded-md @[600px]:col-start-7 @[600px]:row-start-1"
           />
 
           <Button

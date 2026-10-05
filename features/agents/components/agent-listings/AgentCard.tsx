@@ -327,7 +327,6 @@ export function AgentCard({
               <IconButton
                 icon={Play}
                 tooltip={isDisabled ? "Please wait..." : "Run"}
-                size="sm"
                 variant="ghost"
                 tooltipSide="top"
                 tooltipAlign="center"
@@ -345,7 +344,6 @@ export function AgentCard({
               <IconButton
                 icon={Pencil}
                 tooltip={isDisabled ? "Please wait..." : "Edit"}
-                size="sm"
                 variant="ghost"
                 tooltipSide="top"
                 tooltipAlign="center"
@@ -363,7 +361,6 @@ export function AgentCard({
               <IconButton
                 icon={Eye}
                 tooltip={isDisabled ? "Please wait..." : "View"}
-                size="sm"
                 variant="ghost"
                 tooltipSide="top"
                 tooltipAlign="center"
@@ -373,7 +370,6 @@ export function AgentCard({
             <IconButton
               icon={Lightbulb}
               tooltip={isDisabled ? "Please wait..." : "Sneak Peek"}
-              size="sm"
               variant="ghost"
               tooltipSide="top"
               tooltipAlign="center"
@@ -392,18 +388,16 @@ export function AgentCard({
                     ? "Please wait..."
                     : "Duplicate"
               }
-              size="sm"
               variant="ghost"
               tooltipSide="top"
               tooltipAlign="center"
               onClick={handleDuplicate}
               disabled={isDuplicating || isDisabled}
-              iconClassName={isDuplicating ? "animate-spin" : ""}
+              spinning={isDuplicating}
             />
             <IconButton
               icon={Share2}
               tooltip="Share"
-              size="sm"
               variant="ghost"
               tooltipSide="top"
               tooltipAlign="center"
@@ -414,7 +408,6 @@ export function AgentCard({
             <IconButton
               icon={FileText}
               tooltip={isDisabled ? "Please wait..." : "Edit Details"}
-              size="sm"
               variant="ghost"
               tooltipSide="top"
               tooltipAlign="center"
@@ -424,7 +417,6 @@ export function AgentCard({
             <IconButton
               icon={AppWindow}
               tooltip={isDisabled ? "Please wait..." : "Create App"}
-              size="sm"
               variant="ghost"
               tooltipSide="top"
               tooltipAlign="center"
@@ -440,7 +432,6 @@ export function AgentCard({
                     ? "Please wait..."
                     : "Save as Template"
               }
-              size="sm"
               variant="ghost"
               tooltipSide="top"
               tooltipAlign="center"
@@ -449,7 +440,7 @@ export function AgentCard({
                 handleConvertToTemplate();
               }}
               disabled={isConvertingToTemplate || isDisabled}
-              iconClassName={isConvertingToTemplate ? "animate-spin" : ""}
+              spinning={isConvertingToTemplate}
             />
           </div>
           <div className="flex items-center gap-1 shrink-0">
@@ -484,13 +475,12 @@ export function AgentCard({
                       ? "Please wait..."
                       : "Delete"
                 }
-                size="sm"
                 variant="ghost"
                 tooltipSide="top"
                 tooltipAlign="center"
                 onClick={handleDelete}
                 disabled={isDeleting || isDisabled}
-                iconClassName={isDeleting ? "animate-spin" : ""}
+                spinning={isDeleting}
               />
             )}
           </div>

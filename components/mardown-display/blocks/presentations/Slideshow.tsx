@@ -271,8 +271,6 @@ const Slideshow = (
                   icon={ExternalLink}
                   tooltip="Open Canvas"
                   onClick={handleOpenCanvas}
-                  size="sm"
-                  className="bg-purple-500 dark:bg-purple-600 text-white hover:bg-purple-600 dark:hover:bg-purple-700"
                 />
               )}
 
@@ -283,7 +281,6 @@ const Slideshow = (
                     isFullScreen ? "Exit full screen" : "Expand to full screen"
                   }
                   onClick={() => setIsFullScreen(!isFullScreen)}
-                  size="sm"
                   className={
                     isFullScreen
                       ? undefined

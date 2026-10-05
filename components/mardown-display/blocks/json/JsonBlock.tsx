@@ -785,7 +785,6 @@ const JsonViewHeader: React.FC<JsonViewHeaderProps> = ({
         <IconButton
           icon={Copy}
           tooltip={copied ? "Copied!" : "Copy JSON"}
-          size="sm"
           variant="ghost"
           onClick={handleCopy}
           tooltipSide="bottom"
@@ -794,7 +793,6 @@ const JsonViewHeader: React.FC<JsonViewHeaderProps> = ({
           <IconButton
             icon={MoreHorizontal}
             tooltip="More actions"
-            size="sm"
             variant="ghost"
             tooltipSide="bottom"
             onClick={() => {

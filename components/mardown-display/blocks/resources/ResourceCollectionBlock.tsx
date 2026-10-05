@@ -304,14 +304,11 @@ const ResourceCollectionBlock: React.FC<ResourceCollectionBlockProps> = ({
                   tooltip={isPrinting ? "Saving…" : "Print / Save as PDF"}
                   onClick={handlePrint}
                   disabled={isPrinting}
-                  size="sm"
-                  className="bg-slate-500 dark:bg-slate-600 text-white hover:bg-slate-600 dark:hover:bg-slate-700"
                 />
                 <IconButton
                   icon={Minimize2}
                   tooltip="Exit full screen"
                   onClick={() => setIsFullScreen(false)}
-                  size="sm"
                   variant="outline"
                 />
               </div>
@@ -346,22 +343,16 @@ const ResourceCollectionBlock: React.FC<ResourceCollectionBlockProps> = ({
                         tooltip={isPrinting ? "Saving…" : "Print / Save as PDF"}
                         onClick={handlePrint}
                         disabled={isPrinting}
-                        size="sm"
-                        className="bg-slate-500 dark:bg-slate-600 text-white hover:bg-slate-600 dark:hover:bg-slate-700"
                       />
                       <IconButton
                         icon={ExternalLink}
                         tooltip="Open Canvas"
                         onClick={handleOpenCanvas}
-                        size="sm"
-                        className="bg-purple-500 dark:bg-purple-600 text-white hover:bg-purple-600 dark:hover:bg-purple-700"
                       />
                       <IconButton
                         icon={Maximize2}
                         tooltip="Expand to full screen"
                         onClick={() => setIsFullScreen(true)}
-                        size="sm"
-                        className="bg-violet-500 dark:bg-violet-600 text-white hover:bg-violet-600 dark:hover:bg-violet-700"
                       />
                     </div>
                   )}
@@ -535,17 +526,7 @@ const ResourceCollectionBlock: React.FC<ResourceCollectionBlockProps> = ({
                                         onClick={() =>
                                           toggleFavorite(resource.id)
                                         }
-                                        size="xs"
-                                        iconClassName={
-                                          isFav
-                                            ? "fill-current text-pink-500"
-                                            : ""
-                                        }
-                                        className={
-                                          isFav
-                                            ? "text-pink-600 dark:text-pink-400"
-                                            : "text-muted-foreground"
-                                        }
+                                        glyphTone={isFav ? "destructive" : undefined}
                                       />
                                       <IconButton
                                         icon={Check}
@@ -557,7 +538,6 @@ const ResourceCollectionBlock: React.FC<ResourceCollectionBlockProps> = ({
                                         onClick={() =>
                                           toggleCompleted(resource.id)
                                         }
-                                        size="xs"
                                         className={
                                           isDone
                                             ? "text-green-600 dark:text-green-400"

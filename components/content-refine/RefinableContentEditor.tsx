@@ -143,7 +143,6 @@ export function RefinableContentEditor({
             {/* Remove thinking */}
             <IconButton
               icon={Rocket}
-              size="md"
               variant={stripThinkingEnabled ? "default" : "outline"}
               onClick={() => setStripThinkingEnabled((v) => !v)}
               disabled={!canStripThinking}
@@ -154,24 +153,20 @@ export function RefinableContentEditor({
                     : "Remove <thinking> and <reasoning> blocks"
                   : "No <thinking> or <reasoning> tags detected"
               }
-              className="rounded-md"
             />
 
             {/* Copy */}
             <IconButton
               icon={Copy}
-              size="md"
               variant="outline"
               onClick={handleCopy}
               disabled={!workingContent}
               tooltip="Copy current content to clipboard"
-              className="rounded-md"
             />
 
             {/* Reset trim */}
             <IconButton
               icon={RotateCcw}
-              size="md"
               variant="outline"
               onClick={() => {
                 trimScroll.requestEdge("start");
@@ -180,7 +175,6 @@ export function RefinableContentEditor({
               }}
               disabled={trimStart === 0 && trimEnd === 0}
               tooltip="Reset trim sliders to 0"
-              className="rounded-md"
             />
 
             <div className="ml-auto flex items-center gap-2">

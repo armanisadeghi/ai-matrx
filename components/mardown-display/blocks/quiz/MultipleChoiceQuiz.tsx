@@ -655,16 +655,12 @@ const MultipleChoiceQuiz: React.FC<MultipleChoiceQuizProps> = ({
                 icon={Download}
                 tooltip="Download quiz as file"
                 onClick={handleDownloadQuiz}
-                size="md"
-                className="bg-gray-500 dark:bg-gray-600 text-white hover:bg-gray-600 dark:hover:bg-gray-700"
               />
 
               <IconButton
                 icon={Upload}
                 tooltip="Import quiz from file"
                 onClick={handleUploadQuiz}
-                size="md"
-                className="bg-gray-500 dark:bg-gray-600 text-white hover:bg-gray-600 dark:hover:bg-gray-700"
               />
 
               {isFullScreen && (
@@ -673,8 +669,6 @@ const MultipleChoiceQuiz: React.FC<MultipleChoiceQuizProps> = ({
                     icon={Printer}
                     tooltip="Print quiz"
                     onClick={triggerPrint}
-                    size="md"
-                    className="bg-slate-500 dark:bg-slate-600 text-white hover:bg-slate-600 dark:hover:bg-slate-700"
                   />
                   {showCanvasButton && (
                     <IconButton
@@ -684,16 +678,12 @@ const MultipleChoiceQuiz: React.FC<MultipleChoiceQuizProps> = ({
                         setIsFullScreen(false);
                         handleOpenCanvas();
                       }}
-                      size="md"
-                      className="bg-purple-500 dark:bg-purple-600 text-white hover:bg-purple-600 dark:hover:bg-purple-700"
                     />
                   )}
                   <IconButton
                     icon={Minimize2}
                     tooltip="Exit focus mode"
                     onClick={() => setIsFullScreen(false)}
-                    size="md"
-                    className="bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
                   />
                 </>
               )}

@@ -539,7 +539,6 @@ export function PublicImageSearch({
             variant="outline"
             tooltip="Search public images"
             className={cn("h-8 w-8 min-w-[32px]", buttonClassName)}
-            size="sm"
             disabled={disabled}
           />
         </div>

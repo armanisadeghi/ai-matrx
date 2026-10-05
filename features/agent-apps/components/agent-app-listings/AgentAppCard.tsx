@@ -240,19 +240,17 @@ export function AgentAppCard({
                 : `Duplicate ${app.name}`
             }
             tooltip={isDuplicating ? "Duplicating…" : "Duplicate"}
-            size="sm"
             variant="ghost"
             tooltipSide="top"
             tooltipAlign="center"
             onClick={() => onDuplicate(app)}
             disabled={isDisabled}
-            iconClassName={isDuplicating ? "animate-spin" : ""}
+            spinning={isDuplicating}
           />
           <IconButton
             icon={LinkIcon}
             aria-label={`Copy public URL for ${app.name}`}
             tooltip="Copy public URL"
-            size="sm"
             variant="ghost"
             tooltipSide="top"
             tooltipAlign="center"
@@ -276,13 +274,12 @@ export function AgentAppCard({
               isDeleting ? `Deleting ${app.name}` : `Delete ${app.name}`
             }
             tooltip={isDeleting ? "Deleting…" : "Delete"}
-            size="sm"
             variant="ghost"
             tooltipSide="top"
             tooltipAlign="center"
             onClick={() => onDelete(app)}
             disabled={isDisabled}
-            iconClassName={isDeleting ? "animate-spin" : ""}
+            spinning={isDeleting}
           />
           <CopyButtons
             size="icon"

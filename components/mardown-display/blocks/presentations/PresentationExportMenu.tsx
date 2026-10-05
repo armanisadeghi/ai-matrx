@@ -406,9 +406,8 @@ const PresentationExportMenu: React.FC<PresentationExportMenuProps> = ({
         tooltip="Export presentation"
         onClick={() => setIsOpen(!isOpen)}
         disabled={isExporting}
-        size="sm"
         variant="outline"
-        iconClassName={isExporting ? "animate-spin" : undefined}
+        spinning={isExporting}
       />
 
       {isOpen && (

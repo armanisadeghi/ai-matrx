@@ -247,7 +247,6 @@ export function SetContextValueCore({
 
             <IconButton
               icon={Rocket}
-              size="md"
               variant={stripThinkingEnabled ? "default" : "outline"}
               onClick={() => setStripThinkingEnabled((v) => !v)}
               disabled={!canStripThinking}
@@ -258,27 +257,22 @@ export function SetContextValueCore({
                     : "Remove <thinking> and <reasoning> blocks"
                   : "No <thinking> or <reasoning> tags detected"
               }
-              className="rounded-md"
             />
 
             <IconButton
               icon={Copy}
-              size="md"
               variant="outline"
               onClick={handleCopy}
               disabled={!workingContent}
               tooltip="Copy current content to clipboard"
-              className="rounded-md"
             />
 
             <IconButton
               icon={RotateCcw}
-              size="md"
               variant="outline"
               onClick={handleResetTrim}
               disabled={trimStart === 0 && trimEnd === 0}
               tooltip="Reset trim sliders to 0"
-              className="rounded-md"
             />
 
             <div className="ml-auto flex items-center gap-2">

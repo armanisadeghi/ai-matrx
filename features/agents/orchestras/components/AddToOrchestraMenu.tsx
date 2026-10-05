@@ -60,7 +60,6 @@ export function AddToOrchestraMenu({
           <IconButton
             icon={Network}
             tooltip="Add to Orchestra"
-            size="sm"
             variant="ghost"
             tooltipSide="top"
             tooltipAlign="center"

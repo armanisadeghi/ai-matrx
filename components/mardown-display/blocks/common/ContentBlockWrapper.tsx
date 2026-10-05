@@ -262,8 +262,6 @@ const ContentBlockWrapper: React.FC<ContentBlockWrapperProps> = ({
                             icon={X}
                             tooltip="Exit focus mode (ESC)"
                             onClick={() => setIsFullScreen(false)}
-                            size="md"
-                            className="bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 shadow-lg"
                         />
                     </div>
                 )}
@@ -334,7 +332,6 @@ const ContentBlockWrapper: React.FC<ContentBlockWrapperProps> = ({
                                             tooltip={action.tooltip}
                                             onClick={action.onClick}
                                             disabled={action.disabled}
-                                            size="md"
                                             className={action.className}
                                         />
                                     ))}
