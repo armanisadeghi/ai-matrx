@@ -168,7 +168,9 @@ function useComposerOutput(conversationId: string) {
     skills,
     lock,
     isDefault: isDefaultOutput(types, kinds.length),
-    label: summarizeOutput(types, kinds, kindLabel),
+    // A locked agent answers in its own shape(s), so the pill names those, not the picks.
+    locked: lock.status === "locked",
+    label: lock.status === "locked" ? summarizeOutput([], lock.shapes, kindLabel) : summarizeOutput(types, kinds, kindLabel),
     toggleType: (id: string) => write({ outputTypes: toggleOutputType(types, id) }),
     toggleKind: (kind: string) => write(toggleOutputKind({ outputKinds, addedSkills }, kind, skills)),
     clear: () => write(clearOutput({ outputKinds, addedSkills }, skills)),
@@ -453,7 +455,9 @@ export function ComposerOutputPill({
             className="inline-flex h-full min-w-0 items-center gap-1 px-2"
             aria-label={`Output: ${output.label}`}
           >
-            <span className={cn("truncate", !output.isDefault && "font-medium text-foreground")}>{output.label}</span>
+            <span className={cn("truncate", (output.locked || !output.isDefault) && "font-medium text-foreground")}>
+              {output.label}
+            </span>
           </button>
         </PopoverTrigger>
         {!output.isDefault ? (
