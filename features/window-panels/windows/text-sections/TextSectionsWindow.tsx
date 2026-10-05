@@ -30,6 +30,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { KIND_SOURCE_PROPS } from "@/features/content-ir/surfaces/kind-leak-scan";
 import { Badge } from "@/components/ui/badge";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { RichContent } from "@/components/rich-content/RichContent";
@@ -281,7 +282,11 @@ export function TextSectionsWindow({
                       view === "split" ? "w-1/2" : "w-full",
                     )}
                   >
-                    <pre /* rich-content-exempt: verbatim transcript or extracted document text, not authored markdown */ className="whitespace-pre-wrap break-words font-mono text-[11px] leading-relaxed text-foreground/85">
+                    <pre /* rich-content-exempt: verbatim transcript or extracted document text, not authored markdown */
+                      /* The Raw view is a deliberate source view (kind-never-raw R8-3 d). */
+                      {...KIND_SOURCE_PROPS}
+                      className="whitespace-pre-wrap break-words font-mono text-[11px] leading-relaxed text-foreground/85"
+                    >
                       {shownContent}
                     </pre>
                   </div>

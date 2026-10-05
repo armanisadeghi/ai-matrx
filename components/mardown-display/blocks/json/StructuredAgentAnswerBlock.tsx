@@ -11,6 +11,8 @@ import { outputSchemaKeys } from "@ai-matrx/chat/mandates/output-contract";
 import { writeClipboard } from "@/components/agent-copy/clipboard";
 import { toast } from "@/lib/toast";
 import { isJsonObject } from "@/types/json";
+import { valueCarriesKind } from "@/features/content-ir/surfaces/json-kind-signal";
+import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
 
 type StructuredValue = Record<string, unknown>;
 
@@ -320,9 +322,18 @@ export function StructuredAgentAnswerBlock({
           <CopyRawButton rawContent={rawContent} />
           <SaveAnswerToTableButton value={value} />
         </summary>
-        <pre /* rich-content-exempt: app-authored string, editable source text, or raw payload */ className="mt-2 overflow-x-auto whitespace-pre-wrap text-xs">
-          {rawContent}
-        </pre>
+        {/* "Details" is not a labelled source view: a payload that carries a
+            kind (nested object or string-held, any spelling) is drawn by the
+            one value door, never printed raw (kind-never-raw R8-3 d). */}
+        {valueCarriesKind(value) ? (
+          <div className="mt-2">
+            <AnswerValueView value={value} />
+          </div>
+        ) : (
+          <pre /* rich-content-exempt: app-authored string, editable source text, or raw payload */ className="mt-2 overflow-x-auto whitespace-pre-wrap text-xs">
+            {rawContent}
+          </pre>
+        )}
       </details>
     </div>
   );

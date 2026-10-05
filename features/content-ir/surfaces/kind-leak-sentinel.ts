@@ -20,6 +20,8 @@ import {
   findKindAttributeLeaks,
   findKindLeak,
   KIND_LEAK_ATTRIBUTES,
+  KIND_SOURCE_ATTR,
+  KIND_WATCHED_STATE_ATTRIBUTES,
   screenKindSlug,
   screenTextHoldsKind,
   identifyingAttributesOf,
@@ -271,11 +273,14 @@ export function installKindLeakSentinel(options: KindLeakSentinelOptions = {}): 
     try {
       // Readable attributes (title / aria-label / alt) of what changed — one
       // native selector query per changed node, never the whole page again.
+      // The skip check reads the PARENT: a read-only field or a marked element
+      // is judged by `attributeKindLeakOf` itself (a TEXTAREA is a skipped tag
+      // for TEXT, never for its read-only value — R8-3 a).
       for (const node of touched) {
-        if (node.isConnected && node.nodeType === 1 && !isInsideKindSource(node)) reportAttributes(node);
+        if (node.isConnected && node.nodeType === 1 && !isInsideKindSource(node.parentNode ?? node)) reportAttributes(node);
       }
       for (const node of attributeTouched) {
-        if (node.isConnected && !isInsideKindSource(node)) reportAttributes(node);
+        if (node.isConnected && !isInsideKindSource(node.parentNode ?? node)) reportAttributes(node);
       }
       attributeTouched.clear();
       // Group what changed by parent: one run from the first to the last
@@ -325,7 +330,10 @@ export function installKindLeakSentinel(options: KindLeakSentinelOptions = {}): 
   const observer = new MutationObserver((records) => {
     for (const record of records) {
       if (record.type === "attributes") {
-        if (record.target.nodeType === 1) {
+        if (record.attributeName === KIND_SOURCE_ATTR && record.target.nodeType === 1) {
+          // A source marker added or REMOVED at runtime: re-read that subtree (R8-3 b).
+          schedule(record.target);
+        } else if (record.target.nodeType === 1) {
           attributeTouched.add(record.target as Element);
           if (timer !== null) clearTimeout(timer);
           timer = setTimeout(flush, resolved.debounceMs);
@@ -343,7 +351,7 @@ export function installKindLeakSentinel(options: KindLeakSentinelOptions = {}): 
     subtree: true,
     characterData: true,
     attributes: true,
-    attributeFilter: [...KIND_LEAK_ATTRIBUTES],
+    attributeFilter: [...KIND_LEAK_ATTRIBUTES, ...KIND_WATCHED_STATE_ATTRIBUTES],
   });
   schedule(root);
 

@@ -130,7 +130,50 @@ export function findKindLeak(root: Node, cap?: number): Element | null {
 
 /** Attributes a person reads (tooltip, screen reader, image text) — R3 round 6. */
 export const KIND_LEAK_ATTRIBUTES = ["title", "aria-label", "alt"] as const;
-const ATTRIBUTE_SELECTOR = KIND_LEAK_ATTRIBUTES.map((name) => `[${name}]`).join(",");
+/**
+ * Elements whose own STATE a person reads beyond attributes (R8-3): a
+ * read-only or disabled field's `value`, and an iframe's `srcdoc`.
+ */
+const HELD_SELECTOR = "input,textarea,iframe[srcdoc]";
+const ATTRIBUTE_SELECTOR = [...KIND_LEAK_ATTRIBUTES.map((name) => `[${name}]`), HELD_SELECTOR].join(",");
+
+/**
+ * What the sentinel's observer watches beyond the readable attributes: a
+ * field turning read-only, a srcdoc being set, and the source marker itself
+ * (removing `data-kind-source` re-scans that subtree, R8-3 b).
+ */
+export const KIND_WATCHED_STATE_ATTRIBUTES = ["readonly", "disabled", "value", "srcdoc", "data-kind-source"] as const;
+
+/** Whether a field is one a person READS (read-only or disabled) — an editable one is their own input. */
+function isReadOnlyField(el: Element): el is HTMLInputElement | HTMLTextAreaElement {
+  if (el.tagName !== "INPUT" && el.tagName !== "TEXTAREA") return false;
+  const field = el as HTMLInputElement | HTMLTextAreaElement;
+  if (el.tagName === "INPUT" && /^(?:hidden|password|checkbox|radio|file)$/i.test((field as HTMLInputElement).type)) {
+    return false;
+  }
+  return field.readOnly || field.disabled;
+}
+
+/** The kind leak in a read-only field's value or an iframe's srcdoc, or null. */
+function heldKindLeakOf(el: Element): KindAttributeLeak | null {
+  if (el.hasAttribute(KIND_SOURCE_ATTR)) return null;
+  if (isReadOnlyField(el)) {
+    const value = el.value;
+    if (!value || !withoutZeroWidth(value).includes("kind")) return null;
+    if (!screenTextHoldsKind(value.replace(/[“”„‟″]/g, '"'))) return null;
+    return el.parentElement && isInsideKindSource(el.parentElement) ? null : { element: el, attribute: "value", value };
+  }
+  if (el.tagName === "IFRAME") {
+    // The STRING the host set — never the frame's document (no cross-origin access).
+    const html = el.getAttribute("srcdoc");
+    if (!html || !withoutZeroWidth(html).includes("kind") || typeof DOMParser === "undefined") return null;
+    if (isInsideKindSource(el)) return null;
+    const doc = new DOMParser().parseFromString(html, "text/html");
+    const leaks = textLeaksKind(doc.body) || findKindAttributeLeaks(doc.body, 1).length > 0;
+    return leaks ? { element: el, attribute: "srcdoc", value: html.slice(0, 2000) } : null;
+  }
+  return null;
+}
 
 export interface KindAttributeLeak {
   element: Element;
@@ -140,6 +183,8 @@ export interface KindAttributeLeak {
 
 /** Whether one element's own readable attributes hold a kind key (outside source views). */
 export function attributeKindLeakOf(el: Element): KindAttributeLeak | null {
+  const held = heldKindLeakOf(el);
+  if (held) return held;
   for (const attribute of KIND_LEAK_ATTRIBUTES) {
     const value = el.getAttribute(attribute);
     if (value && withoutZeroWidth(value).includes("kind") && screenTextHoldsKind(value.replace(/[“”„‟″]/g, '"'))) {
