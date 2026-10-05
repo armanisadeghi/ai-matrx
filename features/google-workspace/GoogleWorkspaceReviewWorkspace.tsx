@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -88,6 +88,12 @@ import {
   pickedGoogleRecordResource,
 } from "@/features/google-workspace/documents/openRecord";
 import { useGoogleAuthorizationWindow } from "@/providers/google-provider/useGoogleAuthorizationWindow";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import { readGooglePresentation } from "@/features/connected-sources/api";
+import {
+  ReadResultsDialog,
+  type ConnectedReadDialogState,
+} from "@/features/connected-sources/components/ReadResultsDialog";
 
 type BusyAction =
   | "connect-files"
@@ -152,6 +158,7 @@ export function GoogleWorkspaceReviewWorkspace({
   pickerInitialQuery,
 }: GoogleWorkspaceReviewWorkspaceProps) {
   const router = useRouter();
+  const dispatch = useAppDispatch();
   const google = useGoogleAPI();
   // 🚨 ONE Google authorization window per PERSON — never a per-component
   // lock, never the raw provider primitive (V-23 NEW-3, lane F-103).
@@ -177,6 +184,11 @@ export function GoogleWorkspaceReviewWorkspace({
   const [pickerSessionConnectionId, setPickerSessionConnectionId] = useState<
     string | null
   >(null);
+  const [slideReadDialog, setSlideReadDialog] = useState<{
+    key: string;
+    state: ConnectedReadDialogState;
+  } | null>(null);
+  const slideReadRequest = useRef(0);
   /**
    * 🚨 F-74 — a fresh pick hands its Record straight to the open control (F-69,
    * `openRecord.tsx`). `selectedResources` renders from the inventory read
@@ -250,6 +262,21 @@ export function GoogleWorkspaceReviewWorkspace({
       selectedResources[0] ??
       null,
     [selectedResourceId, selectedResources],
+  );
+  const selectedPresentationKey =
+    activeConnection &&
+    selectedResource?.resource_type === "google_presentation"
+      ? `${activeConnection.id}:${selectedResource.id}:${selectedResource.resource_ref}`
+      : null;
+
+  // Changing the effective account/file or unmounting invalidates the request.
+  // Its callbacks then become no-ops, so a late response cannot replace the
+  // newly selected file, reopen a closed dialog, or clear newer pending state.
+  useEffect(
+    () => () => {
+      slideReadRequest.current += 1;
+    },
+    [selectedPresentationKey],
   );
 
   const run = async (action: BusyAction, operation: () => Promise<void>) => {
@@ -396,6 +423,54 @@ export function GoogleWorkspaceReviewWorkspace({
       setSheetValues(result.values.map((row) => row.join("\t")).join("\n"));
       toast.success(`Loaded ${result.range}.`);
     });
+  };
+
+  const readSelectedPresentation = () => {
+    if (
+      !activeConnection ||
+      !selectedResource ||
+      selectedResource.resource_type !== "google_presentation"
+    ) {
+      return;
+    }
+    // Capture the effective selection, including the first-row fallback when
+    // `selectedResourceId` is still null. The registered row's id and ref are
+    // the authority for this one explicit read.
+    const connectionId = activeConnection.id;
+    const resourceId = selectedResource.id;
+    const resourceRef = selectedResource.resource_ref;
+    const title = selectedResource.display_name;
+    const key = `${connectionId}:${resourceId}:${resourceRef}`;
+    const request = ++slideReadRequest.current;
+    setError(null);
+    setSlideReadDialog({
+      key,
+      state: { kind: "slides", pending: true, titles: [title] },
+    });
+
+    void readGooglePresentation(dispatch, connectionId, resourceRef)
+      .then((deck) => {
+        if (slideReadRequest.current !== request) return;
+        setSlideReadDialog({
+          key,
+          state: {
+            kind: "slides",
+            files: [{ title, url: resourceDoor(selectedResource), deck }],
+          },
+        });
+      })
+      .catch((operationError: unknown) => {
+        if (slideReadRequest.current !== request) return;
+        const message = errorMessage(operationError);
+        setSlideReadDialog(null);
+        setError(message);
+        toast.error(message);
+      });
+  };
+
+  const closeSlideRead = () => {
+    slideReadRequest.current += 1;
+    setSlideReadDialog(null);
   };
 
   /**
@@ -974,11 +1049,17 @@ export function GoogleWorkspaceReviewWorkspace({
                       </div>
                     )}
 
-                    {selectedResource &&
-                      googleWorkspaceFileType(selectedResource.resource_type)
-                        .clientRead === null && (
-                        <ReadOnlyFileDetail resource={selectedResource} />
-                      )}
+                    {selectedResource?.resource_type ===
+                      "google_presentation" && (
+                      <PresentationFileDetail
+                        resource={selectedResource}
+                        pending={
+                          slideReadDialog?.key === selectedPresentationKey &&
+                          "pending" in slideReadDialog.state
+                        }
+                        onRead={readSelectedPresentation}
+                      />
+                    )}
                   </>
                 )}
               </CardContent>
@@ -1117,26 +1198,38 @@ export function GoogleWorkspaceReviewWorkspace({
           </Card>
         </Collapsible>
       )}
+      <ReadResultsDialog
+        result={
+          slideReadDialog?.key === selectedPresentationKey
+            ? slideReadDialog.state
+            : null
+        }
+        onClose={closeSlideRead}
+      />
     </div>
   );
 }
 
 /**
- * A connected file this client has no reader for — today, a Google Slides deck.
+ * The selected Google Slides deck and its explicit content read.
  *
- * It is NOT a blank panel and NOT a disabled-looking one: it shows every fact
+ * It shows every fact
  * the registered row actually holds (name, what it is, when Google last saw it
  * edited, how it entered AI Matrx, when it was connected) and opens the door.
  * Nothing here is invented — there is no owner field on the row, so no owner is
- * claimed — and it says in one sentence why the slides themselves are not on
- * this screen, which is the difference between an honest surface and a dead end.
+ * claimed. The read is a deliberate action and shows the shared Slides result
+ * rather than adding a second presentation renderer here.
  */
-function ReadOnlyFileDetail({
+function PresentationFileDetail({
   resource,
+  pending,
+  onRead,
 }: {
   resource: GoogleConnectionResource & {
-    resource_type: GoogleWorkspaceResourceType;
+    resource_type: "google_presentation";
   };
+  pending: boolean;
+  onRead: () => void;
 }) {
   const fileType = googleWorkspaceFileType(resource.resource_type);
   const FileIcon = fileType.icon;
@@ -1174,20 +1267,31 @@ function ReadOnlyFileDetail({
           <div className="min-w-0">
             <p className="truncate font-medium">{resource.display_name}</p>
             <p className="text-xs text-muted-foreground">
-              {fileType.readOnlyNote}
+              Read the slide text and speaker notes stored in this deck.
             </p>
           </div>
         </div>
-        <Button asChild type="button" variant="outline">
-          <a
-            href={resourceDoor(resource)}
-            target="_blank"
-            rel="noopener noreferrer"
+        <div className="flex flex-wrap gap-2">
+          <Button
+            icon={pending ? <Loader2 className="animate-spin" /> : undefined}
+            type="button"
+            variant="primary"
+            onClick={onRead}
+            disabled={pending}
           >
-            Open in Google
-            <ExternalLink className="h-3.5 w-3.5" />
-          </a>
-        </Button>
+            Read slides and notes
+          </Button>
+          <Button asChild type="button" variant="outline">
+            <a
+              href={resourceDoor(resource)}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Open in Google
+              <ExternalLink className="h-3.5 w-3.5" />
+            </a>
+          </Button>
+        </div>
       </div>
       <dl className="grid gap-x-6 gap-y-2 text-xs sm:grid-cols-2">
         {facts.map((fact) => (

@@ -51,6 +51,10 @@ const mockExistingRecordRead = jest.fn();
 let existingRow: { id: string; title: string } | null = null;
 let readError: string | null = null;
 
+jest.mock("@/lib/redux/hooks", () => ({
+  useAppDispatch: () => jest.fn(),
+}));
+
 jest.mock("@/features/marketing/google/hooks", () => ({
   useGoogleConnectionInventory: () => mockInventory(),
   useConnectGoogle: () => ({ mutateAsync: jest.fn(), isPending: false }),

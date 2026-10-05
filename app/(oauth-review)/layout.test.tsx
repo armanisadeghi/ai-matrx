@@ -13,6 +13,14 @@ jest.mock("@/providers/StoreProvider", () => ({
     return <Provider store={store}>{children}</Provider>;
   },
 }));
+const mockCanonicalProviders = jest.fn();
+jest.mock("@/app/Providers", () => ({
+  Providers: ({ children, initialReduxState }: { children: ReactNode; initialReduxState: { user: { id: string; email: string } } }) => {
+    mockCanonicalProviders(initialReduxState);
+    const store = configureStore({ reducer: () => ({ userAuth: initialReduxState.user }) });
+    return <Provider store={store}>{children}</Provider>;
+  },
+}));
 const mockGetServerAuth = jest.fn();
 const mockCreateClient = jest.fn();
 const mockGetAdminStatus = jest.fn();
@@ -43,6 +51,7 @@ test("standalone OAuth review pages provide the signed-in account to shared Goog
     const tree = await OAuthReviewLayout({ children: <AccountProbe /> });
     await act(async () => root.render(tree));
     expect(container.textContent).toBe("admin@admin.com");
+    expect(mockCanonicalProviders).toHaveBeenCalledWith({ user: { id: "reviewer", email: "admin@admin.com" } });
   } finally {
     act(() => root.unmount());
     container.remove();

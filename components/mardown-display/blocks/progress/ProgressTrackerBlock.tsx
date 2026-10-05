@@ -415,17 +415,17 @@ const ProgressTrackerBlock: React.FC<ProgressTrackerBlockProps> = ({
                   </div>
 
                   {!isFullScreen && (
-                    <div className="flex w-full flex-col items-stretch gap-2 @4xl:w-auto @4xl:flex-row @4xl:items-center">
-                      <Button variant="success" icon={<Upload />} onClick={() => setIsImportModalOpen(true)} className="w-full @4xl:w-auto">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button variant="success" icon={<Upload />} onClick={() => setIsImportModalOpen(true)}>
                         <span>Import to Tasks</span>
                       </Button>
-                      <Button variant="quiet" icon={<ArrowUpRight />} onClick={handleOpenCanvas} className="w-full @4xl:w-auto">
+                      <Button variant="quiet" icon={<ArrowUpRight />} onClick={handleOpenCanvas}>
                         <span>Canvas</span>
                       </Button>
-                      <Button variant="quiet" icon={<Printer />} onClick={handlePrint} className="w-full @4xl:w-auto">
+                      <Button variant="quiet" icon={<Printer />} onClick={handlePrint}>
                         <span>Print</span>
                       </Button>
-                      <Button variant="quiet" icon={<Maximize2 />} onClick={() => setIsFullScreen(true)} className="w-full @4xl:w-auto">
+                      <Button variant="quiet" icon={<Maximize2 />} onClick={() => setIsFullScreen(true)}>
                         <span>Focus</span>
                       </Button>
                     </div>
@@ -519,16 +519,13 @@ const ProgressTrackerBlock: React.FC<ProgressTrackerBlockProps> = ({
                       <option value="low">Low Priority</option>
                     </select>
 
-                    <button
+                    <Button
+                      variant="quiet"
+                      pressed={showCompletedOnly}
                       onClick={() => setShowCompletedOnly(!showCompletedOnly)}
-                      className={`min-h-11 w-full px-3 py-2 rounded-lg text-sm font-medium transition-colors sm:min-h-0 sm:w-auto ${
-                        showCompletedOnly
-                          ? "bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300 border border-green-300 dark:border-green-700"
-                          : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-border"
-                      }`}
                     >
-                      {showCompletedOnly ? "Show All" : "Completed Only"}
-                    </button>
+                      Completed only
+                    </Button>
                   </div>
 
                   <div className="flex w-full gap-2 sm:w-auto">

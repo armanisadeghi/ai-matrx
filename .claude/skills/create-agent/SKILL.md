@@ -219,6 +219,14 @@ variables (`variables` itself is refused). One `update` may carry `model_id` +
 `variable_definitions` + `messages` together, so a whole agent flip is one versioned call. Optional variables render as empty strings, so keep
 them on labeled lines after the conversational opening rather than mid-sentence.
 
+**When `create` returns a `build_id` instead of an `agent_id`,** your organization builds
+through the Agent Factory: it writes the agent, then proves it on your `sample_inputs`
+before keeping it. Send ≥3 real cases as a JSON array (each object one case's variables),
+or the build is refused before anything is spent. Poll `agent_author action=build_status
+build_id=…` about every 30 s; only `agent_kept: true` gives you an `agent_id`. Any other
+outcome kept no agent and says why — fix the input and create again; retry with the same
+`idempotency_key` to rejoin a build instead of starting a second one.
+
 For structured output, the schema must pass the provider gate: object root,
 `additionalProperties: false` on every object, every property in `required` (optional =
 `["<type>","null"]` union). Iterate with `validate_schema`; `create_structured` creates

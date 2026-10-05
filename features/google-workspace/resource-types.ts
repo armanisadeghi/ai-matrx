@@ -21,11 +21,11 @@
  * So the types live HERE, once, with everything a surface needs to render one
  * honestly: the name a person uses, its icon, its door at Google, and — the
  * part that keeps a surface from lying — which reads this client actually has.
- * A deck's `clientRead` is `null` and `writable` is false: there is no Slides
- * reader in this repo (the server's `google_workspace.read_presentation` is an
- * agent tool, not a client endpoint), so a deck's detail says what it can show
- * and offers the door, and NEVER falls through to the Sheets reader — which is
- * exactly what `readSelected`'s `if document … else sheet` would have done.
+ * A deck's `clientRead` is `presentation` and `writable` is false: the shared
+ * connected-sources reader returns its slide text and speaker notes. Keeping
+ * that capability explicit prevents the old "not a Doc means a Sheet"
+ * fall-through while letting every client switch exhaustively on the same
+ * record.
  *
  * THE GUARD: `features/connectors/__tests__/capability-keys-are-the-servers-keys.test.ts`
  * censuses this record against the server's own `eligible_resource_types` in the
@@ -62,7 +62,7 @@ export interface GoogleWorkspaceFileType {
    * Which read THIS CLIENT has for the file, or `null` when it has none. A
    * surface switches on this instead of assuming "not a Doc means a Sheet".
    */
-  readonly clientRead: "document" | "sheet" | null;
+  readonly clientRead: "document" | "sheet" | "presentation" | null;
   /** Whether this client can write back to the file. */
   readonly writable: boolean;
   /** Said on the detail when there is no client read — honest, with the door. */
@@ -102,10 +102,9 @@ export const GOOGLE_WORKSPACE_FILE_TYPES = {
     iconClassName: "text-amber-600 dark:text-amber-400",
     hrefFor: (resourceRef) =>
       `https://docs.google.com/presentation/d/${encodeURIComponent(resourceRef)}/edit`,
-    clientRead: null,
+    clientRead: "presentation",
     writable: false,
-    readOnlyNote:
-      "This deck is connected and AI Matrx agents can read it, including its speaker notes. There is no deck viewer on this screen yet, so open it in Google Slides to see the slides themselves.",
+    readOnlyNote: null,
   },
 } as const satisfies Record<string, GoogleWorkspaceFileType>;
 

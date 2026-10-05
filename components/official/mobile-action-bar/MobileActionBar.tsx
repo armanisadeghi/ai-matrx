@@ -6,7 +6,6 @@ import { useRecordAndTranscribe } from "@/features/audio/hooks/useRecordAndTrans
 import { Button } from "@ai-matrx/design-system";
 import { TranscriptionResult } from "@/features/audio/types";
 import { toast } from "@/lib/toast";
-import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { MobileActionBarProps } from "./types";
 import { motion } from "motion/react";
 import { cn } from "@/lib/utils";
@@ -52,7 +51,6 @@ export function MobileActionBar({
   isFilterModalOpen = false,
   setIsFilterModalOpen,
 }: MobileActionBarProps) {
-  const isMobile = useIsMobile();
   const [isSearchActive, setIsSearchActive] = useState(false);
   const [localSearchValue, setLocalSearchValue] = useState(searchValue);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -125,10 +123,8 @@ export function MobileActionBar({
     [isRecording, isTranscribing, startRecording, stopRecording],
   );
 
-  // Only show on mobile - conditional return AFTER all hooks
-  if (!isMobile) {
-    return null;
-  }
+  // Phones only — by CSS (`md:hidden` on both roots), so the server paints it
+  // right at every width (SSR ZERO LAYOUT SHIFT), never a JS switch.
 
   const handleSearchActivate = () => {
     setIsSearchActive(true);
@@ -152,7 +148,7 @@ export function MobileActionBar({
   // Default state - compact bar
   if (!isSearchActive) {
     return (
-      <div className="fixed bottom-0 left-0 right-0 pb-safe z-40" data-matrx-floating-bottom="">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 pb-safe z-40" data-matrx-floating-bottom="">
         <div className="container mx-auto px-4 sm:px-6 md:px-8 lg:px-12 max-w-[1800px]">
           <div data-matrx-pill="off" className="flex items-center gap-2 p-2 rounded-full matrx-glass-core">
             {/* Filter Button */}
@@ -217,7 +213,7 @@ export function MobileActionBar({
   // Search Active State - MOVED TO TOP for mobile keyboard display
   // KEY UX FIX: Fixed to top instead of bottom so keyboard doesn't cover it
   return (
-    <div className="fixed top-0 left-0 right-0 z-50 matrx-glass-thin-border">
+    <div className="md:hidden fixed top-0 left-0 right-0 z-50 matrx-glass-thin-border">
       <div className="container mx-auto px-4 sm:px-6 md:px-8 lg:px-12 max-w-[1800px] py-3">
         <div className="flex items-center gap-2 p-2 rounded-full matrx-glass-thin-border">
           {/* Search Input Container */}

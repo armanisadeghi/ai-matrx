@@ -67,7 +67,7 @@ function exactly(iso: string | null): string {
 const TITLES: Record<ConnectedReadResult["kind"], string> = {
   comments: "Comments",
   revisions: "Revision history",
-  slides: "Speaker notes",
+  slides: "Slides and notes",
 };
 
 function when(iso: string | null): string {
@@ -230,8 +230,22 @@ function Body({ result }: { result: ConnectedReadResult }) {
                   Slide {s.index + 1}
                   {s.title ? ` — ${s.title}` : ""}
                 </p>
+                {s.body_text ? (
+                  <p className="whitespace-pre-wrap text-sm text-foreground">
+                    {s.body_text}
+                  </p>
+                ) : (
+                  <Empty>No slide text.</Empty>
+                )}
                 {s.speaker_notes ? (
-                  <p className="whitespace-pre-wrap text-sm text-foreground">{s.speaker_notes}</p>
+                  <div className="space-y-0.5">
+                    <p className="text-xs font-medium text-muted-foreground">
+                      Speaker notes
+                    </p>
+                    <p className="whitespace-pre-wrap text-sm text-foreground">
+                      {s.speaker_notes}
+                    </p>
+                  </div>
                 ) : (
                   <Empty>No speaker notes.</Empty>
                 )}

@@ -11,6 +11,7 @@
 import { normalizeKindSpellings } from "@/features/content-ir/surfaces/json-kind-signal";
 import { spelledKindsAsOneLine } from "@/features/content-ir/surfaces/kind-one-line";
 import { markdownCarriesKind } from "@/features/content-ir/surfaces/json-kind-signal";
+import { kindTextToMarkdown } from "@/features/content-ir/surfaces/kind-text-to-markdown";
 
 /** The prose leaf's whole per-frame work (round 10): the render decision + the leaf's two passes. */
 const proseLeaf = (text: string) => {
@@ -97,5 +98,20 @@ describe("prose spelling reader — linear-time budgets", () => {
 
   it("100 KB of escaped kinds, cold (no previous frame): under 30 ms", () => {
     expect(bestMs(fresh(repeat(ESCAPED, 100_000)), proseLeaf)).toBeLessThan(30);
+  });
+  // Round 11 (P5): the export's unreadable-kind note pass read a balanced value from
+  // EVERY `{`, so thousands of unclosed openers re-scanned the rest of the text each.
+  it("export: thousands of unclosed kind openers (~100 KB) in under 60 ms, linear at 400 KB", () => {
+    const unit = '{ "__kind": "x", ';
+    const make = (count: number) => () => unit.repeat(count) + ` w${++frame}`;
+    const small = bestMs(make(6_000), kindTextToMarkdown, 2);
+    const large = bestMs(make(24_000), kindTextToMarkdown, 2);
+    expect(small).toBeLessThan(60);
+    expect(large).toBeLessThan(Math.max(240, small * 8));
+  });
+
+  it("export: deep unclosed nesting with a kind key (~100 KB) in under 60 ms", () => {
+    const make = () => '{"__kind": [' + "[".repeat(50_000) + ` w${++frame}`;
+    expect(bestMs(make, kindTextToMarkdown, 2)).toBeLessThan(60);
   });
 });

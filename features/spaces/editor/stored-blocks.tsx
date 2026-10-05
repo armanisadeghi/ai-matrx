@@ -11,7 +11,9 @@ import katex from "katex";
 import { FileText, Globe, Paperclip, TriangleAlert } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useParams } from "next/navigation";
-import { Component, useMemo, useSyncExternalStore, type ReactNode } from "react";
+import { Component, useEffect, useMemo, useRef, useSyncExternalStore, type ReactNode } from "react";
+
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 import type { RichSpan, SpaceMedia } from "../contract";
 import { useSpaceMediaUrl } from "../page/media";
@@ -22,6 +24,31 @@ const DatabaseBlockView = dynamic(() => import("../data/DatabaseBlock").then((m)
   ssr: false,
   loading: () => <div className="spaces-db-loading" />,
 });
+
+/**
+ * A database block is its own app inside the page: ProseMirror listens NATIVELY on the editor element,
+ * so a React stopPropagation reaches it too late — a click on a row became a block selection (and the
+ * selection made the table ignore the row click). The host stops mouse and key events natively,
+ * before the editor sees them.
+ */
+function DatabaseHost({ children }: { children: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const stop = (e: Event) => e.stopPropagation();
+    const kinds = ["mousedown", "keydown", "paste", "copy", "cut"] as const;
+    for (const k of kinds) el.addEventListener(k, stop);
+    return () => {
+      for (const k of kinds) el.removeEventListener(k, stop);
+    };
+  }, []);
+  return (
+    <div ref={ref} className="spaces-db-host" contentEditable={false}>
+      {children}
+    </div>
+  );
+}
 
 type Data = { props?: Record<string, unknown> };
 
@@ -247,7 +274,7 @@ class BlockBoundary extends Component<{ children: ReactNode }, { error: string |
     return { error: e instanceof Error ? e.message : "This block could not be drawn." };
   }
   override render() {
-    return this.state.error ? <div className="spaces-unknown">This block could not be drawn: {this.state.error}</div> : this.props.children;
+    return this.state.error ? <ErrorNotice title="This block could not be drawn" message={this.state.error} size="compact" /> : this.props.children;
   }
 }
 
@@ -286,11 +313,11 @@ export const storedBlockSpecs = {
   tableOfContents: storedSpec("tableOfContents", (_p, ctx) => <TableOfContents editor={ctx.editor} />),
   breadcrumb: storedSpec("breadcrumb", () => <Breadcrumb />),
   database: storedSpec("database", (p, ctx) => (
-    <div className="spaces-db-host" contentEditable={false} onMouseDown={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+    <DatabaseHost>
       <BlockBoundary>
         <DatabaseBlockView blockId={ctx.blockId} props={p} onChange={ctx.update} editable={(ctx.editor as unknown as { isEditable: boolean }).isEditable} />
       </BlockBoundary>
-    </div>
+    </DatabaseHost>
   )),
   unknownBlock: createReactBlockSpec(
     { type: "unknownBlock", propSchema: dataProp, content: "none" },

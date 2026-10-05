@@ -165,6 +165,7 @@ export function ShellSettingsMenu({ variant = "rail" }: { variant?: "rail" | "dr
       </button>
     );
 
+  // ssr-viewport-ok: both branches paint the SAME trigger; only the surface a tap opens differs (sheet vs popover).
   if (isMobile) {
     return (
       <>

@@ -115,6 +115,8 @@ function titleColumn(columns: EntityColumn[]): EntityColumn | undefined {
   return TITLE_KEYS.map((k) => columns.find((c) => c.api_name === k)).find(Boolean) ?? columns.find((c) => c.type === "text") ?? columns[0];
 }
 
+const isBareId = (v: unknown) => typeof v === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
+
 function isDateType(type: string): boolean {
   return /date|time/i.test(type);
 }
@@ -258,7 +260,20 @@ function EntityBody({ entity, view, onOpen, limit, onMore }: { entity: Entity; v
         header: c.name,
         label: c.name,
         accessorFn: (row: EntityRow) => (row[c.api_name] ?? null) as never,
-        cell: (row: EntityRow) => <Cell c={c} v={row[c.api_name]} />,
+        // The title opens the row (Notion's title cell): the table's own row click never fires inside the
+        // page editor — its "interactive descendant" test walks up to the editor's contenteditable (NEEDS.md).
+        cell: (row: EntityRow) =>
+          c === title ? (
+            <button type="button" className="spaces-entity-open" onClick={() => onOpen(String(row.id))}>
+              <span className="truncate">{valueText(c, row[c.api_name]) || "Untitled"}</span>
+              <span className="spaces-entity-openpill" aria-hidden>
+                <PanelRight size={12} strokeWidth={2} />
+                Open
+              </span>
+            </button>
+          ) : (
+            <Cell c={c} v={row[c.api_name]} />
+          ),
         sortable: false,
         width: c === title ? 280 : c.type === "choice" ? 140 : 180,
         minWidth: 100,
@@ -531,7 +546,8 @@ function EntityPeek({ entity, rowId, as, editable, onClose }: { entity: Entity; 
       <h2 className="spaces-entity-peektitle">{title ? valueText(title, row[title.api_name]) || "Untitled" : "Untitled"}</h2>
       <div className="spaces-entity-props">
         {entity.columns
-          .filter((c) => c !== title)
+          // A bare id is not a property a person reads (the module's lookup column carries its name).
+          .filter((c) => c !== title && !(isBareId(row[c.api_name]) && !c.writable))
           .map((c) => (
             <PropRow key={c.api_name} c={c} value={row[c.api_name]} editable={editable && c.writable === true && !c.lookup} onWrite={(v) => entity.write(rowId, c.api_name, v)} />
           ))}

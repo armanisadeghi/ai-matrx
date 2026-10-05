@@ -24,10 +24,10 @@ import {
 
 import { DisclosureHeader } from "@ai-matrx/design-system/controls";
 /** Favicon for a page: favicon service derived from the URL → Globe. */
-export const SiteFavicon: React.FC<{ url?: string | null; className?: string }> = ({
-  url,
-  className,
-}) => {
+export const SiteFavicon: React.FC<{
+  url?: string | null;
+  className?: string;
+}> = ({ url, className }) => {
   const serviceUrl = url ? getFaviconUrl(url, 64) : "";
   const [failedFor, setFailedFor] = useState<string | null>(null);
   if (!serviceUrl || failedFor === serviceUrl) {
@@ -86,10 +86,10 @@ export const ExternalImage: React.FC<{
 };
 
 /** Google-style `origin › segment › segment` line. */
-export const BreadcrumbLine: React.FC<{ url?: string | null; className?: string }> = ({
-  url,
-  className,
-}) => {
+export const BreadcrumbLine: React.FC<{
+  url?: string | null;
+  className?: string;
+}> = ({ url, className }) => {
   if (!url) return null;
   const { origin, segments } = getBreadcrumbParts(url);
   return (
@@ -194,23 +194,36 @@ export const Disclosure: React.FC<{
   summary?: React.ReactNode;
   defaultOpen?: boolean;
   /** Data behind this section — becomes its Copy / Copy-for-AI pair. */
-  copy?: { label: string; human?: () => string; data: unknown; description: string };
+  copy?: {
+    label: string;
+    human?: () => string;
+    data: unknown;
+    description: string;
+  };
   children: React.ReactNode;
-}> = ({ icon: Icon, label, count, summary, defaultOpen = false, copy, children }) => {
+}> = ({
+  icon: Icon,
+  label,
+  count,
+  summary,
+  defaultOpen = false,
+  copy,
+  children,
+}) => {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="relative overflow-hidden rounded-lg border border-border bg-card">
-      <DisclosureHeader
-        open={open}
-        onClick={() => setOpen((o) => !o)}
-        icon={<Icon />}
-        title={label}
-        meta={typeof count === "number" ? count : undefined}
-        end={summary}
-        className="w-[calc(100%-6rem)]"
-      />
-      {copy && (
-        <div className="absolute right-9 top-1.5">
+    <div className="overflow-hidden rounded-lg border border-border bg-card">
+      <div className="flex items-center gap-1 pr-1.5">
+        <DisclosureHeader
+          open={open}
+          onClick={() => setOpen((o) => !o)}
+          icon={<Icon />}
+          title={label}
+          meta={typeof count === "number" ? count : undefined}
+          end={summary}
+          className="min-w-0 flex-1"
+        />
+        {copy && (
           <CopyButtons
             size="xs"
             label={copy.label}
@@ -223,9 +236,11 @@ export const Disclosure: React.FC<{
             })}
             json={() => copy.data}
           />
-        </div>
+        )}
+      </div>
+      {open && (
+        <div className="border-t border-border px-3 py-3">{children}</div>
       )}
-      {open && <div className="border-t border-border px-3 py-3">{children}</div>}
     </div>
   );
 };

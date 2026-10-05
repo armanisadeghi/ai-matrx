@@ -16,8 +16,6 @@ import {
   Play,
   Pause,
   RotateCcw,
-  ChevronDown,
-  ChevronRight,
   Flag,
   CheckSquare,
   Printer,
@@ -29,7 +27,7 @@ import IconButton from "@/components/official/IconButton";
 import type { MenuItem } from "@/components/official/AdvancedMenu";
 import { useCanvasPresentation } from "@ai-matrx/canvas/react";
 import { timelineAxis } from "@/components/mardown-display/blocks/canvas-adaptive";
-import { Button } from "@ai-matrx/design-system/controls";
+import { Button, DisclosureHeader } from "@ai-matrx/design-system/controls";
 
 interface TimelinePeriod {
   period: string;
@@ -357,36 +355,21 @@ const TimelineBlock: React.FC<TimelineBlockProps> = ({
                 }
               >
                 {/* Period header */}
-                <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-4 min-w-0">
-                  <button
-                    type="button"
+                <div className="mb-4 min-w-0 border-b border-border">
+                  <DisclosureHeader
+                    open={!isCollapsed}
                     onClick={() => togglePeriodCollapse(period.period)}
-                    className={`inline-flex min-h-11 max-w-full min-w-0 items-center gap-1.5 rounded-full px-2.5 py-1.5 shadow-sm transition-all hover:shadow-md sm:min-h-0 ${
-                      isCompleted
-                        ? "bg-green-500 dark:bg-green-600 text-white"
-                        : "bg-indigo-500 dark:bg-indigo-600 text-white"
-                    }`}
-                  >
-                    {isCollapsed ? (
-                      <ChevronRight className="h-3 w-3 flex-shrink-0" />
-                    ) : (
-                      <ChevronDown className="h-3 w-3 flex-shrink-0" />
-                    )}
-                    {isCompleted ? (
-                      <CheckCircle2 className="h-3 w-3 flex-shrink-0" />
-                    ) : (
-                      <Flag className="h-3 w-3 flex-shrink-0" />
-                    )}
-                    <span className="font-semibold text-xs text-left line-clamp-2 min-w-0">
-                      {period.period}
-                    </span>
-                    {isCompleted && (
-                      <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded-full shrink-0 whitespace-nowrap">
-                        Complete
-                      </span>
-                    )}
-                  </button>
-                  <div className="hidden sm:block flex-1 h-px bg-gradient-to-r from-indigo-300 to-transparent dark:from-indigo-700" />
+                    icon={
+                      isCompleted ? (
+                        <CheckCircle2 className="text-green-600 dark:text-green-400" />
+                      ) : (
+                        <Flag className="text-indigo-500 dark:text-indigo-400" />
+                      )
+                    }
+                    title={period.period}
+                    meta={isCompleted ? "Complete" : `${period.events.length}`}
+                    className="w-full"
+                  />
                 </div>
 
                 {/* Events */}

@@ -52,4 +52,4 @@ Then a line per brief item that PASSED with its evidence. No fix proposals, no c
 beyond naming the component if obvious.
 
 ## Lessons (maintained by the coach — newest first, keep under 30 lines)
-- 2026-10-05 (Spaces reviews 1–3): the in-app Browser pane gets hidden mid-walk; typing is then lost and three walks ended BLOCKED. For any walk longer than a few clicks, drive a HEADLESS Playwright browser from a script in a `mktemp -d` dir (`@playwright/test` is installed; sign in by opening the URL `pnpm dev-login <route>` prints), use `page.keyboard`/`page.mouse` for real input, and READ your screenshots to judge. Never walk while a builder is editing the same code — ask the owner first.
+- (none yet)

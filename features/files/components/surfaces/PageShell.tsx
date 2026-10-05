@@ -196,6 +196,8 @@ export interface PageShellProps {
 
 export function PageShell(props: PageShellProps) {
   const isMobile = useIsMobile();
+  // ssr-viewport-ok: request-hinted — two stateful trees (Redux hydration, realtime, panel layout) that must
+  // never both mount, so CSS cannot pick; ViewportHintProvider (app/layout.tsx) gives the server the phone answer.
   if (isMobile) {
     return <MobileFilesSurface {...props} />;
   }

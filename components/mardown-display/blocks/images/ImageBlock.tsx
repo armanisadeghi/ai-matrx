@@ -198,7 +198,7 @@ const ImageBlockImpl: React.FC<ImageBlockProps> = ({ src: srcProp, alt = "Image"
   }, [showExpandedView]);
 
   return (
-    <div className="relative my-4 rounded-3xl group max-w-[900px]">
+    <div className="relative my-4 rounded-3xl group max-w-[900px]" data-matrx-glass-plane="">
       <img
         key={retryKey}
         ref={imageRef}
@@ -212,7 +212,7 @@ const ImageBlockImpl: React.FC<ImageBlockProps> = ({ src: srcProp, alt = "Image"
       />
 
       {/* Action buttons - visible on group hover */}
-      <div className="absolute top-4 right-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+      <div className="absolute top-4 right-2 flex opacity-0 group-hover:opacity-100 transition-opacity duration-200">
         <TapTargetButton icon={<DownloadIcon />} ariaLabel="Download" onClick={handleDownload} />
         <TapTargetButton icon={<ClipboardCopyIcon />} ariaLabel="Copy URL" onClick={handleCopyUrl} />
         <TapTargetButton icon={<CopyIcon />} ariaLabel="Copy Image" onClick={handleCopyImage} />
@@ -230,19 +230,9 @@ const ImageBlockImpl: React.FC<ImageBlockProps> = ({ src: srcProp, alt = "Image"
       </div>
 
       {/* Feedback section - now on bottom left */}
-      <div className="absolute bottom-2 left-2 flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-        <Button variant="quiet" pressed={feedback === "like"} icon={<ThumbsUpIcon />} onClick={() => handleFeedback("like")} title="Like" aria-label="Like" />
-        <button
-          onClick={() => handleFeedback("dislike")}
-          className={`p-2 rounded-full transition-all duration-200 ${
-            feedback === "dislike"
-              ? "bg-red-500 text-white"
-              : "text-white bg-black/40 hover:bg-black/60"
-          }`}
-          title="Dislike"
-        >
-          <ThumbsDownIcon className="w-4 h-4" />
-        </button>
+      <div className="absolute bottom-2 left-2 flex items-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+        <TapTargetButton icon={<ThumbsUpIcon />} ariaLabel="Like" pressed={feedback === "like"} onClick={() => handleFeedback("like")} />
+        <TapTargetButton icon={<ThumbsDownIcon />} ariaLabel="Dislike" pressed={feedback === "dislike"} onClick={() => handleFeedback("dislike")} />
       </div>
 
       {/* Share modal */}

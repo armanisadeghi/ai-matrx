@@ -226,7 +226,12 @@ export function RouteModeNav({
       let next: NavLayout;
       if (maxVariant !== "menu" && fullW <= avail)
         next = { variant: "full", inflow: false, iconTrigger: false };
-      else if (maxVariant !== "menu" && canIcons && compactW > 0 && compactW <= avail)
+      else if (
+        maxVariant !== "menu" &&
+        canIcons &&
+        compactW > 0 &&
+        compactW <= avail
+      )
         next = { variant: "icons", inflow: false, iconTrigger: false };
       else if (centered(menuW))
         next = { variant: "menu", inflow: false, iconTrigger: false };
@@ -264,9 +269,11 @@ export function RouteModeNav({
     // when a frame renders — never in a hidden tab — so the nav also follows
     // those writes directly; otherwise its first guess stands until a frame.
     const mo = new MutationObserver(compute);
-    if (routeHeader) mo.observe(routeHeader, { attributes: true, attributeFilter: ["style"] });
+    if (routeHeader)
+      mo.observe(routeHeader, { attributes: true, attributeFilter: ["style"] });
     const inset = cell.closest<HTMLElement>("[data-route-header-inset]");
-    if (inset) mo.observe(inset, { attributes: true, attributeFilter: ["style"] });
+    if (inset)
+      mo.observe(inset, { attributes: true, attributeFilter: ["style"] });
     return () => {
       ro.disconnect();
       mo.disconnect();
@@ -371,7 +378,11 @@ export function RouteModeNav({
           className={cn(PILL, "w-max max-w-none px-1")}
         >
           <span className={cn(ITEM, NAV_ITEM_SELECTED)}>
-            {ActiveIcon ? <ActiveIcon /> : <span>{current?.name ?? fallbackLabel}</span>}
+            {ActiveIcon ? (
+              <ActiveIcon />
+            ) : (
+              <span>{current?.name ?? fallbackLabel}</span>
+            )}
             <ChevronDown className="opacity-60" />
           </span>
         </span>
@@ -379,8 +390,10 @@ export function RouteModeNav({
 
       {/* Visible variant */}
       {variant === "none" ? null : variant === "menu" ? (
-        isMobile ? (
-          <>
+        <>
+          {/* Both triggers render; CSS picks (SSR ZERO LAYOUT SHIFT): the phone
+              pill opens a bottom sheet, the desktop capsule a dropdown. */}
+          <span className="contents md:hidden">
             <button
               type="button"
               className={cn(PILL, "min-h-11 px-1")}
@@ -391,7 +404,8 @@ export function RouteModeNav({
                 {ActiveIcon && <ActiveIcon />}
                 <span
                   className={cn(
-                    ActiveIcon && (iconTrigger ? "sr-only" : "hidden sm:inline"),
+                    ActiveIcon &&
+                      (iconTrigger ? "sr-only" : "hidden sm:inline"),
                   )}
                 >
                   {current?.name ?? fallbackLabel}
@@ -450,80 +464,85 @@ export function RouteModeNav({
                 })}
               </BottomSheetBody>
             </BottomSheet>
-          </>
-        ) : (
-          <DropdownMenu>
-            {/* The track is decoration; the BUTTON is the selected capsule
+          </span>
+          <span className="hidden md:contents">
+            <DropdownMenu>
+              {/* The track is decoration; the BUTTON is the selected capsule
                 itself, so the pressable box hugs its label. A button that is
                 the whole track reads as a pill stretched by the track's inset
                 (pill-guard, Rulebook/Industry packs/Setup headers,
                 2026-10-05). */}
-            <span className={cn(PILL, "px-1")}>
-              <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  className={cn(ITEM, NAV_ITEM_SELECTED)}
-                  aria-label="Switch view"
-                >
-                  {ActiveIcon && <ActiveIcon />}
-                  <span className={cn(iconTrigger && ActiveIcon && "sr-only")}>
-                    {current?.name ?? fallbackLabel}
-                  </span>
-                  <ChevronDown className="opacity-60" />
-                </button>
-              </DropdownMenuTrigger>
-            </span>
-            <DropdownMenuContent
-              align="center"
-              className={cn(items.some((i) => i.description) ? "w-72" : "w-52")}
-            >
-              {items.map((item) => {
-                const Icon = item.icon;
-                const isActive = item.href === current?.href;
-                return (
-                  <DropdownMenuItem
-                    key={item.href}
-                    asChild
-                    className={cn(
-                      "gap-2",
-                      isActive &&
-                        "bg-accent font-semibold text-accent-foreground focus:bg-accent",
-                    )}
+              <span className={cn(PILL, "px-1")}>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    className={cn(ITEM, NAV_ITEM_SELECTED)}
+                    aria-label="Switch view"
                   >
-                    <AppLink
-                      href={item.href}
-                      onClick={(event) => {
-                        if (allowNativeNewTab(event)) return;
-                        event.preventDefault();
-                        navigate(item.href);
-                      }}
-                      className={cn(item.description && "items-start py-1.5")}
+                    {ActiveIcon && <ActiveIcon />}
+                    <span
+                      className={cn(iconTrigger && ActiveIcon && "sr-only")}
                     >
-                      {Icon && (
-                        <Icon
-                          className={cn(
-                            "h-4 w-4 shrink-0",
-                            item.description && "mt-0.5",
-                          )}
-                        />
+                      {current?.name ?? fallbackLabel}
+                    </span>
+                    <ChevronDown className="opacity-60" />
+                  </button>
+                </DropdownMenuTrigger>
+              </span>
+              <DropdownMenuContent
+                align="center"
+                className={cn(
+                  items.some((i) => i.description) ? "w-72" : "w-52",
+                )}
+              >
+                {items.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = item.href === current?.href;
+                  return (
+                    <DropdownMenuItem
+                      key={item.href}
+                      asChild
+                      className={cn(
+                        "gap-2",
+                        isActive &&
+                          "bg-accent font-semibold text-accent-foreground focus:bg-accent",
                       )}
-                      {item.description ? (
-                        <span className="min-w-0 flex-1">
-                          <span className="block">{item.name}</span>
-                          <span className="mt-0.5 block whitespace-normal type-secondary font-normal leading-snug text-muted-foreground">
-                            {item.description}
+                    >
+                      <AppLink
+                        href={item.href}
+                        onClick={(event) => {
+                          if (allowNativeNewTab(event)) return;
+                          event.preventDefault();
+                          navigate(item.href);
+                        }}
+                        className={cn(item.description && "items-start py-1.5")}
+                      >
+                        {Icon && (
+                          <Icon
+                            className={cn(
+                              "h-4 w-4 shrink-0",
+                              item.description && "mt-0.5",
+                            )}
+                          />
+                        )}
+                        {item.description ? (
+                          <span className="min-w-0 flex-1">
+                            <span className="block">{item.name}</span>
+                            <span className="mt-0.5 block whitespace-normal type-secondary font-normal leading-snug text-muted-foreground">
+                              {item.description}
+                            </span>
                           </span>
-                        </span>
-                      ) : (
-                        item.name
-                      )}
-                    </AppLink>
-                  </DropdownMenuItem>
-                );
-              })}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )
+                        ) : (
+                          item.name
+                        )}
+                      </AppLink>
+                    </DropdownMenuItem>
+                  );
+                })}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </span>
+        </>
       ) : (
         <NavTooltipProvider>
           <div className={PILL} data-route-nav-variant={variant}>

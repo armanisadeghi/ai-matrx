@@ -404,17 +404,17 @@ const TroubleshootingBlock: React.FC<TroubleshootingBlockProps> = ({
                   </div>
 
                   {!isFullScreen && (
-                    <div className="flex w-full flex-col items-stretch gap-2 @4xl:w-auto @4xl:flex-row @4xl:items-center">
-                      <Button variant="success" icon={<Upload />} onClick={() => setIsImportModalOpen(true)} className="w-full @4xl:w-auto">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button variant="success" icon={<Upload />} onClick={() => setIsImportModalOpen(true)}>
                         <span>Import to Tasks</span>
                       </Button>
-                      <Button variant="quiet" icon={<ArrowUpRight />} onClick={handleOpenCanvas} className="w-full @4xl:w-auto">
+                      <Button variant="quiet" icon={<ArrowUpRight />} onClick={handleOpenCanvas}>
                         <span>Canvas</span>
                       </Button>
-                      <Button variant="quiet" icon={<Printer />} onClick={handlePrint} className="w-full @4xl:w-auto">
+                      <Button variant="quiet" icon={<Printer />} onClick={handlePrint}>
                         <span>Print</span>
                       </Button>
-                      <Button variant="danger" icon={<Maximize2 />} onClick={() => setIsFullScreen(true)} className="w-full @4xl:w-auto">
+                      <Button variant="quiet" icon={<Maximize2 />} onClick={() => setIsFullScreen(true)}>
                         <span>Debug Mode</span>
                       </Button>
                     </div>
