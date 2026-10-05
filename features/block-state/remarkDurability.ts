@@ -31,6 +31,7 @@ import { selectAllBlockStateRows, upsertBlockStateRows } from "./redux/blockStat
 import { ensureBlockStatesLoaded, unitRefOf } from "./redux/blockStateThunks";
 import { BLOCK_STATE_DEBOUNCE_MS } from "./useBlockState";
 import { isChipDue } from "./types";
+import { purgeLegacyBrowserStores } from "./legacyPurge";
 
 interface Slot {
   timer: ReturnType<typeof setTimeout> | null;
@@ -180,5 +181,6 @@ export function createRemarkDurability(store: AppStore): RemarkDurability {
 
 /** Register this app's durability with the chat package (once, with the store). Returns the release. */
 export function registerBlockStateRemarkDurability(store: AppStore): () => void {
+  purgeLegacyBrowserStores();
   return registerRemarkDurability(createRemarkDurability(store));
 }

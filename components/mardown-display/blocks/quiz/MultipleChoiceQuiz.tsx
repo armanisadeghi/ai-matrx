@@ -281,7 +281,7 @@ const MultipleChoiceQuiz: React.FC<MultipleChoiceQuizProps> = ({
     title: parsedQuiz?.title || null,
   });
   const isSaving = false;
-  const lastSaved: Date | null = null;
+  const lastSaved = null as Date | null;
   const saveError = blockSaveError ? blockSaveError.message : null;
 
   // Put the saved session back ONCE, after the quiz itself has been set up.

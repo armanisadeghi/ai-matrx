@@ -45,8 +45,11 @@ type QuestionnaireData = {
 
 type ThemeColors = (typeof THEMES)[keyof typeof THEMES];
 
+/** A patch of the block's saved state: the form while filling, the submitted answers on Submit. */
 type QuestionnaireStatePayload = {
-  formState: Record<string, unknown>;
+  formState?: Record<string, unknown>;
+  submittedAnswers?: { question: string; answer: string }[];
+  submittedTitle?: string | null;
 };
 
 type QuestionMeta = {
@@ -64,7 +67,7 @@ interface QuestionnaireRendererProps {
   conversationId?: string;
   messageId?: string;
   blockIndex?: number;
-  initialState?: { formState?: Record<string, unknown> };
+  initialState?: { formState?: Record<string, unknown>; submittedAnswers?: unknown };
   onStateChange?: (state: QuestionnaireStatePayload) => void;
 }
 
