@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@ai-matrx/design-system/controls";
 import { CheckCircle2, RefreshCw } from "lucide-react";
@@ -28,8 +28,16 @@ const MAX_AUTOMATIC_CHECKS = 4;
  */
 export function CheckoutFeedback() {
   const searchParams = useSearchParams();
+  const search = searchParams.toString();
+  return <CheckoutFeedbackForReturn key={search} search={search} />;
+}
+
+function CheckoutFeedbackForReturn({ search }: { search: string }) {
   const dispatch = useAppDispatch();
-  const returned = checkoutReturnContext(searchParams);
+  const returned = useMemo(
+    () => checkoutReturnContext(new URLSearchParams(search)),
+    [search],
+  );
   const [state, setState] = useState<FeedbackState>("checking");
   const [attempt, setAttempt] = useState(0);
 
@@ -114,7 +122,7 @@ export function CheckoutFeedback() {
         className="flex items-center justify-center gap-2 text-center text-sm text-success"
       >
         <CheckCircle2 className="h-4 w-4" />
-        Payment confirmed. Your access is ready.
+        Your subscription is active. Your access is ready.
       </p>
     );
   }

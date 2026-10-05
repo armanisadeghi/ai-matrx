@@ -64,6 +64,12 @@ export async function POST(request: NextRequest) {
       );
       return NextResponse.json({ url: session.url });
     }
+    if (!organizationPortal) {
+      return NextResponse.json(
+        { error: "No personal billing account" },
+        { status: 404 },
+      );
+    }
 
     // REC-62: the Stripe customer belongs to the ORGANIZATION the person is acting
     // in. `billingOwnerRef` names whichever column is live and refuses rather than

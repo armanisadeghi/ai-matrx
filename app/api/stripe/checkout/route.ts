@@ -254,11 +254,18 @@ export async function POST(request: NextRequest) {
         { customer: customerId, status: "open", limit: 100 },
         requestOptions,
       );
+      const returnUrls = checkoutReturnUrls(origin, {
+        planKey: plan.plan_key,
+        cycle,
+        audience: personal ? "personal" : "company",
+      });
       const pending = open.data.find(
         (s) =>
           s.mode === "subscription" &&
           s.metadata?.plan_key === plan?.plan_key &&
-          s.metadata?.billing_cycle === cycle,
+          s.metadata?.billing_cycle === cycle &&
+          s.success_url === returnUrls.success &&
+          s.cancel_url === returnUrls.cancelled,
       );
       if (pending?.url) return NextResponse.json({ url: pending.url });
       // Retire abandoned alternatives before starting another checkout. These
@@ -272,11 +279,6 @@ export async function POST(request: NextRequest) {
         await stripe.checkout.sessions.expire(previous.id, {}, requestOptions);
       }
       await assertHeld();
-      const returnUrls = checkoutReturnUrls(origin, {
-        planKey: plan.plan_key,
-        cycle,
-        audience: plan.audience,
-      });
       const session = await stripe.checkout.sessions.create(
         {
           mode: "subscription",
