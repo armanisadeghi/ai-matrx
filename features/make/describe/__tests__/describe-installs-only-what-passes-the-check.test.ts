@@ -50,7 +50,9 @@ describe("the describe box installs only what passes the store's check", () => {
     const d = describeDeclaration(spec, "00000000-0000-4000-8000-000000000001", "K3X9");
     expect(d.catalogueId).toBe("DESCRIBE-K3X9");
     expect(d.organizationId).toBe("00000000-0000-4000-8000-000000000001");
-    const plan = d.installPlan as { steps: Array<{ door: string }> };
+    const plan = d.installPlan as { ids?: Record<string, string>; steps: Array<{ door: string }> };
+    expect(plan.steps.every((s) => typeof (s as { label?: string }).label === "string")).toBe(true);
+    expect(plan.steps.some((s) => s.door === "table_from_example")).toBe(true);
     expect(plan.steps.some((s) => s.door === "booking_declare")).toBe(true);
     expect(plan.steps.some((s) => s.door === "form_declare")).toBe(true);
   });
