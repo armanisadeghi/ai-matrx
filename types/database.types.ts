@@ -96718,7 +96718,7 @@ export type Database = {
       }
       agx_contract_hash: { Args: { p_contract: Json }; Returns: string }
       agx_create_agent_from_template: {
-        Args: { p_template_id: string }
+        Args: { p_organization_id: string; p_template_id: string }
         Returns: string
       }
       agx_create_shortcut: {

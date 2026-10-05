@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { TemplateCard } from "./TemplateCard";
 import { useRouter } from "next/navigation";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { createAgentFromTemplate } from "./templateService";
 import { toast } from "@/lib/toast-service";
 import { ArchivedDisclosure } from "@ai-matrx/design-system";
 
@@ -49,15 +50,13 @@ export function TemplatesGrid({ templates }: TemplatesGridProps) {
     setUsingTemplateId(id);
 
     try {
-      const response = await fetch(`/api/agents/templates/${id}/use`, {
-        method: "POST",
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to use template");
+      const made = await createAgentFromTemplate(id);
+      if ("cancelled" in made) {
+        setUsingTemplateId(null); // the organization picker was closed: not now
+        return;
       }
-
-      const { agentId } = await response.json();
+      if ("error" in made) throw new Error(made.error);
+      const { agentId } = made;
 
       startTransition(() => {
         // agent-link-ok: instantiating a template creates a user agent owned by this user
@@ -65,7 +64,7 @@ export function TemplatesGrid({ templates }: TemplatesGridProps) {
       });
     } catch (error) {
       console.error("Error creating agent from template:", error);
-      toast.error("Failed to create agent from template. Please try again.");
+      toast.error(error instanceof Error ? error.message : "The agent could not be created from this template.");
       setUsingTemplateId(null);
     }
   };

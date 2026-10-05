@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Copy, Loader2 } from "lucide-react";
+import { createAgentFromTemplate } from "./templateService";
 import { toast } from "@/lib/toast-service";
 
 interface UseTemplateButtonProps {
@@ -20,15 +21,13 @@ export function UseTemplateButton({ templateId }: UseTemplateButtonProps) {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`/api/agents/templates/${templateId}/use`, {
-        method: "POST",
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to use template");
+      const made = await createAgentFromTemplate(templateId);
+      if ("cancelled" in made) {
+        setIsLoading(false); // the organization picker was closed: not now
+        return;
       }
-
-      const { agentId } = await response.json();
+      if ("error" in made) throw new Error(made.error);
+      const { agentId } = made;
 
       startTransition(() => {
         // agent-link-ok: instantiating a template creates a user agent owned by this user
@@ -36,7 +35,7 @@ export function UseTemplateButton({ templateId }: UseTemplateButtonProps) {
       });
     } catch (error) {
       console.error("Error creating agent from template:", error);
-      toast.error("Failed to create agent from template. Please try again.");
+      toast.error(error instanceof Error ? error.message : "The agent could not be created from this template.");
       setIsLoading(false);
     }
   };

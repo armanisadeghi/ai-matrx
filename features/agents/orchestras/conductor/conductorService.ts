@@ -9,6 +9,7 @@
 "use client";
 
 import { supabase } from "@/utils/supabase/client";
+import { createAgentFromTemplate } from "@/features/agents/agent-creators/templates/templateService";
 import { tryWriteOne } from "@/utils/supabase/writeOne";
 import {
   ok,
@@ -172,27 +173,9 @@ export function buildAvailableAgentsBlock(
 export const conductorService = {
   /** Copy the "Agent Conductor" template into a new agent owned by the caller. */
   async createFromTemplate(): Promise<ScopesRpcResult<{ agentId: string }>> {
-    try {
-      const res = await fetch(
-        `/api/agents/templates/${CONDUCTOR_TEMPLATE_ID}/use`,
-        {
-          method: "POST",
-        },
-      );
-      if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as { error?: string };
-        return err(
-          "internal",
-          body.error ?? `Template create failed (HTTP ${res.status})`,
-        );
-      }
-      const body = (await res.json()) as { agentId?: string };
-      if (!body.agentId)
-        return err("internal", "Template create returned no agent id");
-      return ok({ agentId: body.agentId });
-    } catch (e) {
-      return { ok: false, error: mapPgError(e) };
-    }
+    const made = await createAgentFromTemplate(CONDUCTOR_TEMPLATE_ID);
+    if ("cancelled" in made) return err("internal", "No organization chosen for the new leader.");
+    return "error" in made ? err("internal", made.error) : ok({ agentId: made.agentId });
   },
 
   /**

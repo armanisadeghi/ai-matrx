@@ -66,7 +66,7 @@ function Body({
   onMade: (conductorId: string, warnings: string[]) => void;
 }) {
   const dispatch = useAppDispatch();
-  const { create } = useCreateConductor();
+  const { create, error: createError } = useCreateConductor();
   const [name, setName] = useState(request.suggestedName);
   const [step, setStep] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -78,7 +78,7 @@ function Body({
     const conductorId = await create({ name: name.trim() || request.suggestedName, accent: DEFAULT_ORCHESTRA_ACCENT });
     if (!conductorId) {
       setStep(null);
-      setError("The leader could not be created.");
+      setError("The leader could not be created."); // the hook's own reason shows beside it
       return;
     }
     const warnings: string[] = [];
@@ -126,7 +126,12 @@ function Body({
           <Field value={name} onChange={(e) => setName(e.target.value)} disabled={step !== null} />
         </label>
         {step && <p className="text-xs text-muted-foreground">{step}</p>}
-        {error && <p className="text-xs text-destructive">{error}</p>}
+        {error && (
+          <p className="text-xs text-destructive">
+            {error}
+            {createError ? ` ${createError}` : ""}
+          </p>
+        )}
         <div className="flex justify-end gap-2">
           <Button variant="outline" onClick={onClose} disabled={step !== null}>
             Cancel
