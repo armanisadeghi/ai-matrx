@@ -1,3 +1,4 @@
+-- chair-step: re-bodies the tag doors (tag_scope_id, file_under_tag, context_tags_set, the tags-column trigger, tags_backfill) and the projection read _search_item_filed_tags onto platform.tag; drops the retired platform.tag_scope_type_id and its client_callable_door row (zero callers in code and DB); adds platform.tags_in and platform._tag_slug and two CREATE TRIGGERs on platform.associations (tag edges refresh filed_tags).
 -- lane: FINISH-THE-SWITCH
 -- lock: platform
 -- based-on: platform.tag_scope_id(uuid, text, uuid) 695449197971fb9428f2db51886c4441b27b622ebf4ce96f4fda1e9b3a447337
