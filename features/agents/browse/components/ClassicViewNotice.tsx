@@ -25,7 +25,7 @@ export function ClassicViewNotice() {
   if (dismissed) return null;
 
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-lg border border-primary/25 bg-primary/5 px-3 py-1.5 text-xs sm:flex-nowrap">
+    <div className="flex flex-wrap items-center gap-2 rounded-lg border border-primary/25 bg-primary/5 px-3 py-1.5 type-secondary sm:flex-nowrap">
       <Rows3 className="h-3.5 w-3.5 shrink-0 text-primary" />
       <span className="min-w-48 flex-1 text-foreground">
         This is the new Agents list — scopes, full filtering, and inline
@@ -54,7 +54,7 @@ export function ClassicViewNotice() {
 // person on the old gallery with no control leading home. Never dismissible.
 export function ClassicViewReturn() {
   return (
-    <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-1.5 text-xs">
+    <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-1.5 type-secondary">
       <Rows3 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
       <span className="min-w-0 flex-1 truncate text-foreground">
         You are on the classic Agents view

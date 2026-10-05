@@ -60,7 +60,7 @@ function CardAction({
   return (
     <Link
       href={href}
-      className="flex h-11 flex-1 items-center justify-center gap-1.5 rounded-md text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground lg:h-7"
+      className="flex h-11 flex-1 items-center justify-center gap-1.5 rounded-md type-secondary font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground lg:h-7"
       onClick={(e) => e.stopPropagation()}
     >
       <Icon className="h-3.5 w-3.5" />
@@ -124,7 +124,7 @@ export function AgentBrowseCards({
                 still opens AgentActionModal, so the click that bubbles is
                 unchanged and only the name itself navigates.
               */}
-                <p className="line-clamp-2 text-sm font-medium leading-snug">
+                <p className="line-clamp-2 type-title leading-snug">
                   {agentHref ? (
                     <Link
                       href={agentHref}
@@ -138,7 +138,7 @@ export function AgentBrowseCards({
                   )}
                 </p>
                 {row.description && (
-                  <div className="mt-0.5 text-xs text-muted-foreground">
+                  <div className="mt-0.5 type-secondary text-muted-foreground">
                     <RichContentPreview source={row.description} lines={2} />
                   </div>
                 )}
@@ -158,7 +158,7 @@ export function AgentBrowseCards({
                     </Badge>
                   )}
                   {showOwner && row.owner_email && (
-                    <span className="truncate text-[10px] text-muted-foreground">
+                    <span className="truncate type-meta text-muted-foreground">
                       {row.owner_email}
                     </span>
                   )}
@@ -169,7 +169,7 @@ export function AgentBrowseCards({
                       offeringId={row.offering_id}
                       showIcon={false}
                       disableNavigation
-                      className="min-w-0 text-[10px] text-muted-foreground"
+                      className="min-w-0 type-meta text-muted-foreground"
                     />
                   )}
                 </div>

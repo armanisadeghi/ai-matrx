@@ -71,7 +71,7 @@ export function AgentBuilderPicker() {
                   <h3 className="text-base font-semibold mb-1">
                     {option.title}
                   </h3>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="type-body text-muted-foreground">
                     {option.description}
                   </p>
                   <div className="mt-2 flex items-center gap-2">

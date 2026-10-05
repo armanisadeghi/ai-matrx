@@ -113,7 +113,7 @@ function BuilderContent({ onComplete }: ComprehensiveBuilderProps) {
                   key={tab.id}
                   value={tab.id}
                 >
-                  <span className="text-sm">{tab.icon}</span>
+                  <span className="type-body">{tab.icon}</span>
                   {tab.label}
                 </TabsTrigger>
               ))}

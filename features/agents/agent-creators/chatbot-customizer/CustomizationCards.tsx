@@ -111,7 +111,7 @@ export const PersonalityCard: React.FC<CardComponentProps> = (props) => {
 
   return (
     <div>
-      <p className="text-sm text-muted-foreground mb-4">
+      <p className="type-body text-muted-foreground mb-4">
         Choose your AI assistant's personality:
       </p>
       {createOptionComponent(personalityOptions, currentValue, props.onChange)}
@@ -141,7 +141,7 @@ export const ToneCard: React.FC<CardComponentProps> = (props) => {
 
   return (
     <div>
-      <p className="text-sm text-muted-foreground mb-3">
+      <p className="type-body text-muted-foreground mb-3">
         How should your AI sound?
       </p>
       {createOptionComponent(toneOptions, currentValue, props.onChange)}
@@ -165,7 +165,7 @@ export const VerbosityCard: React.FC<CardComponentProps> = (props) => {
 
   return (
     <div>
-      <p className="text-sm text-muted-foreground mb-3">
+      <p className="type-body text-muted-foreground mb-3">
         Adjust how detailed responses should be:
       </p>
       {createOptionComponent(verbosityOption, currentValue, props.onChange)}
@@ -189,7 +189,7 @@ export const FormalityCard: React.FC<CardComponentProps> = (props) => {
 
   return (
     <div>
-      <p className="text-sm text-muted-foreground mb-3">
+      <p className="type-body text-muted-foreground mb-3">
         Set the level of formality:
       </p>
       {createOptionComponent(formalityOption, currentValue, props.onChange)}
@@ -259,7 +259,7 @@ export const ReasoningDepthCard: React.FC<CardComponentProps> = (props) => {
 
   return (
     <div>
-      <p className="text-sm text-muted-foreground mb-3">
+      <p className="type-body text-muted-foreground mb-3">
         How deeply should your AI analyze problems?
       </p>
       {createOptionComponent(reasoningOption, currentValue, props.onChange)}
@@ -283,7 +283,7 @@ export const CreativityLevelCard: React.FC<CardComponentProps> = (props) => {
 
   return (
     <div>
-      <p className="text-sm text-muted-foreground mb-3">
+      <p className="type-body text-muted-foreground mb-3">
         How creative should your AI be?
       </p>
       {createOptionComponent(creativityOption, currentValue, props.onChange)}
@@ -307,7 +307,7 @@ export const MemoryFeaturesCard: React.FC<CardComponentProps> = (props) => {
   return (
     <div className="space-y-3 py-2">
       {createOptionComponent(memoryOption, currentValue, props.onChange)}
-      <p className="text-xs text-muted-foreground mt-2">
+      <p className="type-secondary text-muted-foreground mt-2">
         When on, your AI remembers key details across sessions.
       </p>
     </div>
@@ -342,7 +342,7 @@ export const ExpertiseAreasCard: React.FC<CardComponentProps> = (props) => {
 
   return (
     <div>
-      <p className="text-sm text-muted-foreground mb-3">
+      <p className="type-body text-muted-foreground mb-3">
         Choose areas where you need specialized knowledge:
       </p>
       {createOptionComponent(expertiseOptions, currentValue, props.onChange)}
@@ -465,7 +465,7 @@ export const PersonalInfoCard: React.FC<CardComponentProps> = (props) => {
 
   return (
     <div className="space-y-2">
-      <p className="text-sm text-muted-foreground mb-3">
+      <p className="type-body text-muted-foreground mb-3">
         All optional and private:
       </p>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

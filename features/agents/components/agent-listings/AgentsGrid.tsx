@@ -605,7 +605,7 @@ export function AgentsGrid() {
       <div className="flex-1 border-t border-border" />
       <div className="flex items-center gap-1.5">
         <Users className="w-3.5 h-3.5 text-muted-foreground" />
-        <span className="text-xs text-muted-foreground font-medium">
+        <span className="type-secondary text-muted-foreground font-medium">
           Shared with me
         </span>
       </div>
@@ -618,7 +618,7 @@ export function AgentsGrid() {
 
     if (isVersionLookupLoading && versionLookupRequestId === versionIdQuery) {
       return (
-        <div className="mb-4 flex items-center gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
+        <div className="mb-4 flex items-center gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2 type-body text-muted-foreground">
           <History className="h-4 w-4 animate-pulse" />
           Looking up version ID…
         </div>
@@ -637,10 +637,10 @@ export function AgentsGrid() {
       >
         <History className="h-4 w-4 shrink-0 text-primary" />
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-sm font-medium text-foreground">
+          <span className="block truncate type-title text-foreground">
             {versionLookup.agentName ?? "Unnamed agent"}
           </span>
-          <span className="block text-xs text-muted-foreground">
+          <span className="block type-secondary text-muted-foreground">
             Version ID match · v{versionLookup.versionNumber}
           </span>
         </span>
@@ -744,7 +744,7 @@ export function AgentsGrid() {
                   >
                     {t === "mine" ? "Mine" : t === "shared" ? "Shared" : "All"}
                     <UntrustedCount
-                      className="text-[10px] opacity-70"
+                      className="type-meta opacity-70"
                       trustworthy={sliceStatus !== "failed"}
                       label="Agents"
                       value={
@@ -762,7 +762,7 @@ export function AgentsGrid() {
             )}
 
             {searchTerm && (
-              <span className="text-xs text-muted-foreground shrink-0">
+              <span className="type-secondary text-muted-foreground shrink-0">
                 <UntrustedCount
                   trustworthy={sliceStatus !== "failed"}
                   label="Results"
@@ -827,7 +827,7 @@ export function AgentsGrid() {
             >
               {t === "mine" ? "Mine" : t === "shared" ? "Shared" : "All"}
               <UntrustedCount
-                className="text-[10px] opacity-70"
+                className="type-meta opacity-70"
                 trustworthy={sliceStatus !== "failed"}
                 label="Agents"
                 value={
@@ -965,7 +965,7 @@ export function AgentsGrid() {
             {filteredOwnedAgents.length > 0 && (
               <>
                 {hasShared && (
-                  <p className="text-xs font-medium text-muted-foreground mb-3">
+                  <p className="type-secondary font-medium text-muted-foreground mb-3">
                     My Agents
                   </p>
                 )}

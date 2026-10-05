@@ -137,7 +137,7 @@ function AgentHeadCard({
         <Badge variant="outline" className="text-[10px]">
           {label}
         </Badge>
-        <span className="text-[10px] tabular-nums text-muted-foreground">
+        <span className="type-meta tabular-nums text-muted-foreground">
           {agent?.version != null ? `v${agent.version}` : "Current"}
         </span>
       </div>
@@ -147,10 +147,10 @@ function AgentHeadCard({
         name={agentRef.name}
         href={`${basePath}/${agentRef.id}`}
         alwaysShowActions
-        className="max-w-full text-sm font-medium"
+        className="max-w-full type-title"
       />
       <div className="mt-2 flex items-center justify-between gap-2">
-        <span className="truncate text-[10px] text-muted-foreground">
+        <span className="truncate type-meta text-muted-foreground">
           Updated {formatTimestamp(agent?.updatedAt)}
         </span>
         <Button
@@ -580,7 +580,7 @@ export function AgentSyncBody({
 
   if (loading) {
     return (
-      <div className="flex h-full items-center justify-center gap-3 p-4 text-sm text-muted-foreground">
+      <div className="flex h-full items-center justify-center gap-3 p-4 type-body text-muted-foreground">
         <Loader2 className="w-4 h-4 animate-spin text-primary" />
         Resolving linked agent…
       </div>
@@ -623,7 +623,7 @@ export function AgentSyncBody({
       <div className="space-y-4 p-4">
         <div className="flex items-start gap-3 rounded-md border border-border bg-muted/30 px-3 py-2.5">
           <Copy className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-          <div className="text-xs leading-relaxed text-muted-foreground">
+          <div className="type-secondary leading-relaxed text-muted-foreground">
             Editable copy of{" "}
             <span className="font-medium text-foreground">
               {agent?.name ?? "this system agent"}
@@ -654,7 +654,7 @@ export function AgentSyncBody({
       <div className="space-y-4 p-4">
         <div className="flex items-start gap-3 rounded-md border border-border bg-muted/30 px-3 py-2.5">
           <Unlink className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
-          <div className="text-xs leading-relaxed text-muted-foreground">
+          <div className="type-secondary leading-relaxed text-muted-foreground">
             This agent isn&apos;t linked to a system agent.
           </div>
         </div>
@@ -717,7 +717,7 @@ export function AgentSyncBody({
       <div className="shrink-0 border-b border-border bg-card/40 px-4 pt-3">
         {mandateDisplayName && (
           <div className="mb-2 flex flex-wrap items-center justify-between gap-2 rounded-md border border-primary/30 bg-primary/5 px-2.5 py-1.5">
-            <div className="flex min-w-0 flex-wrap items-center gap-1.5 text-xs">
+            <div className="flex min-w-0 flex-wrap items-center gap-1.5 type-secondary">
               <Badge variant="outline" className="text-[10px]">
                 Agent mandate
               </Badge>
@@ -783,7 +783,7 @@ export function AgentSyncBody({
           currentComparisonError ? (
             <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
               <AlertCircle className="h-5 w-5 text-destructive" />
-              <p className="max-w-md text-sm text-muted-foreground">
+              <p className="max-w-md type-body text-muted-foreground">
                 {currentComparisonError}
                 <ErrorAlchemyMenu error={currentComparisonError} />
               </p>
@@ -801,7 +801,7 @@ export function AgentSyncBody({
             </div>
           ) : comparisonReady && systemAgent && userAgent ? (
             <div className="flex h-full min-h-0 flex-col">
-              <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border bg-muted/20 px-4 py-2 text-xs">
+              <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border bg-muted/20 px-4 py-2 type-secondary">
                 <div className="flex min-w-0 flex-wrap items-center gap-3">
                   <EntityRef
                     token="agent"
@@ -819,7 +819,7 @@ export function AgentSyncBody({
                     alwaysShowActions
                   />
                 </div>
-                <span className="text-[10px] text-muted-foreground">
+                <span className="type-meta text-muted-foreground">
                   Identity fields excluded; local state shown, not synced
                 </span>
               </div>
@@ -833,7 +833,7 @@ export function AgentSyncBody({
               />
             </div>
           ) : (
-            <div className="flex h-full items-center justify-center gap-2 text-sm text-muted-foreground">
+            <div className="flex h-full items-center justify-center gap-2 type-body text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin text-primary" />
               Comparing current definitions…
             </div>
@@ -875,14 +875,14 @@ export function AgentSyncBody({
                     <GitCompareArrows className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
                   )}
                   <div className="min-w-0 flex-1">
-                    <div className="text-sm font-medium">
+                    <div className="type-title">
                       {comparison.comparedConfigurationMatches
                         ? "Compared configuration is identical"
                         : comparison.behaviorMatches
                           ? "Runtime behavior matches"
                           : `Runtime behavior differs in ${behaviorDifferenceCount} ${behaviorDifferenceCount === 1 ? "section" : "sections"}`}
                     </div>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
+                    <p className="mt-0.5 type-secondary text-muted-foreground">
                       {comparison.behaviorMatches
                         ? comparison.localStateFields.length > 0
                           ? `Synced behavior matches, but local record state differs: ${comparison.localStateFields.map((field) => humanizeIdentifier(field.key)).join(", ")}${comparison.profileFields.length > 0 ? `; profile details also differ: ${comparison.profileFields.map((field) => humanizeIdentifier(field.key)).join(", ")}` : ""}.`
@@ -903,7 +903,7 @@ export function AgentSyncBody({
                   )}
                 </div>
               ) : (
-                <div className="flex items-center gap-2 rounded-lg border border-border px-3 py-3 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2 rounded-lg border border-border px-3 py-3 type-body text-muted-foreground">
                   <Loader2 className="h-4 w-4 animate-spin text-primary" />
                   Comparing current definitions…
                 </div>
@@ -913,11 +913,11 @@ export function AgentSyncBody({
                 <div className="mb-2 flex items-center justify-between gap-2">
                   <h3
                     id="relationship-map-title"
-                    className="text-xs font-semibold"
+                    className="type-secondary font-semibold"
                   >
                     Current relationship
                   </h3>
-                  <span className="text-[10px] text-muted-foreground">
+                  <span className="type-meta text-muted-foreground">
                     System baseline → personal copy
                   </span>
                 </div>
@@ -955,11 +955,11 @@ export function AgentSyncBody({
               >
                 <h3
                   id="relationship-history-title"
-                  className="mb-3 text-xs font-semibold"
+                  className="mb-3 type-secondary font-semibold"
                 >
                   Relationship history
                 </h3>
-                <ol className="space-y-3 text-xs">
+                <ol className="space-y-3 type-secondary">
                   <li className="flex gap-3">
                     <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-muted-foreground/50" />
                     <div>
@@ -1003,7 +1003,7 @@ export function AgentSyncBody({
                     </div>
                   </li>
                 </ol>
-                <p className="mt-3 text-[10px] leading-relaxed text-muted-foreground">
+                <p className="mt-3 type-meta leading-relaxed text-muted-foreground">
                   Milestones only; full edits are in each agent&apos;s Versions
                 </p>
               </section>

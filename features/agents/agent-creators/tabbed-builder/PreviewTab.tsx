@@ -84,7 +84,7 @@ export const PreviewTab: React.FC = () => {
                   }
                 </Button>
               </div>
-              <pre className="p-4 bg-zinc-50 dark:bg-zinc-800 text-gray-800 dark:text-gray-100 rounded-md whitespace-pre-wrap font-mono text-sm overflow-auto max-h-[400px] border border-zinc-200 dark:border-zinc-700">
+              <pre className="p-4 bg-zinc-50 dark:bg-zinc-800 text-gray-800 dark:text-gray-100 rounded-md whitespace-pre-wrap font-mono type-body overflow-auto max-h-[400px] border border-zinc-200 dark:border-zinc-700">
                 {getDisplayPrompt()}
               </pre>
             </div>
@@ -112,7 +112,7 @@ export const PreviewTab: React.FC = () => {
                   }`}
                 >
                   <div className={`w-2 h-2 rounded-full ${isEnabled ? 'bg-green-500' : 'bg-gray-400'}`} />
-                  <span className="text-sm">{tab.label}</span>
+                  <span className="type-body">{tab.label}</span>
                 </div>
               );
             })}

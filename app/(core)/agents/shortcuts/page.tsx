@@ -73,7 +73,7 @@ export default function UserShortcutsPage() {
       <RouteHeader
         left={
           <>
-            <h1 className="text-sm font-medium text-foreground truncate">
+            <h1 className="type-title text-foreground truncate">
               My Shortcuts
             </h1>
           </>

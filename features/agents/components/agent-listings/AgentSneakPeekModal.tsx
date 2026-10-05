@@ -150,7 +150,7 @@ function TruncatedText({
       : text.slice(0, previewChars).trimEnd() + "…";
 
   return (
-    <div className="text-sm text-foreground whitespace-pre-wrap break-words">
+    <div className="type-body text-foreground whitespace-pre-wrap break-words">
       {displayed}
       {needsTruncation && (
         <button
@@ -192,7 +192,7 @@ function Section({
 }
 
 function EmptyValue() {
-  return <span className="text-sm text-muted-foreground italic">—</span>;
+  return <span className="type-body text-muted-foreground italic">—</span>;
 }
 
 function outputSchemaRequiredKeys(outputSchema: unknown): Set<string> {
@@ -241,11 +241,11 @@ function MetaRow({
 }) {
   return (
     <div className="flex items-baseline gap-2 py-0.5">
-      <span className="text-[0.625rem] uppercase tracking-wider text-muted-foreground w-28 shrink-0">
+      <span className="type-meta uppercase tracking-wider text-muted-foreground w-28 shrink-0">
         {label}
       </span>
       <span
-        className={cn("text-xs text-foreground break-all", mono && "font-mono")}
+        className={cn("type-secondary text-foreground break-all", mono && "font-mono")}
       >
         {value ?? <EmptyValue />}
       </span>
@@ -377,7 +377,7 @@ export function AgentSneakPeekContent({
     return (
       <div
         className={cn(
-          "flex items-center gap-2 text-sm text-muted-foreground py-6",
+          "flex items-center gap-2 type-body text-muted-foreground py-6",
           className,
         )}
       >
@@ -418,7 +418,7 @@ export function AgentSneakPeekContent({
         <EntityCustomFields entityToken="agent" recordId={agentId} />
         <Section label="Description">
           {record.description ? (
-            <div className="text-sm text-foreground break-words"><RichContent source={record.description ?? ""} level="standard" /></div>
+            <div className="type-body text-foreground break-words"><RichContent source={record.description ?? ""} level="standard" /></div>
           ) : (
             <EmptyValue />
           )}
@@ -440,7 +440,7 @@ export function AgentSneakPeekContent({
             <AiModelRef
               modelId={record.modelId}
               name={modelLabel}
-              className="text-sm text-foreground"
+              className="type-body text-foreground"
             />
           ) : (
             <EmptyValue />
@@ -455,7 +455,7 @@ export function AgentSneakPeekContent({
               {variableNames.map((n) => (
                 <span
                   key={n}
-                  className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-xs font-mono text-foreground"
+                  className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 type-secondary font-mono text-foreground"
                 >
                   {n}
                 </span>
@@ -475,7 +475,7 @@ export function AgentSneakPeekContent({
                 <span
                   key={`${n}-${i}`}
                   className={cn(
-                    "inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-xs text-foreground",
+                    "inline-flex items-center rounded-md bg-muted px-2 py-0.5 type-secondary text-foreground",
                     !toolsReady && "opacity-70",
                   )}
                 >
@@ -500,7 +500,7 @@ export function AgentSneakPeekContent({
                     key={i}
                     className="rounded-md border border-border bg-muted/30 p-2.5"
                   >
-                    <div className="text-[0.625rem] font-semibold uppercase tracking-wider text-muted-foreground mb-1">
+                    <div className="type-meta font-semibold uppercase tracking-wider text-muted-foreground mb-1">
                       {m.role}
                     </div>
                     {text ? (
@@ -589,8 +589,8 @@ export function AgentSneakPeekContent({
         {!variableDefs || variableDefs.length === 0 ? (
           <div className="rounded-md border border-dashed border-border bg-muted/20 px-3 py-6 text-center">
             <Variable className="mx-auto mb-2 h-5 w-5 text-muted-foreground/60" />
-            <p className="text-sm text-muted-foreground">No declared inputs.</p>
-            <p className="mt-1 text-xs text-muted-foreground/70">
+            <p className="type-body text-muted-foreground">No declared inputs.</p>
+            <p className="mt-1 type-secondary text-muted-foreground/70">
               This agent runs without user-supplied variables.
             </p>
           </div>
@@ -611,13 +611,13 @@ export function AgentSneakPeekContent({
                   className="rounded-md border border-border bg-muted/30 p-2.5"
                 >
                   <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="text-sm font-medium text-foreground">
+                    <span className="type-title text-foreground">
                       {variableRunLabel(v)}
                     </span>
-                    <code className="rounded bg-primary/10 px-1.5 py-0.5 text-xs font-semibold text-primary">
+                    <code className="rounded bg-primary/10 px-1.5 py-0.5 type-secondary font-semibold text-primary">
                       {`{{${v.name}}}`}
                     </code>
-                    <span className="rounded bg-background px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                    <span className="rounded bg-background px-1.5 py-0.5 type-meta font-medium uppercase tracking-wide text-muted-foreground">
                       {humanizeIdentifier(inputType)}
                     </span>
                     {v.required && (
@@ -625,12 +625,12 @@ export function AgentSneakPeekContent({
                     )}
                   </div>
                   {v.helpText && (
-                    <p className="mt-1.5 text-sm leading-snug text-foreground/90">
+                    <p className="mt-1.5 type-body leading-snug text-foreground/90">
                       {v.helpText}
                     </p>
                   )}
                   {defaultDisplay && (
-                    <p className="mt-1 text-xs text-muted-foreground">
+                    <p className="mt-1 type-secondary text-muted-foreground">
                       Default:{" "}
                       <span className="font-mono text-foreground/80">
                         {defaultDisplay}
@@ -649,16 +649,16 @@ export function AgentSneakPeekContent({
           <div className="rounded-md border border-border bg-muted/30 px-3 py-4">
             <div className="flex items-center gap-2">
               <FileText className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-medium text-foreground">Text</span>
+              <span className="type-title text-foreground">Text</span>
             </div>
-            <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
+            <p className="mt-1.5 type-secondary leading-relaxed text-muted-foreground">
               No structured output schema — the agent returns free-form text.
             </p>
           </div>
         ) : (
           <>
             {outputSchema?.name && (
-              <div className="flex items-center gap-2 text-sm">
+              <div className="flex items-center gap-2 type-body">
                 <Braces className="h-4 w-4 shrink-0 text-primary" />
                 <span className="font-medium text-foreground">
                   {outputSchema.name}
@@ -669,7 +669,7 @@ export function AgentSneakPeekContent({
               </div>
             )}
             {outputSchema?.description && (
-              <p className="text-sm leading-snug text-muted-foreground">
+              <p className="type-body leading-snug text-muted-foreground">
                 {outputSchema.description}
               </p>
             )}
@@ -681,21 +681,21 @@ export function AgentSneakPeekContent({
                 >
                   <div className="flex items-start justify-between gap-2">
                     <span className="flex min-w-0 items-center gap-1 truncate">
-                      <code className="text-xs font-semibold text-foreground">
+                      <code className="type-secondary font-semibold text-foreground">
                         {field.key}
                       </code>
                       {outputRequired.has(field.key) && (
-                        <span className="text-[10px] font-semibold text-primary">
+                        <span className="type-meta font-semibold text-primary">
                           *
                         </span>
                       )}
                     </span>
-                    <span className="shrink-0 font-mono text-[11px] text-muted-foreground">
+                    <span className="shrink-0 font-mono type-meta text-muted-foreground">
                       {field.type}
                     </span>
                   </div>
                   {field.description && (
-                    <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
+                    <p className="mt-0.5 type-meta leading-snug text-muted-foreground">
                       {field.description}
                     </p>
                   )}
@@ -731,7 +731,7 @@ export function AgentSneakPeekContent({
 
 function JsonBlock({ json }: { json: string }) {
   return (
-    <pre className="text-[11px] leading-relaxed bg-muted/40 border border-border rounded-md p-3 font-mono whitespace-pre-wrap break-words">
+    <pre className="type-meta leading-relaxed bg-muted/40 border border-border rounded-md p-3 font-mono whitespace-pre-wrap break-words">
       {json}
     </pre>
   );
@@ -787,7 +787,7 @@ export function AgentSneakPeekCopyMenu({ agentId }: { agentId: string }) {
           <FileJson className="mr-2 h-4 w-4" />
           <div className="flex flex-col">
             <span>Full JSON</span>
-            <span className="text-[10px] text-muted-foreground">
+            <span className="type-meta text-muted-foreground">
               Complete agent definition
             </span>
           </div>
@@ -796,7 +796,7 @@ export function AgentSneakPeekCopyMenu({ agentId }: { agentId: string }) {
           <Zap className="mr-2 h-4 w-4" />
           <div className="flex flex-col">
             <span>Execution Core</span>
-            <span className="text-[10px] text-muted-foreground">
+            <span className="type-meta text-muted-foreground">
               id, name, variables, slots
             </span>
           </div>
@@ -805,7 +805,7 @@ export function AgentSneakPeekCopyMenu({ agentId }: { agentId: string }) {
           <FileText className="mr-2 h-4 w-4" />
           <div className="flex flex-col">
             <span>Overview</span>
-            <span className="text-[10px] text-muted-foreground">
+            <span className="type-meta text-muted-foreground">
               Full JSON, messages truncated
             </span>
           </div>
@@ -936,7 +936,7 @@ export function AgentSneakPeekModal({
                 title="Next (→)"
               />
               {navigationIds && (
-                <span className="text-[10px] font-medium tabular-nums text-muted-foreground ml-1">
+                <span className="type-meta font-medium tabular-nums text-muted-foreground ml-1">
                   {currentIndex + 1} / {navigationIds.length}
                 </span>
               )}

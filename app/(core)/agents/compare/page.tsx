@@ -26,7 +26,7 @@ export default async function CompareAgentsPage({
     <>
       <PageHeader>
         <div className="flex items-center gap-2 px-2">
-          <span className="text-sm font-medium">Compare Agents</span>
+          <span className="type-title">Compare Agents</span>
         </div>
       </PageHeader>
       {/*

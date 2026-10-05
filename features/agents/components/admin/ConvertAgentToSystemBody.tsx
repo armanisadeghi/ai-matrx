@@ -201,7 +201,7 @@ export function ConvertAgentToSystemBody({
   // ─── Renderers ──────────────────────────────────────────────────────────────
 
   const renderChecking = (
-    <div className="flex items-center justify-center gap-3 py-12 text-sm text-muted-foreground">
+    <div className="flex items-center justify-center gap-3 py-12 type-body text-muted-foreground">
       <Loader2 className="w-4 h-4 animate-spin text-primary" />
       Checking for existing system agents…
     </div>
@@ -228,7 +228,7 @@ export function ConvertAgentToSystemBody({
     <div className="space-y-4">
       <div className="flex items-start gap-3 rounded-md border border-border bg-muted/30 px-3 py-2.5">
         <ShieldCheck className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-        <div className="text-xs leading-relaxed text-muted-foreground">
+        <div className="type-secondary leading-relaxed text-muted-foreground">
           <span className="font-medium text-foreground">{agentName}</span> goes
           to the system library, visible to all users
         </div>
@@ -268,7 +268,7 @@ export function ConvertAgentToSystemBody({
             >
               Update existing system agent
               {!hasExisting && (
-                <span className="ml-2 text-xs font-normal text-muted-foreground">
+                <span className="ml-2 type-secondary font-normal text-muted-foreground">
                   (none found)
                 </span>
               )}
@@ -300,14 +300,14 @@ export function ConvertAgentToSystemBody({
                         )}
                       >
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium truncate flex-1">
+                          <span className="type-title truncate flex-1">
                             {row.name}
                           </span>
                           <Badge variant="outline" className="text-[10px]">
                             v{row.version}
                           </Badge>
                         </div>
-                        <div className="mt-1 flex items-center gap-2 text-[11px] text-muted-foreground">
+                        <div className="mt-1 flex items-center gap-2 type-meta text-muted-foreground">
                           <Clock className="w-3 h-3 shrink-0" />
                           last snapshot{" "}
                           {formatTimestamp(
@@ -354,7 +354,7 @@ export function ConvertAgentToSystemBody({
             </Label>
             <Plus className="w-3.5 h-3.5 text-muted-foreground" />
           </div>
-          <p className="mt-1.5 pl-6 text-xs text-muted-foreground">
+          <p className="mt-1.5 pl-6 type-secondary text-muted-foreground">
             For sources with no linked system agent
           </p>
         </div>
@@ -389,7 +389,7 @@ export function ConvertAgentToSystemBody({
   const renderProcessing = (
     <div className="flex flex-col items-center justify-center gap-3 py-10 text-center">
       <Loader2 className="w-5 h-5 animate-spin text-primary" />
-      <div className="text-sm text-foreground">
+      <div className="type-body text-foreground">
         {action === "update"
           ? "Updating system agent…"
           : "Creating system agent…"}
@@ -403,7 +403,7 @@ export function ConvertAgentToSystemBody({
         <CheckCircle2 className="w-6 h-6" />
       </div>
       <div className="space-y-1">
-        <div className="text-sm font-medium text-foreground">
+        <div className="type-title text-foreground">
           {resultIsUpdate ? "System agent updated" : "System agent created"}
         </div>
       </div>

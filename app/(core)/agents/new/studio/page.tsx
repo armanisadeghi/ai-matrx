@@ -53,12 +53,12 @@ export default function AgentStudioComingSoonPage() {
                             <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">
                                 Agent Studio
                             </h1>
-                            <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400">
+                            <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-0.5 type-secondary font-medium text-amber-700 dark:text-amber-400">
                                 <AGENT_ICON className="h-3 w-3" />
                                 Coming soon
                             </span>
                         </div>
-                        <p className="text-sm text-muted-foreground max-w-2xl">
+                        <p className="type-body text-muted-foreground max-w-2xl">
                             Not another form. A system that builds genuinely intelligent agents for
                             you — and proves they work before you ever rely on them.
                         </p>
@@ -74,7 +74,7 @@ export default function AgentStudioComingSoonPage() {
                             <h2 className="text-base font-semibold text-foreground mb-1.5">
                                 Everyone else asks you to write a prompt.
                             </h2>
-                            <p className="text-sm text-muted-foreground">
+                            <p className="type-body text-muted-foreground">
                                 Writing a good agent means knowing what to say, what to leave out,
                                 which model, which tools, and how to tell whether it actually worked.
                                 That is a specialist job, and asking a brilliant non-specialist to do
@@ -87,7 +87,7 @@ export default function AgentStudioComingSoonPage() {
                     </div>
                 </div>
 
-                <h2 className="text-sm font-semibold text-foreground mb-3">
+                <h2 className="type-title text-foreground mb-3">
                     Several ways in. Pick whichever suits you — or let it pick for you.
                 </h2>
 
@@ -111,12 +111,12 @@ export default function AgentStudioComingSoonPage() {
                                         <h3 className="text-base font-semibold text-foreground">
                                             {approach.title}
                                             {approach.highlight && (
-                                                <span className="ml-2 text-xs font-medium text-sky-700 dark:text-sky-400">
+                                                <span className="ml-2 type-secondary font-medium text-sky-700 dark:text-sky-400">
                                                     the big one
                                                 </span>
                                             )}
                                         </h3>
-                                        <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                                        <p className="type-secondary text-muted-foreground mt-1 leading-relaxed">
                                             {approach.body}
                                         </p>
                                     </div>
@@ -125,7 +125,7 @@ export default function AgentStudioComingSoonPage() {
                         );
                     })}
                     <div className="rounded-xl border border-dashed border-border/60 p-4 flex items-center justify-center lg:col-span-2">
-                        <p className="text-xs text-muted-foreground text-center">
+                        <p className="type-secondary text-muted-foreground text-center">
                             …and more. Every way of getting expertise out of a person is an{" "}
                             <span className="font-medium text-foreground">Approach</span>, and Agent
                             Studio is built as a registry of them — never one hardcoded flow.
@@ -139,7 +139,7 @@ export default function AgentStudioComingSoonPage() {
                             Build an agent now
                         </Button>
                     </Link>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="type-secondary text-muted-foreground">
                         The current builder is live and stays. Agent Studio is what comes next to it.
                     </p>
                 </div>

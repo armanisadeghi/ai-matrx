@@ -64,7 +64,7 @@ export function TemplateCard({
         <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-20 flex items-center justify-center">
           <div className="flex flex-col items-center gap-2">
             <Loader2 className="w-8 h-8 text-primary animate-spin" />
-            <span className="text-sm font-medium text-foreground">
+            <span className="type-title text-foreground">
               {isNavigating ? "Loading..." : "Creating Agent..."}
             </span>
           </div>
@@ -82,7 +82,7 @@ export function TemplateCard({
         </div>
 
         {description && (
-          <p className="text-sm text-muted-foreground mb-4 line-clamp-3">
+          <p className="type-body text-muted-foreground mb-4 line-clamp-3">
             {description}
           </p>
         )}

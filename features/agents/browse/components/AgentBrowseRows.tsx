@@ -120,7 +120,7 @@ export function AgentBrowseRows({
           {/* Fixed-width zones from here right, so the columns line up down the
               list even though this is not a table. Each drops out on smaller
               widths rather than crushing the name. */}
-          <span className="hidden w-40 shrink-0 truncate text-xs text-muted-foreground lg:block">
+          <span className="hidden w-40 shrink-0 truncate type-secondary text-muted-foreground lg:block">
             {row.category ?? ""}
           </span>
 
@@ -136,20 +136,20 @@ export function AgentBrowseRows({
               </Badge>
             ))}
             {(row.tags?.length ?? 0) > 2 && (
-              <span className="text-[10px] text-muted-foreground">
+              <span className="type-meta text-muted-foreground">
                 +{(row.tags?.length ?? 0) - 2}
               </span>
             )}
           </span>
 
           {showOwner && (
-            <span className="hidden w-48 shrink-0 truncate text-xs text-muted-foreground xl:block">
+            <span className="hidden w-48 shrink-0 truncate type-secondary text-muted-foreground xl:block">
               {row.owner_email ?? ""}
             </span>
           )}
 
           <span
-            className="hidden w-20 shrink-0 text-right text-xs tabular-nums text-muted-foreground sm:block"
+            className="hidden w-20 shrink-0 text-right type-secondary tabular-nums text-muted-foreground sm:block"
             title={new Date(row.updated_at).toLocaleString()}
           >
             {formatRelativeTime(row.updated_at, { absolute: "date" })}
@@ -170,7 +170,7 @@ export function AgentBrowseRows({
         </div>
       ))}
       {rows.length === 0 && (
-        <p className="px-3 py-8 text-center text-sm text-muted-foreground">
+        <p className="px-3 py-8 text-center type-body text-muted-foreground">
           No agents match this scope and filter combination.
         </p>
       )}

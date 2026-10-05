@@ -70,10 +70,10 @@ export function CreateManualAgentClient() {
         <div className="flex max-w-md items-start gap-3 rounded-lg border border-border bg-card p-4">
           <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
           <div>
-            <p className="text-sm font-medium text-foreground">
+            <p className="type-title text-foreground">
               The agent was not created
             </p>
-            <p className="mt-1 text-sm text-muted-foreground">{error} <ErrorAlchemyMenu error={error} /></p>
+            <p className="mt-1 type-body text-muted-foreground">{error} <ErrorAlchemyMenu error={error} /></p>
           </div>
         </div>
       </div>

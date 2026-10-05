@@ -115,7 +115,7 @@ class GeneratorErrorBoundary extends Component<
         <div className="flex flex-col h-full">
           <div className="flex-none p-2 bg-red-100 dark:bg-red-900/20 border-b border-red-200 dark:border-red-800 flex items-start gap-2">
             <AlertTriangle className="h-3.5 w-3.5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
-            <span className="text-xs text-red-700 dark:text-red-300">
+            <span className="type-secondary text-red-700 dark:text-red-300">
               <strong>Display Error:</strong>{" "}
               {asClause(this.state.error?.message ?? "Unknown rendering error")}. Showing
               raw response below.
@@ -613,7 +613,7 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
           {holderDraftWaiting ? (
             <div
               data-testid="generator-needs-workspace"
-              className="flex items-center gap-2 rounded-md border border-border bg-muted/50 px-2.5 py-1.5 text-xs text-muted-foreground"
+              className="flex items-center gap-2 rounded-md border border-border bg-muted/50 px-2.5 py-1.5 type-secondary text-muted-foreground"
             >
               <span className="flex-1">Choose a workspace to generate.</span>
               <Button
@@ -631,7 +631,7 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
               </Button>
             </div>
           ) : !shortcutReady && !generatorLoadError ? (
-            <div className="flex items-center gap-2 p-2 rounded-md bg-muted/50 border border-border text-xs text-muted-foreground">
+            <div className="flex items-center gap-2 p-2 rounded-md bg-muted/50 border border-border type-secondary text-muted-foreground">
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
               Loading generator configuration…
             </div>
@@ -641,7 +641,7 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
             // button that opens the job so it can be bound (Arman, 2026-09-24).
             <div
               data-testid="generator-unavailable"
-              className="flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-2.5 py-1.5 text-xs text-destructive"
+              className="flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-2.5 py-1.5 type-secondary text-destructive"
             >
               <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
               <span className="flex-1 font-medium">Mandate binding needed</span>
@@ -659,12 +659,12 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
           ) : generatorLoadError ? (
             <div
               data-testid="generator-unavailable"
-              className="flex items-start gap-2 p-2 rounded-md bg-destructive/10 border border-destructive/30 text-xs text-destructive"
+              className="flex items-start gap-2 p-2 rounded-md bg-destructive/10 border border-destructive/30 type-secondary text-destructive"
             >
               <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
               <div className="flex-1 min-w-0">
                 <div className="font-medium">Generator unavailable</div>
-                <div className="text-[11px] opacity-80">
+                <div className="type-meta opacity-80">
                   {generatorLoadError}
                 </div>
               </div>
@@ -684,7 +684,7 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
             <div className="space-y-2">
               <Label className="text-xs sm:text-sm font-medium flex items-center gap-2">
                 What should this agent do?
-                <span className="text-xs text-red-500">*</span>
+                <span className="type-secondary text-red-500">*</span>
               </Label>
               <VoiceTextarea
                 value={selection}
@@ -716,7 +716,7 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
             <div className="space-y-2">
               <Label className="text-xs sm:text-sm font-medium">
                 {mandateMode ? "Your guidance" : "Additional Context"}
-                <span className="text-xs text-gray-500 ml-1">(Optional)</span>
+                <span className="type-secondary text-gray-500 ml-1">(Optional)</span>
               </Label>
               <VoiceTextarea
                 value={userInput}
@@ -752,7 +752,7 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
               <div className="space-y-2">
                 <Label className="text-xs sm:text-sm font-medium flex items-center gap-2">
                   Agent Name
-                  <span className="text-xs text-red-500">*</span>
+                  <span className="type-secondary text-red-500">*</span>
                 </Label>
                 <Input
                   value={agentName}
@@ -804,11 +804,11 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
                 <div className="h-full flex flex-col">
                   <div className="flex-none flex items-center gap-2 p-2 border-b border-purple-200 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-950/30">
                     <Loader2 className="h-4 w-4 animate-spin text-purple-600 dark:text-purple-400" />
-                    <span className="text-xs font-medium text-purple-700 dark:text-purple-300">
+                    <span className="type-secondary font-medium text-purple-700 dark:text-purple-300">
                       Generating your agent...
                     </span>
                     {isDebugActive && (
-                      <span className="ml-auto text-[10px] font-mono text-gray-400 flex items-center gap-1">
+                      <span className="ml-auto type-meta font-mono text-gray-400 flex items-center gap-1">
                         <Bug className="h-3 w-3" />
                         {streamPhase} | rev:{jsonExtractionRevision}
                       </span>
@@ -822,7 +822,7 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
                         extracted={extractedValue}
                       />
                     ) : (
-                      <div className="flex flex-col items-center justify-center h-full text-center text-xs text-muted-foreground">
+                      <div className="flex flex-col items-center justify-center h-full text-center type-secondary text-muted-foreground">
                         <Loader2 className="h-5 w-5 animate-spin text-purple-600 dark:text-purple-400 mb-2" />
                         Waiting for the stream to start…
                       </div>
@@ -834,7 +834,7 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
                   {extractionFailed && (
                     <div className="flex-none p-2 bg-amber-100 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-800 flex items-start gap-2">
                       <AlertTriangle className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-                      <span className="text-xs text-amber-700 dark:text-amber-300">
+                      <span className="type-secondary text-amber-700 dark:text-amber-300">
                         <strong>JSON Extraction Failed:</strong> Could not
                         extract structured agent config from the response.
                         <ErrorAlchemyMenu />
@@ -844,7 +844,7 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
                   {showResult && (
                     <div className="flex-none p-2 bg-green-100 dark:bg-green-900/20 border-b border-green-200 dark:border-green-800 flex items-center gap-2">
                       <Check className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
-                      <span className="text-xs text-green-700 dark:text-green-300">
+                      <span className="type-secondary text-green-700 dark:text-green-300">
                         Agent generated successfully!
                       </span>
                     </div>
@@ -860,10 +860,10 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
               ) : (
                 <div className="flex flex-col items-center justify-center h-full text-center p-4 sm:p-6">
                   <Hammer className="h-10 w-10 sm:h-12 sm:w-12 text-gray-300 dark:text-gray-600 mb-3" />
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+                  <p className="type-body text-gray-500 dark:text-gray-400 mb-2">
                     Ready to generate
                   </p>
-                  <p className="text-xs text-gray-400 dark:text-gray-500 max-w-md">
+                  <p className="type-secondary text-gray-400 dark:text-gray-500 max-w-md">
                     {mandateMode
                       ? "Everything this job needs is already on the left. Click \u201cGenerate\u201d and the agent is drafted against it."
                       : "Describe what you want your agent to do and click \u201cGenerate\u201d to let AI create the configuration"}
@@ -877,7 +877,7 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
 
       {/* Action Buttons */}
       <div className="flex-shrink-0 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-0 px-4 sm:px-6 py-3 sm:py-4 border-t bg-muted/30 pb-safe">
-        <div className="text-xs text-gray-500 dark:text-gray-400 hidden sm:block">
+        <div className="type-secondary text-gray-500 dark:text-gray-400 hidden sm:block">
           {showResult && (
             <span className="flex items-center gap-1">
               <Check className="h-3 w-3 text-green-600" />

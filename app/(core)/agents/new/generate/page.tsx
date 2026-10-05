@@ -13,7 +13,7 @@ export default function GenerateAgentPage() {
             <ArrowLeft className="h-3.5 w-3.5" />
           </Button>
         </Link>
-        <div className="flex items-center gap-2 text-sm font-semibold">
+        <div className="flex items-center gap-2 type-title">
           <Rocket className="h-4 w-4 text-purple-600 dark:text-purple-400" />
           AI Agent Generator
         </div>

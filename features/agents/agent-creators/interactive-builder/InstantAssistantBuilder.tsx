@@ -236,7 +236,7 @@ export function InstantAssistantBuilder({
                     className="text-indigo-500 dark:text-indigo-400"
                     size={16}
                   />
-                  <h3 className="text-sm font-medium">Fine-Tuning</h3>
+                  <h3 className="type-title">Fine-Tuning</h3>
                 </div>
                 <div className="space-y-4">
                   <LevelSlider
@@ -317,7 +317,7 @@ function SelectSection({
     <div className="border-border rounded-lg p-3">
       <div className="flex items-center gap-2 mb-2">
         {icon}
-        <h3 className="text-sm font-medium">{label}</h3>
+        <h3 className="type-title">{label}</h3>
       </div>
       <Select
         value={value}
@@ -341,7 +341,7 @@ function SelectSection({
                 <div className="flex flex-col py-1">
                   <span className="font-medium">{opt.label}</span>
                   {"shortDesc" in opt && (
-                    <span className="text-xs text-muted-foreground mt-0.5">
+                    <span className="type-secondary text-muted-foreground mt-0.5">
                       {(opt as OptionItem & { shortDesc: string }).shortDesc}
                     </span>
                   )}
@@ -377,7 +377,7 @@ function LevelSlider({
     <div>
       <div className="flex justify-between items-center mb-1.5">
         <label className="text-xs font-medium">{label}</label>
-        <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">
+        <span className="type-secondary font-semibold text-indigo-600 dark:text-indigo-400">
           {levels[snapped]?.label}
         </span>
       </div>
@@ -389,7 +389,7 @@ function LevelSlider({
         onValueChange={([v]) => onChange(snapToNearestLevel(v))}
         className="w-full"
       />
-      <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
+      <div className="flex justify-between type-secondary text-gray-500 dark:text-gray-400 mt-1">
         <span>{leftLabel}</span>
         <span>Standard</span>
         <span>{rightLabel}</span>

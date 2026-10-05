@@ -51,7 +51,7 @@ const EvaluationContent: React.FC<EvaluationContentProps> = ({ updateContent }) 
     <div className="space-y-6 w-full">
       <div className="space-y-4">
         <Label className="text-gray-700 dark:text-gray-300">Success Metrics</Label>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+        <p className="type-body text-gray-600 dark:text-gray-400 mb-2">
           Select criteria in order of importance (first selected = highest priority)
         </p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

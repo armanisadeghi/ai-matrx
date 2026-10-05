@@ -216,7 +216,7 @@ export function AgentLineageTree() {
   if (builtins.length === 0) {
     return (
       <Card>
-        <CardContent className="p-8 flex items-center justify-center gap-2 text-sm text-muted-foreground">
+        <CardContent className="p-8 flex items-center justify-center gap-2 type-body text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" />
           Loading system agents…
         </CardContent>
@@ -248,7 +248,7 @@ export function AgentLineageTree() {
             )}
           </div>
         </div>
-        <span className="text-xs text-muted-foreground shrink-0">
+        <span className="type-secondary text-muted-foreground shrink-0">
           <UntrustedCount
             value={visibleBuiltins.length}
             trustworthy={!agentsError}
@@ -327,7 +327,7 @@ export function AgentLineageTree() {
 
       {visibleBuiltins.length === 0 ? (
         <Card>
-          <CardContent className="p-8 text-center text-sm text-muted-foreground">
+          <CardContent className="p-8 text-center type-body text-muted-foreground">
             No system agents match &ldquo;{search}&rdquo;.
           </CardContent>
         </Card>
@@ -406,10 +406,10 @@ function LineageCard({
               name={agent.name}
               href={`${ADMIN_AGENT_BASE}/${agent.id}/build`}
               showIcon={false}
-              className="pointer-events-auto text-sm"
+              className="pointer-events-auto type-body"
               labelClassName="font-medium"
             />
-            <div className="text-xs text-muted-foreground truncate">
+            <div className="type-secondary text-muted-foreground truncate">
               {agent.description ?? "No description"}
             </div>
           </div>
@@ -465,7 +465,7 @@ function LineageCard({
       {isOpen && (
         <div className="border-t border-border bg-muted/20 p-3 space-y-3">
           {totalRefs === 0 ? (
-            <div className="text-xs text-muted-foreground px-1">
+            <div className="type-secondary text-muted-foreground px-1">
               Nothing references this agent yet.
             </div>
           ) : null}
@@ -533,7 +533,7 @@ function Section({
 }) {
   return (
     <div className="space-y-1.5">
-      <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">
+      <div className="flex items-center gap-1.5 type-meta uppercase tracking-wider text-muted-foreground font-medium">
         <Icon className="h-3 w-3" />
         {title}
       </div>
@@ -565,9 +565,9 @@ function LineageRow({
        rel="noopener noreferrer"
      >
       <div className="flex-1 min-w-0">
-        <div className="text-xs font-medium truncate">{title}</div>
+        <div className="type-secondary font-medium truncate">{title}</div>
         {subtitle ? (
-          <div className="text-[10px] text-muted-foreground truncate">
+          <div className="type-meta text-muted-foreground truncate">
             {subtitle}
           </div>
         ) : null}
@@ -598,7 +598,7 @@ function CountBadge({
   return (
     <div
       className={cn(
-        "flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px]",
+        "flex items-center gap-1 px-1.5 py-0.5 rounded type-meta",
         state === "ready" && count > 0
           ? "bg-primary/10 text-primary"
           : "text-muted-foreground/60 border border-border",

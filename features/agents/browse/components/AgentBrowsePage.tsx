@@ -119,7 +119,7 @@ export function AgentBrowsePage({
       notice={<ClassicViewNotice />}
       headerActions={(list) =>
         supportAdmin ? (
-          <span className="flex items-center gap-2 text-xs text-muted-foreground">
+          <span className="flex items-center gap-2 type-secondary text-muted-foreground">
             <span className="rounded border border-amber-500/40 bg-amber-500/10 px-1.5 py-0.5 font-medium text-amber-700 dark:text-amber-300">
               Support tool
             </span>

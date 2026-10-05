@@ -86,7 +86,7 @@ export default function NewAgentPage() {
             <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground mb-1 sm:mb-2">
               Create New Agent
             </h1>
-            <p className="text-sm text-muted-foreground">
+            <p className="type-body text-muted-foreground">
               Choose how you want to create your new AI agent.
             </p>
           </div>
@@ -113,12 +113,12 @@ export default function NewAgentPage() {
                     <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
                       {option.title}
                       {"badge" in option && option.badge ? (
-                        <span className="inline-flex items-center rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-400">
+                        <span className="inline-flex items-center rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 type-meta font-medium text-amber-700 dark:text-amber-400">
                           {option.badge}
                         </span>
                       ) : null}
                     </h3>
-                    <p className="text-xs text-muted-foreground mt-0.5">
+                    <p className="type-secondary text-muted-foreground mt-0.5">
                       {option.description}
                     </p>
                   </div>

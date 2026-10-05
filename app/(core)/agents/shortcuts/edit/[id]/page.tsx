@@ -114,7 +114,7 @@ export default function UserEditShortcutPage({
       />
       <div className="h-full overflow-hidden flex items-center justify-center p-6 bg-textured">
         <Card className="max-w-lg w-full">
-          <CardContent className="p-6 space-y-2 text-sm text-muted-foreground">
+          <CardContent className="p-6 space-y-2 type-body text-muted-foreground">
             <div className="font-medium text-foreground">Shortcut editor</div>
             <p>
               The shortcut editor is open as a modal. Close it to return to the

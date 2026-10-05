@@ -43,7 +43,7 @@ const ExamplesContent: React.FC<ExamplesContentProps> = ({ updateContent }) => {
           onChange={(e) => setExamplesText(e.target.value)}
           className="w-full min-h-[200px] bg-white dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400"
         />
-        <p className="text-sm text-gray-600 dark:text-gray-400">
+        <p className="type-body text-gray-600 dark:text-gray-400">
           Include sample inputs/outputs, good examples to follow, or examples to avoid.
         </p>
       </div>

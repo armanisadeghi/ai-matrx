@@ -181,7 +181,7 @@ export const BROWSE_COLUMNS: EntityColumnSpec<AgentBrowseRow>[] = [
             ))}
             {row.tags.length > 2 && (
               <span
-                className="shrink-0 pl-1 text-[11px] text-muted-foreground"
+                className="shrink-0 pl-1 type-meta text-muted-foreground"
                 title={row.tags.join(", ")}
               >
                 +{row.tags.length - 2}

@@ -53,7 +53,7 @@ export default async function AgentTemplatesPage() {
               <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground mb-1 sm:mb-2">
                 Agent Templates
               </h1>
-              <p className="text-sm text-muted-foreground">
+              <p className="type-body text-muted-foreground">
                 Start from a pre-built template and customize it to your needs.
               </p>
             </div>

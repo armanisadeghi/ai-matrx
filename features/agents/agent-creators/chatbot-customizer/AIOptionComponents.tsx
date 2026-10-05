@@ -52,10 +52,10 @@ export const SliderControl: React.FC<{
         <div className="mb-4">
             <div className="flex justify-between items-center mb-1">
                 <Label className="text-sm font-medium">{label}</Label>
-                <span className="text-xs font-medium px-2 py-1 bg-primary/10 text-primary rounded-full">{value}%</span>
+                <span className="type-secondary font-medium px-2 py-1 bg-primary/10 text-primary rounded-full">{value}%</span>
             </div>
             <div className="flex items-center space-x-2">
-                <span className="text-xs text-muted-foreground">{leftLabel}</span>
+                <span className="type-secondary text-muted-foreground">{leftLabel}</span>
                 <Slider
                     value={[value]}
                     min={min}
@@ -64,7 +64,7 @@ export const SliderControl: React.FC<{
                     onValueChange={(values) => onChange(option.id, values[0])}
                     className="flex-1"
                 />
-                <span className="text-xs text-muted-foreground">{rightLabel}</span>
+                <span className="type-secondary text-muted-foreground">{rightLabel}</span>
             </div>
         </div>
     );
@@ -141,7 +141,7 @@ export const StyleButtonControl: React.FC<{
                         }`}
                     >
                         <div className="font-medium mb-1">{item.label}</div>
-                        {item.description && <div className="text-xs text-muted-foreground">{item.description}</div>}
+                        {item.description && <div className="type-secondary text-muted-foreground">{item.description}</div>}
                     </button>
                 ))}
             </div>

@@ -258,7 +258,7 @@ export function AgentCard({
         <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-20 flex items-center justify-center">
           <div className="flex flex-col items-center gap-2">
             <Loader2 className="w-8 h-8 text-primary animate-spin" />
-            <span className="text-sm font-medium text-foreground">
+            <span className="type-title text-foreground">
               Loading...
             </span>
           </div>
@@ -286,7 +286,7 @@ export function AgentCard({
       {isArchived && (
         <div className="absolute top-3 right-8 z-10 flex items-center gap-1 px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
           <Archive className="h-3 w-3" />
-          <span className="text-[10px] font-medium">Archived</span>
+          <span className="type-meta font-medium">Archived</span>
         </div>
       )}
 

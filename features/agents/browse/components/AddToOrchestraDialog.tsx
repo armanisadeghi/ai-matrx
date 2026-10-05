@@ -72,7 +72,7 @@ export function AddToOrchestraDialog({
             <SuspenseLoader centered={false} message="Loading orchestras…" />
           </div>
         ) : orchestras.length === 0 ? (
-          <p className="py-6 text-center text-sm text-muted-foreground">
+          <p className="py-6 text-center type-body text-muted-foreground">
             You don&apos;t have any Orchestras yet.
           </p>
         ) : (
@@ -97,7 +97,7 @@ export function AddToOrchestraDialog({
                       <Network className="h-4 w-4 shrink-0 text-muted-foreground" />
                     )}
                     <span className="truncate">{orchestraLabel}</span>
-                    <span className="ml-auto shrink-0 text-xs text-muted-foreground tabular-nums">
+                    <span className="ml-auto shrink-0 type-secondary text-muted-foreground tabular-nums">
                       {orchestra.memberCount}
                     </span>
                   </button>

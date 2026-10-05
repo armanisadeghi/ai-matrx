@@ -56,7 +56,7 @@ export const TabBase: React.FC<TabBaseProps> = ({
           <div>
             <CardTitle className="text-gray-900 dark:text-gray-100 text-lg font-medium">{tabTitle}</CardTitle>
             {tabDescription && (
-              <CardDescription className="text-gray-600 dark:text-gray-400 text-sm mt-1">
+              <CardDescription className="text-gray-600 dark:text-gray-400 type-body mt-1">
                 {tabDescription}
               </CardDescription>
             )}
@@ -90,7 +90,7 @@ export const TabBase: React.FC<TabBaseProps> = ({
       )}
       
       {footer && (isEnabled || isAlwaysEnabled) && (
-        <CardFooter className="flex items-center justify-between px-6 py-3 bg-zinc-50 dark:bg-zinc-900 border-t border-zinc-100 dark:border-zinc-800 text-xs text-gray-500 dark:text-gray-400">
+        <CardFooter className="flex items-center justify-between px-6 py-3 bg-zinc-50 dark:bg-zinc-900 border-t border-zinc-100 dark:border-zinc-800 type-secondary text-gray-500 dark:text-gray-400">
           {footer}
         </CardFooter>
       )}

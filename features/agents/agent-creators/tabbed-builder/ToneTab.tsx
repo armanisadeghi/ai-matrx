@@ -91,7 +91,7 @@ const ToneContent: React.FC<ToneContentProps> = ({ updateContent }) => {
             Level of Detail
           </Label>
           <div className="px-1">
-            <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-2">
+            <div className="flex justify-between type-secondary text-gray-500 dark:text-gray-400 mb-2">
               <span>Concise</span>
               <span>Balanced</span>
               <span>Comprehensive</span>

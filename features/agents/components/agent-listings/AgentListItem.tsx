@@ -233,7 +233,7 @@ export function AgentListItem({
             {/* THE DOOR LAW: the row itself opens a chooser modal, so the name
                 is the record's own door — a real anchor (cmd-click, middle
                 click, new tab, keyboard). */}
-            <h4 className="text-sm font-medium text-foreground truncate">
+            <h4 className="type-title text-foreground truncate">
               <EntityRef
                 token="agent"
                 id={id}
@@ -244,7 +244,7 @@ export function AgentListItem({
             </h4>
             <AgentProofBadge agentId={id} className="flex-shrink-0" />
             {isArchived && (
-              <span className="flex-shrink-0 text-[10px] font-medium px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+              <span className="flex-shrink-0 type-meta font-medium px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
                 Archived
               </span>
             )}

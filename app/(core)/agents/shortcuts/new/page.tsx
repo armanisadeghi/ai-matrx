@@ -26,7 +26,7 @@ export default function UserNewShortcutPage() {
   return (
     <div className="h-full flex flex-col overflow-hidden bg-textured">
       <PageHeader>
-        <h1 className="text-sm font-medium text-foreground">New shortcut</h1>
+        <h1 className="type-title text-foreground">New shortcut</h1>
       </PageHeader>
       <div className="flex-1 min-h-0 pt-[var(--shell-header-h)]" />
       <ShortcutForm

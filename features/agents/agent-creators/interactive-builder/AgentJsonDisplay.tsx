@@ -94,10 +94,10 @@ class AgentJsonErrorBoundary extends Component<
         <div className="p-3 rounded-md bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-800 flex items-start gap-2">
           <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
           <div>
-            <p className="text-sm font-semibold text-red-700 dark:text-red-300">
+            <p className="type-title text-red-700 dark:text-red-300">
               Display error
             </p>
-            <p className="text-xs text-red-600 dark:text-red-400 mt-1">
+            <p className="type-secondary text-red-600 dark:text-red-400 mt-1">
               {this.state.error?.message ?? "Failed to render agent JSON"}
               <ErrorAlchemyMenu error={this.state.error?.message} />
             </p>
@@ -214,7 +214,7 @@ function AgentJsonDisplayInner({
     return isStreamActive ? (
       <div className="flex flex-col items-center justify-center py-12 px-4">
         <Loader2 className="h-7 w-7 animate-spin text-purple-600 dark:text-purple-400 mb-2" />
-        <p className="text-xs text-muted-foreground">
+        <p className="type-secondary text-muted-foreground">
           Generating agent configuration…
         </p>
       </div>
@@ -227,7 +227,7 @@ function AgentJsonDisplayInner({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <FileJson className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+          <span className="type-title text-gray-700 dark:text-gray-300">
             Agent Configuration
           </span>
           {!agentData.isComplete && isStreamActive && (
@@ -294,7 +294,7 @@ function PrettyView({
           {data.name && (
             <div className="flex items-center gap-2">
               <Gem className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+              <h3 className="type-title text-gray-900 dark:text-gray-100">
                 {data.name}
               </h3>
               {data.agent_type && (
@@ -313,7 +313,7 @@ function PrettyView({
             </div>
           )}
           {data.description && (
-            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+            <p className="type-secondary text-gray-600 dark:text-gray-400 mt-1">
               {data.description}
             </p>
           )}
@@ -406,14 +406,14 @@ function PrettyView({
       {/* Model id alone (when settings haven't landed) */}
       {!data.settings && data.model_id && (
         <section className="border-t pt-2">
-          <div className="flex items-center gap-1.5 text-xs">
+          <div className="flex items-center gap-1.5 type-secondary">
             <Database className="h-3.5 w-3.5 text-gray-600 dark:text-gray-400" />
             <span className="text-muted-foreground">Model:</span>
             <AiModelRef
               modelId={data.model_id}
               showId
               showIcon={false}
-              className="rounded bg-muted px-1.5 py-0.5 text-[10px]"
+              className="rounded bg-muted px-1.5 py-0.5 type-meta"
             />
           </div>
         </section>
@@ -434,7 +434,7 @@ function SectionHeader({
   return (
     <div className="flex items-center gap-1.5 mb-1.5">
       <Icon className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
-      <h4 className="text-xs font-semibold text-gray-900 dark:text-gray-100">
+      <h4 className="type-secondary font-semibold text-gray-900 dark:text-gray-100">
         {label}
       </h4>
     </div>
@@ -481,7 +481,7 @@ function MessageCard({
         <MessageSquare className={cn("h-3 w-3", c.color)} />
         <span
           className={cn(
-            "text-[10px] font-semibold uppercase tracking-wide",
+            "type-meta font-semibold uppercase tracking-wide",
             c.color,
           )}
         >
@@ -508,7 +508,7 @@ function VariablesTable({
 }) {
   return (
     <div className="border rounded-md overflow-hidden bg-background/40">
-      <table className={cn("text-xs", MOBILE_TABLE)}>
+      <table className={cn("type-secondary", MOBILE_TABLE)}>
         <thead>
           <tr className="bg-muted/50 border-b">
             <th
@@ -586,7 +586,7 @@ function ContextPoliciesTable({
 }) {
   return (
     <div className="border rounded-md overflow-hidden bg-background/40">
-      <table className={cn("text-xs", MOBILE_TABLE)}>
+      <table className={cn("type-secondary", MOBILE_TABLE)}>
         <thead>
           <tr className="bg-muted/50 border-b">
             <th
@@ -666,10 +666,10 @@ function SettingsGrid({
   });
   if (entries.length === 0) return null;
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-3 gap-y-1 p-2 border rounded-md bg-muted/30 text-xs">
+    <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-3 gap-y-1 p-2 border rounded-md bg-muted/30 type-secondary">
       {entries.map(([key, value]) => (
         <div key={key} className="flex flex-col min-w-0">
-          <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
+          <span className="type-meta font-medium text-muted-foreground uppercase tracking-wide">
             {key.replace(/_/g, " ")}
           </span>
           {key === "model_id" && typeof value === "string" ? (
@@ -677,10 +677,10 @@ function SettingsGrid({
               modelId={value}
               showId
               showIcon={false}
-              className="text-xs text-gray-900 dark:text-gray-100"
+              className="type-secondary text-gray-900 dark:text-gray-100"
             />
           ) : (
-            <span className="text-xs font-medium text-gray-900 dark:text-gray-100 truncate">
+            <span className="type-secondary font-medium text-gray-900 dark:text-gray-100 truncate">
               {renderValuePreview(value)}
             </span>
           )}
@@ -692,7 +692,7 @@ function SettingsGrid({
 
 function JsonView({ jsonContent }: { jsonContent: string }) {
   return (
-    <pre className="p-3 bg-gray-900 dark:bg-black text-gray-100 rounded-lg overflow-x-auto text-[11px] font-mono leading-relaxed border">
+    <pre className="p-3 bg-gray-900 dark:bg-black text-gray-100 rounded-lg overflow-x-auto type-meta font-mono leading-relaxed border">
       <code>{jsonContent || "// Waiting for JSON…"}</code>
     </pre>
   );

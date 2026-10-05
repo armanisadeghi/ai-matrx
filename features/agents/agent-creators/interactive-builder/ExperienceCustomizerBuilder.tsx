@@ -35,7 +35,7 @@ const Section: React.FC<{
       >
         <div className="flex items-center">
           <section.icon className="h-4 w-4 mr-2 text-primary flex-shrink-0" />
-          <h2 className="text-sm font-semibold flex-grow">{section.title}</h2>
+          <h2 className="type-title flex-grow">{section.title}</h2>
           <svg
             width="16"
             height="16"
@@ -54,7 +54,7 @@ const Section: React.FC<{
           </svg>
         </div>
         {section.description && (
-          <p className="text-xs text-muted-foreground mt-1">
+          <p className="type-secondary text-muted-foreground mt-1">
             {section.description}
           </p>
         )}
@@ -84,7 +84,7 @@ const Section: React.FC<{
                       <div className="p-1 rounded-lg bg-primary/10 text-primary mr-2">
                         <cardConfig.icon className="h-4 w-4" />
                       </div>
-                      <h3 className="text-sm font-semibold text-foreground">
+                      <h3 className="type-title text-foreground">
                         {cardConfig.title}
                       </h3>
                     </div>

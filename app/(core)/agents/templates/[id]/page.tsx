@@ -91,7 +91,7 @@ export default async function AgentTemplateDetailPage({
               {template.messages != null ? (
                 <div className="mb-4">
                   <h3 className="font-medium text-foreground mb-2">Messages</h3>
-                  <pre className="bg-textured p-4 rounded-lg text-sm overflow-auto max-h-96">
+                  <pre className="bg-textured p-4 rounded-lg type-body overflow-auto max-h-96">
                     {JSON.stringify(template.messages, null, 2)}
                   </pre>
                 </div>
@@ -102,7 +102,7 @@ export default async function AgentTemplateDetailPage({
                   <h3 className="font-medium text-foreground mb-2">
                     Variable Definitions
                   </h3>
-                  <pre className="bg-textured p-4 rounded-lg text-sm overflow-auto">
+                  <pre className="bg-textured p-4 rounded-lg type-body overflow-auto">
                     {JSON.stringify(template.variable_definitions, null, 2)}
                   </pre>
                 </div>
@@ -111,7 +111,7 @@ export default async function AgentTemplateDetailPage({
               {template.tools && template.tools.length > 0 && (
                 <div className="mb-4">
                   <h3 className="font-medium text-foreground mb-2">Tools</h3>
-                  <pre className="bg-textured p-4 rounded-lg text-sm overflow-auto">
+                  <pre className="bg-textured p-4 rounded-lg type-body overflow-auto">
                     {JSON.stringify(template.tools, null, 2)}
                   </pre>
                 </div>
@@ -124,7 +124,7 @@ export default async function AgentTemplateDetailPage({
                     <h3 className="font-medium text-foreground mb-2">
                       Settings
                     </h3>
-                    <pre className="bg-textured p-4 rounded-lg text-sm overflow-auto">
+                    <pre className="bg-textured p-4 rounded-lg type-body overflow-auto">
                       {JSON.stringify(template.settings, null, 2)}
                     </pre>
                   </div>
@@ -140,7 +140,7 @@ export default async function AgentTemplateDetailPage({
               <div className="space-y-3">
                 {template.category && (
                   <div>
-                    <p className="text-sm text-muted-foreground mb-1">
+                    <p className="type-body text-muted-foreground mb-1">
                       Category
                     </p>
                     <Badge
@@ -154,7 +154,7 @@ export default async function AgentTemplateDetailPage({
 
                 {template.tags && template.tags.length > 0 && (
                   <div>
-                    <p className="text-sm text-muted-foreground mb-1">Tags</p>
+                    <p className="type-body text-muted-foreground mb-1">Tags</p>
                     <div className="flex flex-wrap gap-1">
                       {template.tags.map((tag: string) => (
                         <Badge
@@ -170,7 +170,7 @@ export default async function AgentTemplateDetailPage({
                 )}
 
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">
+                  <p className="type-body text-muted-foreground mb-1">
                     Times Used
                   </p>
                   <p className="font-medium text-foreground">
@@ -179,17 +179,17 @@ export default async function AgentTemplateDetailPage({
                 </div>
 
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">Created</p>
-                  <p className="text-sm text-foreground">
+                  <p className="type-body text-muted-foreground mb-1">Created</p>
+                  <p className="type-body text-foreground">
                     {formatDate(template.created_at)}
                   </p>
                 </div>
 
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">
+                  <p className="type-body text-muted-foreground mb-1">
                     Last Updated
                   </p>
-                  <p className="text-sm text-foreground">
+                  <p className="type-body text-foreground">
                     {formatDate(template.updated_at)}
                   </p>
                 </div>
