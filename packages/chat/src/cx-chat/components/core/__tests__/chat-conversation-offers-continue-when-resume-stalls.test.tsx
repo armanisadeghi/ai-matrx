@@ -25,6 +25,10 @@ const fakeState = () => ({
   },
 });
 
+// The page reads the tab-wide composer mode; this test store has no chatRoute slice.
+jest.mock("../../../../agents/components/inputs/smart-input/composer/useComposerMode", () => ({
+  useComposerMode: () => ({ mode: "chat", setMode: () => undefined }),
+}));
 jest.mock("../../../../store/hooks", () => ({
   useAppDispatch: () => jest.fn(() => ({ finally: () => undefined })),
   useAppSelector: (sel: (s: unknown) => unknown) => sel(fakeState()),

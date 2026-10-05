@@ -112,7 +112,7 @@ describe("AgentTextarea auto-resize", () => {
     expect(source).toContain("const unexpandedCapPx = maxHeightPx ?? 200;");
     expect(source).toContain("maxHeight: isExpanded ? undefined : unexpandedCapPx");
     expect(source).toContain("Math.min(snapped, unexpandedCapPx)");
-    expect(stackedSource).toContain('"mx-auto flex w-full min-w-0 shrink-0 flex-col gap-1"');
+    expect(stackedSource).toContain('"matrx-touch-targets mx-auto flex w-full min-w-0 shrink-0 flex-col gap-1"');
   });
 
   it("keeps the connector line dense without shrinking mobile hit areas", () => {
