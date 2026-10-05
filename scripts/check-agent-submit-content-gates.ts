@@ -94,7 +94,16 @@ function main(): void {
 
     const thunks = `features/agent-comparison/modes/${mode}/redux/thunks.ts`;
     const thunkSource = readFileSync(path.join(ROOT, thunks), "utf8");
-    if (!thunkSource.includes("copyInstanceRequestDraft")) {
+    // A mode fans out the complete draft either itself (copyInstanceRequestDraft)
+    // or through the ONE shared fan-out (runBattleFanOut, battle-follow-up.ts),
+    // which copies the draft into every column it fires.
+    const sharedFanOut = readFileSync(
+      path.join(ROOT, "features/agent-comparison/shared/battle-follow-up.ts"),
+      "utf8",
+    );
+    const delegatesToSharedFanOut =
+      /\brunBattleFanOut\(/.test(thunkSource) && /\bcopyInstanceRequestDraft\(/.test(sharedFanOut);
+    if (!thunkSource.includes("copyInstanceRequestDraft") && !delegatesToSharedFanOut) {
       findings.push({
         file: thunks,
         line: 1,

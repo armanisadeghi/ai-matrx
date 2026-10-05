@@ -5,11 +5,13 @@ const stacked = readFileSync(join(__dirname, "../SmartAgentInputStacked.tsx"), "
 const buttons = readFileSync(join(__dirname, "../InputActionButtons.tsx"), "utf8");
 
 describe("responsive chat run controls", () => {
-  it("keeps the variables-only Run mode on the 44px touch-target floor", () => {
-    // The Run mode's shell is the one composer surface that opts into the
-    // subtree touch floor (globals.css `.matrx-touch-targets`).
-    const shell = stacked.slice(stacked.indexOf("const shellClassName"));
-    expect(shell.slice(0, shell.indexOf(");"))).toContain('"matrx-touch-targets"');
+  it("keeps every style — Form included — on the 44px touch-target floor", () => {
+    // Each style's root opts into the subtree touch floor (globals.css `.matrx-touch-targets`).
+    const form = stacked.slice(stacked.indexOf('data-composer-style="form"') - 600, stacked.indexOf('data-composer-style="form"'));
+    expect(form).toContain("matrx-touch-targets");
+    const roots = stacked.match(/"matrx-touch-targets mx-auto flex w-full/g) ?? [];
+    expect(roots.length).toBeGreaterThanOrEqual(2); // Form + Full/Compact (Launcher separately)
+    expect(stacked).toContain('className="matrx-touch-targets mx-auto flex w-full min-w-0 max-w-[420px]');
   });
 
   it("draws Stop and Send as the composer's own 32px controls", () => {

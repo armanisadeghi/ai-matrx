@@ -95,22 +95,28 @@ export function ComposerPills({
   folded?: boolean;
 }) {
   const effectiveModelId = useEffectiveModelId(conversationId);
-  const showEffort = !folded && composerShows(composer.mode, "meta.effort");
+  // No agent pill (battle): Output and Effort have no menu to fold into, so
+  // they always stay in the row.
+  const withAgent = composer.meta !== "no-agent";
+  const foldIntoAgent = folded && withAgent;
+  const showEffort = !foldIntoAgent && composerShows(composer.mode, "meta.effort");
   return (
     // The agent pill is the ONE pill here that shrinks (its label ellipsizes),
     // never below a readable floor. `ml-auto` keeps the cluster on the right;
     // start-justified, any overflow runs into the row's sideways scroll and
     // never over its left neighbour.
     <div className="ml-auto flex min-w-0 shrink items-center gap-1.5 [&>*:first-child]:min-w-[4.5rem] [&>*:not(:first-child)]:shrink-0">
-      <ComposerAgentPill
-        conversationId={conversationId}
-        mode={composer.mode}
-        size={composer.size}
-        agentControl={composer.agent}
-        menuSide={menuSide}
-        folded={folded}
-      />
-      {folded ? null : (
+      {withAgent ? (
+        <ComposerAgentPill
+          conversationId={conversationId}
+          mode={composer.mode}
+          size={composer.size}
+          agentControl={composer.agent}
+          menuSide={menuSide}
+          folded={folded}
+        />
+      ) : null}
+      {foldIntoAgent ? null : (
         <ComposerOutputPill conversationId={conversationId} size={composer.size} menuSide={menuSide} />
       )}
       {showEffort ? (

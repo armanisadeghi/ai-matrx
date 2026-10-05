@@ -111,75 +111,71 @@ export function SmartAgentInputStacked({
     if (!sendBlocked) dispatch(smartExecute({ conversationId, surfaceKey }));
   };
 
-  // Outer shell — matches the `/chat/new` landing pill so the two surfaces
-  // feel like one continuous component as the conversation grows. The
-  // `transition-[padding,border-color]` lets focus/expansion changes flow
-  // smoothly; the textarea inside owns its own height transition.
-  const shellClassName = cn(
-    // A composer is content-sized chrome. `shrink-0` is a layout backstop for
-    // constrained flex hosts (windows, battle columns, split panes): spare
-    // column height always belongs to the transcript, never the input shell.
-    "w-full shrink-0 border",
-    "flex flex-col min-h-0 overflow-hidden",
-    // THE 44px FLOOR for every composer control on a touch layout (mic, live
-    // audio, context chip, attachment chips — 14–32px measured on a phone,
-    // run PB-08 #2). Desktop density is untouched (globals.css).
-    "matrx-touch-targets",
-    "rounded-[20px] border-border bg-card shadow-[0_2px_16px_-4px_rgba(0,0,0,0.08)] transition-colors focus-within:border-foreground/25 dark:shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset,0_1px_2px_0_rgba(0,0,0,0.4)]",
-    // Centered within its cap. `compact` is density, not width: a compact
-    // host wider than 500px (a resized agent window) used to get a 500px
-    // composer pinned to its left edge while the transcript used the full
-    // width. The host decides the width; below the cap this changes nothing.
-    "mx-auto",
-    "max-w-[800px]",
-  );
-
-  // Variables-only mode: hide chips + textarea + full toolbar. Render the
-  // variables panel and a single Run button. Apps that want a structured
-  // form experience (no chat box) configure showFreeformInput = false.
+  // ── Form style: the agent takes no typed message (showFreeformInput off) —
+  // its variables and ONE Run button, in the same card as every other style
+  // (Arman, 2026-10-04: "just a fourth style"). Shortcuts and apps that are a
+  // structured form, never a chat box, land here whatever size the host asked for.
   if (!showFreeformInput) {
     const handleStop = () => dispatch(cancelExecution(conversationId));
+    const formCompact = composer.size === "compact" || composer.size === "launcher";
     return (
-      <div className={shellClassName}>
-        <ConversationContextRail
+      <div
+        className={cn(
+          "matrx-touch-targets mx-auto flex w-full min-w-0 shrink-0 flex-col",
+          formCompact ? undefined : "max-w-[768px]",
+        )}
+        data-composer-size={composer.size}
+        data-composer-style="form"
+        data-assist-dock-avoid=""
+      >
+        <SmartInputFileDropTarget
           conversationId={conversationId}
-          className="px-3 pt-2"
-          presentation={contextRailPresentation}
-          attachedItems={contextRailAttachedItems}
-          surfaceValueName={surfaceValueAnchors?.context}
-        />
-        <SmartAgentVariables
-          conversationId={conversationId}
-          compact={compact}
-          onSubmit={handleSubmit}
-          styleOverride={variablesPanelStyle}
-          surfaceValueName={surfaceValueAnchors?.variables}
-        />
-        <div className="flex items-center justify-end gap-2 px-3 py-2 border-t border-border/40">
-          {extraRightControls}
-          <Button
-            size="sm"
-            onClick={isExecuting ? handleStop : handleSubmit}
-            disabled={sendBlocked && !isExecuting}
-            className={cn(
-              "gap-1.5 rounded-full",
-              "shadow-[0_1px_0_0_rgba(255,255,255,0.25)_inset,0_1px_2px_0_rgba(0,0,0,0.25)]",
-              "disabled:shadow-none",
-            )}
-          >
-            {isExecuting ? (
-              <>
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                Stop
-              </>
-            ) : (
-              <>
-                <ArrowUp className="w-3.5 h-3.5" />
-                Run
-              </>
-            )}
-          </Button>
-        </div>
+          uploadRoot={uploadRoot}
+          uploadPath={uploadPath}
+          className={cn(
+            "relative flex w-full min-h-0 flex-col gap-1.5 border border-border bg-card transition-colors focus-within:border-foreground/25",
+            "[&_[data-variable-row]]:px-1.5 [&_[data-variable-heading]]:px-1.5 [&>input[type=file]]:!hidden",
+            formCompact ? "rounded-[14px] p-1.5" : "rounded-[22px] p-2 shadow-[0_2px_10px_rgba(0,0,0,0.05)]",
+          )}
+        >
+          <ConversationContextRail
+            conversationId={conversationId}
+            className="px-0 pb-0"
+            presentation={contextRailPresentation}
+            attachedItems={contextRailAttachedItems}
+            surfaceValueName={surfaceValueAnchors?.context}
+            withAttachments
+            attachmentsSurfaceValueName={surfaceValueAnchors?.resources}
+          />
+          <SmartAgentVariables
+            conversationId={conversationId}
+            compact={formCompact}
+            onSubmit={handleSubmit}
+            styleOverride={variablesPanelStyle}
+            surfaceValueName={surfaceValueAnchors?.variables}
+          />
+          <div className="flex items-center justify-end gap-1.5">
+            {extraRightControls}
+            <Button
+              size="sm"
+              onClick={isExecuting ? handleStop : handleSubmit}
+              disabled={sendBlocked && !isExecuting}
+              className="h-8 gap-1.5 rounded-full px-3"
+            >
+              {isExecuting ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Stop
+                </>
+              ) : (
+                <>
+                  <ArrowUp className="h-3.5 w-3.5" />
+                  Run
+                </>
+              )}
+            </Button>
+          </div>
+        </SmartInputFileDropTarget>
       </div>
     );
   }

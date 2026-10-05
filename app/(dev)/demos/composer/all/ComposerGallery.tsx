@@ -14,7 +14,9 @@
  * pixel), so resizing never re-renders the composer.
  */
 
-import { useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import { setShowFreeformInput } from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { Building2, GripVertical, RotateCcw } from "lucide-react";
 import { AgentConversationColumn } from "@ai-matrx/chat/agents/components/shared/AgentConversationColumn";
 import { useCanvasWorkspaceConversation } from "@ai-matrx/chat/canvas/workspace/useCanvasWorkspaceConversation";
@@ -38,6 +40,8 @@ interface StyleSpec {
   key: string;
   title: string;
   size: ComposerSize;
+  /** Form style: the conversation takes no typed message — variables + Run. */
+  form?: boolean;
 }
 
 const STYLES: StyleSpec[] = [
@@ -45,6 +49,7 @@ const STYLES: StyleSpec[] = [
   { key: "full-bottom", title: "Full · bottom (conversation)", size: "page" },
   { key: "compact", title: "Compact", size: "compact" },
   { key: "launcher", title: "Launcher (foot of notes, education, data, landings)", size: "launcher" },
+  { key: "form", title: "Form (an agent with no typed message: its variables + Run)", size: "page", form: true },
 ];
 
 export function ComposerGallery({ initialMode }: { initialMode: ComposerMode | null }) {
@@ -69,6 +74,12 @@ function StyleSection({ spec, mode }: { spec: StyleSpec; mode: ComposerMode }) {
   const surfaceKey = `demo:composer-all:${spec.key}`;
   const chat = useCanvasWorkspaceConversation(surfaceKey);
   const conversationId = chat.conversationId;
+  const dispatch = useAppDispatch();
+  // Form style is the agent's setting, not the host's: show it by turning the
+  // demo conversation's typed message off (an app or shortcut sets the same).
+  useEffect(() => {
+    if (spec.form && conversationId) dispatch(setShowFreeformInput({ conversationId, value: false }));
+  }, [dispatch, spec.form, conversationId]);
   const composer: ComposerPresentation = {
     size: spec.size,
     mode,

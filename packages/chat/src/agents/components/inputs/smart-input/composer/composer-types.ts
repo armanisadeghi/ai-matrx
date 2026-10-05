@@ -85,9 +85,11 @@ export interface ComposerPresentation {
    * `none`: no chips row above and no meta row below (scope · values · agent
    * · output · effort) — the + menu, mic and send stay. For hosts where those
    * pills would mislead: an Expert being interviewed by a fixed agent, or a
-   * shared input that fans out to other conversations. Absent = `full`.
+   * shared input that fans out to other conversations. `no-agent`: every pill
+   * but the agent pill — a shared input whose columns each keep their own
+   * agent and model (battle). Absent = `full`.
    */
-  meta?: "full" | "none";
+  meta?: "full" | "none" | "no-agent";
   /** The Scope chip's face (meta row). Absent = `plain`, the Output pill's face. */
   scopeChipStyle?: "plain" | "pill";
   /** The chips row's corners (Cloud, connections). Absent = `md` (6px); `soft` = 8px. */
