@@ -18,6 +18,7 @@ export const GOOGLE_SCOPE = {
   gmailSend: "https://www.googleapis.com/auth/gmail.send",
   gmailReadonly: "https://www.googleapis.com/auth/gmail.readonly",
   gmailModify: "https://www.googleapis.com/auth/gmail.modify",
+  webmasters: "https://www.googleapis.com/auth/webmasters",
   webmastersReadonly: "https://www.googleapis.com/auth/webmasters.readonly",
   analyticsReadonly: "https://www.googleapis.com/auth/analytics.readonly",
   youtubeReadonly: "https://www.googleapis.com/auth/youtube.readonly",
