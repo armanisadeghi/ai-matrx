@@ -20,7 +20,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Rainbow, GitCompare, File, FileCode, FileText } from "lucide-react";
-import MarkdownStream from "@/components/MarkdownStream";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { DiffView } from "./DiffView";
 import type { ParseResult } from "../../utils/parseCodeEdits";
 
@@ -160,8 +160,8 @@ export function ReviewStage({
             className="h-full m-0 p-0 overflow-hidden"
           >
             <div className="h-full overflow-auto p-3">
-              <MarkdownStream imagePolicy="ai"
-                content={rawAIResponse}
+              <RichContent level="full" imagePolicy="ai"
+                source={rawAIResponse}
                 hideCopyButton={false}
                 allowFullScreenEditor={false}
               />

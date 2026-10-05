@@ -10,7 +10,7 @@
 
 import React from "react";
 import { Loader2 } from "lucide-react";
-import MarkdownStream from "@/components/MarkdownStream";
+import { RichContent } from "@/components/rich-content/RichContent";
 
 interface ProcessingOverlayProps {
   /** Live streaming text from the agent — optional; shown when present. */
@@ -34,7 +34,7 @@ export function ProcessingOverlay({
             <p className="text-muted-foreground mb-1 text-[9px] uppercase tracking-wider font-semibold">
               Live Response
             </p>
-            <MarkdownStream imagePolicy="ai" content={streamingText} />
+            <RichContent level="full" imagePolicy="ai" source={streamingText} />
           </div>
         </div>
       )}

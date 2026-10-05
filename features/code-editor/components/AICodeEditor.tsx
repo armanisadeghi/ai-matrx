@@ -27,7 +27,7 @@ import {
   GitCompare,
 } from "lucide-react";
 import CodeBlock from "@/features/code-editor/components/code-block/CodeBlock";
-import MarkdownStream from "@/components/MarkdownStream";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { DiffView } from "./DiffView";
 import { SmartAgentInput } from "@ai-matrx/chat/agents/components/inputs/smart-input/SmartAgentInput";
 import { useComposerMode } from "@ai-matrx/chat/agents/components/inputs/smart-input/composer/useComposerMode";
@@ -203,7 +203,7 @@ export function AICodeEditor({
                         <p className="text-muted-foreground mb-1 text-[9px] uppercase tracking-wider font-semibold">
                           Live Response
                         </p>
-                        <MarkdownStream imagePolicy="ai" content={streamingText} />
+                        <RichContent level="full" imagePolicy="ai" source={streamingText} />
                       </div>
                     </div>
                   )}
@@ -330,8 +330,8 @@ export function AICodeEditor({
                     className="h-full m-0 p-0 overflow-hidden"
                   >
                     <div className="h-full overflow-auto p-3">
-                      <MarkdownStream imagePolicy="ai"
-                        content={rawAIResponse}
+                      <RichContent level="full" imagePolicy="ai"
+                        source={rawAIResponse}
                         hideCopyButton={false}
                         allowFullScreenEditor={false}
                       />
