@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-05T04:03:22.254Z",
+  "generated_at": "2026-10-05T04:06:52.374Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -3908,6 +3908,12 @@
       "checksum": "607e3ef2bf4d7d1bccb8a45b734099119c49733bd7e82fc9e890b534dd379401",
       "applied_at": "2026-10-05 03:31:47.518124+00"
     },
+    "migrations/campaign/lane7w4b_a_an_hr_rows_custom_fields_change_through_hrs_own_edit_rule.sql": {
+      "source": "matrx-frontend",
+      "filename": "lane7w4b_a_an_hr_rows_custom_fields_change_through_hrs_own_edit_rule.sql",
+      "checksum": "41ab3ffb89e9dac88dc783ff8cb6e64b18d05b7052ee54ecee1ba586fc54237c",
+      "applied_at": "2026-10-05 04:06:38.760577+00"
+    },
     "migrations/campaign/lane7w5_a_record_names_its_own_organization.sql": {
       "source": "matrx-frontend",
       "filename": "lane7w5_a_record_names_its_own_organization.sql",
@@ -5395,6 +5401,12 @@
       "filename": "scopestreepaged_the_tree_paints_its_types_first.sql",
       "checksum": "76a29ffefd5fb05a04661660cff59c40435838ff7b688e81553d7e39ba379912",
       "applied_at": "2026-10-02 19:03:58.727527+00"
+    },
+    "migrations/campaign/scopesw2_the_dead_image_readers_are_gone.sql": {
+      "source": "matrx-frontend",
+      "filename": "scopesw2_the_dead_image_readers_are_gone.sql",
+      "checksum": "67295f494a0f0ae872b4b9ecc8ba3e4e17cafae8dd56745b00091f112422114b",
+      "applied_at": "2026-10-05 04:06:51.103749+00"
     },
     "migrations/campaign/scopesw2w_a_scope_type_under_a_type_keeps_its_parent_in_the_store.sql": {
       "source": "matrx-frontend",
