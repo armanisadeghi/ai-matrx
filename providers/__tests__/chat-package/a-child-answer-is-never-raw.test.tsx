@@ -1,3 +1,4 @@
+import "@/providers/chatUiRegistration";
 /** @jest-environment jsdom */
 /**
  * A KIND IS NEVER DRAWN AS RAW JSON — sub-agent call answers (T3 of
@@ -16,30 +17,30 @@
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-import type { ToolLifecycleEntry } from "../../../../agents/types/request.types";
+import type { ToolLifecycleEntry } from "@ai-matrx/chat/agents/types/request.types";
 
 let childStream: { status: string; text: string; label: string | null; childConversationId: string | null } | null = null;
 
-jest.mock("../../../../store/hooks", () => ({
+jest.mock("@ai-matrx/chat/store/hooks", () => ({
   useAppSelector: () => childStream,
 }));
 // The host code this test renders reads the app's own hooks (P3): one double covers both.
-jest.mock("@host/lib/redux/hooks", () => jest.requireMock("../../../../store/hooks"));
+jest.mock("@/lib/redux/hooks", () => jest.requireMock("@ai-matrx/chat/store/hooks"));
 jest.mock(
-  "../../../../agents/redux/execution-system/active-requests/active-requests.selectors",
+  "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors",
   () => ({ selectAgentCallChildStream: () => () => childStream }),
 );
-jest.mock("../../../../agents/hooks/useConversationTitle", () => ({
+jest.mock("@ai-matrx/chat/agents/hooks/useConversationTitle", () => ({
   useConversationTitle: () => null,
 }));
-jest.mock("@host/components/official/entity-ref/EntityRef", () => ({
+jest.mock("@/components/official/entity-ref/EntityRef", () => ({
   EntityRef: () => null,
 }));
-jest.mock("@host/components/errors/ErrorAlchemyMenu", () => ({
+jest.mock("@/components/errors/ErrorAlchemyMenu", () => ({
   ErrorAlchemyMenu: () => null,
 }));
 jest.mock(
-  "@host/features/content-ir/studio/components/KindInstanceRender",
+  "@/features/content-ir/studio/components/KindInstanceRender",
   () => ({
     __esModule: true,
     default: ({ kind }: { kind: string }) => (
@@ -47,10 +48,10 @@ jest.mock(
     ),
   }),
 );
-jest.mock("@host/components/official/structured-value/StructuredValueView", () => ({
+jest.mock("@/components/official/structured-value/StructuredValueView", () => ({
   StructuredValueView: () => <div data-route="floor" />,
 }));
-jest.mock("@host/components/MarkdownStream", () => ({
+jest.mock("@/components/MarkdownStream", () => ({
   __esModule: true,
   default: ({
     content,
@@ -70,20 +71,20 @@ jest.mock("@host/components/MarkdownStream", () => ({
     </div>
   ),
 }));
-jest.mock("@host/components/mardown-display/chat-markdown/BasicMarkdownContent", () => ({
+jest.mock("@/components/mardown-display/chat-markdown/BasicMarkdownContent", () => ({
   BasicMarkdownContent: ({ content }: { content: string }) => (
     <pre data-route="plain-markdown">{content}</pre>
   ),
 }));
-jest.mock("../../../registry/GenericRenderer", () => ({
+jest.mock("@ai-matrx/chat/tool-call-visualization/registry/GenericRenderer", () => ({
   GenericRenderer: ({ entry }: { entry: ToolLifecycleEntry }) => (
     <pre data-route="generic">{JSON.stringify(entry.result)}</pre>
   ),
 }));
 jest.mock("@ai-matrx/media/react", () => ({ InlineMediaRef: () => null }));
 
-import { AgentCallInline } from "../AgentCallInline";
-import { CollabCallCard } from "../CollabCallCard";
+import { AgentCallInline } from "@ai-matrx/chat/tool-call-visualization/renderers/agent-call/AgentCallInline";
+import { CollabCallCard } from "@ai-matrx/chat/tool-call-visualization/renderers/agent-call/CollabCallCard";
 
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean })
   .IS_REACT_ACT_ENVIRONMENT = true;

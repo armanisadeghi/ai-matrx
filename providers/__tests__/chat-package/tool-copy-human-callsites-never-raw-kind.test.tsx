@@ -1,3 +1,4 @@
+import "@/providers/chatUiRegistration";
 /**
  * Y7 (kind never raw): the tool INPUT copy and the generated-image copy hand
  * their `human` flavor through the shared human-copy helper — a value carrying
@@ -11,18 +12,18 @@ import { createRoot, type Root } from "react-dom/client";
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 const copyProps: Array<{ label: string; human: () => string; agent: () => unknown }> = [];
-jest.mock("@host/components/agent-copy/CopyButtons", () => ({
+jest.mock("@/components/agent-copy/CopyButtons", () => ({
   CopyButtons: (props: { label: string; human: () => string; agent: () => unknown }) => {
     copyProps.push(props);
     return null;
   },
 }));
-jest.mock("../../result-fields/ResultMedia", () => ({ ResultMedia: () => null }));
-jest.mock("../../registry/GenericRenderer", () => ({ GenericRenderer: () => null }));
-jest.mock("../ToolConversationContext", () => ({ useToolConversationId: () => "conv-1" }));
+jest.mock("@ai-matrx/chat/tool-call-visualization/result-fields/ResultMedia", () => ({ ResultMedia: () => null }));
+jest.mock("@ai-matrx/chat/tool-call-visualization/registry/GenericRenderer", () => ({ GenericRenderer: () => null }));
+jest.mock("@ai-matrx/chat/tool-call-visualization/components/ToolConversationContext", () => ({ useToolConversationId: () => "conv-1" }));
 
-import { InputView } from "../ToolTabBodies";
-import { ImageGenerationResult } from "../../renderers/agent-call/ImageGenerationResult";
+import { InputView } from "@ai-matrx/chat/tool-call-visualization/components/ToolTabBodies";
+import { ImageGenerationResult } from "@ai-matrx/chat/tool-call-visualization/renderers/agent-call/ImageGenerationResult";
 
 const KIND = { __kind: "checklist", title: "Packing", items: [{ text: "Passport" }] };
 

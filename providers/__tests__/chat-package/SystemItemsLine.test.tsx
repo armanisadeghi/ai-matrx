@@ -1,3 +1,4 @@
+import "@/providers/chatUiRegistration";
 /**
  * The compare's "System items" line (lane CONTEXT-VALUES-NAMED): what the
  * server said was named, by what, and which side delivered it. Payloads are the
@@ -7,7 +8,7 @@
 
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { SystemItemsLine } from "./SystemItemsLine";
+import { SystemItemsLine } from "@ai-matrx/chat/agents/components/context-preview/SystemItemsLine";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 

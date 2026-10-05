@@ -1,3 +1,4 @@
+import "@/providers/chatUiRegistration";
 /**
  * GUARD: a tool card is the SAME DOM node from the moment it appears in a
  * live turn until after the turn has settled — never unmounted and remounted.
@@ -28,7 +29,7 @@ import {
   TextDecoder as NodeTextDecoder,
   TextEncoder as NodeTextEncoder,
 } from "node:util";
-import type { ChatRootState } from "../../../../store/root-state";
+import type { ChatRootState } from "@ai-matrx/chat/store/root-state";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -53,31 +54,31 @@ function stateForComponents(): ChatRootState {
     get: (target, key: string) => (key in target ? target[key] : EMPTY_SLICE),
   }) as unknown as ChatRootState;
 }
-jest.mock("../../../../store/hooks", () => ({
+jest.mock("@ai-matrx/chat/store/hooks", () => ({
   useAppSelector: (selector: (state: unknown) => unknown) =>
     selector(stateForComponents()),
   useAppDispatch: () => () => undefined,
   useAppStore: () => ({ getState: () => stateForComponents() }),
 }));
 // The host code this test renders reads the app's own hooks (P3): one double covers both.
-jest.mock("@host/lib/redux/hooks", () =>
-  jest.requireMock("../../../../store/hooks"),
+jest.mock("@/lib/redux/hooks", () =>
+  jest.requireMock("@ai-matrx/chat/store/hooks"),
 );
 jest.mock("next/dynamic", () => ({
   __esModule: true,
   default: () => () => null,
 }));
 // The engine loads through next/dynamic in the app; render it directly here.
-jest.mock("@host/components/MarkdownStream", () => ({
+jest.mock("@/components/MarkdownStream", () => ({
   __esModule: true,
-  default: jest.requireActual("@host/components/MarkdownStreamImpl").default,
+  default: jest.requireActual("@/components/MarkdownStreamImpl").default,
 }));
 jest.mock("next/cache", () => ({
   revalidatePath: jest.fn(),
   revalidateTag: jest.fn(),
 }));
-jest.mock("../../../../host/navigation", () => ({
-  ...jest.requireActual("../../../../host/navigation"),
+jest.mock("@ai-matrx/chat/host/navigation", () => ({
+  ...jest.requireActual("@ai-matrx/chat/host/navigation"),
   useRouter: () => ({ push: jest.fn(), back: jest.fn(), prefetch: jest.fn() }),
   usePathname: () => "/chat",
   useSearchParams: () => new URLSearchParams(),
@@ -85,7 +86,7 @@ jest.mock("../../../../host/navigation", () => ({
 // The card's own body: one marked node per call. Everything that decides
 // whether THIS node survives lives above it.
 jest.mock(
-  "../../../../tool-call-visualization/components/ToolCallVisualization",
+  "@ai-matrx/chat/tool-call-visualization/components/ToolCallVisualization",
   () => ({
     ToolCallVisualization: ({
       entries,
@@ -100,7 +101,7 @@ jest.mock(
   }),
 );
 jest.mock(
-  "../../../../tool-call-visualization/components/ToolCallBatch",
+  "@ai-matrx/chat/tool-call-visualization/components/ToolCallBatch",
   () => ({
     ToolCallBatch: ({ children }: { children: React.ReactNode }) => (
       <>{children}</>
@@ -108,21 +109,21 @@ jest.mock(
   }),
 );
 jest.mock(
-  "@host/components/mardown-display/chat-markdown/internal-handlers/SafeBlockRenderer",
+  "@/components/mardown-display/chat-markdown/internal-handlers/SafeBlockRenderer",
   () => ({ SafeBlockRenderer: () => null }),
 );
 jest.mock(
-  "@host/components/mardown-display/chat-markdown/FullScreenMarkdownEditor",
+  "@/components/mardown-display/chat-markdown/FullScreenMarkdownEditor",
   () => ({ __esModule: true, default: () => null }),
 );
 jest.mock(
-  "@host/components/mardown-display/blocks/json/useBoundAgentOutputSchema",
+  "@/components/mardown-display/blocks/json/useBoundAgentOutputSchema",
   () => ({ useBoundAgentOutputSchema: () => null }),
 );
-jest.mock("../../shared/transcript-audience", () => ({
+jest.mock("@ai-matrx/chat/agents/components/shared/transcript-audience", () => ({
   useMachineFramesVisible: () => true,
 }));
-jest.mock("../assistant/AssistantMessageFooter", () => ({
+jest.mock("@ai-matrx/chat/agents/components/messages-display/assistant/AssistantMessageFooter", () => ({
   AssistantMessageFooter: () => null,
   AssistantMessageContextMenu: ({
     children,
@@ -130,20 +131,20 @@ jest.mock("../assistant/AssistantMessageFooter", () => ({
     children: React.ReactNode;
   }) => <>{children}</>,
 }));
-jest.mock("@host/features/code/views/history/MessageFilesStrip", () => ({
+jest.mock("@/features/code/views/history/MessageFilesStrip", () => ({
   MessageFilesStrip: () => null,
 }));
 
 import activeRequestsReducer, {
   createRequest,
-} from "../../../redux/execution-system/active-requests/active-requests.slice";
-import messagesReducer from "../../../redux/execution-system/messages/messages.slice";
-import observabilityReducer from "../../../redux/execution-system/observability/observability.slice";
-import { processStream } from "../../../redux/execution-system/thunks/process-stream";
-import { buildDisplayEntries, groupDisplayEntries } from "../display-groups";
-import { AssistantTurnGroup } from "../assistant/AssistantTurnGroup";
-import { ChatHostTestProvider } from "../../../../host/__tests__/chat-host-test-provider";
-import { configureServerForTest } from "../../../../host/__tests__/server-test-host";
+} from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.slice";
+import messagesReducer from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.slice";
+import observabilityReducer from "@ai-matrx/chat/agents/redux/execution-system/observability/observability.slice";
+import { processStream } from "@ai-matrx/chat/agents/redux/execution-system/thunks/process-stream";
+import { buildDisplayEntries, groupDisplayEntries } from "@ai-matrx/chat/agents/components/messages-display/display-groups";
+import { AssistantTurnGroup } from "@ai-matrx/chat/agents/components/messages-display/assistant/AssistantTurnGroup";
+import { ChatHostTestProvider } from "@ai-matrx/chat/host/__tests__/chat-host-test-provider";
+import { configureServerForTest } from "@ai-matrx/chat/host/__tests__/server-test-host";
 
 // Server calls reach the host's server client through the server port (P9).
 beforeAll(() => {

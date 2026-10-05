@@ -54,7 +54,14 @@ export type CanvasWorkspaceConversation =
 type Request =
   | { kind: "new"; nonce: number; mandateKey?: AnyMandateKey }
   | { kind: "agent"; agentId: string; nonce: number }
-  | { kind: "open"; conversationId: string; agentId: string | null; nonce: number };
+  | {
+      kind: "open";
+      conversationId: string;
+      agentId: string | null;
+      nonce: number;
+      /** Recalled from this chat's memory, not named by the address or the person. */
+      recalled?: boolean;
+    };
 
 /** What to open on mount. Default: a new conversation under the mandate. */
 export type CanvasWorkspaceStart =
@@ -86,8 +93,10 @@ export type CanvasWorkspaceConversationOptions = {
    * The query param this conversation lives at (`?chat=<id>`), so a reload
    * returns the person to it the way `/chat/<id>` does. Read once on mount
    * (it wins over the default new chat), written once the server has the
-   * conversation, removed by New chat. Omitted = the address is not touched
-   * (board chat TILES: many conversations, one page).
+   * conversation, removed by New chat. With no `?<param>=`, the conversation
+   * this chat last showed on this device opens instead (see
+   * `recallWorkspaceConversation`). Omitted = neither the address nor the memory
+   * is touched (board chat TILES: many conversations, one page).
    */
   addressParam?: string;
 };
@@ -99,6 +108,37 @@ const CONVERSATION_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-
 export function conversationInAddress(param: string, search: string): string | null {
   const value = new URLSearchParams(search).get(param);
   return value && CONVERSATION_ID.test(value) ? value : null;
+}
+
+/**
+ * THIS CHAT'S LAST CONVERSATION, remembered on this device (2026-10-05).
+ * `?<param>=` alone was not enough: any address without it — the board opened
+ * from the sidebar or the boards list, a link, a reload of an address copied
+ * before the first send — opened "New chat" and the conversation was gone from
+ * the column. The address still wins; this answers only when it names none.
+ * Forgotten by New chat (an unsent chat), and when it can no longer be opened.
+ */
+export function workspaceChatMemoryKey(surfaceKey: string): string {
+  return `matrx:workspace-chat:${surfaceKey}`;
+}
+
+export function recallWorkspaceConversation(surfaceKey: string): string | null {
+  try {
+    const value = window.localStorage.getItem(workspaceChatMemoryKey(surfaceKey));
+    return value && CONVERSATION_ID.test(value) ? value : null;
+  } catch {
+    return null; // storage unavailable: the address alone decides
+  }
+}
+
+export function rememberWorkspaceConversation(surfaceKey: string, conversationId: string | null): void {
+  try {
+    const key = workspaceChatMemoryKey(surfaceKey);
+    if (conversationId) window.localStorage.setItem(key, conversationId);
+    else window.localStorage.removeItem(key);
+  } catch {
+    // storage unavailable: the address still carries the conversation
+  }
 }
 
 /** `search` with `?<param>=` set to `conversationId`, or removed when null. */
@@ -181,25 +221,28 @@ export function useCanvasWorkspaceConversation(
   useEffect(() => {
     if (addressRead || addressParam === null) return;
     const named = conversationInAddress(addressParam, window.location.search);
-    if (named && !start) {
+    const recalled = named ? null : recallWorkspaceConversation(surfaceKey);
+    const target = named ?? recalled;
+    if (target && !start) {
       setRequest((current) =>
         current.kind === "new" && current.nonce === 0
-          ? { kind: "open", conversationId: named, agentId: null, nonce: 0 }
+          ? { kind: "open", conversationId: target, agentId: null, nonce: 0, recalled: !named }
           : current,
       );
     }
     setAddressRead(true);
-  }, [addressRead, addressParam, start]);
+  }, [addressRead, addressParam, start, surfaceKey]);
 
   // The address follows the shown conversation: set once the server has it
   // (a reopened one always has), cleared when a new chat has not been sent.
   useEffect(() => {
     if (addressParam === null || !addressRead || !conversationId) return;
     const shown = request.kind === "open" || serverHasIt ? conversationId : null;
+    rememberWorkspaceConversation(surfaceKey, shown);
     const search = addressWithConversation(addressParam, window.location.search, shown);
     if (search === window.location.search) return;
     replaceAddressWithoutNavigating(`${window.location.pathname}${search}${window.location.hash}`);
-  }, [addressParam, addressRead, conversationId, request.kind, serverHasIt]);
+  }, [addressParam, addressRead, conversationId, request.kind, serverHasIt, surfaceKey]);
 
   useEffect(() => {
     if (!enabled || waitingForOrganization || !addressRead) return;
@@ -239,6 +282,14 @@ export function useCanvasWorkspaceConversation(
             if (!stale()) setConversationId(target);
           },
           (error: unknown) => {
+            if (request.recalled) {
+              // Only this device's memory named it (archived, another account's,
+              // gone): forget it and open the default new chat, as before.
+              console.warn("[canvas-workspace] the remembered conversation could not be opened; starting a new chat", target, error);
+              rememberWorkspaceConversation(surfaceKey, null);
+              if (!stale()) setRequest((current) => ({ kind: "new", nonce: current.nonce + 1 }));
+              return;
+            }
             console.error("[canvas-workspace] could not load the conversation", target, error);
             if (!stale()) setFailure(describeLaunchError(error));
           },

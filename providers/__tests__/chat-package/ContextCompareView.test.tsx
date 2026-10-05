@@ -1,3 +1,4 @@
+import "@/providers/chatUiRegistration";
 /**
  * The compare tab (lane SC-3'): what it asks the server, and what it shows.
  *
@@ -12,41 +13,41 @@
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-jest.mock("../../../host/server/call-api", () => ({ callApi: jest.fn() }));
-jest.mock("../../../store/hooks", () => ({
+jest.mock("@ai-matrx/chat/host/server/call-api", () => ({ callApi: jest.fn() }));
+jest.mock("@ai-matrx/chat/store/hooks", () => ({
   useAppDispatch: () => (thunk: unknown) => thunk,
   useAppSelector: (selector: (state: unknown) => unknown) => selector(undefined),
 }));
 // The host code this test renders reads the app's own hooks (P3): one double covers both.
-jest.mock("@host/lib/redux/hooks", () => jest.requireMock("../../../store/hooks"));
-jest.mock("@host/lib/redux/slices/appContextSlice", () => ({
+jest.mock("@/lib/redux/hooks", () => jest.requireMock("@ai-matrx/chat/store/hooks"));
+jest.mock("@/lib/redux/slices/appContextSlice", () => ({
   selectScopeSelectionsContext: () => ({}),
 }));
 // The context door (the conversation's own fields); this test is about the selection.
-jest.mock("../../redux/execution-system/context-rules/request-context", () => ({
+jest.mock("@ai-matrx/chat/agents/redux/execution-system/context-rules/request-context", () => ({
   buildPreviewRequestContext: () => ({}),
   pageContextFor: () => null,
   selectResolvedContextRows: () => () => null,
 }));
 jest.mock(
-  "../../redux/execution-system/conversations/conversations.selectors",
+  "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.selectors",
   () => ({
     selectConversationScopeIds: () => () => ({ organizationId: undefined }),
   }),
 );
 // THE markdown renderer a chat answer goes through, stood in so the test can see what it is handed.
-jest.mock("@host/components/MarkdownStream", () => ({
+jest.mock("@/components/MarkdownStream", () => ({
   __esModule: true,
   default: (props: { content?: string }) => <div data-markdown-stream>{props.content}</div>,
 }));
-jest.mock("../../../host/server/run-wait", () => ({
+jest.mock("@ai-matrx/chat/host/server/run-wait", () => ({
   resolveRunWait: jest.fn(async () => ({ firstResponseMs: 120_000 })),
 }));
-jest.mock("../../../host/server/organization-admission", () => ({
+jest.mock("@ai-matrx/chat/host/server/organization-admission", () => ({
   peekSelectedOrganizationId: () => null,
 }));
-jest.mock("@host/utils/auth/getUserId", () => ({ getUserId: () => "a1e2c3d4-0000-4000-8000-00000000a1e7" }));
-jest.mock("@host/components/matrx/buttons/InlineCopyButton", () => ({
+jest.mock("@/utils/auth/getUserId", () => ({ getUserId: () => "a1e2c3d4-0000-4000-8000-00000000a1e7" }));
+jest.mock("@/components/matrx/buttons/InlineCopyButton", () => ({
   InlineCopyButton: () => null,
 }));
 // THE platform diff viewer, stood in so the test can read exactly what it is asked to diff.
@@ -68,26 +69,26 @@ jest.mock("@ai-matrx/agents/catalog/react", () => ({
     </button>
   ),
 }));
-jest.mock("../../redux/agent-definition/selectors", () => ({
+jest.mock("@ai-matrx/chat/agents/redux/agent-definition/selectors", () => ({
   selectAllAgents: () => ({ [INTAKE_AGENT]: { name: "Client Intake Reviewer" } }),
 }));
-jest.mock("../../redux/agent-definition/thunks", () => ({
+jest.mock("@ai-matrx/chat/agents/redux/agent-definition/thunks", () => ({
   fetchAgentsList: () => ({ type: "agents/list" }),
 }));
 // The identity seam (P7) carries the names this test stood in for above; the rest stay real.
-jest.mock("../../../host/identity", () => {
+jest.mock("@ai-matrx/chat/host/identity", () => {
   const standIns: Record<string, unknown> = {
     ...(() => ({ getUserId: () => "a1e2c3d4-0000-4000-8000-00000000a1e7" }))(),
   };
   const moved = ["selectUserId","selectIsAuthenticated","selectIsAdmin","selectIsSuperAdmin","getUserId","requireUserId","NotAuthenticatedError","isNotAuthenticatedError","hasBrowserSession"];
   return {
-    ...jest.requireActual("../../../host/identity"),
+    ...jest.requireActual("@ai-matrx/chat/host/identity"),
     ...Object.fromEntries(Object.entries(standIns).filter(([name]) => moved.includes(name))),
   };
 });
 
-import { callApi } from "../../../host/server/call-api";
-import { ContextCompareView, focusLines } from "./ContextCompareView";
+import { callApi } from "@ai-matrx/chat/host/server/call-api";
+import { ContextCompareView, focusLines } from "@ai-matrx/chat/agents/components/context-preview/ContextCompareView";
 
 (
   globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
