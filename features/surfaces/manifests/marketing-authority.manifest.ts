@@ -7,6 +7,7 @@ import type {
 } from "@ai-matrx/chat/surfaces/types";
 import { AUTHORITY_GUIDANCE_MAX_CHARS } from "@/features/marketing/authority/authority-write-targets";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -150,6 +151,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const marketingAuthorityManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-authority",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "",

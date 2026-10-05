@@ -91,10 +91,34 @@ export function useEditingTile(): string | null {
 // ── per-tile booleans: a click re-renders the two tiles whose answer changed,
 // never every tile on the board (an id-returning hook wakes them all). ──────
 
+/** In the selection (one of several, or the only one). */
 export function useIsSelected(id: string): boolean {
+  const store = useBoardCameraStore();
+  const get = () => store.isSelected(id);
+  return useSyncExternalStore(store.subscribeSelection, get, get);
+}
+
+/** The ONLY selected item — what shows resize handles (resizing is one item at a time). */
+export function useIsSoleSelected(id: string): boolean {
   const store = useBoardCameraStore();
   const get = () => store.getSelected() === id;
   return useSyncExternalStore(store.subscribeSelection, get, get);
+}
+
+/** Every selected id. Read in ONE leaf (the selection box, a menu), never per tile. */
+export function useSelection(): readonly string[] {
+  const store = useBoardCameraStore();
+  return useSyncExternalStore(store.subscribeSelection, store.getSelection, store.getSelection);
+}
+
+/** An agent's tool call is acting on this item right now (`beginAgentWork`). A leaf read. */
+export function useIsAgentWorking(id: string): boolean {
+  const store = useBoardCameraStore();
+  return useSyncExternalStore(
+    (l) => store.subscribeAgentWork(id, l),
+    () => store.isAgentWorking(id),
+    () => false,
+  );
 }
 
 export function useIsFocused(id: string): boolean {

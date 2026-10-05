@@ -12,6 +12,7 @@ import {
   OPPORTUNITY_STATUS_QUOTED_LIST,
 } from "@/features/marketing/competitors/autopsy-controls";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 const groups: SurfaceValueGroup[] = [
   { key: "selection", label: "Selected site", sortOrder: 100, description: "The managed site currently being investigated." },
@@ -154,6 +155,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const marketingCompetitorsManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-competitors",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "",

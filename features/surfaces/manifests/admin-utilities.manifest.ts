@@ -44,6 +44,7 @@ import type {
   SurfaceValueGroup,
 } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const ADMIN_UTILITIES_SURFACE_NAME = "matrx-admin/utilities";
 
@@ -439,6 +440,7 @@ const surfaceSpecific: SurfaceValue[] = [
 export const adminUtilitiesManifest: SurfaceManifest = {
   surfaceName: ADMIN_UTILITIES_SURFACE_NAME,
   client: "matrx-admin",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Utilities admin family: all-routes, caches, capture-inspector, content-blocks, message-templates, markdown-tester, text-cleaner (kind-registry excluded)",

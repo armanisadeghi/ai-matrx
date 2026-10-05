@@ -43,6 +43,7 @@ import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manif
 import type { AgentWritePolicy } from "@/features/cms/types";
 import { dbAuthoredMandateKey } from "@ai-matrx/agents/mandates";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -711,6 +712,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const cmsPageManifest: SurfaceManifest = {
   surfaceName: "matrx-user/cms-page",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "CMS page editor — HTML/CSS/JS/SEO/preview/version-history for one page",

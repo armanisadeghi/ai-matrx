@@ -1,0 +1,120 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { ChevronLeft, ChevronRight, RotateCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
+import { formatPoints } from "../catalog/format";
+import { fetchPersonalUsageHistory } from "./service";
+import type { UsageHistoryActivity, UsageHistoryEntry, UsageHistoryPage, UsageHistoryQuery, UsageHistoryRange } from "./types";
+
+function timestamp(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  return date.toLocaleString(undefined, { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
+}
+
+function amount(entry: UsageHistoryEntry): string {
+  if (entry.quantity === null) return "—";
+  const prefix = entry.quantity > 0 ? "−" : entry.quantity < 0 ? "+" : "";
+  return `${prefix}${formatPoints(Math.abs(entry.quantity))} points`;
+}
+
+function rowTone(entry: UsageHistoryEntry): string {
+  if (entry.quantity === null) return "text-muted-foreground";
+  return entry.quantity < 0 ? "text-emerald-700 dark:text-emerald-400" : "text-foreground";
+}
+
+const initialQuery: UsageHistoryQuery = { range: "30d", activity: "all", page: 0 };
+
+export function UsageHistory() {
+  const [query, setQuery] = useState<UsageHistoryQuery>(initialQuery);
+  const [result, setResult] = useState<UsageHistoryPage | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [retry, setRetry] = useState(0);
+
+  useEffect(() => {
+    let live = true;
+    setLoading(true);
+    setError(null);
+    void fetchPersonalUsageHistory(query)
+      .then((page) => {
+        if (live) setResult(page);
+      })
+      .catch(() => {
+        if (live) setError("We couldn’t load your usage history. Try again.");
+      })
+      .finally(() => {
+        if (live) setLoading(false);
+      });
+    return () => { live = false; };
+  }, [query, retry]);
+
+  const updateRange = (range: UsageHistoryRange) => setQuery((current) => ({ ...current, range, page: 0 }));
+  const updateActivity = (activity: UsageHistoryActivity) => setQuery((current) => ({ ...current, activity, page: 0 }));
+
+  return (
+    <SettingsSection title="Usage history">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="grid grid-cols-2 gap-2 sm:flex">
+          <Select value={query.range} onValueChange={(value) => updateRange(value as UsageHistoryRange)}>
+            <SelectTrigger aria-label="Date interval" className="w-full sm:w-40"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="7d">Last 7 days</SelectItem>
+              <SelectItem value="30d">Last 30 days</SelectItem>
+              <SelectItem value="90d">Last 90 days</SelectItem>
+              <SelectItem value="all">All time</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={query.activity} onValueChange={(value) => updateActivity(value as UsageHistoryActivity)}>
+            <SelectTrigger aria-label="Activity filter" className="w-full sm:w-44"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All activity</SelectItem>
+              <SelectItem value="executions">Executions</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <Button variant="outline" size="sm" onClick={() => setRetry((value) => value + 1)} disabled={loading}>
+          <RotateCw className="h-3.5 w-3.5" aria-hidden /> Refresh
+        </Button>
+      </div>
+
+      {loading ? <p className="py-6 text-sm text-muted-foreground">Loading usage history…</p> : null}
+      {error ? (
+        <div className="py-6 text-sm text-muted-foreground">
+          <p>{error}</p>
+          <Button className="mt-2" variant="outline" size="sm" onClick={() => setRetry((value) => value + 1)}>Try again</Button>
+        </div>
+      ) : null}
+      {!loading && !error && result?.entries.length === 0 ? <p className="py-6 text-sm text-muted-foreground">No activity in this interval.</p> : null}
+      {!loading && !error && result && result.entries.length > 0 ? (
+        <>
+          <div className="mt-3 divide-y divide-border rounded-md border border-border" role="table" aria-label="Usage history">
+            <div className="hidden grid-cols-[minmax(9rem,1.2fr)_minmax(8rem,1fr)_minmax(8rem,1fr)_minmax(6rem,.7fr)] gap-3 bg-muted/40 px-3 py-2 text-xs font-medium text-muted-foreground sm:grid" role="row">
+              <span role="columnheader">Recorded</span><span role="columnheader">Activity</span><span role="columnheader">Points</span><span role="columnheader">Outcome</span>
+            </div>
+            {result.entries.map((entry) => (
+              <div key={entry.id} className="grid gap-1 px-3 py-3 text-sm sm:grid-cols-[minmax(9rem,1.2fr)_minmax(8rem,1fr)_minmax(8rem,1fr)_minmax(6rem,.7fr)] sm:gap-3" role="row">
+                <span className="tabular-nums text-muted-foreground" role="cell">{timestamp(entry.createdAt)}</span>
+                <span role="cell">{entry.activity ?? "—"}</span>
+                <span className={`tabular-nums ${rowTone(entry)}`} role="cell">{amount(entry)}</span>
+                <span className="text-muted-foreground" role="cell">{entry.outcome ?? "—"}</span>
+              </div>
+            ))}
+          </div>
+          <div className="mt-3 flex items-center justify-between gap-3">
+            <Button variant="outline" size="sm" disabled={query.page === 0} onClick={() => setQuery((current) => ({ ...current, page: current.page - 1 }))}>
+              <ChevronLeft className="h-3.5 w-3.5" aria-hidden /> Previous
+            </Button>
+            <span className="text-xs text-muted-foreground">Page {query.page + 1}</span>
+            <Button variant="outline" size="sm" disabled={!result.hasNextPage} onClick={() => setQuery((current) => ({ ...current, page: current.page + 1 }))}>
+              Next <ChevronRight className="h-3.5 w-3.5" aria-hidden />
+            </Button>
+          </div>
+        </>
+      ) : null}
+    </SettingsSection>
+  );
+}

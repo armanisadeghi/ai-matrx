@@ -32,6 +32,7 @@ import type {
   SurfaceValueGroup,
 } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const KEYWORD_VALUE_WORKBENCH_SURFACE_NAME =
   "matrx-user/keyword-value-workbench" as const;
@@ -231,6 +232,7 @@ const surfaceSpecific: SurfaceValue[] = [
 export const keywordValueWorkbenchManifest: SurfaceManifest = {
   surfaceName: KEYWORD_VALUE_WORKBENCH_SURFACE_NAME,
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "The keyword value workbench for one site: what every keyword is worth, the level it lands on, and the receipt behind it.",

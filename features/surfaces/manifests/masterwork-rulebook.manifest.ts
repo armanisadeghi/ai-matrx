@@ -13,6 +13,7 @@ import type {
   SurfaceWriteTarget,
 } from "@ai-matrx/chat/surfaces/types";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const MASTERWORK_RULEBOOK_SURFACE_NAME =
   "matrx-user/masterwork-rulebook";
@@ -408,6 +409,7 @@ const clientTools: SurfaceClientTool[] = [
 export const masterworkRulebookManifest: SurfaceManifest = {
   surfaceName: MASTERWORK_RULEBOOK_SURFACE_NAME,
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "One Rulebook workspace for reviewing, sourcing, correcting, and approving the rules that power Masterworks.",

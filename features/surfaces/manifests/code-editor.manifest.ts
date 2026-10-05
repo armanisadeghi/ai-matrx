@@ -31,6 +31,7 @@ import {
   mergeBaselineValues,
   pickBaseline,
 } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -334,6 +335,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const codeEditorManifest: SurfaceManifest = {
   surfaceName: "matrx-user/code-editor",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Code editing, review, and generation surfaces",

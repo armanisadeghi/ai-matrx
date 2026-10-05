@@ -30,6 +30,7 @@ import type {
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 import { dbAuthoredMandateKey } from "@ai-matrx/agents/mandates";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 /** Per-slot summary entry inside `custom_slots_summary`. */
 export interface CleanupSlotSummary {
@@ -531,6 +532,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const transcriptsCleanupManifest: SurfaceManifest = {
   surfaceName: "matrx-user/transcripts-cleanup",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "High-volume transcription cleanup page (record -> clean -> custom refine)",

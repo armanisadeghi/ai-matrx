@@ -57,6 +57,7 @@ import {
   AGENT_CONNECTIONS_SURFACE_NAME,
   type AgentConnectionsSectionEntry,
 } from "./agent-connections.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const CONNECTIONS_SKILLS_SURFACE_NAME = "matrx-user/connections-skills";
 
@@ -318,6 +319,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const connectionsSkillsManifest: SurfaceManifest = {
   surfaceName: CONNECTIONS_SKILLS_SURFACE_NAME,
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Skills editor (reachable from the Agent Connections window panel)",

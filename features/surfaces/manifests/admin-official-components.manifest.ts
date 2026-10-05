@@ -128,6 +128,7 @@ import type {
   SurfaceValueGroup,
 } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const ADMIN_OFFICIAL_COMPONENTS_SURFACE_NAME =
   "matrx-admin/official-components";
@@ -290,6 +291,7 @@ const surfaceSpecific: SurfaceValue[] = [
 export const adminOfficialComponentsManifest: SurfaceManifest = {
   surfaceName: ADMIN_OFFICIAL_COMPONENTS_SURFACE_NAME,
   client: "matrx-admin",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Official component library admin",

@@ -31,6 +31,12 @@ import type { SnapOverlay } from "./snapping";
 
 type Listener = () => void;
 
+/** How a host moves several items as one gesture step (`BoardStore.dragMany`). */
+export interface BoardMover {
+  /** Put these items (tiles or frames, by id) at these positions; successive calls in one gesture are ONE undo step. */
+  dragMany: (moves: { id: string; x: number; y: number }[]) => void;
+}
+
 export interface Insets {
   top: number;
   right: number;
@@ -91,7 +97,14 @@ export class BoardCameraStore {
 
   private tier: DetailTier;
   private visible = new Set<string>();
-  private selected: string | null = null;
+  /** Everything selected, in the order it was added (tiles and frames, by id). */
+  private selection: readonly string[] = [];
+  private selectionSet = new Set<string>();
+  /** Items an agent's tool call is acting on right now (nested calls count). */
+  private agentWork = new Map<string, number>();
+  private agentWorkListeners = new Map<string, Set<Listener>>();
+  /** The host's group mover (`registerMover`); absent on a board whose host keeps its own layout. */
+  private mover: BoardMover | null = null;
   private editing: string | null = null;
   private editingListeners = new Set<Listener>();
   private coarseScheduled = false;
@@ -230,7 +243,7 @@ export class BoardCameraStore {
         for (const l of this.focusListeners) l();
       }
       if (this.editing === id) this.setEditing(null);
-      if (this.selected === id) this.select(null);
+      if (this.selectionSet.has(id)) this.setSelection(this.selection.filter((x) => x !== id));
     };
   }
 
@@ -257,15 +270,87 @@ export class BoardCameraStore {
     return () => set.delete(l);
   }
 
-  getSelected = (): string | null => this.selected;
+  /**
+   * THE selected item — only when exactly one is selected. Everything that
+   * acts on "the selected tile" (Enter, zoom to selection, the live tile, the
+   * agent's `selected_tile`) reads this, so with several selected none of them
+   * picks one at random (Figma: a multi-selection has no primary object).
+   */
+  getSelected = (): string | null => (this.selection.length === 1 ? this.selection[0] : null);
+
+  /** Every selected id (tiles and frames), stable between changes. */
+  getSelection = (): readonly string[] => this.selection;
+
+  isSelected = (id: string): boolean => this.selectionSet.has(id);
 
   select(id: string | null): void {
-    if (this.selected === id) return;
-    this.selected = id;
+    this.setSelection(id === null ? [] : [id]);
+  }
+
+  /** Replace the selection (a marquee, ⌘A, a group pick). */
+  setSelection(ids: readonly string[]): void {
+    const next = [...new Set(ids)];
+    if (next.length === this.selection.length && next.every((id, i) => id === this.selection[i])) return;
+    this.selection = next;
+    this.selectionSet = new Set(next);
     // Selecting something else (or nothing) ends interaction with a tile.
-    if (this.editing !== null && this.editing !== id) this.setEditing(null);
+    if (this.editing !== null && !(next.length === 1 && next[0] === this.editing)) this.setEditing(null);
     for (const l of this.selectionListeners) l();
     this.recomputeLife();
+  }
+
+  /** Shift / ⌘-click: add the item, or take it out when it is already selected. */
+  toggleSelected(id: string): void {
+    this.setSelection(this.selectionSet.has(id) ? this.selection.filter((x) => x !== id) : [...this.selection, id]);
+  }
+
+  // ── group moves: the host's one path for moving several items at once ───
+
+  /** The host's mover (its board store): what a group drag, a frame drag and a nudge call. */
+  registerMover(mover: BoardMover | null): () => void {
+    this.mover = mover;
+    return () => {
+      if (this.mover === mover) this.mover = null;
+    };
+  }
+
+  getMover = (): BoardMover | null => this.mover;
+
+  // ── the agent is working on an item (a tool call in flight) ──────────────
+
+  /** Mark `id` as being worked on by an agent until the returned function runs. Calls nest. */
+  beginAgentWork(id: string): () => void {
+    this.agentWork.set(id, (this.agentWork.get(id) ?? 0) + 1);
+    this.notifyAgentWork(id);
+    let done = false;
+    return () => {
+      if (done) return;
+      done = true;
+      const n = (this.agentWork.get(id) ?? 1) - 1;
+      if (n <= 0) this.agentWork.delete(id);
+      else this.agentWork.set(id, n);
+      this.notifyAgentWork(id);
+    };
+  }
+
+  isAgentWorking = (id: string): boolean => (this.agentWork.get(id) ?? 0) > 0;
+
+  subscribeAgentWork(id: string, l: Listener): () => void {
+    let set = this.agentWorkListeners.get(id);
+    if (!set) {
+      set = new Set();
+      this.agentWorkListeners.set(id, set);
+    }
+    set.add(l);
+    return () => {
+      set.delete(l);
+      if (set.size === 0 && this.agentWorkListeners.get(id) === set) this.agentWorkListeners.delete(id);
+    };
+  }
+
+  private notifyAgentWork(id: string): void {
+    const ls = this.agentWorkListeners.get(id);
+    if (ls) for (const l of [...ls]) l();
   }
 
   // ── interacting: the ONE tile whose content receives input natively ─────
@@ -280,8 +365,9 @@ export class BoardCameraStore {
   setEditing(id: string | null): void {
     if (this.editing === id) return;
     this.editing = id;
-    if (id !== null && this.selected !== id) {
-      this.selected = id;
+    if (id !== null && !(this.selection.length === 1 && this.selection[0] === id)) {
+      this.selection = [id];
+      this.selectionSet = new Set([id]);
       for (const l of this.selectionListeners) l();
     }
     for (const l of this.editingListeners) l();
@@ -333,7 +419,8 @@ export class BoardCameraStore {
 
   /** Is the tile needed right now (as opposed to merely remembered)? */
   private needed(id: string): boolean {
-    if (this.focused === id || this.selected === id || this.editing === id) return true;
+    // A multi-selection keeps nothing awake: ⌘A on a 100-tile board must not wake 100 bodies.
+    if (this.focused === id || this.getSelected() === id || this.editing === id) return true;
     if ((this.holds.get(id) ?? 0) > 0) return true;
     return this.visible.has(id) && this.tier !== "overview";
   }

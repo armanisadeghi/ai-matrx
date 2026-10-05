@@ -29,6 +29,7 @@ import type {
 } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 import { BING_PROVIDER } from "@/features/marketing/lib/provider-names";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -168,6 +169,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const marketingSiteKeywordsManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-site-keywords",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "",

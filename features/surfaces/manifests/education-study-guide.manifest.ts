@@ -62,6 +62,7 @@ import type {
   SurfaceWriteTarget,
 } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const EDUCATION_STUDY_GUIDE_SURFACE_NAME = "matrx-user/education-study-guide";
 
@@ -250,6 +251,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const educationStudyGuideManifest: SurfaceManifest = {
   surfaceName: EDUCATION_STUDY_GUIDE_SURFACE_NAME,
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "One study guide: its full text, outline, the person's private highlights and notes, comment threads and linked key terms; create, edit, or move a guide to Trash, and add or change notes and comments (/education/study-guides/[id]).",

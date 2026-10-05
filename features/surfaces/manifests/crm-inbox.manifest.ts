@@ -24,6 +24,7 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
 } from "@ai-matrx/chat/surfaces/types";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const CRM_INBOX_SURFACE_NAME = "matrx-user/crm-inbox";
 
@@ -124,6 +125,7 @@ const values: SurfaceValue[] = [
 export const crmInboxManifest: SurfaceManifest = {
   surfaceName: CRM_INBOX_SURFACE_NAME,
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Every reply an outreach campaign got back, with the classifier verdict and the evidence behind it",

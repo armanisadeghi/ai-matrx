@@ -45,6 +45,7 @@ import type {
   SurfaceWriteTarget,
 } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -349,6 +350,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const educationPlannerManifest: SurfaceManifest = {
   surfaceName: "matrx-user/education-planner",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "AI study planner: goal, exam date, daily minutes, agenda (/education/planner).",

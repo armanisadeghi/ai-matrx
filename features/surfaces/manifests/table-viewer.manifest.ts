@@ -35,6 +35,7 @@ import type {
   SurfaceValueGroup,
 } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const TABLE_VIEWER_SURFACE_NAME = "matrx-user/table-viewer";
 
@@ -139,6 +140,7 @@ const surfaceSpecific: SurfaceValue[] = [
 export const tableViewerManifest: SurfaceManifest = {
   surfaceName: TABLE_VIEWER_SURFACE_NAME,
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "The floating Table Viewer window — the platform generic markdown-table viewer, opened app-wide.",

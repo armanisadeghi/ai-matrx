@@ -59,6 +59,7 @@ import type {
 } from "@ai-matrx/chat/surfaces/types";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -368,6 +369,7 @@ const surfaceSpecific: SurfaceValue[] = [
 export const educationProgressManifest: SurfaceManifest = {
   surfaceName: "matrx-user/education-progress",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Study analytics dashboard + narrated progress reports (/education/progress).",

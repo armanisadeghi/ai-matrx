@@ -32,6 +32,7 @@ import {
   UPDATE_METHODS,
 } from "@/features/notes/actions/quick-save/quickNoteSaveVocabulary";
 import { BASELINE_VALUES, mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const QUICK_NOTE_SAVE_SURFACE_NAME = "matrx-user/quick-note-save";
 
@@ -170,6 +171,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const quickNoteSaveManifest: SurfaceManifest = {
   surfaceName: QUICK_NOTE_SAVE_SURFACE_NAME,
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Quick-note capture overlay",

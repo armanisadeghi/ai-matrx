@@ -32,6 +32,7 @@ import type {
 } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 import type { SurfaceWriteTarget } from "@ai-matrx/chat/surfaces/types";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -261,6 +262,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const educationSummariesManifest: SurfaceManifest = {
   surfaceName: "matrx-user/education-summaries",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description: "Create, edit, and view study summaries (/education/summaries).",
   readiness: "partial",

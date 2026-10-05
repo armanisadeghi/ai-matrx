@@ -69,7 +69,7 @@ export async function findMeetings(
     meetings: readonly {
       id: string;
       title: string;
-      deletedAt: string | null;
+      deletedAt?: string | null;
       cancelledAt?: string | null;
       scheduledFor: string | null;
       startedAt: string | null;

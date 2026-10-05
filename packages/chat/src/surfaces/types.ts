@@ -25,6 +25,7 @@ import type {
   ValueGroup,
   ValueType,
 } from "@ai-matrx/alchemy/declare";
+import type { SurfaceExecutorName } from "./executor";
 import type { ApplicationScope } from "../agents/types/scope.types";
 import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 import type { components } from "@ai-matrx/agents/generated/api-types";
@@ -541,6 +542,12 @@ export interface SurfaceManifest extends SurfaceDeclaration {
    * `surfaceName` prefix before the first `/`; the checks refuse a mismatch.
    */
   client: string;
+  /**
+   * REQUIRED — who runs this page's client-side tools (`ui_surface.executor_name`).
+   * Web-app pages name `MATRX_WEB_APP_EXECUTOR` (`../executor`). The sync
+   * writes it; registry init throws without it.
+   */
+  executor: SurfaceExecutorName;
   /** `ui_surface.execution_mode`. Backfilled from the live row (ALC-14 S1). */
   executionMode: SurfaceExecutionMode;
   /** One sentence on what this surface is (`ui_surface.description`). */

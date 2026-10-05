@@ -26,6 +26,7 @@ import type {
   SurfaceWriteTarget,
 } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const EDUCATION_LIBRARY_SUGGESTIONS_SURFACE_NAME =
   "matrx-user/education-library-suggestions";
@@ -124,6 +125,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const educationLibrarySuggestionsManifest: SurfaceManifest = {
   surfaceName: EDUCATION_LIBRARY_SUGGESTIONS_SURFACE_NAME,
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Deck suggestions inbox: improvements other people suggested for the person's community decks; accept or decline them (/education/library/suggestions).",

@@ -6,6 +6,7 @@ import type {
   SurfaceWriteTarget,
 } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const EDUCATION_QUICK_MATH_AUTHORING_SURFACE_NAME = "matrx-user/education-quick-math-authoring";
 
@@ -43,6 +44,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const educationQuickMathAuthoringManifest: SurfaceManifest = {
   surfaceName: EDUCATION_QUICK_MATH_AUTHORING_SURFACE_NAME,
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   label: "Quick Math authoring",
   description: "Super-admin authoring for the persisted Quick Math problem catalog.",

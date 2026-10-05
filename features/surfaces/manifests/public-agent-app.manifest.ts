@@ -52,6 +52,7 @@ import type {
   SurfaceValueGroup,
 } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const PUBLIC_AGENT_APP_SURFACE_NAME = "matrx-public/p";
 
@@ -247,6 +248,7 @@ const surfaceSpecific: SurfaceValue[] = [
 export const publicAgentAppManifest: SurfaceManifest = {
   surfaceName: PUBLIC_AGENT_APP_SURFACE_NAME,
   client: "matrx-public",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Slug-based public agent / app pages",

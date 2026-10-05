@@ -27,6 +27,7 @@ import type {
   SurfaceWriteTarget,
 } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const EDUCATION_KITS_SURFACE_NAME = "matrx-user/education-kits";
 
@@ -303,6 +304,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const educationKitsManifest: SurfaceManifest = {
   surfaceName: EDUCATION_KITS_SURFACE_NAME,
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Study kits: every kit, and one kit's study aids with their practice progress (/education/kits).",

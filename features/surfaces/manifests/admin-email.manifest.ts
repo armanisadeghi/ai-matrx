@@ -38,6 +38,7 @@ import {
   EMAIL_SUBJECT_MAX_CHARS,
 } from "@/features/admin/shared/email-compose-draft";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const ADMIN_EMAIL_SURFACE_NAME = "matrx-admin/email";
 
@@ -249,6 +250,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const adminEmailManifest: SurfaceManifest = {
   surfaceName: ADMIN_EMAIL_SURFACE_NAME,
   client: "matrx-admin",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Email configuration",

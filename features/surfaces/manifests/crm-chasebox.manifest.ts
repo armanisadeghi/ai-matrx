@@ -25,6 +25,7 @@ import type {
   SurfaceValueGroup,
 } from "@ai-matrx/chat/surfaces/types";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const CRM_CHASEBOX_SURFACE_NAME = "matrx-user/crm-chasebox";
 
@@ -172,6 +173,7 @@ const values: SurfaceValue[] = [
 export const crmChaseboxManifest: SurfaceManifest = {
   surfaceName: CRM_CHASEBOX_SURFACE_NAME,
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Outreach triage: replies to answer and held drafts to approve, reword or reject at volume",

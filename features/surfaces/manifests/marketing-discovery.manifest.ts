@@ -32,6 +32,7 @@ import {
   LABEL_REQUIRED_KIND,
 } from "@/features/marketing/discovery-classification";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -205,6 +206,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const marketingDiscoveryManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-discovery",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Machine-discovery review inbox — pending candidates promoted to confirmed brand truth.",

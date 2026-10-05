@@ -6,6 +6,7 @@ import { getClaimsUser } from "@/utils/supabase/resolveUser";
 import { getStripe, isStripeConfigured, requiredStripeMode } from "@/lib/stripe/server";
 import { ownerEq, billingOwnerRef, readRequestOrganizationState } from "@/features/entitlements/stripe/billingOwner";
 import { billingOrganizationRequiredResponse, isBillingOrganizationRequiredError } from "@/features/entitlements/stripe/billingOwnerRoute";
+import { billingSubscriptionSelectionPasses, terminalBillingSubscriptionStatuses } from "@/features/entitlements/billing-subscription-selection";
 
 export async function GET() {
   return NextResponse.json({ livemode: requiredStripeMode() === "live" });
@@ -51,12 +52,23 @@ export async function POST(request: NextRequest) {
       if (!membership || !["owner", "admin"].includes(membership.role ?? "")) return NextResponse.json({ error: "An organization owner or admin must manage its subscription." }, { status: 403 });
       subscriptionQuery = ownerEq(subscriptionQuery, owner).is("beneficiary_user_id", null);
     }
-    const { data: subscription, error } = await subscriptionQuery
-      .order("current_period_end", { ascending: false, nullsFirst: false })
-      .order("updated_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    if (error) throw error;
+    let subscription: { stripe_subscription_id: string | null } | null = null;
+    for (const pass of billingSubscriptionSelectionPasses) {
+      const candidateQuery = pass.terminal
+        ? subscriptionQuery.in("status", [...terminalBillingSubscriptionStatuses])
+        : subscriptionQuery.neq("status", terminalBillingSubscriptionStatuses[0]).neq("status", terminalBillingSubscriptionStatuses[1]);
+      const { data, error } = await candidateQuery
+        .order("current_period_end", { ascending: false, nullsFirst: false })
+        .order("updated_at", { ascending: false })
+        .order("id", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      if (data) {
+        subscription = data;
+        break;
+      }
+    }
     if (!subscription?.stripe_subscription_id) return NextResponse.json({ invoice: null });
     const stripeSubscription = await getStripe().subscriptions.retrieve(subscription.stripe_subscription_id, {
       expand: ["latest_invoice.payments.data.payment.payment_intent"],

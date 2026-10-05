@@ -36,6 +36,7 @@ import type {
   SurfaceWriteTarget,
 } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const CONNECTED_SOURCES_SURFACE_NAME = "matrx-user/connected-sources";
 
@@ -187,6 +188,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const connectedSourcesManifest: SurfaceManifest = {
   surfaceName: CONNECTED_SOURCES_SURFACE_NAME,
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Connected sources (/connected-sources): the accounts the person connected and the items inside the one on screen, read live from the provider.",

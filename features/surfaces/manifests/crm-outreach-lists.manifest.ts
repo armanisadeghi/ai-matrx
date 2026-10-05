@@ -22,6 +22,7 @@ import type {
 } from "@ai-matrx/chat/surfaces/types";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { dbAuthoredMandateKey } from "@ai-matrx/agents/mandates";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const CRM_OUTREACH_LISTS_SURFACE_NAME = "matrx-user/crm-outreach-lists";
 
@@ -129,6 +130,7 @@ const values: SurfaceValue[] = [
 export const crmOutreachListsManifest: SurfaceManifest = {
   surfaceName: CRM_OUTREACH_LISTS_SURFACE_NAME,
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Outreach campaign console: every outreach list (email, calling, mixed) with lifecycle and member counts",

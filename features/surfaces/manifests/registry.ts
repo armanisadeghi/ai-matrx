@@ -27,6 +27,7 @@ import type {
   SurfaceManifest,
 } from "@ai-matrx/chat/surfaces/types";
 import { agentRolesExtension } from "@ai-matrx/chat/surfaces/declare/surface-declare";
+import { SURFACE_EXECUTOR_NAMES } from "@ai-matrx/chat/surfaces/executor";
 import { BASELINE_VALUES, PLATFORM_RESERVED_NAMES } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 import { notesEditorManifest } from "./notes-editor.manifest";
 import { agentShortcutsManifest } from "./agent-shortcuts.manifest";
@@ -589,6 +590,23 @@ export function assertNoPlatformReservedNames(
 }
 
 /**
+ * EVERY PAGE HAS AN EXECUTOR (Arman, 2026-10-04). The server picks the tools a
+ * page's client runs from `ui_surface.executor_name`; with none it disables
+ * every client-run tool for the request. A manifest without a known executor
+ * is refused at registry init, so the build/dev server fails loudly.
+ */
+export function assertDeclaresExecutor(
+  m: Pick<SurfaceManifest, "surfaceName" | "executor">,
+): void {
+  if (!SURFACE_EXECUTOR_NAMES.includes(m.executor)) {
+    throw new Error(
+      `[surfaces] "${m.surfaceName}" declares executor ${JSON.stringify(m.executor)} — every page names one of ` +
+        `${SURFACE_EXECUTOR_NAMES.join(", ")}; web-app pages use MATRX_WEB_APP_EXECUTOR (@ai-matrx/chat/surfaces/executor)`,
+    );
+  }
+}
+
+/**
  * THE REGISTRY is `@ai-matrx/alchemy/declare`'s (ALC-14): inheritance (child
  * wins per key), baseline injection, provenance, group synthesis and the loud
  * guards (unknown parent, cycle, depth > MAX_INHERITANCE_DEPTH, reserved or
@@ -608,6 +626,7 @@ const REGISTRY = createDeclarationRegistry<SurfaceManifest>({
 REGISTRY.registerExtension(agentRolesExtension);
 for (const manifest of RAW_MANIFESTS) {
   assertNoPlatformReservedNames(manifest);
+  assertDeclaresExecutor(manifest);
   REGISTRY.register(manifest);
 }
 

@@ -64,14 +64,22 @@ describe("a snap session over the camera store", () => {
     camera.registerItem("frame:f", { x: 503, y: 0, w: 900, h: 900 });
     return camera;
   }
-  it("candidates are the tiles near the viewport: not itself, not far ones, not frames", () => {
+  it("candidates are the tiles and frames near the viewport: not itself, not far ones; a frame by its own rect", () => {
     const camera = setup();
-    expect(nearbyRects(camera, "a")).toEqual([{ x: 500, y: 300, w: 200, h: 120 }]);
+    // The frame registers with its 110px title band above it; it snaps by its own rect.
+    expect(nearbyRects(camera, "a")).toEqual([
+      { x: 500, y: 300, w: 200, h: 120 },
+      { x: 503, y: 110, w: 900, h: 790 },
+    ]);
+  });
+  it("a group move excludes everything it carries (frames by their id)", () => {
+    const camera = setup();
+    expect(nearbyRects(camera, new Set(["a", "f"]))).toEqual([{ x: 500, y: 300, w: 200, h: 120 }]);
   });
   it("a move snaps to a neighbour, draws the guide, and clears on end", () => {
     const camera = setup();
     const s = beginSnap(camera, "a");
-    const r = s.move({ x: 503, y: 40, w: 200, h: 120 }, {});
+    const r = s.move({ x: 499, y: 40, w: 200, h: 120 }, {});
     expect(r.x).toBe(500);
     expect(camera.getSnapOverlay()?.lines.length).toBeGreaterThan(0);
     s.end();

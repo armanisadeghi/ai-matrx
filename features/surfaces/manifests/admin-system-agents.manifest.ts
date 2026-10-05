@@ -54,6 +54,7 @@ import {
   AGENT_TAG_MAX_CHARS,
 } from "@ai-matrx/chat/agents/constants/agent-identity-metadata";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const ADMIN_SYSTEM_AGENTS_SURFACE_NAME = "matrx-admin/system-agents";
 
@@ -596,6 +597,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const adminSystemAgentsManifest: SurfaceManifest = {
   surfaceName: ADMIN_SYSTEM_AGENTS_SURFACE_NAME,
   client: "matrx-admin",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "System agent management",

@@ -26,6 +26,7 @@ import type {
 } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -201,6 +202,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const contentPlanSetupManifest: SurfaceManifest = {
   surfaceName: "matrx-user/content-plan-setup",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Site Setup view of the content plan: archetype shape, counts/names, exact route preview, readiness checklist.",

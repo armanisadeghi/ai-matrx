@@ -20,6 +20,7 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
 } from "@ai-matrx/chat/surfaces/types";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const IMAGE_UPLOADER_SURFACE_NAME = "matrx-user/image-uploader";
 
@@ -180,6 +181,7 @@ const surfaceSpecific: SurfaceValue[] = [
 export const imageUploaderManifest: SurfaceManifest = {
   surfaceName: IMAGE_UPLOADER_SURFACE_NAME,
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Image upload overlay",

@@ -30,6 +30,7 @@ import type {
 import { TASK_STATUSES } from "@/features/tasks/constants/status";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 
 const groups: SurfaceValueGroup[] = [
@@ -515,6 +516,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const warRoomThreadManifest: SurfaceManifest = {
   surfaceName: "matrx-user/war-room-thread",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "War Room thread agent panel — one thread (real chat: working doc + scratchpad + context).",

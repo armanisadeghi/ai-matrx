@@ -30,6 +30,7 @@ import type {
   SurfaceWriteTarget,
 } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 const surfaceSpecific: SurfaceValue[] = [
   {
@@ -205,6 +206,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const voicePadManifest: SurfaceManifest = {
   surfaceName: "matrx-user/voice-pad",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Voice-to-text capture",

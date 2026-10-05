@@ -8,6 +8,7 @@ import type {
   SurfaceWriteTarget,
 } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const EDUCATION_CREATOR_SURFACE_NAME = "matrx-user/education-creator";
 
@@ -99,6 +100,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const educationCreatorManifest: SurfaceManifest = {
   surfaceName: EDUCATION_CREATOR_SURFACE_NAME,
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description: "Authenticated creator profile editor at /education/creator.",
   readiness: "partial",

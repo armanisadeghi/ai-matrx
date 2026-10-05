@@ -96,6 +96,7 @@ import type {
   SurfaceValueGroup,
 } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 /**
  * The chunker's own sections. Parent group keys (`pdf_document`, `pdf_text`,
@@ -219,6 +220,7 @@ const surfaceSpecific: SurfaceValue[] = [
 export const extractorChunkerManifest: SurfaceManifest = {
   surfaceName: "matrx-user/extractor-chunker",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Chunked AI extraction Jobs on the PDF Extractor (Chunked Runs tab). Superset of pdf-extractor values plus per-chunk clean_text / raw_text / pdf_page / chunk identity.",

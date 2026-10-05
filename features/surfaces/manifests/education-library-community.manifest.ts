@@ -34,6 +34,7 @@ import type {
   SurfaceWriteTarget,
 } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const EDUCATION_LIBRARY_COMMUNITY_SURFACE_NAME =
   "matrx-user/education-library-community";
@@ -173,6 +174,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const educationLibraryCommunityManifest: SurfaceManifest = {
   surfaceName: EDUCATION_LIBRARY_COMMUNITY_SURFACE_NAME,
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Community Library: public flashcard decks with search and a Certified-only toggle; copy decks into your library or suggest edits to their owners (/education/library/community).",

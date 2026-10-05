@@ -30,6 +30,7 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
 } from "@ai-matrx/chat/surfaces/types";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const QUICK_DATA_SURFACE_NAME = "matrx-user/quick-data";
 
@@ -115,6 +116,7 @@ const surfaceSpecific: SurfaceValue[] = [
 export const quickDataManifest: SurfaceManifest = {
   surfaceName: QUICK_DATA_SURFACE_NAME,
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Quick data table browser overlay",

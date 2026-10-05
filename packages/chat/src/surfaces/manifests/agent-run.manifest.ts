@@ -44,6 +44,7 @@ import {
   CHAT_INPUT_DRAFT_MAX,
 } from "./chat.manifest";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "../executor";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -502,6 +503,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const agentRunManifest: SurfaceManifest = {
   surfaceName: "matrx-user/agent-run",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Live agent execution viewer",

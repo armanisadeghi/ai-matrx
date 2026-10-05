@@ -55,6 +55,7 @@ import {
   CATEGORY_NAME_MAX_CHARS,
 } from "@/features/admin/feedback/category-draft";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const ADMIN_FEEDBACK_SURFACE_NAME = "matrx-admin/feedback";
 
@@ -246,6 +247,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const adminFeedbackManifest: SurfaceManifest = {
   surfaceName: ADMIN_FEEDBACK_SURFACE_NAME,
   client: "matrx-admin",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Feedback triage queue",

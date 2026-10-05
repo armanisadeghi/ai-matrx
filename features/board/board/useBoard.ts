@@ -66,6 +66,9 @@ export interface Board<T extends BoardTileBase> {
   /** Move many tiles (and/or frames) as ONE undoable step — an arrangement;
    * `addFrames` draws frames in the same step. */
   moveMany: (moves: { id: string; x: number; y: number }[], opts?: { addFrames?: BoardFrame[] }) => void;
+  /** One step of a group gesture (a multi-selection drag, a frame and its tiles, a nudge);
+   * successive steps on the same items are ONE undo step. */
+  dragMany: (moves: { id: string; x: number; y: number }[]) => void;
   connections: BoardConnection[];
   connect: (connection: BoardConnection) => void;
   disconnect: (id: string) => void;
@@ -148,6 +151,7 @@ export function useBoard<T extends BoardTileBase>(
     moveTile: store.moveTile,
     resizeTile: store.resizeTile,
     moveMany: store.moveMany,
+    dragMany: store.dragMany,
     connect: store.connect,
     disconnect: store.disconnect,
     addTile: store.addTile,

@@ -8,6 +8,7 @@
 
 import type { SurfaceManifest, SurfaceScopePayload, SurfaceValueGroup } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const BARCODE_PREVIEW_SURFACE_NAME = "matrx-user/barcode-preview" as const;
 
@@ -29,6 +30,7 @@ const groups: SurfaceValueGroup[] = [
 export const barcodePreviewManifest: SurfaceManifest = {
   surfaceName: BARCODE_PREVIEW_SURFACE_NAME,
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "",

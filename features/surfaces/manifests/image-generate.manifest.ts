@@ -29,6 +29,7 @@ import {
   IMAGE_GENERATE_SIZES,
 } from "@/features/image-studio/constants/generation-options";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -225,6 +226,7 @@ export const IMAGE_GENERATE_SURFACE_NAME = "matrx-user/image-generate";
 export const imageGenerateManifest: SurfaceManifest = {
   surfaceName: IMAGE_GENERATE_SURFACE_NAME,
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Text-to-image generation at /images/generate (also fronts /images/ai-generate).",

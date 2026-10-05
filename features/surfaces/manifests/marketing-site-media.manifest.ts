@@ -30,6 +30,7 @@ import type {
   SurfaceWriteTarget,
 } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -140,6 +141,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const marketingSiteMediaManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-site-media",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Site media command center — crawled inventory, brand library, research images, AI generation orders, media standards.",

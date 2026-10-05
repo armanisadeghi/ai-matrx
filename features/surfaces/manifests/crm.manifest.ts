@@ -23,6 +23,7 @@ import {
 } from "@/features/crm/types";
 import type { EntityScopeCounts } from "@/lib/entity-list/types";
 import type { ListScopeKind } from "@/lib/list-scope/types";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const CRM_SURFACE_NAME = "matrx-user/crm";
 
@@ -396,6 +397,7 @@ export const crmGroups = groups;
 export const crmManifest: SurfaceManifest = {
   surfaceName: CRM_SURFACE_NAME,
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "People and companies manager with explicit Mine, My Orgs, and Public list scopes",

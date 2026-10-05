@@ -60,6 +60,7 @@ import {
   LIST_VISIBILITY_ENUM_TEXT,
 } from "@/features/user-lists/surface-write-targets";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -266,6 +267,7 @@ const surfaceSpecific: SurfaceValue[] = [
 export const listsManifest: SurfaceManifest = {
   surfaceName: "matrx-user/lists",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Custom lists organizer",

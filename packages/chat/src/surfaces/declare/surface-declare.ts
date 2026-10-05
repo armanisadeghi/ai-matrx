@@ -317,7 +317,9 @@ export function planManifestSync(
  * compares them identically:
  *   - `ui_surface_value.max_inline_chars` ← `SurfaceValue.inlineUpTo` on every
  *     screen-value row (NULL = platform default; item-type values are NULL);
- *   - `ui_surface.intro` gains the guide pointer line when `guide` is set.
+ *   - `ui_surface.intro` gains the guide pointer line when `guide` is set;
+ *   - `ui_surface.executor_name` ← `SurfaceManifest.executor` (required; code
+ *     is the source, so `--check` flags a row that disagrees).
  */
 export function withAgentHints(
   plan: SurfaceSyncPlan,
@@ -326,12 +328,20 @@ export function withAgentHints(
   const bySurface = new Map(manifests.map((m) => [m.surfaceName, m]));
   const surfaces = plan.surfaces.map((row) => {
     const m = bySurface.get(row.name);
-    if (!m?.guide) return row;
+    if (!m) return row;
+    const executor_name: string = m.executor;
+    if (!m.guide) {
+      return {
+        ...row,
+        insert: { ...row.insert, executor_name },
+        update: { ...row.update, executor_name },
+      };
+    }
     const intro = introWithGuidePointer(m.intro, m.surfaceName);
     return {
       ...row,
-      insert: { ...row.insert, intro },
-      update: { ...row.update, intro },
+      insert: { ...row.insert, intro, executor_name },
+      update: { ...row.update, intro, executor_name },
     };
   });
   const tables = plan.tables.map((table) => {

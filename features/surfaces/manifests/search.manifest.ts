@@ -26,6 +26,7 @@ import type {
   SurfaceValueGroup,
 } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -212,6 +213,7 @@ const surfaceSpecific: SurfaceValue[] = [
 export const searchManifest: SurfaceManifest = {
   surfaceName: "matrx-user/search",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Matrx Search — the platform's public search engine at /search. One box; the web comes back as the web_search_results kind family.",

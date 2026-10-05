@@ -28,6 +28,7 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
 } from "@ai-matrx/chat/surfaces/types";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const ADMIN_GROWTH_LOOP_SURFACE_NAME = "matrx-admin/growth-loop";
 
@@ -189,6 +190,7 @@ const surfaceSpecific: SurfaceValue[] = [
 export const adminGrowthLoopManifest: SurfaceManifest = {
   surfaceName: ADMIN_GROWTH_LOOP_SURFACE_NAME,
   client: "matrx-admin",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Growth Loop pipeline map: stages, edges, gaps, blockers, loop score",

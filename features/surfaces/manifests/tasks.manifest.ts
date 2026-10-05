@@ -23,6 +23,7 @@ import type {
 import { TASK_LABELS } from "@/features/tasks/constants/labels";
 import type { TaskPriorityValue } from "@/features/tasks/constants/priority";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -441,6 +442,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const tasksManifest: SurfaceManifest = {
   surfaceName: "matrx-user/tasks",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Task management and to-do lists",

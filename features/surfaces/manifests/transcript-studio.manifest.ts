@@ -43,6 +43,7 @@ import type {
 } from "@ai-matrx/chat/surfaces/types";
 import { CONCEPT_KINDS } from "@/features/transcript-studio/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 /** Concept entry emitted in `concept_items`. */
 export interface StudioConceptItemValue {
@@ -423,6 +424,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const transcriptStudioManifest: SurfaceManifest = {
   surfaceName: "matrx-user/transcript-studio",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Live transcription studio overlay",

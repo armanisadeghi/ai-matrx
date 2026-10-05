@@ -22,6 +22,7 @@ import type {
   SurfaceWriteTarget,
 } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const AGENT_APPS_SURFACE_NAME = "matrx-user/agent-apps";
 
@@ -531,6 +532,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const agentAppsManifest: SurfaceManifest = {
   surfaceName: AGENT_APPS_SURFACE_NAME,
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Agent-backed apps directory (replaces prompt-apps)",

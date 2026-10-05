@@ -53,6 +53,7 @@ import type {
 } from "@ai-matrx/chat/surfaces/types";
 import { SQL_QUERY_WRITE_MAX_CHARS } from "@/features/administration/lib/sql-editor-write-targets";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const ADMIN_DATABASE_SURFACE_NAME = "matrx-admin/database";
 
@@ -394,6 +395,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const adminDatabaseManifest: SurfaceManifest = {
   surfaceName: ADMIN_DATABASE_SURFACE_NAME,
   client: "matrx-admin",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Database explorer + SQL workbench",

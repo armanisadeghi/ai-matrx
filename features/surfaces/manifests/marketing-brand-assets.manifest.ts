@@ -32,6 +32,7 @@ import type {
 } from "@ai-matrx/chat/surfaces/types";
 import { MEDIA_ORDER_PRESET_IDS } from "@/features/marketing/lib/media-order-presets";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -171,6 +172,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const marketingBrandAssetsManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-brand-assets",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "The brand's asset desk — owned library, research imagery, stock sources, and AI image generation. Split out of matrx-user/marketing-site-media on 2026-08-15.",

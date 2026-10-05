@@ -60,6 +60,7 @@
 
 import type { SurfaceManifest } from "@ai-matrx/chat/surfaces/types";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 /** Canonical surface name for the Scribe studio. */
 export const TRANSCRIPT_SCRIBE_SURFACE = "matrx-user/transcript-scribe";
@@ -67,6 +68,7 @@ export const TRANSCRIPT_SCRIBE_SURFACE = "matrx-user/transcript-scribe";
 export const transcriptScribeManifest: SurfaceManifest = {
   surfaceName: TRANSCRIPT_SCRIBE_SURFACE,
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Scribe session screen (mobile audio studio): the Agent tab chats against the working document and session recordings. Distinct from the transcripts list so it can carry its own tool defaults (memory).",

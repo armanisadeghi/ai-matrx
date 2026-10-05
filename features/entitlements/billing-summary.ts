@@ -3,6 +3,7 @@
 
 import { createClient } from "@/utils/supabase/client";
 import type { Database } from "@/types/database.types";
+import { billingSubscriptionSelectionPasses, terminalBillingSubscriptionStatuses } from "./billing-subscription-selection";
 
 export type BillingScope =
   | { kind: "personal"; userId: string }
@@ -48,15 +49,23 @@ export async function readBillingSummary(
       ? query.eq("beneficiary_user_id", scope.userId)
       : query.eq("organization_id", scope.organizationId).is("beneficiary_user_id", null);
 
-    // A person can have a historical canceled row beside the current one. The
-    // furthest paid-through period is the current financial account; newest
-    // mirror event breaks a tie without pretending historical rows do not exist.
-    const { data: subscription, error } = await query
-      .order("current_period_end", { ascending: false, nullsFirst: false })
-      .order("updated_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    if (error) return { ok: false, reason: error.message || "Billing could not be read." };
+    let subscription: BillingSubscription | null = null;
+    for (const pass of billingSubscriptionSelectionPasses) {
+      const candidateQuery = pass.terminal
+        ? query.in("status", [...terminalBillingSubscriptionStatuses])
+        : query.neq("status", terminalBillingSubscriptionStatuses[0]).neq("status", terminalBillingSubscriptionStatuses[1]);
+      const { data, error } = await candidateQuery
+        .order("current_period_end", { ascending: false, nullsFirst: false })
+        .order("updated_at", { ascending: false })
+        .order("id", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) return { ok: false, reason: error.message || "Billing could not be read." };
+      if (data) {
+        subscription = data;
+        break;
+      }
+    }
     if (!subscription?.price_id) return { ok: true, subscription, price: null };
 
     const { data: price, error: priceError } = await billing
@@ -86,7 +95,9 @@ export function billingStatusLabel(status: string): string {
 }
 
 /** A scheduled cancellation is not a renewal; the date means a different thing. */
-export function periodEndLabel(cancelAtPeriodEnd: boolean): "Ends" | "Renews" {
+export function periodEndLabel(status: string, cancelAtPeriodEnd: boolean): "Ends" | "Renews" | "Paid through" | "Ended" {
+  if (status === "canceled") return "Paid through";
+  if (status === "incomplete_expired") return "Ended";
   return cancelAtPeriodEnd ? "Ends" : "Renews";
 }
 

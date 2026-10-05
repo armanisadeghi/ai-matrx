@@ -20,6 +20,7 @@ import type {
   SurfaceWriteTarget,
 } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -73,6 +74,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const contentPlanListManifest: SurfaceManifest = {
   surfaceName: "matrx-user/content-plan-list",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Content Plan front door: every visible site with its plan aggregates (pages, statuses, keyword coverage).",

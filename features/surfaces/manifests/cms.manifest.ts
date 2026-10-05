@@ -37,6 +37,7 @@ import {
   CMS_SITE_SLUG_RULE,
 } from "@/features/cms/utils/siteSlug";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -249,6 +250,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const cmsManifest: SurfaceManifest = {
   surfaceName: "matrx-user/cms",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "CMS hub — list of owned websites + entry to standalone published pages",

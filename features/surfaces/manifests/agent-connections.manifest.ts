@@ -26,6 +26,7 @@ import type {
   SurfaceWriteTarget,
 } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const AGENT_CONNECTIONS_SURFACE_NAME = "matrx-user/agent-connections";
 
@@ -213,6 +214,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const agentConnectionsManifest: SurfaceManifest = {
   surfaceName: AGENT_CONNECTIONS_SURFACE_NAME,
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Agent inter-dependency graph",

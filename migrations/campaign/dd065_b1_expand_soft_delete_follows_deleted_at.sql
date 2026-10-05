@@ -1,4 +1,3 @@
--- draft: DD-065 batch 1 EXPAND — clone-proven 2026-10-02, NOT applied to production. Remove this line to apply.
 -- chair-step: lane ONE-HOME, DD-065 batch 1 (expand). Data Doctrine §3.2 + §7: soft delete is `deleted_at`;
 -- `is_deleted` is retired. The three matrx-extend tables carry both, and nothing keeps them in step:
 -- the extension writes `is_deleted = true` and leaves `deleted_at` NULL (clone probe 2026-10-02:

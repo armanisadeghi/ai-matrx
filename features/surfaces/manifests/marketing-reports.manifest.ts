@@ -4,6 +4,7 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
 } from "@ai-matrx/chat/surfaces/types";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const MARKETING_REPORTS_LABEL = "Marketing Reports";
 export const MARKETING_REPORTS_GROUP_LABELS = {
@@ -189,6 +190,7 @@ const values: SurfaceValue[] = [
 export const marketingReportsManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-reports",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Client-ready Search Console reports with plain-language findings and canonical traffic-class evidence.",

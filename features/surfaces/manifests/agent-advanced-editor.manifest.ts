@@ -119,6 +119,7 @@ import type {
 } from "@ai-matrx/chat/surfaces/types";
 import { agentCatalogProfileTargetDescription } from "@ai-matrx/chat/agents/surface-catalog-profile";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -361,6 +362,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const agentAdvancedEditorManifest: SurfaceManifest = {
   surfaceName: "matrx-user/agent-advanced-editor",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Agent system + content editor",

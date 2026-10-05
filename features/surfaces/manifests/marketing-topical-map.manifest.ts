@@ -30,6 +30,7 @@ import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { MAP_CURATION_MANDATE_KEY } from "@/features/marketing/seo/topical-map/mandateKeys";
 import { TOPIC_CURATION_MANDATE_KEY } from "@/features/marketing/seo/topical-map/panel/topicCuration";
 import { dbAuthoredMandateKey } from "@ai-matrx/agents/mandates";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -213,6 +214,7 @@ const surfaceSpecific: SurfaceValue[] = [
 export const marketingTopicalMapManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-topical-map",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "",

@@ -59,6 +59,7 @@ import type {
   VoiceActiveTurnScope,
   VoiceTurnScopeEntry,
 } from "@ai-matrx/chat/voice-agent/agent-context/voiceTranscriptScope";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 /** Canonical surface name for the Scribe Live voice tab. */
 export const TRANSCRIPT_SCRIBE_LIVE_SURFACE =
@@ -365,6 +366,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const transcriptScribeLiveManifest: SurfaceManifest = {
   surfaceName: TRANSCRIPT_SCRIBE_LIVE_SURFACE,
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "browser-realtime",
   description:
     "Scribe session screen — Live tab. xAI Realtime voice agent talking against the working document. Browser↔model direct WebSocket; bypasses the Python streaming backend.",

@@ -88,7 +88,7 @@ export function ItemsHome({ kind }: { kind: ItemsHomeKind }) {
 
 // A page and a dashboard are each one record of the store, so Share is the store's record share
 // (the same dialog a record and a table open), in the item's own organization.
-function useItemRowActions(_list: EntityListController<DataHomeRow>): EntityRowActionsResult<DataHomeRow> {
+export function useItemRowActions(_list: EntityListController<DataHomeRow>): EntityRowActionsResult<DataHomeRow> {
   const router = useRouter();
   const [sharing, setSharing] = useState<DataHomeRow | null>(null);
   const modals: ReactNode =

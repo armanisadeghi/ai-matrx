@@ -30,6 +30,7 @@ import type {
 } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 import { keywordResearchManifest } from "./keyword-research.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const KEYWORD_RESEARCH_WINDOW_SURFACE_NAME =
   "matrx-user/keyword-research-window" as const;
@@ -462,6 +463,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const keywordResearchWindowManifest: SurfaceManifest = {
   surfaceName: KEYWORD_RESEARCH_WINDOW_SURFACE_NAME,
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "",

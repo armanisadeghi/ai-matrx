@@ -30,6 +30,7 @@ import {
   type TaskPriorityValue,
 } from "@/features/tasks/constants/priority";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const TASK_CREATE_SURFACE_NAME = "matrx-user/task-create";
 
@@ -198,6 +199,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const taskCreateManifest: SurfaceManifest = {
   surfaceName: TASK_CREATE_SURFACE_NAME,
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Quick task creation overlay",

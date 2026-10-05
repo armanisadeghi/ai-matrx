@@ -14,6 +14,7 @@
  */
 
 import type { SurfaceManifest, SurfaceValue } from "@ai-matrx/chat/surfaces/types";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 const values: SurfaceValue[] = [
   {
@@ -85,6 +86,7 @@ const values: SurfaceValue[] = [
 export const workflowEmitManifest: SurfaceManifest = {
   surfaceName: "matrx-user/workflow",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Workflow emit-to-frontend render surface. Agent-authored custom React components (in tool_ui) that render a workflow node's emitted output — shown in the Workflow Studio canvas and in shared Applets.",

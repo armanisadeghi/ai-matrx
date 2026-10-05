@@ -91,6 +91,7 @@ import {
   VOICE_EMOTION_ENUM_TEXT,
 } from "@/features/settings/agent-writable-settings";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -556,6 +557,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const settingsManifest: SurfaceManifest = {
   surfaceName: "matrx-user/settings",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "User preferences and account settings",

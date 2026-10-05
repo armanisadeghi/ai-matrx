@@ -32,6 +32,7 @@ import type {
   SurfaceWriteTarget,
 } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 /**
  * The scanner's own sections. Parent group keys are NOT declared here —
@@ -394,6 +395,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const scannerManifest: SurfaceManifest = {
   surfaceName: "matrx-user/scanner",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Phone/desktop document scanner (/tools/scanner) — capture or import pages into a PDF, then hand off to the extractor pipeline.",

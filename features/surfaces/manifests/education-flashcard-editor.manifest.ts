@@ -33,6 +33,7 @@ import type {
   SurfaceWriteTarget,
 } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -271,6 +272,7 @@ export const flashcardDeckWriteTargets: SurfaceWriteTarget[] = [
 export const educationFlashcardEditorManifest: SurfaceManifest = {
   surfaceName: "matrx-user/education-flashcard-editor",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Flashcard set editor — one set open for authoring (/education/flashcards/[setId]/edit).",

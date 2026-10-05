@@ -32,6 +32,7 @@ import type {
   SurfaceWriteTarget,
 } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const HR_EMPLOYER_SURFACE_NAME = "matrx-user/hr-employer";
 
@@ -255,6 +256,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const hrEmployerManifest: SurfaceManifest = {
   surfaceName: HR_EMPLOYER_SURFACE_NAME,
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "HR employer of record: legal identity and address, which employment laws apply and why, establishments (/hr/settings/employer).",

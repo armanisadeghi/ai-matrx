@@ -45,6 +45,7 @@ import type {
 import type { ReviewTriage } from "@/features/admin/agent-review/triage";
 import type { ReviewStatus } from "@/features/admin/agent-review/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const ADMIN_AGENT_REVIEW_ITEM_SURFACE_NAME =
   "matrx-admin/agent-review-item";
@@ -330,6 +331,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const adminAgentReviewItemManifest: SurfaceManifest = {
   surfaceName: ADMIN_AGENT_REVIEW_ITEM_SURFACE_NAME,
   client: "matrx-admin",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "One open Agent Review item: its stage, its conversation, and the human feedback editor.",

@@ -44,6 +44,7 @@ import type {
   SurfaceWriteTarget,
 } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const FILE_SURFACE_NAME = "matrx-user/file";
 
@@ -451,6 +452,7 @@ const clientTools: SurfaceClientTool[] = [
 export const fileManifest: SurfaceManifest = {
   surfaceName: FILE_SURFACE_NAME,
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description: "One file, worked on: its page and its Board tile",
   readiness: "partial",

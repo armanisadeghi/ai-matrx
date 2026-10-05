@@ -35,6 +35,7 @@ import type {
 import { SORT_OPTIONS } from "@ai-matrx/agents/catalog";
 import { AGENT_NONE_SENTINEL } from "@ai-matrx/agents/catalog";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const AGENTS_HUB_SURFACE_NAME = "matrx-user/agents";
 
@@ -371,6 +372,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const agentsHubManifest: SurfaceManifest = {
   surfaceName: AGENTS_HUB_SURFACE_NAME,
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Agent listing, runs, and shortcuts hub",

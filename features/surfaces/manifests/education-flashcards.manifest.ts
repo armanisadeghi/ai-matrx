@@ -29,6 +29,7 @@ import type {
   SurfaceWriteTarget,
 } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -326,6 +327,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const educationFlashcardsManifest: SurfaceManifest = {
   surfaceName: "matrx-user/education-flashcards",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Flashcard Studio — the learner's deck library with lanes, search, sort, filters and archive, plus their study streak; agents can create, change, copy and archive the person's own decks.",

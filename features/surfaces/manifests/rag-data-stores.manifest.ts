@@ -39,6 +39,7 @@ import type {
 } from "@ai-matrx/chat/surfaces/types";
 import { DATA_STORE_KINDS } from "@/features/rag/types/data-stores-ext";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -414,6 +415,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const ragDataStoresManifest: SurfaceManifest = {
   surfaceName: "matrx-user/knowledge-data-stores",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "",

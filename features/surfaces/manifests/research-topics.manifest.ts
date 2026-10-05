@@ -30,6 +30,7 @@ import type {
   SurfaceWriteTarget,
 } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const RESEARCH_TOPICS_SURFACE_NAME = "matrx-user/research-topics";
 
@@ -230,6 +231,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const researchTopicsManifest: SurfaceManifest = {
   surfaceName: RESEARCH_TOPICS_SURFACE_NAME,
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Research topics list (/research/topics): the visible topics, scope, search and filters; create, update and delete topics.",

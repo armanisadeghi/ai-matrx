@@ -6,6 +6,7 @@ import type {
   SurfaceWriteTarget,
 } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const EDUCATION_NOTES_SURFACE_NAME = "matrx-user/education-notes";
 
@@ -106,6 +107,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const educationNotesManifest: SurfaceManifest = {
   surfaceName: EDUCATION_NOTES_SURFACE_NAME,
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description: "The Education Smart Notes collection at /education/notes.",
   label: "Smart Notes",

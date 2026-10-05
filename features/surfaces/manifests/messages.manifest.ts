@@ -103,6 +103,7 @@ import type {
 } from "@ai-matrx/chat/surfaces/types";
 import { MESSAGING_MANDATE_KEYS, MESSAGING_MANDATE_ROLES } from "@/features/messaging/lib/messagingMandates";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 const surfaceSpecific: SurfaceValue[] = [
   {
@@ -229,6 +230,7 @@ const agentRoles: ManifestAgentRole[] = MESSAGING_MANDATE_ROLES.map(
 export const messagesManifest: SurfaceManifest = {
   surfaceName: "matrx-user/messages",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Cross-conversation message inbox",

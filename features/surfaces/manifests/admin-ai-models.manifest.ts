@@ -54,6 +54,7 @@ import {
   MODEL_DESCRIPTION_MAX_CHARS,
 } from "@/features/ai-models/model-metadata";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const ADMIN_AI_MODELS_SURFACE_NAME = "matrx-admin/ai-models";
 
@@ -550,6 +551,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const adminAiModelsManifest: SurfaceManifest = {
   surfaceName: ADMIN_AI_MODELS_SURFACE_NAME,
   client: "matrx-admin",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "AI model registry and provider sync",

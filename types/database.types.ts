@@ -82514,6 +82514,9 @@ export type Database = {
           client_request_id: string | null
           created_at: string
           created_by: string | null
+          created_by_agent_id: string | null
+          created_by_system: string | null
+          created_by_tier: string | null
           custom_fields: Json
           deleted_at: string | null
           edited_at: string | null
@@ -82536,6 +82539,9 @@ export type Database = {
           client_request_id?: string | null
           created_at?: string
           created_by?: string | null
+          created_by_agent_id?: string | null
+          created_by_system?: string | null
+          created_by_tier?: string | null
           custom_fields?: Json
           deleted_at?: string | null
           edited_at?: string | null
@@ -82558,6 +82564,9 @@ export type Database = {
           client_request_id?: string | null
           created_at?: string
           created_by?: string | null
+          created_by_agent_id?: string | null
+          created_by_system?: string | null
+          created_by_tier?: string | null
           custom_fields?: Json
           deleted_at?: string | null
           edited_at?: string | null
@@ -91670,6 +91679,11 @@ export type Database = {
         }[]
       }
       orgs_tightening: { Args: { p_token: string }; Returns: string[] }
+      part_anchor_problem: { Args: { p: Json }; Returns: string }
+      part_anchor_target_problem: {
+        Args: { p: Json; p_target_id: string; p_target_type: string }
+        Returns: string
+      }
       partitioned_row_attrs: {
         Args: { p_id: string; p_schema: string; p_table: string }
         Returns: Record<string, unknown>
@@ -98214,6 +98228,8 @@ export type Database = {
         Args: { p_entity_id: string; p_entity_type: string }
         Returns: {
           anchor: Json
+          author_agent_id: string
+          author_agent_name: string
           author_avatar_url: string
           author_display_name: string
           author_email: string
@@ -98221,6 +98237,7 @@ export type Database = {
           client_request_id: string
           created_at: string
           created_by: string
+          created_by_tier: string
           edited_at: string
           entity_id: string
           entity_type: string
@@ -102482,14 +102499,6 @@ export type Database = {
       }
       list_context_value_refs: {
         Args: { p_ref_key: string; p_ref_type: string }
-        Returns: Json
-      }
-      list_entities_by_scopes: {
-        Args: {
-          p_entity_type?: string
-          p_match_all?: boolean
-          p_scope_ids: string[]
-        }
         Returns: Json
       }
       list_field_data_types: { Args: never; Returns: string[] }
@@ -124462,6 +124471,7 @@ export type Database = {
           created_by: string | null
           deleted_at: string | null
           id: string
+          inherit_tools: boolean
           is_active: boolean
           metadata: Json
           never_include_bundles: string[]
@@ -124487,6 +124497,7 @@ export type Database = {
           created_by?: string | null
           deleted_at?: string | null
           id?: string
+          inherit_tools?: boolean
           is_active?: boolean
           metadata?: Json
           never_include_bundles?: string[]
@@ -124512,6 +124523,7 @@ export type Database = {
           created_by?: string | null
           deleted_at?: string | null
           id?: string
+          inherit_tools?: boolean
           is_active?: boolean
           metadata?: Json
           never_include_bundles?: string[]

@@ -15,6 +15,7 @@ import {
   SCALE_LEGEND,
 } from "@/features/employee-performance-reviews/schema";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const PERFORMANCE_REVIEW_SURFACE_NAME =
   "matrx-user/organization-performance-reviews";
@@ -595,6 +596,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const organizationPerformanceReviewsManifest: SurfaceManifest = {
   surfaceName: PERFORMANCE_REVIEW_SURFACE_NAME,
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Organization-scoped interim employee performance-review editor",

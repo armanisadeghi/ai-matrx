@@ -36,6 +36,7 @@ import type {
   SurfaceWriteTarget,
 } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 /**
  * The studio's own sections. Parent group keys (`pdf_document`, `pdf_text`,
@@ -383,6 +384,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const analysisStudioManifest: SurfaceManifest = {
   surfaceName: "matrx-user/analysis-studio",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "PDF Analysis Studio (/files/f/[id]/studio) — pages, detectors, annotations, redaction. Agents act on the open file/page.",

@@ -45,6 +45,7 @@ import {
   TUTOR_TEACHING_MODES,
 } from "@/features/education/tutor/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -463,6 +464,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const educationTutorManifest: SurfaceManifest = {
   surfaceName: "matrx-user/education-tutor",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "",

@@ -7,6 +7,7 @@
  */
 import type { SurfaceManifest, SurfaceScopePayload, SurfaceValue, SurfaceValueGroup, SurfaceWriteTarget } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 const groups: SurfaceValueGroup[] = [
   { key: "guide", label: "Current guide", sortOrder: 100, description: "The guide being read or edited." },
@@ -68,6 +69,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const educationStudyGuidesManifest: SurfaceManifest = {
   surfaceName: "matrx-user/education-study-guides",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "The study-guide library: the person's guides in the picker, before one is opened (/education/study-guides). One open guide is matrx-user/education-study-guide.",

@@ -16,6 +16,7 @@ import type {
 } from "@ai-matrx/chat/surfaces/types";
 import type { DiagramData } from "@/components/mardown-display/blocks/diagram/parseDiagramJSON";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const MAPS_SURFACE_NAME = "matrx-user/maps";
 
@@ -203,6 +204,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const mapsManifest: SurfaceManifest = {
   surfaceName: MAPS_SURFACE_NAME,
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "A non-executable visual thinking canvas for boxes, sections, and arrows.",

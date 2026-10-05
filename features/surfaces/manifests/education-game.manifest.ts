@@ -51,6 +51,7 @@ import type {
   SurfaceWriteTarget,
 } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -277,6 +278,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const educationGameManifest: SurfaceManifest = {
   surfaceName: "matrx-user/education-game",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Study game arcade hub + multiplayer host/join (/education/game). Solo Arcade has its own surface, matrx-user/education-game-solo.",

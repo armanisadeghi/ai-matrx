@@ -143,6 +143,7 @@ import type {
   SurfaceValueGroup,
 } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const ADMIN_USERS_SURFACE_NAME = "matrx-admin/users";
 
@@ -442,6 +443,7 @@ const surfaceSpecific: SurfaceValue[] = [
 export const adminUsersManifest: SurfaceManifest = {
   surfaceName: ADMIN_USERS_SURFACE_NAME,
   client: "matrx-admin",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Users & Access admin hub: account roster and access management.",

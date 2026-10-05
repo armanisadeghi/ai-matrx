@@ -42,6 +42,7 @@ import type {
 } from "@ai-matrx/chat/surfaces/types";
 import { dbAuthoredMandateKey } from "@ai-matrx/agents/mandates";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const MANDATE_WORKSPACE_SURFACE_NAME = "matrx-admin/mandate-workspace";
 
@@ -181,6 +182,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const mandateWorkspaceManifest: SurfaceManifest = {
   surfaceName: MANDATE_WORKSPACE_SURFACE_NAME,
   client: "matrx-admin",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "",

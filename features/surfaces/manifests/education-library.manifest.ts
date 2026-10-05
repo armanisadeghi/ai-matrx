@@ -36,6 +36,7 @@ import type {
   SurfaceWriteTarget,
 } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const EDUCATION_LIBRARY_SURFACE_NAME = "matrx-user/education-library";
 
@@ -226,6 +227,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const educationLibraryManifest: SurfaceManifest = {
   surfaceName: EDUCATION_LIBRARY_SURFACE_NAME,
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Education Library: the person's flashcards, assessments, study media and notes in Mine / Shared / Public tabs, with search, filters and sort (/education/library).",

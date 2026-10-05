@@ -22,6 +22,7 @@ import type { ManifestAgentRole, SurfaceManifest } from "@ai-matrx/chat/surfaces
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 import { RUN_CONSOLE_GROUPS, RUN_CONSOLE_VALUES } from "./_run-console.manifest";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const MARKETING_AUTOMATIONS_SURFACE_NAME =
   "matrx-user/marketing-automations";
@@ -43,6 +44,7 @@ const agentRoles: ManifestAgentRole[] = [
 export const marketingAutomationsManifest: SurfaceManifest = {
   surfaceName: MARKETING_AUTOMATIONS_SURFACE_NAME,
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "The run console at the organization/brand tier: run the coverage engines over the brands this organization controls and author the schedule that overrides the system default.",

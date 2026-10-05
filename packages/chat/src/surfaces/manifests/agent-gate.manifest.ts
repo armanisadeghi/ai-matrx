@@ -19,6 +19,7 @@ import type {
   SurfaceValue,
 } from "../types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "../executor";
 
 export const AGENT_GATE_SURFACE_NAME = "matrx-user/agent-gate";
 
@@ -69,6 +70,7 @@ const surfaceSpecific: SurfaceValue[] = [
 export const agentGateManifest: SurfaceManifest = {
   surfaceName: AGENT_GATE_SURFACE_NAME,
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Pre-execution agent gate / trigger",

@@ -30,6 +30,7 @@ import {
   mergeBaselineValues,
   pickBaseline,
 } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const FEEDBACK_SURFACE_NAME = "matrx-user/feedback";
 
@@ -269,6 +270,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const feedbackManifest: SurfaceManifest = {
   surfaceName: FEEDBACK_SURFACE_NAME,
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Feedback / bug report submission",

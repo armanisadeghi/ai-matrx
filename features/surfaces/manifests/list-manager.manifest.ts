@@ -21,6 +21,7 @@ import type {
 } from "@ai-matrx/chat/surfaces/types";
 import { LIST_SURFACE_WRITE_TARGETS } from "@/features/user-lists/surface-write-targets";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -177,6 +178,7 @@ const writeTargets = LIST_SURFACE_WRITE_TARGETS;
 export const listManagerManifest: SurfaceManifest = {
   surfaceName: "matrx-user/list-manager",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "List management overlay",

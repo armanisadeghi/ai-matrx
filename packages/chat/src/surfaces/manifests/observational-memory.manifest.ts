@@ -20,6 +20,7 @@ import type {
   SurfaceValueGroup,
 } from "../types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "../executor";
 
 export const OBSERVATIONAL_MEMORY_SURFACE_NAME =
   "matrx-user/observational-memory";
@@ -109,6 +110,7 @@ const surfaceSpecific: SurfaceValue[] = [
 export const observationalMemoryManifest: SurfaceManifest = {
   surfaceName: OBSERVATIONAL_MEMORY_SURFACE_NAME,
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Agent observational memory inspector",

@@ -104,6 +104,7 @@ import {
   NEW_BUNDLE_DRAFT_FIELDS,
 } from "@/features/tool-registry/bundles/bundlesVocabulary";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const ADMIN_BUNDLES_SURFACE_NAME = "matrx-admin/bundles";
 
@@ -279,6 +280,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const adminBundlesManifest: SurfaceManifest = {
   surfaceName: ADMIN_BUNDLES_SURFACE_NAME,
   client: "matrx-admin",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Tool bundle admin",

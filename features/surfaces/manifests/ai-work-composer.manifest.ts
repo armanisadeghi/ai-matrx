@@ -30,6 +30,7 @@ import type {
   SurfaceValueGroup,
 } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -206,6 +207,7 @@ const surfaceSpecific: SurfaceValue[] = [
 export const aiWorkComposerManifest: SurfaceManifest = {
   surfaceName: "matrx-user/ai-work-composer",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "The eight-step composer at /work/new that assembles and launches one run.",

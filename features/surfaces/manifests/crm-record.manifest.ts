@@ -28,6 +28,7 @@ import {
   INTERACTION_CHANNELS,
   INTERACTION_DIRECTIONS,
 } from "@/features/crm/types";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const CRM_RECORD_SURFACE_NAME = "matrx-user/crm-record";
 
@@ -965,6 +966,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const crmRecordManifest: SurfaceManifest = {
   surfaceName: CRM_RECORD_SURFACE_NAME,
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "",

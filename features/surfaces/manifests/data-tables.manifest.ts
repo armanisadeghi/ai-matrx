@@ -35,6 +35,7 @@ import type {
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { FIELD_DATA_TYPES } from "@/features/data-tables/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 /** Real column-type vocabulary, spelled into the model-facing contract. */
 const FIELD_TYPE_ENUM_TEXT = FIELD_DATA_TYPES.map((t) => `"${t}"`).join(" | ");
@@ -392,6 +393,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const dataTablesManifest: SurfaceManifest = {
   surfaceName: "matrx-user/data-tables",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Tables and spreadsheet views",

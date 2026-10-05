@@ -163,6 +163,8 @@
     "surface:feedback": "tsx scripts/surface-feedback.ts",
     "surface:openers": "tsx scripts/surface-openers.ts",
     "check:surface-drift": "tsx scripts/check-surface-drift.ts",
+    "check:surface-executors": "tsx scripts/check-surface-executors.ts",
+    "check:surface-executors:self-test": "tsx scripts/check-surface-executors.ts --self-test",
     "check:surface-approval-render": "tsx scripts/check-surface-approval-render.ts",
     "check:surface-approval-render:census": "tsx scripts/check-surface-approval-render.ts --census",
     "check:surface-approval-render:self-test": "tsx scripts/check-surface-approval-render.ts --self-test",

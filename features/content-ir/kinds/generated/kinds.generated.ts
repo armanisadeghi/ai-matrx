@@ -7,7 +7,7 @@
 // Verify:      pnpm check:kind-types   (CI-blocking freshness gate)
 // Twin guard:  pnpm check:kind-type-twins
 //
-// 573 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
+// 579 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
 // A hand-written interface mirroring a registered kind is a defect — derive
 // (Pick/Omit) from the type here instead, and never re-declare it.
 //
@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "79280d9e730c";
+export const KIND_REGISTRY_FINGERPRINT = "97e488b92824";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -4514,6 +4514,30 @@ export interface PhotoGroup {
   suspected_lot?: boolean;
   boundary_source: string;
   boundary_confidence?: number | null;
+}
+
+/**
+ * One choice: a record of the Pick list the offer names.
+ *  *
+ *  * From kind `pick_list`.
+ */
+export interface PickListChoice {
+  /**
+   * The words the person reads on the choice.
+   */
+  label: string;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  /**
+   * A record of the Pick list.
+   */
+  _record_id: string;
+  /**
+   * One short line under the label.
+   */
+  description?: string | null;
 }
 
 /**
@@ -15108,6 +15132,42 @@ export interface PersonalizationWriteResult {
 }
 
 /**
+ * An offer to choose one or several records of a Pick list.
+ *  *
+ *  * Kind `pick_list` (registry v2).
+ */
+export interface PickList {
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "pick_list";
+  /**
+   * Pick one, or several.
+   */
+  choose?: "one" | "many";
+  /**
+   * The question the person answers by choosing.
+   */
+  prompt: string;
+  /**
+   * Records of that Pick list, each named by its _record_id.
+   */
+  choices: PickListChoice[];
+  /**
+   * reply: the choice is sent as the person's reply.
+   */
+  on_choose?: "reply" | "accept";
+  /**
+   * Whether the person may answer in their own words.
+   */
+  allow_other?: boolean;
+  /**
+   * The Pick list (a Table) whose records the choices are.
+   */
+  pick_list_id: string;
+}
+
+/**
  * Kind `plan_entity_attachment_set` (registry v7).
  */
 export interface PlanEntityAttachmentSet {
@@ -17002,6 +17062,43 @@ export interface RegexReplaceResult {
 }
 
 /**
+ * A pointer at one record or platform thing that already exists. Never stored as a row.
+ *  *
+ *  * Kind `relation` (registry v3).
+ */
+export interface Relation {
+  /**
+   * Shown until the live title loads, and when it cannot be opened.
+   */
+  label?: string | null;
+  /**
+   * What the id names: "record" for a store record, or an entity-reference token (custom.entity_reference_kinds()) such as note or agent. Omitted means record.
+   */
+  token?: string | null;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "relation";
+  /**
+   * Read-only copy of the record's fields at the time it was read.
+   */
+  snapshot?: {
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+  } | null;
+  /**
+   * The Table a store record belongs to (a hint).
+   */
+  table_id?: string | null;
+  /**
+   * The id of the record or platform thing this points at.
+   */
+  _record_id: string;
+}
+
+/**
  * Kind `rendered_text` (registry v7).
  */
 export interface RenderedText {
@@ -18172,6 +18269,46 @@ export interface SealedCaseAnswer {
   __kind?: "sealed_case_answer";
   answer?: string;
   asked_kind?: string;
+}
+
+/**
+ * Kind `seat_job_suggestion` (registry v2).
+ */
+export interface SeatJobSuggestion {
+  /**
+   * One or two plain sentences: what the seat is for and what a great result looks like.
+   */
+  goal: string;
+  __kind: "seat_job_suggestion";
+  /**
+   * What the seat would be given to do its work.
+   */
+  inputs: ({
+    /**
+     * snake_case name of the input.
+     */
+    name: string;
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+    /**
+     * True when the seat cannot work without it.
+     */
+    required: boolean;
+    /**
+     * What it is, in plain words.
+     */
+    description: string;
+  })[];
+  /**
+   * What the seat hands back, concretely.
+   */
+  output: string;
+  /**
+   * What the person should decide.
+   */
+  questions?: string[];
 }
 
 /**
@@ -21174,6 +21311,126 @@ export interface TranscriptionResult {
   __kind?: "transcription_result";
   language?: string | null;
   duration_seconds?: number;
+}
+
+/**
+ * Kind `translation_cell_evidence` (registry v3).
+ */
+export interface TranslationCellEvidence {
+  /**
+   * ISO-8601 timestamp the evidence was observed.
+   */
+  at?: string;
+  /**
+   * URL or identifier of the evidence (endpoint, doc link, error signature).
+   */
+  ref?: string;
+  /**
+   * Evidence source type.
+   */
+  kind?: "doc" | "probe" | "ingest" | "replay" | "rejection";
+  __kind: "translation_cell_evidence";
+  /**
+   * What the evidence showed.
+   */
+  result?: string;
+}
+
+/**
+ * Kind `translation_cell_proposal` (registry v3).
+ */
+export interface TranslationCellProposal {
+  /**
+   * ControlRule. Keys vary per setting; common keys: provider_key, value_map, clamp, off, from_number, to_number, accepts, drop, why, context.
+   */
+  rule: {
+    /**
+     * What the off value translates to.
+     */
+    off?: unknown;
+    /**
+     * Short reason attached to the rule.
+     */
+    why?: unknown;
+    /**
+     * Whether/when the parameter is dropped.
+     */
+    drop?: unknown;
+    /**
+     * Numeric bounds, e.g. {min, max}.
+     */
+    clamp?: unknown;
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+    /**
+     * Values the provider accepts.
+     */
+    accepts?: unknown;
+    /**
+     * Extra context for the rule.
+     */
+    context?: unknown;
+    /**
+     * Numeric conversion target spec.
+     */
+    to_number?: unknown;
+    /**
+     * Map of platform values to provider values.
+     */
+    value_map?: unknown;
+    /**
+     * Numeric conversion source spec.
+     */
+    from_number?: unknown;
+    /**
+     * Provider parameter name the setting maps to.
+     */
+    provider_key?: unknown;
+  };
+  /**
+   * Settings layer the translation applies to, e.g. offering.
+   */
+  layer: string;
+  __kind: "translation_cell_proposal";
+  evidence: ({
+    at?: string;
+    ref?: string;
+    kind?: "doc" | "probe" | "ingest" | "replay" | "rejection";
+    __kind: "translation_cell_evidence";
+    result?: string;
+  })[];
+  /**
+   * Id of the model or settings profile that owns the cell on that layer.
+   */
+  owner_id?: string;
+  /**
+   * Plain-language justification for the rule.
+   */
+  rationale: string;
+  unsettled: ({
+    why?: string;
+    value?: string;
+    __kind: "translation_cell_unsettled_value";
+  })[];
+  /**
+   * Drafter confidence 0..1; 0.9 is the approval threshold.
+   */
+  confidence: number;
+  /**
+   * Platform setting being translated, e.g. max_output_tokens.
+   */
+  setting_key: string;
+}
+
+/**
+ * Kind `translation_cell_unsettled_value` (registry v2).
+ */
+export interface TranslationCellUnsettledValue {
+  why?: string;
+  value?: string;
+  __kind: "translation_cell_unsettled_value";
 }
 
 /**
@@ -25374,6 +25631,7 @@ export type GeneratedKindSlug =
   | "pdf_text_extraction"
   | "personalization_target_result"
   | "personalization_write_result"
+  | "pick_list"
   | "plan_entity_attachment_set"
   | "plan_entity_roster"
   | "plan_family_names"
@@ -25438,6 +25696,7 @@ export type GeneratedKindSlug =
   | "redirect_hop"
   | "regex_extract_result"
   | "regex_replace_result"
+  | "relation"
   | "rendered_text"
   | "resale_intelligence_report"
   | "research_coverage_audit"
@@ -25465,6 +25724,7 @@ export type GeneratedKindSlug =
   | "scraper_batch_result"
   | "scraper_crawl_result"
   | "sealed_case_answer"
+  | "seat_job_suggestion"
   | "seo_authority_route_analysis"
   | "seo_authority_route_result"
   | "seo_backlink_enrichment_result"
@@ -25588,6 +25848,9 @@ export type GeneratedKindSlug =
   | "transcript"
   | "transcript_usage"
   | "transcription_result"
+  | "translation_cell_evidence"
+  | "translation_cell_proposal"
+  | "translation_cell_unsettled_value"
   | "troubleshooting_guide"
   | "trust_envelope"
   | "uploaded_asset"
@@ -25950,6 +26213,7 @@ export interface KindPayloadBySlug {
   "pdf_text_extraction": PdfTextExtraction;
   "personalization_target_result": PersonalizationTargetResult;
   "personalization_write_result": PersonalizationWriteResult;
+  "pick_list": PickList;
   "plan_entity_attachment_set": PlanEntityAttachmentSet;
   "plan_entity_roster": PlanEntityRoster;
   "plan_family_names": PlanFamilyNames;
@@ -26014,6 +26278,7 @@ export interface KindPayloadBySlug {
   "redirect_hop": RedirectHop;
   "regex_extract_result": RegexExtractResult;
   "regex_replace_result": RegexReplaceResult;
+  "relation": Relation;
   "rendered_text": RenderedText;
   "resale_intelligence_report": ResaleIntelligenceReport;
   "research_coverage_audit": ResearchCoverageAudit;
@@ -26041,6 +26306,7 @@ export interface KindPayloadBySlug {
   "scraper_batch_result": ScraperBatchResult;
   "scraper_crawl_result": ScraperCrawlResult;
   "sealed_case_answer": SealedCaseAnswer;
+  "seat_job_suggestion": SeatJobSuggestion;
   "seo_authority_route_analysis": SeoAuthorityRouteAnalysis;
   "seo_authority_route_result": SeoAuthorityRouteResult;
   "seo_backlink_enrichment_result": SeoBacklinkEnrichmentResult;
@@ -26164,6 +26430,9 @@ export interface KindPayloadBySlug {
   "transcript": Transcript;
   "transcript_usage": TranscriptUsage;
   "transcription_result": TranscriptionResult;
+  "translation_cell_evidence": TranslationCellEvidence;
+  "translation_cell_proposal": TranslationCellProposal;
+  "translation_cell_unsettled_value": TranslationCellUnsettledValue;
   "troubleshooting_guide": TroubleshootingGuide;
   "trust_envelope": TrustEnvelope;
   "uploaded_asset": UploadedAsset;
@@ -26530,6 +26799,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "pdf_text_extraction",
   "personalization_target_result",
   "personalization_write_result",
+  "pick_list",
   "plan_entity_attachment_set",
   "plan_entity_roster",
   "plan_family_names",
@@ -26594,6 +26864,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "redirect_hop",
   "regex_extract_result",
   "regex_replace_result",
+  "relation",
   "rendered_text",
   "resale_intelligence_report",
   "research_coverage_audit",
@@ -26621,6 +26892,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "scraper_batch_result",
   "scraper_crawl_result",
   "sealed_case_answer",
+  "seat_job_suggestion",
   "seo_authority_route_analysis",
   "seo_authority_route_result",
   "seo_backlink_enrichment_result",
@@ -26744,6 +27016,9 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "transcript",
   "transcript_usage",
   "transcription_result",
+  "translation_cell_evidence",
+  "translation_cell_proposal",
+  "translation_cell_unsettled_value",
   "troubleshooting_guide",
   "trust_envelope",
   "uploaded_asset",

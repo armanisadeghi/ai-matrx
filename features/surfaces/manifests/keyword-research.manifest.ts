@@ -33,6 +33,7 @@ import type {
 import { KEYWORD_CLUSTER_WRITE_MODES } from "@/features/marketing/seo/keyword-research/types";
 import { MAX_STAGED_KEYWORD_LENGTH } from "@/features/marketing/seo/keyword-research/keyword-research-write";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -325,6 +326,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const keywordResearchManifest: SurfaceManifest = {
   surfaceName: "matrx-user/keyword-research",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "",

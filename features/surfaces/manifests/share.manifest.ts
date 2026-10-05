@@ -19,6 +19,7 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
 } from "@ai-matrx/chat/surfaces/types";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const SHARE_SURFACE_NAME = "matrx-user/share";
 
@@ -158,6 +159,7 @@ const surfaceSpecific: SurfaceValue[] = [
 export const shareManifest: SurfaceManifest = {
   surfaceName: SHARE_SURFACE_NAME,
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Resource sharing dialog",

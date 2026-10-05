@@ -35,6 +35,7 @@ import type {
   SurfaceValueGroup,
 } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const EDUCATION_OVERVIEW_SURFACE_NAME = "matrx-user/education-overview";
 
@@ -326,6 +327,7 @@ const surfaceSpecific: SurfaceValue[] = [
 export const educationOverviewManifest: SurfaceManifest = {
   surfaceName: EDUCATION_OVERVIEW_SURFACE_NAME,
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Study Hub home: the learner's dashboard — plan, streak, goals, due work, next actions, library counts, recent items and study kits (/education/overview). Read-only.",

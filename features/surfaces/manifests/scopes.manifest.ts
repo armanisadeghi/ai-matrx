@@ -97,6 +97,7 @@ import type {
   SurfaceValueGroup,
 } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 /** Canonical `ui_surface.name` for this surface. */
 export const SCOPES_SURFACE_NAME = "matrx-user/scopes";
@@ -464,6 +465,7 @@ const surfaceSpecific: SurfaceValue[] = [
 export const scopesManifest: SurfaceManifest = {
   surfaceName: SCOPES_SURFACE_NAME,
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "",

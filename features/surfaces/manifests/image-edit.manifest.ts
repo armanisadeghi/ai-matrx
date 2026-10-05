@@ -52,6 +52,7 @@ import type {
   SurfaceValueGroup,
 } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -197,6 +198,7 @@ export const IMAGE_EDIT_SURFACE_NAME = "matrx-user/image-edit";
 export const imageEditManifest: SurfaceManifest = {
   surfaceName: IMAGE_EDIT_SURFACE_NAME,
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Single-image editor at /images/edit/[id] (Filerobot canvas, AI ops, versions); also opens as a modal.",

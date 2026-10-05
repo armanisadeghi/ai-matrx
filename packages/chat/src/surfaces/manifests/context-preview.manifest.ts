@@ -27,6 +27,7 @@ import type {
   SurfaceValueGroup,
 } from "../types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "../executor";
 
 export const CONTEXT_PREVIEW_SURFACE_NAME = "matrx-user/context-preview";
 
@@ -274,6 +275,7 @@ const surfaceSpecific: SurfaceValue[] = [
 export const contextPreviewManifest: SurfaceManifest = {
   surfaceName: CONTEXT_PREVIEW_SURFACE_NAME,
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "",

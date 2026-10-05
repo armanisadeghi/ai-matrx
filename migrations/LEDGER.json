@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-05T04:43:58.449Z",
+  "generated_at": "2026-10-05T04:44:47.431Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -1315,6 +1315,12 @@
       "filename": "datav2face2_a_copied_table_opens_as_the_sheet_it_was.sql",
       "checksum": "37d67dea7df8b1a9f14e5e507f7aaf18422042c82edbae47eba42fd57d6b4ae2",
       "applied_at": "2026-09-25 00:24:47.668421+00"
+    },
+    "migrations/campaign/dd065_b1_expand_soft_delete_follows_deleted_at.sql": {
+      "source": "matrx-frontend",
+      "filename": "dd065_b1_expand_soft_delete_follows_deleted_at.sql",
+      "checksum": "7c4fff9c9a8be3ce82949c1ba9ee54d39c7948fce17b257c2edc868c72352a4a",
+      "applied_at": "2026-10-05 04:44:46.218379+00"
     },
     "migrations/campaign/deadkeys_feature_knob_has_no_signed_out_reader.sql": {
       "source": "matrx-frontend",

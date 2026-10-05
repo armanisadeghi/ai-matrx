@@ -10,6 +10,7 @@ import {
   REPUTATION_RULING_NOTE_MAX_LENGTH,
 } from "@/features/marketing/data/reputation-types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -206,6 +207,7 @@ Persists immediately through the same case-update path the Dismiss / Monitor / A
 export const marketingReputationManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-reputation",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "",

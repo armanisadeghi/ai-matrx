@@ -1,11 +1,13 @@
 import type { SurfaceManifest, SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const VOICE_CHAT_SURFACE = "matrx-user/voice-chat";
 
 export const voiceChatManifest: SurfaceManifest = {
   surfaceName: VOICE_CHAT_SURFACE,
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "",

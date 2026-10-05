@@ -34,6 +34,7 @@ import {
 } from "@/features/image-studio/constants/conversion-options";
 import { FILENAME_BASE_MAX_CHARS } from "@/features/image-studio/utils/slugify-filename";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -504,6 +505,7 @@ export const IMAGE_STUDIO_SURFACE_NAME = "matrx-user/image-studio";
 export const imageStudioManifest: SurfaceManifest = {
   surfaceName: IMAGE_STUDIO_SURFACE_NAME,
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Image Studio batch preset converter at /images/convert (fronted by the /images/studio landing).",

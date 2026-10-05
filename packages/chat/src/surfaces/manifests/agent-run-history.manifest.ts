@@ -69,6 +69,7 @@ import type {
   SurfaceValueGroup,
 } from "../types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "../executor";
 
 /** Canonical `ui_surface.name`. The emitter imports this — never a literal. */
 export const AGENT_RUN_HISTORY_SURFACE_NAME = "matrx-user/agent-run-history";
@@ -285,6 +286,7 @@ const surfaceSpecific: SurfaceValue[] = [
 export const agentRunHistoryManifest: SurfaceManifest = {
   surfaceName: AGENT_RUN_HISTORY_SURFACE_NAME,
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Past agent run replays",

@@ -23,6 +23,7 @@ import type {
 } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -178,6 +179,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const contentPlanEntitiesManifest: SurfaceManifest = {
   surfaceName: "matrx-user/content-plan-entities",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "E-E-A-T entity manager of the content plan: the people, sources, media, and orgs behind the site's content.",

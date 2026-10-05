@@ -43,6 +43,7 @@ import type {
   SurfaceWriteTarget,
 } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const ADMIN_UI_SURFACES_SURFACE_NAME = "matrx-admin/ui-surfaces";
 
@@ -227,6 +228,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const adminUiSurfacesManifest: SurfaceManifest = {
   surfaceName: ADMIN_UI_SURFACES_SURFACE_NAME,
   client: "matrx-admin",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "UI Surfaces registry admin: every ui_surface row with readiness, check ledger, value/agent/tool counts and filters; create, update, deactivate and move surfaces to Trash (/administration/ui/surfaces).",

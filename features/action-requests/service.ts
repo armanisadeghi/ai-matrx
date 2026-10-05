@@ -60,7 +60,8 @@ export type ActionRequestForm =
   | "browser_takeover"
   | "one_time_code"
   | "vault_item"
-  | "approve_spend";
+  | "approve_spend"
+  | "questions";
 
 /**
  * What EVERY render spec carries. Verified against the live doors on
@@ -195,7 +196,31 @@ export interface ApproveSpendRender extends RenderCommon {
   choices: { value: "yes" | "no"; label: string; tone: "primary" | "ghost" }[];
 }
 
+/**
+ * 1–4 questions answered together — the shape the retired client-only `user`
+ * tool asked, now stored server-side (aidream `kinds.QuestionsPayload`). The
+ * form is the chat package's wizard (`QuestionsAskForm`), on both doors.
+ */
+export interface QuestionsRender extends RenderCommon {
+  form: "questions";
+  questions: QuestionSpec[];
+  submit_label: string;
+}
+
+export interface QuestionSpec {
+  type: "confirm" | "choice" | "choice_many" | "text" | "notify";
+  question?: string;
+  header?: string;
+  context?: string;
+  options?: { label: string; description?: string; preview?: string }[];
+  allow_other?: boolean;
+  message?: string;
+  actions?: string[];
+  level?: "info" | "success" | "warning" | "error";
+}
+
 export type ActionRequestRender =
+  | QuestionsRender
   | ApproveRender
   | ApproveSpendRender
   | ChooseOneRender

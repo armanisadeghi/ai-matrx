@@ -33,6 +33,7 @@ import type {
   SurfaceValueGroup,
 } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const ADMIN_HINDSIGHT_SURFACE_NAME = "matrx-admin/hindsight";
 
@@ -195,6 +196,7 @@ const surfaceSpecific: SurfaceValue[] = [
 export const adminHindsightManifest: SurfaceManifest = {
   surfaceName: ADMIN_HINDSIGHT_SURFACE_NAME,
   client: "matrx-admin",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Hindsight — the platform's self-review console: enrolled subjects, reviewer findings, and replay evidence.",

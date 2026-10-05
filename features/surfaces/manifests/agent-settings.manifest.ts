@@ -110,6 +110,7 @@ import {
 } from "@ai-matrx/chat/agents/constants/agent-settings-surface";
 import { agentCatalogProfileTargetDescription } from "@ai-matrx/chat/agents/surface-catalog-profile";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -415,6 +416,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const agentSettingsManifest: SurfaceManifest = {
   surfaceName: AGENT_SETTINGS_SURFACE_NAME,
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Per-agent configuration UI",

@@ -46,6 +46,7 @@ import type {
 // manifest registry.
 import { MEDIA_GENERATOR_SOURCE_KINDS } from "@/features/education/media/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -527,6 +528,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const educationMindMapsManifest: SurfaceManifest = {
   surfaceName: "matrx-user/education-mind-maps",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Generate and view study mind maps (/education/mind-maps).",

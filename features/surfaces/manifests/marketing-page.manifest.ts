@@ -35,6 +35,7 @@ import type {
   SurfaceValueGroup,
 } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -980,6 +981,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const marketingPageManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-page",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Marketing page workspace — one canonical web.page: observed crawl evidence (SERP preview, metrics) plus the user's editorial intent (target keyword, desired metadata).",

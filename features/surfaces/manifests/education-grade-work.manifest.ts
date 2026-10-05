@@ -33,6 +33,7 @@ import type {
 } from "@ai-matrx/chat/surfaces/types";
 import type { GradeStep } from "@/features/education/trust/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -220,6 +221,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const educationGradeWorkManifest: SurfaceManifest = {
   surfaceName: "matrx-user/education-grade-work",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Photograph handwritten work and have it graded step-by-step (/education/grade-work).",

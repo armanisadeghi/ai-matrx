@@ -46,6 +46,7 @@ import type { AgentWritePolicy } from "@/features/cms/types";
 import type { CmsHubSiteSummaryEntry } from "./cms.manifest";
 import { dbAuthoredMandateKey } from "@ai-matrx/agents/mandates";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -765,6 +766,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const cmsSiteManifest: SurfaceManifest = {
   surfaceName: "matrx-user/cms-site",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "CMS site workspace — page list, site settings, components hub",

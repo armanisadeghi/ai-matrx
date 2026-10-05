@@ -20,6 +20,7 @@ import { DETECTABLE_DIAGRAM_TYPES } from "@/components/mermaid/diagram-type";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 import { dbAuthoredMandateKey } from "@ai-matrx/agents/mandates";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 const surfaceSpecific: SurfaceValue[] = [
   {
@@ -197,6 +198,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const mermaidEditorManifest: SurfaceManifest = {
   surfaceName: "matrx-user/mermaid-editor",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Mermaid diagram workbench (canvas editor: visual / outline / code modes). Agents bound here receive the diagram source and editor state, and return ONE full updated ```mermaid fence.",

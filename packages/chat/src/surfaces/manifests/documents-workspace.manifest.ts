@@ -43,6 +43,7 @@ import type {
   SurfaceValueGroup,
 } from "../types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "../executor";
 
 export const DOCUMENTS_WORKSPACE_SURFACE_NAME = "matrx-user/documents-workspace";
 
@@ -190,6 +191,7 @@ const surfaceSpecific: SurfaceValue[] = [
 export const documentsWorkspaceManifest: SurfaceManifest = {
   surfaceName: DOCUMENTS_WORKSPACE_SURFACE_NAME,
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "The multi-document workspace shell — recent-docs rail plus tab strip over working documents and scratchpads.",

@@ -531,6 +531,9 @@ if $STRICT; then
         # `sync-surface-manifests-direct.ts --surface <name>` (archives what the code
         # removed). The jest row proves the archive/revive planner can still fail.
         "Surface mirror matches the code (values, roles, write targets, tools)|pnpm exec tsx scripts/sync-surface-manifests-direct.ts --check"
+        # EVERY PAGE HAS AN EXECUTOR (Arman, 2026-10-04): a surface row with no
+        # executor_name disables every client-run tool for the request.
+        "Every surface row names its executor|pnpm check:surface-executors"
         "…and its archive/revive planner can still fail|npx jest scripts/lib/__tests__/surface-sync-check.test.ts --silent"
         # Blast radius of the surface VALUE vocabulary: orphan agent bindings /
         # shortcut mappings / write twins, values a sync would delete out from

@@ -39,6 +39,7 @@ import type {
 } from "@ai-matrx/chat/surfaces/types";
 import type { CanvasItemReference } from "@/features/canvas/lib/canvas-item-reference";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -194,6 +195,7 @@ export const CANVAS_SURFACE_NAME = "matrx-user/canvas";
 export const canvasManifest: SurfaceManifest = {
   surfaceName: CANVAS_SURFACE_NAME,
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Visual canvas and diagram editors",

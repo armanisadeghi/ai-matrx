@@ -22,6 +22,7 @@ import type {
 } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 import { flashcardDeckWriteTargets } from "./education-flashcard-editor.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -131,6 +132,7 @@ const surfaceSpecific: SurfaceValue[] = [
 export const educationFlashcardSetManifest: SurfaceManifest = {
   surfaceName: "matrx-user/education-flashcard-set",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "",

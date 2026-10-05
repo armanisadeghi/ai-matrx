@@ -58,6 +58,7 @@ import type {
   SurfaceValueGroup,
 } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -183,6 +184,7 @@ const surfaceSpecific: SurfaceValue[] = [
 export const assistantMessageManifest: SurfaceManifest = {
   surfaceName: "matrx-user/assistant-message",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Read-only rendered conversation thread (the chat message display). Right-click a message or content block to act on it. Read side of matrx-user/chat.",

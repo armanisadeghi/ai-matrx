@@ -30,6 +30,7 @@ import type {
   SurfaceWriteTarget,
 } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -188,6 +189,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const marketingSiteSettingsManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-site-settings",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Settings page of one managed website: identity, lifecycle, default crawl policy, and the health of every data source feeding the site.",

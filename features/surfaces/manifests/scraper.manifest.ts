@@ -39,6 +39,7 @@ import {
   SCRAPE_MODE_ENUM_TEXT,
 } from "@/features/scraper/scrape-command";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -474,6 +475,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const scraperManifest: SurfaceManifest = {
   surfaceName: "matrx-user/scraper",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Web scraper overlay (also a /scraper route)",

@@ -6,18 +6,21 @@
  * The candidates are collected ONCE per gesture: the tiles inside the viewport
  * plus half a viewport of margin (a bounded scan, never the whole board), so a
  * pointer move costs a few comparisons whatever the board's size. Frames are
- * not snap targets (their registered rect carries the title band).
+ * snap targets too, by their own rect (the registered one carries the title
+ * band, which is taken off). A group move excludes everything it carries.
  */
 
 import type { Rect } from "./camera";
 import type { BoardCameraStore } from "./camera-store";
 import { isSnapBypass, snapMove, snapResize } from "./snapping";
 import type { ResizeHandle } from "./tile-gestures";
+import { frameBody, isFrameKey } from "./selection";
 
 type Mods = { metaKey?: boolean; ctrlKey?: boolean; altKey?: boolean; shiftKey?: boolean };
 
-/** Tiles near the viewport, except `selfId`. */
-export function nearbyRects(store: BoardCameraStore, selfId: string): Rect[] {
+/** Tiles and frames near the viewport, except what is moving (`self`: one id, or the set a group move carries). */
+export function nearbyRects(store: BoardCameraStore, self: string | ReadonlySet<string>): Rect[] {
+  const moving = typeof self === "string" ? new Set([self]) : self;
   const { x, y, z } = store.getCamera();
   const { w, h } = store.getSize();
   const left = -x / z - w / z / 2;
@@ -25,8 +28,10 @@ export function nearbyRects(store: BoardCameraStore, selfId: string): Rect[] {
   const right = (w - x) / z + w / z / 2;
   const bottom = (h - y) / z + h / z / 2;
   const out: Rect[] = [];
-  for (const [id, r] of store.getItems()) {
-    if (id === selfId || id.startsWith("frame:")) continue;
+  for (const [key, registered] of store.getItems()) {
+    const frame = isFrameKey(key);
+    if (moving.has(frame ? key.slice("frame:".length) : key)) continue;
+    const r = frame ? frameBody(registered) : registered;
     if (r.x > right || r.x + r.w < left || r.y > bottom || r.y + r.h < top) continue;
     out.push(r);
   }
@@ -42,8 +47,8 @@ export interface SnapSession {
   end(): void;
 }
 
-export function beginSnap(store: BoardCameraStore, selfId: string): SnapSession {
-  const others = nearbyRects(store, selfId);
+export function beginSnap(store: BoardCameraStore, self: string | ReadonlySet<string>): SnapSession {
+  const others = nearbyRects(store, self);
   const options = (mods: Mods) => {
     const { smartGuides, grid } = store.getSnapSettings();
     return { z: store.getCamera().z, smartGuides, grid, bypass: isSnapBypass(mods) };

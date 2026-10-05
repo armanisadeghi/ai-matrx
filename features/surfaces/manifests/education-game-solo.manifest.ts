@@ -33,6 +33,7 @@ import type {
 } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 import type { GameMiss } from "@/features/education/engage/data/useGamePlay";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const EDUCATION_GAME_SOLO_SURFACE_NAME = "matrx-user/education-game-solo";
 
@@ -283,6 +284,7 @@ const surfaceSpecific: SurfaceValue[] = [
 export const educationGameSoloManifest: SurfaceManifest = {
   surfaceName: EDUCATION_GAME_SOLO_SURFACE_NAME,
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Live solo-arcade round: current question, choices, score, streak and recent mistakes (/education/game/solo).",

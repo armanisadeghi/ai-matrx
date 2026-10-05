@@ -356,6 +356,40 @@ export class BoardStore<T extends BoardTileBase> {
       return { ...s, byId, frames: opts.addFrames?.length ? [...frames, ...opts.addFrames] : frames };
     });
 
+  /**
+   * One step of a GROUP gesture — a multi-selection drag, a frame carrying its
+   * tiles, a keyboard nudge. Successive steps on the same set of items within
+   * MOVE_COALESCE_MS are ONE undo step, exactly like a single tile's drag.
+   */
+  dragMany = (moves: { id: string; x: number; y: number }[]): void => {
+    const st = this.h;
+    const at = new Map(moves.map((m) => [m.id, m]));
+    let byId = st.now.byId;
+    for (const [id, m] of at) {
+      const t = byId[id];
+      if (!t || (t.rect.x === m.x && t.rect.y === m.y)) continue;
+      if (byId === st.now.byId) byId = { ...byId };
+      byId[id] = { ...t, rect: { ...t.rect, x: m.x, y: m.y } };
+    }
+    let framesChanged = false;
+    const frames = st.now.frames.map((f) => {
+      const m = at.get(f.id);
+      if (!m || (f.rect.x === m.x && f.rect.y === m.y)) return f;
+      framesChanged = true;
+      return { ...f, rect: { ...f.rect, x: m.x, y: m.y } };
+    });
+    if (byId === st.now.byId && !framesChanged) return;
+    const key = `group:${[...at.keys()].sort().join("|")}`;
+    const t = performance.now();
+    const coalesce = st.moving?.id === key && t - st.moving.at < MOVE_COALESCE_MS;
+    this.commit({
+      now: { ...st.now, byId, frames: framesChanged ? frames : st.now.frames },
+      past: coalesce ? st.past : [...st.past, st.now].slice(-HISTORY_LIMIT),
+      future: coalesce ? st.future : [],
+      moving: { id: key, at: t },
+    });
+  };
+
   connect = (c: BoardConnection): void =>
     this.change((s) =>
       s.connections.some((x) => x.from === c.from && x.to === c.to) ? s : { ...s, connections: [...s.connections, c] },

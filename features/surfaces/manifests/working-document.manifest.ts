@@ -38,10 +38,12 @@ import {
   CONVERSATION_DOCUMENT_WRITE_TARGETS,
   createConversationDocumentScope,
 } from "@ai-matrx/chat/surfaces/manifests/_conversation-document.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const workingDocumentManifest: SurfaceManifest = {
   surfaceName: "matrx-user/working-document",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Per-conversation collaborative working document editor. The cloud agent reads and writes it; surface agents act on the user's selection or the whole body.",

@@ -44,6 +44,7 @@ import type {
   SurfaceWriteTarget,
 } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const MESSAGE_TEMPLATE_SURFACE_NAME = "matrx-user/message-template";
 
@@ -230,6 +231,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const messageTemplateManifest: SurfaceManifest = {
   surfaceName: MESSAGE_TEMPLATE_SURFACE_NAME,
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "One saved message template: its name, role, visibility, tags, email subject and body with merge fields; stage edits into its edit form (/chat/message-templates/[id]).",

@@ -9,6 +9,7 @@
 
 import type { SurfaceManifest, SurfaceScopePayload, SurfaceValue, SurfaceValueGroup, SurfaceWriteTarget } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 const groups: SurfaceValueGroup[] = [
   { key: "family_view", label: "Family view", sortOrder: 100, description: "The current Family route." },
@@ -39,6 +40,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const educationFamilyManifest: SurfaceManifest = {
   surfaceName: "matrx-user/education-family",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description: "Guardian and learner consent management, plus read-only linked learner progress.",
   readiness: "partial",

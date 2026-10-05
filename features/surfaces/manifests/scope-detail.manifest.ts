@@ -28,6 +28,7 @@ import type {
   SurfaceWriteTarget,
 } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 /** Canonical `ui_surface.name` for this surface. */
 export const SCOPE_DETAIL_SURFACE_NAME = "matrx-user/scope-detail";
@@ -213,6 +214,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const scopeDetailManifest: SurfaceManifest = {
   surfaceName: SCOPE_DETAIL_SURFACE_NAME,
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description: "One scope: its name, description and the values it holds for each context item of its type.",
   label: "Scope",

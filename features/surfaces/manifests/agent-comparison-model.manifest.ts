@@ -20,6 +20,7 @@ import type {
 } from "@ai-matrx/chat/surfaces/types";
 import { CHAT_DRAFT_WRITE_MODES, CHAT_INPUT_DRAFT_MAX } from "@ai-matrx/chat/surfaces/manifests/chat.manifest";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -215,6 +216,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const agentComparisonModelManifest: SurfaceManifest = {
   surfaceName: "matrx-user/agent-comparison-model",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "",

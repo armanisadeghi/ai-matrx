@@ -30,6 +30,7 @@ import type {
   SurfaceWriteTarget,
 } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -328,6 +329,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const workflowRunManifest: SurfaceManifest = {
   surfaceName: "matrx-user/workflow-run",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "One workflow run — its state, plan, inputs and outputs, and the run page's own controls.",

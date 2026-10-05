@@ -13,6 +13,7 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
 } from "@ai-matrx/chat/surfaces/types";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const ADMIN_BILLING_SPEND_SURFACE_NAME = "matrx-admin/billing-spend";
 
@@ -412,6 +413,7 @@ const surfaceSpecific: SurfaceValue[] = [
 export const adminBillingSpendManifest: SurfaceManifest = {
   surfaceName: ADMIN_BILLING_SPEND_SURFACE_NAME,
   client: "matrx-admin",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Super-admin platform spend dashboard: the spend alarm, cost sources, print orders, and a window's batch savings and estimated cost.",

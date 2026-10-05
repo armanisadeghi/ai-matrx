@@ -105,6 +105,7 @@ import type {
   VoiceActiveTurnScope,
   VoiceTurnScopeEntry,
 } from "../../voice-agent/agent-context/voiceTranscriptScope";
+import { MATRX_WEB_APP_EXECUTOR } from "../executor";
 
 /** Canonical surface name for the realtime voice chat route. */
 export const CHAT_VOICE_SURFACE = "matrx-user/chat-voice";
@@ -413,6 +414,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const chatVoiceManifest: SurfaceManifest = {
   surfaceName: CHAT_VOICE_SURFACE,
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "browser-realtime",
   description:
     "Realtime voice chat surface (/chat/voice). Browser↔model direct WebSocket; bypasses the Python streaming backend.",

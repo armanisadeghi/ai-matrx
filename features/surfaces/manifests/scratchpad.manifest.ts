@@ -39,10 +39,12 @@ import {
   CONVERSATION_DOCUMENT_WRITE_TARGETS,
   createConversationDocumentScope,
 } from "@ai-matrx/chat/surfaces/manifests/_conversation-document.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const scratchpadManifest: SurfaceManifest = {
   surfaceName: "matrx-user/scratchpad",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Per-conversation private scratchpad editor. The cloud agent only reads it; surface (context-menu) agents can edit it — it is just text inside the surface.",

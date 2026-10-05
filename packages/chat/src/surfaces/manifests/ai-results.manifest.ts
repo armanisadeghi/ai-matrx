@@ -26,6 +26,7 @@ import type {
   SurfaceValue,
 } from "../types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "../executor";
 
 export const AI_RESULTS_SURFACE_NAME = "matrx-user/ai-results";
 
@@ -135,6 +136,7 @@ const surfaceSpecific: SurfaceValue[] = [
 export const aiResultsManifest: SurfaceManifest = {
   surfaceName: AI_RESULTS_SURFACE_NAME,
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Cross-agent conversation history viewer",

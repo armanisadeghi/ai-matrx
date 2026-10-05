@@ -27,6 +27,7 @@ import type { ManifestAgentRole, SurfaceManifest } from "@ai-matrx/chat/surfaces
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 import { RUN_CONSOLE_GROUPS, RUN_CONSOLE_VALUES } from "./_run-console.manifest";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const MARKETING_RUN_CONSOLE_SURFACE_NAME =
   "matrx-admin/marketing-run-console";
@@ -56,6 +57,7 @@ const agentRoles: ManifestAgentRole[] = [
 export const marketingRunConsoleManifest: SurfaceManifest = {
   surfaceName: MARKETING_RUN_CONSOLE_SURFACE_NAME,
   client: "matrx-admin",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "The run console at the SYSTEM tier: drive the keyword-coverage engines by hand across every brand on the platform, and read back what each pass claimed, placed, proposed, protected and quarantined.",

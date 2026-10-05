@@ -36,6 +36,7 @@ import type {
 } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const ADMIN_KIND_REGISTRY_SURFACE_NAME = "matrx-admin/kind-registry";
 
@@ -407,6 +408,7 @@ const surfaceSpecific: SurfaceValue[] = [
 export const adminKindRegistryManifest: SurfaceManifest = {
   surfaceName: ADMIN_KIND_REGISTRY_SURFACE_NAME,
   client: "matrx-admin",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Shape System admin: kind catalog, detail, one-shot kind builder",

@@ -28,6 +28,7 @@ import type {
   SurfaceWriteTarget,
 } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export interface AssessmentListWords {
   surfaceName: string;
@@ -243,6 +244,7 @@ export function buildAssessmentListManifest(w: AssessmentListWords): SurfaceMani
   return {
     surfaceName: w.surfaceName,
     client: "matrx-user",
+    executor: MATRX_WEB_APP_EXECUTOR,
     executionMode: "python-stream",
     description: `${w.label} — the person's ${w.plural} on the canonical list (lanes, search, sort and filter on every column, archive); agents can generate (metered), create, change and archive the person's own ${w.plural}.`,
     readiness: "partial",

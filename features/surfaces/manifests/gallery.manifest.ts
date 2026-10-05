@@ -21,6 +21,7 @@ import type {
   SurfaceValueGroup,
   SurfaceWriteTarget,
 } from "@ai-matrx/chat/surfaces/types";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const GALLERY_SURFACE_NAME = "matrx-user/gallery";
 
@@ -247,6 +248,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const galleryManifest: SurfaceManifest = {
   surfaceName: GALLERY_SURFACE_NAME,
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Image gallery browser",

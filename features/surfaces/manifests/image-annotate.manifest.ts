@@ -63,6 +63,7 @@ import type {
   SurfaceValueGroup,
 } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -156,6 +157,7 @@ export const IMAGE_ANNOTATE_SURFACE_NAME = "matrx-user/image-annotate";
 export const imageAnnotateManifest: SurfaceManifest = {
   surfaceName: IMAGE_ANNOTATE_SURFACE_NAME,
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Screenshot markup at /images/annotate (marker.js annotations baked to PNG); also opens as a modal.",

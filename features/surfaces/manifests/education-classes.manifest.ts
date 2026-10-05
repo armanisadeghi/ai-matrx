@@ -53,6 +53,7 @@ import type {
   SurfaceWriteTarget,
 } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const EDUCATION_CLASSES_SURFACE_NAME = "matrx-user/education-classes";
 
@@ -229,6 +230,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const educationClassesManifest: SurfaceManifest = {
   surfaceName: EDUCATION_CLASSES_SURFACE_NAME,
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "My Classes: owned, archived and joined classes, New class dialog; create, update, archive and delete classes (/education/classes).",

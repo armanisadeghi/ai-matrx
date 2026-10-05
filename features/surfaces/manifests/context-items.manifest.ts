@@ -38,6 +38,7 @@ import {
   SCOPES_SURFACE_NAME,
   type ScopesScopeValues,
 } from "./scopes.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 /** Canonical `ui_surface.name` for this surface. */
 export const CONTEXT_ITEMS_SURFACE_NAME = "matrx-user/context-items";
@@ -223,6 +224,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const contextItemsManifest: SurfaceManifest = {
   surfaceName: CONTEXT_ITEMS_SURFACE_NAME,
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "",

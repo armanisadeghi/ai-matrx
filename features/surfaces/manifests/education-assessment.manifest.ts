@@ -44,6 +44,7 @@ import {
   QUESTION_TYPES,
 } from "@/features/education/assessment/data/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -598,6 +599,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const educationAssessmentManifest: SurfaceManifest = {
   surfaceName: "matrx-user/education-assessment",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "One quiz or practice test: its create, detail, take, edit and results views (/education/quizzes/*, /education/practice-tests/*). The two lists are their own surfaces.",

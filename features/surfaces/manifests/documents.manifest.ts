@@ -58,6 +58,7 @@ import {
 } from "@/features/data-tables/agent-context/documentWriteValidation";
 import { DOCUMENT_BODY_MAX_LENGTH } from "@/features/data-tables/document-body-text";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -515,6 +516,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const documentsManifest: SurfaceManifest = {
   surfaceName: "matrx-user/documents",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Document viewer and editor",

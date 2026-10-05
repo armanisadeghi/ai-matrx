@@ -15,6 +15,7 @@
  */
 
 import type { SurfaceManifest, SurfaceScopePayload, SurfaceValue, SurfaceValueGroup } from "@ai-matrx/chat/surfaces/types";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const ADMIN_AI_USAGE_SURFACE_NAME = "matrx-admin/ai-usage";
 
@@ -160,6 +161,7 @@ const values: SurfaceValue[] = [
 export const adminAiUsageManifest: SurfaceManifest = {
   surfaceName: ADMIN_AI_USAGE_SURFACE_NAME,
   client: "matrx-admin",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description: "Super-admin AI usage explorer: one question of the usage ledger, per execution or the model calls, with its answer.",
   readiness: "partial",

@@ -20,6 +20,7 @@
 import type { SurfaceManifest, SurfaceValue, SurfaceValueGroup } from "@ai-matrx/chat/surfaces/types";
 import { BOARD_CLIENT_TOOLS } from "@/features/board/tools/board-tools";
 import { mergeBaselineValues } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const BOARD_SURFACE_NAME = "matrx-user/board";
 
@@ -72,6 +73,7 @@ const values: SurfaceValue[] = [
 export const boardManifest: SurfaceManifest = {
   surfaceName: BOARD_SURFACE_NAME,
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   label: "Board",
   description:
     "An infinite, zoomable board of tiles — live AI results, notes, pages and images grouped into frames — that the person pans and zooms like a map.",

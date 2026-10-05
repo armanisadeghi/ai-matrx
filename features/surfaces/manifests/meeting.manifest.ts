@@ -27,6 +27,7 @@ import type {
   SurfaceWriteTarget,
 } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -403,6 +404,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const meetingManifest: SurfaceManifest = {
   surfaceName: "matrx-user/meeting",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "One meeting — its time, guests, agenda and settings, and after it happened, its summary, decisions, action items, notes and transcript.",

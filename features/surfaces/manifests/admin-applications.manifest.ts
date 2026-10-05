@@ -57,6 +57,7 @@ import type {
 // and the editor's own Select all read the SAME list.
 import { NOTICE_LEVELS } from "@/features/admin/applications/config/schema";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const ADMIN_APPLICATIONS_SURFACE_NAME = "matrx-admin/applications";
 
@@ -473,6 +474,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const adminApplicationsManifest: SurfaceManifest = {
   surfaceName: ADMIN_APPLICATIONS_SURFACE_NAME,
   client: "matrx-admin",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Applications hub: shipped-client config, catalogs, installations, history.",

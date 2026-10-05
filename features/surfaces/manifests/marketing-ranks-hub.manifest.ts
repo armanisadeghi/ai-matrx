@@ -23,6 +23,7 @@ import type {
   SurfaceValueGroup,
 } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -85,6 +86,7 @@ const surfaceSpecific: SurfaceValue[] = [
 export const marketingRanksHubManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-ranks-hub",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Cross-site rank tracking hub at /marketing/ranks: every rank target across every brand and site the user can see, read-only, with per-row links to the owning site's Ranks workspace.",

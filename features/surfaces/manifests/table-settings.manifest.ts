@@ -32,6 +32,7 @@ import type {
   SurfaceValueGroup,
   SurfaceWriteTarget,
 } from "@ai-matrx/chat/surfaces/types";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const TABLE_SETTINGS_SURFACE_NAME = "matrx-user/table-settings";
 
@@ -206,6 +207,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const tableSettingsManifest: SurfaceManifest = {
   surfaceName: TABLE_SETTINGS_SURFACE_NAME,
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "The data table's settings window: columns, table details and row actions.",

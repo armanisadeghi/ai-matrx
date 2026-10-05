@@ -34,6 +34,7 @@ import {
   CRAWL_RENDER_MODES,
 } from "@/features/marketing/crawler/crawl-options";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -258,6 +259,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const marketingCrawlsManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-crawls",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Crawl sessions list and launch workspace for one site.",

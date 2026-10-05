@@ -17,6 +17,7 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
 } from "@ai-matrx/chat/surfaces/types";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const IMAGE_VIEWER_SURFACE_NAME = "matrx-user/image-viewer";
 
@@ -90,6 +91,7 @@ const surfaceSpecific: SurfaceValue[] = [
 export const imageViewerManifest: SurfaceManifest = {
   surfaceName: IMAGE_VIEWER_SURFACE_NAME,
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Multi-image viewer",

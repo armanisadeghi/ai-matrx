@@ -5,6 +5,7 @@ import type {
   SurfaceValueGroup,
 } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 export const ADMIN_LIMITS_SURFACE_NAME = "matrx-admin/limits";
 const groups: SurfaceValueGroup[] = [
   { key: "addons", label: "Account add-ons", sortOrder: 100 },
@@ -68,6 +69,7 @@ const values: SurfaceValue[] = [
 export const adminLimitsManifest: SurfaceManifest = {
   surfaceName: ADMIN_LIMITS_SURFACE_NAME,
   client: "matrx-admin",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "",

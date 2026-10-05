@@ -40,6 +40,7 @@ import {
   MIN_CHUNK_SIZE,
 } from "@/features/page-extraction/constants";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 /**
  * Canonical sections of the extractor studio, in the order the page reads:
@@ -549,6 +550,7 @@ export const PDF_EXTRACTOR_SURFACE_NAME = "matrx-user/pdf-extractor";
 export const pdfExtractorManifest: SurfaceManifest = {
   surfaceName: PDF_EXTRACTOR_SURFACE_NAME,
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "PDF Extractor studio (/tools/pdf-extractor) — one-shot agent runs on a loaded PDF with a 4-way scope picker (full doc / current page / page range / browser selection). Parent of matrx-user/extractor-chunker.",

@@ -18,6 +18,7 @@ import type {
 } from "@ai-matrx/chat/surfaces/types";
 import { MEDIA_GENERATOR_SOURCE_KINDS } from "@/features/education/media/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 /** Bounds the handler enforces, spelled into the target prose so they match. */
 export const MEMORY_TOPIC_MIN = 3;
@@ -403,6 +404,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const educationMemoryManifest: SurfaceManifest = {
   surfaceName: "matrx-user/education-memory",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Create, edit, generate, and view memory aids (/education/memory).",

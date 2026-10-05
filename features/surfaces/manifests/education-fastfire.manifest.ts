@@ -33,6 +33,7 @@ import {
 } from "@/features/flashcards/fast-fire/drill-config";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -323,6 +324,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const educationFastfireManifest: SurfaceManifest = {
   surfaceName: "matrx-user/education-fastfire",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "FastFire spoken rapid-drill over a flashcard set (/education/fastfire).",

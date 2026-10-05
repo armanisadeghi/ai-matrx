@@ -16,6 +16,7 @@ import type {
   SurfaceWriteTarget,
 } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 const groups: SurfaceValueGroup[] = [
   { key: "keyword_identity", label: "Keyword identity", sortOrder: 100 },
@@ -218,6 +219,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const keywordIntelligenceManifest: SurfaceManifest = {
   surfaceName: "matrx-user/keyword-intelligence",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "",

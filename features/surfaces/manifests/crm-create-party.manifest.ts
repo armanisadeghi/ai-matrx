@@ -11,6 +11,7 @@ import type {
   SurfaceWriteTarget,
 } from "@ai-matrx/chat/surfaces/types";
 import { PARTY_KINDS } from "@/features/crm/types";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const CRM_CREATE_PARTY_SURFACE_NAME = "matrx-user/crm-create-party";
 
@@ -229,6 +230,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const crmCreatePartyManifest: SurfaceManifest = {
   surfaceName: CRM_CREATE_PARTY_SURFACE_NAME,
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Floating create form for a CRM person or company and optional contact methods",

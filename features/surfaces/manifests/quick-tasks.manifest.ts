@@ -22,6 +22,7 @@ import type {
 import { TASK_LABELS, type TaskLabel } from "@/features/tasks/constants/labels";
 import { TASK_PRIORITIES } from "@/features/tasks/constants/priority";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const QUICK_TASKS_SURFACE_NAME = "matrx-user/quick-tasks";
 
@@ -397,6 +398,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const quickTasksManifest: SurfaceManifest = {
   surfaceName: QUICK_TASKS_SURFACE_NAME,
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Quick task browser overlay",

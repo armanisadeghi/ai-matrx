@@ -27,6 +27,7 @@ import {
   USER_WRITABLE_FINDING_STATUSES,
 } from "@/features/marketing/data/finding-lifecycle";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -329,6 +330,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const marketingFindingsManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-findings",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Durable finding lifecycle register and finding detail for one site.",

@@ -32,6 +32,7 @@ import type {
   ChatConversationRecord,
   ChatTranscriptEntry,
 } from "../../agents/components/chat/agent-context/chatTranscriptScope";
+import { MATRX_WEB_APP_EXECUTOR } from "../executor";
 
 // ---------------------------------------------------------------------------
 // Write-contract vocabulary — ONE definition, imported by both the manifest
@@ -572,6 +573,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const chatManifest: SurfaceManifest = {
   surfaceName: "matrx-user/chat",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "The live chat route: one conversation between the person and an agent, its full transcript with tool calls, and the composer for the next message. Outside agents can read all of it and edit messages, the draft and the run.",

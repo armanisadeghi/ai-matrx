@@ -38,6 +38,7 @@ import type {
   SurfaceValueGroup,
 } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const ADMIN_KNOWLEDGE_SURFACE_NAME = "matrx-admin/knowledge";
 
@@ -492,6 +493,7 @@ const surfaceSpecific: SurfaceValue[] = [
 export const adminKnowledgeManifest: SurfaceManifest = {
   surfaceName: ADMIN_KNOWLEDGE_SURFACE_NAME,
   client: "matrx-admin",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Knowledge admin family: cms-agents, kg-cost, kg-inspector, podcasts, research-system",

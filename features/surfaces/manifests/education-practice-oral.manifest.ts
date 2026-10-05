@@ -62,6 +62,7 @@ import {
 } from "@/features/education/spoken-practice/vocabulary";
 import { SPOKEN_PRACTICE_MODES } from "@/features/education/spoken-practice/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 /**
  * Enum prose built FROM the vocabulary the pickers render, never re-typed. If a
@@ -360,6 +361,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const educationPracticeOralManifest: SurfaceManifest = {
   surfaceName: "matrx-user/education-practice-oral",
   client: "matrx-user",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Spoken oral-practice sessions with AI examiner grading (/education/practice-oral).",

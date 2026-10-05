@@ -82,6 +82,7 @@ import type {
   SurfaceWriteTarget,
 } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
 export const ADMIN_SCHEDULING_SURFACE_NAME = "matrx-admin/scheduling";
 
@@ -623,6 +624,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const adminSchedulingManifest: SurfaceManifest = {
   surfaceName: ADMIN_SCHEDULING_SURFACE_NAME,
   client: "matrx-admin",
+  executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
     "Scheduling admin: sch_* tasks, runs, leases, cron tester, scanner health.",
