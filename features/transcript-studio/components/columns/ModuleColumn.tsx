@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { ListChecks, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import MarkdownStream from "@/components/MarkdownStream";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
 import { RichDocumentActions } from "@/features/rich-document/RichDocumentActions";
 import { COLUMN_IDS } from "../../constants";
@@ -291,7 +291,7 @@ function ModuleSegmentRender({
               component), never stringified into markdown; only the explicit
               edit mode above works on its JSON text. */}
           {typeof segment.payload === "string" ? (
-            <MarkdownStream imagePolicy="ai" content={content} hideCopyButton />
+            <RichContent level="full" imagePolicy="ai" source={content} hideCopyButton />
           ) : (
             <AnswerValueView value={segment.payload} />
           )}
