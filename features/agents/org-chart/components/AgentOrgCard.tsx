@@ -149,13 +149,13 @@ export function AgentOrgCard({
           <div
             className={cn(
               "flex h-9 w-9 shrink-0 items-center justify-center",
-              d.boxType === "user" ? "rounded-full" : "rounded-lg",
+              d.boxType === "membership" ? "rounded-full" : "rounded-lg",
               d.isConductor ? a.glyph : "bg-muted text-foreground/70",
             )}
           >
             {d.pending ? (
               <Loader2 className="h-4 w-4 animate-spin" />
-            ) : d.boxType === "user" ? (
+            ) : d.boxType === "membership" ? (
               <span className="text-xs font-semibold">{initials(who.name)}</span>
             ) : (
               <Icon className="h-4 w-4" />
@@ -219,7 +219,13 @@ export function AgentOrgCard({
           state.selected && "opacity-100",
         )}
       >
-        {isAgent ? <AgentPeekButton agentId={d.entityId} /> : <PeekButton token={d.boxType} id={d.entityId} />}
+        {isAgent ? (
+          <AgentPeekButton agentId={d.entityId} />
+        ) : d.boxType === "membership" ? (
+          who.userId && <PeekButton token="user" id={who.userId} />
+        ) : (
+          <PeekButton token={d.boxType} id={d.entityId} />
+        )}
         {href && (
           <Link href={href} onClick={(e) => e.stopPropagation()} aria-label={openLabel} title={openLabel} className={iconButton}>
             <ArrowUpRight className="h-3.5 w-3.5" />

@@ -100,15 +100,17 @@ export const ORG_CHART_READ_CHUNK = 150;
 // ── Boxes ────────────────────────────────────────────────────────────────────
 // A box on the chart is one of four things (Arman, 2026-10-04). Each is an
 // existing entity token, so links between any two are ordinary association
-// edges. "Position" (not "Role" — that word is owner/admin/member) is a named
+// edges. A Person is their MEMBERSHIP — their place in one organization — not
+// the bare account: an org chart is per organization, and the access check
+// (iam.has_access) has no rule for `user`, so no edge could ever reach one. "Position" (not "Role" — that word is owner/admin/member) is a named
 // seat in agent.position that a person may fill and agents may sit under.
 
-export const ORG_BOX_TYPES = ["agent", "user", "team", "position"] as const;
+export const ORG_BOX_TYPES = ["agent", "membership", "team", "position"] as const;
 export type OrgBoxType = (typeof ORG_BOX_TYPES)[number];
 
 export const ORG_BOX_LABEL: Record<OrgBoxType, string> = {
   agent: "Agent",
-  user: "Person",
+  membership: "Person",
   team: "Team",
   position: "Position",
 };

@@ -121,13 +121,13 @@ describe("buildAgentOrgForest", () => {
       orchestras: new Map([["seo", orch("writer")]]),
       conductorIds: new Set(["seo"]),
       manualEdges: [
-        { edgeId: "1", managerId: "user:arman", reportId: "position:seo-lead", kind: "reports_to" },
+        { edgeId: "1", managerId: "membership:arman", reportId: "position:seo-lead", kind: "reports_to" },
         { edgeId: "2", managerId: "position:seo-lead", reportId: "agent:seo", kind: "reports_to" },
       ],
       standalone: ["position:open-seat"],
     });
-    const top = forest.find((r) => r.data.boxId === "user:arman")!;
-    expect(top.data.boxType).toBe("user");
+    const top = forest.find((r) => r.data.boxId === "membership:arman")!;
+    expect(top.data.boxType).toBe("membership");
     const seat = top.children[0];
     expect(seat.data.boxType).toBe("position");
     expect(seat.children[0].data.entityId).toBe("seo");

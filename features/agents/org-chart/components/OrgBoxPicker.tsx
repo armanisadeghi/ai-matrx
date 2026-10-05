@@ -11,7 +11,6 @@ import { Briefcase, Plus, UsersRound } from "lucide-react";
 import { AgentListInlinePicker } from "@ai-matrx/agents/catalog/react";
 import { Button, Field, SearchField, Tabs } from "@ai-matrx/design-system/controls";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { useUserConnections } from "@/features/messaging/hooks/useUserConnections";
 import { selectOrgPositions } from "@/features/agents/redux/orchestras/selectors";
 import { createOrgPosition, loadOrgPositions } from "@/features/agents/redux/orchestras/orgChartThunks";
 import type { Team } from "@/features/organizations/service/teamsService";
@@ -19,11 +18,11 @@ import { selectOrganizationId, selectOrganizationName } from "@/lib/redux/slices
 import { OrganizationPickerPopover } from "@/features/organizations/components/OrganizationPickerPopover";
 import { toast } from "@/lib/toast";
 import { boxId, parseBoxId, type OrgBoxType } from "../constants";
-import { loadTeamsDirectory } from "../useBoxIdentity";
+import { loadOrgDirectory, type OrgMember } from "../useBoxIdentity";
 
 const TAB_LABEL: Record<OrgBoxType, string> = {
   agent: "Agents",
-  user: "People",
+  membership: "People",
   team: "Teams",
   position: "Positions",
 };
@@ -59,7 +58,7 @@ function Row({
 export function OrgBoxPicker({
   onPick,
   exclude = [],
-  types = ["agent", "user", "team", "position"],
+  types = ["agent", "membership", "team", "position"],
   initialType = "agent",
 }: {
   onPick: (boxId: string) => void;
@@ -73,6 +72,7 @@ export function OrgBoxPicker({
   const [tab, setTab] = useState<OrgBoxType>(types.includes(initialType) ? initialType : types[0]);
   const [query, setQuery] = useState("");
   const [teams, setTeams] = useState<Team[] | null>(null);
+  const [members, setMembers] = useState<OrgMember[] | null>(null);
   const [newName, setNewName] = useState("");
   const [creating, setCreating] = useState(false);
   const positions = useAppSelector(selectOrgPositions);
@@ -80,7 +80,6 @@ export function OrgBoxPicker({
   // shown, and chosen right here when none is (never a silent wait on a gate).
   const writeOrgId = useAppSelector(selectOrganizationId);
   const writeOrgName = useAppSelector(selectOrganizationName);
-  const { connections, isLoading: peopleLoading } = useUserConnections();
   const excluded = new Set(exclude);
   const excludedAgents = exclude.map(parseBoxId).filter((b) => b.type === "agent").map((b) => b.id);
   const q = query.trim().toLowerCase();
@@ -90,9 +89,16 @@ export function OrgBoxPicker({
     dispatch(loadOrgPositions());
   }, [dispatch]);
   useEffect(() => {
-    if (tab !== "team" || teams) return;
-    void loadTeamsDirectory().then((m) => setTeams([...m.values()].sort((a, b) => a.name.localeCompare(b.name))));
-  }, [tab, teams]);
+    if (tab === "agent" || tab === "position" || (teams && members)) return;
+    void loadOrgDirectory().then((d) => {
+      setTeams([...d.teams.values()].sort((a, b) => a.name.localeCompare(b.name)));
+      setMembers(
+        [...d.members.values()].sort(
+          (a, b) => a.name.localeCompare(b.name) || a.organizationName.localeCompare(b.organizationName),
+        ),
+      );
+    });
+  }, [tab, teams, members]);
 
   const createPosition = async () => {
     const name = newName.trim();
@@ -139,26 +145,26 @@ export function OrgBoxPicker({
             aria-label={`Find ${TAB_LABEL[tab].toLowerCase()}`}
           />
           <div className="min-h-0 flex-1 overflow-y-auto rounded-md border border-border bg-card p-1">
-            {tab === "user" &&
-              (peopleLoading && connections.length === 0 ? (
+            {tab === "membership" &&
+              (members === null ? (
                 <p className="p-3 text-sm text-muted-foreground">Loading people…</p>
               ) : (
-                connections
-                  .filter((p) => !excluded.has(boxId("user", p.user_id)) && hit(p.display_name, p.email))
-                  .map((p) => (
+                members
+                  .filter((m) => !excluded.has(boxId("membership", m.membershipId)) && hit(m.name, m.email, m.organizationName))
+                  .map((m) => (
                     <Row
-                      key={p.user_id}
+                      key={m.membershipId}
                       icon={
-                        p.avatar_url ? (
+                        m.avatarUrl ? (
                           // eslint-disable-next-line @next/next/no-img-element -- a 28px roster avatar
-                          <img src={p.avatar_url} alt="" className="h-7 w-7 object-cover" />
+                          <img src={m.avatarUrl} alt="" className="h-7 w-7 object-cover" />
                         ) : (
-                          <span className="text-[10px] font-semibold">{(p.display_name ?? p.email ?? "?").slice(0, 2).toUpperCase()}</span>
+                          <span className="text-[10px] font-semibold">{m.name.slice(0, 2).toUpperCase()}</span>
                         )
                       }
-                      title={p.display_name ?? p.email ?? "Member"}
-                      detail={p.email}
-                      onPick={() => onPick(boxId("user", p.user_id))}
+                      title={m.name}
+                      detail={m.organizationName}
+                      onPick={() => onPick(boxId("membership", m.membershipId))}
                     />
                   ))
               ))}

@@ -71,7 +71,6 @@ import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { toast } from "@/lib/toast";
 import { announceReversible } from "@/lib/reversible/announceReversible";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { resolveVisiblePerson } from "@/features/organizations/people/visiblePeople";
 import {
   ORG_BOX_LABEL,
   ORG_LINK_KIND_META,
@@ -82,7 +81,7 @@ import {
 } from "../constants";
 import { crossLinksOf, type AgentOrgNodeData } from "../buildAgentOrgForest";
 import { useAgentOrgChart } from "../useAgentOrgChart";
-import { loadTeamsDirectory } from "../useBoxIdentity";
+import { loadOrgDirectory } from "../useBoxIdentity";
 import type { OrgPosition } from "../positionsService";
 import { AgentOrgCard, boxHref } from "./AgentOrgCard";
 import { OrgBoxPicker } from "./OrgBoxPicker";
@@ -155,7 +154,7 @@ export function AgentOrgChartView({
   const unnamed = [...firstKeyOf.keys()]
     .filter((b) => {
       const t = parseBoxId(b).type;
-      return (t === "user" || t === "team") && !(b in names);
+      return (t === "membership" || t === "team") && !(b in names);
     })
     .sort()
     .join(",");
@@ -164,14 +163,12 @@ export function AgentOrgChartView({
     let live = true;
     void (async () => {
       const found: Record<string, string> = {};
-      const teams = unnamed.includes("team:") ? await loadTeamsDirectory() : null;
-      await Promise.all(
-        unnamed.split(",").map(async (b) => {
-          const { type, id } = parseBoxId(b);
-          if (type === "user") found[b] = (await resolveVisiblePerson(id))?.name ?? "this person";
-          if (type === "team") found[b] = teams?.get(id)?.name ?? "this team";
-        }),
-      );
+      const dir = await loadOrgDirectory();
+      for (const b of unnamed.split(",")) {
+        const { type, id } = parseBoxId(b);
+        if (type === "membership") found[b] = dir.members.get(id)?.name ?? "this person";
+        if (type === "team") found[b] = dir.teams.get(id)?.name ?? "this team";
+      }
       if (live) setNames((cur) => ({ ...cur, ...found }));
     })();
     return () => {
@@ -183,7 +180,7 @@ export function AgentOrgChartView({
     const { type, id } = parseBoxId(b);
     if (type === "agent") return agents[id]?.name ?? "this agent";
     if (type === "position") return positionById.get(id)?.name ?? "this position";
-    return names[b] ?? (type === "user" ? "this person" : "this team");
+    return names[b] ?? (type === "membership" ? "this person" : "this team");
   };
   const nounOf = (b: string) => ORG_BOX_LABEL[parseBoxId(b).type].toLowerCase();
   const agentOf = (n: Node) => (n.data.boxType === "agent" ? n.data.entityId : null);
@@ -299,11 +296,15 @@ export function AgentOrgChartView({
     toast.success(`${nameOf(fromId)} ${ORG_LINK_KIND_META[link].verb} ${nameOf(toId)}.`);
   };
 
-  const fillPosition = async (positionId: string, userBox: string | null) => {
+  /** Fill a position with a person (their membership box), or mark it open (null). */
+  const fillPosition = async (positionId: string, memberBox: string | null) => {
     const before = positionById.get(positionId)?.filledByUserId ?? null;
-    const res = await dispatch(
-      updateOrgPosition(positionId, { filledByUserId: userBox ? parseBoxId(userBox).id : null }),
-    );
+    const userId = memberBox ? ((await loadOrgDirectory()).members.get(parseBoxId(memberBox).id)?.userId ?? null) : null;
+    if (memberBox && !userId) {
+      fail("That person could not be found.");
+      return;
+    }
+    const res = await dispatch(updateOrgPosition(positionId, { filledByUserId: userId }));
     if (!res.ok) {
       fail(res.error);
       return;
@@ -644,7 +645,8 @@ export function AgentOrgChartView({
         : pick?.kind === "fill"
           ? "The person who holds this seat."
           : "Recorded structure. To have an agent direct others, make it an Orchestra.";
-  const pickerTypes: readonly OrgBoxType[] = pick?.kind === "fill" ? ["user"] : ["agent", "user", "team", "position"];
+  const pickerTypes: readonly OrgBoxType[] =
+    pick?.kind === "fill" ? ["membership"] : ["agent", "membership", "team", "position"];
   const pickerExclude =
     pick?.kind === "manager-for"
       ? pick.reportIds
@@ -779,7 +781,7 @@ export function AgentOrgChartView({
               onPick={(b) => void onPicked(b)}
               exclude={pickerExclude}
               types={pickerTypes}
-              initialType={pick.kind === "fill" ? "user" : "agent"}
+              initialType={pick.kind === "fill" ? "membership" : "agent"}
             />
           )}
         </DialogContent>
