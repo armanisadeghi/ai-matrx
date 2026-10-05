@@ -115,9 +115,12 @@ export function ScopesManager({ organization, role }: ScopesManagerProps) {
     setArchiveReadFailed(false);
   }, [organization.id]);
 
+  // The archive is re-read whenever the live types change: a type archived anywhere on this page (its settings
+  // sheet drops it from the tree) shows in the panel without a reload, and a restored one leaves it.
+  const liveTypeIds = useMemo(() => scopeTypes.map((t) => t.id).join(","), [scopeTypes]);
   useEffect(() => {
     void loadArchived();
-  }, [loadArchived]);
+  }, [loadArchived, liveTypeIds]);
 
   async function restoreType(row: ArchivedScopeTypeRow) {
     setRestoring(true);
@@ -129,6 +132,7 @@ export function ScopesManager({ organization, role }: ScopesManagerProps) {
       }
       toast.success(`${row.label_plural} restored`);
       setRestoreTarget(null);
+      setArchivedTypes((rows) => rows.filter((r) => r.id !== row.id));
       await Promise.all([
         dispatch(ensureScopeTree({ refresh: true })),
         loadArchived(),
