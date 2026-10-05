@@ -1,28 +1,26 @@
 "use client";
 
 /**
- * "Use existing" — what the person already has, by kind. The kinds are EXACTLY
- * the organization page's Resources grid "Sources" + "Sources & Outputs"
- * entries — `sourceRoleEntries()` from the grid's own definition
- * (`features/organizations/resource-catalogue.ts`), in the grid's order, with
- * the grid's names and icons: Files, Transcripts, Websites, Datasets, Lists,
- * Workbooks, Notes. One flat list — no Utilities, Outputs or Workspaces
- * (Arman, 2026-09-30).
+ * "Use existing" — what the person already has, by kind. WHICH kinds and in WHAT order is the
+ * registry's (`platform.entity_types.source_input_pickable` + `source_input_order`, read by
+ * `sourceInputKinds.ts`); kinds sharing an order are one entry (Documents = `document` +
+ * `udt_document`). Arman approved the list 2026-10-05: Files · Notes · Documents · Websites ·
+ * Transcripts · Conversations · Tables · Workbooks · Saved results. One flat list, no group titles.
  *
- * Counts and lists: a kind with a registry token reads the kind inventory
- * (`useKindCounts` / `useKindItems`, server-searched, recent first, paged by
- * the `resources.inventory/page_size` knob). Websites has no token — it lists
- * the web pages the person saved as Sources (`savedWebPages.ts`), picked as
- * `processed_document`. Datasets and Pick lists have no token either — the
- * record store holds them; they are read through the store's own list doors
- * (`recordStoreKinds.ts`) and picked as `dataset` / `structured_list`. The
- * scope (All / Mine / an organization) is a FILTER, never permission.
+ * Counts and lists: a registry kind reads the kind inventory (`useKindCounts` / `useKindItems`,
+ * server-searched, recent first, paged by the `resources.inventory/page_size` knob); an entry of
+ * several tokens adds their counts and merges their lists, each row picked as its own token.
+ * Websites lists the web pages the person saved as Sources (`savedWebPages.ts`), picked as
+ * `processed_document`. Tables lists the record store's tables AND pick lists (`recordStoreKinds.ts`;
+ * a pick list's row carries a "Pick list" badge), every one picked as `dataset`. A kind whose count
+ * fails shows a dash; the others are unaffected. The scope (All / Mine / an organization) is a
+ * FILTER, never permission.
  *
- * Also the answer to the input's one search box: with words typed, every kind
- * that has items shows its first matches, each kind openable for the rest.
+ * Also the answer to the input's one search box: with words typed, every kind that has items shows
+ * its first matches, each kind openable for the rest.
  *
- * A row of a kind that has a stage (a saved Source) carries the Knowledge hub's
- * Stage word as a small badge (`itemStage.ts`, the hub's own facts read).
+ * A row of a kind that has a stage (a saved Source) carries the Knowledge hub's Stage word as a
+ * small badge (`itemStage.ts`, the hub's own facts read).
  *
  * UI only: picking goes through `useSourceIntake().addExisting`.
  */
@@ -32,8 +30,7 @@ import { Check, Loader2, Plus } from "lucide-react";
 import { Badge, Input } from "@ai-matrx/design-system";
 import { useKindCounts } from "@/features/scopes/hooks/useKindCounts";
 import { useKindItems } from "@/features/scopes/hooks/useKindItems";
-import type { KindItem, KindScope } from "@/features/scopes/service/kindInventory";
-import { sourceRoleEntries } from "@/features/organizations/resource-catalogue";
+import { fetchKindItemsPage, type KindItem, type KindScope } from "@/features/scopes/service/kindInventory";
 import { SOURCE_KIND_GROUP_KINDS } from "@/features/sources/sourceRows";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
@@ -44,11 +41,15 @@ import {
   type SavedSourceGroup,
 } from "@/features/resource-manager/source-input/savedWebPages";
 import {
-  countRecordStoreItems,
-  fetchRecordStorePage,
+  countTablesAndPickLists,
+  fetchTablesPage,
   RECORD_STORE_TOKEN,
-  type RecordStoreKind,
 } from "@/features/resource-manager/source-input/recordStoreKinds";
+import {
+  fetchSourceInputKinds,
+  sourceInputEntries,
+  type SourceInputEntry,
+} from "@/features/resource-manager/source-input/sourceInputKinds";
 import { MiddleTruncate } from "@/components/official/MiddleTruncate";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { describeFailure } from "@/lib/failure/transport";
@@ -68,67 +69,88 @@ export interface UseExistingProps {
   onToggle: (token: string, item: KindItem, sourceKind?: string) => void;
 }
 
-/** One kind offered: a Resources-grid Sources / Sources & Outputs entry. */
+/** One kind offered: a registry entry, with how it is listed. */
 export interface OfferedKind {
-  /** The grid entry's key — unique per kind. */
+  /** Unique per entry (its tokens joined). */
   key: string;
-  /** The token a picked row is sent as. */
+  /** The token a picked row is sent as, when the row does not carry its own. */
   token: string;
-  /** The grid's name for it ("Files", "Websites"…). */
+  /** Every inventory token this entry counts and lists (Documents = two); empty for own-reader kinds. */
+  tokens: string[];
+  /** The entry's name ("Files", "Documents"…). */
   plural: string;
   Icon: ComponentType<{ className?: string }>;
   /** Set when the kind is listed from the person's saved Sources (Websites). */
   savedSourceGroup?: SavedSourceGroup;
-  /** Set when the kind is listed from the record store (Datasets, Pick lists). */
-  recordStoreKind?: RecordStoreKind;
+  /** Set when the kind is listed from the record store (Tables, pick lists included). */
+  recordStore?: boolean;
   /** The stored Source kind a picked row is (its card's noun), for saved-Source kinds. */
   sourceKind?: string;
 }
 
-/**
- * The kinds offered: the grid's Sources + Sources & Outputs entries, in the
- * grid's order. The grid's definition decides, never a list here. A grid entry
- * with no token, saved-Source group or record-store kind cannot be listed —
- * the guard test fails on it, never a silent drop.
- */
-export function offeredKinds(): OfferedKind[] {
-  return sourceRoleEntries().flatMap((e): OfferedKind[] => {
-    const base = { key: e.key, plural: e.labelPlural, Icon: e.icon };
+/** A listed row; `token` set when an entry spans tokens, `badge` on a pick list. */
+type OfferedItem = KindItem & { token?: string; badge?: string };
+
+/** The registry's entries as offered kinds. Pure — the tests drive it with registry rows. */
+export function offeredKindsFrom(entries: readonly SourceInputEntry[]): OfferedKind[] {
+  return entries.map((e): OfferedKind => {
+    const base = { key: e.key, plural: e.plural, Icon: e.Icon };
     if (e.savedSourceGroup) {
-      return [
-        {
-          ...base,
-          token: SAVED_SOURCE_TOKEN,
-          savedSourceGroup: e.savedSourceGroup,
-          sourceKind: SOURCE_KIND_GROUP_KINDS[e.savedSourceGroup][0],
-        },
-      ];
+      return {
+        ...base,
+        token: SAVED_SOURCE_TOKEN,
+        tokens: [],
+        savedSourceGroup: e.savedSourceGroup,
+        sourceKind: SOURCE_KIND_GROUP_KINDS[e.savedSourceGroup][0],
+      };
     }
-    if (e.recordStoreKind) {
-      return [{ ...base, token: RECORD_STORE_TOKEN[e.recordStoreKind], recordStoreKind: e.recordStoreKind }];
-    }
-    if (e.token) return [{ ...base, token: e.token }];
-    console.error(`[UseExisting] grid kind "${e.key}" has no way to be listed`);
-    return [];
+    if (e.recordStore) return { ...base, token: RECORD_STORE_TOKEN.table, tokens: [], recordStore: true };
+    return { ...base, token: e.tokens[0]!, tokens: e.tokens };
   });
+}
+
+/** The offered kinds, read from the registry once per page load. */
+function useOfferedKinds(): { offered: OfferedKind[]; loading: boolean; error: Error | null; reload: () => void } {
+  const [state, setState] = useState<{ offered: OfferedKind[]; loading: boolean; error: Error | null }>({
+    offered: [],
+    loading: true,
+    error: null,
+  });
+  const [attempt, setAttempt] = useState(0);
+  useEffect(() => {
+    let cancelled = false;
+    fetchSourceInputKinds().then(
+      (rows) => {
+        if (!cancelled) setState({ offered: offeredKindsFrom(sourceInputEntries(rows)), loading: false, error: null });
+      },
+      (error: unknown) => {
+        if (!cancelled)
+          setState({ offered: [], loading: false, error: error instanceof Error ? error : new Error(String(error)) });
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [attempt]);
+  return { ...state, reload: () => setAttempt((n) => n + 1) };
 }
 
 /** Listed through its own reader (saved Sources or the record store), not the kind inventory. */
 function readsOwnList(k: OfferedKind): boolean {
-  return Boolean(k.savedSourceGroup || k.recordStoreKind);
+  return Boolean(k.savedSourceGroup || k.recordStore);
 }
 
 /** One own-reader kind's count; null = could not count. */
 function countOwnList(k: OfferedKind, scope: KindScope, userId: string): Promise<number | null> {
-  if (k.recordStoreKind) return countRecordStoreItems(k.recordStoreKind, scope, userId);
+  if (k.recordStore) return countTablesAndPickLists(scope, userId);
   return countSavedSources(k.savedSourceGroup!, scope, userId);
 }
 
-/** The kind inventory's counts plus the own-reader kinds' counts, as one map keyed by kind key. */
+/** The kind inventory's counts plus the own-reader kinds' counts, as one map keyed by entry key. */
 function useOfferedCounts(scope: KindScope, offered: OfferedKind[]) {
   const userId = useAppSelector(selectUserId);
   const inventoryKinds = offered.filter((k) => !readsOwnList(k));
-  const inventory = useKindCounts(scope, { tokens: inventoryKinds.map((k) => k.token) });
+  const inventory = useKindCounts(scope, { tokens: inventoryKinds.flatMap((k) => k.tokens) });
   const groups = offered.filter(readsOwnList);
   const groupsKey = groups.map((k) => k.key).join(",");
   const scopeKey = JSON.stringify(scope);
@@ -155,9 +177,15 @@ function useOfferedCounts(scope: KindScope, offered: OfferedKind[]) {
   const counts = new Map<string, number | null>();
   for (const k of inventoryKinds) {
     // A count read that failed outright leaves every kind it carried uncounted: each shows a dash
-    // and still opens its list — never one error block in place of the whole row.
-    if (inventory.error) counts.set(k.key, null);
-    else if (inventory.counts.has(k.token)) counts.set(k.key, inventory.counts.get(k.token)!);
+    // and still opens its list — never one error block in place of the whole row. An entry of
+    // several tokens is their sum; one uncountable token dashes that entry only.
+    if (inventory.error) {
+      counts.set(k.key, null);
+      continue;
+    }
+    if (!k.tokens.every((t) => inventory.counts.has(t))) continue;
+    const parts = k.tokens.map((t) => inventory.counts.get(t)!);
+    counts.set(k.key, parts.some((n) => n === null) ? null : parts.reduce<number>((a, n) => a + (n ?? 0), 0));
   }
   const savedReady = !groupsKey || saved.key === requestKey;
   if (savedReady) for (const [key, n] of saved.counts) counts.set(key, n);
@@ -167,20 +195,49 @@ function useOfferedCounts(scope: KindScope, offered: OfferedKind[]) {
   };
 }
 
+/** Every token's page merged, newest first, each row carrying the token it is picked as. */
+async function fetchMergedPage(
+  tokens: readonly string[],
+  args: Parameters<typeof fetchKindItemsPage>[0],
+): Promise<OfferedItem[]> {
+  const pages = await Promise.all(
+    tokens.map(async (token) =>
+      (await fetchKindItemsPage({ ...args, token, offset: 0, limit: args.offset + args.limit })).map(
+        (item): OfferedItem => ({ ...item, token }),
+      ),
+    ),
+  );
+  return pages
+    .flat()
+    .sort((a, b) => String(b.updatedAt ?? "").localeCompare(String(a.updatedAt ?? "")))
+    .slice(args.offset, args.offset + args.limit);
+}
+
 /** One kind's list — the kind inventory, the person's saved Sources (Websites), or the record store. */
 function useOfferedKindItems(kind: OfferedKind, scope: KindScope, query: string) {
   const userId = useAppSelector(selectUserId);
   const group = kind.savedSourceGroup;
-  const store = kind.recordStoreKind;
+  const store = kind.recordStore;
+  const tokensKey = kind.tokens.join(",");
   const fetchOwn = useCallback(
     (args: { scope: KindScope; query?: string; offset: number; limit: number }) =>
       store
-        ? fetchRecordStorePage({ kind: store, scope: args.scope, userId: userId ?? "", ...pageOf(args) })
+        ? fetchTablesPage({ scope: args.scope, userId: userId ?? "", ...pageOf(args) })
         : fetchSavedSourcesPage({ group: group!, scope: args.scope, userId: userId ?? "", ...pageOf(args) }),
     [group, store, userId],
   );
+  const fetchMerged = useCallback(
+    (args: Parameters<typeof fetchKindItemsPage>[0]) => fetchMergedPage(tokensKey.split(","), args),
+    [tokensKey],
+  );
   const own = Boolean(group || store);
-  return useKindItems(own && !userId ? null : kind.token, scope, query, own ? { fetchPage: fetchOwn } : undefined);
+  const merged = kind.tokens.length > 1;
+  return useKindItems(
+    own && !userId ? null : merged ? kind.key : kind.token,
+    scope,
+    query,
+    own ? { fetchPage: fetchOwn } : merged ? { fetchPage: fetchMerged } : undefined,
+  );
 }
 
 function pageOf(args: { query?: string; offset: number; limit: number }) {
@@ -196,7 +253,8 @@ function shortDate(iso: string | null): string {
 }
 
 export function UseExisting({ scope, query, isPicked, onToggle }: UseExistingProps) {
-  const offered = offeredKinds();
+  const registry = useOfferedKinds();
+  const offered = registry.offered;
   const counts = useOfferedCounts(scope, offered);
   const [open, setOpen] = useState<string | null>(null);
   const [openQuery, setOpenQuery] = useState("");
@@ -212,6 +270,23 @@ export function UseExisting({ scope, query, isPicked, onToggle }: UseExistingPro
   const openKind = kinds.find((k) => k.key === open) ?? null;
   // A list's page size is a knob that resolves with or without an organization
   // (user override -> platform default), so a read never waits on one.
+
+  if (registry.error)
+    return (
+      <ErrorNotice
+        size="inline"
+        message={describeFailure(registry.error, { action: "listing what you have", read: true }).sentence}
+        error={registry.error}
+        operation="List what you have"
+        className="py-2 text-sm"
+        actions={
+          <button type="button" className="underline" onClick={registry.reload}>
+            Try again
+          </button>
+        }
+      />
+    );
+  if (registry.loading) return <TileSkeleton />;
 
   if (searching) {
     if (counts.loading) return <TileSkeleton />;
@@ -435,13 +510,15 @@ function Rows({
   const more = (limit !== undefined && list.items.length > limit) || (limit === undefined && list.hasMore);
   return (
     <ul className="max-h-80 divide-y divide-border overflow-y-auto rounded-lg border border-border">
-      {shown.map((item) => {
-        const picked = isPicked(token, item.id);
+      {shown.map((row) => {
+        const item = row as OfferedItem;
+        const rowToken = item.token ?? token;
+        const picked = isPicked(rowToken, item.id);
         return (
           <li key={item.id}>
             <button
               type="button"
-              onClick={() => onToggle(token, item, sourceKind)}
+              onClick={() => onToggle(rowToken, { id: item.id, title: item.title, updatedAt: item.updatedAt }, sourceKind)}
               aria-pressed={picked}
               className={cn(
                 "flex min-h-11 w-full items-center gap-3 px-3 py-2 text-left transition-colors",
@@ -458,6 +535,11 @@ function Rows({
               </span>
               {/* One line; the official primitive keeps the tail and carries the full name as its tooltip. */}
               <MiddleTruncate text={item.title} className="flex-1 text-sm text-foreground" />
+              {item.badge ? (
+                <Badge variant="neutral" className="shrink-0 px-1.5 py-0 text-[11px] font-normal">
+                  {item.badge}
+                </Badge>
+              ) : null}
               {(() => {
                 const stage = stageFor(item.id);
                 return stage ? (

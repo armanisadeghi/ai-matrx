@@ -1,10 +1,10 @@
 /**
- * Use existing offers EXACTLY the kinds the organization page's Resources grid
- * shows under "Sources" and "Sources & Outputs", read from the grid's own
- * definition — never Utilities, Outputs or Workspaces, never the registry's
- * wider `content_role` set (Arman, 2026-09-30: "We want sources… Just a list
- * of the things that are in either sources or sources and outputs").
+ * Use existing offers EXACTLY the registry's pickable kinds, in the registry's order
+ * (`platform.entity_types.source_input_pickable` + `source_input_order`). Arman approved the list
+ * on 2026-10-05: Files · Notes · Documents · Websites · Transcripts · Conversations · Tables ·
+ * Workbooks · Saved results — one flat list. Kinds sharing an order are one entry.
  */
+jest.mock("@/utils/supabase/client", () => ({ supabase: {} }));
 jest.mock("@/features/unified-data/hub/doors", () => ({
   ...jest.requireActual("@/features/unified-data/hub/doors"),
   dataHomeTables: jest.fn(),
@@ -14,52 +14,43 @@ jest.mock("@/features/user-lists/pick-list-index", () => ({
   readPickListIndexOrThrow: jest.fn(),
 }));
 
-import { offeredKinds } from "./UseExisting";
-import { fetchRecordStorePage } from "../recordStoreKinds";
+import { offeredKindsFrom } from "./UseExisting";
+import { sourceInputEntries, type SourceInputKindRow } from "../sourceInputKinds";
+import { fetchTablesPage, PICK_LIST_BADGE } from "../recordStoreKinds";
 import { dataHomeTables } from "@/features/unified-data/hub/doors";
 import { readPickListIndexOrThrow } from "@/features/user-lists/pick-list-index";
-import {
-  CONTENT_ROLES,
-  entriesByRole,
-  SOURCE_CONTENT_ROLES,
-} from "@/features/organizations/resource-catalogue";
+
+const LIVE: SourceInputKindRow[] = (
+  [
+    ["workbook", 8], ["file", 1], ["udt_document", 3], ["note", 2], ["document", 3], ["processed_document", 4],
+    ["content_ir_kind_instance", 9], ["transcript", 5], ["dataset", 7], ["conversation", 6],
+  ] as const
+).map(([token, order]) => ({ token, label: token, order }));
 
 describe("Use existing kinds", () => {
-  it("are the grid's Sources + Sources & Outputs entries, in the grid's order", () => {
-    // What the org page renders: one section per role, entriesByRole(role) in each.
-    const gridSourceSections = CONTENT_ROLES.filter((r) =>
-      (SOURCE_CONTENT_ROLES as readonly string[]).includes(r.id),
-    ).flatMap((r) => entriesByRole(r.id).map((e) => e.labelPlural));
-    expect(offeredKinds().map((k) => k.plural)).toEqual(gridSourceSections);
-  });
-
-  it("are the seven kinds the page shows (Files … Notes), Websites and Datasets included", () => {
-    expect(offeredKinds().map((k) => k.plural)).toEqual([
-      "Files",
-      "Transcripts",
-      "Websites",
-      "Datasets",
-      "Pick lists",
-      "Workbooks",
-      "Notes",
+  it("are the registry's pickable kinds in the registry's order, Documents as one entry", () => {
+    const kinds = offeredKindsFrom(sourceInputEntries(LIVE));
+    expect(kinds.map((k) => k.plural)).toEqual([
+      "Files", "Notes", "Documents", "Websites", "Transcripts", "Conversations", "Tables", "Workbooks", "Saved results",
     ]);
+    const docs = kinds.find((k) => k.plural === "Documents")!;
+    expect(docs.tokens).toEqual(["document", "udt_document"]);
   });
 
-  it("gives every kind a way to count and list it (no grid kind is dropped)", () => {
-    for (const k of offeredKinds()) {
-      expect(k.token).toBeTruthy();
-      if (k.plural === "Websites") {
-        expect(k.token).toBe("processed_document");
-        expect(k.savedSourceGroup).toBe("web_page");
-      }
-    }
-    const byPlural = new Map(offeredKinds().map((k) => [k.plural, k]));
-    // Datasets and Pick lists live in the record store: picked as the tokens the server resolves.
-    expect(byPlural.get("Datasets")).toMatchObject({ token: "dataset", recordStoreKind: "table" });
-    expect(byPlural.get("Pick lists")).toMatchObject({ token: "structured_list", recordStoreKind: "pick_list" });
+  it("lists Websites from saved Sources and Tables from the record store, one token each", () => {
+    const byPlural = new Map(offeredKindsFrom(sourceInputEntries(LIVE)).map((k) => [k.plural, k]));
+    expect(byPlural.get("Websites")).toMatchObject({ token: "processed_document", savedSourceGroup: "web_page" });
+    expect(byPlural.get("Tables")).toMatchObject({ token: "dataset", recordStore: true, tokens: [] });
   });
 
-  it("lists the record store's rows for each record-store kind, Mine keeping what the person made", async () => {
+  it("adds a kind with one registry setting: a new token shows, under its registry label, last", () => {
+    const kinds = offeredKindsFrom(
+      sourceInputEntries([...LIVE, { token: "rulebook", label: "Rulebook", order: null }]),
+    );
+    expect(kinds.at(-1)).toMatchObject({ plural: "Rulebook", token: "rulebook", tokens: ["rulebook"] });
+  });
+
+  it("lists tables and pick lists together, a pick list once and badged", async () => {
     const me = "user-me";
     const row = (id: string, name: string, mine: boolean, updated: string, kind = "table") => ({
       table_id: id, table_name: name, organization_id: "org-1", organization_name: "Harbor Logistics",
@@ -71,8 +62,10 @@ describe("Use existing kinds", () => {
       data: [
         row("t-old", "Client roster", true, "2026-09-01T00:00:00Z"),
         row("t-new", "Vendor price sheet", false, "2026-10-01T00:00:00Z"),
-        // A pick list's Table of choices is the store's kind "list" — listed under Pick lists, never Datasets.
-        row("l-choices", "Deal stages", true, "2026-09-25T00:00:00Z", "list"),
+        // The app's choice Table behind a choice column is the store's kind "list": never listed.
+        row("c-1", "State choices", true, "2026-09-25T00:00:00Z", "list"),
+        // A pick list the data home also lists as a table: shown once, as a pick list.
+        row("l-1", "Deal stages", true, "2026-09-20T00:00:00Z"),
       ],
     });
     (readPickListIndexOrThrow as jest.Mock).mockResolvedValue({
@@ -81,19 +74,16 @@ describe("Use existing kinds", () => {
       ],
       archivedIds: [],
     });
-    for (const k of offeredKinds().filter((k) => k.recordStoreKind)) {
-      const page = await fetchRecordStorePage({ kind: k.recordStoreKind!, scope: { kind: "all" }, userId: me, offset: 0, limit: 50 });
-      expect(page.length).toBeGreaterThan(0);
-    }
-    const tables = await fetchRecordStorePage({ kind: "table", scope: { kind: "all" }, userId: me, offset: 0, limit: 50 });
-    expect(tables.map((t) => t.title)).toEqual(["Vendor price sheet", "Client roster"]);
-    const mine = await fetchRecordStorePage({ kind: "table", scope: { kind: "mine" }, userId: me, offset: 0, limit: 50 });
-    expect(mine.map((t) => t.id)).toEqual(["t-old"]);
-    await fetchRecordStorePage({ kind: "table", scope: { kind: "organization", organizationId: "org-1" }, userId: me, offset: 0, limit: 50 });
+    const page = await fetchTablesPage({ scope: { kind: "all" }, userId: me, offset: 0, limit: 50 });
+    expect(page.map((t) => [t.title, t.badge ?? null])).toEqual([
+      ["Vendor price sheet", null],
+      ["Deal stages", PICK_LIST_BADGE],
+      ["Client roster", null],
+    ]);
+    const mine = await fetchTablesPage({ scope: { kind: "mine" }, userId: me, offset: 0, limit: 50 });
+    expect(mine.map((t) => t.id)).toEqual(["l-1", "t-old"]);
+    await fetchTablesPage({ scope: { kind: "organization", organizationId: "org-1" }, userId: me, offset: 0, limit: 50 });
     expect(dataHomeTables).toHaveBeenLastCalledWith(expect.anything(), "org-1");
-    await fetchRecordStorePage({ kind: "pick_list", scope: { kind: "organization", organizationId: "org-1" }, userId: me, offset: 0, limit: 50 });
     expect(readPickListIndexOrThrow).toHaveBeenLastCalledWith(expect.anything(), { organizationId: "org-1" });
-    const searched = await fetchRecordStorePage({ kind: "table", scope: { kind: "all" }, userId: me, query: "vendor", offset: 0, limit: 50 });
-    expect(searched.map((t) => t.id)).toEqual(["t-new"]);
   });
 });

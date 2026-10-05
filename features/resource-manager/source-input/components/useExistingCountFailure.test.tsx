@@ -27,10 +27,20 @@ jest.mock("@/features/resource-manager/source-input/savedWebPages", () => ({
   fetchSavedSourcesPage: () => Promise.resolve([]),
 }));
 jest.mock("@/features/resource-manager/source-input/recordStoreKinds", () => ({
-  RECORD_STORE_TOKEN: { table: "dataset", pick_list: "structured_list" },
-  countRecordStoreItems: (kind: string) => Promise.resolve(kind === "table" ? 3 : null),
-  fetchRecordStorePage: () => Promise.resolve([]),
+  RECORD_STORE_TOKEN: { table: "dataset", pick_list: "dataset" },
+  countTablesAndPickLists: () => Promise.resolve(3),
+  fetchTablesPage: () => Promise.resolve([]),
 }));
+// The registry's offered kinds, as live (2026-10-05): order groups document + udt_document.
+jest.mock("@/features/resource-manager/source-input/sourceInputKinds", () => {
+  const actual = jest.requireActual("@/features/resource-manager/source-input/sourceInputKinds");
+  const rows = [
+    ["file", 1], ["note", 2], ["document", 3], ["udt_document", 3], ["processed_document", 4],
+    ["transcript", 5], ["conversation", 6], ["dataset", 7], ["workbook", 8], ["content_ir_kind_instance", 9],
+  ].map(([token, order]) => ({ token, label: String(token), order }));
+  return { ...actual, fetchSourceInputKinds: () => Promise.resolve(rows) };
+});
+jest.mock("@/utils/supabase/client", () => ({ supabase: {} }));
 jest.mock("@/features/resource-manager/source-input/itemStage", () => ({ useKindItemStages: () => new Map() }));
 jest.mock("@/components/errors/ErrorAlchemyMenu", () => ({ ErrorAlchemyMenu: () => null }));
 jest.mock("@/lib/redux/hooks", () => ({ useAppSelector: (sel: () => unknown) => sel() }));
@@ -68,7 +78,10 @@ it("shows every kind with a dash instead of one red error block", async () => {
   expect(tiles.some((t) => t.startsWith("Notes") && t.endsWith("—"))).toBe(true);
   // A kind counted another way still shows its number.
   expect(tiles.some((t) => t.startsWith("Websites") && t.endsWith("4"))).toBe(true);
-  // The record store's kinds count through their own doors: a number, or a dash when it failed.
-  expect(tiles.some((t) => t.startsWith("Datasets") && t.endsWith("3"))).toBe(true);
-  expect(tiles.some((t) => t.startsWith("Pick lists") && t.endsWith("—"))).toBe(true);
+  // Tables (pick lists included) count through the record store's doors.
+  expect(tiles.some((t) => t.startsWith("Tables") && t.endsWith("3"))).toBe(true);
+  // The approved list, in the registry's order, one flat row.
+  expect(tiles.map((t) => t.replace(/[\d,—]+$/, ""))).toEqual([
+    "Files", "Notes", "Documents", "Websites", "Transcripts", "Conversations", "Tables", "Workbooks", "Saved results",
+  ]);
 });

@@ -28,8 +28,58 @@ export type RecordStoreKind = "table" | "pick_list";
 /** The Source token a picked row of each record-store kind is sent as. */
 export const RECORD_STORE_TOKEN: Record<RecordStoreKind, string> = {
   table: "dataset",
-  pick_list: "structured_list",
+  // ONE token for both (2026-10-05): the server reads the table and decides rows vs choices.
+  pick_list: "dataset",
 };
+
+/** The badge a pick list's row carries inside Tables (vocabulary: a Pick list is a Table). */
+export const PICK_LIST_BADGE = "Pick list";
+
+/** A Tables row; `badge` set on a pick list. */
+export interface TablesItem extends KindItem {
+  badge?: string;
+}
+
+/**
+ * Tables, as Use existing offers them: every person's Table plus every pick list, one list.
+ * The pick-list index (`custom.pick_list_index*`) is THE truth for pick lists — the data home's
+ * "list" kind also counts the choice Tables the app makes behind a choice column ("State choices",
+ * hundreds of them), which nobody made as a list. A Table that is also a pick list shows once,
+ * as a pick list.
+ */
+export async function listTablesAndPickLists(scope: KindScope, userId: string, query = ""): Promise<TablesItem[]> {
+  const [tables, lists] = await Promise.all([
+    listRecordStoreItems("table", scope, userId, query),
+    listRecordStoreItems("pick_list", scope, userId, query),
+  ]);
+  const listIds = new Set(lists.map((l) => l.id));
+  return [
+    ...lists.map((l) => ({ ...l, badge: PICK_LIST_BADGE })),
+    ...tables.filter((t) => !listIds.has(t.id)),
+  ].sort((a, b) => String(b.updatedAt ?? "").localeCompare(String(a.updatedAt ?? "")));
+}
+
+/** How many Tables (pick lists included); null = could not count. */
+export async function countTablesAndPickLists(scope: KindScope, userId: string): Promise<number | null> {
+  try {
+    return (await listTablesAndPickLists(scope, userId)).length;
+  } catch (error) {
+    console.error("[recordStoreKinds] could not count tables:", error);
+    return null;
+  }
+}
+
+/** One page of Tables, in `useKindItems`'s `fetchPage` shape. */
+export async function fetchTablesPage(args: {
+  scope: KindScope;
+  userId: string;
+  query?: string;
+  offset: number;
+  limit: number;
+}): Promise<TablesItem[]> {
+  const all = await listTablesAndPickLists(args.scope, args.userId, args.query ?? "");
+  return all.slice(args.offset, args.offset + args.limit);
+}
 
 interface StoreRow extends KindItem {
   /** The person signed in made it (Mine). */

@@ -18345,6 +18345,7 @@ export type ChatDatabase = {
           rls_variant: string
           schema_name: string
           service_only_history: boolean
+          source_input_order: number | null
           source_input_pickable: boolean
           suppress_platform_admin_lane: boolean
           table_name: string
@@ -18416,6 +18417,7 @@ export type ChatDatabase = {
           rls_variant?: string
           schema_name: string
           service_only_history?: boolean
+          source_input_order?: number | null
           source_input_pickable?: boolean
           suppress_platform_admin_lane?: boolean
           table_name: string
@@ -18487,6 +18489,7 @@ export type ChatDatabase = {
           rls_variant?: string
           schema_name?: string
           service_only_history?: boolean
+          source_input_order?: number | null
           source_input_pickable?: boolean
           suppress_platform_admin_lane?: boolean
           table_name?: string
