@@ -5,7 +5,7 @@
  * Supavisor's transaction pooler (:6543) never resets a backend between clients, so a session-level
  * SET (default_transaction_read_only, statement_timeout, lock_timeout, role, search_path, …) left by
  * any script is handed to the aidream server's next query. Incident 2026-10-01 08:31–10:14Z.
- * Proof and rule: common-docs/systems/platform/custom-data/STATE.md.
+ * Proof and rule: common-docs/systems/data/custom-data/STATE.md.
  *
  * Visits the transaction pool in parallel (short transactions, a few workers — never enough to starve
  * the server), and on every backend it lands on reads the GUCs whose source is `session`. A leaked one

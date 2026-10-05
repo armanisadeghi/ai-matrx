@@ -93,7 +93,7 @@ The cloud browser's entry point is the **"Cloud browser" row in the `+` attach
 menu** (a direct-action row in `ResourcePickerMenu` → the canonical
 `useOpenCloudBrowserCanvas` opener) — never a standing button in the input bar
 (Arman 2026-08-21: input space is for text; ruling D-26 in
-`/Users/armanisadeghi/code/common-docs/systems/architecture/persistent-cloud-browser/VISION.md`).
+`/Users/armanisadeghi/code/common-docs/systems/web/persistent-cloud-browser/VISION.md`).
 While a browser is actually in use (live run, or its canvas is open) a
 "Browser" pill appears on the conversation context rail above the input
 (`selectCloudBrowserRunLive`). `/chat/new` shares the same path; no throwaway

@@ -8,11 +8,11 @@ timestamp: 2026-10-02
 
 # FEATURE — `features/unified-data`
 
-Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/platform/custom-data/STATE.md — read it before touching this feature in ANY repo.
+Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/data/custom-data/STATE.md — read it before touching this feature in ANY repo.
 
 This file holds only mechanics and landmines for this directory. What is live, what is open and what Arman ruled
 live in the custom-data node (`STATE.md`, `HANDOFF.md`, `DECISIONS.md`, `VISION.md`); drill-down in
-`common-docs/systems/platform/drill-down/STATE.md`.
+`common-docs/systems/data/drill-down/STATE.md`.
 
 ## What is where
 

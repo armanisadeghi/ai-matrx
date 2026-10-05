@@ -1,6 +1,6 @@
 # FEATURE.md — `features/agent-context` (LOCAL MECHANICS ONLY)
 
-> Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/account/scopes-context/STATE.md — read it before touching this feature in ANY repo.
+> Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/data/scopes-context/STATE.md — read it before touching this feature in ANY repo.
 
 **Status:** legacy, mid-teardown. Scope CRUD, pickers, tagging and the active-context sidebar all
 live in [`features/scopes/`](../scopes/FEATURE.md). The model, the resolution contract, the

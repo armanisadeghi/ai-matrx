@@ -1,6 +1,6 @@
 # features/files/handler — the universal file handler (local mechanics)
 
-> **Cross-repo system-of-record:** `/Users/armanisadeghi/code/common-docs/systems/media/file-service/STATE.md` — read it before touching this feature in ANY repo. What the handler enforces (durable URLs + the file-session cookie, share-vs-private, transport policy, the Vault byte boundary) is stated once in `FILE_HANDLING_LAWS.md` § 9 in that same directory; the durable-URL contract lives in `../media-durability/FEATURE.md` beside it.
+> **Cross-repo system-of-record:** `/Users/armanisadeghi/code/common-docs/systems/files/file-service/STATE.md` — read it before touching this feature in ANY repo. What the handler enforces (durable URLs + the file-session cookie, share-vs-private, transport policy, the Vault byte boundary) is stated once in `FILE_HANDLING_LAWS.md` § 9 in that same directory; the durable-URL contract lives in `../media-durability/FEATURE.md` beside it.
 
 Every codepath that touches a file funnels through ONE `FileSource → NormalizedFile → FileTarget`
 pipeline. This is the single source of resistance for file flows.

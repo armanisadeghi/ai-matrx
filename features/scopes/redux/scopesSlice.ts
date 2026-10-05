@@ -637,7 +637,7 @@ export default scopesSlice.reducer;
 // refresh the tree rehydrates BEFORE paint and `ensureScopeTree()` returns the
 // cached tree without a network round-trip.
 //
-// Layer B of the three-layer context model (/Users/armanisadeghi/code/common-docs/systems/account/scopes-context/STATE.md):
+// Layer B of the three-layer context model (/Users/armanisadeghi/code/common-docs/systems/data/scopes-context/STATE.md):
 // the REFERENCE tree — "what scopes/types/orgs/projects exist". It changes
 // rarely, so:
 //   - NO `staleAfter` / `remote.fetch` here. Refresh is explicit only:

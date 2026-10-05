@@ -50,7 +50,7 @@
       "allow": [
         {
           "file": "features/files/redux/request-ledger.ts",
-          "reason": "A DIFFERENT capability: correlation on metadata.request_id, an end-to-end write id the Python backend stamps under common-docs systems/media/file-service/WIRE_CONTRACT.md. The package's ledger infers from (table, id, updated_at, fingerprint) and has no equivalent."
+          "reason": "A DIFFERENT capability: correlation on metadata.request_id, an end-to-end write id the Python backend stamps under common-docs systems/files/file-service/WIRE_CONTRACT.md. The package's ledger infers from (table, id, updated_at, fingerprint) and has no equivalent."
         },
         {
           "file": "features/files/redux/realtime-middleware.ts",

@@ -1,6 +1,6 @@
 # FEATURE.md — `drill-explorer` (one explorer screen for every declared drill definition)
 
-Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/platform/drill-down/STATE.md — read it before touching this feature in ANY repo.
+Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/data/drill-down/STATE.md — read it before touching this feature in ANY repo.
 
 **Status:** `active`
 **Tier:** `2`

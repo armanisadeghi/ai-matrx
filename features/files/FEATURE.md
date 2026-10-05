@@ -1,6 +1,6 @@
 # features/files — local mechanics
 
-> **Cross-repo system-of-record:** `/Users/armanisadeghi/code/common-docs/systems/media/file-service/STATE.md` — read it before touching this feature in ANY repo. The client wire contract is `WIRE_CONTRACT.md`, the platform-wide handling laws are `FILE_HANDLING_LAWS.md`, the per-file-type capability inventory is `FILE_SURFACES.md`, and open work is `HANDOFF.md`, all in that same directory. Do not restate any of them here.
+> **Cross-repo system-of-record:** `/Users/armanisadeghi/code/common-docs/systems/files/file-service/STATE.md` — read it before touching this feature in ANY repo. The client wire contract is `WIRE_CONTRACT.md`, the platform-wide handling laws are `FILE_HANDLING_LAWS.md`, the per-file-type capability inventory is `FILE_SURFACES.md`, and open work is `HANDOFF.md`, all in that same directory. Do not restate any of them here.
 
 Frontend-local rules and maps only. If you're modifying anything in this feature, update this file
 in the same change.
@@ -32,7 +32,7 @@ in the same change.
 
 0. **What is the person's file, and what is Recents, is the DATABASE's rule** — mirrored once in
    `utils/user-visible.ts` (`pnpm check:user-visible-parity`), never a second client filter:
-   `/Users/armanisadeghi/code/common-docs/systems/media/file-service/USER_FILES_VS_MACHINE_FILES.md`.
+   `/Users/armanisadeghi/code/common-docs/systems/files/file-service/USER_FILES_VS_MACHINE_FILES.md`.
 
 1. **`types.ts` is the only type source.** Import `@/features/files/types` directly; never duplicate
    types in subfolders, never declare `CloudFile`/`CloudFolder` inline.

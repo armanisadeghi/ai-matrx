@@ -8,7 +8,7 @@
  *
  * Arman, 2026-10-02: deleting a table code depends on must "create something that would scream in
  * the app release as well (but never block)". And the size gate (common-docs
- * systems/platform/custom-data/DECISIONS.md, last section): "put that starting at 50,000 rows, we
+ * systems/data/custom-data/DECISIONS.md, last section): "put that starting at 50,000 rows, we
  * have to get a verification from me every 10k rows."
  *
  * For every definition this repo declares (every `*.app-table.ts`, plus any installed

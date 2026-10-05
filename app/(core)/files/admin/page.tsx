@@ -28,7 +28,7 @@ const FILES_ADMIN_MAP: FeatureAdminMap = {
     { label: "Files FEATURE.md", href: "/features/files/FEATURE.md" },
     {
       label: "Roadmap",
-      href: "https://github.com/AI-Matrix-Engine/matrx-common-docs/blob/main/systems/media/file-service/HANDOFF.md",
+      href: "https://github.com/AI-Matrix-Engine/matrx-common-docs/blob/main/systems/files/file-service/HANDOFF.md",
     },
     {
       label: "Upload troubleshooting",

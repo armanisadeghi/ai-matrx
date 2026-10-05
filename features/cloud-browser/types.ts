@@ -120,7 +120,7 @@ export interface CloudBrowserProfile {
  * Which way out of the internet this run is taking, when the server says.
  *
  * 🚨 TODO(residential-egress owner): hand-typed from the cross-repo contract
- * (`common-docs/systems/architecture/residential-egress/FEATURE.md` § When we are
+ * (`common-docs/systems/web/residential-egress/FEATURE.md` § When we are
  * blocked). The server writes `metadata.egress` on `browser.run` and
  * `egress` / `egress_unavailable` on a navigate command result; neither is in
  * `@ai-matrx/agents/generated/api-types` yet. Every render of these is guarded

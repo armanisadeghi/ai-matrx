@@ -5,8 +5,8 @@ repos: [matrx-frontend, aidream, matrx-local, matrx-claude-plugin, matrx-codex-p
 vision:
   - /Users/armanisadeghi/code/common-docs/systems/chat/ai-work/projects/ai-work-hub/PLAN.md
   - /Users/armanisadeghi/code/common-docs/projects/coding-agent-bridge/PLAN.md
-  - /Users/armanisadeghi/code/common-docs/systems/coding/coding-session-bridge/FEATURE.md
-  - /Users/armanisadeghi/code/common-docs/systems/coding/coding-session-bridge/BEHAVIOR.md
+  - /Users/armanisadeghi/code/common-docs/systems/code/coding-session-bridge/FEATURE.md
+  - /Users/armanisadeghi/code/common-docs/systems/code/coding-session-bridge/BEHAVIOR.md
 ---
 
 # Coding Integrations — THE feature handoff (all packages, UI, services)
@@ -67,7 +67,7 @@ last 7 days**. `chat.coding_session_entry` holds **1,534,926 rows** (Claude 1,13
 
 ## Resources
 
-- **Vision/contract (read FIRST):** `common-docs/systems/coding/coding-session-bridge/BEHAVIOR.md`
+- **Vision/contract (read FIRST):** `common-docs/systems/code/coding-session-bridge/BEHAVIOR.md`
   + `FEATURE.md`; product plan `common-docs/systems/chat/ai-work/projects/ai-work-hub/PLAN.md`.
 - **Backend:** aidream `aidream/services/coding_session_bridge/` (favorites now via
   `platform.user_entity_state` — `378aa5f9f`). **Frontend:** `features/ai-work/` (browser→Mac
@@ -129,7 +129,7 @@ second list elsewhere.
 - 09-14: doc-truth repair. Three live docs were telling the next agent that Codex mirroring was
   dead and that `/work/new` did not exist; all three were corrected against re-measured live state
   (this handoff, `common-docs/projects/coding-agent-bridge/PLAN.md`, and
-  `common-docs/systems/coding/coding-session-bridge/FEATURE.md`). The open-work queue now lives
+  `common-docs/systems/code/coding-session-bridge/FEATURE.md`). The open-work queue now lives
   only here.
 - 08-27→09-07 (other sessions): favorites → `user_entity_state` (`378aa5f9f`); unmasked labels
   ruling executed; three-bucket conversation list + realtime manager; `/claude-code` screen

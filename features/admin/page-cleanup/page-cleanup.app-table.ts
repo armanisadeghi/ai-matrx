@@ -4,7 +4,7 @@
  *
  * Why the store and not a platform table: a one-off review tool with ~150 rows that will be thrown
  * away once the cleanup lands — a trial / short-term stopgap under Arman's app-data gate
- * (common-docs systems/platform/custom-data/DECISIONS.md, 2026-10-02).
+ * (common-docs systems/data/custom-data/DECISIONS.md, 2026-10-02).
  *
  * `organization` scope: the decisions are about the platform's own pages, so every member of the
  * organization they were saved in sees them. `path` is the key — one row per page.

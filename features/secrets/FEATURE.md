@@ -6,7 +6,7 @@
 >
 > **Follow-on, in progress:** `/Users/armanisadeghi/code/common-docs/projects/credential-sharing-browser-login/REGISTER.md` (ratified 2026-07-26) — destination-login items, one-to-one sharing/transfer/assignment, and agent-safe browser login. Read it before touching scopes, sharing, transfer, or item metadata.
 >
-> **Cloud Browser follow-on:** `/Users/armanisadeghi/code/common-docs/systems/architecture/persistent-cloud-browser/FEATURE.md` — read it before adding server-side profile login, unattended credential use, MFA delegation, session-health automation, or Cloud Browser controls.
+> **Cloud Browser follow-on:** `/Users/armanisadeghi/code/common-docs/systems/web/persistent-cloud-browser/FEATURE.md` — read it before adding server-side profile login, unattended credential use, MFA delegation, session-health automation, or Cloud Browser controls.
 >
 > **Picking this up cold?** `/Users/armanisadeghi/code/common-docs/projects/credential-sharing-browser-login/REGISTER.md` — vision, gap analysis, cross-repo architecture, next steps, and landmines. Start there.
 

@@ -26,7 +26,7 @@
  *   write ledger correlates on (table, id, updated_at, content fingerprint);
  *   this one correlates on `metadata.request_id`, an end-to-end write id the
  *   Python backend stamps on every cloud_sync write under a documented wire
- *   contract (common-docs systems/media/file-service/WIRE_CONTRACT.md). That is
+ *   contract (common-docs systems/files/file-service/WIRE_CONTRACT.md). That is
  *   strictly more precise than a timestamp+fingerprint inference and the package
  *   has no equivalent, so it stays — as the FEATURE's correlation, on top of
  *   everything the package does. (A consumer-supplied own-write predicate is a
@@ -433,7 +433,7 @@ export const cloudFilesRealtimeMiddleware: Middleware = (store) => {
     // variant rows now carry `parent_file_id` + `derivation_kind`, but
     // realtime payloads still arrive for new variant writes — we filter
     // at the boundary so they never appear in the user tree.
-    // See `isSystemPath` + common-docs systems/media/file-service/WIRE_CONTRACT.md.
+    // See `isSystemPath` + common-docs systems/files/file-service/WIRE_CONTRACT.md.
     if (!isUserVisibleFileRow(newRow)) return;
     // LISTING gate (client mirror of DB `files.is_listable_for`): realtime
     // is RLS-authorized and RLS includes a `pub_read` policy, so without

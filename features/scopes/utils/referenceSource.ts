@@ -7,7 +7,7 @@
  *
  * INTERIM representation — stored as `context_items.reference_source` JSONB to ship
  * fast; the permanent model is likely one or more dedicated tables. See
- * common-docs/systems/account/scopes-context/HANDOFF.md § 8.
+ * common-docs/systems/data/scopes-context/HANDOFF.md § 8.
  */
 
 export type ReferenceContainerType =

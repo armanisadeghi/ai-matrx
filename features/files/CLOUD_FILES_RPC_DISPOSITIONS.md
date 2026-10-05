@@ -1,6 +1,6 @@
 # Cloud-files RPCs — direct-vs-server disposition map
 
-> **Cross-repo system-of-record:** `/Users/armanisadeghi/code/common-docs/systems/media/file-service/STATE.md` — the doctrine behind this map is in `DECISIONS.md` § Where file operations run, and the remaining conversions are in `HANDOFF.md` § 8, both in that directory.
+> **Cross-repo system-of-record:** `/Users/armanisadeghi/code/common-docs/systems/files/file-service/STATE.md` — the doctrine behind this map is in `DECISIONS.md` § Where file operations run, and the remaining conversions are in `HANDOFF.md` § 8, both in that directory.
 
 Every cloud-files RPC lives in the **`public`** schema (the tables are in `files`). All are
 `SECURITY DEFINER` and `EXECUTE`-granted to `authenticated`, and all eight mutation RPCs carry

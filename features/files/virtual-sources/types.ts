@@ -24,7 +24,7 @@
  *    `version: int` instead translate internally.
  *
  * See `features/files/virtual-sources/README.md` for the full pattern doc and
- * /Users/armanisadeghi/code/common-docs/systems/media/file-service/HANDOFF.md for the server parity asks.
+ * /Users/armanisadeghi/code/common-docs/systems/files/file-service/HANDOFF.md for the server parity asks.
  */
 
 import type { ComponentType } from "react";

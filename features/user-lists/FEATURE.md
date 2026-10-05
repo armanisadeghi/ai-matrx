@@ -1,6 +1,6 @@
 # FEATURE.md — `user-lists` (Pick lists)
 
-Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/platform/custom-data/STATE.md — read it before touching this feature in ANY repo.
+Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/data/custom-data/STATE.md — read it before touching this feature in ANY repo.
 
 Structured Lists are reusable collections of choices. A list can stay flat, or each choice can carry a
 `group_name` so the same data can be projected as grouped sections, dependent dropdown options,

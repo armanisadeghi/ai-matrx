@@ -8,7 +8,7 @@
 > lives on our servers, stays signed in to a user's accounts, and lets an agent do
 > real work — with a person able to step in when a site needs one.
 >
-> Cross-repo authority: `common-docs/systems/architecture/persistent-cloud-browser/` (PLAN.md,
+> Cross-repo authority: `common-docs/systems/web/persistent-cloud-browser/` (PLAN.md,
 > EXECUTION.md §WS-8, DECISIONS.md, contracts S1/S4/S6, NOTIFICATIONS.md). This repo
 > owns only the panel/share/timeline UI. Do not restate program truth here — link it.
 
@@ -302,7 +302,7 @@ The frontend never receives a password, seed, or generated code from that path.
   own fix, not a dead end. BOTH renders are guarded on presence and on shape,
   because the aidream half is deploying separately: a run with neither field
   renders exactly what it rendered before. Shapes are hand-typed from
-  `common-docs/systems/architecture/residential-egress/FEATURE.md` until
+  `common-docs/systems/web/residential-egress/FEATURE.md` until
   `pnpm sync-types` carries them.
 - **2026-09-18 — the panel's chosen browser reaches the agent.** New
   `hooks/useCloudBrowserProfileContextSync.ts`, mounted in `CloudBrowserBody`, publishes

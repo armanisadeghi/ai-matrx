@@ -692,7 +692,7 @@ export interface SetContextValueResult {
 // ─── Service result envelope ───────────────────────────────────────────
 //
 // Mirrors the RpcResult shape this module's service returns. Contract of record:
-// /Users/armanisadeghi/code/common-docs/systems/account/scopes-context/STATE.md (the RPC_CONTRACTS.md spec was deleted 2026-08-25 — most of it was never built).
+// /Users/armanisadeghi/code/common-docs/systems/data/scopes-context/STATE.md (the RPC_CONTRACTS.md spec was deleted 2026-08-25 — most of it was never built).
 // Service methods always return this — they never throw to callers.
 
 export type ScopesRpcErrorCode =

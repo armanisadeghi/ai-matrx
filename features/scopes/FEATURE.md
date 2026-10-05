@@ -1,6 +1,6 @@
 # FEATURE.md — `features/scopes` (LOCAL MECHANICS ONLY)
 
-> Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/account/scopes-context/STATE.md — read it before touching this feature in ANY repo.
+> Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/data/scopes-context/STATE.md — read it before touching this feature in ANY repo.
 
 **The model, the invariants' rationale, the data model, the resolution contract, the delivery
 path, the migration status and the change history are NOT in this file** — they were centralized
@@ -18,7 +18,7 @@ this directory.
    store first); elsewhere today's scope doors write and the store's copy follows. `scopesService.ts`
    keeps the READS and is the legacy adapter until the final switch; its write methods are called by
    nothing (`service/scopeStore.test.ts` fails on any new call). Decoders + slug rule:
-   `service/scopeRows.ts`. Design and census: `common-docs/systems/account/scopes-context/STATE.md`.
+   `service/scopeRows.ts`. Design and census: `common-docs/systems/data/scopes-context/STATE.md`.
 
 1. **`scopesService.ts` is the ONLY file that may query the `context.*` tables**, and ESLint
    enforces it. The boy-scout rule applies — fix violators on sight.

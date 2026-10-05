@@ -2,7 +2,7 @@
  * features/residential-egress/types.ts
  *
  * The shapes this feature reads and writes, from the ONE cross-repo contract:
- *   /Users/armanisadeghi/code/common-docs/systems/architecture/residential-egress/FEATURE.md
+ *   /Users/armanisadeghi/code/common-docs/systems/web/residential-egress/FEATURE.md
  *
  * `platform.egress_device` is now in `types/database.types.ts` — `service.ts`
  * reaches it through the generated `Database` type (see `egressDb()`, same

@@ -9,7 +9,7 @@
  * `record_aggregate` / `agg_sql` and re-created them with a plain `CREATE FUNCTION` from a
  * stale dump — no `OR REPLACE` needed, because the DROP had already removed the object — and
  * put S2's older bodies back on the clone, twice, with no warning
- * (common-docs/systems/platform/custom-data/STATE.md).
+ * (common-docs/systems/data/custom-data/STATE.md).
  *
  * Both runners now treat a DROP FUNCTION / DROP TRIGGER / DROP VIEW that the same file
  * recreates exactly like a replace. This script is the forcing function that they AGREE:

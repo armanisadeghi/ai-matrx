@@ -21,7 +21,7 @@
 // round-trip for N entities, target-filtered to 'scope' in the DB) — see
 // `bulkEntityScopeIds`. Reverse (scope→members) reads use `assoc_for_targets`.
 //
-// Spec of record: /Users/armanisadeghi/code/common-docs/systems/account/scopes-context/STATE.md — when the Python team ships
+// Spec of record: /Users/armanisadeghi/code/common-docs/systems/data/scopes-context/STATE.md — when the Python team ships
 // the proposed RPC family (get_user_scope_tree_with_projects, resolve_*,
 // apply_template, etc.), the implementation of each method below swaps to
 // a single supabase.rpc(...) call. Method signatures and return shapes

@@ -11,7 +11,7 @@
  * on the message toggles the turn's canvas tab (`message-context-receipt`,
  * keyed by the message id), whose body is `MessageContextReceiptView`.
  *
- * Contract: common-docs/systems/account/scopes-context/context-delivery/RULES.md §5.
+ * Contract: common-docs/systems/data/scopes-context/context-delivery/RULES.md §5.
  */
 
 import { useMemo, useState } from "react";

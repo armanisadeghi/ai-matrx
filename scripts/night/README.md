@@ -58,7 +58,7 @@
 >
 > Measured against the clone on 2026-09-22: dump **354 s · 20 MB · 20,878 CREATE · 9,961 GRANT**
 > (production's own dump was 409 s). Full run, refusals and numbers:
-> [`v5/PROGRESS-BRANCH-REFRESH.md`](/systems/platform/custom-data/STATE.md).
+> [`v5/PROGRESS-BRANCH-REFRESH.md`](/systems/data/custom-data/STATE.md).
 >
 > 🚨 **A password passed as `argv` is public.** The same session measured the clone's database
 > password sitting in `ps aux` for the whole ten minutes a dump ran, because the DSN was an

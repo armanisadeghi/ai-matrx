@@ -19,7 +19,7 @@
  *
  * As of 2026-05-17 the Python backend reliably stamps
  * `metadata.request_id` on every cloud_sync write (commit `d647c143` —
- * see common-docs systems/media/file-service/WIRE_CONTRACT.md). The legacy 2s
+ * see common-docs systems/files/file-service/WIRE_CONTRACT.md). The legacy 2s
  * timestamp-fuzzy fallback was removed at that point — direct
  * supabase writes that don't stamp request_id will trigger an echo
  * re-apply, which is idempotent (upsert keyed on id).

@@ -1,6 +1,6 @@
 # Branding images — store the `file_id`, not the URL
 
-> **Never persist a resolved upload URL as the durable reference for an image.** Store the durable `files.files` `file_id` and re-resolve the URL at render time. Rationale and the incident behind it: `/Users/armanisadeghi/code/common-docs/systems/media/file-service/DECISIONS.md` § Identity and URLs.
+> **Never persist a resolved upload URL as the durable reference for an image.** Store the durable `files.files` `file_id` and re-resolve the URL at render time. Rationale and the incident behind it: `/Users/armanisadeghi/code/common-docs/systems/files/file-service/DECISIONS.md` § Identity and URLs.
 
 Applies to every user-uploaded branding image: org logo, user avatar, app image, favicon, cover.
 

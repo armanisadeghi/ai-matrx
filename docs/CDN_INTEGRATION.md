@@ -4,7 +4,7 @@
 > should ever return signed URLs"). The previous version of this document
 > described a `useSignedUrl` hook and 1-hour AWS-signed URLs — both are gone.
 > Canonical cross-repo doctrine:
-> `/Users/armanisadeghi/code/common-docs/systems/media/media-durability/FEATURE.md`.
+> `/Users/armanisadeghi/code/common-docs/systems/files/media-durability/FEATURE.md`.
 
 ## The URL contract
 

@@ -30,7 +30,7 @@ This skill enforces the architecture established in [features/files/FEATURE.md](
 
 Read, in this order:
 
-1. `/Users/armanisadeghi/code/common-docs/systems/media/file-service/WIRE_CONTRACT.md` — the backend contract (routes, shapes, quotas, TUS, share tokens).
+1. `/Users/armanisadeghi/code/common-docs/systems/files/file-service/WIRE_CONTRACT.md` — the backend contract (routes, shapes, quotas, TUS, share tokens).
 2. [features/files/FEATURE.md](FEATURE.md) — current FE architecture.
 3. [features/agents/redux/agent-shortcuts/slice.ts](../agents/redux/agent-shortcuts/slice.ts) — the record + dirty-tracking pattern you're copying.
 
@@ -131,6 +131,6 @@ After any non-trivial change:
 
 1. Update [FEATURE.md](FEATURE.md) — architecture sections, invariants, status.
 2. Append to the bottom of [FEATURE.md](FEATURE.md) change log with date + one-line summary.
-3. If you need something new from the file service, add it to `/Users/armanisadeghi/code/common-docs/systems/media/file-service/HANDOFF.md`.
+3. If you need something new from the file service, add it to `/Users/armanisadeghi/code/common-docs/systems/files/file-service/HANDOFF.md`.
 
 Treat docs as weight-equal to code. Stale docs cascade across every future agent touching this system.

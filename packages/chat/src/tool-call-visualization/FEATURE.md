@@ -196,7 +196,7 @@ files service and turns an expected fixture miss into a structured production er
 ### An agent_call hands back media as an IDENTITY
 
 aidream now declares a child agent's media on a canonical channel instead of
-flattening it to a link (cross-repo SoR: `common-docs/systems/media/media-durability/FEATURE.md`).
+flattening it to a link (cross-repo SoR: `common-docs/systems/files/media-durability/FEATURE.md`).
 Two shapes arrive, and `findResultMedia` reads the declared channel FIRST, ahead
 of every url-ish heuristic:
 

@@ -126,7 +126,7 @@ export interface FileIdentityHint {
 //
 // Note on table naming: The Python team's doc uses `cld_file_share_links`;
 // the canonical DB table is `platform.share_links` (see common-docs
-// systems/media/file-service/WIRE_CONTRACT.md).
+// systems/files/file-service/WIRE_CONTRACT.md).
 
 // Cloud-files tables live in the dedicated `files` schema (the `cld_` prefix
 // was dropped in the 2026 DB restructure). Permissions are the exception —
@@ -420,7 +420,7 @@ export interface CloudShareLink {
 // updates the shape, only [redux/converters.ts](./redux/converters.ts) needs
 // to change.
 //
-// Open question on the exact schema: common-docs systems/media/file-service/HANDOFF.md.
+// Open question on the exact schema: common-docs systems/files/file-service/HANDOFF.md.
 
 export interface CloudTreeFileRow {
   kind: "file";
