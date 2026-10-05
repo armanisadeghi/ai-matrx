@@ -99,6 +99,7 @@
 - Text sizes: responsive pairs / multi-size strings left for manual; packages/chat, mardown-display, marketing not run. Then spinners -> loading system; palette colours -> tokens (by reach).
 - Chips: 7 marketing sites (judgement), app/(dev) 64, features/content-ir 48. Surface Buttons (~66 CTAs on inviting pages): keep size, add a named package option.
 - Tab rails onto TabsList overflow (27).
+- From the wave-3 final look-check (shots scratchpad wave3-final): /agents/all dark — page-rhythm guard (amber dashed, lib/layout/useFloatingClearanceGuard.ts) flags the list surface as double-padded (owner's table-footer double padding item); pinned ACTIONS/NAME edge shadow invisible in dark (rgba(0,0,0,.3) on dark bg — make the shadow token theme-aware); /tasks 375 "HR 28" pill taller than 28px header controls + search icon clipped; /files 375 light sidebar squeezed to ~45px (possibly hydration timing, re-check); /notes 1440 folder-row count glyph collides with "1 of 2" (pre-existing); /crm/chasebox filter pill + tile label truncate; org-choice dialog Cancel vs Continue border weights differ (by design after 0.68.9 single ring — confirm with owner's eye).
 
 ## OPEN / NEXT
 - **The rollout, after the owner finalises the pages above:**
