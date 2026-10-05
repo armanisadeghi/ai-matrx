@@ -49,6 +49,7 @@ export const SHORTCUT_HANDLERS: Record<string, Handler> = {
   orderedList: (e) => e.chain().focus().toggleOrderedList().run(),
   bulletList: (e) => e.chain().focus().toggleBulletList().run(),
   taskList: (e) => toggleTaskList(e),
+  quote: (e) => e.chain().focus().toggleBlockquote().run(),
   moveUp: (e) => moveBlock(e, "up"),
   moveDown: (e) => moveBlock(e, "down"),
   codeBlock: (e) => {

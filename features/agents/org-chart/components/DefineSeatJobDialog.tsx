@@ -13,7 +13,10 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, X } from "lucide-react";
+import { Plus, Wand2, X } from "lucide-react";
+import { useHeadlessAgentJson } from "@ai-matrx/chat/agents/hooks/useHeadlessAgentJson";
+import { useDeclaredSurfaceMandates } from "@ai-matrx/chat/surfaces/runtime/surface-mandates";
+import { MANDATE_KEYS, type AnyMandateKey } from "@ai-matrx/agents/mandates";
 import { Button, Field, Textarea } from "@ai-matrx/design-system/controls";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useAppDispatch } from "@/lib/redux/hooks";
@@ -24,24 +27,46 @@ import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-c
 import { updateOrgPosition, loadSeatJobs } from "@/features/agents/redux/orchestras/orgChartThunks";
 import type { OrgPosition } from "../positionsService";
 
+/** What the chart knows around the seat, for the suggester. */
+export interface SeatContext {
+  /** The box above: its name and kind ("Head of Marketing (Agent)"). */
+  reportsTo: string | null;
+  /** The boxes beside it. */
+  team: string[];
+}
+
+const SUGGESTER = MANDATE_KEYS.org_chart__seat_job_suggester;
+const SUGGESTER_DISCLOSURE = [{ mandateKey: SUGGESTER, does: "suggests a position's goal, inputs and output" }] as const;
+
+interface SeatJobSuggestion {
+  goal?: string;
+  inputs?: Array<{ name?: string; description?: string; required?: boolean }>;
+  output?: string;
+  questions?: string[];
+}
+
 export interface DefinedSeatJob {
-  mandateKey: string;
+  mandateKey: AnyMandateKey;
   mandateId: string;
 }
 
 export function DefineSeatJobDialog({
   position,
+  context,
   onClose,
   onDefined,
 }: {
   position: OrgPosition | null;
+  context?: SeatContext;
   onClose: () => void;
   onDefined: (job: DefinedSeatJob) => void;
 }) {
   return (
     <Dialog open={position !== null} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-lg">
-        {position && <Body key={position.id} position={position} onClose={onClose} onDefined={onDefined} />}
+        {position && (
+          <Body key={position.id} position={position} context={context} onClose={onClose} onDefined={onDefined} />
+        )}
       </DialogContent>
     </Dialog>
   );
@@ -49,10 +74,12 @@ export function DefineSeatJobDialog({
 
 function Body({
   position,
+  context,
   onClose,
   onDefined,
 }: {
   position: OrgPosition;
+  context?: SeatContext;
   onClose: () => void;
   onDefined: (job: DefinedSeatJob) => void;
 }) {
@@ -62,6 +89,38 @@ function Body({
   const [output, setOutput] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [questions, setQuestions] = useState<string[]>([]);
+  const suggester = useHeadlessAgentJson();
+  useDeclaredSurfaceMandates(SUGGESTER_DISCLOSURE);
+
+  /** Ideas, never decisions: fills only what is still empty; what the person typed stays. */
+  const suggest = async () => {
+    setError(null);
+    try {
+      const s = await suggester.run<SeatJobSuggestion>({
+        mandateKey: SUGGESTER,
+        surfaceKey: `mandate:${SUGGESTER}`,
+        sourceFeature: "agent-builder",
+        expect: "json",
+        initiation: "user",
+        variables: {
+          seat_name: position.name,
+          ...(position.description?.trim() ? { seat_description: position.description.trim() } : {}),
+          ...(context?.reportsTo ? { reports_to: context.reportsTo } : {}),
+          ...(context?.team.length ? { team: context.team.join("\n") } : {}),
+        },
+      });
+      if (s.goal && !goal.trim()) setGoal(s.goal);
+      const suggestedInputs = (s.inputs ?? [])
+        .map((i) => i.description?.trim())
+        .filter((d): d is string => Boolean(d));
+      if (suggestedInputs.length && !inputs.some((i) => i.trim())) setInputs(suggestedInputs);
+      if (s.output && !output.trim()) setOutput(s.output);
+      setQuestions(s.questions ?? []);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "No suggestion came back.");
+    }
+  };
 
   const missing = [
     !inputs.some((i) => i.trim()) && "what it's given",
@@ -114,6 +173,11 @@ function Body({
       </DialogHeader>
 
       <div className="flex flex-col gap-4">
+        <div>
+          <Button variant="outline" icon={<Wand2 />} disabled={suggester.isRunning || saving} onClick={() => void suggest()}>
+            {suggester.isRunning ? "Suggesting…" : "Suggest"}
+          </Button>
+        </div>
         <label className="flex flex-col gap-1.5">
           <span className="text-xs font-medium text-foreground">Goal</span>
           <Textarea
@@ -161,6 +225,16 @@ function Body({
           />
         </label>
 
+        {questions.length > 0 && (
+          <div className="flex flex-col gap-1">
+            <span className="text-xs font-medium text-foreground">Worth deciding</span>
+            <ul className="list-disc pl-5 text-xs text-muted-foreground">
+              {questions.map((q, i) => (
+                <li key={i}>{q}</li>
+              ))}
+            </ul>
+          </div>
+        )}
         {missing.length > 0 && goal.trim() && (
           <p className="text-xs text-muted-foreground">You can add {missing.join(" and ")} later.</p>
         )}

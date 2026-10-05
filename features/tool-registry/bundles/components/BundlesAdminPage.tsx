@@ -372,7 +372,7 @@ function NewBundleDialog({
     try {
       const result = await createBundleWithLister({
         name,
-        organizationId: await ensureOrgId(),
+        organizationId: await ensureOrgId(null),
         description,
         isSystem,
       });

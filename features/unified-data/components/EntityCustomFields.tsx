@@ -43,7 +43,7 @@ import { CustomFieldsSection, RecordsMount, personActor, recordsDataSource } fro
 import { Button } from "@/components/ui/button";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { NewTableDialog } from "@/features/make/MakeMount";
-import { entityRecordHome, entityRecordReadable } from "@/features/unified-data/hub/doors";
+import { entityRecordHome } from "@/features/unified-data/hub/doors";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
@@ -56,6 +56,7 @@ import { mayReadAsMember } from "@/features/organizations/organizationsIAmIn";
 import {
   CUSTOM_FIELDS_VALUE_NAME,
   customFieldsScopeValue,
+  providerOwnsCustomFields,
   registerCustomFieldsDoor,
 } from "@ai-matrx/chat/surfaces/runtime/custom-field-targets";
 import {
@@ -63,6 +64,11 @@ import {
   useSurfaceRuntime,
   useSurfaceScopeContribution,
 } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  readRecordReadable,
+  recordReadableKey,
+  type RecordReadableAnswer,
+} from "@/features/unified-data/customFieldsRead";
 import { getManifest } from "@/features/surfaces/manifests/registry";
 
 export interface EntityCustomFieldsProps {
@@ -107,7 +113,6 @@ function doorIsAbsent(error: { message: string; sqlstate?: string | undefined })
 }
 let announcedFallback = false;
 let announcedAbsent = false;
-let announcedUnreadable = false;
 
 /** Said once per tab: the home door is not on this database yet (and what the section does instead). */
 function announceDoorAbsent(withPageOrganization: boolean): void {
@@ -127,52 +132,25 @@ type Readable = "checking" | "ok" | "absent" | "error";
  * 🚨 READ ONCE PER RECORD PER TAB (the remount law, 2026-10-03). Both of the section's own reads —
  * the row's organization and whether the row reads — are kept in the store by record
  * (`useStoreRead`): a board tile that sleeps and wakes, a Remove + Undo, or a second view of the
- * same record renders the kept answer and reads nothing. They used to live in this component's
- * `useState`, so every wake asked `entity_record_home` and `entity_record_read` again. A failed
- * read is never kept: the next view (or Retry) asks again.
+ * same record renders the kept answer and reads nothing. A failed read is never kept.
+ * The readable read is shared with a surface provider that owns `custom_fields`
+ * (`features/unified-data/customFieldsRead.ts`): same key, one request.
  */
-export const recordHomeKey = (token: string, recordId: string) => `unified-data.record-home:${token}:${recordId}`;
-export const recordReadableKey = (organizationId: string, token: string, recordId: string) =>
-  `unified-data.record-readable:${organizationId}:${token}:${recordId}`;
+export { recordReadableKey };
 
-/**
- * The section's own first read, asked BEFORE it mounts. A store refusal is never printed raw: the
- * known pre-apply refusal (42501 — production's `entity_record_read` before lane7w5b reads every
- * column, and files.files grants 36 of 37) makes the section ABSENT with one console note; anything
- * else is the short "Couldn't read this record" state.
- */
 function useRecordReadable(token: string, recordId: string, organizationId: string | null) {
-  const read = useStoreRead<"ok" | "absent">(
+  const read = useStoreRead<RecordReadableAnswer>(
     organizationId ? recordReadableKey(organizationId, token, recordId) : null,
-    async () => {
-      let answer: Awaited<ReturnType<typeof entityRecordReadable>>;
-      try {
-        answer = await entityRecordReadable(recordsDataSource(createClient()), organizationId!, token, recordId);
-      } catch (error) {
-        console.error("[EntityCustomFields] custom.entity_record_read threw", { token, recordId, error });
-        throw error;
-      }
-      if (answer.ok) return "ok";
-      if (answer.error.sqlstate === "42501") {
-        if (!announcedUnreadable) {
-          announcedUnreadable = true;
-          console.warn(
-            "[EntityCustomFields] custom.entity_record_read refused a column of this table (lane7w5b SQL, chair's apply); the section stays hidden on such tables until it is.",
-            { token },
-          );
-        }
-        return "absent";
-      }
-      console.error("[EntityCustomFields] custom.entity_record_read failed", { token, recordId, error: answer.error });
-      throw new Error(answer.error.message);
-    },
+    () => readRecordReadable(organizationId!, token, recordId),
   );
   const readable: Readable = !organizationId
     ? "checking"
     : read.status === "error"
       ? "error"
       : read.hasData && read.data
-        ? read.data
+        ? read.data.state === "ok"
+          ? "ok"
+          : "absent"
         : "checking";
   return { readable, retry: () => void read.refresh() };
 }
@@ -279,8 +257,12 @@ export function EntityCustomFields({
   // declares it (`pickBaseline("custom_fields")`); a surface that does not keeps
   // the targets but no value (an undeclared value is a contract error).
   const runtime = useSurfaceRuntime();
+  // ONE OWNER PER VALUE: a surface whose provider answers `custom_fields` itself (notes) is
+  // never also contributed to — the registry refuses a contribution that replaces a provider value.
   const declares = Boolean(
-    runtime && getManifest(runtime.surfaceName)?.values?.some((v) => v.name === CUSTOM_FIELDS_VALUE_NAME),
+    runtime &&
+      !providerOwnsCustomFields(runtime.surfaceName) &&
+      getManifest(runtime.surfaceName)?.values?.some((v) => v.name === CUSTOM_FIELDS_VALUE_NAME),
   );
   useSurfaceScopeContribution(declares ? runtime!.surfaceName : null, "custom-fields-section", () => ({
     [CUSTOM_FIELDS_VALUE_NAME]: customFieldsScopeValue(),

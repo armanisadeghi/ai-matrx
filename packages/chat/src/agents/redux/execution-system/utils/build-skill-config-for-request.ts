@@ -91,3 +91,25 @@ export function attachSkillConfigFromState(
     payload.skill_config = skillConfigToWire(effective);
   }
 }
+
+/**
+ * Attach the composer's picked shapes as the request field `output_kinds` (kind
+ * slugs). Sent on EVERY request — start and continue — as the chat's selected
+ * set; `[]` is sent too, because the server reads an omitted field as "use the
+ * chat's saved picks" while `[]` means the person explicitly wants none. The
+ * server resolves each shape to its skill; the browser adds no skill ids.
+ *
+ * The set is `outputKinds` — the picker's own record. Kind skills added through
+ * the Skills menu stay in `skill_config` and the server folds them into the
+ * picks, so nothing is counted twice.
+ */
+export function attachOutputKindsFromState(
+  state: ChatRootState,
+  conversationId: string,
+  payload: { output_kinds?: string[] | null },
+): void {
+  const picked =
+    state.instanceUIState.byConversationId[conversationId]?.builderAdvancedSettings
+      ?.outputKinds ?? [];
+  payload.output_kinds = [...new Set(picked.filter(Boolean))];
+}

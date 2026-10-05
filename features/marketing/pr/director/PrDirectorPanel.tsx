@@ -40,6 +40,7 @@ import {
   bindConversationToBrand,
   prBrandContextValue,
 } from "./director-context";
+import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 /** The front door's starting points. `send` runs now; otherwise the words wait in the composer for the rest. */
 export const PR_STARTING_POINTS: ReadonlyArray<{
@@ -87,7 +88,7 @@ function takeAskFromUrl(): string | null {
   const ask = url.searchParams.get(DIRECTOR_ASK_PARAM)?.trim() || null;
   if (!ask) return null;
   url.searchParams.delete(DIRECTOR_ASK_PARAM);
-  window.history.replaceState(window.history.state, "", url.toString());
+  replaceAddressWithoutNavigating(url);
   // A door never sends `ask` WITH a held conversation. Both at once means the ask was already
   // sent into that conversation and a stale URL snapshot (the workspace rewriting its own
   // params) carried it back — reopen the conversation, never send it twice.
@@ -105,7 +106,7 @@ function holdDirectorConversation(conversationId: string): void {
   url.searchParams.set(DIRECTOR_CONVERSATION_PARAM, conversationId);
   // A sent ask must not ride along into the held URL.
   url.searchParams.delete(DIRECTOR_ASK_PARAM);
-  window.history.replaceState(window.history.state, "", url.toString());
+  replaceAddressWithoutNavigating(url);
 }
 
 export interface PrDirectorPanelProps {
@@ -250,7 +251,7 @@ export function PrDirectorPanel({
     setStartingFresh(true);
     const url = new URL(window.location.href);
     url.searchParams.delete(DIRECTOR_CONVERSATION_PARAM);
-    window.history.replaceState(window.history.state, "", url.toString());
+    replaceAddressWithoutNavigating(url);
     launchMandate(PR_DIRECTOR_MANDATE_KEY, {
       surfaceKey,
       sourceFeature: "marketing",

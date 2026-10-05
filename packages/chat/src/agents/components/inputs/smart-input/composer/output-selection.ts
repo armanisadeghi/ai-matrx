@@ -11,23 +11,20 @@
  *     that it is not sent — it never pretends to change the run.
  *
  *  2. SHAPES — any number of kinds from the whole catalog (system + org +
- *     mine). A kind whose render_block skill exists (`kind_<kind>`, or one of
- *     the curated Quickset chip skills) toggles that skill in `addedSkills` —
- *     the same per-run write the Quickset chips and the Skills menu make, which
- *     `buildSkillConfigForRequest` folds into `skill_config.included`. Every
- *     selected kind is also recorded in `outputKinds`; a kind with no skill is
- *     kept there and labelled as not sent.
+ *     mine). A picked shape is recorded in `outputKinds` ONLY and travels as the
+ *     request field `output_kinds` on every turn; the SERVER resolves shape →
+ *     skill (chat-shape-picks plan, rule 21). The frontend adds no skill ids for
+ *     a pick and keeps no shape→skill resolver.
  *
  * The selected-kinds set is DERIVED: `outputKinds` ∪ the kinds of every
- * kind-skill already in `addedSkills`, so a shape switched on from the
- * Quickset chips or the Skills menu shows here too and the surfaces can never
- * disagree.
+ * kind-skill still in `addedSkills` (the Skills menu, or an old chat), so the
+ * surfaces never disagree. Loading an old chat moves those kind skills into
+ * `outputKinds` (`migrateKindSkills`).
  *
  * PURE — no React, no Redux — so it is unit-testable.
  */
 
-import { skillNamedForKind } from "@host/features/content-ir/admin/duplicate-skill-analysis";
-import { SHAPE_CHIP_DEFS, type ShapeChipSkillSource } from "../shape-chips";
+import type { ShapeChipSkillSource } from "../shape-chips";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 export type OutputTypeGroup = "core" | "media" | "files";
@@ -80,39 +77,30 @@ export function toggleOutputType(current: readonly string[], id: string): string
 // ── Kind ↔ skill ─────────────────────────────────────────────────────────────
 
 /**
- * The kind a skill slug teaches: a curated Quickset chip skill → its kind;
- * otherwise the R9 convention `kind_<kind>` / `kind_<kind>_xml`. `null` when
- * the slug is not a shape skill.
+ * Curated Quickset skill slugs that predate the `kind_<kind>` convention → the
+ * kind they teach. Used ONLY to recognise a kind skill already sitting in an
+ * old chat's `addedSkills`; nothing resolves a pick to a skill from here.
+ */
+const LEGACY_CURATED_SKILL_KINDS: Readonly<Record<string, string>> = {
+  "flashcard-set": "flashcard_set",
+  "quiz-set": "quiz_set",
+  "timeline-block": "timeline",
+  "comparison-tables": "comparison_set",
+  "mermaid-diagrams": "mermaid_diagram",
+  "diagram-spec": "mermaid_diagram",
+};
+
+/**
+ * The kind a skill slug teaches: a legacy curated skill → its kind; otherwise
+ * the R9 convention `kind_<kind>` / `kind_<kind>_xml`. `null` when the slug is
+ * not a shape skill.
  */
 export function kindForSkillSlug(slug: string): string | null {
-  for (const def of SHAPE_CHIP_DEFS) {
-    if (def.skillIds.includes(slug)) return def.kind;
-  }
+  const legacy = LEGACY_CURATED_SKILL_KINDS[slug];
+  if (legacy) return legacy;
   const normalized = slug.replace(/-/g, "_");
   const match = /^kind_(.+?)(_xml)?$/.exec(normalized);
   return match ? match[1] : null;
-}
-
-/**
- * The registry id of the active skill that teaches `kind`, or `null`. Curated
- * chip skills win (their preference order), then the R9 naming convention.
- */
-export function resolveKindSkillId(
-  kind: string,
-  skills: readonly ShapeChipSkillSource[],
-): string | null {
-  const active = skills.filter((skill) => skill.isActive);
-  const curated = SHAPE_CHIP_DEFS.find((def) => def.kind === kind);
-  if (curated) {
-    for (const slug of curated.skillIds) {
-      const hit = active.find((skill) => skill.skillId === slug);
-      if (hit) return hit.id;
-    }
-  }
-  const named = active.filter((skill) => skillNamedForKind(skill.skillId, kind));
-  // Prefer the JSON `kind_<kind>` skill over its `_xml` twin.
-  named.sort((a, b) => a.skillId.length - b.skillId.length);
-  return named[0]?.id ?? null;
 }
 
 /** Kinds already on through `addedSkills` (Quickset chips, Skills menu). */
@@ -163,7 +151,7 @@ function skillIdsForKind(
   );
 }
 
-/** Toggle one kind: on → record it + add its skill; off → drop both. */
+/** Toggle one kind: on → record it; off → drop it and any kind skill that taught it. */
 export function toggleOutputKind(
   state: OutputShapeState,
   kind: string,
@@ -177,14 +165,68 @@ export function toggleOutputKind(
       addedSkills: state.addedSkills.filter((id) => !drop.has(id)),
     };
   }
-  const skillId = resolveKindSkillId(kind, skills);
-  return {
-    outputKinds: [...state.outputKinds, kind],
-    addedSkills:
-      skillId && !state.addedSkills.includes(skillId)
-        ? [...state.addedSkills, skillId]
-        : [...state.addedSkills],
-  };
+  return { outputKinds: [...state.outputKinds, kind], addedSkills: [...state.addedSkills] };
+}
+
+/**
+ * Old chats: move every kind skill out of `addedSkills` into `outputKinds`, so
+ * the pick travels as `output_kinds` and the server resolves the skill. Skills
+ * that are not kind skills stay. Order: existing picks, then the moved kinds.
+ */
+export function migrateKindSkills(
+  state: OutputShapeState,
+  skills: readonly ShapeChipSkillSource[],
+): OutputShapeState {
+  const byId = new Map(skills.map((skill) => [skill.id, skill]));
+  const outputKinds = [...state.outputKinds];
+  const addedSkills: string[] = [];
+  for (const id of state.addedSkills) {
+    const skill = byId.get(id);
+    const kind = skill ? kindForSkillSlug(skill.skillId) : null;
+    if (!kind) {
+      addedSkills.push(id);
+      continue;
+    }
+    if (!outputKinds.includes(kind)) outputKinds.push(kind);
+  }
+  return { outputKinds, addedSkills };
+}
+
+// ── Locked agents ────────────────────────────────────────────────────────────
+
+/**
+ * The shape(s) an agent's enforced `output_schema` fixes at its root `__kind`
+ * (`const` → one, `enum` → that set); `[]` = not locked. Line-for-line mirror
+ * of aidream `services/tooling/output_kinds.py::locked_shapes` — the server
+ * refuses a pick outside this set, so the picker must agree with it.
+ */
+export function lockedShapesFromSchema(outputSchema: unknown): string[] {
+  const obj = asRecord(outputSchema);
+  if (!obj) return [];
+  const inner = asRecord(obj.json_schema);
+  const root = asRecord(inner?.schema) ?? asRecord(obj.schema) ?? obj;
+  const marker = asRecord(asRecord(root.properties)?.__kind);
+  if (!marker) return [];
+  if (typeof marker.const === "string") return [marker.const];
+  if (Array.isArray(marker.enum)) {
+    return marker.enum.filter((value): value is string => typeof value === "string");
+  }
+  return [];
+}
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+/** Picks outside a locked agent's shapes (the server would refuse the send). */
+export function conflictingKinds(
+  picks: readonly string[],
+  lockedShapes: readonly string[],
+): string[] {
+  if (lockedShapes.length === 0) return [];
+  return picks.filter((kind) => !lockedShapes.includes(kind));
 }
 
 /** × on the pill: back to the default — Text only, no shapes. */

@@ -36,6 +36,7 @@
 // and it fires exactly once for that arrival when `ready` turns true.
 
 import { useEffect, useRef } from "react";
+import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 /**
  * Run `onArrive` once per arrival at a deep link.
@@ -91,6 +92,6 @@ function dropSearchParam(param: string): void {
   const url = new URL(window.location.href);
   if (!url.searchParams.has(param)) return;
   url.searchParams.delete(param);
-  // Next's App Router syncs `useSearchParams` with native history calls.
-  window.history.replaceState(window.history.state, "", url.toString());
+  // Through the one writer, so `useSearchParams` sees it and `asking` re-arms.
+  replaceAddressWithoutNavigating(url);
 }

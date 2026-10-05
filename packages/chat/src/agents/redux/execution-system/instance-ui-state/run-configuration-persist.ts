@@ -49,7 +49,18 @@ export interface PersistedRunConfiguration {
    * unbound and loses its page's tools (`page-tool-binding.ts`).
    */
   surfaceName: string | null;
+  /**
+   * The composer's Output → Shapes picks (kind slugs). Stored camelCase as
+   * `outputKinds` — the key the SERVER reads when a request omits
+   * `output_kinds` (aidream `services/tooling/output_kinds.py`), so every
+   * client gets the chat's saved picks.
+   */
+  outputKinds: string[];
+  /** The composer's Output types (saved for the chat; not sent). Text by default. */
+  outputTypes: string[];
 }
+
+const DEFAULT_OUTPUT_TYPES: readonly string[] = ["text"];
 
 const EMPTY: PersistedRunConfiguration = {
   addedTools: [],
@@ -58,6 +69,8 @@ const EMPTY: PersistedRunConfiguration = {
   removedTools: [],
   autoTools: null,
   surfaceName: null,
+  outputKinds: [],
+  outputTypes: [...DEFAULT_OUTPUT_TYPES],
 };
 
 function strings(value: unknown): string[] {
@@ -84,6 +97,11 @@ export function parsePersistedRunConfiguration(
       typeof r.surface_name === "string" && r.surface_name.length > 0
         ? r.surface_name
         : null,
+    outputKinds: strings(r.outputKinds),
+    // Absent = the chat never chose = Text; a stored empty list is a choice.
+    outputTypes: Array.isArray(r.outputTypes)
+      ? strings(r.outputTypes)
+      : [...DEFAULT_OUTPUT_TYPES],
   };
 }
 
@@ -95,6 +113,8 @@ function toStored(config: PersistedRunConfiguration) {
     removed_tools: config.removedTools,
     auto_tools: config.autoTools,
     surface_name: config.surfaceName,
+    outputKinds: config.outputKinds,
+    outputTypes: config.outputTypes,
   };
 }
 
@@ -106,6 +126,9 @@ export function runConfigurationSignature(config: PersistedRunConfiguration): st
     [...config.removedTools].sort(),
     config.autoTools,
     config.surfaceName,
+    // Pick order is meaningful for shapes; types are a set.
+    config.outputKinds,
+    [...config.outputTypes].sort(),
   ]);
 }
 
@@ -125,6 +148,8 @@ export function selectRunConfiguration(
     removedTools: s.removedTools ?? [],
     autoTools: s.autoTools ?? null,
     surfaceName,
+    outputKinds: s.outputKinds ?? [],
+    outputTypes: s.outputTypes ?? [...DEFAULT_OUTPUT_TYPES],
   };
 }
 

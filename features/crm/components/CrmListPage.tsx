@@ -166,6 +166,8 @@ function fromTableFilters(state: ColumnFiltersState): PartyListFilters {
       if (id === "display_name") out.display_name = f.value.trim();
       else if (id === "job_title") out.job_title = f.value.trim();
       else if (id === "primary_domain") out.primary_domain = f.value.trim();
+      else if (id === "tax_id") out.tax_id = f.value.trim();
+      else if (id === "date_of_birth") out.date_of_birth = f.value.trim();
     } else if (f.kind === "select") {
       const values = f.values?.length ? f.values : f.value ? [f.value] : [];
       if (values.length === 0) continue;
@@ -211,6 +213,9 @@ function toTableFilters(filters: PartyListFilters): ColumnFiltersState {
     out.job_title = { kind: "text", value: filters.job_title };
   if (filters.primary_domain)
     out.primary_domain = { kind: "text", value: filters.primary_domain };
+  if (filters.tax_id) out.tax_id = { kind: "text", value: filters.tax_id };
+  if (filters.date_of_birth)
+    out.date_of_birth = { kind: "text", value: filters.date_of_birth };
   if (filters.party_kind?.length)
     out.party_kind = {
       kind: "select",

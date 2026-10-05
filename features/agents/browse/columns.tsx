@@ -24,7 +24,7 @@
 import { Archive, Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import { cleanMarkdownPreview } from "@/utils/markdown-processors/clean-markdown-to-text";
+import { RichContentPreview } from "@/components/rich-content/RichContentPreview";
 import {
   DATE_FILTER_OPTIONS,
   Muted,
@@ -110,13 +110,13 @@ export const BROWSE_COLUMNS: EntityColumnSpec<AgentBrowseRow>[] = [
       width: 420,
       className: "max-w-[26rem] overflow-hidden",
       cell: (row) => {
-        const preview = cleanMarkdownPreview(row.description);
         return (
-          <span
-            className="block truncate text-muted-foreground"
-            title={preview || undefined}
-          >
-            {preview || "—"}
+          <span className="block text-muted-foreground">
+            {row.description?.trim() ? (
+              <RichContentPreview source={row.description} lines={1} />
+            ) : (
+              "—"
+            )}
           </span>
         );
       },

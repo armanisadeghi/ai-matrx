@@ -1,3 +1,4 @@
+-- draft: WITHDRAWN by Arman 2026-10-03 (feedback b608595c) — never apply
 -- chair-step: NEEDS ARMAN WATCHING (CHAIR-GUIDANCE § What needs Arman watching). This file:
 --   · CREATES ONE TABLE crm.party_confidential (row security ON, every client privilege revoked —
 --     crm's default ACL would otherwise hand authenticated arwd; registered in platform.entity_types

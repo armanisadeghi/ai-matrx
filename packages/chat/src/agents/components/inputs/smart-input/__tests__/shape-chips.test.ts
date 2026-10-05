@@ -1,74 +1,33 @@
 /**
- * Shape-chip display logic — chips resolve ONLY when a matching, active
- * render_block skill exists in the live skill list (no skill → no chip; the
- * chip toggles the resolved registry UUID, never a hardcoded id).
+ * Shape chips pick a KIND (`outputKinds`), never a skill id — the server
+ * resolves shape → skill. The chip list must therefore carry kinds only, and
+ * toggling a chip must write `outputKinds` and leave `addedSkills` alone.
  */
 
-import {
-  resolveShapeChips,
-  SHAPE_CHIP_DEFS,
-  type ShapeChipSkillSource,
-} from "../shape-chips";
+import { SHAPE_CHIP_DEFS } from "../shape-chips";
+import { toggleOutputKind } from "../composer/output-selection";
 
-const skill = (
-  id: string,
-  skillId: string,
-  isActive = true,
-): ShapeChipSkillSource => ({ id, skillId, isActive });
-
-describe("resolveShapeChips", () => {
-  it("returns nothing for an empty skill list", () => {
-    expect(resolveShapeChips([])).toEqual([]);
+describe("SHAPE_CHIP_DEFS", () => {
+  it("carries a unique key and kind per chip, and no skill slugs", () => {
+    expect(new Set(SHAPE_CHIP_DEFS.map((d) => d.key)).size).toBe(SHAPE_CHIP_DEFS.length);
+    expect(new Set(SHAPE_CHIP_DEFS.map((d) => d.kind)).size).toBe(SHAPE_CHIP_DEFS.length);
+    for (const def of SHAPE_CHIP_DEFS) {
+      expect(Object.keys(def).sort()).toEqual(["key", "kind", "label"]);
+    }
   });
 
-  it("resolves a chip to the matching skill's registry UUID", () => {
-    const chips = resolveShapeChips([skill("uuid-fc", "flashcard-set")]);
-    expect(chips).toEqual([
-      { key: "flashcards", label: "Flashcards", registryId: "uuid-fc" },
+  it("keeps the five curated shapes", () => {
+    expect(SHAPE_CHIP_DEFS.map((d) => d.kind)).toEqual([
+      "flashcard_set",
+      "quiz_set",
+      "timeline",
+      "comparison_set",
+      "mermaid_diagram",
     ]);
   });
 
-  it("drops chips whose skill is missing from the list", () => {
-    const chips = resolveShapeChips([skill("uuid-quiz", "quiz-set")]);
-    expect(chips.map((c) => c.key)).toEqual(["quiz"]);
-  });
-
-  it("ignores inactive skills entirely", () => {
-    expect(
-      resolveShapeChips([skill("uuid-fc", "flashcard-set", false)]),
-    ).toEqual([]);
-  });
-
-  it("prefers the first slug in a chip's candidate list", () => {
-    const chips = resolveShapeChips([
-      skill("uuid-kind", "kind_timeline"),
-      skill("uuid-block", "timeline-block"),
-    ]);
-    expect(chips).toEqual([
-      { key: "timeline", label: "Timeline", registryId: "uuid-block" },
-    ]);
-  });
-
-  it("falls back to later slugs when the preferred one is absent or inactive", () => {
-    const chips = resolveShapeChips([
-      skill("uuid-mermaid", "mermaid-diagrams", false),
-      skill("uuid-spec", "diagram-spec"),
-    ]);
-    expect(chips).toEqual([
-      { key: "diagram", label: "Diagram", registryId: "uuid-spec" },
-    ]);
-  });
-
-  it("resolves all five chips when every skill is present, in definition order", () => {
-    const chips = resolveShapeChips([
-      skill("u1", "flashcard-set"),
-      skill("u2", "quiz-set"),
-      skill("u3", "timeline-block"),
-      skill("u4", "comparison-tables"),
-      skill("u5", "mermaid-diagrams"),
-    ]);
-    expect(chips.map((c) => c.key)).toEqual(
-      SHAPE_CHIP_DEFS.map((d) => d.key),
-    );
+  it("a chip click records the kind and adds no skill", () => {
+    const state = toggleOutputKind({ outputKinds: [], addedSkills: ["uuid-other"] }, "quiz_set", []);
+    expect(state).toEqual({ outputKinds: ["quiz_set"], addedSkills: ["uuid-other"] });
   });
 });

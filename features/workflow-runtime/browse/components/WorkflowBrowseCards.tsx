@@ -27,7 +27,7 @@ import {
   shouldOpenInNewTab,
   openInNewTab,
 } from "@/utils/navigation/should-open-in-new-tab";
-import { cleanMarkdownPreview } from "@/utils/markdown-processors/clean-markdown-to-text";
+import { RichContentPreview } from "@/components/rich-content/RichContentPreview";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { RunStatusChip } from "../../run-status";
 import {
@@ -132,9 +132,9 @@ export function WorkflowBrowseCards({
                   )}
                 </p>
                 {row.description && (
-                  <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
-                    {cleanMarkdownPreview(row.description)}
-                  </p>
+                  <div className="mt-0.5 text-xs text-muted-foreground">
+                    <RichContentPreview source={row.description} lines={2} />
+                  </div>
                 )}
                 <div className="mt-1.5 flex flex-wrap items-center gap-1">
                   {row.category && (

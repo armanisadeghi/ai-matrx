@@ -10,6 +10,7 @@
 // No second modal on the automatic path: the toast is the whole announcement.
 
 import type { RecordsClient } from "@ai-matrx/records/core";
+import type { RecordsError } from "@ai-matrx/records";
 import { announceTableArchived, refusalForAPerson, type RecordsUiHost } from "@ai-matrx/records-ui";
 
 /** The pass size the package's own loop starts at; halves on a timeout, never below the floor. */
@@ -19,7 +20,7 @@ const MIN_PASS = 10;
 export type ArchiveFromHome =
   | { outcome: "archived"; name: string }
   | { outcome: "needs-confirm" }
-  | { outcome: "refused"; sentence: string };
+  | { outcome: "refused"; sentence: string; error?: RecordsError };
 
 export async function archiveTableFromHome({
   client,
@@ -42,7 +43,7 @@ export async function archiveTableFromHome({
   fallbackName: string;
 }): Promise<ArchiveFromHome> {
   const look = await client.tableArchive({ table_id: tableId, chunk: 0, includeTable: true });
-  if (!look.ok) return { outcome: "refused", sentence: refusalForAPerson(look.error).sentence };
+  if (!look.ok) return { outcome: "refused", sentence: refusalForAPerson(look.error).sentence, error: look.error };
   const line = look.data.confirm_over;
   if (look.data.in_progress || typeof line !== "number" || look.data.remaining > line) {
     return { outcome: "needs-confirm" };
@@ -58,7 +59,7 @@ export async function archiveTableFromHome({
         continue;
       }
       onRollback();
-      return { outcome: "refused", sentence: refusalForAPerson(pass.error).sentence };
+      return { outcome: "refused", sentence: refusalForAPerson(pass.error).sentence, error: pass.error };
     }
     if (pass.data.done) {
       if (!pass.data.table_archived) {

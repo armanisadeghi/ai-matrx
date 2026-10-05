@@ -30,7 +30,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { getActiveAnnouncements } from "@/actions/feedback.actions";
-import { renderAnnouncementMessage } from "@/utils/render-announcement-message";
+import { RichContent } from "@/components/rich-content/RichContent";
 import type {
   AnnouncementType,
   SystemAnnouncement,
@@ -151,8 +151,8 @@ function Detail({
       </div>
       <ScrollArea className="min-h-0 flex-1 overscroll-contain">
         <div className="mx-auto max-w-2xl px-6 py-7 sm:px-10 sm:py-9">
-          <div className="whitespace-pre-wrap text-base leading-7 text-foreground/90">
-            {renderAnnouncementMessage(announcement.message)}
+          <div className="text-base leading-7 text-foreground/90">
+            <RichContent source={announcement.message} level="standard" />
           </div>
           <div className="mt-8 rounded-2xl border border-border/70 bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
             Other active updates are available from the user menu under

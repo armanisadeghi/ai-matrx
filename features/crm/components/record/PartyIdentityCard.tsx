@@ -62,6 +62,8 @@ type EditableKey =
   | "legal_name"
   | "primary_domain"
   | "timezone"
+  | "tax_id"
+  | "date_of_birth"
   | "bio";
 
 interface FieldSpec {
@@ -82,6 +84,8 @@ const FIELDS: FieldSpec[] = [
   { key: "legal_name", label: "Legal name", companyOnly: true },
   { key: "primary_domain", label: "Domain", placeholder: "acme.com" },
   { key: "timezone", label: "Timezone", placeholder: "America/Los_Angeles" },
+  { key: "date_of_birth", label: "Born", personOnly: true, placeholder: "1984-03-27" },
+  { key: "tax_id", label: "Tax ID", companyOnly: true },
   { key: "bio", label: "Bio", multiline: true },
 ];
 

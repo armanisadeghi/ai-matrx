@@ -82,3 +82,32 @@ export async function fetchShapeFacets(
   }
   return { byKind };
 }
+
+/**
+ * The one-line description of each shape (`kind_definition.metadata.description`)
+ * for a page of rows — the Shapes list RPC does not return it. Returns
+ * `{ id → description }` for the shapes that have one; a failed read throws.
+ */
+export async function fetchShapeDescriptions(
+  ids: readonly string[],
+): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  if (ids.length === 0) return out;
+  const { data, error } = await supabase
+    .schema("content_ir")
+    .from("kind_definition")
+    .select("id,metadata")
+    .in("id", [...ids])
+    .is("deleted_at", null);
+  if (error) throw pgError(error);
+  for (const row of data ?? []) {
+    const meta = row.metadata;
+    if (meta && typeof meta === "object" && !Array.isArray(meta)) {
+      const description = (meta as Record<string, Json | undefined>).description;
+      if (typeof description === "string" && description.trim()) {
+        out.set(row.id, description.trim());
+      }
+    }
+  }
+  return out;
+}

@@ -12748,6 +12748,20 @@ export type Database = {
     }
     Functions: {
       _message_tool_call_ids: { Args: { p_content: Json }; Returns: string[] }
+      admin_explore_conversation_facets: {
+        Args: { p_filters?: Json }
+        Returns: Json
+      }
+      admin_explore_conversations: {
+        Args: {
+          p_dir?: string
+          p_filters?: Json
+          p_limit?: number
+          p_offset?: number
+          p_sort?: string
+        }
+        Returns: Json
+      }
       admin_user_usage_rollup: {
         Args: { p_from?: string; p_to?: string }
         Returns: {
@@ -70729,21 +70743,21 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "access_audit_actor_user_id_fkey_p"
+            foreignKeyName: "access_audit_actor_user_id_fkey"
             columns: ["actor_user_id"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "access_audit_created_by_fkey_p"
+            foreignKeyName: "access_audit_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "access_audit_granted_to_user_id_fkey_p"
+            foreignKeyName: "access_audit_granted_to_user_id_fkey"
             columns: ["granted_to_user_id"]
             isOneToOne: false
             referencedRelation: "users"
@@ -70757,14 +70771,14 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "access_audit_subject_user_id_fkey_p"
+            foreignKeyName: "access_audit_subject_user_id_fkey"
             columns: ["subject_user_id"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "access_audit_updated_by_fkey_p"
+            foreignKeyName: "access_audit_updated_by_fkey"
             columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "users"
@@ -70936,14 +70950,14 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "access_requests_created_by_fkey_p"
+            foreignKeyName: "access_requests_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "access_requests_decided_by_fkey_p"
+            foreignKeyName: "access_requests_decided_by_fkey"
             columns: ["decided_by"]
             isOneToOne: false
             referencedRelation: "users"
@@ -70957,7 +70971,7 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "access_requests_updated_by_fkey_p"
+            foreignKeyName: "access_requests_updated_by_fkey"
             columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "users"
@@ -71046,7 +71060,7 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "api_keys_created_by_fkey_p"
+            foreignKeyName: "api_keys_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "users"
@@ -71060,14 +71074,14 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "api_keys_service_user_id_fkey_p"
+            foreignKeyName: "api_keys_service_user_id_fkey"
             columns: ["service_user_id"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "api_keys_updated_by_fkey_p"
+            foreignKeyName: "api_keys_updated_by_fkey"
             columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "users"
@@ -71255,14 +71269,14 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "emergency_door_request_created_by_fkey_p"
+            foreignKeyName: "emergency_door_request_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "emergency_door_request_decided_by_fkey_p"
+            foreignKeyName: "emergency_door_request_decided_by_fkey"
             columns: ["decided_by"]
             isOneToOne: false
             referencedRelation: "users"
@@ -71276,21 +71290,21 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "emergency_door_request_requested_by_fkey_p"
+            foreignKeyName: "emergency_door_request_requested_by_fkey"
             columns: ["requested_by"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "emergency_door_request_subject_user_id_fkey_p"
+            foreignKeyName: "emergency_door_request_subject_user_id_fkey"
             columns: ["subject_user_id"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "emergency_door_request_updated_by_fkey_p"
+            foreignKeyName: "emergency_door_request_updated_by_fkey"
             columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "users"
@@ -71373,7 +71387,7 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "iam_industries_created_by_fkey_p"
+            foreignKeyName: "iam_industries_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "users"
@@ -71387,7 +71401,7 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "iam_industries_updated_by_fkey_p"
+            foreignKeyName: "iam_industries_updated_by_fkey"
             columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "users"
@@ -81079,52 +81093,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "action_request_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "action_request_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "action_request_subject_user_id_fkey"
-            columns: ["subject_user_id"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "action_request_subject_user_id_fkey"
-            columns: ["subject_user_id"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "action_request_supersedes_fk"
             columns: ["supersedes_id"]
             isOneToOne: false
             referencedRelation: "action_request"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "action_request_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "action_request_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
             referencedColumns: ["id"]
           },
         ]
@@ -83434,20 +83406,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "cutover_seam_press_pressed_by_fkey"
-            columns: ["pressed_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "cutover_seam_press_pressed_by_fkey"
-            columns: ["pressed_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "cutover_seam_press_seam_key_fkey"
             columns: ["seam_key"]
             isOneToOne: false
@@ -84582,34 +84540,6 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "flexible_data_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "flexible_data_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "flexible_data_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "flexible_data_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
             referencedColumns: ["id"]
           },
         ]
@@ -87389,34 +87319,6 @@ export type Database = {
           warn_days?: number | null
         }
         Relationships: [
-          {
-            foreignKeyName: "platform_retention_policy_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "platform_retention_policy_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "platform_retention_policy_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "platform_retention_policy_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "retention_policy_entity_token_fkey"
             columns: ["entity_token"]

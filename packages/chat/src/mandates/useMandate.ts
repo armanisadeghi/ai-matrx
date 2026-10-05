@@ -15,6 +15,8 @@ import {
 } from "./service";
 import { extractErrorMessage } from "@ai-matrx/data/net";
 import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
+import { useAppSelector } from "../store/hooks";
+import { selectOrganizationId } from "../host/org";
 
 export interface MandateState {
   mandate: ResolvedMandate | null;
@@ -87,10 +89,22 @@ export function useMandate(
   const resolvableKey: AnyMandateKey | null = hasMandateKey
     ? (mandateKey as AnyMandateKey)
     : null;
+  // THE ORGANIZATION IS PART OF THE QUESTION (2026-10-04). Which agent runs a
+  // job depends on the selected workspace, so the answer is keyed on it — the
+  // same contract as `useMandateHolder`. A caller that names the record's own
+  // organization asked a question the selection cannot change. Before this, the
+  // hook learned of a new organization ONLY through the store middleware's cache
+  // drop; when that notice did not reach it, "An organization is needed" stayed
+  // up after the person chose one, on /notes and /education, and Try again could
+  // not clear it (useMandate.organization-is-part-of-the-question.test.tsx).
+  const selectedOrganizationId = useAppSelector(selectOrganizationId) ?? null;
+  const question = options.organizationId
+    ? `${mandateKey}|record:${options.organizationId}`
+    : `${mandateKey}|selected:${selectedOrganizationId ?? ""}`;
   const [state, setState] = useState<
     MandateState & { key: string; epoch: number; organizationRetries: number }
   >({
-    key: mandateKey,
+    key: question,
     epoch: 0,
     organizationRetries: 0,
     mandate: null,
@@ -100,11 +114,11 @@ export function useMandate(
     organizationPending: false,
   });
 
-  // Reset for a new mandate key during render (the documented adjust-state-on-
+  // Reset for a new question (key or organization) during render (the documented adjust-state-on-
   // prop-change pattern) — never synchronously inside the effect.
-  if (state.key !== mandateKey) {
+  if (state.key !== question) {
     setState({
-      key: mandateKey,
+      key: question,
       epoch: 0,
       organizationRetries: 0,
       mandate: null,
@@ -145,7 +159,7 @@ export function useMandate(
         if (!cancelled) {
           setState((prev) => ({
             ...prev,
-            key: mandateKey,
+            key: question,
             mandate,
             loading: false,
             error: null,
@@ -171,7 +185,7 @@ export function useMandate(
         if (organizationPending && state.organizationRetries === 0) {
           setState((prev) => ({
             ...prev,
-            key: mandateKey,
+            key: question,
             organizationRetries: prev.organizationRetries + 1,
             epoch: prev.epoch + 1,
             loading: true,
@@ -184,7 +198,7 @@ export function useMandate(
         }
         setState((prev) => ({
           ...prev,
-          key: mandateKey,
+          key: question,
           mandate: null,
           loading: false,
           error: message,
@@ -199,6 +213,7 @@ export function useMandate(
     };
   }, [
     mandateKey,
+    question,
     epoch,
     options.optional,
     options.organizationId,

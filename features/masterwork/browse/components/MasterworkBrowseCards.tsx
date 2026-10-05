@@ -21,7 +21,7 @@ import { ItemMenu } from "@/components/official/item/ItemMenu";
 import type { ItemMenuConfig } from "@/components/official/item/types";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { cleanMarkdownPreview } from "@/utils/markdown-processors/clean-markdown-to-text";
+import { RichContentPreview } from "@/components/rich-content/RichContentPreview";
 import type { Masterwork, RulebookListRow } from "../../types";
 import { rulebookLookalikeNotes } from "../lookalikeRulebooks";
 import { ArchivedDisclosure } from "@ai-matrx/design-system";
@@ -168,9 +168,9 @@ export function MasterworkBrowseCards({
             </div>
 
             {row.description ? (
-              <p className="line-clamp-2 text-xs text-muted-foreground">
-                {cleanMarkdownPreview(row.description)}
-              </p>
+              <div className="text-xs text-muted-foreground">
+                <RichContentPreview source={row.description} lines={2} />
+              </div>
             ) : null}
 
             <div className="mt-auto space-y-1.5 border-t border-border pt-2.5">

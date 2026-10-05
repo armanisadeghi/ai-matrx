@@ -17,6 +17,7 @@ import { refreshUsageInBackground } from "../usage-gate/usageGate";
 import { redeemCoupon } from "./redeemCoupon";
 import { redeemSuccessLine, type RedeemOutcome } from "./couponCopy";
 import { catalogPlanName } from "./planName";
+import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 export function RedeemCodeField({ autoCode }: { autoCode?: string | null }) {
   const dispatch = useAppDispatch();
@@ -40,7 +41,7 @@ export function RedeemCodeField({ autoCode }: { autoCode?: string | null }) {
       if (autoCode) {
         const url = new URL(window.location.href);
         url.searchParams.delete("code");
-        window.history.replaceState(window.history.state, "", url.pathname + url.search);
+        replaceAddressWithoutNavigating(url.pathname + url.search);
       }
       void refreshUsageInBackground(dispatch, store.getState);
     }

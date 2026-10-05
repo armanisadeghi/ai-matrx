@@ -74,6 +74,7 @@ import { cn } from "@/utils/cn";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { TASKS_CONTEXT_MENU_PROPS } from "@/features/tasks/agent-context/buildTasksContextData";
 import { useTasksListSurfaceScope } from "@/features/tasks/components/TasksListSurfaceRuntime";
+import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 type LucideIcon = React.ComponentType<{
   className?: string;
@@ -200,7 +201,7 @@ export default function TasksContextSidebar() {
     const url = new URL(window.location.href);
     if (id) url.searchParams.set("org_filter", id);
     else url.searchParams.delete("org_filter");
-    window.history.replaceState(window.history.state, "", url);
+    replaceAddressWithoutNavigating(url);
   };
 
   const activeGroupLabel =

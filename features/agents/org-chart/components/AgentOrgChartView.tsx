@@ -157,6 +157,18 @@ export function AgentOrgChartView({
   const [renaming, setRenaming] = useState<OrgPosition | null>(null);
   const [defining, setDefining] = useState<OrgPosition | null>(null);
   const [making, setMaking] = useState<MakeOrchestraRequest | null>(null);
+  /** The chart around a seat, for the job suggester: the box above it and the boxes beside it. */
+  const seatContextOf = (positionId: string) => {
+    const key = firstKeyOf.get(boxId("position", positionId));
+    const node = key ? byKey.get(key) : undefined;
+    const parentKey = key?.includes("/") ? key.slice(0, key.lastIndexOf("/")) : null;
+    const parent = parentKey ? byKey.get(parentKey) : undefined;
+    const label = (b: string) => `${nameOf(b)} (${ORG_BOX_LABEL[parseBoxId(b).type]})`;
+    return {
+      reportsTo: parent ? label(parent.data.boxId) : null,
+      team: (parent?.children ?? []).filter((c) => c.key !== node?.key).map((c) => label(c.data.boxId)),
+    };
+  };
   /** Form A: these agent nodes become a new Orchestra, taking their shared recorded place. */
   const makeOrchestraOf = (nodes: Node[]) => {
     const agentsOnly = nodes.filter((x) => x.data.boxType === "agent");
@@ -179,7 +191,7 @@ export function AgentOrgChartView({
       toast.error("This position's job is still loading. Try again in a moment.");
       return;
     }
-    openMandateWindow({ initialMandateKey: storedMandateKey(job.mandateKey), mandateKeys: [storedMandateKey(job.mandateKey)] });
+    openMandateWindow({ initialMandateKey: job.mandateKey, mandateKeys: [job.mandateKey] });
   };
   const [dropMenu, setDropMenu] = useState<{ x: number; y: number; title: string; actions: ChartAction[] } | null>(
     null,
@@ -995,12 +1007,13 @@ export function AgentOrgChartView({
 
       <DefineSeatJobDialog
         position={defining}
+        context={defining ? seatContextOf(defining.id) : undefined}
         onClose={() => setDefining(null)}
         onDefined={(job) => {
           const p = defining;
           setDefining(null);
           toast.success(`${p?.name ?? "The position"} now has a job. Next, build its agent.`);
-          openMandateWindow({ initialMandateKey: storedMandateKey(job.mandateKey), mandateKeys: [storedMandateKey(job.mandateKey)] });
+          openMandateWindow({ initialMandateKey: job.mandateKey, mandateKeys: [job.mandateKey] });
         }}
       />
 

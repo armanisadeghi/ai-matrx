@@ -19,7 +19,7 @@ export interface ShortcutSpec {
 export const RICH_EDITOR_SHORTCUTS: readonly ShortcutSpec[] = [
   { id: "bold", label: "Bold", keys: ["Mod-b"], group: "Text", reference: "Docs · Notion" },
   { id: "italic", label: "Italic", keys: ["Mod-i"], group: "Text", reference: "Docs · Notion" },
-  { id: "strike", label: "Strikethrough", keys: ["Mod-Shift-s", "Alt-Shift-5"], group: "Text", reference: "Notion · Docs" },
+  { id: "strike", label: "Strikethrough", keys: ["Mod-Shift-x", "Mod-Shift-s", "Alt-Shift-5"], group: "Text", reference: "Docs · Notion" },
   { id: "code", label: "Inline code", keys: ["Mod-e"], group: "Text", reference: "Notion" },
   { id: "link", label: "Add or edit link", keys: ["Mod-k"], group: "Text", reference: "Docs · Notion" },
   { id: "paragraph", label: "Normal text", keys: ["Mod-Alt-0", "Mod-Shift-0"], group: "Blocks", reference: "Docs · Notion" },
@@ -32,6 +32,7 @@ export const RICH_EDITOR_SHORTCUTS: readonly ShortcutSpec[] = [
   { id: "orderedList", label: "Numbered list", keys: ["Mod-Shift-7"], group: "Blocks", reference: "Docs · Notion" },
   { id: "bulletList", label: "Bulleted list", keys: ["Mod-Shift-8"], group: "Blocks", reference: "Docs · Notion" },
   { id: "taskList", label: "Checklist", keys: ["Mod-Shift-9"], group: "Blocks", reference: "Docs" },
+  { id: "quote", label: "Quote", keys: ["Mod-Shift-."], group: "Blocks", reference: "AI Matrx" },
   { id: "moveUp", label: "Move block up", keys: ["Mod-Shift-ArrowUp"], group: "Blocks", reference: "Notion" },
   { id: "moveDown", label: "Move block down", keys: ["Mod-Shift-ArrowDown"], group: "Blocks", reference: "Notion" },
   { id: "codeBlock", label: "Code block", keys: ["Mod-Alt-c"], group: "Insert", reference: "Notion" },

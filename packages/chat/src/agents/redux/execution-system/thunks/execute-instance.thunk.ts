@@ -32,7 +32,7 @@ import type { RequestInitiation } from "../../../types/instance.types";
 import { toast } from "../../../../host/notify";
 import { buildToolInjection } from "../utils/build-tool-injection";
 import { resolveRequestOverrides } from "../utils/request-overrides";
-import { attachSkillConfigFromState } from "../utils/build-skill-config-for-request";
+import { attachOutputKindsFromState, attachSkillConfigFromState } from "../utils/build-skill-config-for-request";
 import { buildContinuationBody } from "../utils/continuation-body";
 import type { MessagePart } from "@ai-matrx/agents/generated/stream-events";
 import type { Json } from "../../../../host/db-types";
@@ -977,6 +977,7 @@ export const executeInstance = createAsyncThunk<
       }
 
       attachSkillConfigFromState(state, conversationId, payload);
+      attachOutputKindsFromState(state, conversationId, payload);
 
       // Sandbox binding travels solely as `client.state["sandbox-fs"]` —
       // aidream bridges the capability payload into `active_sandbox`

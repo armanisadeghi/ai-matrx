@@ -14,11 +14,12 @@
 import { useRef, useState, type ReactNode } from "react";
 import { VersionLedger, updateRecordAt, versionRefusalLabel } from "@/lib/records/record-versions";
 import type { GridContextSnapshot } from "./recordStoreTableScope";
-import { useRecordsClient } from "@ai-matrx/records/react";
+import { useFields, useRecordsClient, useTable } from "@ai-matrx/records/react";
 
 import { SurfaceRuntimeProvider, type SurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { createDataTablesScope } from "@/features/surfaces/manifests/data-tables.manifest";
 import { buildDataTablesScope } from "@/features/data-tables/agent-context/buildDataTablesScope";
+import { briefColumns } from "@/features/data-tables/agent-context/tableBrief";
 
 import { isWorkedOut, scopeInputFromGrid } from "./recordStoreTableScope";
 
@@ -127,6 +128,10 @@ export function RecordStoreTableSurface({
   children: ReactNode;
 }) {
   const client = useRecordsClient();
+  // What the store already holds before the grid has drawn (the same cached reads the grid makes):
+  // the table's name and its column headers. No row count: the store keeps none until a page is read.
+  const known = useTable(tableId ?? null);
+  const knownFields = useFields(tableId ?? null);
   const { latest } = channel;
   // THE VERSIONS OF THE ROWS THE AGENT WAS SHOWN: read when the scope is handed over, so its one
   // confirmed cell is sent against what it saw — a colleague's change since is refused, never overwritten.
@@ -136,7 +141,18 @@ export function RecordStoreTableSurface({
     const snapshot = latest.current;
     if (snapshot) void ledger.current!.drew(client, snapshot.visibleRows.map((r) => r.id));
     // Not loaded yet: say only what is known. row_count / is_read_only are left OUT (unknown is not 0 / true).
-    if (!gridHasLoaded(snapshot)) return { ...createDataTablesScope(tableId ? { table_id: tableId } : {}), not_loaded_yet: true };
+    if (!gridHasLoaded(snapshot)) {
+      const name = known.data?.name?.trim();
+      const columns = briefColumns((knownFields.data ?? []).map((f) => ({ field_name: f.key, display_name: f.label?.trim() || f.key })));
+      return {
+        ...createDataTablesScope({
+          ...(tableId ? { table_id: tableId } : {}),
+          ...(name ? { table_name: name } : {}),
+          ...(columns ? { brief_columns: columns } : {}),
+        }),
+        not_loaded_yet: true,
+      };
+    }
     return buildDataTablesScope(scopeInputFromGrid(snapshot));
   };
   const handlers = recordStoreWriteHandlers(latest, async (recordId, key, value) => {

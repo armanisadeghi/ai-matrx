@@ -10,6 +10,8 @@ import {
 } from "./service";
 import type { MandateState } from "./useMandate";
 import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
+import { useAppSelector } from "../store/hooks";
+import { selectOrganizationId } from "../host/org";
 
 export type MandateSetState = Readonly<Record<string, MandateState>>;
 
@@ -78,16 +80,21 @@ export function useMandateSet(
   // `keyList` is what every effect keys on. Gating here rather than at each
   // effect means there is exactly one place where "not asked" is decided.
   const keys = enabled ? requestedKeys : EMPTY_KEYS;
+  // THE ORGANIZATION IS PART OF THE QUESTION — see `useMandate`: a set asked
+  // before the workspace was chosen is re-asked when it is, never latched.
+  const selectedOrganizationId = useAppSelector(selectOrganizationId) ?? null;
   const keyList = keys.join(SEPARATOR);
+  const question =
+    keyList.length > 0 ? `${keyList}|${selectedOrganizationId ?? ""}` : "";
   const optionalKeyList = (options.optionalKeys ?? []).join(SEPARATOR);
   const [state, setState] = useState<{
-    keyList: string;
+    question: string;
     epoch: number;
     set: Record<string, MandateState>;
-  }>(() => ({ keyList, epoch: 0, set: pendingSet(keys) }));
+  }>(() => ({ question, epoch: 0, set: pendingSet(keys) }));
 
-  if (state.keyList !== keyList) {
-    setState({ keyList, epoch: 0, set: pendingSet(keys) });
+  if (state.question !== question) {
+    setState({ question, epoch: 0, set: pendingSet(keys) });
   }
 
   useEffect(() => {
@@ -145,14 +152,14 @@ export function useMandateSet(
           }
         });
         setState((prev) =>
-          prev.keyList === keyList ? { ...prev, set: next } : prev,
+          prev.question === question ? { ...prev, set: next } : prev,
         );
       },
     );
     return () => {
       cancelled = true;
     };
-  }, [keyList, optionalKeyList, epoch]);
+  }, [keyList, question, optionalKeyList, epoch]);
 
   return state.set;
 }

@@ -25,6 +25,7 @@ import {
 } from "../validation";
 import { describeRowAction, type RowAction } from "../row-actions";
 import { rowLabelText, type RowLabelConfig } from "../row-label";
+import { briefColumns, briefFirstRows } from "./tableBrief";
 
 /** One column definition as the viewer holds it (a `TableField`). */
 export interface DataTableScopeField {
@@ -216,6 +217,11 @@ export function buildDataTablesScope(
       ? { table_schema: tableSchema, column_list: columnList }
       : {}),
     row_count: input.totalCount,
+    // The board's brief of this table: column names and the first rows as short text (see tableBrief.ts).
+    ...(orderedFields.length > 0 ? { brief_columns: briefColumns(orderedFields) } : {}),
+    ...(orderedFields.length > 0 && input.visibleRows.length > 0
+      ? { brief_first_rows: briefFirstRows(orderedFields, input.visibleRows) }
+      : {}),
     ...(input.rowActions && input.rowActions.length > 0
       ? {
           row_actions: input.rowActions.map((a) => ({

@@ -382,6 +382,12 @@ function buildOverview(
       const basics = fitBasics(read.manifest, read.scope, allowance);
       if (Object.keys(basics).length > 0) return { ...base, basics };
     }
+    // Mounted but not loaded: what it cheaply knows (a table's name and columns) beats what the add knew,
+    // but a fuller last-known brief from when it WAS loaded beats both.
+    if (read && !(row.stored_basics && !row.stored_basics.stale)) {
+      const basics = fitBasics(read.manifest, read.scope, allowance);
+      if (Object.keys(basics).length > 0) return { ...base, basics, basics_stale: true as const };
+    }
     // Asleep, never woken, or not loaded yet: the last-known basics, with when they were taken.
     return { ...base, ...lastKnown(row) };
   });
@@ -465,6 +471,14 @@ export async function sampleItemBasics(
         if (Object.keys(values).length === 0) return null;
         if (tile.basics && !tile.basics.stale && JSON.stringify(tile.basics.values) === JSON.stringify(values)) return null;
         return { id: tile.id, basics: { values, at } };
+      }
+      // Mounted but not loaded: the cheap facts it already has (a table's name and columns), kept as stale.
+      if (runtime && scope && !(tile.basics && !tile.basics.stale)) {
+        const cheap = surfaceBrief(getManifest(runtime.surfaceName), scope).values;
+        if (Object.keys(cheap).length > 0) {
+          if (tile.basics && JSON.stringify(tile.basics.values) === JSON.stringify(cheap)) return null;
+          return { id: tile.id, basics: { values: cheap, at, stale: true } };
+        }
       }
       if (tile.basics) return null;
       return { id: tile.id, basics: addTimeBasics(tile.kind, tile.title, at) };

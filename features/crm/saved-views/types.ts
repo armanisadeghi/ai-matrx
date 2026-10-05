@@ -295,6 +295,8 @@ export function describeDefinition(definition: SavedViewDefinition): string {
   if (f.display_name) parts.push(`name ~ ${f.display_name}`);
   if (f.job_title) parts.push(`title ~ ${f.job_title}`);
   if (f.primary_domain) parts.push(`domain ~ ${f.primary_domain}`);
+  if (f.tax_id) parts.push(`tax ID ~ ${f.tax_id}`);
+  if (f.date_of_birth) parts.push(`born ${f.date_of_birth}`);
   if (f.party_kind?.length) parts.push(`kind: ${f.party_kind.join(", ")}`);
   if (f.do_not_contact !== undefined) {
     parts.push(f.do_not_contact ? "do-not-contact only" : "contactable only");

@@ -194,7 +194,7 @@ import { netRequests } from "../../../../host/diagnostics";
 import { buildRequestUserOverrides } from "../utils/request-user-overrides";
 import { buildToolInjection } from "../utils/build-tool-injection";
 import { resolveRequestOverrides } from "../utils/request-overrides";
-import { attachSkillConfigFromState } from "../utils/build-skill-config-for-request";
+import { attachOutputKindsFromState, attachSkillConfigFromState } from "../utils/build-skill-config-for-request";
 import type { ToolSpec } from "../../../types/tool-injection.types";
 import { isUiGateKey } from "@host/lib/redux/slices/agent-settings/ui-gates";
 import { extractErrorMessage } from "@ai-matrx/data/net";
@@ -531,6 +531,11 @@ export async function assembleManualRequest(
     state,
     conversationId,
     request as { skill_config?: Record<string, unknown> },
+  );
+  attachOutputKindsFromState(
+    state,
+    conversationId,
+    request as { output_kinds?: string[] | null },
   );
 
   // Global active context scope — org / project / task. Mirrors what callApi

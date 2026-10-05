@@ -70,6 +70,8 @@ import {
   parsePersistedRunConfiguration,
   selectRunConfiguration,
 } from "../instance-ui-state/run-configuration-persist";
+import { migrateKindSkills } from "../../../components/inputs/smart-input/composer/output-selection";
+import { selectLoadedSkillSources } from "../utils/loaded-skill-sources";
 import {
   initInstanceContext,
   setContextEntries,
@@ -337,6 +339,8 @@ export const loadConversation = createAsyncThunk<
         addedMcpServers?: string[];
         removedTools?: string[];
         autoTools?: boolean | null;
+        outputKinds?: string[];
+        outputTypes?: string[];
       } = {};
       if (!local.addedTools.length && storedRun.addedTools.length)
         changes.addedTools = storedRun.addedTools;
@@ -348,8 +352,35 @@ export const loadConversation = createAsyncThunk<
         changes.removedTools = storedRun.removedTools;
       if (local.autoTools === null && storedRun.autoTools !== null)
         changes.autoTools = storedRun.autoTools;
+      if (!local.outputKinds.length && storedRun.outputKinds.length)
+        changes.outputKinds = storedRun.outputKinds;
+      // Types: restore only when this tab still holds the Text-only default.
+      if (
+        local.outputTypes.length === 1 &&
+        local.outputTypes[0] === "text" &&
+        !(storedRun.outputTypes.length === 1 && storedRun.outputTypes[0] === "text")
+      )
+        changes.outputTypes = storedRun.outputTypes;
       if (Object.keys(changes).length) {
         dispatch(setBuilderAdvancedSettings({ conversationId, changes }));
+      }
+    }
+
+    // Old chats: kind skills in `addedSkills` become picked shapes
+    // (`output_kinds`), so the server — not the browser — resolves the skill.
+    // Needs the skill list to name each id; when it is not loaded yet the
+    // composer's Output control runs the same move once it is.
+    {
+      const current = selectRunConfiguration(getState() as ChatRootState, conversationId);
+      const skills = selectLoadedSkillSources(getState());
+      if (skills.length && current.addedSkills.length) {
+        const moved = migrateKindSkills(
+          { outputKinds: current.outputKinds, addedSkills: current.addedSkills },
+          skills,
+        );
+        if (moved.addedSkills.length !== current.addedSkills.length) {
+          dispatch(setBuilderAdvancedSettings({ conversationId, changes: moved }));
+        }
       }
     }
 

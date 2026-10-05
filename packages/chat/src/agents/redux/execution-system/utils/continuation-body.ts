@@ -56,6 +56,8 @@ export const CONTINUATION_FIELD_ROUTING = {
   memory_scope: true,
   // Per-conversation skill picks (Chat Options → Skills).
   skill_config: true,
+  // The composer's picked shapes (Output → Shapes) — every turn; `[]` = none.
+  output_kinds: true,
   // Set by the builder itself, not copied from the payload.
   user_input: "set by the builder (omitted on retry)",
   retry: "set by the builder from the retry flag",
@@ -71,6 +73,9 @@ export const CONTINUATION_FIELD_ROUTING = {
   max_retries_per_iteration: "not assembled by this thunk",
   responder_agent_id: "coding-mirror replies only; not assembled by this thunk",
 } as const satisfies Record<ContinueKey, true | string>;
+
+/** An empty list is a statement here: `output_kinds: []` = "no shapes", not "use the saved picks". */
+const EMPTY_IS_MEANINGFUL = new Set(["tools", "output_kinds"]);
 
 const FALSE_IS_MEANINGFUL = new Set(["memory", "tools_replace", "context_withheld"]);
 
@@ -96,7 +101,7 @@ export function buildContinuationBody(
     if (value === undefined || value === null) continue;
     // Preserve the old whitelist's emptiness rules: an empty list or `false`
     // flag is "not set", except the fields whose false/empty is meaningful.
-    if (Array.isArray(value) && value.length === 0 && key !== "tools") continue;
+    if (Array.isArray(value) && value.length === 0 && !EMPTY_IS_MEANINGFUL.has(key)) continue;
     if (value === false && !FALSE_IS_MEANINGFUL.has(key)) continue;
     if (value === "") continue;
     body[key] = value;

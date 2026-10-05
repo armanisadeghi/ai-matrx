@@ -1,17 +1,15 @@
 "use client";
 
 /**
- * ShapeChipsRow — compact discovery chips for the high-value render_block
- * shapes ("Flashcards", "Quiz", "Timeline", "Comparison", "Diagram") inside
- * the Quickset panel.
+ * ShapeChipsRow — compact discovery chips for the high-value shapes
+ * ("Flashcards", "Quiz", "Timeline", "Comparison", "Diagram") inside the
+ * Quickset panel.
  *
  * Users can't discover shapes when emission depends on magic words — these
- * chips make the skills visible and one-click. A chip toggles its skill into
- * `builderAdvancedSettings.addedSkills` (the SAME per-run state RunSkillPicker
- * writes; `buildSkillConfigForRequest` folds it into the request's
- * `skill_config.included`). Visibility is resolved from the live skill list
- * the skills slice already holds (`useSkills`) — a chip only shows when its
- * render_block skill exists and is active. No new fetch, no new state.
+ * chips make them one-click. A chip picks its shape: it toggles the kind in
+ * `builderAdvancedSettings.outputKinds` (the SAME state the composer's Output →
+ * Shapes list writes) and the request carries it as `output_kinds`; the server
+ * resolves the skill. No skill list gates the chips and no skill id is written.
  */
 
 import {
@@ -28,7 +26,8 @@ import { selectBuilderAdvancedSettings } from "../../../redux/execution-system/i
 import { setBuilderAdvancedSettings } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { DEFAULT_BUILDER_ADVANCED_SETTINGS } from "../../../types/instance.types";
 import { useSkills } from "@host/features/skills/hooks/useSkills";
-import { resolveShapeChips } from "./shape-chips";
+import { SHAPE_CHIP_DEFS } from "./shape-chips";
+import { selectedOutputKinds, toggleOutputKind } from "./composer/output-selection";
 
 /** Chip key → Lucide icon (kept out of the pure resolver module). */
 const CHIP_ICONS: Record<string, LucideIcon> = {
@@ -40,47 +39,31 @@ const CHIP_ICONS: Record<string, LucideIcon> = {
 };
 
 /**
- * The shape chips' state and toggle — shared by this row (Quickset) and the
- * composer's Output → Shapes menu, so both write the SAME per-run
- * `addedSkills` and can never disagree.
+ * The shape chips' state and toggle — shared with the composer's Output →
+ * Shapes menu through `output-selection.ts`, so both write the SAME
+ * `outputKinds` and can never disagree.
  */
 export function useShapeChipToggles(conversationId: string) {
   const dispatch = useAppDispatch();
-  // Same slice-backed list RunSkillPicker reads — the slice status guard makes
-  // this a no-op re-read when the list is already loaded.
+  // A kind skill added through the Skills menu still shows its chip selected.
   const { skills } = useSkills();
 
   const settings =
     useAppSelector(selectBuilderAdvancedSettings(conversationId)) ??
     DEFAULT_BUILDER_ADVANCED_SETTINGS;
-  const addedList = settings.addedSkills ?? [];
-  const added = new Set(addedList);
+  const outputKinds = settings.outputKinds ?? [];
+  const addedSkills = settings.addedSkills ?? [];
+  const picked = new Set(selectedOutputKinds(outputKinds, addedSkills, skills));
 
-  const chips = resolveShapeChips(skills);
-
-  const toggle = (registryId: string) =>
+  const toggle = (kind: string) =>
     dispatch(
       setBuilderAdvancedSettings({
         conversationId,
-        changes: {
-          addedSkills: added.has(registryId)
-            ? addedList.filter((id) => id !== registryId)
-            : [...addedList, registryId],
-        },
+        changes: toggleOutputKind({ outputKinds, addedSkills }, kind, skills),
       }),
     );
 
-  const clear = () => {
-    const chipIds = new Set(chips.map((chip) => chip.registryId));
-    dispatch(
-      setBuilderAdvancedSettings({
-        conversationId,
-        changes: { addedSkills: addedList.filter((id) => !chipIds.has(id)) },
-      }),
-    );
-  };
-
-  return { chips, added, toggle, clear };
+  return { chips: SHAPE_CHIP_DEFS, picked, toggle };
 }
 
 export { CHIP_ICONS as SHAPE_CHIP_ICONS };
@@ -90,29 +73,26 @@ export function ShapeChipsRow({
 }: {
   conversationId: string;
 }) {
-  const { chips, added, toggle } = useShapeChipToggles(conversationId);
-  if (chips.length === 0) return null;
+  const { chips, picked, toggle } = useShapeChipToggles(conversationId);
 
   // Full-width tag flow — NOT the quickset label-column grid: the control
-  // column is too narrow for 5 chips (they stacked one per line). The label
-  // leads the flow and renders only when chips resolved (cold skills slice /
-  // zero matches → nothing, not an empty labeled row).
+  // column is too narrow for 5 chips (they stacked one per line).
   return (
     <div className="flex min-h-8 flex-wrap items-center gap-x-1.5 gap-y-1 py-0.5">
       <span className="mr-0.5 text-xs text-foreground">Shapes</span>
         {chips.map((chip) => {
           const Icon = CHIP_ICONS[chip.key] ?? Layers;
-          const selected = added.has(chip.registryId);
+          const selected = picked.has(chip.kind);
           return (
             <button
               key={chip.key}
               type="button"
               aria-pressed={selected}
-              onClick={() => toggle(chip.registryId)}
+              onClick={() => toggle(chip.kind)}
               title={
                 selected
-                  ? `${chip.label} skill added to this run — click to remove`
-                  : `Add the ${chip.label} skill to this run`
+                  ? `${chip.label} picked for this chat — click to remove`
+                  : `Answer as ${chip.label}`
               }
               className={cn(
                 "inline-flex h-6 items-center gap-1 rounded-md border px-2 text-xs font-medium transition-colors",

@@ -1,3 +1,4 @@
+-- draft: WITHDRAWN by Arman 2026-10-03 (feedback b608595c) — never apply
 -- chair-step: NEEDS ARMAN WATCHING (CHAIR-GUIDANCE § What needs Arman watching). This file:
 --   · GRANTS EXECUTE to authenticated on one new door, crm.party_confidential_apply (declared in
 --     platform.client_callable_door first). No new table, column, index or policy.

@@ -265,6 +265,9 @@ export function carryRunConfigurationToFork(
       ...(source.autoTools !== undefined && source.autoTools !== null
         ? { autoTools: source.autoTools }
         : {}),
+      // The composer's Output picks ride the fork like every other pick.
+      ...(source.outputKinds?.length ? { outputKinds: [...source.outputKinds] } : {}),
+      ...(source.outputTypes !== undefined ? { outputTypes: [...source.outputTypes] } : {}),
     };
     if (Object.keys(changes).length > 0) {
       dispatch(setBuilderAdvancedSettings({ conversationId: forkConversationId, changes }));

@@ -129,6 +129,32 @@ const surfaceSpecific: SurfaceValue[] = [
     sortOrder: 318,
   },
 
+  // ── Brief (board listing; on demand, never auto-context) ──────────────
+  {
+    name: "brief_columns",
+    label: "Column names (brief)",
+    description:
+      "The column headers as one short line, in display order (\"Item, Room, Quantity\"). The compact form a board lists this table by; column_list is the full schema.",
+    valueType: "string",
+    alwaysAvailable: false,
+    autoContext: false,
+    typicalCharCount: 80,
+    group: "table_structure",
+    sortOrder: 319,
+  },
+  {
+    name: "brief_first_rows",
+    label: "First rows (brief)",
+    description:
+      "The first one to three rows as short text, one row per ' | ' (\"Item: Boxes, Room: Kitchen | Item: Lamp, Room: Hall\"), empty cells left out. The compact form a board lists this table by; visible_data_csv is the page.",
+    valueType: "string",
+    alwaysAvailable: false,
+    autoContext: false,
+    typicalCharCount: 160,
+    group: "table_data",
+    sortOrder: 419,
+  },
+
   // ── Table structure (320-339) ─────────────────────────────────────────
   {
     name: "table_schema",
@@ -416,7 +442,9 @@ is_read_only tells you whether you may write at all; on a shared table you can r
     surfaceSpecific,
   ),
   // Which table, at a glance: its name, how many rows, its columns.
-  briefValues: ["table_name", "row_count", "column_list"],
+  // column_list is NOT here: a brief projects a list to its count, so the agent would read "7 columns"
+  // with no names. brief_columns / brief_first_rows are short text, so names and the first rows survive.
+  briefValues: ["table_name", "brief_columns", "row_count", "brief_first_rows"],
   writeTargets,
   // THE TWO FIXED AI JOBS this surface already runs — disclosed in the top
   // Agents menu only (agent-disclosure skill), never as page content. Both are
@@ -510,6 +538,8 @@ export function createDataTablesScope(values: {
   column_list?: DataTableColumnEntry[];
   row_actions?: { id: string; name: string; kind: "update" | "agent"; description: string }[];
   row_count?: number;
+  brief_columns?: string;
+  brief_first_rows?: string;
   current_cell_value?: string;
   current_column_name?: string;
   current_row_id?: string;

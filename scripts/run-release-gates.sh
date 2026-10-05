@@ -830,6 +830,11 @@ if $STRICT; then
         # policies/motion-standard.md). Zero findings today; advisory here.
         "Panel slide off THE panel motion (literal duration or curve)|pnpm check:motion-standard"
         "Motion standard guard self-test|pnpm check:motion-standard:self-test"
+        # HISTORY-STATE BYPASS — replaceState/pushState(window.history.state, …) forwards
+        # Next's __NA marker, so the router never sees the URL and writes the old one
+        # back (2026-10-04). Zero findings; advisory here.
+        "History write that skips Next's router sync (window.history.state)|pnpm check:history-state-bypass"
+        "History-state bypass guard self-test|pnpm check:history-state-bypass:self-test"
         # THE CURSOR LAW — the cursor tells the truth; a disabled state never turns
         # pointer events off (it swallows not-allowed). Arman, 2026-10-03 — common-docs
         # policies/cursor-law.md. Baseline ratchet: exits 1 only on a NEW site; advisory here.
@@ -1467,6 +1472,11 @@ else
         # policies/motion-standard.md). Zero findings today; advisory here.
         "Panel slide off THE panel motion (literal duration or curve)|pnpm check:motion-standard"
         "Motion standard guard self-test|pnpm check:motion-standard:self-test"
+        # HISTORY-STATE BYPASS — replaceState/pushState(window.history.state, …) forwards
+        # Next's __NA marker, so the router never sees the URL and writes the old one
+        # back (2026-10-04). Zero findings; advisory here.
+        "History write that skips Next's router sync (window.history.state)|pnpm check:history-state-bypass"
+        "History-state bypass guard self-test|pnpm check:history-state-bypass:self-test"
         # THE CURSOR LAW — the cursor tells the truth; a disabled state never turns
         # pointer events off (it swallows not-allowed). Arman, 2026-10-03 — common-docs
         # policies/cursor-law.md. Baseline ratchet: exits 1 only on a NEW site; advisory here.

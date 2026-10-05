@@ -30,6 +30,16 @@ export const CUSTOM_FIELDS_SET_TARGET_NAME = "custom_fields_set";
 export const CUSTOM_FIELDS_VALUE_NAME = "custom_fields";
 export const CUSTOM_FIELDS_MAX_PER_WRITE = 10;
 
+/**
+ * Surfaces whose PROVIDER answers `custom_fields` itself (the one owner of the value, so it is
+ * answered even while the section is not mounted). The section keeps its UI and doors there but
+ * contributes no value — a contribution replacing a provider value throws in the registry.
+ */
+const PROVIDER_OWNED_CUSTOM_FIELDS = new Set<string>(["matrx-user/notes"]);
+export function providerOwnsCustomFields(surfaceName: string): boolean {
+  return PROVIDER_OWNED_CUSTOM_FIELDS.has(surfaceName);
+}
+
 export interface CustomFieldAddRequest {
   label: string;
   type?: string | undefined;

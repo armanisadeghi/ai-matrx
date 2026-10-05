@@ -191,14 +191,7 @@ export function buildCrmRecordContextData(
     aliases: party.aka,
     pronouns: party.pronouns ?? "",
     locale: party.locale ?? "",
-    // Confidential: read through the split door, never off crm.party (its column is always blank).
-    // Withheld is said as withheld — never as "" (which would claim "not set").
-    date_of_birth:
-      detail.confidential?.state === "shown"
-        ? (detail.confidential.date_of_birth ?? "")
-        : null,
-    confidential_withheld:
-      detail.confidential?.state === "withheld" ? detail.confidential.fields : [],
+    date_of_birth: party.date_of_birth ?? "",
     founded_year: party.founded_year ?? null,
     industry_id: party.industry_id ?? "",
     do_not_contact_reason: party.do_not_contact_reason ?? "",

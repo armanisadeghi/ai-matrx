@@ -27,6 +27,7 @@ import { featureIcon } from "./feature-icons";
 import { useIntelligenceDirectory } from "./useIntelligenceDirectory";
 import type { DirectoryFeature, DirectoryJob } from "./index-model";
 import type { FeatureIntelligenceRow, IntelligenceContext, ResolvedPlace } from "./types";
+import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 export const INTELLIGENCE_QUERY_PARAM = "q";
 
@@ -68,13 +69,15 @@ export function useIntelligenceQuery(): [string, (next: string) => void] {
   const fromUrl = params.get(INTELLIGENCE_QUERY_PARAM) ?? "";
   const [query, setQuery] = useState(fromUrl);
   // Back/Forward to another query brings it back into the box.
-  useEffect(() => setQuery(fromUrl), [fromUrl]);
+  // Our own write echoes back here; a box whose URL form already matches keeps what was typed
+  // (a lone space writes no param, and must not be wiped).
+  useEffect(() => setQuery((q) => ((q.trim() ? q : "") === fromUrl ? q : fromUrl)), [fromUrl]);
   const update = (next: string) => {
     setQuery(next);
     const url = new URL(window.location.href);
     if (next.trim()) url.searchParams.set(INTELLIGENCE_QUERY_PARAM, next);
     else url.searchParams.delete(INTELLIGENCE_QUERY_PARAM);
-    window.history.replaceState(window.history.state, "", url.toString());
+    replaceAddressWithoutNavigating(url);
   };
   return [query, update];
 }

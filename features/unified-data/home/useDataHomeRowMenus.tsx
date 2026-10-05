@@ -29,6 +29,9 @@ import { createRecordsClient } from "@ai-matrx/records/core";
 import { restoreTableIn } from "@/features/unified-data/hub/doors";
 import { onReadTheHomeAgain } from "./readTheHomeAgain";
 import {
+  ArchiveDeliberatelyDialog,
+  codeDependsRefusal,
+  TableDuplicateDialog,
   TableRenameDialog,
   TableSettings,
   WhereItLives,
@@ -178,7 +181,13 @@ export function actionsForHomeTable(
   );
 }
 
-type Asked = { what: "share" | "rename" | "move" | "archive"; row: DataHomeRow; count: number };
+type Asked = {
+  what: "share" | "rename" | "duplicate" | "move" | "archive" | "archive-deliberately";
+  row: DataHomeRow;
+  count: number;
+  /** A table an app's code depends on: what the store's refusal named (v7 TABLE-EXPERIENCE item 6). */
+  codeDepends?: { slug: string; declaredIn: string | null };
+};
 
 const NO_PUBLIC_LINK_REASON = "No public link";
 const NO_TABLE_HISTORY_REASON = "No table history yet";
@@ -235,7 +244,11 @@ export function useDataHomeRowMenus({
       onRestored: () => onUnhide(row.id),
     });
     if (result.outcome === "needs-confirm") ask("archive", row);
-    else if (result.outcome === "refused") toast.error(result.sentence);
+    else if (result.outcome === "refused") {
+      const codeDepends = codeDependsRefusal(result.error);
+      if (codeDepends) setAsked((now) => ({ what: "archive-deliberately", row, count: (now?.count ?? 0) + 1, codeDepends }));
+      else toast.error(result.sentence);
+    }
   };
   const origin = typeof window !== "undefined" ? window.location.origin : undefined;
 
@@ -267,6 +280,8 @@ export function useDataHomeRowMenus({
           }
         },
         rename: () => ask("rename", row),
+        // v7 TABLE-EXPERIENCE item 3: the one Duplicate dialog (records-ui), in the table's organization.
+        duplicate: () => ask("duplicate", row),
         move: () => ask("move", row),
         isFavorite: starred.has(row.id),
         toggleFavorite: () => stars.toggle(row.id),
@@ -393,6 +408,40 @@ export function useDataHomeRowMenus({
             if (!open) close();
           }}
           onRenamed={() => onChanged()}
+        />,
+      )
+    ) : asked.what === "archive-deliberately" && asked.codeDepends ? (
+      inTablesOrganization(
+        <ArchiveDeliberatelyDialog
+          key={`deliberate-${asked.count}`}
+          tableId={tableId}
+          name={row.name}
+          slug={asked.codeDepends.slug}
+          declaredIn={asked.codeDepends.declaredIn}
+          open
+          onOpenChange={(open) => {
+            if (!open) close();
+          }}
+          onArchived={() => {
+            onHide(row.id);
+            onChanged();
+          }}
+        />,
+      )
+    ) : asked.what === "duplicate" ? (
+      inTablesOrganization(
+        <TableDuplicateDialog
+          key={`duplicate-${asked.count}`}
+          tableId={tableId}
+          name={row.name}
+          open
+          onOpenChange={(open) => {
+            if (!open) close();
+          }}
+          onDuplicated={(copy) => {
+            onChanged();
+            router.push(copy.path);
+          }}
         />,
       )
     ) : asked.what === "move" ? (

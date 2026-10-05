@@ -1,3 +1,4 @@
+-- draft: WITHDRAWN by Arman 2026-10-03 (feedback b608595c) — never apply
 -- chair-step: NEEDS ARMAN WATCHING — ONE POLICY, ALONE IN ITS TRANSACTION. Adds the restrictive SELECT
 -- policy hr_employee_confidential_readers on hr.employee (41 rows). Lock: CREATE POLICY takes ACCESS
 -- EXCLUSIVE on hr.employee and Supabase's sign-in freeze (measured 206 ms on the clone; over the 200 ms

@@ -11,16 +11,18 @@
  *    carries requested output types yet, and the panel says so. They DO narrow
  *    the agent picker by the agents' model outputs (`agent-output-filter.ts`).
  *  - SHAPES: the whole kind catalog (system + organization + mine) through the
- *    canonical Shapes list RPC, searchable, paged, selected pinned on top. A
- *    kind with a render_block skill toggles that skill in `addedSkills` (sent
- *    as `skill_config.included` — the same write the Quickset chips make); a
- *    kind with none is kept in `outputKinds` and marked "no skill".
+ *    canonical Shapes list RPC, searchable, paged, selected pinned on top, each
+ *    row with the shape's one-line description. A pick is recorded in
+ *    `outputKinds` only and sent as `output_kinds` on every request; the server
+ *    resolves the skill. An agent whose output schema fixes the root `__kind`
+ *    is LOCKED: the panel shows its shape(s) as locked with a short reason and
+ *    lets the person remove any pick the agent would refuse.
  *
  * State logic: `output-selection.ts` (pure, tested). Catalog read:
  * `useOutputShapeCatalog`.
  */
 
-import { useRef, useState, type ComponentType } from "react";
+import { useEffect, useRef, useState, type ComponentType } from "react";
 import {
   AudioLines,
   Braces,
@@ -32,6 +34,7 @@ import {
   Image as ImageIcon,
   Mic,
   Music,
+  Lock,
   Presentation,
   RotateCcw,
   Search,
@@ -40,6 +43,7 @@ import {
   Video,
   X,
 } from "lucide-react";
+import { fetchAgentOutputSchemas } from "../../../../../mandates/output-contract";
 import { Popover, PopoverContent, PopoverTrigger, Skeleton } from "@ai-matrx/design-system";
 import { cn } from "@ai-matrx/design-system";
 import { ErrorNotice } from "@host/components/errors/ErrorNotice";
@@ -56,14 +60,16 @@ import {
   OUTPUT_TYPES,
   clearOutput,
   isDefaultOutput,
+  migrateKindSkills,
+  conflictingKinds,
+  lockedShapesFromSchema,
   readOutputTypes,
-  resolveKindSkillId,
   selectedOutputKinds,
   summarizeOutput,
   toggleOutputKind,
   toggleOutputType,
 } from "./output-selection";
-import { SHAPE_SOURCES, knownShapeLabel, useOutputShapeCatalog, type ShapeSource } from "./useOutputShapeCatalog";
+import { SHAPE_SOURCES, knownShapeDescription, knownShapeLabel, useOutputShapeCatalog, type ShapeSource } from "./useOutputShapeCatalog";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 type IconType = ComponentType<{ className?: string }>;
@@ -85,6 +91,31 @@ const TYPE_ICONS: Record<string, IconType> = {
 
 const kindLabel = (kind: string) => knownShapeLabel(kind) ?? (humanizeIdentifier(kind) || kind);
 
+/** The reason line shown on a locked agent's shapes (interface-text: ≤60 chars). */
+const LOCKED_REASON = "This agent always answers in its own shape";
+
+/**
+ * The shape(s) this conversation's agent is locked to — read from its output
+ * schema (root `__kind` const/enum). `[]` while unread or when not locked.
+ */
+function useLockedShapes(conversationId: string): string[] {
+  const agentId = useAppSelector(
+    (state) => state.conversations.byConversationId[conversationId]?.agentId ?? null,
+  );
+  const [read, setRead] = useState<{ agentId: string; shapes: string[] } | null>(null);
+  useEffect(() => {
+    if (!agentId) return;
+    let cancelled = false;
+    fetchAgentOutputSchemas([agentId]).then((byId) => {
+      if (!cancelled) setRead({ agentId, shapes: lockedShapesFromSchema(byId[agentId]) });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [agentId]);
+  return read && read.agentId === agentId ? read.shapes : [];
+}
+
 /** The Output selection for one conversation, and its writes. */
 function useComposerOutput(conversationId: string) {
   const dispatch = useAppDispatch();
@@ -95,6 +126,19 @@ function useComposerOutput(conversationId: string) {
   const outputKinds = settings.outputKinds ?? [];
   const addedSkills = settings.addedSkills ?? [];
   const kinds = selectedOutputKinds(outputKinds, addedSkills, skills);
+  const lockedShapes = useLockedShapes(conversationId);
+
+  // Old chats: kind skills still in `addedSkills` become picked shapes once the
+  // skill list is known (the load thunk does the same when it is already loaded).
+  const migrated = useRef(new Set<string>());
+  useEffect(() => {
+    if (skills.length === 0 || migrated.current.has(conversationId)) return;
+    migrated.current.add(conversationId);
+    const moved = migrateKindSkills({ outputKinds, addedSkills }, skills);
+    if (moved.addedSkills.length !== addedSkills.length) {
+      dispatch(setBuilderAdvancedSettings({ conversationId, changes: moved }));
+    }
+  });
 
   const write = (changes: { outputTypes?: string[]; outputKinds?: string[]; addedSkills?: string[] }) =>
     dispatch(setBuilderAdvancedSettings({ conversationId, changes }));
@@ -103,6 +147,7 @@ function useComposerOutput(conversationId: string) {
     types,
     kinds,
     skills,
+    lockedShapes,
     isDefault: isDefaultOutput(types, kinds.length),
     label: summarizeOutput(types, kinds, kindLabel),
     toggleType: (id: string) => write({ outputTypes: toggleOutputType(types, id) }),
@@ -140,11 +185,11 @@ function TypeGrid({ types, onToggle }: { types: readonly string[]; onToggle: (id
 
 function ShapePicker({
   kinds,
-  skills,
+  lockedShapes,
   onToggle,
 }: {
   kinds: readonly string[];
-  skills: ReturnType<typeof useSkills>["skills"];
+  lockedShapes: readonly string[];
   onToggle: (kind: string) => void;
 }) {
   const [search, setSearch] = useState("");
@@ -159,24 +204,57 @@ function ShapePicker({
     (kind) => !needle || kind.toLowerCase().includes(needle) || kindLabel(kind).toLowerCase().includes(needle),
   );
   const unpinned = catalog.rows.filter((row) => !selected.has(row.kind));
-  const skillsKnown = skills.length > 0;
-  const hasSkill = (kind: string) => resolveKindSkillId(kind, skills) !== null;
+  const locked = lockedShapes.length > 0;
+  const refused = conflictingKinds(kinds, lockedShapes);
 
   const row = (kind: string, label: string, checked: boolean) => (
     <ComposerMenuRow
       key={kind}
       icon={Shapes}
       label={label}
+      description={knownShapeDescription(kind) ?? undefined}
       checked={checked}
-      detail={skillsKnown && !hasSkill(kind) ? "no skill" : undefined}
-      title={
-        skillsKnown && !hasSkill(kind)
-          ? `${label} (${kind}) — no skill teaches the model this shape yet; saved for this chat only`
-          : `${label} (${kind}) — adds its skill to this chat`
-      }
+      title={`${label} (${kind})`}
       onClick={() => onToggle(kind)}
     />
   );
+
+  if (locked) {
+    return (
+      <div className="flex min-h-0 flex-col">
+        <div className="flex items-center gap-1.5 px-2.5 pb-1 pt-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+          <Lock className="h-3 w-3 shrink-0" />
+          <span className="truncate">Shapes locked</span>
+        </div>
+        <ComposerMenuHelp>{LOCKED_REASON}</ComposerMenuHelp>
+        {lockedShapes.map((kind) => (
+          <ComposerMenuRow
+            key={kind}
+            icon={Lock}
+            label={kindLabel(kind)}
+            description={knownShapeDescription(kind) ?? undefined}
+            checked
+            title={`${kindLabel(kind)} (${kind}) — ${LOCKED_REASON}`}
+          />
+        ))}
+        {refused.length > 0 ? (
+          <>
+            <ComposerMenuDivider />
+            <ComposerMenuHelp>Remove these, the agent refuses them</ComposerMenuHelp>
+            {refused.map((kind) => (
+              <ComposerMenuRow
+                key={kind}
+                icon={X}
+                label={kindLabel(kind)}
+                title={`Remove ${kindLabel(kind)} from this chat`}
+                onClick={() => onToggle(kind)}
+              />
+            ))}
+          </>
+        ) : null}
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-0 flex-col">
@@ -275,20 +353,13 @@ function ShapePicker({
 /** The Output menu's body — rendered in the pill (page/splash) or inside + (compact). */
 export function ComposerOutputPanel({ conversationId }: { conversationId: string }) {
   const output = useComposerOutput(conversationId);
-  const unsent = output.skills.length > 0 ? output.kinds.filter((kind) => !resolveKindSkillId(kind, output.skills)) : [];
   return (
     <div className="@container flex min-h-0 flex-col">
       <ComposerMenuLabel>Output types</ComposerMenuLabel>
       <TypeGrid types={output.types} onToggle={output.toggleType} />
       <ComposerMenuHelp>Narrows the agent list. Not sent to the model.</ComposerMenuHelp>
       <ComposerMenuDivider />
-      <ShapePicker kinds={output.kinds} skills={output.skills} onToggle={output.toggleKind} />
-      {unsent.length > 0 ? (
-        <ComposerMenuHelp>
-          {unsent.length === 1 ? "1 selected shape has" : `${unsent.length} selected shapes have`} no skill yet, so the
-          model is not told about {unsent.length === 1 ? "it" : "them"}.
-        </ComposerMenuHelp>
-      ) : null}
+      <ShapePicker kinds={output.kinds} lockedShapes={output.lockedShapes} onToggle={output.toggleKind} />
       {!output.isDefault ? (
         <>
           <ComposerMenuDivider />

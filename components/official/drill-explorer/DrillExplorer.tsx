@@ -97,6 +97,7 @@ import {
   staleAfterKnobOf,
   type DrillExplorerProps,
 } from "./types";
+import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 type Unit = "points" | "usd";
 
@@ -127,7 +128,7 @@ function writeViewParam(ref: string | null) {
   const url = new URL(window.location.href);
   if (ref) url.searchParams.set(DRILL_VIEW_PARAM, ref);
   else url.searchParams.delete(DRILL_VIEW_PARAM);
-  if (url.href !== window.location.href) window.history.replaceState(window.history.state, "", url.href);
+  replaceAddressWithoutNavigating(url);
 }
 
 export function DrillExplorer({

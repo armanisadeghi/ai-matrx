@@ -10,6 +10,7 @@ import { useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 import { findInDocument } from "./find-in-document";
+import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 type AnchorProps = React.AnchorHTMLAttributes<HTMLAnchorElement> & {
   href: string;
@@ -78,7 +79,7 @@ export function InDocAnchor({ href, children, className, node: _node, onClick, .
           );
         }
         try {
-          window.history.replaceState(window.history.state, "", `#${encodeURIComponent(id)}`);
+          replaceAddressWithoutNavigating(`#${encodeURIComponent(id)}`);
         } catch {
           // A sandboxed frame may refuse history writes; the scroll already happened.
         }

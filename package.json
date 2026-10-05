@@ -713,6 +713,8 @@
     "dev-login": "bash scripts/dev-login.sh",
     "check:page-wide-has": "node scripts/check-page-wide-has.mjs",
     "check:page-wide-has:self-test": "node scripts/check-page-wide-has.mjs --self-test",
+    "check:history-state-bypass": "node scripts/check-history-state-bypass.mjs",
+    "check:history-state-bypass:self-test": "node scripts/check-history-state-bypass.mjs --self-test",
     "check:motion-standard": "node scripts/check-motion-standard.mjs",
     "check:motion-standard:self-test": "node scripts/check-motion-standard.mjs --self-test",
     "check:cursor-law": "node scripts/check-cursor-law.mjs",

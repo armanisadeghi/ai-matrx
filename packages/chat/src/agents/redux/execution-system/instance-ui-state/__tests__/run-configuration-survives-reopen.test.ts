@@ -121,6 +121,8 @@ it("persists tools and skills added mid-turn once the turn completes, keeping th
     removedTools: [],
     autoTools: null,
     surfaceName: null,
+    outputKinds: [],
+    outputTypes: ["text"],
   });
 });
 
@@ -136,6 +138,8 @@ it("parse round-trips the stored shape and ignores junk", () => {
     removedTools: [],
     autoTools: null,
     surfaceName: null,
+    outputKinds: [],
+    outputTypes: ["text"],
   });
   // The per-chat switch and removals survive a reopen too.
   expect(
@@ -143,6 +147,17 @@ it("parse round-trips the stored shape and ignores junk", () => {
       run_configuration: { removed_tools: ["web"], auto_tools: false },
     }),
   ).toMatchObject({ removedTools: ["web"], autoTools: false });
+  // The shapes picked in the composer's Output ride the same record — stored
+  // camelCase because the SERVER reads `run_configuration.outputKinds`.
+  expect(
+    parsePersistedRunConfiguration({
+      run_configuration: { outputKinds: ["quiz_set", 4, ""], outputTypes: ["text", "image"] },
+    }),
+  ).toMatchObject({ outputKinds: ["quiz_set"], outputTypes: ["text", "image"] });
+  // A stored empty types list is a choice (untick everything), not the default.
+  expect(
+    parsePersistedRunConfiguration({ run_configuration: { outputTypes: [] } }),
+  ).toMatchObject({ outputTypes: [] });
   expect(parsePersistedRunConfiguration({})).toBeNull();
   expect(parsePersistedRunConfiguration(null)).toBeNull();
 });

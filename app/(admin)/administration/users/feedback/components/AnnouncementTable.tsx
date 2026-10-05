@@ -23,7 +23,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import EditAnnouncementDialog from './EditAnnouncementDialog';
-import { renderAnnouncementMessage } from '@/utils/render-announcement-message';
+import { RichContent } from '@/components/rich-content/RichContent';
 import { CopyButtons } from '@/components/agent-copy/CopyButtons';
 import { csvExportItem, jsonExportItem } from '@/components/agent-copy/export';
 import { announcementSummary } from '../format';
@@ -307,9 +307,9 @@ export default function AnnouncementTable() {
                             <div>
                                 <div className="text-sm font-medium mb-2">Message</div>
                                 <div className="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
-                                    <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
-                                        {renderAnnouncementMessage(selectedAnnouncement.message)}
-                                    </p>
+                                    <div className="text-gray-700 dark:text-gray-300">
+                                        <RichContent source={selectedAnnouncement.message} level="standard" />
+                                    </div>
                                 </div>
                             </div>
                         </div>

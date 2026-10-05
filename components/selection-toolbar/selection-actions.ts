@@ -85,8 +85,12 @@ export const SELECTION_ACTION_MODES: Readonly<Record<string, ModeRule>> = {
   "selection:format-link": ["edit"],
   "selection:format-h1": ["edit"],
   "selection:format-h2": ["edit"],
+  "selection:format-h3": ["edit"],
   "selection:format-quote": ["edit"],
   "selection:format-list": ["edit"],
+  "selection:format-numbered": ["edit"],
+  "selection:format-tasks": ["edit"],
+  "selection:format-codeblock": ["edit"],
   "selection:format-variable": ["edit"],
   // Annotations (the annotation sidecar)
   "selection:highlight-yellow": HIGHLIGHT,

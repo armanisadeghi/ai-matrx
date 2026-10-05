@@ -8,6 +8,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { readAllRows } from "@ai-matrx/data/db";
+import { storedMandateKey, type AnyMandateKey } from "@ai-matrx/agents/mandates";
 import { requireUserId } from "@/utils/auth/getUserId";
 
 export interface OrgPosition {
@@ -111,7 +112,7 @@ export const positionsService = {
 /** Where a seat stands on the ladder: noted → job defined → an agent holds it. */
 export interface SeatJob {
   mandateId: string;
-  mandateKey: string;
+  mandateKey: AnyMandateKey;
   label: string;
   /** The agent that does the job: the job's own Holder, else a live binding's. */
   holderAgentId: string | null;
@@ -161,7 +162,7 @@ export async function readSeatJobs(mandateIds: readonly string[]): Promise<Map<s
   for (const d of defs) {
     out.set(d.id, {
       mandateId: d.id,
-      mandateKey: d.mandate_key,
+      mandateKey: storedMandateKey(d.mandate_key),
       label: d.label ?? d.mandate_key,
       holderAgentId:
         (d.default_holder_type === "agent" ? d.default_holder_id : null) ?? boundAgent.get(d.id) ?? null,

@@ -112,34 +112,9 @@ export interface DedupScanResult {
   pending_candidates: number;
 }
 
-/**
- * A contact's confidential facts (tax ID for a company, date of birth for a person), read through
- * `crm_party_confidential_read` — never from `crm.party`, whose two columns stay blank. `withheld`
- * means the person may not read them (the organization's knob `crm/party_confidential_readers`
- * names who may); `shown` carries the values (null = not recorded).
- */
-export type PartyConfidential =
-  | {
-      party_id: string;
-      state: "shown";
-      level: "viewer" | "commenter" | "editor";
-      may_edit: boolean;
-      tax_id: string | null;
-      date_of_birth: string | null;
-    }
-  | {
-      party_id: string;
-      state: "withheld";
-      level: null;
-      may_edit: false;
-      fields: ("tax_id" | "date_of_birth")[];
-    };
-
 /** Everything the record page needs, loaded in one parallel batch. */
 export interface PartyDetail {
   party: PartyListRow;
-  /** `null` = the confidential read failed or has not answered; the page says so, it never guesses. */
-  confidential: PartyConfidential | null;
   contactPoints: ContactPoint[];
   addresses: AddressRow[];
   /** Person side: where this person works / worked. */
@@ -355,6 +330,10 @@ export interface PartyListFilters {
   display_name?: string;
   job_title?: string;
   primary_domain?: string;
+  /** Substring of the tax ID. */
+  tax_id?: string;
+  /** `YYYY`, `YYYY-MM` or `YYYY-MM-DD` of the date of birth. */
+  date_of_birth?: string;
   party_kind?: PartyKind[];
   do_not_contact?: boolean;
   /** "any" = any tier at all; "none" = explicitly not an expert. */
@@ -408,6 +387,8 @@ export const PARTY_SORT_KEYS = [
   "party_kind",
   "job_title",
   "primary_domain",
+  "tax_id",
+  "date_of_birth",
   "created_at",
   "updated_at",
   "expert_status",
@@ -444,6 +425,8 @@ export const PARTY_COLUMN_FILTER_KEYS = [
   "display_name",
   "job_title",
   "primary_domain",
+  "tax_id",
+  "date_of_birth",
   "party_kind",
   "do_not_contact",
   "expert_status",
@@ -459,6 +442,8 @@ export const PARTY_TEXT_FILTER_KEYS = [
   "display_name",
   "job_title",
   "primary_domain",
+  "tax_id",
+  "date_of_birth",
 ] as const;
 export type PartyTextFilterKey = (typeof PARTY_TEXT_FILTER_KEYS)[number];
 

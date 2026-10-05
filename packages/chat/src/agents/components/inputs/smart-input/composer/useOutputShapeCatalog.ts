@@ -17,7 +17,7 @@
  */
 
 import { useEffect, useState } from "react";
-import { fetchShapePage } from "@host/features/content-ir/browse/service";
+import { fetchShapeDescriptions, fetchShapePage } from "@host/features/content-ir/browse/service";
 import type { ShapeBrowseRow } from "@host/features/content-ir/browse/types";
 import type { EntityFilters, EntityListQuery, EntityListSort } from "@host/lib/entity-list/types";
 import type { ListScope } from "@host/lib/list-scope/types";
@@ -41,8 +41,34 @@ export function knownShapeLabel(kind: string): string | null {
   return KIND_LABELS.get(kind) ?? null;
 }
 
-function remember(rows: readonly ShapeBrowseRow[]): void {
+/** Kind slug → one-line description (content_ir.kind_definition.metadata.description). */
+const KIND_DESCRIPTIONS = new Map<string, string>();
+
+/** The shape's description for a kind slug, or `null` when it has none (or is not read yet). */
+export function knownShapeDescription(kind: string): string | null {
+  return KIND_DESCRIPTIONS.get(kind) ?? null;
+}
+
+/**
+ * Remember each row's label, then read the page's descriptions in one query and
+ * bump `onDescriptions` when they land. A failed description read is reported
+ * loudly and leaves the rows without a description line — never a blank pick.
+ */
+function remember(rows: readonly ShapeBrowseRow[], onDescriptions?: () => void): void {
   for (const row of rows) KIND_LABELS.set(row.kind, row.label);
+  const missing = rows.filter((row) => !KIND_DESCRIPTIONS.has(row.kind));
+  if (missing.length === 0) return;
+  fetchShapeDescriptions(missing.map((row) => row.id))
+    .then((byId) => {
+      for (const row of missing) {
+        const text = byId.get(row.id);
+        if (text) KIND_DESCRIPTIONS.set(row.kind, text);
+      }
+      onDescriptions?.();
+    })
+    .catch((cause: unknown) => {
+      console.error("[composer-output] could not read shape descriptions", cause);
+    });
 }
 
 const PAGE_SIZE = 50;
@@ -109,6 +135,8 @@ export function useOutputShapeCatalog({
   const [state, setState] = useState<PageState>(EMPTY);
   const [totals, setTotals] = useState<Partial<Record<ShapeSource, number>>>({});
   const [loadingMore, setLoadingMore] = useState(false);
+  const [, setDescriptionTick] = useState(0);
+  const onDescriptions = () => setDescriptionTick((n) => n + 1);
   const key = `${source}\u0000${debounced}\u0000${attempt}`;
 
   useEffect(() => {
@@ -123,7 +151,7 @@ export function useOutputShapeCatalog({
     fetchShapePage(sourceQuery(source, debounced, 1), SORT)
       .then((result) => {
         if (cancelled) return;
-        remember(result.rows);
+        remember(result.rows, onDescriptions);
         setState({ key, rows: result.rows, total: result.total, page: 1, error: null });
         setTotals((prev) => ({ ...prev, [source]: result.total }));
       })
@@ -166,7 +194,7 @@ export function useOutputShapeCatalog({
     setLoadingMore(true);
     fetchShapePage(sourceQuery(source, debounced, nextPage), SORT)
       .then((result) => {
-        remember(result.rows);
+        remember(result.rows, onDescriptions);
         setState((prev) =>
           prev.key === requestKey ? { ...prev, rows: [...prev.rows, ...result.rows], page: nextPage } : prev,
         );

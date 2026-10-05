@@ -219,6 +219,34 @@ export const PARTY_COLUMNS: MatrxColumnDef<PartyListRow>[] = [
       ),
   },
   {
+    id: "date_of_birth",
+    accessorKey: "date_of_birth",
+    header: "Born",
+    sortable: true,
+    filter: "text",
+    cell: (row) =>
+      row.date_of_birth ? (
+        <span className="whitespace-nowrap text-xs tabular-nums text-muted-foreground">
+          {row.date_of_birth}
+        </span>
+      ) : (
+        <span className="text-xs text-muted-foreground">—</span>
+      ),
+  },
+  {
+    id: "tax_id",
+    accessorKey: "tax_id",
+    header: "Tax ID",
+    sortable: true,
+    filter: "text",
+    cell: (row) =>
+      row.tax_id ? (
+        <span className="font-mono text-xs text-muted-foreground">{row.tax_id}</span>
+      ) : (
+        <span className="text-xs text-muted-foreground">—</span>
+      ),
+  },
+  {
     id: "do_not_contact",
     accessorKey: "do_not_contact",
     header: "DNC",

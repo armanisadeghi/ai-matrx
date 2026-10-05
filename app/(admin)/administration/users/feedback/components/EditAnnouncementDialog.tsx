@@ -13,7 +13,7 @@ import { Switch } from '@/components/ui/switch';
 import { toast } from "@/lib/toast";
 import { Eye, EyeOff, AlertCircle, AlertTriangle, Info, Megaphone, X } from 'lucide-react';
 import { Card } from '@/components/ui/card';
-import { renderAnnouncementMessage } from '@/utils/render-announcement-message';
+import { RichContent } from '@/components/rich-content/RichContent';
 import { useRegisterAnnouncementEditor } from '@/features/admin/users/components/FeedbackConsoleEditorStore';
 import { ProTextarea } from "@/components/official/ProTextarea";
 
@@ -267,9 +267,13 @@ export default function EditAnnouncementDialog({ announcement, open, onOpenChang
                                         {title || 'Announcement Title'}
                                     </h2>
                                     <div className="prose dark:prose-invert max-w-none mb-6">
-                                        <p className="text-base text-gray-800 dark:text-gray-200 whitespace-pre-wrap">
-                                            {message ? renderAnnouncementMessage(message) : 'Announcement message will appear here...'}
-                                        </p>
+                                        <div className="text-base text-gray-800 dark:text-gray-200">
+                                            {message ? (
+                                                <RichContent source={message} level="standard" />
+                                            ) : (
+                                                'Announcement message will appear here...'
+                                            )}
+                                        </div>
                                     </div>
                                     <div className="flex gap-3 justify-end">
                                         <Button variant="outline" size="sm" disabled className="min-w-[100px]">

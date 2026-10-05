@@ -1,7 +1,7 @@
 /**
  * The composer Output picker's state logic: Text on by default, multi-select
- * types, any number of shapes, a shape's skill rides `addedSkills` exactly as
- * the Quickset chips do, and × resets to Text only.
+ * types, any number of shapes, a pick is recorded in `outputKinds` only (the server
+ * resolves its skill), and × resets to Text only.
  */
 
 import type { ShapeChipSkillSource } from "../shape-chips";
@@ -11,7 +11,9 @@ import {
   isDefaultOutput,
   kindForSkillSlug,
   readOutputTypes,
-  resolveKindSkillId,
+  conflictingKinds,
+  lockedShapesFromSchema,
+  migrateKindSkills,
   selectedOutputKinds,
   summarizeOutput,
   toggleOutputKind,
@@ -56,26 +58,28 @@ describe("shape ↔ skill", () => {
     expect(kindForSkillSlug("research-helper")).toBeNull();
   });
 
-  it("resolves a kind to its active skill, preferring the JSON skill over the _xml twin", () => {
-    expect(resolveKindSkillId("flashcard_set", SKILLS)).toBe("uuid-flash");
-    expect(resolveKindSkillId("kpi_card", SKILLS)).toBe("uuid-kpi");
-    expect(resolveKindSkillId("retired_thing", SKILLS)).toBeNull();
-    expect(resolveKindSkillId("no_such_kind", SKILLS)).toBeNull();
-  });
-
   it("a shape switched on from the Quickset chips shows as selected here", () => {
     expect(selectedOutputKinds([], ["uuid-flash", "uuid-other"], SKILLS)).toEqual(["flashcard_set"]);
   });
 
-  it("toggling a kind with a skill adds/removes that skill; one without is stored only", () => {
+  it("toggling a kind records it in outputKinds only — no skill id is ever added", () => {
     let state = { outputKinds: [] as string[], addedSkills: ["uuid-other"] };
     state = toggleOutputKind(state, "timeline", SKILLS);
-    expect(state).toEqual({ outputKinds: ["timeline"], addedSkills: ["uuid-other", "uuid-timeline"] });
+    expect(state).toEqual({ outputKinds: ["timeline"], addedSkills: ["uuid-other"] });
     state = toggleOutputKind(state, "bespoke_org_kind", SKILLS);
-    expect(state.outputKinds).toEqual(["timeline", "bespoke_org_kind"]);
-    expect(state.addedSkills).toEqual(["uuid-other", "uuid-timeline"]);
+    expect(state).toEqual({ outputKinds: ["timeline", "bespoke_org_kind"], addedSkills: ["uuid-other"] });
     state = toggleOutputKind(state, "timeline", SKILLS);
     expect(state).toEqual({ outputKinds: ["bespoke_org_kind"], addedSkills: ["uuid-other"] });
+  });
+
+  it("loading an old chat moves kind skills from addedSkills into outputKinds", () => {
+    const moved = migrateKindSkills(
+      { outputKinds: ["quiz_set"], addedSkills: ["uuid-flash", "uuid-other", "uuid-kpi", "uuid-flash"] },
+      SKILLS,
+    );
+    expect(moved).toEqual({ outputKinds: ["quiz_set", "flashcard_set", "kpi_card"], addedSkills: ["uuid-other"] });
+    // Idempotent: a migrated chat migrates to itself.
+    expect(migrateKindSkills(moved, SKILLS)).toEqual(moved);
   });
 
   it("turning off a chip-added shape removes its skill", () => {
@@ -101,5 +105,28 @@ describe("pill label", () => {
     expect(summarizeOutput(["text", "image", "video"], ["a", "b"])).toBe("3 types + 2 shapes");
     expect(summarizeOutput([], ["flashcard_set"])).toBe("Flashcard Set");
     expect(summarizeOutput([], [])).toBe("Output");
+  });
+});
+
+describe("locked agents", () => {
+  it("reads the fixed root __kind (const or enum), under any schema wrapper", () => {
+    const bare = { type: "object", properties: { __kind: { const: "quiz_set" } } };
+    expect(lockedShapesFromSchema(bare)).toEqual(["quiz_set"]);
+    expect(lockedShapesFromSchema({ schema: bare })).toEqual(["quiz_set"]);
+    expect(lockedShapesFromSchema({ json_schema: { schema: bare } })).toEqual(["quiz_set"]);
+    expect(
+      lockedShapesFromSchema({ properties: { __kind: { enum: ["a", "b", 3] } } }),
+    ).toEqual(["a", "b"]);
+  });
+
+  it("no fixed value means not locked", () => {
+    expect(lockedShapesFromSchema(null)).toEqual([]);
+    expect(lockedShapesFromSchema({ properties: { __kind: { type: "string" } } })).toEqual([]);
+    expect(lockedShapesFromSchema({ properties: { title: { type: "string" } } })).toEqual([]);
+  });
+
+  it("names the picks the server would refuse", () => {
+    expect(conflictingKinds(["quiz_set", "timeline"], ["quiz_set"])).toEqual(["timeline"]);
+    expect(conflictingKinds(["timeline"], [])).toEqual([]);
   });
 });

@@ -377,22 +377,10 @@ const values: SurfaceValue[] = [
     name: "date_of_birth",
     label: "Date of birth",
     description:
-      "Person date of birth, for this record's confidential readers only; null when withheld or unset. Bind only when the task requires it.",
+      "Person date of birth, when recorded. Bind only when the task requires it.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 10,
-    autoContext: false,
-    group: "record_identity",
-    sortOrder: 148,
-  },
-  {
-    name: "confidential_withheld",
-    label: "Withheld confidential fields",
-    description:
-      "Confidential fields this person may not read on the record (e.g. date_of_birth, tax_id). A listed field exists but is withheld, never 'not set'.",
-    valueType: "array",
-    alwaysAvailable: false,
-    typicalCharCount: 40,
     autoContext: false,
     group: "record_identity",
     sortOrder: 148,
@@ -1062,8 +1050,7 @@ export function createCrmRecordScope(values: {
   aliases?: string[];
   pronouns?: string;
   locale?: string;
-  date_of_birth?: string | null;
-  confidential_withheld?: string[];
+  date_of_birth?: string;
   founded_year?: number | null;
   industry_id?: string;
   do_not_contact_reason?: string;
