@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "aef96a28401d";
+export const KIND_REGISTRY_FINGERPRINT = "69d14418e180";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -230,9 +230,9 @@ export interface AgentDefinitionVariableControl {
  */
 export interface AgentFactoryCaseVerdict {
   /**
-   * The registered kind this payload is an instance of, when it is one.
+   * The storage marker the emitting step wrote, carried unchanged.
    */
-  __kind?: string;
+  __kind?: string | null;
   case_id: string;
   criteria: AgentFactoryCriterionVerdict[];
   preferred: "a" | "b" | "tie" | "both_fail";
@@ -245,12 +245,16 @@ export interface AgentFactoryCaseVerdict {
  */
 export interface AgentFactoryCriterionVerdict {
   /**
-   * The registered kind this payload is an instance of, when it is one.
+   * The storage marker the emitting step wrote, carried unchanged.
    */
-  __kind?: string;
+  __kind?: string | null;
   evidence: string;
   criterion: string;
   preferred: "a" | "b" | "tie" | "both_fail";
+  /**
+   * Required whenever preferred is not tie: the kind of error the LOSING answer made on this criterion (on both_fail: the error the failing answers share). omitted_required = left out something the job requires; included_excluded = included something the job says to leave out; unsupported_claim = stated or inferred something the input does not support; misattributed = right item, wrong person/source/field; wrong_value = wrong date, amount, name or other stated value; wrong_category = wrong label, class or decision; format_violation = broke the required format or shape; no_answer = refused, empty or off-task; other = none of these fits. Null only on a tie.
+   */
+  error_class?: "omitted_required" | "included_excluded" | "unsupported_claim" | "misattributed" | "wrong_value" | "wrong_category" | "format_violation" | "no_answer" | "other" | null;
 }
 
 /**
@@ -260,9 +264,9 @@ export interface AgentFactoryCriterionVerdict {
  */
 export interface AgentFactoryFit {
   /**
-   * The registered kind this payload is an instance of, when it is one.
+   * The storage marker the emitting step wrote, carried unchanged.
    */
-  __kind?: string;
+  __kind?: string | null;
   reason: string;
   verdict: "one_agent" | "workflow";
   /**
@@ -278,9 +282,9 @@ export interface AgentFactoryFit {
  */
 export interface AgentFactoryGateResult {
   /**
-   * The registered kind this payload is an instance of, when it is one.
+   * The storage marker the emitting step wrote, carried unchanged.
    */
-  __kind?: string;
+  __kind?: string | null;
   passed: boolean;
   /**
    * The case and the words that decide it.
@@ -304,9 +308,9 @@ export interface AgentFactoryInput {
    */
   name: string;
   /**
-   * The registered kind this payload is an instance of, when it is one.
+   * The storage marker the emitting step wrote, carried unchanged.
    */
-  __kind?: string;
+  __kind?: string | null;
   /**
    * The value used when when_absent is 'use_default'.
    */
@@ -338,9 +342,9 @@ export interface AgentFactoryKindProposal {
   slug: string;
   label: string;
   /**
-   * The registered kind this payload is an instance of, when it is one.
+   * The storage marker the emitting step wrote, carried unchanged.
    */
-  __kind?: string;
+  __kind?: string | null;
   fields: AgentFactoryOutputField[];
   /**
    * One realistic payload, as JSON text.
@@ -367,9 +371,9 @@ export interface AgentFactoryOutputChoice {
    */
   kind?: string | null;
   /**
-   * The registered kind this payload is an instance of, when it is one.
+   * The storage marker the emitting step wrote, carried unchanged.
    */
-  __kind?: string;
+  __kind?: string | null;
   choice: "active_kind" | "new_kind_proposal";
   /**
    * One line: why this kind fits the job.
@@ -397,9 +401,9 @@ export interface AgentFactoryOutputField {
    */
   type: string;
   /**
-   * The registered kind this payload is an instance of, when it is one.
+   * The storage marker the emitting step wrote, carried unchanged.
    */
-  __kind?: string;
+  __kind?: string | null;
   required: boolean;
   description: string;
 }
@@ -412,9 +416,9 @@ export interface AgentFactoryOutputField {
 export interface AgentFactoryProfile {
   tier: "fast" | "standard" | "deep";
   /**
-   * The registered kind this payload is an instance of, when it is one.
+   * The storage marker the emitting step wrote, carried unchanged.
    */
-  __kind?: string;
+  __kind?: string | null;
   /**
    * One line: what about the job sets this tier.
    */
@@ -433,9 +437,9 @@ export interface AgentFactoryProfile {
 export interface AgentFactorySendBack {
   step: "contract" | "goal" | "tool_choice" | "instructions";
   /**
-   * The registered kind this payload is an instance of, when it is one.
+   * The storage marker the emitting step wrote, carried unchanged.
    */
-  __kind?: string;
+  __kind?: string | null;
   /**
    * Each a concrete defect the step can act on, never a style note.
    */
@@ -453,9 +457,9 @@ export interface AgentFactoryToolPick {
    */
   name: string;
   /**
-   * The registered kind this payload is an instance of, when it is one.
+   * The storage marker the emitting step wrote, carried unchanged.
    */
-  __kind?: string;
+  __kind?: string | null;
   /**
    * One line: which part of the job needs it.
    */
@@ -8301,7 +8305,7 @@ export interface AgentDefinition {
  * code saves it through the one guarded writer, so a build creates exactly one
  * agent row.
  *  *
- *  * Kind `agent_factory_build` (registry v2).
+ *  * Kind `agent_factory_build` (registry v4).
  */
 export interface AgentFactoryBuild {
   /**
@@ -8345,7 +8349,7 @@ export interface AgentFactoryBuild {
  * A Mandate-backed build skips this step: its Provision and output kind ARE
  * the contract, and the factory never re-decides them.
  *  *
- *  * Kind `agent_factory_contract` (registry v2).
+ *  * Kind `agent_factory_contract` (registry v4).
  */
 export interface AgentFactoryContract {
   fit: AgentFactoryFit;
@@ -8390,7 +8394,7 @@ export interface AgentFactoryInstructions {
  * the goal spec's gated criteria and the blind pairwise comparison. Code
  * un-blinds A/B afterwards.
  *  *
- *  * Kind `agent_factory_proof_review` (registry v2).
+ *  * Kind `agent_factory_proof_review` (registry v4).
  */
 export interface AgentFactoryProofReview {
   cases: AgentFactoryCaseVerdict[];
@@ -8410,7 +8414,7 @@ export interface AgentFactoryProofReview {
 /**
  * The tools the new agent gets, and the profile class its model is chosen by.
  *  *
- *  * Kind `agent_factory_tool_choice` (registry v2).
+ *  * Kind `agent_factory_tool_choice` (registry v4).
  */
 export interface AgentFactoryToolChoice {
   tools?: AgentFactoryToolPick[];
