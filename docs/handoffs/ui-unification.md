@@ -80,6 +80,16 @@
 - Owner feedback: double bottom padding on table-footer pages; feature cards need more space above/below (top too busy); kit-card coloured chips all different sizes — annihilate; system page internal page-top (two lines + back chevron) busy; builder proposals OK.
 - Lanes running: page rhythm (spacing scale + clearance, no double padding); canonical chip + sweep; page-top templates (one-line internal) + rollout; table playground rebuild on controls + 12 flaws (APPROVED); app-wide rollout coordinator (doors → controls, codemods, census leftovers).
 
+## QUEUED for the next rollout wave (found 2026-10-05)
+- Marketing page headers (Rulebook, Industry packs, Setup) trip the tap guard (3px neighbour).
+- Quiz save-error copy menu at 375: 32px button (canon 38).
+- Chat timeline phase pills off-centre (14 vs 10).
+- Content-plan setup page at 1440 with chat open: middle work-order column squeezed to ~40px.
+- Agents table at 1024: Tags column starts under pinned ACTIONS until scrolled.
+- Wave-1 leftovers: dashboard "Create a note" wraps at 375; /tasks filter chips wrap at 1440; /chat 2px pill overflow + page-rhythm gap; /files td padding around a tap button.
+- Unverified by eye: chat flag chips, working-document view controls, flashcards block header/"Go deeper", admin limits numeric/mark inputs + Tile rows.
+- Remaining waves: tab rails onto TabsList overflow (27), raw buttons in packages/chat + mardown-display, chips app/(dev) 64 + content-ir 48 + 7 marketing, page-top raw headers 203 + sentences 380, census leftovers (spinners, text sizes → type-*, palette colours).
+
 ## OPEN / NEXT
 - **The rollout, after the owner finalises the pages above:**
   - DONE 2026-10-04: the system is in `@ai-matrx/design-system/controls`, locked in `matrx-tap-lock`; `ControlScope` stands in for the tap tokens' 28/34 flip until it lands app-wide;
