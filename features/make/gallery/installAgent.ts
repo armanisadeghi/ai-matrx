@@ -12,11 +12,39 @@
 // with `{{table:…}}` / `{{agent:…}}` resolved and noted (kind 'workflow'). A re-open resumes:
 // what the install already lists (by its title) is never made twice.
 
-import type { TemplateDoorAnswer, TemplatePlanBinding, TemplatePlanExtraAgent, TemplateWorkflow } from "@ai-matrx/records/templates";
+import type { TemplateDoorAnswer } from "@ai-matrx/records/templates";
 import type { TemplateAgentBinding, TemplateAgentCopier } from "@/features/kits/templateAgentCopy";
 import { buildMergeFieldBinding, resolveIdPlaceholders, type MergeBindingResolver, type MergeFieldBinding } from "./mergeBinding";
 
 export type InstallAnswer = TemplateDoorAnswer;
+
+// The plan's host parts as the door answers them (@ai-matrx/records >= 0.70.0 templates/extras.ts:
+// TemplatePlanBinding / TemplatePlanExtraAgent / TemplateWorkflow), read structurally from the
+// answer so an older package or a template without them reads as "nothing to do".
+export interface TemplatePlanBinding {
+  semantic: "collection" | "reference" | "value";
+  table: string;
+  rowKey?: string;
+  field?: string;
+  transform?: { name: string; template?: string; join?: string; max?: number; header?: string };
+  limit?: number;
+  sort?: { field: string; dir: "asc" | "desc" };
+  match?: Record<string, unknown>;
+  missing?: string;
+}
+export interface TemplatePlanExtraAgent {
+  key: string;
+  platformAgent: { id: string; name: string };
+  name: string;
+  bindings: Array<{ variable: string; describes: string; binding: TemplatePlanBinding }>;
+}
+export interface TemplateWorkflow {
+  key: string;
+  name: string;
+  description: string;
+  definition: unknown;
+}
+type HostBlock = { extra_agents?: TemplatePlanExtraAgent[] | null; workflows?: TemplateWorkflow[] | null; ids?: Record<string, string> } | null;
 
 type Made = { kind: string; id: string | null; title: string | null; ref?: string };
 
@@ -25,7 +53,7 @@ function madeOf(answer: InstallAnswer, kind: "agent" | "workflow"): Made[] {
 }
 
 function hostOf(answer: InstallAnswer) {
-  const host = answer.host ?? null;
+  const host = (answer["host"] ?? null) as HostBlock;
   return {
     extras: (host?.extra_agents ?? []) as TemplatePlanExtraAgent[],
     workflows: (host?.workflows ?? []) as TemplateWorkflow[],
