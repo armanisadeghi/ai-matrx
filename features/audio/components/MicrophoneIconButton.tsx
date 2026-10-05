@@ -34,9 +34,10 @@ import React, {
   Suspense,
 } from "react";
 import { Mic } from "lucide-react";
+import { Button } from "@ai-matrx/design-system/controls";
 import { cn } from "@/lib/utils";
 
-export type MicVariant = "icon-only" | "inline-expand" | "modal-controls";
+export type MicVariant = "icon-only" | "inline-expand" | "modal-controls" | "control";
 
 export interface MicrophoneIconButtonHandle {
   /** Stop recording and deliver transcript via `onTranscriptOnlyComplete`. */
@@ -159,6 +160,21 @@ export const MicrophoneIconButton = forwardRef<
   }, [disabled]);
 
   // ── Before engagement: just an icon, nothing more ────────────────────────
+  if (!engaged && variant === "control") {
+    return (
+      <Button
+        id={id}
+        variant="quiet"
+        icon={<Mic />}
+        onClick={handleClick}
+        disabled={disabled}
+        title={label}
+        aria-label={label}
+        className={className}
+      />
+    );
+  }
+
   if (!engaged) {
     return (
       <button
