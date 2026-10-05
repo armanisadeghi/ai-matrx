@@ -110,6 +110,7 @@ export function BillingSummary({ scope }: { scope: BillingScope }) {
   const plan = catalog.status === "ready" ? catalog.plans.find((item) => item.planKey === activeRead.subscription?.plan_key) : null;
   const periodEnd = dateLabel(activeRead.subscription.current_period_end);
   const recovering = ["past_due", "unpaid", "incomplete"].includes(activeRead.subscription.status);
+  const invoiceUrl = recovering && invoiceScope === scopeKey ? invoice?.url ?? null : null;
   return (
     <section className="rounded-md border border-border bg-card p-4" aria-label={title}>
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -123,7 +124,7 @@ export function BillingSummary({ scope }: { scope: BillingScope }) {
       {recovering ? <p className="mt-2 text-sm text-destructive">Payment needs attention.</p> : null}
       {recoveryError?.scope === scopeKey ? <ErrorNotice size="inline" message={recoveryError.reason} actions={<Button size="sm" variant="outline" onClick={retry}>Retry</Button>} /> : null}
       <div className="mt-4 flex flex-wrap gap-2">
-        {recovering && invoiceScope === scopeKey && invoice?.url ? <Button size="sm" onClick={() => window.location.assign(invoice.url)}>{invoice.requiresAction ? "Complete payment" : "Pay invoice"}</Button> : null}
+        {invoiceUrl ? <Button size="sm" onClick={() => window.location.assign(invoiceUrl)}>{invoice?.requiresAction ? "Complete payment" : "Pay invoice"}</Button> : null}
         <SubscriptionControls livemode={livemode} scope={scope.kind === "personal" ? { kind: "personal" } : { kind: "organization", organizationId: scope.organizationId }} label="Manage billing" />
       </div>
     </section>
