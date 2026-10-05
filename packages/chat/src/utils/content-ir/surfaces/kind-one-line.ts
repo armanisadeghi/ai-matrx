@@ -13,6 +13,7 @@
 
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { deriveInstanceTitle } from "../instance-title";
+import { UNREADABLE_KIND_NOTE } from "./kind-text-to-markdown";
 import {
   findBrokenKindJsonRegions,
   findEmbeddedKindJsonRegions,
@@ -23,6 +24,7 @@ import {
   hasKindKey,
   kindGrammar,
   mayHoldKindKey,
+  hasJsonKindKey,
   normalizeKindSpellings,
   quotedSourceRanges,
   regionJson,
@@ -106,7 +108,45 @@ export function inlineKindText(raw: string, options: { plain?: boolean } = {}): 
       if (end > key) out = out.slice(0, brace) + kindName(firstKindSlug(out.slice(key, end))) + out.slice(end);
     }
   }
-  return out;
+  return unreadableKindsAsNote(out);
+}
+
+/**
+ * Whether parsed JSON text is an object whose `__kind` is not a string — a
+ * list, number, boolean or null: broken structured output (round 11, L2). An
+ * object under `__kind` is a shape (a pasted schema), not a kind (round 10).
+ */
+function holdsUnreadableKind(json: string): boolean {
+  let value: unknown;
+  try {
+    value = JSON.parse(json);
+  } catch {
+    return false;
+  }
+  if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
+  if (!Object.prototype.hasOwnProperty.call(value, "__kind")) return false;
+  const kind = (value as Record<string, unknown>).__kind;
+  if (typeof kind === "string") return false;
+  return !(typeof kind === "object" && kind !== null && !Array.isArray(kind));
+}
+
+/**
+ * A complete JSON kind region whose `__kind` cannot name a kind (`{"__kind":
+ * ["x"], …}`, `{"__kind": 5}`) → the one-line unreadable note, the words the
+ * export writes (`UNREADABLE_KIND_NOTE`), instead of raw JSON (round 11, L2).
+ */
+export function unreadableKindsAsNote(text: string): string {
+  if (!text || !mayHoldKindKey(text) || !hasJsonKindKey(text)) return text;
+  let out = "";
+  let cursor = 0;
+  for (const region of scanKindSpellingRegions(text)) {
+    if (region.status !== "complete") continue;
+    const json = regionJson(region);
+    if (json === null || !holdsUnreadableKind(json)) continue;
+    out += text.slice(cursor, region.start) + UNREADABLE_KIND_NOTE;
+    cursor = region.end;
+  }
+  return cursor === 0 ? text : out + text.slice(cursor);
 }
 
 /**
@@ -167,8 +207,15 @@ function computeSpelledKindsAsOneLine(text: string): string {
   let out = "";
   let cursor = 0;
   for (const region of scanKindSpellingRegions(text)) {
-    // A literal key is lifted by the pipeline — unless it broke in prose.
-    if (region.family === "lifted" && !region.markdown && region.status !== "broken") continue;
+    // A literal key is lifted by the pipeline — unless it broke in prose, or
+    // its `__kind` cannot name a kind (round 11, L2: the unreadable note).
+    if (region.family === "lifted" && !region.markdown && region.status !== "broken") {
+      const json = region.status === "complete" ? regionJson(region) : null;
+      if (json === null || !holdsUnreadableKind(json)) continue;
+      out += text.slice(cursor, region.start) + UNREADABLE_KIND_NOTE;
+      cursor = region.end;
+      continue;
+    }
     out += text.slice(cursor, region.start) + regionOneLine(region);
     cursor = region.end;
   }

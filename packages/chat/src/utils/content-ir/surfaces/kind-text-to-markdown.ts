@@ -62,7 +62,8 @@ function carriesBrokenKind(value: unknown, depth = 0): boolean {
     const kind = record.__kind;
     // An object / array under `__kind` is a shape (a pasted JSON schema's
     // `properties`), not a kind — left as written (round 10).
-    const shape = typeof kind === "object" && kind !== null;
+    // A list under `__kind` is broken output, not a shape (round 11, L2).
+    const shape = typeof kind === "object" && kind !== null && !Array.isArray(kind);
     if (!shape && (typeof kind !== "string" || !KIND_SLUG_TEXT.test(kind))) return true;
   }
   return Object.values(record).some((item) => carriesBrokenKind(item, depth + 1));
