@@ -149,7 +149,7 @@ describe("the header right set on a phone — source", () => {
     ]) {
       expect(header.indexOf(control)).toBeGreaterThan(secondary);
     }
-    expect(header.indexOf("<HeaderPhoneOverflow")).toBeGreaterThan(header.indexOf("<InboxHeaderButton"));
+    expect(header.indexOf("<HeaderPhoneOverflow")).toBeGreaterThan(header.indexOf("<CanvasToggle"));
   });
 
   it("folds below 768px and only below it", () => {

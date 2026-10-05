@@ -335,25 +335,6 @@ export function HeaderPhoneOverflow({
               {/* Same reservation as the desktop slot: present until a surface
                   REPORTS the canvas unavailable, never missing while the
                   deferred front door is still mounting. */}
-              {canvas.isAvailable || !canvas.availabilityKnown ? (
-                <Row
-                  icon={<Layers className="h-5 w-5" />}
-                  label={
-                    canvas.homeOnly
-                      ? "Close canvas"
-                      : canvasState === "open"
-                      ? `Put away canvas — ${canvas.headlineTitle}`
-                      : canvasState === "closed"
-                        ? `Open canvas — ${canvas.headlineTitle}`
-                        : "Canvas"
-                  }
-                  onClick={() => {
-                    close();
-                    if (canvas.isOpen) canvas.putAway();
-                    else canvas.reopen();
-                  }}
-                />
-              ) : null}
               <Row
                 icon={<MessageSquare className="h-5 w-5" />}
                 label="Messages"
@@ -380,6 +361,25 @@ export function HeaderPhoneOverflow({
                 }}
                 trailing={isAuthenticated ? <InboxRowTrailing /> : undefined}
               />
+              {canvas.isAvailable || !canvas.availabilityKnown ? (
+                <Row
+                  icon={<Layers className="h-5 w-5" />}
+                  label={
+                    canvas.homeOnly
+                      ? "Close canvas"
+                      : canvasState === "open"
+                      ? `Put away canvas — ${canvas.headlineTitle}`
+                      : canvasState === "closed"
+                        ? `Open canvas — ${canvas.headlineTitle}`
+                        : "Canvas"
+                  }
+                  onClick={() => {
+                    close();
+                    if (canvas.isOpen) canvas.putAway();
+                    else canvas.reopen();
+                  }}
+                />
+              ) : null}
             </div>
           ) : (
             <div className="overflow-y-auto px-1 pb-4">

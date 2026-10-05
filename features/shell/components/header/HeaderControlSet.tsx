@@ -10,7 +10,7 @@ import { HeaderPhoneOverflow } from "./HeaderPhoneOverflow";
  * every header that draws them (the shell `Header`, the canvas workspace's
  * header on /board). Owner, 2026-09-30, left to right:
  *
- *   [ Search ] [ Intelligence ] [ Canvas ] [ Messages ] [ Notifications ]
+ *   [ Search ] [ Intelligence ] [ Messages ] [ Notifications ] [ Canvas ]
  *
  * Each is a 44px tap target that carries its own invisible spacing: NO gap,
  * NO padding, NO margin between them or around them — they render touching.
@@ -26,9 +26,11 @@ export function HeaderControlSet({ isAuthenticated }: { isAuthenticated: boolean
       <div className="shell-header-secondary" data-header-control-set>
         <CommandBarHeaderButton isAuthenticated={isAuthenticated} />
         <SurfaceAgentsHeaderButton isAuthenticated={isAuthenticated} />
-        <CanvasToggle variant="transparent" />
         <MessagesHeaderButton isAuthenticated={isAuthenticated} />
         <InboxHeaderButton isAuthenticated={isAuthenticated} />
+        {/* Right-most (owner, 2026-10-04): the canvas opens as a column on the
+            right edge, so its button sits nearest to where it opens. */}
+        <CanvasToggle variant="transparent" />
       </div>
       <HeaderPhoneOverflow isAuthenticated={isAuthenticated} />
     </>

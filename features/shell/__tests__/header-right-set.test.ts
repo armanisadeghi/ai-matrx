@@ -43,13 +43,13 @@ describe("the header right set", () => {
   const header = read("features/shell/components/header/Header.tsx");
   const set = read("features/shell/components/header/HeaderControlSet.tsx");
 
-  it("mounts Search, Intelligence, Canvas, Messages and Notifications in that order, unconditionally", () => {
+  it("mounts Search, Intelligence, Messages, Notifications and Canvas in that order, unconditionally", () => {
     const order = [
       "<CommandBarHeaderButton",
       "<SurfaceAgentsHeaderButton",
-      "<CanvasToggle",
       "<MessagesHeaderButton",
       "<InboxHeaderButton",
+      "<CanvasToggle",
     ];
     let last = -1;
     for (const control of order) {
