@@ -29,7 +29,7 @@ jest.mock("../../agents/redux/agent-definition/thunks", () => ({
   fetchFullAgent: (...args: unknown[]) => (fetchFullAgent as jest.Mock)(...args),
 }));
 
-const postJson = jest.fn(async (path: string) => {
+const postJson = jest.fn(async (path: string, _body?: unknown) => {
   if (path === `/ai/agents/${AGENT_ID}/realtime-session`) {
     return {
       data: {
