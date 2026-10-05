@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-05T21:11:06.237Z",
+  "generated_at": "2026-10-05T21:37:55.751Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -523,6 +523,18 @@
       "filename": "chairalwayson_a_the_store_is_never_off.sql",
       "checksum": "3076e47df8bd34d0d2d00328f417cc173ce2d0c75bf804ea76c0aa47c254ce7b",
       "applied_at": "2026-10-03 20:13:31.39149+00"
+    },
+    "migrations/campaign/chairblk_a_the_drill_doors_show_a_standard_sources_words.sql": {
+      "source": "matrx-frontend",
+      "filename": "chairblk_a_the_drill_doors_show_a_standard_sources_words.sql",
+      "checksum": "bbd7edd5d0ee80c24fc97b98e534042a462e80c3f9ea4dd716d965e4d35a2131",
+      "applied_at": "2026-10-05 21:33:41.880238+00"
+    },
+    "migrations/campaign/chairblk_b_a_lookup_finds_its_table_through_the_registry_door.sql": {
+      "source": "matrx-frontend",
+      "filename": "chairblk_b_a_lookup_finds_its_table_through_the_registry_door.sql",
+      "checksum": "2ede582322c36fbb31a48591b2b72da55d88004abd038ead81f15d1a3590ba17",
+      "applied_at": "2026-10-05 21:37:54.596934+00"
     },
     "migrations/campaign/chaircensus13_a_the_census_ceiling_counts_the_pairs_it_will_judge.sql": {
       "source": "matrx-frontend",

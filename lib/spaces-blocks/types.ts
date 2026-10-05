@@ -132,6 +132,45 @@ export interface TableProps extends Record<string, unknown> {
   headerRow: boolean;
   headerColumn: boolean;
   rows: Array<{ cells: RichSpan[][] }>;
+  /** Column widths in px, one per column; null = automatic. */
+  columnWidths?: Array<number | null>;
+}
+
+/** The layouts a database view can show (`table` = `grid`, `board` = `kanban`; both spellings are accepted). */
+export const DATABASE_VIEW_LAYOUTS = ["grid", "table", "kanban", "board", "gallery", "list", "calendar", "timeline", "chart", "dashboard"] as const;
+export type DatabaseViewLayout = (typeof DATABASE_VIEW_LAYOUTS)[number];
+export const DATABASE_CHART_TYPES = ["donut", "bar", "hbar", "line"] as const;
+export const DATABASE_CHART_OPS = ["count", "sum", "avg", "min", "max"] as const;
+export const DATABASE_OPEN_AS = ["side", "center", "page", "full"] as const;
+
+export interface DatabaseChartSettings {
+  type: (typeof DATABASE_CHART_TYPES)[number];
+  /** X axis field (null = one group). */
+  groupBy: string | null;
+  op: (typeof DATABASE_CHART_OPS)[number];
+  /** The field sum / avg / min / max reads. */
+  field?: string | null;
+  sort?: "manual" | "asc" | "desc";
+  legend?: boolean;
+  dataLabels?: boolean;
+  /** Donut: the total drawn in the middle. */
+  centerValue?: boolean;
+}
+
+/** One saved view of a database block (props.views[]). */
+export interface DatabaseView {
+  id: string;
+  name: string;
+  layout: DatabaseViewLayout;
+  /** Lucide icon name on the view tab. */
+  icon?: string;
+  groupField?: string | null;
+  dateField?: string | null;
+  sorts?: Array<{ field: string; direction: "asc" | "desc" }>;
+  filters?: Record<string, string | number | boolean | null>;
+  /** Property keys this view hides. */
+  hiddenFields?: string[];
+  chart?: DatabaseChartSettings;
 }
 
 export interface DatabaseProps extends Record<string, unknown> {
@@ -139,6 +178,15 @@ export interface DatabaseProps extends Record<string, unknown> {
   /** true = inline database in the page body; false = a full-page database shown as a row that opens it. */
   inline: boolean;
   title?: string;
+  /** The sample world the table lives in (the agency sample); absent = a real store table. */
+  sample?: string;
+  /** Linked view of a database: shows the source's name with an arrow. */
+  linked?: boolean;
+  showTitle?: boolean;
+  /** Where a record opens: side peek, center peek or a full page. */
+  openAs?: (typeof DATABASE_OPEN_AS)[number];
+  views?: DatabaseView[];
+  activeViewId?: string;
 }
 
 /** Marks a block an importer could not map. It is a `text` block that says what it was. */

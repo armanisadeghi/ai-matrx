@@ -11,19 +11,32 @@
 // Regenerate the SQL function: `pnpm exec tsx scripts/spaces-snapshot-schema.mjs --print-sql`.
 
 import { BLOCK_SPECS } from "./schema";
-import { SPACE_COLORS } from "./types";
+import { DATABASE_CHART_OPS, DATABASE_CHART_TYPES, DATABASE_OPEN_AS, DATABASE_VIEW_LAYOUTS, SPACE_COLORS } from "./types";
 
 type J = Record<string, unknown>;
 
 const nonEmptyStr: J = { type: "string", minLength: 1 };
 const bool: J = { type: "boolean" };
+const nullableStr: J = { type: ["string", "null"] };
 const ref = (n: string): J => ({ $ref: `#/$defs/${n}` });
 const spans = ref("spans");
 const alignment: J = { textAlignment: { enum: ["left", "center", "right", "justify"] } };
 
 /** props schema + whether props must be present, per stored block type. */
 const PROPS_SCHEMAS: Record<string, { required?: boolean; schema: J }> = {
-  text: { schema: { properties: alignment } },
+  text: {
+    schema: {
+      properties: {
+        ...alignment,
+        // an importer's "could not map this" marker; round-trips through the editor
+        unsupported: {
+          type: "object",
+          required: ["from", "kind", "source"],
+          properties: { from: { type: "string" }, kind: { type: "string" }, source: { type: "string" } },
+        },
+      },
+    },
+  },
   heading: {
     required: true,
     schema: {
@@ -49,6 +62,7 @@ const PROPS_SCHEMAS: Record<string, { required?: boolean; schema: J }> = {
       properties: {
         headerRow: bool,
         headerColumn: bool,
+        columnWidths: { type: "array", items: { oneOf: [{ type: "null" }, { type: "number", exclusiveMinimum: 0 }] } },
         rows: {
           type: "array",
           minItems: 1,
@@ -77,6 +91,13 @@ const PROPS_SCHEMAS: Record<string, { required?: boolean; schema: J }> = {
       required: ["inline", "source"],
       properties: {
         inline: bool,
+        title: { type: "string" },
+        sample: { type: "string" },
+        linked: bool,
+        showTitle: bool,
+        openAs: { enum: [...DATABASE_OPEN_AS] },
+        activeViewId: { type: "string" },
+        views: { type: "array", items: databaseView() },
         source: {
           oneOf: [
             {
@@ -92,6 +113,41 @@ const PROPS_SCHEMAS: Record<string, { required?: boolean; schema: J }> = {
   },
   slot: { required: true, schema: { required: ["label"], properties: { label: { type: "string" } } } },
 };
+
+function databaseView(): J {
+  return {
+    type: "object",
+    required: ["id", "name", "layout"],
+    properties: {
+      id: nonEmptyStr,
+      name: { type: "string" },
+      layout: { enum: [...DATABASE_VIEW_LAYOUTS] },
+      icon: { type: "string" },
+      groupField: nullableStr,
+      dateField: nullableStr,
+      sorts: {
+        type: "array",
+        items: { type: "object", required: ["field", "direction"], properties: { field: { type: "string" }, direction: { enum: ["asc", "desc"] } } },
+      },
+      filters: { type: "object" },
+      hiddenFields: { type: "array", items: { type: "string" } },
+      chart: {
+        type: "object",
+        required: ["type", "groupBy", "op"],
+        properties: {
+          type: { enum: [...DATABASE_CHART_TYPES] },
+          groupBy: nullableStr,
+          op: { enum: [...DATABASE_CHART_OPS] },
+          field: nullableStr,
+          sort: { enum: ["manual", "asc", "desc"] },
+          legend: bool,
+          dataLabels: bool,
+          centerValue: bool,
+        },
+      },
+    },
+  };
+}
 
 function mediaProps(): J {
   return {

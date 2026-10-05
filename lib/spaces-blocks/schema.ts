@@ -4,6 +4,10 @@
 // it today, what `text` means for it, which children it may hold, and a check of its `props`.
 
 import {
+  DATABASE_CHART_OPS,
+  DATABASE_CHART_TYPES,
+  DATABASE_OPEN_AS,
+  DATABASE_VIEW_LAYOUTS,
   RENDERED_BLOCK_TYPES,
   SCHEMA_ONLY_BLOCK_TYPES,
   SPACE_COLORS,
@@ -39,6 +43,12 @@ const alignment: PropsCheck = (p) =>
     ? "textAlignment must be left, center, right or justify"
     : null;
 
+const textProps: PropsCheck = (p, b) => {
+  const u = p?.unsupported;
+  if (u !== undefined && (!isObj(u) || !str(u.from) || !str(u.kind) || !str(u.source))) return "props.unsupported must be { from, kind, source } text";
+  return alignment(p, b);
+};
+
 function spansProblem(spans: unknown, where: string): string | null {
   if (!Array.isArray(spans)) return `${where} must be an array of spans`;
   for (const [i, s] of spans.entries()) {
@@ -61,7 +71,7 @@ const media: PropsCheck = (p) => {
 const spaceRef: PropsCheck = (p) => (nonEmpty(p?.spaceId) ? null : "needs props.spaceId (the Space it opens)");
 
 const SPECS: BlockSpec[] = [
-  { type: "text", parity: "C1", label: "Text", rendered: true, text: "inline", children: "blocks", props: alignment },
+  { type: "text", parity: "C1", label: "Text", rendered: true, text: "inline", children: "blocks", props: textProps },
   {
     type: "heading",
     parity: "C2",
@@ -139,6 +149,9 @@ const SPECS: BlockSpec[] = [
           if (prob) return prob;
         }
       }
+      if (p.columnWidths !== undefined) {
+        if (!Array.isArray(p.columnWidths) || p.columnWidths.some((w) => w !== null && (typeof w !== "number" || !(w > 0)))) return "props.columnWidths must be a list of positive px widths or null";
+      }
       return null;
     },
   },
@@ -191,10 +204,22 @@ const SPECS: BlockSpec[] = [
       if (s.kind === "table") {
         if (!nonEmpty(s.tableId)) return "props.source.tableId is required";
         if (s.viewId !== undefined && !nonEmpty(s.viewId)) return "props.source.viewId must be an id when present";
-        return null;
+      } else if (s.kind === "entity") {
+        if (!nonEmpty(s.token)) return "props.source.token is required";
+      } else return "props.source.kind must be table or entity";
+      if (p.title !== undefined && !str(p.title)) return "props.title must be text";
+      if (p.sample !== undefined && !str(p.sample)) return "props.sample must be text";
+      for (const k of ["linked", "showTitle"]) if (p[k] !== undefined && typeof p[k] !== "boolean") return `props.${k} must be true or false`;
+      if (p.openAs !== undefined && !(DATABASE_OPEN_AS as readonly string[]).includes(String(p.openAs))) return "props.openAs must be side, center, page or full";
+      if (p.activeViewId !== undefined && !str(p.activeViewId)) return "props.activeViewId must be an id";
+      if (p.views !== undefined) {
+        if (!Array.isArray(p.views)) return "props.views must be a list";
+        for (const [i, v] of (p.views as unknown[]).entries()) {
+          const prob = viewProblem(v);
+          if (prob) return `views[${i}]: ${prob}`;
+        }
       }
-      if (s.kind === "entity") return nonEmpty(s.token) ? null : "props.source.token is required";
-      return "props.source.kind must be table or entity";
+      return null;
     },
   },
   {
@@ -213,6 +238,29 @@ export const BLOCK_SPECS: ReadonlyMap<string, BlockSpec> = new Map(SPECS.map((s)
 // The catalog and the type lists must agree (a type added to one and not the other is a bug).
 for (const t of [...RENDERED_BLOCK_TYPES, ...SCHEMA_ONLY_BLOCK_TYPES]) {
   if (!BLOCK_SPECS.has(t)) throw new Error(`spaces-blocks: ${t} has no BlockSpec`);
+}
+
+function viewProblem(v: unknown): string | null {
+  if (!isObj(v)) return "a view must be an object";
+  if (!nonEmpty(v.id)) return "id is required";
+  if (!str(v.name)) return "name must be text";
+  if (!(DATABASE_VIEW_LAYOUTS as readonly string[]).includes(String(v.layout))) return `layout must be one of ${DATABASE_VIEW_LAYOUTS.join(", ")}`;
+  for (const k of ["icon"]) if (v[k] !== undefined && !str(v[k])) return `${k} must be text`;
+  for (const k of ["groupField", "dateField"]) if (v[k] !== undefined && v[k] !== null && !str(v[k])) return `${k} must be text or null`;
+  if (v.sorts !== undefined && (!Array.isArray(v.sorts) || v.sorts.some((x) => !isObj(x) || !str(x.field) || (x.direction !== "asc" && x.direction !== "desc")))) return "sorts must be [{ field, direction: asc|desc }]";
+  if (v.filters !== undefined && !isObj(v.filters)) return "filters must be an object";
+  if (v.hiddenFields !== undefined && (!Array.isArray(v.hiddenFields) || v.hiddenFields.some((x) => !str(x)))) return "hiddenFields must be a list of text";
+  if (v.chart !== undefined) {
+    const c = v.chart;
+    if (!isObj(c)) return "chart must be an object";
+    if (!(DATABASE_CHART_TYPES as readonly string[]).includes(String(c.type))) return `chart.type must be one of ${DATABASE_CHART_TYPES.join(", ")}`;
+    if (!(DATABASE_CHART_OPS as readonly string[]).includes(String(c.op))) return `chart.op must be one of ${DATABASE_CHART_OPS.join(", ")}`;
+    if (c.groupBy !== null && !str(c.groupBy)) return "chart.groupBy must be text or null";
+    if (c.field !== undefined && c.field !== null && !str(c.field)) return "chart.field must be text or null";
+    if (c.sort !== undefined && !["manual", "asc", "desc"].includes(String(c.sort))) return "chart.sort must be manual, asc or desc";
+    for (const k of ["legend", "dataLabels", "centerValue"]) if (c[k] !== undefined && typeof c[k] !== "boolean") return `chart.${k} must be true or false`;
+  }
+  return null;
 }
 
 const SPAN_KEYS = new Set(["text", "bold", "italic", "underline", "strike", "code", "color", "background", "link", "mention", "equation"]);

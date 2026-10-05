@@ -34,7 +34,7 @@ function everyType() {
     { id: id(), type: "equation", props: { expression: "e=mc^2" } },
     { id: id(), type: "page", props: { spaceId: "s1" } },
     { id: id(), type: "linkToPage", props: { spaceId: "s2" } },
-    { id: id(), type: "table", props: { headerRow: true, headerColumn: false, rows: [{ cells: [[span("a")], [span("b")]] }] } },
+    { id: id(), type: "table", props: { headerRow: true, headerColumn: false, columnWidths: [120, null], rows: [{ cells: [[span("a")], [span("b")]] }] } },
     { id: id(), type: "tableOfContents" },
     { id: id(), type: "breadcrumb" },
     {
@@ -51,6 +51,25 @@ function everyType() {
     { id: id(), type: "embed", props: { url: "https://x.y" } },
     { id: id(), type: "database", props: { inline: true, source: { kind: "table", tableId: "t1", viewId: "v1" } } },
     { id: id(), type: "database", props: { inline: false, source: { kind: "entity", token: "client" } } },
+    {
+      id: id(),
+      type: "database",
+      props: {
+        inline: true,
+        title: "Clients",
+        sample: "agency",
+        linked: true,
+        showTitle: false,
+        openAs: "page",
+        activeViewId: "v-ring",
+        source: { kind: "table", tableId: "t1" },
+        views: [
+          { id: "v-all", name: "All", layout: "grid", icon: "Users", groupField: null, dateField: "due", sorts: [{ field: "name", direction: "asc" }], filters: { status: "active", n: 1, ok: true, none: null }, hiddenFields: ["linked:task__client"] },
+          { id: "v-ring", name: "Ring", layout: "chart", chart: { type: "donut", groupBy: "status", op: "avg", field: "score", sort: "desc", legend: true, dataLabels: true, centerValue: true } },
+          { id: "v-dash", name: "Dash", layout: "dashboard" },
+        ],
+      },
+    },
     { id: id(), type: "slot", props: { label: "Hero" } },
   ];
 }
@@ -93,6 +112,11 @@ describe("Space snapshot JSON Schema", () => {
     "media with neither": (s) => (s.blocks[18].props = { width: 3 }),
     "table without rows": (s) => (s.blocks[14].props.rows = []),
     "bookmark without url": (s) => (s.blocks[24].props = {}),
+    "database bad openAs": (s) => (s.blocks[27].props.openAs = "popup"),
+    "database bad view layout": (s) => (s.blocks[27].props.views[0].layout = "cards"),
+    "database chart without op": (s) => delete s.blocks[27].props.views[1].chart.op,
+    "table bad columnWidths": (s) => (s.blocks[14].props.columnWidths = ["wide"]),
+    "unsupported without source": (s) => delete s.blocks[1].props.unsupported.source,
     "database bad source": (s) => (s.blocks[26].props.source = { kind: "sheet" }),
     "page without spaceId": (s) => (s.blocks[12].props = {}),
     "version 2": (s) => (s.v = 2),
