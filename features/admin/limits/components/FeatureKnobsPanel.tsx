@@ -16,7 +16,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AlertTriangle } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Chip } from "@ai-matrx/design-system/controls";
 import { SettingsCallout } from "@/components/official/settings/layout/SettingsCallout";
 import { SettingsNavigationSearch } from "@/components/official/settings/navigation/SettingsFlatNavigation";
 import { SettingsDesignProvider } from "@/components/official/settings/SettingsDesignProvider";
@@ -136,7 +136,7 @@ function SystemKnobRows({ feature }: { feature?: string }) {
         </SettingsCallout>
       )}
       <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
-        {matching.filter((knob) => (counts[knob.full_key] ?? 0) > 0).map((knob) => <Badge key={knob.full_key} variant="secondary">{knob.label}: {counts[knob.full_key]} override{counts[knob.full_key] === 1 ? "" : "s"}</Badge>)}
+        {matching.filter((knob) => (counts[knob.full_key] ?? 0) > 0).map((knob) => <Chip key={knob.full_key} label={`${knob.label}: ${counts[knob.full_key]} override${counts[knob.full_key] === 1 ? "" : "s"}`} />)}
       </div>
       <div className="mt-4">
         <UniversalSettingsRows
