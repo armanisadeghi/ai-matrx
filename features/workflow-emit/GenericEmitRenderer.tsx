@@ -20,7 +20,7 @@
 import React, { useMemo } from "react";
 import { CheckCircle2 } from "lucide-react";
 
-import MarkdownStream from "@/components/MarkdownStream";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { ToolResultValue } from "@ai-matrx/chat/tool-call-visualization/result-fields/ToolResultValue";
 import { AssistChip } from "@/features/assists/components/AssistChip";
 import { makeEphemeralAssist, type Assist } from "@/features/assists/types";
@@ -172,7 +172,7 @@ export const GenericEmitRenderer: React.FC<EmitRendererProps> = ({
     <div className="space-y-2">
       {title && (
         <div className="text-sm font-semibold text-foreground">
-          <MarkdownStream imagePolicy="ai" content={title} />
+          <RichContent level="full" imagePolicy="ai" source={title} />
         </div>
       )}
       <ToolResultValue value={value} density="full" />
