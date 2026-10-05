@@ -30,9 +30,14 @@ import { shellChromeAttributes } from "@/features/shell/constants/canvas-chrome-
 import DeferredIslands from "@/features/shell/islands/DeferredIslands";
 import { cookies } from "next/headers";
 import { ShellChatDock } from "@ai-matrx/chat/canvas/workspace/ShellChatDock";
-import { shellChatFamily, shellChatHostedElsewhere, shellChatWorkspaceId } from "@ai-matrx/chat/canvas/workspace/shell-chat-route";
+import { shellChatHome, shellChatHostedElsewhere } from "@ai-matrx/chat/canvas/workspace/shell-chat-route";
 import { SHELL_DOMAIN_PANEL_COOKIE, shellToggleChecked } from "@/features/shell/constants/sidebar-cookie";
-import { CANVAS_CHAT_SIZES, CANVAS_PANEL_IDS, canvasChatCookieName } from "@ai-matrx/chat/canvas/workspace/workspace-cookies";
+import {
+  CANVAS_CHAT_SIZES,
+  CANVAS_PANEL_IDS,
+  canvasChatCookieName,
+  parseCanvasChatCookie,
+} from "@ai-matrx/chat/canvas/workspace/workspace-cookies";
 import { readSidePanelWidth } from "@/components/official/side-panel/side-panel-width.server";
 import { readComposerModeCookie } from "@ai-matrx/chat/next/server/composer-mode.server";
 import { ShellCanvasColumn } from "@/features/canvas/host/ShellCanvasColumn";
@@ -66,19 +71,22 @@ export default async function AppShell({
   sidebarExpanded,
 }: AppShellProps) {
   // The chat dock's first paint is the person's own remembered choice for this
-  // page family (null = not chosen yet → the dock applies the wide-screen default).
+  // page's home (a board, Education, else the page family); null = not chosen
+  // yet → the home's default (open on a wide screen only, for a family).
   const cookieStore = await cookies();
-  const chatCookie = isAuthenticated
-    ? cookieStore.get(canvasChatCookieName(shellChatWorkspaceId(shellChatFamily(pathname))))?.value
-    : undefined;
-  const chatInitialOpen = chatCookie === undefined ? null : !chatCookie.endsWith(":closed");
+  const chatHome = shellChatHome(pathname, isAuthenticated);
+  const chatCookie = isAuthenticated ? cookieStore.get(canvasChatCookieName(chatHome.layoutId))?.value : undefined;
+  const chatInitial = chatCookie === undefined ? null : parseCanvasChatCookie(chatCookie, true);
   const [chatWidth, composerMode] = isAuthenticated
     ? await Promise.all([readSidePanelWidth(CANVAS_PANEL_IDS.chat, CANVAS_CHAT_SIZES), readComposerModeCookie()])
     : [undefined, null];
-  // A remembered open chat reserves its width in the first paint, before the
-  // dock hydrates and publishes it — the page never paints under the dock.
-  const chatReserved =
-    chatInitialOpen === true && chatWidth !== undefined && !shellChatHostedElsewhere(pathname, isAuthenticated);
+  // A chat known to be docked open reserves its width in the first paint,
+  // before the dock hydrates and publishes it — the page never paints under it.
+  const chatAvailable = isAuthenticated && !shellChatHostedElsewhere(pathname);
+  const chatDockedOpen = chatInitial
+    ? chatInitial.open && chatInitial.placement === "side"
+    : chatHome.defaultOpen === true;
+  const chatReserved = chatAvailable && chatDockedOpen && chatWidth !== undefined;
   const domainPanel = isDomainPanelPath(pathname);
   const toggleChecked = shellToggleChecked(
     domainPanel,
@@ -93,6 +101,7 @@ export default async function AppShell({
           data-pathname={pathname}
           {...shellChromeAttributes(pathname, isAuthenticated)}
           {...(domainPanel ? { "data-domain-panel": "" } : {})}
+          {...(chatAvailable ? { "data-shell-chat-available": "" } : {})}
           style={chatReserved ? ({ "--shell-chat-w": `${chatWidth}px` } as React.CSSProperties) : undefined}
           {...(FORCE_EXCLUDE_SIDEMENU ? { "data-no-sidebar": "" } : {})}
         >
@@ -116,7 +125,7 @@ export default async function AppShell({
 
           {/* A direct child of .shell-root: it publishes --shell-chat-w here. */}
           <ShellChatDock
-            initialOpen={chatInitialOpen}
+            initialChat={chatInitial}
             initialWidth={chatWidth}
             initialMode={composerMode}
             signedIn={isAuthenticated}

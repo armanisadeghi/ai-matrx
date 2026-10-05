@@ -1,8 +1,8 @@
-# FEATURE.md — `canvas workspace` (chat beside a canvas)
+# FEATURE.md — `canvas workspace` (the one chat, and the canvas beside it)
 
 **Status:** `active`
 **Tier:** `1`
-**Last updated:** `2026-09-27`
+**Last updated:** `2026-10-05`
 
 > Build map: `/Users/armanisadeghi/code/common-docs/systems/chat/conversations/projects/ai-matrx-composer/MAP.md`. Ruling: Amendment 1, A5
 > (`composer-spec-amendment-1.md`). The composer inside it: [`../../agents/components/inputs/smart-input/composer/FEATURE.md`](../../agents/components/inputs/smart-input/composer/FEATURE.md).
@@ -11,115 +11,112 @@
 
 ## Purpose
 
-The ONE "chat beside a canvas" layout: **chat panel · canvas · properties panel**, beside the app shell's
-OWN sidebar (owner, 2026-09-30: one sidebar and header a person can always count on), with three
-switches — chat (docked / floating, and open / closed), properties (open / closed), input (grows to a knob
-share of the panel). Navigation is the shell sidebar: its main menu is in front, and its **Chats** side (the
-same `ChatSidebarMenu` as /chat, registered `defaultView: "main"` for these pages) opens conversations IN this
-page's chat panel through `in-place-chat-host`. Every side panel is a `DockedSidePanel`
-(`components/official/side-panel`): it slides open and closed and the person drags its edge to any width
-between its min and max — chat 440 (340–760), properties 250 (220–420) — remembered per
-person across canvas pages; dragging a panel past its minimum closes it. A MODULE can be hosted too: its layout
-renders the workspace with the module's pages as the canvas (education does, for signed-in people), and every
-`<PageHeader>` / `<RouteHeader>` inside portals into the workspace header — the module's own menu sits in the
-canvas header, the app's menu is the shell sidebar. Generic: any canvas (a Board, a document, a Matrx UI) is a host. There must be only one
-such layout in the app.
+**ONE chat, on every page** (owner, 2026-10-01 "the new menu MUST offer the chat on ALL pages"; 2026-10-05
+"one copy of everything"). The chat is `ShellChatDock`, mounted once by the app shell beside its sidebar and
+kept across navigation. It stands aside only on `/chat` (the chat itself) and `/code` (its own coding agent).
+A canvas page — the Board, signed-in Education, the canvas demos — no longer draws a chat: it renders
+`ChatCanvasWorkspace` (**canvas · properties panel** + its own header) beside the shell chat and hands the chat
+its context with `useShellChatContext`. Navigation is the shell sidebar; its **Chats** side opens conversations
+IN the shell chat through `in-place-chat-host`. Every side panel is a `DockedSidePanel`
+(`components/official/side-panel`): slides, drags to any width between min and max — chat 440 (340–760),
+properties 250 (220–420) — remembered per person; dragging past the minimum closes it.
+
+**Homes** (`shellChatHome(pathname, signedIn)`): which conversation the shell chat shows and where its
+open / closed + docked / floating choice is remembered. Each board (`/board/<id>`) has its own conversation
+(`canvas-workspace:board-<id>`, `?chat=`, open by default); signed-in Education has one
+(`canvas-workspace:education`, `?chat=`, closed by default); every other page shares one conversation that
+follows the person (`canvas-workspace:shell`, `?pageChat=`), remembered per page family, open by default only
+at ≥ 1440px. These are the exact ids, params and defaults the Board and Education used when they drew their own
+chat, so cookies, `?chat=` links and this device's remembered conversation carried over with no migration.
 
 ---
 
 ## Entry points
 
-- **`ChatCanvasWorkspace`** (`ChatCanvasWorkspace.tsx`) — props: `id` (cookies + chat surface key),
-  `canvas`, `title`, `titleMenu?`, `byline?`, `record?` (Share + comments; absent = those controls absent),
-  `properties?` (tabs; absent = no panel), `getCanvasContext?`, `contextChip?`, `initialLayout?`
-  (`readCanvasWorkspaceLayout(id, { defaultChatOpen })` — chat, properties, the two widths),
-  `defaultChatOpen?` (default true; many pages start with the chat closed), `initialMode?`, `onClose?`. `title` is optional (a hosted module brings its
-  own header).
+- **`ShellChatDock`** (`ShellChatDock.tsx`) — THE chat. Docked (fixed beside the sidebar, publishes
+  `--shell-chat-w`), popped out (`MatrxFloatingFrame` over the page; size from the
+  `agents.chat_composer.floating_panel_size` knob), or a sheet on a phone. Owns ⌘\, the in-place chat host,
+  the remark sink, the domain-panel fold. AppShell reads its home's cookie on the server (first paint) and
+  stamps `data-shell-chat-available`.
+- **`ShellChatToggle`** (`features/shell/components/header/`) — the one chat button, fixed at the chat column's
+  left edge on every page (canvas pages too: the shell header hides by `visibility`, the button stays visible).
+  On a phone a canvas page's own header has a Chat button that fires the same `SHELL_CHAT_TOGGLE_EVENT`.
+- **`useShellChatContext({ getCanvasContext?, contextChip? })`** (`shell-chat-page-context.ts`) — how a page
+  hands the shell chat what it shows: ONE `{key, value, type, label}` entry + its composer pill. Released on
+  unmount; the column drops the entry from the conversation when the page goes away.
+- **`ChatCanvasWorkspace`** — props: `id` (the properties cookie), `canvas`, `title`, `titleMenu?`,
+  `byline?`, `record?` (Share + comments), `properties?` (tabs), `getCanvasContext?`, `contextChip?` (both
+  forwarded to `useShellChatContext`), `initialLayout?` (`readCanvasWorkspaceLayout(id)` — properties open +
+  width), `onClose?`.
 - **`CanvasChatColumn`** — the platform's ONE chat column (`AgentConversationColumn`) with the COMPACT
-  composer; `buildCanvasSmartInputProps` is the single place its composer props are built.
-- **`useCanvasWorkspaceConversation(surfaceKey, { enabled, start, surfaceName })`** — the surface-owned
-  conversation: `startNew`, `openExisting(id, agentId?)` (in place, through the canonical resume sequence
-  `resumeConversation` — hydrate, re-surface an unanswered client tool prompt, reattach to a turn the server
-  is still running; never `loadConversation` alone), `startWith(agentId, via?)`. `surfaceName: null` = the
-  conversation IS its host's own chat (a board chat tile): launches adopt no mounted surface, like /chat's. Waits for an active
-  organization and offers the ONE org gate (`ensureOrganizationContext`) — never picks one. With
-  `enabled: false` nothing launches: a chat that starts closed launches when it is first opened.
-- **`ChatPanelTitleMenu` / `useChatPanelTitle`** — the chat's name ▾ (New chat · Rename · Open in full chat),
-  shared by every chat panel.
+  composer; `buildCanvasSmartInputProps` is the single place its composer props are built. Hosts: the shell
+  chat and a board chat TILE only (guard: `__tests__/one-chat-panel.test.ts`).
+- **`useCanvasWorkspaceConversation(surfaceKey, { enabled, start, surfaceName, addressParam })`** — the
+  conversation: `startNew`, `openExisting(id, agentId?)` (in place, through `resumeConversation`),
+  `startWith(agentId, via?)`. A changed `surfaceKey` starts over for the new home (address, memory, launch)
+  without remounting. `surfaceName: null` = the conversation IS its host's own chat (a board chat tile).
+  Waits for an active organization and offers the ONE org gate — never picks one. `enabled: false` launches
+  nothing (a closed chat costs nothing).
+- **`ChatPanelTitleMenu` / `useChatPanelTitle`** — the chat's name ▾ (New chat · Rename · Open in full chat).
 - **`CanvasPropertiesPanel`** — tabs; lists scroll with a bottom fade, scrollbar on hover.
-- **Cookies** — `workspace-cookies.ts` (chat `side` · `floating` · `…:closed`, properties open/closed, sizes,
-  panel ids) + `next/server/workspace-cookies.server.ts` (`readCanvasWorkspaceLayout`, the Next binding).
-- **Navigation** — the shell sidebar + account rail (never a page-local nav). The page registers itself with
-  `registerInPlaceChatHost` (`packages/chat/src/agents/components/chat/in-place-chat-host.ts`) so the sidebar's Chats
-  side opens history and New chat in this panel; on a phone the header's menu button opens the shell drawer
-  (`openShellMobileMenu`). Full screen hides the sidebar too (`useShellCanvasFullScreen`).
-- **Shell mode** — `ShellChromeMode` / `ShellChromeRouteSync` (`features/shell/components/ShellChromeMode.tsx`)
-  + `CANVAS_CHROME_ROUTES` (`features/shell/constants/canvas-chrome-routes.ts`) + `styles/shell.css` §13c.
-- **Floating chat** — `MatrxFloatingFrame` with its `container` prop (bounded to the canvas region);
-  size from the `agents.chat_composer.floating_panel_size` knob.
-- **Demos** — `/demos/canvas-workspace` (the demo board as host) and
-  `/demos/canvas-workspace/properties` (a real Properties tab).
+- **Cookies** — `workspace-cookies.ts`: the shell chat per home (`canvas-workspace:<layoutId>:chat` =
+  `side` · `floating` · `…:closed`), the workspace's properties open/closed, shared widths;
+  `next/server/workspace-cookies.server.ts` (`readCanvasWorkspaceLayout`).
+- **Shell mode** — `ShellChromeMode` / `ShellChromeRouteSync` + `CANVAS_CHROME_ROUTES` + `styles/shell.css` §13c.
+- **Demos** — `/demos/canvas-workspace` (the demo board) and `/demos/canvas-workspace/properties` (a real
+  Properties tab + a `getCanvasContext` entry and its pill).
 
 ---
 
 ## Key flows
 
-**Canvas context → agent.** `getCanvasContext()` returns ONE `{key, value, type, label}` entry; the column
-writes it with `setContextEntries` when the conversation exists and again in the CAPTURE phase of
-pointerdown / Enter / focus inside the chat's own DOM (never from a portaled layer it opened — the page-chip
-popover, the value panel), so every request carries the canvas as it is NOW. An unchanged snapshot is a
-no-op in the slice, so the rail never re-renders for it. It never
-rides `user_input` (THE USER-INPUT LAW). A `contextChip` with `contextKey` equal to the entry's key
-REPLACES the rail's generic pill for it — one input, one pill.
+**Page context → agent.** Every conversation already follows the page SURFACE (`useConversationFollowsPage`).
+A canvas with no surface of its own hands ONE entry via `useShellChatContext`; the column writes it with
+`setContextEntries` when the conversation exists, again in the CAPTURE phase of pointerdown / Enter / focus
+inside the chat's own DOM, and removes it (`removeContextEntry`) when the page releases it. It never rides
+`user_input` (THE USER-INPUT LAW). A `contextChip` with `contextKey` equal to the entry's key REPLACES the
+rail's generic pill for it.
 
-**Canvas chrome.** The app shell stays mounted (Providers, overlays, windows, tray, org gate, error
-capture, header portal targets) and `.shell-root[data-shell-chrome="canvas"]` hides its header, sidebar,
-user block and dock. The attribute is stamped at SSR for listed routes and kept in sync on soft
-navigation; a mounted `<ShellChromeMode/>` sets it on unlisted routes after hydration.
+**Canvas chrome.** The app shell stays mounted; `.shell-root[data-shell-chrome="canvas"]` hides the shell
+header (by visibility — its chat button stays), the phone trigger and the phone dock; the shell chat, sidebar
+and account rail stay. Full screen (`data-canvas-fullscreen`) hides sidebar, rail, chat and chat button;
+anything that opens the chat fires `SHELL_CHAT_REVEAL_EVENT` and the workspace leaves full screen.
 
-**Chat open / closed.** The chat panel header has Pop out and Hide; the floating window has Dock and ×
-(hide). A hidden chat is reopened by the **Chat** button at the LEFT of the canvas header — where the chat opens
-— or ⌘\ (which shows / hides it). The
-chat column lives in exactly ONE place: the docked panel while docked (the panel stays mounted while hidden,
-so the conversation keeps its place), the floating window while floating, the drawer below 1024px. The nav's
-"+" and a history row open the chat if it is hidden.
-
-**Agent switch.** The composer's agent pill calls `startWith`; Custom passes `via.mandateKey` so the chat
-relaunches through `chat.default_new_chat` (the person's own default model applies).
+**Chat open / closed.** The chat button (or ⌘\) shows / hides it; the docked header has Pop out, the floating
+window has Dock and × (hide). The column lives in ONE place: the docked panel (stays mounted while hidden), the
+floating window, or the phone sheet. History rows, "New chat", a pinned agent and a comment riding along
+(remark sink) all open the chat if hidden.
 
 ---
 
 ## Invariants & gotchas
 
 - **The page header slot:** the canvas header renders `[data-page-header-target="workspace"]` (center) and
-  `[data-page-header-right-target="workspace"]`; `PageHeaderPortal` / `PageHeaderRightPortal` prefer them over
-  the (hidden) shell header slots.
-- **Hosted modules for signed-in people only** are listed in `SIGNED_IN_CANVAS_CHROME_ROUTES` (education): a
-  guest keeps the ordinary shell (the chat needs an account). `AppShell` stamps `data-signed-in`.
-- **List a route in `CANVAS_CHROME_ROUTES` only once its page renders `ChatCanvasWorkspace`** — listing it
-  earlier hides the shell header with nothing to replace it.
-- **The Agents menu and Inbox live in the canvas header** on canvas pages (agent disclosure: a surface's
-  jobs stay reachable from the Agents menu).
-- **The workspace owns ⌘\\ here** (show / hide the chat); the global canvas side sheet stands down while
-  `data-shell-chrome="canvas"` is present.
-- **Below 1024px it is one pane** — the canvas; chat, nav and properties are sheets.
-- **A canvas that publishes its OWN surface passes no `getCanvasContext`.** The Board is the
-  `matrx-user/board` surface (values `board_title` / `board_tiles` / `selected_tile` + the `board_*`
-  agent tools, `features/board/components/BoardSurface.tsx`); a page-level snapshot of it would send
-  the board twice. `getCanvasContext` is for canvases with no surface of their own.
-- **Board contract** (`features/board` is owned by another session): the board draws its own
-  ToolBar + ZoomMenu inside its canvas and its own surface; it still owes — once it exposes its store outside
-  its viewport — its LayersPanel as a Properties tab and an insets callback so fit-to-view avoids the
-  floating chat. `/demos/board` and `/board` render the workspace; the interim `features/board/chat/`
-  split was deleted 2026-09-27.
-- **Open:** Share/comments are unexercised (no demo has a record); at 390px the board's own ToolBar and
-  ZoomMenu overlap (Board-owned); the Error Inspector badge sits over the nav's user row bottom-left.
+  `[data-page-header-right-target="workspace"]`; `PageHeaderPortal` / `PageHeaderRightPortal` prefer them.
+- **Hosted modules for signed-in people only** are listed in `SIGNED_IN_CANVAS_CHROME_ROUTES` (education).
+- **List a route in `CANVAS_CHROME_ROUTES` only once its page renders `ChatCanvasWorkspace`.**
+- **A page with a conversation of its own is a `shellChatHome` entry**, never a second chat panel.
+- **A canvas that publishes its OWN surface passes no `getCanvasContext`** (the Board: `matrx-user/board`).
+- **The remark sink is the shell chat on every page** (it used to exist only on canvas pages), so a comment's
+  "With next message" switch shows wherever the chat does.
+- **Below 1024px** the canvas is one pane; chat and properties are sheets; navigation is the shell drawer.
+- **Open:** Share/comments unexercised in the demos; at 390px the board's ToolBar and ZoomMenu overlap
+  (Board-owned).
 
 ---
 
 > The Board (`/board`) is owned by [`features/board/FEATURE.md`](../../../../../features/board/FEATURE.md); this doc owns the workspace host only.
 
 ## Change Log
+
+- **2026-10-05** — **One chat.** `ChatCanvasWorkspace` no longer draws a chat (docked panel, floating window,
+  phone chat sheet, ⌘\, in-place host, remark sink and its conversation all deleted from it): the Board,
+  Education and the demos show the shell's `ShellChatDock`, which gained pop-out, the remark sink, full-screen
+  handling and per-page homes (`shellChatHome`) keeping each board's and Education's own conversation, `?chat=`
+  and cookies. Pages hand context with `useShellChatContext`. `readCanvasWorkspaceLayout` lost its chat fields
+  (and `defaultChatOpen`); `initialMode` / `defaultChatOpen` props removed. Guards:
+  `__tests__/one-chat-panel.test.ts`, `shell-chat-route.test.ts`, `shell-chat-page-context.test.tsx`, the
+  "moves between homes" case in `workspace-chat-survives-reload.test.tsx` (red on the old hook).
 
 - **2026-10-01** — **A reload returns to the conversation.** The workspace chat lives at `?chat=<id>`
   (`useCanvasWorkspaceConversation` option `addressParam`): read once on mount (nothing launches before it is read),

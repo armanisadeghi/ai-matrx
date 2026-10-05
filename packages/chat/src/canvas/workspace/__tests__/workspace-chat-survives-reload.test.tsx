@@ -70,6 +70,9 @@ import {
 const SAVED = "c1eccd75-aea8-4ba3-893b-ce71c42a6b41";
 const FRESH = "0b7a8d0e-1111-4222-8333-944455556666";
 
+/** The home the probe renders for — the shell chat changes it as the person moves between pages. */
+let home = { surfaceKey: "canvas-workspace:board-x", addressParam: "chat" };
+
 function mount(): {
   current: CanvasWorkspaceConversationController;
   rerender: () => void;
@@ -83,9 +86,9 @@ function mount(): {
   const root = createRoot(document.createElement("div"));
   out.unmount = () => act(() => root.unmount());
   function Probe() {
-    out.current = useCanvasWorkspaceConversation("canvas-workspace:board-x", {
+    out.current = useCanvasWorkspaceConversation(home.surfaceKey, {
       enabled: true,
-      addressParam: "chat",
+      addressParam: home.addressParam,
     });
     return null;
   }
@@ -109,6 +112,7 @@ beforeEach(() => {
   resumeFails = false;
   window.localStorage.clear();
   window.history.replaceState(null, "", "/board/b1#c=0,0,1");
+  home = { surfaceKey: "canvas-workspace:board-x", addressParam: "chat" };
 });
 
 describe("the workspace chat lives at ?chat=<id>", () => {
@@ -202,6 +206,37 @@ describe("the column reopens its conversation when the address names none (2026-
     await settle();
     expect(launchMandate).toHaveBeenCalledTimes(1);
     expect(hook.current.conversation.state).not.toBe("failed");
+  });
+});
+
+describe("the shell chat moves between homes without remounting (2026-10-05)", () => {
+  // The Board's chat IS the shell chat now: it stays mounted while the person
+  // goes from a board to /notes and back, and each home shows its own conversation.
+  it("a board's conversation comes back when the person returns to the board", async () => {
+    window.history.replaceState(null, "", `/board/b1?chat=${SAVED}`);
+    const hook = mount();
+    await settle();
+    expect(hook.current.conversationId).toBe(SAVED);
+
+    // To /notes: the page family's shared conversation, read from its own param.
+    window.history.replaceState(null, "", "/notes");
+    home = { surfaceKey: "canvas-workspace:shell", addressParam: "pageChat" };
+    hook.rerender();
+    await settle();
+    expect(launchMandate).toHaveBeenCalledTimes(1);
+    expect(hook.current.conversationId).toBe(FRESH);
+    expect(window.location.search).toBe(""); // the board's ?chat= never follows to /notes
+
+    // Back to the board, at an address naming no conversation: its own comes back.
+    resumeConversation.mockClear();
+    window.history.replaceState(null, "", "/board/b1");
+    home = { surfaceKey: "canvas-workspace:board-x", addressParam: "chat" };
+    hook.rerender();
+    await settle();
+    expect(resumeConversation).toHaveBeenCalledWith(expect.objectContaining({ conversationId: SAVED }));
+    expect(hook.current.conversationId).toBe(SAVED);
+    expect(launchMandate).toHaveBeenCalledTimes(1);
+    expect(window.location.search).toBe(`?chat=${SAVED}`);
   });
 });
 

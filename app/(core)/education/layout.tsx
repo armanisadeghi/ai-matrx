@@ -9,9 +9,8 @@ import { ScrollAssistantLauncher } from "@ai-matrx/chat/agents/components/ambien
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import { ChatCanvasWorkspace } from "@ai-matrx/chat/canvas/workspace/ChatCanvasWorkspace";
 import { readCanvasWorkspaceLayout } from "@ai-matrx/chat/next/server/workspace-cookies.server";
-import { readComposerModeCookie } from "@ai-matrx/chat/next/server/composer-mode.server";
 
-/** The education workspace's id: its chat, its remembered layout. */
+/** The education workspace's id: its remembered layout. */
 const EDUCATION_WORKSPACE_ID = "education";
 
 export const metadata = {
@@ -60,22 +59,18 @@ export default async function EducationLayout({
   const { isAuthenticated } = await getServerAuth();
   if (!isAuthenticated) return body;
 
-  // Signed in: THE chat-beside-a-canvas layout (features/canvas/workspace) —
-  // the app's own sidebar (Chats one switch away), the chat beside it (closed until opened), and education
-  // as the canvas. EducationHeader's module menu portals into the workspace
-  // header; the chat sees whichever education page is on screen and follows
-  // the person from page to page. Listed in SIGNED_IN_CANVAS_CHROME_ROUTES so
-  // the first paint already has canvas chrome.
-  const [initialLayout, initialMode] = await Promise.all([
-    readCanvasWorkspaceLayout(EDUCATION_WORKSPACE_ID, { defaultChatOpen: false }),
-    readComposerModeCookie(),
-  ]);
+  // Signed in: THE chat-beside-a-canvas layout (packages/chat/src/canvas/workspace) —
+  // the app's own sidebar (Chats one switch away), the shell chat beside it
+  // (Education's own conversation, closed until opened — `shellChatHome`), and
+  // education as the canvas. EducationHeader's module menu portals into the
+  // workspace header; the chat sees whichever education page is on screen and
+  // follows the person from page to page. Listed in SIGNED_IN_CANVAS_CHROME_ROUTES
+  // so the first paint already has canvas chrome.
+  const initialLayout = await readCanvasWorkspaceLayout(EDUCATION_WORKSPACE_ID);
   return (
     <ChatCanvasWorkspace
       id={EDUCATION_WORKSPACE_ID}
       initialLayout={initialLayout}
-      defaultChatOpen={false}
-      initialMode={initialMode}
       // Canvas chrome stops `.shell-main` scrolling; the education pages scroll here.
       canvas={<div className="h-full min-h-0 overflow-y-auto">{body}</div>}
     />

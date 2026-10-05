@@ -314,8 +314,9 @@ A saved tile whose type is not registered renders an honest stand-in (`home/Unav
 and is kept. Tile bodies are STATIC imports inside the page's one `ssr:false` edge (`BoardPage` →
 `UserBoard`) — never `dynamic()` a body (code-splitting FRAGMENTATION LAW).
 
-- **The chat beside the board** is `ChatCanvasWorkspace`'s; the board publishes its own surface
-  (the Board surface: values + `board_*` tools), so no page-level snapshot is passed.
+- **The chat beside the board** is the shell's (`ShellChatDock`, the one chat on every page), showing
+  this board's own conversation (`shellChatHome`: `?chat=`, per-board cookie, open by default); the board
+  publishes its own surface (values + `board_*` tools), so no page-level snapshot is passed.
 - **A chat tile is /chat's conversation**: `CanvasChatColumn` (the one chat column, compact composer, agent
   switch) under `ChatConversationSurface` — the `matrx-user/chat` surface `/chat` mounts, scoped to the
   tile's conversation, so the chat beside the board reads what the tile's agent said (through the surface

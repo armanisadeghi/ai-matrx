@@ -13,7 +13,6 @@
 import { type DemoKindExample, BoardDemo } from "@/features/board/demo/BoardDemo";
 import { ChatCanvasWorkspace } from "@ai-matrx/chat/canvas/workspace/ChatCanvasWorkspace";
 import type { CanvasWorkspaceLayout } from "@ai-matrx/chat/canvas/workspace/workspace-cookies";
-import type { ComposerMode } from "@ai-matrx/chat/agents/components/inputs/smart-input/composer/composer-types";
 
 const BOARD_TITLE = "Board demo board";
 
@@ -22,13 +21,11 @@ export function BoardCanvasWorkspaceDemo({
   kinds,
   examplesNote,
   initialLayout,
-  initialMode,
 }: {
   workspaceId: string;
   kinds: DemoKindExample[];
   examplesNote: string | null;
   initialLayout: CanvasWorkspaceLayout;
-  initialMode: ComposerMode | null;
 }) {
   return (
     <ChatCanvasWorkspace
@@ -36,7 +33,6 @@ export function BoardCanvasWorkspaceDemo({
       title={BOARD_TITLE}
       byline="By you"
       initialLayout={initialLayout}
-      initialMode={initialMode}
       // No getCanvasContext here: the board publishes ITSELF as the
       // `matrx-user/board` surface (its values + board_* tools reach
       // the chat on their own). A second, page-level snapshot of the same

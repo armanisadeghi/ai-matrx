@@ -2314,8 +2314,8 @@ body:has(.shell-root[data-pathname^="/administration"]) {
    13c. Canvas chrome — `data-shell-chrome="canvas"`
 
    A chat-beside-a-canvas page (features/canvas/workspace/ChatCanvasWorkspace)
-   draws its OWN header (title, chat controls, and the shared header control
-   set), so the shell's header and dock step aside and `.shell-main` becomes a
+   draws its OWN header (title, record controls, and the shared header control
+   set), so the shell's header and phone dock step aside (the shell CHAT stays) and `.shell-main` becomes a
    full-height, non-scrolling box. The SIDEBAR, the account rail and the phone
    drawer STAY — one sidebar a person can always count on (owner, 2026-09-30);
    the sidebar's Chats side opens conversations in the page's chat panel.
@@ -2335,10 +2335,16 @@ body:has(.shell-root[data-pathname^="/administration"]) {
   --shell-header-clearance: 0px;
   grid-template-rows: 0 1fr;
 }
-.shell-root[data-shell-chrome="canvas"] .shell-header,
 .shell-root[data-shell-chrome="canvas"] .shell-mobile-trigger,
 .shell-root[data-shell-chrome="canvas"] ~ * .shell-dock {
   display: none !important;
+}
+/* The shell header steps aside by VISIBILITY, not display: its chat button
+   (THE CHAT BUTTON NEVER MOVES, below) is the one way to the shell chat on
+   every page, canvas pages included (2026-10-05: the Board and Education show
+   the shell chat, they no longer draw their own). Hidden boxes take no clicks. */
+.shell-root[data-shell-chrome="canvas"] .shell-header {
+  visibility: hidden;
 }
 /* The sidebar's top row keeps the shell header's height (the page's own header
    is the same 2.75rem), so it lines up with the page header instead of
@@ -2975,6 +2981,23 @@ html[data-board-embed] .shell-main {
   .shell-root[data-shell-chat-available] .shell-header {
     padding-left: var(--shell-chat-toggle-room);
   }
+}
+
+/* Canvas pages: the chat button stays at its pixel over the page's own header
+   (or the dock's top row), and that header starts after it. Behind a
+   full-screen canvas the chat steps aside, and so does its button. */
+@media (min-width: 1024px) {
+  .shell-root[data-shell-chrome="canvas"][data-shell-chat-available] .shell-chat-toggle {
+    visibility: visible;
+  }
+
+  .shell-root[data-shell-chrome="canvas"][data-shell-chat-available] .canvas-workspace-header {
+    padding-left: var(--shell-chat-toggle-room);
+  }
+}
+
+.shell-root[data-canvas-fullscreen] .shell-chat-toggle {
+  display: none !important;
 }
 
 /* The dock's top row starts after the button that sits over it. */

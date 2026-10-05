@@ -22,7 +22,9 @@
  *   - `startWith(agentId)` — a fresh conversation with the chosen agent.
  * A host that owns SEVERAL conversations (one per board tile) passes `start`:
  * what to open on mount (a saved conversation, a chosen agent, or new). It is
- * read once, at mount.
+ * read once, at mount — and again when `surfaceKey` changes: the shell chat
+ * passes each page's own key (a board, Education), and the hook starts over
+ * for it (address, memory, launch) without remounting.
  * A failure carries its real reason and a retry — nothing fails silently.
  *
  * A NEW chat waits for an active organization instead of racing its
@@ -216,6 +218,19 @@ export function useCanvasWorkspaceConversation(
   const serverHasIt = useAppSelector((state) =>
     conversationId ? !selectIsCacheOnly(conversationId)(state) : false,
   );
+
+  // A NEW HOME: the shell chat stays mounted while the person moves between
+  // pages, and a page with a chat of its own (a board, Education) hands it a
+  // different surface key. Everything restarts for the new key — its address
+  // and its remembered conversation are read again before anything launches.
+  const [keyedFor, setKeyedFor] = useState({ surfaceKey, addressParam });
+  if (keyedFor.surfaceKey !== surfaceKey || keyedFor.addressParam !== addressParam) {
+    setKeyedFor({ surfaceKey, addressParam });
+    setRequest(initialRequest(start));
+    setConversationId(null);
+    setFailure(null);
+    setAddressRead(addressParam === null);
+  }
 
   // Declared BEFORE the launch effect so it runs first in the same commit.
   useEffect(() => {

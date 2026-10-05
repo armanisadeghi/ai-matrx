@@ -1,11 +1,12 @@
 /**
- * ChatCanvasWorkspace's remembered layout (navigation is the app shell's own
- * sidebar and its cookie) — per workspace id: where the chat
- * sits (docked / floating), whether it is open, and whether the properties
- * panel is open. Panel WIDTHS are the shared side-panel cookies
- * (`components/official/side-panel`), one per panel kind, so a width the
- * person likes follows them to every canvas page.
- * Plain module: the server reader and the client writer both import it.
+ * The chat's and the canvas workspace's remembered layout:
+ *   - the SHELL CHAT, per home (`shellChatHome(...).layoutId` — a board, Education,
+ *     else `page:<family>`): where it sits (docked / floating) and whether it is open;
+ *   - a canvas workspace (ChatCanvasWorkspace), per workspace id: whether its
+ *     properties panel is open.
+ * Panel WIDTHS are the shared side-panel cookies (`components/official/side-panel`),
+ * one per panel kind, so a width the person likes follows them to every page.
+ * Plain module: the server readers and the client writers both import it.
  */
 
 import type { SidePanelSizes } from "@ai-matrx/chat/ui/side-panel-width";
@@ -17,11 +18,10 @@ export interface CanvasChatState {
   open: boolean;
 }
 
-/** Everything a canvas page remembers (`readCanvasWorkspaceLayout` on the server). */
+/** What a canvas page remembers (`readCanvasWorkspaceLayout` on the server). The chat's is the shell's. */
 export interface CanvasWorkspaceLayout {
-  chat: CanvasChatState;
   propertiesOpen: boolean;
-  widths: { chat: number; properties: number };
+  widths: { properties: number };
 }
 
 export const CANVAS_WORKSPACE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
@@ -43,7 +43,7 @@ export function canvasPropertiesCookieName(workspaceId: string): string {
   return `canvas-workspace:${workspaceId}:properties`;
 }
 
-/** `side` · `floating` · `side:closed` · `floating:closed`. No cookie = the host's default. */
+/** `side` · `floating` · `side:closed` · `floating:closed`. No cookie = the home's default. */
 export function parseCanvasChatCookie(
   value: string | undefined,
   defaultOpen: boolean,

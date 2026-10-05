@@ -1,5 +1,9 @@
 # CHANGELOG — Board (`features/board`)
 
+## 2026-10-05 — The Board's chat is the shell chat
+
+- `/board/<id>` no longer draws its own chat column: the shell's chat (`ShellChatDock`) docks beside it, as on every page, showing this board's own conversation (same `?chat=`, same per-board cookie `canvas-workspace:board-<id>:chat`, same remembered conversation). `BoardPage` / `app/(core)/board/[id]/page.tsx` drop `initialMode`. Mechanics: `packages/chat/src/canvas/workspace/FEATURE.md`.
+
 ## 2026-10-05 — Board polish from the browser walk
 
 - Opening a saved board never asks "which organization is this for". Cause (traced live: `NoteItemBody` startDraft, via the gate): a note tile whose draft was never saved is started again on every reload and used the "new note" resolver, which asks when no organization is selected. Fix: `items/board-organization.tsx` (`BoardOrganizationProvider`, wrapped around `UserBoard` by `BoardPage` and the saved meeting board); restoring a draft files under the board's own organization; a NEW note still goes through the gate. Guard: `__tests__/note-draft-restore-never-asks.test.tsx` (failed on the old body).

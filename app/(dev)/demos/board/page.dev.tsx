@@ -8,7 +8,6 @@ import type { Metadata } from "next";
 import { createClient } from "@/utils/supabase/server";
 import type { DemoKindExample } from "@/features/board/demo/BoardDemo";
 import { readCanvasWorkspaceLayout } from "@ai-matrx/chat/next/server/workspace-cookies.server";
-import { readComposerModeCookie } from "@ai-matrx/chat/next/server/composer-mode.server";
 import { BoardCanvasWorkspaceDemo } from "../canvas-workspace/BoardCanvasWorkspaceDemo";
 
 /** The workspace id (its chat surface key and cookies). */
@@ -71,10 +70,9 @@ async function loadCanonicalExamples(): Promise<{
 }
 
 export default async function BoardDemoPage() {
-  const [{ kinds, note }, initialLayout, initialMode] = await Promise.all([
+  const [{ kinds, note }, initialLayout] = await Promise.all([
     loadCanonicalExamples(),
     readCanvasWorkspaceLayout(WORKSPACE_ID),
-    readComposerModeCookie(),
   ]);
   return (
     <div className="h-full min-h-0">
@@ -83,7 +81,6 @@ export default async function BoardDemoPage() {
         kinds={kinds}
         examplesNote={note}
         initialLayout={initialLayout}
-        initialMode={initialMode}
       />
     </div>
   );

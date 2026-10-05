@@ -3,8 +3,9 @@
 /**
  * BoardPage — the Board: a person's own canvas, the platform's main way in.
  * The ONE chat-beside-a-canvas layout (`ChatCanvasWorkspace`) with the
- * person's saved board as its canvas. The board publishes its own surface
- * (`matrx-user/board`), so no page-level snapshot is passed.
+ * person's saved board as its canvas; the chat beside it is the shell's, with
+ * this board's own conversation (`shellChatHome`). The board publishes its
+ * own surface (`matrx-user/board`), so no page-level snapshot is passed.
  *
  * Code splitting: the board (engine + every item type's canonical body) is
  * ONE `ssr: false` edge, rendered only once the saved board is ready.
@@ -16,7 +17,6 @@ import { type ReactNode, useState } from "react";
 import { LayoutGrid, Pencil, Plus } from "lucide-react";
 import { ChatCanvasWorkspace } from "@ai-matrx/chat/canvas/workspace/ChatCanvasWorkspace";
 import type { CanvasWorkspaceLayout } from "@ai-matrx/chat/canvas/workspace/workspace-cookies";
-import type { ComposerMode } from "@ai-matrx/chat/agents/components/inputs/smart-input/composer/composer-types";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { ShimmerText } from "@/components/loaders/ShimmerText";
@@ -38,13 +38,11 @@ export function BoardPage({
   target,
   workspaceId,
   initialLayout,
-  initialMode,
 }: {
   target: SavedBoardTarget;
-  /** Cookies + the chat's surface key. */
+  /** The workspace's remembered layout (the chat's is the shell chat's: `shellChatHome`). */
   workspaceId: string;
   initialLayout: CanvasWorkspaceLayout;
-  initialMode: ComposerMode | null;
 }) {
   const saved = useSavedBoard(target);
   const [renaming, setRenaming] = useState(false);
@@ -70,7 +68,6 @@ export function BoardPage({
         title={title}
         byline={byline}
         initialLayout={initialLayout}
-        initialMode={initialMode}
         // Comments on the whole board ("bigger things"); each rides the next message of this chat.
         record={ready ? { resourceId: ready.board.id, resourceName: title, commentToken: BOARD_TOKEN } : undefined}
         titleMenu={

@@ -1,11 +1,11 @@
 "use client";
 
 /**
- * The chat inside a panel — a ChatCanvasWorkspace (docked, floating or the
- * mobile drawer) or the shell's chat dock — the platform's ONE chat column
+ * The chat inside a panel — the shell's chat dock (docked, floating or the
+ * phone sheet) or a board chat tile — the platform's ONE chat column
  * (`AgentConversationColumn`, the same one /chat mounts) with the compact
- * composer, plus an optional host context entry. Every place a panel shows it
- * reads the SAME conversation from its host.
+ * composer, plus an optional page context entry (`useShellChatContext`).
+ * Every place a panel shows it reads the SAME conversation from its host.
  *
  * HOW THE CANVAS REACHES THE AGENT: as ONE named context entry, written with
  * `setContextEntries` — never as user text (THE USER-INPUT LAW,
@@ -22,7 +22,10 @@ import { useEffect, useRef, useState } from "react";
 import { Building2, RotateCcw } from "lucide-react";
 import { AgentConversationColumn } from "../../agents/components/shared/AgentConversationColumn";
 import type { AttachedContextRailItem } from "../../agents/components/inputs/smart-input/ConversationContextRail";
-import { setContextEntries } from "../../agents/redux/execution-system/instance-context/instance-context.slice";
+import {
+  removeContextEntry,
+  setContextEntries,
+} from "../../agents/redux/execution-system/instance-context/instance-context.slice";
 import { useAppDispatch } from "../../store/hooks";
 import { Button } from "@ai-matrx/design-system/controls";
 import { ErrorNotice } from "@ai-matrx/chat/host/ui-slots";
@@ -117,12 +120,25 @@ export function CanvasChatColumn({
     writeContext(conversationId);
   };
 
-  // (1) Seed the moment the conversation exists — and for every new one.
-  const seededFor = useRef<string | null>(null);
+  // (1) Seed the moment the conversation exists — for every new one, and for
+  // every new page handing its context (the shell chat follows the person).
+  // The previous page's entry leaves with it: a conversation never keeps a
+  // snapshot of a page it is no longer beside.
+  const seeded = useRef<{
+    conversationId: string;
+    read: (() => CanvasContextEntry) | undefined;
+    key: string | null;
+  } | null>(null);
   useEffect(() => {
-    if (!conversationId || seededFor.current === conversationId || !getCanvasContext) return;
-    seededFor.current = conversationId;
-    dispatch(setContextEntries({ conversationId, entries: [getCanvasContext()] }));
+    if (!conversationId) return;
+    const previous = seeded.current;
+    if (previous?.conversationId === conversationId && previous.read === getCanvasContext) return;
+    const entry = getCanvasContext ? getCanvasContext() : null;
+    if (entry) dispatch(setContextEntries({ conversationId, entries: [entry] }));
+    if (previous?.conversationId === conversationId && previous.key && previous.key !== entry?.key) {
+      dispatch(removeContextEntry({ conversationId, key: previous.key }));
+    }
+    seeded.current = { conversationId, read: getCanvasContext, key: entry?.key ?? null };
   }, [conversationId, dispatch, getCanvasContext]);
 
   if (conversation.state === "opening") {

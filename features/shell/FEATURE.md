@@ -7,9 +7,10 @@ their own docs: sidebar `components/sidebar/FEATURE.md`, route headers
 file holds the two laws that span them.
 
 **Canvas chrome** — a page that hosts `ChatCanvasWorkspace` flips this shell to
-`data-shell-chrome="canvas"`: the shell header and dock step aside for the page's own
-header; the SIDEBAR and account rail stay (one sidebar everywhere — owner, 2026-09-30),
-and its Chats side opens conversations in the page's chat panel: read
+`data-shell-chrome="canvas"`: the shell header (by visibility — its chat button stays) and
+the phone dock step aside for the page's own header; the SIDEBAR, account rail and THE
+CHAT (`ShellChatDock`, the one chat on every page but /chat and /code) stay, and the
+sidebar's Chats side opens conversations in it: read
 [`../canvas/workspace/FEATURE.md`](../canvas/workspace/FEATURE.md) before touching
 `ShellChromeMode`, `canvas-chrome-routes.ts`, `in-place-chat-host.ts` or `shell.css` §13c.
 
@@ -107,6 +108,8 @@ A page picks a template; it never hand-builds its top. Named options only — a 
 **Guard:** `pnpm check:page-top` (findings row `page-top`, `--self-test`): `raw-page-header` (a file outside the header module importing `PageHeader`) and `sentence-under-title` (the interface-text `page-description` scanner). Baseline `scripts/page-top/baseline.json` only shrinks (`--shrink`).
 
 ## Change log
+
+- `2026-10-05` — claude: **One chat.** The shell chat (`ShellChatDock`) now shows on the Board, signed-in Education and the canvas demos too — they no longer draw their own chat column; it stands aside only on /chat and /code. The shell header hides by `visibility` in canvas chrome so `ShellChatToggle` stays at its pixel (the canvas header pads for it, `.canvas-workspace-header`); full screen hides the chat button. AppShell reads the chat cookie for the page's HOME (`shellChatHome`: each board, Education, else the family) and stamps `data-shell-chat-available` at SSR. Mechanics: `packages/chat/src/canvas/workspace/FEATURE.md`.
 
 - `2026-10-05` — claude: **`RecordPageHeader` has a top-level form.** `backHref` is optional (and on `EntityModeHeader`): omit it on a module-home, queue or inbox page that has no parent and the line is just the name (no back chevron, `parents` empty). A trailing action is a declarative `actions` entry (`primary: true`, `href`), never a free-form slot — `CasesListClient`'s New case moved onto it. A page's `MandateDoorLink` icon variant renders nothing and only registers the door, so it sits beside the header, not inside. ~85 raw `PageHeader` page tops (commerce, CRM, marketing, notifications, boards, maps, reports, HR, dashboard, launchpad…) moved onto the template; `check:page-top` baseline 495 → 433. Still on a raw `PageHeader` and named gaps: `AdminModuleHeader` (admin route-tree crumbs + module menu + injected items), `ScopesRouteHeader` / `ScopeBreadcrumb` (org-level drawer, "see all" links, confirm-delete actions), the header-variant family (`HeaderToggle`, `HeaderTabs`, `StudyDeckHeader`), and header-with-live-control pages (`ShapesListHeader`).
 - `2026-10-05` — claude: **Page-top templates.** `RecordPageHeader` (internal record page, ONE line: back + parents + record + modes + actions; named options only), `EntityModeHeader` gains `trail`, `CrumbNode` exported, `HeaderSpecimen` + specimen context so the system page shows the real template (the old mock drew two lines under a back chevron — owner: "busy and sloppy"). Guard `check:page-top` + shrink-only baseline (593 → 583 after wave 1: 10 raw `PageHeader` pages moved onto `RecordPageHeader`).

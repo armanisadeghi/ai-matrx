@@ -4,8 +4,6 @@
  * dock both import it.
  */
 
-import { isCanvasChromeRoute } from "@ai-matrx/chat/utils/shell/canvas-chrome-routes";
-
 /** Fired on window to open or close the shell's chat (the header's chat button). */
 export const SHELL_CHAT_TOGGLE_EVENT = "matrx:shell-chat-toggle";
 
@@ -49,7 +47,68 @@ export function shellChatWorkspaceId(family: string): string {
   return `page:${family}`;
 }
 
-/** A page that hosts its own canvas workspace chat (Board, Education) or is the full chat. */
-export function shellChatHostedElsewhere(pathname: string, signedIn: boolean): boolean {
-  return OWN_CHAT_PATHS.some((p) => p.test(pathname)) || isCanvasChromeRoute(pathname, signedIn);
+/**
+ * The only pages the shell's chat stands aside on: the full chat itself and
+ * the code workspace (it docks its own coding agent). Every other page —
+ * the Board and Education included — shows THE chat (owner, 2026-10-05: one
+ * chat, on every page).
+ */
+export function shellChatHostedElsewhere(pathname: string): boolean {
+  return OWN_CHAT_PATHS.some((p) => p.test(pathname));
 }
+
+/** The shell chat's conversation everywhere no page has its own. */
+export const SHELL_CHAT_SURFACE_KEY = "canvas-workspace:shell";
+
+/**
+ * Where the shell's chat lives on a page:
+ *   - `layoutId`     — its remembered open / closed + docked / floating
+ *                      (`canvasChatCookieName(layoutId)`);
+ *   - `surfaceKey`   — the conversation it shows (and this device's memory of it);
+ *   - `addressParam` — the query param that conversation lives at;
+ *   - `defaultOpen`  — open with no remembered choice; null = open on a wide
+ *                      screen only (SHELL_CHAT_WIDE_QUERY).
+ */
+export interface ShellChatHome {
+  layoutId: string;
+  surfaceKey: string;
+  addressParam: string;
+  defaultOpen: boolean | null;
+}
+
+/** One board: /board/<id> (/board and /board/all are the boards list). */
+const BOARD_PAGE = /^\/board\/(?!all(?:\/|$))([^/]+)\/?$/;
+const EDUCATION_PAGES = /^\/education(?:\/|$)/;
+
+/**
+ * A page with a chat of its OWN keeps it inside the shell chat: each board
+ * has its conversation, signed-in Education has one. The ids, params and
+ * defaults are exactly the ones those pages used when they drew their own chat
+ * column (ChatCanvasWorkspace, until 2026-10-05), so a person's remembered
+ * layout and conversation carry over untouched. Every other page shares one
+ * conversation that follows the person, remembered open / closed per family.
+ */
+export function shellChatHome(pathname: string, signedIn: boolean): ShellChatHome {
+  const board = BOARD_PAGE.exec(pathname);
+  if (board) {
+    const layoutId = `board-${board[1]}`;
+    return { layoutId, surfaceKey: `canvas-workspace:${layoutId}`, addressParam: "chat", defaultOpen: true };
+  }
+  if (signedIn && EDUCATION_PAGES.test(pathname)) {
+    return { layoutId: "education", surfaceKey: "canvas-workspace:education", addressParam: "chat", defaultOpen: false };
+  }
+  return {
+    layoutId: shellChatWorkspaceId(shellChatFamily(pathname)),
+    surfaceKey: SHELL_CHAT_SURFACE_KEY,
+    // `pageChat`, not `chat`: /code keeps its own `?chat=`.
+    addressParam: "pageChat",
+    defaultOpen: null,
+  };
+}
+
+/**
+ * Fired on window whenever the shell chat is brought into view (the toggle,
+ * ⌘\, a history row, a comment riding along), so a canvas in full screen
+ * steps out of it — the chat is never opened behind a full-screen canvas.
+ */
+export const SHELL_CHAT_REVEAL_EVENT = "matrx:shell-chat-reveal";

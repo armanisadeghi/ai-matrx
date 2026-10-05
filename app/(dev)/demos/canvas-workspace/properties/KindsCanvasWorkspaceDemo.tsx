@@ -16,7 +16,6 @@ import { cn } from "@/lib/utils";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { ChatCanvasWorkspace } from "@ai-matrx/chat/canvas/workspace/ChatCanvasWorkspace";
 import type { CanvasWorkspaceLayout } from "@ai-matrx/chat/canvas/workspace/workspace-cookies";
-import type { ComposerMode } from "@ai-matrx/chat/agents/components/inputs/smart-input/composer/composer-types";
 
 export interface DemoKindRow {
   id: string;
@@ -33,13 +32,11 @@ export function KindsCanvasWorkspaceDemo({
   kinds,
   loadError,
   initialLayout,
-  initialMode,
 }: {
   workspaceId: string;
   kinds: DemoKindRow[];
   loadError: string | null;
   initialLayout: CanvasWorkspaceLayout;
-  initialMode: ComposerMode | null;
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selected = kinds.find((k) => k.id === selectedId) ?? null;
@@ -96,7 +93,6 @@ export function KindsCanvasWorkspaceDemo({
       title={TITLE}
       byline="By you"
       initialLayout={initialLayout}
-      initialMode={initialMode}
       getCanvasContext={() => ({
         key: "registered_shapes",
         type: "json",
