@@ -18,6 +18,15 @@ describe("valueCarriesKind — the value form of the kind signal", () => {
     ["The `\"__kind\": \"x\"` key routes a payload.", false],
     [null, false],
     [42, false],
+    // H1 (round 5): prose BEFORE an embedded kind region still carries it.
+    [{ answer: 'Here are your cards: ```json\n{"__kind":"flashcard_set","cards":[]}\n```' }, true],
+    ['Here are your cards:\n\n```json\n{"__kind":"flashcard_set","cards":[]}\n```', true],
+    ['Your timeline: {"__kind":"timeline","events":[]} — enjoy.', true],
+    [['intro', 'See: {"__kind":"timeline","events":[]}'], true],
+    ['Markdown escaped: {"\\_\\_kind":"timeline","events":[]}', true],
+    // Quoted source stays source: a code span or a non-JSON fence.
+    ['Write `{"__kind":"timeline"}` to route.', false],
+    ['Example:\n```ts\nconst k = {"__kind": "timeline"};\n```', false],
   ])("%j → %s", (value, expected) => {
     expect(valueCarriesKind(value)).toBe(expected);
   });

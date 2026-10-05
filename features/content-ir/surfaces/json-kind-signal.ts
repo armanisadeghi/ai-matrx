@@ -313,8 +313,10 @@ export function json5AsJson(text: string): string | null {
  * The VALUE form of the same question, for renderers handed parsed data
  * instead of text (the value grid, the JSON viewers): does this value carry a
  * kind anywhere — an object with a string `__kind`, at any depth, or a string
- * whose text is JSON with a `__kind` key? A raw renderer that answers yes
- * renders the value through the one value door (`AnswerValueView`) instead.
+ * that holds a kind REGION (`textCarriesKind`: whole kind JSON, or prose with
+ * a kind in it — a ```json fence, inline JSON — outside quoted source)? A raw
+ * renderer that answers yes renders the value through the one value door
+ * (`AnswerValueView`) instead.
  */
 export function valueCarriesKind(value: unknown): boolean {
   return carriesKind(value, 0, new Set());
@@ -324,7 +326,7 @@ export function valueCarriesKind(value: unknown): boolean {
 const VALUE_SEARCH_DEPTH = 64;
 
 function carriesKind(value: unknown, depth: number, seen: Set<object>): boolean {
-  if (typeof value === "string") return isKindJsonText(value);
+  if (typeof value === "string") return textCarriesKind(value);
   if (value === null || typeof value !== "object") return false;
   if (depth > VALUE_SEARCH_DEPTH || seen.has(value)) return false;
   seen.add(value);
@@ -339,7 +341,21 @@ function carriesKind(value: unknown, depth: number, seen: Set<object>): boolean 
   return false;
 }
 
-/** Text that IS a JSON object/array carrying a `__kind` key (not prose mentioning one). */
+/**
+ * A STRING value that holds a kind region (H1, round 5): text that is kind
+ * JSON, or prose with a kind region in it by THE markdown definition
+ * (`markdownCarriesKind` — outside quoted source, markdown-escaped key too).
+ * `{answer: "Here are your cards: ```json {…kind…}```"}` carries its kind.
+ */
+export function textCarriesKind(text: string): boolean {
+  return isKindJsonText(text) || markdownCarriesKind(text);
+}
+
+/**
+ * Text that IS a JSON object/array carrying a `__kind` key (not prose
+ * mentioning one) — the gate before a `JSON.parse` of the whole text. For
+ * "does this string hold a kind anywhere", read `textCarriesKind`.
+ */
 export function isKindJsonText(text: string): boolean {
   const first = text.trimStart()[0];
   return (first === "{" || first === "[") && hasKindKey(text);
