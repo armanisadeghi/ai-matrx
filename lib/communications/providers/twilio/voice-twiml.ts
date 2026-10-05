@@ -90,6 +90,7 @@ export function buildOwnerBetaConsentAcceptedTwiml(
     const connect = response.connect();
     const relay = connect.conversationRelay({
       url: options.conversationRelay.url,
+      dtmfDetection: true,
       welcomeGreeting: OWNER_BETA_CONVERSATION_RELAY_GREETING,
     });
     relay.parameter({
