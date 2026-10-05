@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-05T04:40:36.891Z",
+  "generated_at": "2026-10-05T04:42:30.743Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -3037,6 +3037,12 @@
       "filename": "fts4_e_the_tag_scopes_are_archived.sql",
       "checksum": "de96e875bc3c8882b4e35f6f7701a2a41fe086c9ab4d53f37144df15ba88f7d5",
       "applied_at": "2026-10-05 04:26:31.523062+00"
+    },
+    "migrations/campaign/fts4b_drop_list_entities_by_scopes.sql": {
+      "source": "matrx-frontend",
+      "filename": "fts4b_drop_list_entities_by_scopes.sql",
+      "checksum": "def7ee3f2bed49c6ed49eb1cfca30e964641c2b98e8225d43171022d8de823df",
+      "applied_at": "2026-10-05 04:42:29.554504+00"
     },
     "migrations/campaign/g0a_has_permission_for_declares_its_door.sql": {
       "source": "matrx-frontend",
