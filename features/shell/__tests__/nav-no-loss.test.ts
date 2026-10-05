@@ -267,6 +267,7 @@ const DOMAIN_ORDER = [
   "Media",
   "Audio",
   "Code",
+  "Computer",
   "Publish",
   "Communications",
   "CRM",

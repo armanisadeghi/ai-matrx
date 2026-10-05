@@ -115,7 +115,8 @@ describe("shell navigation route ownership", () => {
     expect(owner("/tasks")).toBe("Projects");
     expect(owner("/scraper")).toBe("Web");
     expect(owner("/search")).toBe("Web");
-    expect(owner("/connect-computer")).toBe("Web");
+    expect(owner("/connect-computer")).toBe("Computer");
+    expect(owner("/local")).toBe("Computer");
     expect(owner("/reports")).toBe("Intelligence");
     expect(owner("/reports/agent-drift")).toBe("Intelligence");
     expect(owner("/acquisition")).toBe("Knowledge");

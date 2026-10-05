@@ -1194,7 +1194,6 @@ export const primaryNavItems: ShellNavItem[] = [
         dashboard: true,
       },
       { label: "Search", href: "/search", iconName: "Search" },
-      { label: "Connect a Computer", href: "/connect-computer", iconName: "Laptop", guestHidden: true },
       { label: "Web Scraper Window", href: "/scraper", iconName: NAV_WINDOW_PANEL_ICON, panelAction: "open-web-scraper-panel" },
       { label: "Site Workbench Window", href: "/tools/pdf-extractor", iconName: NAV_WINDOW_PANEL_ICON, panelAction: "open-site-workbench-panel" },
     ],
@@ -1536,6 +1535,23 @@ export const primaryNavItems: ShellNavItem[] = [
     ],
   },
   {
+    // computer (Arman, 2026-10-04): the person's own computer, through the
+    // desktop app — connecting it and the devices already connected.
+    label: "Computer",
+    href: "/local",
+    iconName: "Monitor",
+    section: "primary",
+    profileMenu: false,
+    dashboard: false,
+    description: "Your own computer, through the desktop app",
+    color: "slate",
+    guestHidden: true,
+    children: [
+      { label: "My Devices", href: "/local", iconName: "Laptop", guestHidden: true },
+      { label: "Connect a Computer", href: "/connect-computer", iconName: "Monitor", guestHidden: true },
+    ],
+  },
+  {
     // publish: cms, html-pages, podcasts, artifacts, printing — everything
     // that leaves the platform.
     label: "Publish",
@@ -1751,7 +1767,6 @@ export const primaryNavItems: ShellNavItem[] = [
     guestHidden: true,
     children: [
       { label: "Connected Sources", href: "/connected-sources", iconName: "Link2", guestHidden: true },
-      { label: "My Devices", href: "/local", iconName: "Laptop", guestHidden: true },
       { label: "Connect your AI", href: "/bring-your-work", iconName: "Import", guestHidden: true },
     ],
   },
