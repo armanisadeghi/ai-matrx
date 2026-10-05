@@ -59,24 +59,24 @@ export function WebpagePreviewContent({
         <Globe className="w-3.5 h-3.5 text-teal-500 mt-0.5 shrink-0" />
         <div className="flex-1 min-w-0">
           {title?.trim() && (
-            <div className="text-sm font-semibold text-foreground line-clamp-2">
+            <div className="type-title text-foreground line-clamp-2">
               {title}
             </div>
           )}
           {domain && (
-            <div className="text-[11px] text-muted-foreground truncate">
+            <div className="type-meta text-muted-foreground truncate">
               {domain}
             </div>
           )}
         </div>
       </div>
 
-      <div className="text-[10px] font-mono text-muted-foreground break-all bg-muted/40 rounded p-1.5">
+      <div className="type-meta font-mono text-muted-foreground break-all bg-muted/40 rounded p-1.5">
         {url}
       </div>
 
       {snippet?.trim() && (
-        <p className="text-xs text-foreground whitespace-pre-wrap break-words max-h-32 overflow-y-auto">
+        <p className="type-secondary text-foreground whitespace-pre-wrap break-words max-h-32 overflow-y-auto">
           {snippet.length > 400 ? snippet.slice(0, 400).trimEnd() + "…" : snippet}
         </p>
       )}

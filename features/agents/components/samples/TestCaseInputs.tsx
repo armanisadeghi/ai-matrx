@@ -168,7 +168,7 @@ function PartRow({
     return (
       <div className="flex items-baseline gap-2 py-1 pl-[22px] pr-2.5">
         <PartLabel part={part} />
-        <div className="min-w-0 flex-1 text-[11px]">
+        <div className="min-w-0 flex-1 type-meta">
           <EntityRef
             token={part.entity.token}
             id={part.entity.id}
@@ -190,7 +190,7 @@ function PartRow({
       <div className="flex items-baseline gap-2 py-1 pl-[22px] pr-2.5">
         <PartLabel part={part} />
         <span
-          className="min-w-0 flex-1 truncate text-[11px] text-foreground"
+          className="min-w-0 flex-1 truncate type-meta text-foreground"
           title={part.text}
         >
           {part.text}
@@ -213,17 +213,17 @@ function PartRow({
           <ChevronRight className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground" />
         )}
         <PartLabel part={part} />
-        <span className="min-w-0 flex-1 truncate text-[11px] text-muted-foreground">
+        <span className="min-w-0 flex-1 truncate type-meta text-muted-foreground">
           {previewOf(part.text)}
         </span>
-        <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground/70">
+        <span className="shrink-0 type-meta tabular-nums text-muted-foreground/70">
           {formatSize(part.text)}
         </span>
       </button>
       {open ? (
         <div className="relative px-2.5 pb-2">
           {part.description ? (
-            <p className="pb-1 pr-8 text-[10px] leading-snug text-muted-foreground">
+            <p className="pb-1 pr-8 type-meta leading-snug text-muted-foreground">
               {part.description}
             </p>
           ) : null}
@@ -234,7 +234,7 @@ function PartRow({
               tooltip={`${part.label} value`}
             />
           </div>
-          <pre className="max-h-72 overflow-auto whitespace-pre-wrap break-words rounded bg-muted/60 p-2 pr-8 text-[11px] leading-relaxed text-foreground scrollbar-thin">
+          <pre className="max-h-72 overflow-auto whitespace-pre-wrap break-words rounded bg-muted/60 p-2 pr-8 type-meta leading-relaxed text-foreground scrollbar-thin">
             {prettyValue(part.text)}
           </pre>
         </div>
@@ -246,7 +246,7 @@ function PartRow({
 function PartLabel({ part }: { part: TestCasePart }) {
   return (
     <span
-      className="shrink-0 truncate text-[11px] font-medium text-foreground/80"
+      className="shrink-0 truncate type-meta font-medium text-foreground/80"
       style={{ maxWidth: "11rem" }}
       title={part.name ? `${part.label} (${part.name})` : part.label}
     >
@@ -265,7 +265,7 @@ function PartLabel({ part }: { part: TestCasePart }) {
 
 function GroupLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="pb-0.5 pl-[22px] pr-2.5 pt-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/70">
+    <div className="pb-0.5 pl-[22px] pr-2.5 pt-1.5 type-meta font-semibold uppercase tracking-wide text-muted-foreground/70">
       {children}
     </div>
   );
@@ -309,7 +309,7 @@ export function TestCaseInputs({
     attachmentParts.length === 0
   ) {
     return (
-      <p className={cn("px-2.5 py-1.5 text-[11px] text-muted-foreground", className)}>
+      <p className={cn("px-2.5 py-1.5 type-meta text-muted-foreground", className)}>
         This test case carries no inputs.
       </p>
     );

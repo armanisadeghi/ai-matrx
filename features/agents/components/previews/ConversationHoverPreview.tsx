@@ -90,7 +90,7 @@ export function ConversationPreviewContent({
 
   if (!conv) {
     return (
-      <div className="text-xs text-muted-foreground italic">
+      <div className="type-secondary text-muted-foreground italic">
         Conversation not loaded.
       </div>
     );
@@ -105,11 +105,11 @@ export function ConversationPreviewContent({
       <div className="flex items-start gap-2">
         <MessagesSquare className="w-3.5 h-3.5 text-blue-500 mt-0.5 shrink-0" />
         <div className="flex-1 min-w-0">
-          <div className="text-sm font-semibold text-foreground truncate">
+          <div className="type-title text-foreground truncate">
             {title}
           </div>
           {agentName && (
-            <div className="flex items-center gap-1 text-[11px] text-muted-foreground mt-0.5">
+            <div className="flex items-center gap-1 type-meta text-muted-foreground mt-0.5">
               <CircuitBoard className="w-3 h-3" />
               <span className="truncate">{agentName}</span>
             </div>
@@ -117,7 +117,7 @@ export function ConversationPreviewContent({
         </div>
       </div>
 
-      <div className="flex items-center gap-1.5 flex-wrap text-[10px]">
+      <div className="flex items-center gap-1.5 flex-wrap type-meta">
         <span
           className={cn(
             "inline-flex items-center px-1.5 py-0.5 rounded font-semibold capitalize",
@@ -139,7 +139,7 @@ export function ConversationPreviewContent({
       </div>
 
       {conv.description && (
-        <div className="text-xs text-foreground/90 line-clamp-3"><RichContentPreview source={conv.description} lines={3} /></div>
+        <div className="type-secondary text-foreground/90 line-clamp-3"><RichContentPreview source={conv.description} lines={3} /></div>
       )}
 
       {conv.keywords && conv.keywords.length > 0 && (
@@ -148,7 +148,7 @@ export function ConversationPreviewContent({
           {conv.keywords.slice(0, 6).map((k) => (
             <span
               key={k}
-              className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-foreground"
+              className="type-meta px-1.5 py-0.5 rounded bg-muted text-foreground"
             >
               {k}
             </span>
@@ -156,7 +156,7 @@ export function ConversationPreviewContent({
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-1 text-[10px] text-muted-foreground pt-1 border-t border-border">
+      <div className="grid grid-cols-2 gap-1 type-meta text-muted-foreground pt-1 border-t border-border">
         <div>
           <div className="uppercase tracking-wider opacity-70">Updated</div>
           <div className="text-foreground/80">

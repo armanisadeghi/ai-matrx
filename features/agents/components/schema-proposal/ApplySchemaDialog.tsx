@@ -105,7 +105,7 @@ export const ApplySchemaDialog: React.FC<ApplySchemaDialogProps> = ({
           initialTab="mine"
           visibleTabs={WRITABLE_AGENT_TABS}
           showPinnedAgent={false}
-          className="h-10 w-full justify-between text-sm"
+          className="h-10 w-full justify-between type-body"
         />
 
         <DialogFooter>

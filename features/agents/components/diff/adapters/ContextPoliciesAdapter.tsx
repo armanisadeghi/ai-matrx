@@ -32,15 +32,15 @@ function ContextPoliciesDiffRenderer({ node }: FieldDiffProps) {
     const newJson =
       node.newValue != null ? JSON.stringify(node.newValue, null, 2) : "—";
     return (
-      <div className="grid grid-cols-[200px_1fr_1fr] text-xs">
+      <div className="grid grid-cols-[200px_1fr_1fr] type-secondary">
         <div className="border-r border-border" />
         <div className="px-3 py-2 border-r border-border">
-          <pre className="font-mono text-[0.625rem] text-foreground/70">
+          <pre className="font-mono type-meta text-foreground/70">
             {oldJson}
           </pre>
         </div>
         <div className="px-3 py-2">
-          <pre className="font-mono text-[0.625rem] text-foreground/70">
+          <pre className="font-mono type-meta text-foreground/70">
             {newJson}
           </pre>
         </div>
@@ -63,7 +63,7 @@ function ContextPoliciesDiffRenderer({ node }: FieldDiffProps) {
             return (
               <div
                 key={child.key ?? i}
-                className="grid grid-cols-[200px_1fr] text-xs border-t border-border/30"
+                className="grid grid-cols-[200px_1fr] type-secondary border-t border-border/30"
               >
                 <div className="px-3 py-1.5 border-r border-border text-muted-foreground pl-8 font-mono">
                   {policyKey}
@@ -79,7 +79,7 @@ function ContextPoliciesDiffRenderer({ node }: FieldDiffProps) {
         return (
           <div
             key={child.key ?? i}
-            className="grid grid-cols-[200px_1fr_1fr] text-xs border-t border-border/30"
+            className="grid grid-cols-[200px_1fr_1fr] type-secondary border-t border-border/30"
           >
             <div className="px-3 py-1.5 border-r border-border text-muted-foreground pl-8 font-mono">
               {policyKey}

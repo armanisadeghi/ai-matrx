@@ -187,7 +187,7 @@ export function SettingControlInput({
                   <AlertTriangle className="h-3.5 w-3.5" />
                 </span>
               </TooltipTrigger>
-              <TooltipContent side="top" className="max-w-[220px] text-xs">
+              <TooltipContent side="top" className="max-w-[220px] type-secondary">
                 &quot;{stringValue}&quot; is not a recognized option for this
                 model
               </TooltipContent>
@@ -380,7 +380,7 @@ function JsonValueInput({
         spellCheck={false}
       />
       {jsonError && (
-        <p className="text-[11px] text-amber-600 dark:text-amber-400">
+        <p className="type-meta text-amber-600 dark:text-amber-400">
           {jsonError}
           <ErrorAlchemyMenu error={jsonError} />
         </p>

@@ -56,7 +56,7 @@ export function VersionIdBadge({
           )}
         </button>
       </TooltipTrigger>
-      <TooltipContent side="bottom" className="font-mono text-xs">
+      <TooltipContent side="bottom" className="font-mono type-secondary">
         {copied ? "Copied!" : versionId}
       </TooltipContent>
     </Tooltip>

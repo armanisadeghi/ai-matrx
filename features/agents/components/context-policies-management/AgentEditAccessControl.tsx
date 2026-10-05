@@ -67,7 +67,7 @@ export function AgentEditAccessControl({
 
       {value.access === "editable" && (
         <div className="space-y-1.5 rounded-md border border-border bg-card/40 p-2.5">
-          <p className="text-xs font-medium text-foreground">
+          <p className="type-secondary font-medium text-foreground">
             Where the agent's edits go
           </p>
           <div role="radiogroup" className="flex flex-wrap gap-1.5">
@@ -98,11 +98,11 @@ export function AgentEditAccessControl({
               );
             })}
           </div>
-          <p className="text-[11px] text-muted-foreground/80">
+          <p className="type-meta text-muted-foreground/80">
             {AGENT_EDIT_SAVE_MODES.find((m) => m.id === value.saveMode)?.hint}
           </p>
           {saveToSourceDisabledReason && (
-            <p className="text-[11px] text-muted-foreground">
+            <p className="type-meta text-muted-foreground">
               {saveToSourceDisabledReason}
             </p>
           )}
@@ -137,11 +137,11 @@ function AccessRow({
         className="mt-0.5"
       />
       <div className="flex-1 min-w-0">
-        <span className="flex items-center gap-1.5 text-sm font-medium text-foreground">
+        <span className="flex items-center gap-1.5 type-title text-foreground">
           <Icon className="h-3.5 w-3.5 shrink-0" />
           {AGENT_EDIT_ACCESS_LABEL[value]}
         </span>
-        <p className="text-xs text-muted-foreground">{description}</p>
+        <p className="type-secondary text-muted-foreground">{description}</p>
       </div>
     </label>
   );
@@ -238,7 +238,7 @@ export function AgentEditAccessBadge({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[11px] font-medium",
+        "inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 type-meta font-medium",
         access === "editable"
           ? "border-primary/40 bg-primary/10 text-primary"
           : "border-border bg-muted text-muted-foreground",

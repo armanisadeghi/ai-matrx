@@ -292,19 +292,19 @@ export function AgentComparisonPage({
       ) : left.loadError || right.loadError ? (
         // A deep link that failed must say so. Falling through to the "select
         // an agent" state would blame the user for a link that didn't resolve.
-        <div className="flex-1 flex flex-col items-center justify-center gap-1 px-6 text-center text-sm text-muted-foreground">
+        <div className="flex-1 flex flex-col items-center justify-center gap-1 px-6 text-center type-body text-muted-foreground">
           <span className="font-medium text-foreground">
             This comparison could not be opened.
             <ErrorAlchemyMenu />
           </span>
           {left.loadError && <span>{left.loadError} <ErrorAlchemyMenu error={left.loadError} /></span>}
           {right.loadError && <span>{right.loadError} <ErrorAlchemyMenu error={right.loadError} /></span>}
-          <span className="text-xs">
+          <span className="type-secondary">
             Pick an agent on each side above to compare something else.
           </span>
         </div>
       ) : (
-        <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground">
+        <div className="flex-1 flex items-center justify-center type-body text-muted-foreground">
           Select an agent and version on each side to compare
         </div>
       )}

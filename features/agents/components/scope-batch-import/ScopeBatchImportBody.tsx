@@ -415,7 +415,7 @@ export function ScopeBatchImportBody({
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">Organization</Label>
           {isSystem ? (
-            <div className="flex h-9 items-center text-sm text-muted-foreground">—</div>
+            <div className="flex h-9 items-center type-body text-muted-foreground">—</div>
           ) : (
             <EntityOrgFilter
               orgId={orgFilter}
@@ -457,7 +457,7 @@ export function ScopeBatchImportBody({
       </div>
 
       {!isSystem && !scopeTypeId ? (
-        <div className="flex flex-1 items-center justify-center p-8 text-sm text-muted-foreground text-center">
+        <div className="flex flex-1 items-center justify-center p-8 type-body text-muted-foreground text-center">
           Pick a scope type to see its context items.
         </div>
       ) : itemsError && items.length === 0 ? (
@@ -471,11 +471,11 @@ export function ScopeBatchImportBody({
           }
         />
       ) : !itemsLoaded ? (
-        <div className="flex flex-1 items-center justify-center p-8 text-sm text-muted-foreground">
+        <div className="flex flex-1 items-center justify-center p-8 type-body text-muted-foreground">
           Loading context items…
         </div>
       ) : items.length === 0 ? (
-        <div className="flex flex-1 items-center justify-center p-8 text-sm text-muted-foreground text-center">
+        <div className="flex flex-1 items-center justify-center p-8 type-body text-muted-foreground text-center">
           {isSystem
             ? "No system context items are defined yet."
             : "This scope type has no context items yet."}
@@ -548,7 +548,7 @@ export function ScopeBatchImportBody({
                   <TableRow key={item.id}>
                     <TableCell data-phone="lead">
                       <div className="flex flex-col gap-0.5 min-w-0">
-                        <span className="text-sm font-medium truncate">
+                        <span className="type-title truncate">
                           {item.display_name}
                         </span>
                       </div>
@@ -586,7 +586,7 @@ export function ScopeBatchImportBody({
       )}
 
       <div className="flex items-center justify-between gap-3 p-3 border-t border-border shrink-0 bg-background/95">
-        <p className="text-xs text-muted-foreground">
+        <p className="type-secondary text-muted-foreground">
           {canSubmit
             ? [
                 `${selectedVariableCount} variable${selectedVariableCount === 1 ? "" : "s"}`,

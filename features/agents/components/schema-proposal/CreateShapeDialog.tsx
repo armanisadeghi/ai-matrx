@@ -438,7 +438,7 @@ const CreateShapeDialog: React.FC<CreateShapeDialogProps> = ({
             />
             <p
               className={cn(
-                "text-xs",
+                "type-secondary",
                 slugHint.tone === "ok" && "text-primary",
                 slugHint.tone === "bad" && "text-destructive",
                 slugHint.tone === "muted" && "text-muted-foreground",
@@ -477,7 +477,7 @@ const CreateShapeDialog: React.FC<CreateShapeDialogProps> = ({
                   {KIND_DISPOSITION_CHOICES.map((choice) => (
                     <SelectItem key={choice.id} value={choice.id}>
                       {choice.label}
-                      <span className="ml-2 text-xs text-muted-foreground">
+                      <span className="ml-2 type-secondary text-muted-foreground">
                         {choice.description}
                       </span>
                     </SelectItem>
@@ -507,7 +507,7 @@ const CreateShapeDialog: React.FC<CreateShapeDialogProps> = ({
           {!pendingFix && planWarnings.length > 0 && (
             <div className="flex gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
-              <div className="min-w-0 space-y-1 text-xs text-amber-700 dark:text-amber-300">
+              <div className="min-w-0 space-y-1 type-secondary text-amber-700 dark:text-amber-300">
                 <p className="font-medium">
                   Lossy conversion — review before creating:
                 </p>
@@ -523,7 +523,7 @@ const CreateShapeDialog: React.FC<CreateShapeDialogProps> = ({
           {!pendingFix && planErrors.length > 0 && (
             <div className="flex gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
-              <div className="min-w-0 space-y-1 text-xs text-destructive">
+              <div className="min-w-0 space-y-1 type-secondary text-destructive">
                 {planErrors.map((err, i) => (
                   <p key={i} className="break-words">
                     {err}
@@ -537,7 +537,7 @@ const CreateShapeDialog: React.FC<CreateShapeDialogProps> = ({
           {errors.length > 0 && (
             <div className="flex gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
-              <div className="min-w-0 space-y-1 text-xs text-destructive">
+              <div className="min-w-0 space-y-1 type-secondary text-destructive">
                 {errors.map((err, i) => (
                   <p key={i} className="break-words">
                     {err}

@@ -119,9 +119,9 @@ export function AgentAssignmentsDemo() {
               >
                 <div className="flex items-center gap-2">
                   <Icon className="size-4 text-primary" />
-                  <span className="text-sm font-medium">{mode.label}</span>
+                  <span className="type-title">{mode.label}</span>
                 </div>
-                <p className="mt-1 text-xs text-muted-foreground">
+                <p className="mt-1 type-secondary text-muted-foreground">
                   {mode.description}
                 </p>
               </button>
@@ -224,7 +224,7 @@ export function AgentAssignmentsDemo() {
                 </div>
 
                 <div className="space-y-2 rounded-md border border-border bg-muted/30 p-3">
-                  <div className="flex items-center justify-between text-xs">
+                  <div className="flex items-center justify-between type-secondary">
                     <span className="font-medium capitalize">{state.runStatus}</span>
                     {state.total > 0 && (
                       <span className="text-muted-foreground">
@@ -240,20 +240,20 @@ export function AgentAssignmentsDemo() {
                       cell rather than an invented door: 8…4 in place, full
                       value on hover, one-click copy. */}
                   {state.sessionId && (
-                    <div className="group flex items-center gap-1 font-mono text-[11px] text-muted-foreground">
+                    <div className="group flex items-center gap-1 font-mono type-meta text-muted-foreground">
                       Session:{" "}
                       <MatrxUuidCell value={state.sessionId} label="Session" />
                     </div>
                   )}
                   {state.sessionKey && (
-                    <p className="break-all font-mono text-[11px] text-muted-foreground">
+                    <p className="break-all font-mono type-meta text-muted-foreground">
                       Idempotency key: {state.sessionKey}
                     </p>
                   )}
                 </div>
 
                 {state.error && (
-                  <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+                  <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 type-body text-destructive">
                     {state.error}
                     <ErrorAlchemyMenu error={state.error} />
                   </div>
@@ -296,10 +296,10 @@ function SingleRandomEditor({ disabled }: { disabled: boolean }) {
         {/* The normal agent endpoint receives the marker below; the server
             validates the variable definition and picks with secure, unbiased
             randomness. */}
-        <p className="text-xs text-muted-foreground">
+        <p className="type-secondary text-muted-foreground">
           Needs a choice variable with random assignment enabled
         </p>
-        <pre className="overflow-x-auto rounded-md bg-muted p-3 text-xs">
+        <pre className="overflow-x-auto rounded-md bg-muted p-3 type-secondary">
           {`{"${state.singleVariableName || "variable"}": {"type": "auto_assign", "strategy": "random"}}`}
         </pre>
       </CardContent>
@@ -553,7 +553,7 @@ function ApiReference({ mode }: { mode: AssignmentDemoMode }) {
       <CardHeader className="pb-3">
         <CardTitle className="text-base">Public API used here</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-2 font-mono text-xs text-muted-foreground">
+      <CardContent className="space-y-2 font-mono type-secondary text-muted-foreground">
         {mode === "single_random" ? (
           <p><code>POST /api/ai/agents/&#123;agent_id&#125;</code></p>
         ) : (
@@ -580,7 +580,7 @@ function ResultsPanel() {
           <CardTitle className="text-base">Agent response</CardTitle>
         </CardHeader>
         <CardContent>
-          <pre className="whitespace-pre-wrap text-sm">{state.streamedText}</pre>
+          <pre className="whitespace-pre-wrap type-body">{state.streamedText}</pre>
         </CardContent>
       </Card>
     );
@@ -618,12 +618,12 @@ function ResultsPanel() {
             {/* Inputs: a kind (at any depth) is drawn, never dumped. */}
             <AnswerValueView value={item.values} density="inline" />
             {finalText(item.output) && (
-              <div className="text-sm">
+              <div className="type-body">
                 <AnswerValueView text={finalText(item.output)} />
               </div>
             )}
             {item.error && (
-              <p className="text-sm text-destructive">{item.error.message} <ErrorAlchemyMenu error={item.error.message} /></p>
+              <p className="type-body text-destructive">{item.error.message} <ErrorAlchemyMenu error={item.error.message} /></p>
             )}
           </article>
         ))}

@@ -61,7 +61,7 @@ function VariablesDiffRenderer({ node }: FieldDiffProps) {
         return (
           <div
             key={i}
-            className="grid grid-cols-[200px_1fr_1fr] text-xs border-t border-border/30"
+            className="grid grid-cols-[200px_1fr_1fr] type-secondary border-t border-border/30"
           >
             <div className="px-3 py-1.5 border-r border-border text-muted-foreground pl-8 font-mono">
               {newVar?.name ?? oldVar?.name ?? `#${i + 1}`}
@@ -107,7 +107,7 @@ function VariableRow({ child }: { child: DiffNode }) {
     const newText = formatVar(newVar);
     if (oldText !== "" && newText !== "") {
       return (
-        <div className="grid grid-cols-[200px_1fr] text-xs border-t border-border/30">
+        <div className="grid grid-cols-[200px_1fr] type-secondary border-t border-border/30">
           <div className="px-3 py-1.5 border-r border-border text-muted-foreground pl-8 font-mono">
             {"{{" + varName + "}}"}
           </div>
@@ -120,7 +120,7 @@ function VariableRow({ child }: { child: DiffNode }) {
   }
 
   return (
-    <div className="grid grid-cols-[200px_1fr_1fr] text-xs border-t border-border/30">
+    <div className="grid grid-cols-[200px_1fr_1fr] type-secondary border-t border-border/30">
       <div className="px-3 py-1.5 border-r border-border text-muted-foreground pl-8 font-mono">
         {"{{" + varName + "}}"}
       </div>

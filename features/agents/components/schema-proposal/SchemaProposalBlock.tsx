@@ -107,7 +107,7 @@ const SchemaProposalBlock: React.FC<SchemaProposalBlockProps> = ({
   // Fail-safe: not a valid proposal → show the raw body, never throw.
   if (!schema) {
     return (
-      <pre className="my-3 overflow-x-auto rounded-md border border-border bg-muted px-3 py-2 text-xs text-muted-foreground">
+      <pre className="my-3 overflow-x-auto rounded-md border border-border bg-muted px-3 py-2 type-secondary text-muted-foreground">
         {pretty}
       </pre>
     );
@@ -120,10 +120,10 @@ const SchemaProposalBlock: React.FC<SchemaProposalBlockProps> = ({
           <FileJson className="h-5 w-5 text-primary" />
         </div>
         <div className="min-w-0 flex-1">
-          <div className="truncate text-sm font-semibold text-foreground">
+          <div className="truncate type-title text-foreground">
             Proposed output schema
           </div>
-          <div className="truncate text-xs text-muted-foreground">
+          <div className="truncate type-secondary text-muted-foreground">
             {schema.name}
             {schema.strict ? " · strict" : ""}
           </div>
@@ -164,7 +164,7 @@ const SchemaProposalBlock: React.FC<SchemaProposalBlockProps> = ({
         <div className="border-t border-border">
           <Suspense
             fallback={
-              <pre className="overflow-x-auto bg-muted px-3 py-2 text-xs text-muted-foreground">
+              <pre className="overflow-x-auto bg-muted px-3 py-2 type-secondary text-muted-foreground">
                 {pretty}
               </pre>
             }

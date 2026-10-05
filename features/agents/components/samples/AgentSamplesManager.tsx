@@ -252,7 +252,7 @@ export function AgentSamplesManager({
                   ellipsize, never push its own status badge onto a second
                   line and cost the card a row of height. */}
               <span className="flex items-center gap-1.5">
-                <span className="min-w-0 flex-1 truncate text-sm font-medium">
+                <span className="min-w-0 flex-1 truncate type-title">
                   {sample.label}
                 </span>
                 <span className="shrink-0">
@@ -267,7 +267,7 @@ export function AgentSamplesManager({
                   </Badge>
                 ) : null}
               </span>
-              <span className="block truncate text-[11px] text-muted-foreground">
+              <span className="block truncate type-meta text-muted-foreground">
                 {summarizeInputs({
                   variables: sampleVariables,
                   attachmentCount: attachmentParts.length,
@@ -357,7 +357,7 @@ export function AgentSamplesManager({
     <div className="space-y-4">
       <section className="space-y-2">
         <div className="flex items-center justify-between">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          <h3 className="type-secondary font-semibold uppercase tracking-wide text-muted-foreground">
             Approved
           </h3>
           <Button
@@ -368,7 +368,7 @@ export function AgentSamplesManager({
           />
         </div>
         {approved.length === 0 ? (
-          <p className="text-xs text-muted-foreground">None</p>
+          <p className="type-secondary text-muted-foreground">None</p>
         ) : (
           approved.map(renderSample)
         )}
@@ -376,7 +376,7 @@ export function AgentSamplesManager({
 
       <section className="space-y-2">
         <div className="flex items-center justify-between">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          <h3 className="type-secondary font-semibold uppercase tracking-wide text-muted-foreground">
             Candidates
           </h3>
           <Button
@@ -388,7 +388,7 @@ export function AgentSamplesManager({
           </Button>
         </div>
         {candidates.length === 0 ? (
-          <p className="text-xs text-muted-foreground">None</p>
+          <p className="type-secondary text-muted-foreground">None</p>
         ) : (
           candidates.map(renderSample)
         )}
@@ -491,7 +491,7 @@ function BorrowFromRunsSection({
   return (
     <section className="space-y-2">
       <div className="flex items-center justify-between">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        <h3 className="type-secondary font-semibold uppercase tracking-wide text-muted-foreground">
           Recent runs
         </h3>
         <Button
@@ -506,7 +506,7 @@ function BorrowFromRunsSection({
         </Button>
       </div>
       {!open ? null : loading ? (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <div className="flex items-center gap-2 type-body text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" /> Loading recent runs…
         </div>
       ) : loadError && runs.length === 0 ? (
@@ -517,7 +517,7 @@ function BorrowFromRunsSection({
           onRetry={() => void load()}
         />
       ) : runs.length === 0 ? (
-        <p className="text-xs text-muted-foreground">None</p>
+        <p className="type-secondary text-muted-foreground">None</p>
       ) : (
         <div className="space-y-1.5">
           {runs.map((run) => {
@@ -545,10 +545,10 @@ function BorrowFromRunsSection({
                       <ChevronRight className="mt-1 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                     )}
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm">
+                      <span className="block truncate type-body">
                         {run.title || "Untitled run"}
                       </span>
-                      <span className="block truncate text-[11px] text-muted-foreground">
+                      <span className="block truncate type-meta text-muted-foreground">
                         {new Date(run.createdAt).toLocaleString()}
                         {run.sourceFeature ? ` · ${run.sourceFeature}` : ""}
                         {" · "}
@@ -615,7 +615,7 @@ function BorrowFromRunsSection({
                       declarations={declarations}
                     />
                     <div className="border-t border-border/40 px-2.5 py-1.5">
-                      <div className="pb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/70">
+                      <div className="pb-1 type-meta font-semibold uppercase tracking-wide text-muted-foreground/70">
                         What the agent answered
                       </div>
                       {finalError ? (
@@ -628,11 +628,11 @@ function BorrowFromRunsSection({
                       ) : final === undefined ? (
                         <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                       ) : final ? (
-                        <p className="max-h-48 overflow-y-auto whitespace-pre-wrap rounded bg-muted/60 p-2 text-[11px] leading-relaxed scrollbar-thin">
+                        <p className="max-h-48 overflow-y-auto whitespace-pre-wrap rounded bg-muted/60 p-2 type-meta leading-relaxed scrollbar-thin">
                           {final}
                         </p>
                       ) : (
-                        <p className="text-[11px] text-muted-foreground">
+                        <p className="type-meta text-muted-foreground">
                           No response
                         </p>
                       )}

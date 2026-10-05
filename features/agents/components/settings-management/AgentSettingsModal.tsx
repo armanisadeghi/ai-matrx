@@ -94,7 +94,7 @@ export function AgentSettingsModal({
 
   const footer = showUnappliedConfirm ? (
     <div className="flex items-center justify-between px-4 py-1.5 border-t border-border bg-red-50 dark:bg-red-950/30 flex-shrink-0 gap-2">
-      <span className="flex items-center gap-1.5 min-w-0 text-xs text-red-700 dark:text-red-300">
+      <span className="flex items-center gap-1.5 min-w-0 type-secondary text-red-700 dark:text-red-300">
         <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
         <span className="truncate">
           You have unapplied editor changes — they&apos;ll be lost.
@@ -122,7 +122,7 @@ export function AgentSettingsModal({
   ) : (
     <div className="flex items-center justify-end px-4 py-1.5 border-t border-border bg-gray-50 dark:bg-gray-900/50 flex-shrink-0 gap-2">
       {hasUnappliedEdits && (
-        <span className="flex items-center gap-1 text-[11px] text-red-600 dark:text-red-400 mr-auto">
+        <span className="flex items-center gap-1 type-meta text-red-600 dark:text-red-400 mr-auto">
           <AlertTriangle className="h-3 w-3" />
           Unapplied editor edits
         </span>
@@ -151,7 +151,7 @@ export function AgentSettingsModal({
         >
           <DrawerContent className="px-4 pb-safe h-[80dvh] flex flex-col">
             <DrawerHeader className="px-0 py-2 flex-shrink-0">
-              <DrawerTitle className="text-xs font-semibold uppercase tracking-wide">
+              <DrawerTitle className="type-secondary font-semibold uppercase tracking-wide">
                 Model Settings
               </DrawerTitle>
             </DrawerHeader>
@@ -180,7 +180,7 @@ export function AgentSettingsModal({
       >
         <DialogContent className="max-w-xl p-0 overflow-hidden flex flex-col h-[65dvh] max-h-[65dvh]">
           <DialogHeader className="px-4 py-2.5 border-b border-border flex-shrink-0">
-            <DialogTitle className="text-xs font-semibold uppercase tracking-wide">
+            <DialogTitle className="type-secondary font-semibold uppercase tracking-wide">
               Model Settings
             </DialogTitle>
             <DialogDescription className="sr-only">

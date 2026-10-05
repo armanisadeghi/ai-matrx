@@ -41,7 +41,7 @@ export function UnsavedChangesDiff({ agentId }: UnsavedChangesDiffProps) {
 
   if (!agent || !dirtyFields || Object.keys(dirtyFields).length === 0) {
     return (
-      <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
+      <div className="flex items-center justify-center py-12 type-body text-muted-foreground">
         {/* read-gate-exempt: local edit tracking of the loaded agent in this browser; not a read's answer */}
         No unsaved changes
       </div>

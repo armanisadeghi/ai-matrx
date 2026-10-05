@@ -217,7 +217,7 @@ export function AgentSettingMediaPicker({
       {refs.map((ref, idx) => (
         <span
           key={`${ref.file_id ?? ref.url ?? idx}-${idx}`}
-          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded border border-border bg-muted/40 text-[11px] max-w-[200px]"
+          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded border border-border bg-muted/40 type-meta max-w-[200px]"
           title={ref.url ?? ref.file_id ?? "media"}
         >
           {mediaRefIcon(ref)}

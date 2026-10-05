@@ -34,7 +34,7 @@ export function SampleOriginLine({
   const itemLabel = origin.item?.title ?? origin.item?.url ?? null;
 
   return (
-    <p className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
+    <p className="flex flex-wrap items-center gap-1 type-secondary text-muted-foreground">
       <Library className="h-3 w-3 shrink-0" aria-hidden />
       <span>From</span>
       {origin.libraryId ? (

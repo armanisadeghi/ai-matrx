@@ -247,7 +247,7 @@ export function SettingsJsonEditor({
       )}
 
       {!parseResult.ok && parseResult.error && (
-        <div className="flex items-start gap-2 px-3 py-2 text-xs bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-md text-red-700 dark:text-red-300">
+        <div className="flex items-start gap-2 px-3 py-2 type-secondary bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-md text-red-700 dark:text-red-300">
           <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
           <div className="flex-1 min-w-0">
             <div className="font-semibold">
@@ -269,7 +269,7 @@ export function SettingsJsonEditor({
 
       {showFooter && (
         <div className="flex items-center gap-2 justify-end">
-          <span className="text-[11px] text-muted-foreground mr-auto">
+          <span className="type-meta text-muted-foreground mr-auto">
             Relaxed JSON OK · ⌘+Enter to apply
           </span>
           {text !== lastInitialRef.current && (

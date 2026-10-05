@@ -84,7 +84,7 @@ export function TaskPreviewContent({ taskId, onOpen }: TaskPreviewContentProps) 
 
   if (!task) {
     return (
-      <div className="text-xs text-muted-foreground italic">
+      <div className="type-secondary text-muted-foreground italic">
         Task not loaded.
       </div>
     );
@@ -106,13 +106,13 @@ export function TaskPreviewContent({ taskId, onOpen }: TaskPreviewContentProps) 
       <div className="flex items-start gap-2">
         <CheckSquare className="w-3.5 h-3.5 text-blue-500 mt-0.5 shrink-0" />
         <div className="flex-1 min-w-0">
-          <div className="text-sm font-semibold text-foreground line-clamp-2">
+          <div className="type-title text-foreground line-clamp-2">
             {title}
           </div>
         </div>
       </div>
 
-      <div className="flex items-center gap-1.5 flex-wrap text-[10px]">
+      <div className="flex items-center gap-1.5 flex-wrap type-meta">
         {task.status && (
           <span
             className={cn(
@@ -143,7 +143,7 @@ export function TaskPreviewContent({ taskId, onOpen }: TaskPreviewContentProps) 
       </div>
 
       {truncatedDesc && (
-        <p className="text-xs text-foreground whitespace-pre-wrap break-words max-h-40 overflow-y-auto">
+        <p className="type-secondary text-foreground whitespace-pre-wrap break-words max-h-40 overflow-y-auto">
           {truncatedDesc}
         </p>
       )}

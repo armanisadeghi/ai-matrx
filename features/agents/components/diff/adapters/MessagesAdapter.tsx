@@ -65,7 +65,7 @@ function MessagesDiffRenderer({ node }: FieldDiffProps) {
           return (
             <div
               key={i}
-              className="grid grid-cols-[200px_1fr] text-xs border-t border-border/30"
+              className="grid grid-cols-[200px_1fr] type-secondary border-t border-border/30"
             >
               <div className="px-3 py-2 border-r border-border text-muted-foreground pl-8">
                 {roleLabel}
@@ -80,7 +80,7 @@ function MessagesDiffRenderer({ node }: FieldDiffProps) {
         return (
           <div
             key={i}
-            className="grid grid-cols-[200px_1fr_1fr] text-xs border-t border-border/30"
+            className="grid grid-cols-[200px_1fr_1fr] type-secondary border-t border-border/30"
           >
             <div className="px-3 py-2 border-r border-border text-muted-foreground pl-8">
               {roleLabel}
@@ -148,7 +148,7 @@ function MessageRow({ child, index }: { child: DiffNode; index: number }) {
   // (the old renderer lit up the entire message even for a one-word change).
   if (child.changeType === "modified" && oldText !== "" && newText !== "") {
     return (
-      <div className="grid grid-cols-[200px_1fr] text-xs border-t border-border/30">
+      <div className="grid grid-cols-[200px_1fr] type-secondary border-t border-border/30">
         <div className="px-3 py-2 border-r border-border text-muted-foreground pl-8">
           {roleBadge}
         </div>
@@ -160,7 +160,7 @@ function MessageRow({ child, index }: { child: DiffNode; index: number }) {
   }
 
   return (
-    <div className="grid grid-cols-[200px_1fr_1fr] text-xs border-t border-border/30">
+    <div className="grid grid-cols-[200px_1fr_1fr] type-secondary border-t border-border/30">
       <div className="px-3 py-2 border-r border-border text-muted-foreground pl-8">
         {roleBadge}
       </div>

@@ -29,15 +29,15 @@ function CustomToolsDiffRenderer({ node }: FieldDiffProps) {
     const oldJson = JSON.stringify(node.oldValue, null, 2) ?? "—";
     const newJson = JSON.stringify(node.newValue, null, 2) ?? "—";
     return (
-      <div className="grid grid-cols-[200px_1fr_1fr] text-xs">
+      <div className="grid grid-cols-[200px_1fr_1fr] type-secondary">
         <div className="border-r border-border" />
         <div className="px-3 py-2 border-r border-border">
-          <pre className="font-mono text-[0.625rem] text-foreground/70">
+          <pre className="font-mono type-meta text-foreground/70">
             {oldJson}
           </pre>
         </div>
         <div className="px-3 py-2">
-          <pre className="font-mono text-[0.625rem] text-foreground/70">
+          <pre className="font-mono type-meta text-foreground/70">
             {newJson}
           </pre>
         </div>
@@ -64,7 +64,7 @@ function CustomToolsDiffRenderer({ node }: FieldDiffProps) {
             return (
               <div
                 key={child.key ?? i}
-                className="grid grid-cols-[200px_1fr] text-xs border-t border-border/30"
+                className="grid grid-cols-[200px_1fr] type-secondary border-t border-border/30"
               >
                 <div className="px-3 py-1.5 border-r border-border text-muted-foreground pl-8">
                   {humanizeIdentifier(toolName)}
@@ -80,14 +80,14 @@ function CustomToolsDiffRenderer({ node }: FieldDiffProps) {
         return (
           <div
             key={child.key ?? i}
-            className="grid grid-cols-[200px_1fr_1fr] text-xs border-t border-border/30"
+            className="grid grid-cols-[200px_1fr_1fr] type-secondary border-t border-border/30"
           >
             <div className="px-3 py-1.5 border-r border-border text-muted-foreground pl-8">
               {humanizeIdentifier(toolName)}
             </div>
             <div
               className={cn(
-                "px-3 py-1.5 border-r border-border whitespace-pre-wrap font-mono text-[0.625rem]",
+                "px-3 py-1.5 border-r border-border whitespace-pre-wrap font-mono type-meta",
                 child.changeType === "removed" ||
                   child.changeType === "modified"
                   ? "bg-red-50 text-red-700 dark:bg-red-950/15 dark:text-red-300"
@@ -99,7 +99,7 @@ function CustomToolsDiffRenderer({ node }: FieldDiffProps) {
             </div>
             <div
               className={cn(
-                "px-3 py-1.5 whitespace-pre-wrap font-mono text-[0.625rem]",
+                "px-3 py-1.5 whitespace-pre-wrap font-mono type-meta",
                 child.changeType === "added" || child.changeType === "modified"
                   ? "bg-green-50 text-green-700 dark:bg-green-950/15 dark:text-green-300"
                   : "text-foreground/70",

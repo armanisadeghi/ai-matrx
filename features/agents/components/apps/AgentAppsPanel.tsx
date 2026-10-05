@@ -40,7 +40,7 @@ export function AgentAppsPanel({
       <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 py-6 space-y-6">
         <header className="flex items-start justify-between gap-3">
           <div className="space-y-1 min-w-0 flex-1">
-            <div className="text-xs uppercase tracking-wider text-muted-foreground font-medium">
+            <div className="type-secondary uppercase tracking-wider text-muted-foreground font-medium">
               Apps
             </div>
             <h1 className="text-2xl font-semibold text-foreground leading-tight">
@@ -68,7 +68,7 @@ export function AgentAppsPanel({
 
         <section className="space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-foreground">
+            <h2 className="type-title text-foreground">
               {apps.length === 0
                 ? "No apps yet"
                 : `${apps.length} ${apps.length === 1 ? "app" : "apps"}`}
@@ -105,7 +105,7 @@ export function AgentAppsPanel({
 
         <Card className="bg-muted/30">
           <CardContent className="p-4 flex items-center gap-3">
-            <div className="text-xs text-muted-foreground flex-1">
+            <div className="type-secondary text-muted-foreground flex-1">
               Looking for the platform-wide admin view?
             </div>
             <AppLink href="/administration/agents/agent-apps/apps" target="_blank" rel="noopener noreferrer">
@@ -135,7 +135,7 @@ function CountCard({
         <Icon className="h-4 w-4" />
       </div>
       <div className="min-w-0 flex-1">
-        <div className="text-xs text-muted-foreground uppercase tracking-wider">
+        <div className="type-secondary text-muted-foreground uppercase tracking-wider">
           {label}
         </div>
         <div className="text-2xl font-semibold text-foreground leading-none mt-1">

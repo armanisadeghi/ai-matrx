@@ -261,7 +261,7 @@ function FallbackValueInput({
           style={{ minHeight: 48 }}
         />
         {jsonError && (
-          <p className="text-[10px] text-orange-600 dark:text-orange-400">
+          <p className="type-meta text-orange-600 dark:text-orange-400">
             {jsonError}
             <ErrorAlchemyMenu error={jsonError} />
           </p>
@@ -319,9 +319,9 @@ function HighlightedJson({ value, highlightKeys = {} }: HighlightedJsonProps) {
       </button>
 
       <pre
-        className="text-xs font-mono leading-5 overflow-auto rounded p-3 select-text
-          bg-zinc-100 dark:bg-zinc-800
-          text-zinc-800 dark:text-zinc-200"
+        className="type-secondary font-mono leading-5 overflow-auto rounded p-3 select-text
+ bg-zinc-100 dark:bg-zinc-800
+ text-zinc-800 dark:text-zinc-200"
       >
         {lines.map((line, i) => {
           const keyMatch = line.match(/^\s*"([^"]+)":/);
@@ -442,11 +442,11 @@ function IssueTable({
         {/* Warning section header */}
         <div className="flex items-center gap-2 px-2.5 py-1.5 bg-yellow-50 dark:bg-yellow-950/40 border-b border-yellow-300 dark:border-yellow-700">
           <AlertTriangle className="h-3.5 w-3.5 text-yellow-600 dark:text-yellow-400 flex-shrink-0" />
-          <span className="text-xs font-semibold text-yellow-800 dark:text-yellow-300">
+          <span className="type-secondary font-semibold text-yellow-800 dark:text-yellow-300">
             Settings Warnings
           </span>
           <div className="ml-auto flex items-center gap-1.5">
-            <span className="text-[10px] text-yellow-600 dark:text-yellow-500">
+            <span className="type-meta text-yellow-600 dark:text-yellow-500">
               {issues.length} issue{issues.length !== 1 ? "s" : ""} detected
             </span>
             {/* In the header bar that owns this section — never a row of its own. */}
@@ -461,7 +461,7 @@ function IssueTable({
                     <ClipboardCopy className="h-3 w-3" />
                   </button>
                 </TooltipTrigger>
-                <TooltipContent side="top" className="text-xs">
+                <TooltipContent side="top" className="type-secondary">
                   {copied ? "Copied!" : "Copy full diagnostic payload"}
                 </TooltipContent>
               </Tooltip>
@@ -510,16 +510,16 @@ function IssueTable({
 
         {/* Column headers — 4 columns: setting | detail | type | actions */}
         <div className="grid grid-cols-[120px_1fr_80px_48px] items-center gap-2 px-2.5 py-1 bg-yellow-50/60 dark:bg-yellow-950/20 border-b border-yellow-200 dark:border-yellow-800/50">
-          <span className="text-[10px] font-semibold uppercase tracking-wide text-yellow-700 dark:text-yellow-500">
+          <span className="type-meta font-semibold uppercase tracking-wide text-yellow-700 dark:text-yellow-500">
             Setting
           </span>
-          <span className="text-[10px] font-semibold uppercase tracking-wide text-yellow-700 dark:text-yellow-500">
+          <span className="type-meta font-semibold uppercase tracking-wide text-yellow-700 dark:text-yellow-500">
             Issue Detail
           </span>
-          <span className="text-[10px] font-semibold uppercase tracking-wide text-yellow-700 dark:text-yellow-500">
+          <span className="type-meta font-semibold uppercase tracking-wide text-yellow-700 dark:text-yellow-500">
             Type
           </span>
-          <span className="text-[10px] font-semibold uppercase tracking-wide text-yellow-700 dark:text-yellow-500 text-right">
+          <span className="type-meta font-semibold uppercase tracking-wide text-yellow-700 dark:text-yellow-500 text-right">
             Options
           </span>
         </div>
@@ -542,12 +542,12 @@ function IssueTable({
               }`}
             >
               {/* setting key */}
-              <span className="text-xs text-foreground truncate">
+              <span className="type-secondary text-foreground truncate">
                 {humanizeIdentifier(issue.key)}
               </span>
 
               {/* detail */}
-              <span className="text-xs text-foreground/80 leading-snug">
+              <span className="type-secondary text-foreground/80 leading-snug">
                 {issue.message || "—"}
               </span>
 
@@ -571,7 +571,7 @@ function IssueTable({
                       <Eye className="h-3.5 w-3.5" />
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent side="top" className="text-xs">
+                  <TooltipContent side="top" className="type-secondary">
                     View in Raw JSON
                   </TooltipContent>
                 </Tooltip>
@@ -588,7 +588,7 @@ function IssueTable({
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent side="top" className="text-xs">
+                    <TooltipContent side="top" className="type-secondary">
                       Remove this key
                     </TooltipContent>
                   </Tooltip>
@@ -604,7 +604,7 @@ function IssueTable({
                         <WrenchIcon className="h-3.5 w-3.5" />
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent side="top" className="text-xs">
+                    <TooltipContent side="top" className="type-secondary">
                       Reset to default value
                     </TooltipContent>
                   </Tooltip>
@@ -747,7 +747,7 @@ function TtsVoiceEditor({
             Multi
           </span>
           {isMulti && atMax && (
-            <span className="text-[10px] text-muted-foreground ml-1">
+            <span className="type-meta text-muted-foreground ml-1">
               (max {maxSpeakers})
             </span>
           )}
@@ -864,23 +864,23 @@ function ModelConfigViewer({
     <div className="space-y-3">
       {/* Parameters this model exposes; they drive which settings appear in the Settings tab. */}
       {entries.length === 0 ? (
-        <p className="text-xs text-muted-foreground italic">
+        <p className="type-secondary text-muted-foreground italic">
           No controls defined for this model.
         </p>
       ) : (
         <div className="rounded border border-border overflow-hidden">
           {/* Fixed columns — Range/Options column scrolls horizontally per-row */}
           <div className="grid grid-cols-[1fr_70px_160px_70px] gap-2 px-2.5 py-1 bg-muted/50 border-b border-border">
-            <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            <span className="type-meta font-semibold uppercase tracking-wide text-muted-foreground">
               Key
             </span>
-            <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            <span className="type-meta font-semibold uppercase tracking-wide text-muted-foreground">
               Type
             </span>
-            <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            <span className="type-meta font-semibold uppercase tracking-wide text-muted-foreground">
               Range / Options
             </span>
-            <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            <span className="type-meta font-semibold uppercase tracking-wide text-muted-foreground">
               Default
             </span>
           </div>
@@ -905,11 +905,11 @@ function ModelConfigViewer({
                 <span className="text-muted-foreground">{control.type}</span>
                 {/* scrollable horizontally so long enum lists are never cut off */}
                 <div className="overflow-x-auto">
-                  <span className="text-muted-foreground text-[10px] whitespace-nowrap">
+                  <span className="text-muted-foreground type-meta whitespace-nowrap">
                     {rangeOrOptions}
                   </span>
                 </div>
-                <span className="font-mono text-muted-foreground text-[10px] truncate">
+                <span className="font-mono text-muted-foreground type-meta truncate">
                   {control.default !== undefined && control.default !== null
                     ? String(control.default)
                     : "—"}
@@ -922,11 +922,11 @@ function ModelConfigViewer({
 
       {unmapped.length > 0 && (
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1">
+          <p className="type-meta font-semibold uppercase tracking-wide text-muted-foreground mb-1">
             Unmapped controls
           </p>
           {/* Full JSON, no height cap — everything visible */}
-          <pre className="text-[10px] font-mono bg-muted/30 rounded p-2 overflow-x-auto text-muted-foreground whitespace-pre-wrap break-all">
+          <pre className="type-meta font-mono bg-muted/30 rounded p-2 overflow-x-auto text-muted-foreground whitespace-pre-wrap break-all">
             {JSON.stringify(Object.fromEntries(unmapped), null, 2)}
           </pre>
         </div>
@@ -1546,7 +1546,7 @@ export function AgentSettingsCore({
   // (same centered muted-text container) and this component's own Loader2 idiom.
   if (settings === null) {
     return (
-      <div className="flex items-center justify-center gap-2 h-full text-muted-foreground text-sm">
+      <div className="flex items-center justify-center gap-2 h-full text-muted-foreground type-body">
         <Loader2 className="h-4 w-4 animate-spin shrink-0" />
         Loading agent settings…
       </div>
@@ -1680,11 +1680,11 @@ export function AgentSettingsCore({
         </Label>
       </div>
       <div className="flex-1 min-w-0 flex items-center gap-2">
-        <span className="inline-flex items-center gap-1 rounded-md border border-primary/30 bg-primary/10 px-1.5 py-0.5 text-xs font-mono text-primary">
+        <span className="inline-flex items-center gap-1 rounded-md border border-primary/30 bg-primary/10 px-1.5 py-0.5 type-secondary font-mono text-primary">
           <Variable className="w-3 h-3" />
           {`{{${variableName}}}`}
         </span>
-        <span className="text-[11px] text-muted-foreground truncate">
+        <span className="type-meta text-muted-foreground truncate">
           {variableValueToDisplay(defaultValue) || "model default"}
         </span>
       </div>
@@ -1701,7 +1701,7 @@ export function AgentSettingsCore({
               <Unlink className="h-3.5 w-3.5" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent side="top" className="text-xs">
+          <TooltipContent side="top" className="type-secondary">
             Make a fixed setting
           </TooltipContent>
         </Tooltip>
@@ -1788,7 +1788,7 @@ export function AgentSettingsCore({
                 aria-label={dotTitle}
               />
             </TooltipTrigger>
-            <TooltipContent side="top" className="text-xs max-w-[260px]">
+            <TooltipContent side="top" className="type-secondary max-w-[260px]">
               {dotTitle}
             </TooltipContent>
           </Tooltip>
@@ -1823,7 +1823,7 @@ export function AgentSettingsCore({
             no value — only what the model does when it is left unset. */}
         <div className="flex-1 min-w-0">
           {!isEnabled ? (
-            <span className="block pt-1 text-xs text-muted-foreground">
+            <span className="block pt-1 type-secondary text-muted-foreground">
               {view.state === "default"
                 ? `Not set \u00b7 Model default: ${formatModelDefault(view.value)}`
                 : "Not set"}
@@ -1839,7 +1839,7 @@ export function AgentSettingsCore({
             />
           )}
           {hasIssue && isEnabled && (
-            <p className="text-[10px] text-orange-600 dark:text-orange-400 mt-1 leading-tight">
+            <p className="type-meta text-orange-600 dark:text-orange-400 mt-1 leading-tight">
               {firstIssue.message}
             </p>
           )}
@@ -1862,7 +1862,7 @@ export function AgentSettingsCore({
                     <Variable className="h-3.5 w-3.5" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent side="top" className="text-xs">
+                <TooltipContent side="top" className="type-secondary">
                   Make a run input
                 </TooltipContent>
               </Tooltip>
@@ -1881,7 +1881,7 @@ export function AgentSettingsCore({
                     <WrenchIcon className="h-3.5 w-3.5" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent side="top" className="text-xs">
+                <TooltipContent side="top" className="type-secondary">
                   Fix automatically
                 </TooltipContent>
               </Tooltip>
@@ -1900,7 +1900,7 @@ export function AgentSettingsCore({
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent side="top" className="text-xs">
+                <TooltipContent side="top" className="type-secondary">
                   Clear to not set
                 </TooltipContent>
               </Tooltip>
@@ -1927,7 +1927,7 @@ export function AgentSettingsCore({
       <Label className="text-xs flex-shrink-0 w-36 text-gray-700 dark:text-gray-300">
         {humanizeIdentifier(key)}
       </Label>
-      <span className="flex-1 min-w-0 truncate text-xs font-mono text-foreground/80">
+      <span className="flex-1 min-w-0 truncate type-secondary font-mono text-foreground/80">
         {isOffValue(value, null) ? "Off" : formatModelDefault(value)}
       </span>
       <TooltipProvider delayDuration={200}>
@@ -1935,7 +1935,7 @@ export function AgentSettingsCore({
           <TooltipTrigger asChild>
             <Chip tone="sky" label="Translated" />
           </TooltipTrigger>
-          <TooltipContent side="top" className="text-xs max-w-[260px]">
+          <TooltipContent side="top" className="type-secondary max-w-[260px]">
             Kept as set and sent as this model's closest equivalent
           </TooltipContent>
         </Tooltip>
@@ -1953,7 +1953,7 @@ export function AgentSettingsCore({
               <Trash2 className="h-3.5 w-3.5" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent side="top" className="text-xs">
+          <TooltipContent side="top" className="type-secondary">
             Clear to not set
           </TooltipContent>
         </Tooltip>
@@ -2083,14 +2083,14 @@ export function AgentSettingsCore({
   if (modelId && !isModelFull) {
     if (registryError && !registryLoading) {
       return (
-        <div className="text-xs text-red-600 dark:text-red-400 px-1 py-2">
+        <div className="type-secondary text-red-600 dark:text-red-400 px-1 py-2">
           Error loading model controls: {registryError}
           <ErrorAlchemyMenu error={registryError} />
         </div>
       );
     }
     return (
-      <div className="flex items-center gap-2 text-xs text-muted-foreground px-1 py-2">
+      <div className="flex items-center gap-2 type-secondary text-muted-foreground px-1 py-2">
         <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" />
         Loading model settings…
       </div>
@@ -2099,7 +2099,7 @@ export function AgentSettingsCore({
 
   if (error) {
     return (
-      <div className="text-xs text-red-600 dark:text-red-400 px-1 py-2">
+      <div className="type-secondary text-red-600 dark:text-red-400 px-1 py-2">
         Error loading model controls: {error}
         <ErrorAlchemyMenu error={error} />
       </div>
@@ -2144,7 +2144,7 @@ export function AgentSettingsCore({
             </div>
 
             {noControls && (
-              <p className="text-xs text-muted-foreground">
+              <p className="type-secondary text-muted-foreground">
                 Select a model to see available settings.
               </p>
             )}
@@ -2167,7 +2167,7 @@ export function AgentSettingsCore({
 
             {!noControls && translatedIssues.length > 0 && (
               <div data-translated-settings>
-                <div className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                <div className="type-secondary font-semibold text-gray-700 dark:text-gray-300 mb-2">
                   Translated for this model
                 </div>
                 {translatedIssues.map((issue) =>
@@ -2210,7 +2210,7 @@ export function AgentSettingsCore({
                   className={group.label ? "border-t pt-2 mt-2" : undefined}
                 >
                   {group.label && (
-                    <div className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                    <div className="type-secondary font-semibold text-gray-700 dark:text-gray-300 mb-2">
                       {group.label}
                     </div>
                   )}
@@ -2229,7 +2229,7 @@ export function AgentSettingsCore({
         {/* ── RAW SETTINGS TAB (colorful read-only viewer) ───────────────── */}
         {activeTab === "raw" && (
           <div className="flex flex-col gap-2">
-            <p className="text-[10px] text-muted-foreground">
+            <p className="type-meta text-muted-foreground">
               {/* Run inputs show as { "$var": name, "default": value }. */}
               Read-only view of stored settings.{" "}
               {allIssues.length > 0 && (
@@ -2256,7 +2256,7 @@ export function AgentSettingsCore({
         {/* ── RAW EDITABLE TAB (forgiving JSON editor) ─────────────────────── */}
         {activeTab === "raw-edit" && (
           <div className="flex flex-col h-full gap-2">
-            <p className="text-[10px] text-muted-foreground flex-shrink-0">
+            <p className="type-meta text-muted-foreground flex-shrink-0">
               Edit the JSON, then apply
             </p>
 

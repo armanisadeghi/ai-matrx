@@ -154,7 +154,7 @@ export function MatrxDirectivesTab({ agentId }: MatrxDirectivesTabProps) {
 
       {/* ── Selected actions ───────────────────────────────────────────────── */}
       <div className="flex flex-col gap-1.5">
-        <span className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+        <span className="flex items-center gap-1.5 type-secondary font-semibold text-foreground">
           <span>
             Actions this agent can perform
             {/* read-gate-exempt: actions in this agent's own settings being edited here, shown only when there are some */}
@@ -163,7 +163,7 @@ export function MatrxDirectivesTab({ agentId }: MatrxDirectivesTabProps) {
           <InfoHint text="Their guidance is added to the system prompt at run time; your prompt is never edited." />
         </span>
         {actions.length === 0 ? (
-          <p className="text-[11px] text-muted-foreground">
+          <p className="type-meta text-muted-foreground">
             {/* read-gate-exempt: editor field over the loaded agent's own settings (a form), not a read's answer; the catalog read's failure is shown below */}
             None yet — pick from the catalog below or add a custom one.
           </p>
@@ -172,10 +172,10 @@ export function MatrxDirectivesTab({ agentId }: MatrxDirectivesTabProps) {
             {actions.map((type) => (
               <span
                 key={type}
-                className="inline-flex items-center gap-1 rounded-full border border-primary/40 bg-primary/5 py-0.5 pl-2 pr-1 text-[11px] text-foreground"
+                className="inline-flex items-center gap-1 rounded-full border border-primary/40 bg-primary/5 py-0.5 pl-2 pr-1 type-meta text-foreground"
               >
                 <span className="font-medium">{labelFor(type)}</span>
-                <code className="font-mono text-[10px] text-muted-foreground">
+                <code className="font-mono type-meta text-muted-foreground">
                   {type}
                 </code>
                 <button
@@ -206,7 +206,7 @@ export function MatrxDirectivesTab({ agentId }: MatrxDirectivesTabProps) {
         </div>
 
         {error ? (
-          <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300">
+          <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 type-secondary text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300">
             Couldn&apos;t load the live directive catalog ({error}). Built-in
             actions are still available below.
             <ErrorAlchemyMenu error={error} />
@@ -222,14 +222,14 @@ export function MatrxDirectivesTab({ agentId }: MatrxDirectivesTabProps) {
         ) : (
           <div className="max-h-52 overflow-y-auto rounded-md border border-border">
             {groups.length === 0 ? (
-              <div className="px-3 py-4 text-center text-xs text-muted-foreground">
+              <div className="px-3 py-4 text-center type-secondary text-muted-foreground">
                 No catalog actions match &ldquo;{query}&rdquo; — add it as a
                 custom action below.
               </div>
             ) : (
               groups.map((group) => (
                 <div key={group.family}>
-                  <div className="sticky top-0 bg-muted/80 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground backdrop-blur">
+                  <div className="sticky top-0 bg-muted/80 px-2.5 py-1 type-meta font-semibold uppercase tracking-wide text-muted-foreground backdrop-blur">
                     {group.family}
                   </div>
                   {group.options.map((opt) => {
@@ -249,7 +249,7 @@ export function MatrxDirectivesTab({ agentId }: MatrxDirectivesTabProps) {
                         <span className="flex-1 text-foreground">
                           {opt.label}
                         </span>
-                        <code className="font-mono text-[10px] text-muted-foreground">
+                        <code className="font-mono type-meta text-muted-foreground">
                           {opt.type}
                         </code>
                       </button>
@@ -289,7 +289,7 @@ export function MatrxDirectivesTab({ agentId }: MatrxDirectivesTabProps) {
 
       {/* ── Policy ─────────────────────────────────────────────────────────── */}
       <div className="flex flex-col gap-1.5 border-t border-border pt-3">
-        <span className="text-xs font-semibold text-foreground">
+        <span className="type-secondary font-semibold text-foreground">
           How they apply
         </span>
         <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
@@ -313,7 +313,7 @@ export function MatrxDirectivesTab({ agentId }: MatrxDirectivesTabProps) {
             );
           })}
         </div>
-        <p className="text-[11px] text-muted-foreground">
+        <p className="type-meta text-muted-foreground">
           {POLICY_OPTIONS.find((o) => o.id === policy)?.hint}
         </p>
       </div>

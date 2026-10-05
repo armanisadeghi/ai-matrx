@@ -45,13 +45,13 @@ function MetaRow({
 }) {
   return (
     <div className="flex items-baseline gap-2 py-0.5">
-      <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground w-20 shrink-0">
+      <span className="inline-flex items-center gap-1 type-meta uppercase tracking-wider text-muted-foreground w-20 shrink-0">
         <Icon className="w-2.5 h-2.5" />
         {label}
       </span>
       <span
         className={cn(
-          "text-xs text-foreground break-all min-w-0",
+          "type-secondary text-foreground break-all min-w-0",
           mono && "font-mono",
         )}
       >
@@ -95,14 +95,14 @@ export function DataRefPreviewContent({ dataRef }: DataRefPreviewContentProps) {
               openInNewTab
               alwaysShowActions
               fill
-              className="w-full text-sm font-semibold text-foreground"
+              className="w-full type-title text-foreground"
             />
           ) : (
-            <div className="text-sm font-semibold text-foreground">
+            <div className="type-title text-foreground">
               {recordName}
             </div>
           )}
-          <div className="text-[11px] text-muted-foreground">
+          <div className="type-meta text-muted-foreground">
             {describeRefType(dataRef)} · {dataRef.table}
           </div>
         </div>
@@ -135,7 +135,7 @@ export function DataRefPreviewContent({ dataRef }: DataRefPreviewContentProps) {
                 Icon={Filter}
                 label="Filter"
                 value={
-                  <pre className="font-mono text-[10px] whitespace-pre-wrap break-all">
+                  <pre className="font-mono type-meta whitespace-pre-wrap break-all">
                     {JSON.stringify(dataRef.filter, null, 2)}
                   </pre>
                 }
@@ -163,7 +163,7 @@ export function DataRefPreviewContent({ dataRef }: DataRefPreviewContentProps) {
       </div>
 
       {dataRef.optional_context && (
-        <div className="text-[10px] text-muted-foreground italic">
+        <div className="type-meta text-muted-foreground italic">
           Optional context — fetch failures are dropped silently
         </div>
       )}

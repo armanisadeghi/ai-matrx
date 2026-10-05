@@ -114,7 +114,7 @@ export function MessagePreviewContent({
 
   if (!message) {
     return (
-      <div className="text-xs text-muted-foreground italic">
+      <div className="type-secondary text-muted-foreground italic">
         Message not loaded.
       </div>
     );
@@ -138,7 +138,7 @@ export function MessagePreviewContent({
       <div className="flex items-center gap-2">
         <span
           className={cn(
-            "inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-[10px] font-semibold",
+            "inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border type-meta font-semibold",
             role.color,
           )}
         >
@@ -146,12 +146,12 @@ export function MessagePreviewContent({
           {role.label}
         </span>
         {message.position != null && (
-          <span className="text-[10px] text-muted-foreground tabular-nums">
+          <span className="type-meta text-muted-foreground tabular-nums">
             #{message.position + 1}
           </span>
         )}
         {toolCalls > 0 && (
-          <span className="inline-flex items-center gap-0.5 text-[10px] text-orange-600 dark:text-orange-400">
+          <span className="inline-flex items-center gap-0.5 type-meta text-orange-600 dark:text-orange-400">
             <Wrench className="w-2.5 h-2.5" />
             {toolCalls} tool{toolCalls === 1 ? "" : "s"}
           </span>
@@ -159,21 +159,21 @@ export function MessagePreviewContent({
       </div>
 
       {conversation?.title?.trim() && (
-        <div className="text-[10px] text-muted-foreground truncate">
+        <div className="type-meta text-muted-foreground truncate">
           in <span className="text-foreground/80">{conversation.title}</span>
         </div>
       )}
 
       {truncated ? (
-        <p className="text-xs text-foreground whitespace-pre-wrap break-words max-h-48 overflow-y-auto">
+        <p className="type-secondary text-foreground whitespace-pre-wrap break-words max-h-48 overflow-y-auto">
           {truncated}
         </p>
       ) : (
         // read-gate-exempt: describes one message record already loaded in the store (non-text message), not a read's empty answer
-        <p className="text-xs text-muted-foreground italic">No text content</p>
+        <p className="type-secondary text-muted-foreground italic">No text content</p>
       )}
 
-      <div className="text-[10px] text-muted-foreground pt-1 border-t border-border">
+      <div className="type-meta text-muted-foreground pt-1 border-t border-border">
         {formatDateTime(message.createdAt)}
       </div>
 

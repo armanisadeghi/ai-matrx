@@ -46,7 +46,7 @@ function SettingsDiffRenderer({ node }: FieldDiffProps) {
         return (
           <div
             key={child.key}
-            className="grid grid-cols-[200px_1fr_1fr] text-xs border-t border-border/30"
+            className="grid grid-cols-[200px_1fr_1fr] type-secondary border-t border-border/30"
           >
             <div className="px-3 py-1.5 border-r border-border text-muted-foreground pl-8">
               {humanizeIdentifier(child.key)}

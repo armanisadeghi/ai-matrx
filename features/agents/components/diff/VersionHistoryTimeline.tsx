@@ -61,7 +61,7 @@ export function VersionHistoryTimeline({
 
   if (versions.length === 0) {
     return (
-      <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
+      <div className="flex items-center justify-center py-12 type-body text-muted-foreground">
         No version history
       </div>
     );
@@ -72,11 +72,11 @@ export function VersionHistoryTimeline({
     return (
       <div className="flex flex-col items-center justify-center py-16 gap-4">
         <div className="text-center">
-          <div className="text-sm font-medium mb-1">
+          <div className="type-title mb-1">
             {versions.length} version{versions.length !== 1 ? "s" : ""}{" "}
             available
           </div>
-          <p className="text-xs text-muted-foreground max-w-[320px]">
+          <p className="type-secondary text-muted-foreground max-w-[320px]">
             Load history to see what changed in each version
           </p>
         </div>
@@ -84,7 +84,7 @@ export function VersionHistoryTimeline({
         {/* A load that ran and failed must never fall back to looking like a
             load that was never started. */}
         {failedVersions.length > 0 && (
-          <div className="flex items-start gap-2 max-w-[420px] px-3 py-2 rounded-md border border-destructive/30 bg-destructive/10 text-xs text-destructive">
+          <div className="flex items-start gap-2 max-w-[420px] px-3 py-2 rounded-md border border-destructive/30 bg-destructive/10 type-secondary text-destructive">
             <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
             <span>
               {failedVersions.length} of {progress.total} snapshot
@@ -120,7 +120,7 @@ export function VersionHistoryTimeline({
     return (
       <div className="flex flex-col items-center justify-center py-16 gap-3">
         <Loader2 className="w-6 h-6 animate-spin text-primary" />
-        <div className="text-sm text-muted-foreground">
+        <div className="type-body text-muted-foreground">
           {/* read-gate-exempt: fetch progress shown only while the fetch is in flight, never a result count */}
           Loading version details... {progress.fetched}/{progress.total}
         </div>
@@ -140,7 +140,7 @@ export function VersionHistoryTimeline({
   return (
     <div className="px-4 py-3">
       <div className="flex items-center justify-between mb-3 pb-3 border-b border-border">
-        <div className="text-xs text-muted-foreground">
+        <div className="type-secondary text-muted-foreground">
           {/* read-gate-exempt: this is the tally of versions whose read succeeded, with the failed ones counted beside it */}
           {enrichedVersions.filter((v) => v.snapshotLoaded).length} of{" "}
           {versions.length} versions loaded
@@ -155,7 +155,7 @@ export function VersionHistoryTimeline({
       </div>
 
       {/* Enriched timeline as a table */}
-      <table className={cn("text-xs", MOBILE_TABLE)}>
+      <table className={cn("type-secondary", MOBILE_TABLE)}>
         <thead>
           <tr className="border-b border-border text-muted-foreground">
             <th className={cn("text-left py-2 pr-3 font-medium w-[70px]", MOBILE_TABLE_FROZEN_HEAD, "max-sm:min-w-[64px]")}>
@@ -437,7 +437,7 @@ function BasicTimeline({
   onCompare: (version: number, compareToVersion: number | "current") => void;
 }) {
   return (
-    <table className={cn("text-xs", MOBILE_TABLE)}>
+    <table className={cn("type-secondary", MOBILE_TABLE)}>
       <thead>
         <tr className="border-b border-border text-muted-foreground">
           <th className={cn("text-left py-1.5 pr-3 font-medium w-[70px]", MOBILE_TABLE_FROZEN_HEAD, "max-sm:min-w-[64px]")}>

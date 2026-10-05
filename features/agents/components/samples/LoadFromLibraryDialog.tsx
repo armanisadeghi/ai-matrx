@@ -320,7 +320,7 @@ export function LoadFromLibraryDialog({
                 size="compact"
               />
             ) : libraries.length === 0 ? (
-              <p className="text-xs text-muted-foreground">
+              <p className="type-secondary text-muted-foreground">
                 You have no media Libraries yet.{" "}
                 <Link
                   href={LIBRARIES_PATH}
@@ -371,7 +371,7 @@ export function LoadFromLibraryDialog({
               size="compact"
             />
           ) : chosenLibrary && readiness && !readiness.canStart ? (
-            <p className="flex items-start gap-2 text-sm text-muted-foreground">
+            <p className="flex items-start gap-2 type-body text-muted-foreground">
               <CircleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
               <span>
                 {readiness.sentence}{" "}
@@ -388,7 +388,7 @@ export function LoadFromLibraryDialog({
           ) : chosenLibrary ? (
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <p className="text-xs text-muted-foreground">
+                <p className="type-secondary text-muted-foreground">
                   {readyTotal} of {totalCount} items have a transcript
                   {readyTotal > videos.length
                     ? ` — the ${videos.length} most recent are listed`
@@ -449,27 +449,27 @@ export function LoadFromLibraryDialog({
           ) : null}
 
           {phase.kind === "watching" ? (
-            <p className="flex items-center gap-2 text-sm text-muted-foreground">
+            <p className="flex items-center gap-2 type-body text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
               {phase.sent} items were sent to the Library. They appear under
               Candidates as they are written — watching for them now.
             </p>
           ) : null}
           {phase.kind === "arrived" ? (
-            <p className="text-sm text-muted-foreground">
+            <p className="type-body text-muted-foreground">
               The first test cases from those {phase.sent} items are in
               Candidates. The rest arrive as the Library writes them.
             </p>
           ) : null}
           {phase.kind === "quiet" ? (
-            <p className="text-sm text-muted-foreground">
+            <p className="type-body text-muted-foreground">
               {phase.sent} items sent, no test case written yet. Refresh in a
               minute or open the Library.
             </p>
           ) : null}
 
           {error ? (
-            <p className="flex items-start gap-2 text-sm text-destructive">
+            <p className="flex items-start gap-2 type-body text-destructive">
               <CircleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
               {error}
               <ErrorAlchemyMenu error={error} />

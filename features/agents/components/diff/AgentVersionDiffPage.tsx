@@ -311,14 +311,14 @@ export function AgentVersionDiffPage({
     return (
       <div className="flex items-center justify-center h-full gap-2 text-muted-foreground">
         <Loader2 className="w-5 h-5 animate-spin text-primary" />
-        <span className="text-sm">Loading version history...</span>
+        <span className="type-body">Loading version history...</span>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center h-full gap-2 text-destructive text-sm">
+      <div className="flex flex-col items-center justify-center h-full gap-2 text-destructive type-body">
         <span>{error}</span>
         <CopyButtons
           size="sm"
@@ -346,7 +346,7 @@ export function AgentVersionDiffPage({
 
   if (versions.length === 0) {
     return (
-      <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+      <div className="flex items-center justify-center h-full text-muted-foreground type-body">
         No version history found for this agent.
       </div>
     );
@@ -505,7 +505,7 @@ export function AgentVersionDiffPage({
                   searchPlaceholder="Search versions..."
                 />
               </div>
-              <span className="text-xs text-muted-foreground">vs</span>
+              <span className="type-secondary text-muted-foreground">vs</span>
               <div className="w-[260px]">
                 <SearchableSelect
                   options={rightVersionOptions}
@@ -517,7 +517,7 @@ export function AgentVersionDiffPage({
               </div>
 
               {selectedVersionItem && (
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <div className="flex items-center gap-2 type-secondary text-muted-foreground">
                   <VersionIdBadge versionId={selectedVersionItem.version_id} />
                 </div>
               )}
@@ -676,7 +676,7 @@ export function AgentVersionDiffPage({
         {/* A snapshot that could not be read says so, in place, with the
             selectors above still live so another version can be chosen. */}
         {snapshotError && (
-          <div className="shrink-0 flex items-center gap-2 px-4 py-2 border-b border-destructive/30 bg-destructive/10 text-xs text-destructive">
+          <div className="shrink-0 flex items-center gap-2 px-4 py-2 border-b border-destructive/30 bg-destructive/10 type-secondary text-destructive">
             <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
             <span className="flex-1">{snapshotError}</span>
             <CopyButtons
@@ -733,7 +733,7 @@ export function AgentVersionDiffPage({
               className="h-full"
             />
           ) : (
-            <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
+            <div className="flex items-center justify-center h-full type-body text-muted-foreground">
               Select a version to see differences
             </div>
           )}

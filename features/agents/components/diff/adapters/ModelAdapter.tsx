@@ -16,7 +16,7 @@ function ModelDiffRenderer({ node, enrichment }: FieldDiffProps) {
   const newName = newId ? enrichment?.resolveModelId(newId) : null;
 
   return (
-    <div className="grid grid-cols-[200px_1fr_1fr] text-xs">
+    <div className="grid grid-cols-[200px_1fr_1fr] type-secondary">
       <div className="border-r border-border" />
       <div
         className={cn(

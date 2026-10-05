@@ -53,7 +53,7 @@ export function NotePreviewContent({ noteId, onOpen }: NotePreviewContentProps) 
 
   if (!note) {
     return (
-      <div className="text-xs text-muted-foreground italic">
+      <div className="type-secondary text-muted-foreground italic">
         Note not loaded.
       </div>
     );
@@ -72,11 +72,11 @@ export function NotePreviewContent({ noteId, onOpen }: NotePreviewContentProps) 
       <div className="flex items-start gap-2">
         <StickyNote className="w-3.5 h-3.5 text-orange-500 mt-0.5 shrink-0" />
         <div className="flex-1 min-w-0">
-          <div className="text-sm font-semibold text-foreground truncate">
+          <div className="type-title text-foreground truncate">
             {title}
           </div>
           {note.folder_name && (
-            <div className="flex items-center gap-1 text-[11px] text-muted-foreground mt-0.5">
+            <div className="flex items-center gap-1 type-meta text-muted-foreground mt-0.5">
               <Folder className="w-3 h-3" />
               <span className="truncate">{note.folder_name}</span>
             </div>
@@ -85,14 +85,14 @@ export function NotePreviewContent({ noteId, onOpen }: NotePreviewContentProps) 
       </div>
 
       {truncated ? (
-        <p className="text-xs text-foreground whitespace-pre-wrap break-words max-h-48 overflow-y-auto">
+        <p className="type-secondary text-foreground whitespace-pre-wrap break-words max-h-48 overflow-y-auto">
           {truncated}
         </p>
       ) : (
-        <p className="text-xs text-muted-foreground italic">Empty note</p>
+        <p className="type-secondary text-muted-foreground italic">Empty note</p>
       )}
 
-      <div className="text-[10px] text-muted-foreground pt-1 border-t border-border">
+      <div className="type-meta text-muted-foreground pt-1 border-t border-border">
         Updated {formatDateTime(note.updated_at)}
       </div>
 

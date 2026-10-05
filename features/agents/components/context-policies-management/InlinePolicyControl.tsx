@@ -84,10 +84,10 @@ function RadioRow({
       />
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between gap-2">
-          <span className="text-sm font-medium text-foreground">{label}</span>
+          <span className="type-title text-foreground">{label}</span>
           {right}
         </div>
-        <p className="text-xs text-muted-foreground">{description}</p>
+        <p className="type-secondary text-muted-foreground">{description}</p>
       </div>
     </label>
   );
@@ -145,7 +145,7 @@ export function InlinePolicyControl({
               className="h-8 w-24 text-sm"
               style={{ fontSize: "16px" }}
             />
-            <span className="text-[11px] text-muted-foreground">chars</span>
+            <span className="type-meta text-muted-foreground">chars</span>
           </div>
         }
       />

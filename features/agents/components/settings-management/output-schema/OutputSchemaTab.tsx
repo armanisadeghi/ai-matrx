@@ -128,20 +128,20 @@ export function OutputSchemaTab({
           onBind={handleBindKind}
         />
         {matchedKind ? (
-          <span className="flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400">
+          <span className="flex items-center gap-1 type-meta text-emerald-600 dark:text-emerald-400">
             <CheckCircle2 className="h-3.5 w-3.5" />
             Matches kind{" "}
             <span className="font-mono font-semibold">{matchedKind}</span>
           </span>
         ) : boundKind ? (
-          <span className="flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400">
+          <span className="flex items-center gap-1 type-meta text-amber-600 dark:text-amber-400">
             <Shapes className="h-3.5 w-3.5" />
             Bound to{" "}
             <span className="font-mono font-semibold">{boundKind}</span> — the
             schema has been edited away from it
           </span>
         ) : (
-          <span className="text-[11px] text-muted-foreground">
+          <span className="type-meta text-muted-foreground">
             Write a registered kind&apos;s schema to render the output
           </span>
         )}
@@ -188,7 +188,7 @@ function ValidationReport({ report }: { report: OutputSchemaValidation }) {
     report.suggestions.length === 0;
 
   return (
-    <div className="flex flex-col gap-2 text-xs">
+    <div className="flex flex-col gap-2 type-secondary">
       {report.ok && report.errors.length === 0 && (
         <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
           <CheckCircle2 className="h-3.5 w-3.5" />

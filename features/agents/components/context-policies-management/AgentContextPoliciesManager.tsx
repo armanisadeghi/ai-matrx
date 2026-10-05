@@ -323,7 +323,7 @@ function PolicyEditorFields({
               checked={form.ctxBound}
               onCheckedChange={(c) => onChange({ ctxBound: c === true })}
             />
-            <span className="text-xs">Bind to a context item</span>
+            <span className="type-secondary">Bind to a context item</span>
           </label>
         </Field>
         {form.ctxBound && (
@@ -410,10 +410,10 @@ function PolicyEditorFields({
             style={{ fontSize: "16px" }}
           />
           {keyDuplicate && (
-            <p className="text-xs text-destructive">This key already exists.</p>
+            <p className="type-secondary text-destructive">This key already exists.</p>
           )}
           {form.key.trim() && !keyRulesOk && (
-            <p className="text-xs text-muted-foreground">
+            <p className="type-secondary text-muted-foreground">
               Letters, numbers and underscores; start with a letter
             </p>
           )}
@@ -641,7 +641,7 @@ function PolicyEditorFields({
       )}
 
       {formError && (
-        <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+        <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 type-secondary text-destructive">
           {formError}
           <ErrorAlchemyMenu error={formError} />
         </div>
@@ -670,12 +670,12 @@ function Section({
   return (
     <section className="space-y-2.5">
       <div className="min-w-0">
-        <h3 className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <h3 className="flex items-center gap-1 type-meta font-semibold uppercase tracking-wider text-muted-foreground">
           {title}
           {hint && <InfoHint text={hint} label={`About ${title}`} />}
         </h3>
         {subtitle && (
-          <p className="truncate text-[11px] text-muted-foreground/80 mt-0.5">
+          <p className="truncate type-meta text-muted-foreground/80 mt-0.5">
             {subtitle}
           </p>
         )}
@@ -772,7 +772,7 @@ function ContextPolicyStackTrigger({
         )}
         <div className="max-h-80 overflow-y-auto py-1">
           {filtered.length === 0 ? (
-            <p className="text-center text-xs text-muted-foreground py-4">
+            <p className="text-center type-secondary text-muted-foreground py-4">
               No matches
             </p>
           ) : (
@@ -798,7 +798,7 @@ function ContextPolicyStackTrigger({
                     }}
                   >
                     <div className="flex items-center gap-1.5 min-w-0">
-                      <span className="text-xs font-mono font-medium truncate">
+                      <span className="type-secondary font-mono font-medium truncate">
                         {key}
                       </span>
                       <Badge
@@ -821,7 +821,7 @@ function ContextPolicyStackTrigger({
                       )}
                     </div>
                     {detail && (
-                      <p className="text-[11px] text-muted-foreground truncate mt-0.5">
+                      <p className="type-meta text-muted-foreground truncate mt-0.5">
                         {detail}
                       </p>
                     )}
