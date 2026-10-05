@@ -177,7 +177,8 @@ describe("a dead credential, in the dialog", () => {
     // same claim. Before this, one said nothing was asked for again and the other
     // said nine products would be approved again.
     expect(shown).toContain(
-      `approve ${provider.products.length} products again`,
+      // YouTube is its own labelled step beside other products (even on a renewal), so the one press renews every product except YouTube; the split makes 'every product in one request' impossible.
+`approve ${provider.products.length - 1} products again`,
     );
     expect(shown).toContain("nothing new is asked for");
   });

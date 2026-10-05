@@ -131,7 +131,8 @@ describe("consentOutcomes after an exchange that failed", () => {
       account: DEAD,
       rollout: LIVE,
     });
-    expect(plan.request?.renewals).toHaveLength(provider.products.length);
+// YouTube is its own labelled step beside other products (even on a renewal), so the one press renews every product except YouTube; the split makes 'every product in one request' impossible.
+    expect(plan.request?.renewals).toHaveLength(provider.products.length - 1);
     const outcomes = consentOutcomes({
       provider,
       plan,
