@@ -101,7 +101,7 @@ export const ORG_CHART_READ_CHUNK = 150;
 // A box on the chart is one of four things (Arman, 2026-10-04). Each is an
 // existing entity token, so links between any two are ordinary association
 // edges. "Position" (not "Role" — that word is owner/admin/member) is a named
-// seat in iam.position that a person may fill and agents may sit under.
+// seat in agent.position that a person may fill and agents may sit under.
 
 export const ORG_BOX_TYPES = ["agent", "user", "team", "position"] as const;
 export type OrgBoxType = (typeof ORG_BOX_TYPES)[number];

@@ -15,7 +15,8 @@ import { useUserConnections } from "@/features/messaging/hooks/useUserConnection
 import { selectOrgPositions } from "@/features/agents/redux/orchestras/selectors";
 import { createOrgPosition, loadOrgPositions } from "@/features/agents/redux/orchestras/orgChartThunks";
 import type { Team } from "@/features/organizations/service/teamsService";
-import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
+import { selectOrganizationId, selectOrganizationName } from "@/lib/redux/slices/appContextSlice";
+import { OrganizationPickerPopover } from "@/features/organizations/components/OrganizationPickerPopover";
 import { toast } from "@/lib/toast";
 import { boxId, parseBoxId, type OrgBoxType } from "../constants";
 import { loadTeamsDirectory } from "../useBoxIdentity";
@@ -75,6 +76,10 @@ export function OrgBoxPicker({
   const [newName, setNewName] = useState("");
   const [creating, setCreating] = useState(false);
   const positions = useAppSelector(selectOrgPositions);
+  // A new position is a WRITE, so it lands in the organization being worked in —
+  // shown, and chosen right here when none is (never a silent wait on a gate).
+  const writeOrgId = useAppSelector(selectOrganizationId);
+  const writeOrgName = useAppSelector(selectOrganizationName);
   const { connections, isLoading: peopleLoading } = useUserConnections();
   const excluded = new Set(exclude);
   const excludedAgents = exclude.map(parseBoxId).filter((b) => b.type === "agent").map((b) => b.id);
@@ -92,15 +97,12 @@ export function OrgBoxPicker({
   const createPosition = async () => {
     const name = newName.trim();
     if (!name) return;
+    if (!writeOrgId) return;
     setCreating(true);
     try {
-      // A new seat belongs to the organization being worked in; with none chosen the gate asks.
-      const organizationId = await ensureOrgId(null);
-      const res = await dispatch(createOrgPosition({ organizationId, name }));
+      const res = await dispatch(createOrgPosition({ organizationId: writeOrgId, name }));
       if ("error" in res) toast.error(res.error);
       else onPick(boxId("position", res.id));
-    } catch (e) {
-      if (e instanceof Error && e.name !== "OrganizationSelectionCancelled") toast.error(e.message);
     } finally {
       setCreating(false);
     }
@@ -198,6 +200,17 @@ export function OrgBoxPicker({
             )}
           </div>
           {tab === "position" && (
+            <>
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <span>{writeOrgId ? `Creates in ${writeOrgName ?? "your organization"}` : "Choose where new positions go"}</span>
+              <OrganizationPickerPopover
+                trigger={
+                  <button type="button" className="font-medium text-primary hover:underline">
+                    {writeOrgId ? "Change" : "Choose organization"}
+                  </button>
+                }
+              />
+            </div>
             <div className="flex items-center gap-2">
               <Field
                 value={newName}
@@ -216,12 +229,13 @@ export function OrgBoxPicker({
                 type="button"
                 variant="primary"
                 icon={<Plus className="h-4 w-4" />}
-                disabled={!newName.trim() || creating}
+                disabled={!newName.trim() || creating || !writeOrgId}
                 onClick={() => void createPosition()}
               >
                 Create
               </Button>
             </div>
+            </>
           )}
         </>
       )}

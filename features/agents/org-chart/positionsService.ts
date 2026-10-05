@@ -1,6 +1,6 @@
 // features/agents/org-chart/positionsService.ts
 //
-// Positions (iam.position): named seats on the org chart — "SEO Lead" — that a
+// Positions (agent.position): named seats on the org chart — "SEO Lead" — that a
 // person may fill and agents may sit under. The one read/write path for the
 // table. Every write names its organization explicitly (no resolver picks one).
 
@@ -8,6 +8,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { readAllRows } from "@ai-matrx/data/db";
+import { requireUserId } from "@/utils/auth/getUserId";
 
 export interface OrgPosition {
   id: string;
@@ -38,7 +39,7 @@ const fromRow = (r: PositionRow): OrgPosition => ({
   hrJobTitleId: r.hr_job_title_id,
 });
 
-const table = () => supabase.schema("iam").from("position");
+const table = () => supabase.schema("agent").from("position");
 
 export const positionsService = {
   /** Every live position the viewer can see (the whole list — never capped at 1000). */
@@ -46,7 +47,7 @@ export const positionsService = {
     const rows = await readAllRows<PositionRow>(
       ({ from, to }) =>
         table().select(COLUMNS, { count: "exact" }).is("deleted_at", null).order("id", { ascending: true }).range(from, to),
-      { label: "iam.position org chart" },
+      { label: "agent.position org chart" },
     );
     return rows.map(fromRow);
   },
@@ -60,6 +61,7 @@ export const positionsService = {
     const { data, error } = await table()
       .insert({
         organization_id: input.organizationId,
+        created_by: requireUserId(),
         name: input.name.trim(),
         description: input.description?.trim() || null,
         filled_by_user_id: input.filledByUserId ?? null,
