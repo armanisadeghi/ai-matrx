@@ -20,7 +20,7 @@ import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-event
 import { StreamBlockAccumulator } from "@ai-matrx/chat/agents/redux/execution-system/utils/stream-block-accumulator";
 import { BlockRenderer } from "@/components/mardown-display/chat-markdown/block-registry/BlockRenderer";
 import { splitContentIntoBlocksV2 } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
-import { pythonKindsAsOneLine } from "@/features/content-ir/surfaces/kind-one-line";
+import { pythonKindsAsOneLine } from "@ai-matrx/chat/utils/content-ir/surfaces/kind-one-line";
 import { chunkText } from "./seeded-random";
 
 jest.setTimeout(240_000);
