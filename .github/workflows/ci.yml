@@ -233,7 +233,7 @@ jobs:
       - name: the session-read-only guard can still fail (self-test)
         run: pnpm check:no-session-read-only:self-test
       - name: the record store lives at /data (no data-v2 links, no retired-table reads)
-        # 2026-10-04: /data-v2 moved to /data; the address survives only as the redirect in next.config.js.
+        # 2026-10-04: the record store moved from data-v2 to /data; the old address survives only as the redirect in next.config.js.
         run: pnpm check:no-data-v2 && pnpm check:no-data-v2:self-test
       - name: the no-fake-data guard can still fail (self-test)
         # A guard you cannot demonstrate failing is not a guard. This plants a
