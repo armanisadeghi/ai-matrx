@@ -37,6 +37,7 @@ import {
   type FactoryBuildDetail,
   type FactoryBuildState,
   type FactoryStepName,
+  type SpineStatus,
 } from "../types";
 import { buildRows, StatusIcon, type RowStatus } from "./FactoryBuildPage";
 import { formatDuration } from "./factory-shared";
@@ -85,16 +86,22 @@ function decisionReason(state: FactoryBuildState): string | null {
 
 function OutcomePanel({
   state,
+  spineStatus,
   busy,
   onKeep,
   onBuildUnproven,
 }: {
   state: FactoryBuildState;
+  /** The execution's real status — the checkpoint can still say running after a worker died. */
+  spineStatus: SpineStatus;
   busy: boolean;
   onKeep: () => void;
   onBuildUnproven: () => void;
 }) {
-  const outcome = state.outcome ?? null;
+  // A build whose worker died before the reaper settled it: the spine says failed or
+  // cancelled while the checkpoint never got an outcome — show it stopped, never blank.
+  const outcome =
+    state.outcome ?? (spineStatus === "failed" || spineStatus === "cancelled" ? "worker_lost" : null);
   const greenfield = state.facts?.greenfield ?? !state.request?.mandate_key;
   const agentId = state.agent_id ?? null;
   const kept = Boolean(outcome && KEPT_OUTCOMES.has(outcome));
@@ -317,7 +324,7 @@ export function BuildProgress({ buildId, onFinished, onRebuilt, className }: Bui
             </Button>
           </div>
         ) : (
-          <OutcomePanel state={state} busy={busy} onKeep={() => void keep()} onBuildUnproven={() => void buildUnproven()} />
+          <OutcomePanel state={state} spineStatus={detail.spineStatus} busy={busy} onKeep={() => void keep()} onBuildUnproven={() => void buildUnproven()} />
         )
       ) : null}
     </div>
