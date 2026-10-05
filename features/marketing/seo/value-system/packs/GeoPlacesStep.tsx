@@ -52,6 +52,7 @@ import { GeoPlacePicker } from "../rules/GeoPlacePicker";
 import { parseTokens, unsafeTokens, type GeoPlace } from "../rules/types";
 import type { StarterPackGeoAreaItem } from "../types";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { Chip } from "@ai-matrx/design-system/controls";
 
 /** What the caller hands to `adoptStarterPack`, keyed by pack item id. */
 export interface GeoPlacesDraft {
@@ -125,14 +126,13 @@ function AreaRow({
             {area.geo_band}
           </Badge>
           {filled === 0 ? (
-            <span className="inline-flex items-center gap-1 rounded border border-warning/40 bg-warning/10 px-1.5 py-0.5 text-[10px] text-warning">
-              <TriangleAlert className="h-3 w-3" aria-hidden />
-              no places — will match nothing
-            </span>
+            <Chip
+              tone="warning"
+              icon={<TriangleAlert aria-hidden />}
+              label="no places — will match nothing"
+            />
           ) : (
-            <span className="rounded border border-border bg-muted/40 px-1.5 py-0.5 text-[10px] tabular-nums text-muted-foreground">
-              {filled} place{filled === 1 ? "" : "s"}
-            </span>
+            <Chip label={`${filled} place${filled === 1 ? "" : "s"}`} />
           )}
         </div>
       </div>

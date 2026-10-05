@@ -33,6 +33,7 @@ import {
 import { SetupSection } from "./SetupSection";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
+import { Badge } from "@ai-matrx/design-system/controls";
 
 const ROLE_LABEL: Record<PageRole, string> = {
   money: "money",
@@ -331,13 +332,14 @@ function AssignmentRow({ assignment }: { assignment: KeywordAssignment }) {
           {assignment.primaryKeyword ? (
             <p className="mt-0.5 text-xs font-medium text-foreground">
               {assignment.primaryKeyword}
+              {assignment.primaryIsNew ? " " : null}
               {assignment.primaryIsNew ? (
-                <span
-                  className="ml-1.5 rounded bg-warning/15 px-1 py-0.5 text-[10px] font-medium uppercase leading-none text-warning"
+                <Badge
+                  tone="warning"
                   title="Not in the existing keyword library — it will be created on apply."
                 >
                   new
-                </span>
+                </Badge>
               ) : null}
             </p>
           ) : (

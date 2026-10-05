@@ -30,6 +30,7 @@ import {
   QueryError,
 } from "@/features/marketing/components/shared/MarketingUi";
 import { cn } from "@/lib/utils";
+import { Badge, Chip, ChipSet } from "@ai-matrx/design-system/controls";
 
 /**
  * Structure — the site's ROUTING TREE, derived from the canonical page
@@ -133,19 +134,13 @@ function LevelChips({ node }: { node: RouteTreeNode }) {
 
 function StatusBadge({ status }: { status: number | null }) {
   if (status === null || (status >= 200 && status < 300)) return null;
-  const bad = status >= 400;
   return (
-    <span
+    <Badge
+      tone={status >= 400 ? "destructive" : "warning"}
       title={`Last observed HTTP status: ${status}`}
-      className={cn(
-        "rounded px-1 py-0.5 text-[10px] font-semibold tabular-nums",
-        bad
-          ? "bg-destructive/10 text-destructive"
-          : "bg-amber-500/10 text-amber-600 dark:text-amber-400",
-      )}
     >
       {status}
-    </span>
+    </Badge>
   );
 }
 
@@ -559,45 +554,33 @@ export function StructureWorkspace({
                 <Layers className="h-3 w-3" />
                 Levels
               </span>
-              <button
-                type="button"
-                onClick={() => setDepthFilter(null)}
-                className={cn(
-                  "rounded-md border px-2 py-1 text-[11px] font-medium",
-                  depthFilter === null
-                    ? "border-primary/40 bg-primary/10 text-primary"
-                    : "border-border bg-card text-muted-foreground hover:bg-muted/40 hover:text-foreground",
-                )}
-              >
-                All levels
-              </button>
-              {tree.levelBreakdown.map((level) => (
-                <button
-                  key={level.depth}
-                  type="button"
-                  onClick={() =>
-                    setDepthFilter(
-                      depthFilter === level.depth ? null : level.depth,
-                    )
-                  }
-                  title={`${level.routes.toLocaleString()} routes and ${level.pages.toLocaleString()} pages at level ${level.depth}; ${level.cumulativePages.toLocaleString()} pages within ${level.depth} level${level.depth === 1 ? "" : "s"} of the home page`}
-                  className={cn(
-                    "rounded-md border px-2 py-1 text-[11px]",
-                    depthFilter === level.depth
-                      ? "border-primary/40 bg-primary/10 text-primary"
-                      : "border-border bg-card text-muted-foreground hover:bg-muted/40 hover:text-foreground",
-                  )}
+              <ChipSet>
+                <Chip
+                  pressed={depthFilter === null}
+                  label="All levels"
+                  asChild
                 >
-                  <span className="font-medium">L{level.depth}</span>
-                  <span className="ml-1 tabular-nums">
-                    {level.pages.toLocaleString()} pages
-                  </span>
-                  <span className="ml-1 tabular-nums opacity-70">
-                    {"≤"}
-                    {level.cumulativePages.toLocaleString()}
-                  </span>
-                </button>
-              ))}
+                  <button type="button" onClick={() => setDepthFilter(null)} />
+                </Chip>
+                {tree.levelBreakdown.map((level) => (
+                  <Chip
+                    key={level.depth}
+                    pressed={depthFilter === level.depth}
+                    label={`L${level.depth} · ${level.pages.toLocaleString()} pages · ≤${level.cumulativePages.toLocaleString()}`}
+                    title={`${level.routes.toLocaleString()} routes and ${level.pages.toLocaleString()} pages at level ${level.depth}; ${level.cumulativePages.toLocaleString()} pages within ${level.depth} level${level.depth === 1 ? "" : "s"} of the home page`}
+                    asChild
+                  >
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setDepthFilter(
+                          depthFilter === level.depth ? null : level.depth,
+                        )
+                      }
+                    />
+                  </Chip>
+                ))}
+              </ChipSet>
             </div>
           </section>
         ) : null}

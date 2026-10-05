@@ -39,6 +39,7 @@ import {
   runPlaceDetectionPass,
   valueSurfaceQueryKeys,
 } from "./data";
+import { Chip } from "@ai-matrx/design-system/controls";
 
 /** The knob namespace this strip obeys. Missing rows raise — by design. */
 const KNOB_FEATURE = "seo.keyword_place_detection";
@@ -142,18 +143,15 @@ export function PlaceDetectionStrip({ siteId }: { siteId: string }) {
             <Check className="h-3 w-3" aria-hidden /> Demand read
           </span>
         ) : (
-          <span className="rounded border border-primary/40 bg-primary/10 px-1.5 py-0.5 text-[10px] tabular-nums text-primary">
-            {formatCount(owed)} keywords unread
-          </span>
+          <Chip tone="primary" label={`${formatCount(owed)} keywords unread`} />
         )}
         {row.areas_with_places === 0 && row.areas_total > 0 ? (
-          <span
-            className="inline-flex items-center gap-1 rounded border border-warning/50 bg-warning/10 px-1.5 py-0.5 text-[10px] text-warning"
+          <Chip
+            tone="warning"
+            icon={<TriangleAlert aria-hidden />}
+            label="no area names a place yet"
             title="Detection can only change a keyword's worth once one of your areas names a place."
-          >
-            <TriangleAlert className="h-3 w-3" aria-hidden />
-            no area names a place yet
-          </span>
+          />
         ) : null}
         {isSuperAdmin ? (
           <div className="ml-auto flex shrink-0 items-center gap-1.5">

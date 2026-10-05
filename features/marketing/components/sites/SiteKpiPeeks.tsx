@@ -29,6 +29,7 @@ import type {
   SiteGscDailyPoint,
   SiteListRow,
 } from "@/features/marketing/types";
+import { Chip } from "@ai-matrx/design-system/controls";
 
 export type GscPeekMetric = "clicks" | "impressions" | "position";
 
@@ -98,21 +99,16 @@ export function TrendDelta({
   const good = invert ? !up : up;
   const Icon = up ? ArrowUpRight : ArrowDownRight;
   return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-0.5 rounded px-1 py-px text-[10px] font-semibold tabular-nums",
-        good
-          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-          : "bg-red-500/10 text-red-600 dark:text-red-400",
-        className,
-      )}
+    <Chip
+      tone={good ? "success" : "destructive"}
+      icon={<Icon />}
+      label={
+        Math.abs(percent) >= 100
+          ? `${Math.round(Math.abs(percent))}%`
+          : `${Math.abs(percent).toFixed(1)}%`
+      }
       title={delta.caveat ?? "vs previous 28 days"}
-    >
-      <Icon className="h-2.5 w-2.5" />
-      {Math.abs(percent) >= 100
-        ? `${Math.round(Math.abs(percent))}%`
-        : `${Math.abs(percent).toFixed(1)}%`}
-    </span>
+    />
   );
 }
 

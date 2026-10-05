@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { AlertTriangle, PanelRightOpen, Play, ScanSearch } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system/controls";
+import { Chip, Input } from "@ai-matrx/design-system/controls";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { adoptForeignStream } from "@ai-matrx/chat/agents/redux/execution-system/thunks/adopt-foreign-stream";
 import { removeRequest } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.slice";
@@ -292,8 +292,12 @@ export function AiVisibilityTool() {
     <div className="space-y-8">
       <section className="mx-auto max-w-5xl overflow-hidden rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/10 via-card to-violet-500/10 p-5 shadow-lg sm:p-8">
         <div className="mb-6 max-w-3xl">
-          <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-            <ScanSearch className="h-3.5 w-3.5" /> Free AI visibility report
+          <div className="mb-3">
+            <Chip
+              tone="primary"
+              icon={<ScanSearch />}
+              label="Free AI visibility report"
+            />
           </div>
           <h2 className="text-2xl font-semibold tracking-tight sm:text-4xl">
             See exactly how AI recommends a brand

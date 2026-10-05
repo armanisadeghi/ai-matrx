@@ -64,6 +64,7 @@ import { archiveRule } from "@/features/marketing/search-console/data-class-rule
 import { extractErrorMessage } from "@/utils/errors";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@ai-matrx/design-system";
+import { Chip, ChipSet } from "@ai-matrx/design-system/controls";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
 import { formatCount } from "@/features/marketing/search-console/types";
 import type { GscFilters } from "@/features/marketing/search-console/types";
@@ -150,30 +151,26 @@ function UsageChip({
   }
   if (failed) {
     return (
-      <span
-        className="inline-flex shrink-0 items-center rounded border border-border bg-muted/30 px-1.5 py-0.5 text-[10px] text-muted-foreground"
+      <Chip
+        label="usage unavailable"
         title="The usage read failed — the number is unknown, not zero."
-      >
-        usage unavailable
-      </span>
+      />
     );
   }
   if (!usage || usage.keywords === 0) {
     return (
-      <span
-        className="inline-flex shrink-0 items-center gap-1 rounded border border-warning/40 bg-warning/10 px-1.5 py-0.5 text-[10px] text-warning"
+      <Chip
+        tone="warning"
+        icon={<TriangleAlert aria-hidden />}
+        label="fires on nothing"
         title="It is in the ledger but matches none of the keywords this site actually gets traffic on, so it changes nothing."
-      >
-        <TriangleAlert className="h-3 w-3" aria-hidden />
-        fires on nothing
-      </span>
+      />
     );
   }
   return (
-    <span className="shrink-0 rounded border border-border bg-muted/40 px-1.5 py-0.5 text-[10px] tabular-nums text-muted-foreground">
-      {formatCount(usage.keywords)} keyword{usage.keywords === 1 ? "" : "s"} ·{" "}
-      {formatCount(usage.clicks)} click{usage.clicks === 1 ? "" : "s"}
-    </span>
+    <Chip
+      label={`${formatCount(usage.keywords)} keyword${usage.keywords === 1 ? "" : "s"} · ${formatCount(usage.clicks)} click${usage.clicks === 1 ? "" : "s"}`}
+    />
   );
 }
 
@@ -272,29 +269,20 @@ function areaSummary(v: Record<string, unknown>): string {
 function SourceFilterChip({
   active,
   onClick,
-  children,
+  label,
+  icon,
   title,
 }: {
   active: boolean;
   onClick: () => void;
-  children: React.ReactNode;
+  label: string;
+  icon?: React.ReactNode;
   title?: string;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      title={title}
-      aria-pressed={active}
-      className={cn(
-        "inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] transition-colors",
-        active
-          ? "border-primary/50 bg-primary/10 text-primary"
-          : "border-border bg-card text-muted-foreground hover:bg-accent hover:text-foreground",
-      )}
-    >
-      {children}
-    </button>
+    <Chip pressed={active} label={label} icon={icon} title={title} asChild>
+      <button type="button" onClick={onClick} />
+    </Chip>
   );
 }
 
@@ -334,12 +322,11 @@ function BandRows({
               {band.description ?? "No description yet."}
             </span>
             {band.is_template ? (
-              <span
-                className="shrink-0 rounded border border-info/40 bg-info/10 px-1.5 py-0.5 text-[10px] text-info"
+              <Chip
+                tone="info"
+                label="platform default"
                 title="This site has not adopted its own bands yet, so the platform template applies."
-              >
-                platform default
-              </span>
+              />
             ) : prov ? (
               <SourceChip
                 state={chipState(prov.state)}
@@ -983,38 +970,36 @@ export function MeaningRulesWorkbench() {
             <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
               Show
             </span>
+            <ChipSet>
             <SourceFilterChip
               active={!sourceFilter}
               onClick={() => setSource(null)}
-            >
-              All
-            </SourceFilterChip>
+              label="All"
+            />
             {(adoptions.data ?? []).map((a) => (
               <SourceFilterChip
                 key={a.pack_id}
                 active={sourceFilter === `pack:${a.slug}`}
                 onClick={() => setSource(`pack:${a.slug}`)}
                 title={`Everything adopted from ${a.name}`}
-              >
-                <Boxes className="h-3 w-3" aria-hidden />
-                From {a.name}
-              </SourceFilterChip>
+                icon={<Boxes aria-hidden />}
+                label={`From ${a.name}`}
+              />
             ))}
             <SourceFilterChip
               active={sourceFilter === "changed"}
               onClick={() => setSource("changed")}
               title="Adopted from a pack, then edited here"
-            >
-              <Pencil className="h-3 w-3" aria-hidden />
-              Changed from pack{changedCount > 0 ? ` (${changedCount})` : ""}
-            </SourceFilterChip>
+              icon={<Pencil aria-hidden />}
+              label={`Changed from pack${changedCount > 0 ? ` (${changedCount})` : ""}`}
+            />
             <SourceFilterChip
               active={sourceFilter === "yours"}
               onClick={() => setSource("yours")}
               title="Written here, not from any pack"
-            >
-              Yours
-            </SourceFilterChip>
+              label="Yours"
+            />
+            </ChipSet>
           </div>
         ) : null}
       </div>

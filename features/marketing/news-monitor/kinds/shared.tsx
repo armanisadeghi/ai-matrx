@@ -8,6 +8,7 @@ import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { Chip, type ChipTone } from "@ai-matrx/design-system/controls";
 
 export function KindCard({
   title,
@@ -36,6 +37,22 @@ export function KindCard({
   );
 }
 
+const PILL_TONE = {
+  neutral: "neutral",
+  good: "success",
+  warn: "warning",
+  bad: "destructive",
+  info: "primary",
+} as const satisfies Record<string, ChipTone>;
+
+/** A pill's children are text runs (`window {decay}`); the chip takes one line. */
+function textOf(node: ReactNode): string {
+  if (node === null || node === undefined || typeof node === "boolean") return "";
+  if (typeof node === "string" || typeof node === "number") return String(node);
+  if (Array.isArray(node)) return node.map(textOf).join("");
+  return "";
+}
+
 export function Pill({
   children,
   tone = "neutral",
@@ -45,21 +62,7 @@ export function Pill({
   tone?: "neutral" | "good" | "warn" | "bad" | "info";
   title?: string;
 }) {
-  return (
-    <span
-      title={title}
-      className={cn(
-        "inline-flex items-center rounded-full border px-1.5 py-px text-[11px] leading-4",
-        tone === "neutral" && "border-border text-muted-foreground",
-        tone === "good" && "border-success/40 bg-success/10 text-success",
-        tone === "warn" && "border-warning/40 bg-warning/10 text-warning",
-        tone === "bad" && "border-destructive/40 bg-destructive/10 text-destructive",
-        tone === "info" && "border-primary/40 bg-primary/10 text-primary",
-      )}
-    >
-      {children}
-    </span>
-  );
+  return <Chip tone={PILL_TONE[tone]} label={textOf(children)} title={title} />;
 }
 
 /** An app-internal path opens in place; anything else opens a new tab. */

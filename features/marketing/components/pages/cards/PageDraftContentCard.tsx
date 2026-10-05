@@ -29,6 +29,7 @@ import { useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/Surface
 import { MARKETING_PAGE_SURFACE_NAME } from "@/features/marketing/lib/marketing-page-scope";
 import type { MarketingPage } from "@/features/marketing/types";
 import { extractErrorMessage } from "@/utils/errors";
+import { Badge } from "@ai-matrx/design-system/controls";
 
 /** Wire value for the `page_draft_content` surface write target. */
 export interface PageDraftContentWrite {
@@ -157,9 +158,7 @@ export function PageDraftContentCard({ page }: { page: MarketingPage }) {
       anchor="draft_content"
       headerExtra={
         dirty ? (
-          <span className="rounded-full border border-warning/40 bg-warning/10 px-2 py-0.5 text-[10px] font-medium text-warning">
-            Unsaved changes
-          </span>
+          <Badge tone="warning">Unsaved changes</Badge>
         ) : null
       }
     >

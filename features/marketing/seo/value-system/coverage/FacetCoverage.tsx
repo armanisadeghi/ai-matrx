@@ -76,6 +76,7 @@ import {
 } from "./data";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
+import { Chip } from "@ai-matrx/design-system/controls";
 
 function share(part: number, whole: number): number {
   return whole > 0 ? (part / whole) * 100 : 0;
@@ -364,9 +365,7 @@ export function FacetCoverage({ siteId }: { siteId: string }) {
             ) : null}
           </span>
         ) : (
-          <span className="rounded border border-primary/40 bg-primary/10 px-1.5 py-0.5 text-[10px] tabular-nums text-primary">
-            {formatCount(owed)} owed
-          </span>
+          <Chip tone="primary" label={`${formatCount(owed)} owed`} />
         )}
         <div className="ml-auto flex shrink-0 items-center gap-1.5">
           <CopyButtons

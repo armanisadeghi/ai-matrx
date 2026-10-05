@@ -45,6 +45,7 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 import { extractErrorMessage } from "@/utils/errors";
+import { Chip } from "@ai-matrx/design-system/controls";
 
 function fact(label: string, value: ReactNode) {
   return (
@@ -811,9 +812,10 @@ export function BacklinkEnrichmentDetail({
                     {humanizeAssessmentValue(assessment.action)}
                   </p>
                   {assessment.priority ? (
-                    <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase text-primary">
-                      {humanizeAssessmentValue(assessment.priority)} priority
-                    </span>
+                    <Chip
+                      tone="primary"
+                      label={`${humanizeAssessmentValue(assessment.priority)} priority`}
+                    />
                   ) : null}
                 </div>
                 <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-6 text-muted-foreground">

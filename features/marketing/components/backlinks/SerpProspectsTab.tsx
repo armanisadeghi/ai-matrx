@@ -52,7 +52,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@ai-matrx/design-system/controls";
+import { Chip, Input } from "@ai-matrx/design-system/controls";
 import { AddToOutreachListDialog } from "@/features/crm/components/outreach-lists/AddToOutreachListDialog";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
@@ -182,13 +182,12 @@ function PromoterChip({
       ? `${signal.win_count} confirmed wins`
       : "Said yes before";
   const body = (
-    <span
-      className="inline-flex shrink-0 items-center gap-1 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-1.5 py-px text-[10px] font-semibold text-emerald-700 dark:text-emerald-400"
+    <Chip
+      tone="emerald"
+      icon={<Trophy />}
+      label={label}
       title={signal.summary}
-    >
-      <Trophy className="h-2.5 w-2.5" />
-      {label}
-    </span>
+    />
   );
   if (!href) {
     // No campaign earned this win (an organic or manually-recorded outcome), so

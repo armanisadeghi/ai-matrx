@@ -135,7 +135,7 @@ function Statement({
       </div>
       <div className="px-3 py-2">
         {banner ? (
-          <p className="mb-2 rounded bg-destructive/10 px-2 py-1 text-[10px] font-bold tracking-wide text-destructive" data-testid="counsel-watermark">
+          <p className="mb-2 block rounded bg-destructive/10 px-2 py-1 text-[10px] font-bold tracking-wide text-destructive" data-testid="counsel-watermark">
             {banner}
           </p>
         ) : null}

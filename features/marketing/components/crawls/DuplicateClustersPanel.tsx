@@ -19,6 +19,7 @@ import {
 } from "@/features/marketing/lib/duplicate-clusters";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { parseSnapshotFingerprint } from "@/features/marketing/lib/snapshot-content";
+import { Chip } from "@ai-matrx/design-system/controls";
 
 /**
  * Duplicate-content clusters for one crawl session — exact duplicates grouped
@@ -108,18 +109,18 @@ export function DuplicateClustersPanel({ crawlId }: { crawlId: string }) {
           {report.fingerprinted.toLocaleString()} fingerprinted captures
         </span>
         {report.withoutFingerprint > 0 ? (
-          <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-400">
-            <AlertTriangle className="h-3 w-3" />
-            {report.withoutFingerprint.toLocaleString()} captures without a
-            fingerprint (older crawl or empty text) — re-crawl to include them
-          </span>
+          <Chip
+            tone="warning"
+            icon={<AlertTriangle />}
+            label={`${report.withoutFingerprint.toLocaleString()} captures without a fingerprint — re-crawl to include them`}
+          />
         ) : null}
         {query.data?.truncated ? (
-          <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-400">
-            <AlertTriangle className="h-3 w-3" />
-            Clustering the first {rows.length.toLocaleString()} of{" "}
-            {(query.data?.total ?? 0).toLocaleString()} captures
-          </span>
+          <Chip
+            tone="warning"
+            icon={<AlertTriangle />}
+            label={`Clustering the first ${rows.length.toLocaleString()} of ${(query.data?.total ?? 0).toLocaleString()} captures`}
+          />
         ) : null}
       </div>
       <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pr-1">
@@ -211,17 +212,14 @@ function ClusterCard({
         <span className="text-[11px] font-medium text-foreground">
           {cluster.pages.length.toLocaleString()} pages
         </span>
-        <span
-          className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
+        <Chip
+          tone={cluster.kind === "exact" ? "destructive" : "warning"}
+          label={
             cluster.kind === "exact"
-              ? "bg-destructive/10 text-destructive"
-              : "bg-amber-500/10 text-amber-600 dark:text-amber-400"
-          }`}
-        >
-          {cluster.kind === "exact"
-            ? "100% identical"
-            : `weakest pair ${cluster.similarity.toFixed(1)}%`}
-        </span>
+              ? "100% identical"
+              : `weakest pair ${cluster.similarity.toFixed(1)}%`
+          }
+        />
       </div>
       <ul className="divide-y divide-border">
         {cluster.pages.map((page) => (

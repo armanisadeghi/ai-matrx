@@ -28,6 +28,7 @@ import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { CrawlSurfaceProvider } from "@/features/marketing/lib/scopes/crawl-surface";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
+import { Chip } from "@ai-matrx/design-system/controls";
 
 const REPORT_ICONS: Record<CrawlReportKey, LucideIcon> = {
   "response-codes": Route,
@@ -91,9 +92,10 @@ export function CrawlReportsIndex({ crawlId }: { crawlId: string }) {
               <h1 className="text-base font-semibold text-foreground">
                 Crawl reports
               </h1>
-              <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 dark:text-emerald-300">
-                {CRAWL_REPORTS.length} dedicated views
-              </span>
+              <Chip
+                tone="emerald"
+                label={`${CRAWL_REPORTS.length} dedicated views`}
+              />
             </div>
             <p className="mt-0.5 text-xs text-muted-foreground">
               Bulk technical-SEO evidence organized by subject, without opening

@@ -91,6 +91,7 @@ import {
 } from "@/features/context-menu-v3/types";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { Chip } from "@ai-matrx/design-system/controls";
 
 /**
  * One honest empty line per lens — a lens finding nothing is usually GOOD
@@ -356,12 +357,11 @@ export function BacklinkObservationTable({
         return (
           <span className="flex flex-wrap items-center gap-1">
             {row.is_dofollow ? (
-              <span
-                className="inline-flex items-center rounded border border-success/30 bg-success/10 px-1 py-px text-[10px] font-medium leading-4 text-success"
+              <Chip
+                tone="success"
+                label="Passes credit"
                 title="Search engines let this link help your rankings (dofollow)."
-              >
-                Passes credit
-              </span>
+              />
             ) : (
               <MutedChip>
                 <span title="This link is marked so search engines ignore it (nofollow).">

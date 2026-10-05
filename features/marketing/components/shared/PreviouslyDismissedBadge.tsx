@@ -5,6 +5,7 @@ import {
   parseDismissals,
 } from "@/features/marketing/lib/dismissals";
 import { formatDate } from "@/features/marketing/components/shared/MarketingUi";
+import { Chip } from "@ai-matrx/design-system/controls";
 
 /**
  * Subtle marker for a crawler-observed row (page/sitemap) the user dismissed
@@ -30,12 +31,11 @@ export function PreviouslyDismissedBadge({
     .filter(Boolean)
     .join("\n");
   return (
-    <span
+    <Chip
+      tone="warning"
+      icon={<History />}
+      label={`Previously dismissed${records.length > 1 ? ` ×${records.length}` : ""}`}
       title={tooltip}
-      className="inline-flex shrink-0 items-center gap-1 rounded-full border border-warning/40 bg-warning/10 px-1.5 py-px text-[10px] font-medium text-warning"
-    >
-      <History className="h-3 w-3" />
-      Previously dismissed{records.length > 1 ? ` ×${records.length}` : ""}
-    </span>
+    />
   );
 }

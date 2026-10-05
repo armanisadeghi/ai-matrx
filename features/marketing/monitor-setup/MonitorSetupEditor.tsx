@@ -29,7 +29,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@ai-matrx/design-system/controls";
+import { Chip, Input } from "@ai-matrx/design-system/controls";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -185,18 +185,12 @@ function BasisChip({
       ? "You typed this"
       : basis.ref;
   const chip = (
-    <span
+    <Chip
+      tone={basis.kind === "user" ? "neutral" : "primary"}
+      icon={source?.url ? <ExternalLink /> : undefined}
+      label={basisChip(basis)}
       title={title}
-      className={cn(
-        "inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border px-1.5 py-0.5 text-[10px]",
-        basis.kind === "user"
-          ? "border-border text-muted-foreground"
-          : "border-primary/30 bg-primary/5 text-primary",
-      )}
-    >
-      {basisChip(basis)}
-      {source?.url ? <ExternalLink className="h-2.5 w-2.5" /> : null}
-    </span>
+    />
   );
   return source?.url ? (
     <a href={source.url} target="_blank" rel="noopener noreferrer">

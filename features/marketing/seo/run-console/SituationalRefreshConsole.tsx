@@ -59,6 +59,7 @@ import type {
 } from "./types";
 import { formatRelativeTime } from "@/utils/datetime";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { Chip } from "@ai-matrx/design-system/controls";
 
 /** "3 hours ago" / "never" — an as-of only means something as an age. */
 function age(iso: string | null): string {
@@ -503,16 +504,16 @@ export function SituationalRefreshConsole({
                     </span>
                   )}
                   {outcome.proposals > 0 ? (
-                    <span className="inline-flex items-center gap-1 rounded border border-warning/50 bg-warning/10 px-1 py-px text-[10px] tabular-nums text-warning">
-                      <UserCheck className="h-3 w-3" />
-                      {formatCount(outcome.proposals)} waiting in Approvals
-                    </span>
+                    <Chip
+                      tone="warning"
+                      icon={<UserCheck />}
+                      label={`${formatCount(outcome.proposals)} waiting in Approvals`}
+                    />
                   ) : null}
                   {outcome.timeoutApplied > 0 ? (
-                    <span className="rounded border border-border px-1 py-px text-[10px] tabular-nums text-muted-foreground">
-                      {formatCount(outcome.timeoutApplied)} applied after the
-                      wait
-                    </span>
+                    <Chip
+                      label={`${formatCount(outcome.timeoutApplied)} applied after the wait`}
+                    />
                   ) : null}
                   {outcome.remaining > 0 ? (
                     <span className="rounded border border-warning/50 px-1 py-px text-[10px] tabular-nums text-warning">

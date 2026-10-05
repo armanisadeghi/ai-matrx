@@ -49,6 +49,7 @@ import { cn } from "@/styles/themes/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@ai-matrx/design-system";
+import { Chip, ChipSet } from "@ai-matrx/design-system/controls";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import { useBrand } from "@/features/marketing/data/hooks";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
@@ -145,29 +146,22 @@ function ReceiptCounts({ a }: { a: StarterPackAdoption }) {
   const taken = a.total - a.missing;
   return (
     <div className="flex flex-wrap items-center gap-1">
-      <span className="rounded border border-info/40 bg-info/10 px-1.5 py-0.5 text-[10px] text-info">
-        {a.as_adopted} as adopted
-      </span>
-      {a.changed > 0 ? (
-        <span className="rounded border border-primary/40 bg-primary/10 px-1.5 py-0.5 text-[10px] text-primary">
-          {a.changed} changed by you
-        </span>
-      ) : null}
-      {a.archived > 0 ? (
-        <span className="rounded border border-border bg-muted/40 px-1.5 py-0.5 text-[10px] text-muted-foreground">
-          {a.archived} archived by you
-        </span>
-      ) : null}
-      {a.missing > 0 ? (
-        <span className="rounded border border-border bg-card px-1.5 py-0.5 text-[10px] text-muted-foreground">
-          {a.missing} not taken
-        </span>
-      ) : null}
-      {a.places_pending > 0 ? (
-        <span className="rounded border border-warning/40 bg-warning/10 px-1.5 py-0.5 text-[10px] text-warning">
-          {a.places_pending} area{a.places_pending === 1 ? "" : "s"} need places
-        </span>
-      ) : null}
+      <ChipSet>
+        <Chip tone="info" label={`${a.as_adopted} as adopted`} />
+        {a.changed > 0 ? (
+          <Chip tone="primary" label={`${a.changed} changed by you`} />
+        ) : null}
+        {a.archived > 0 ? (
+          <Chip label={`${a.archived} archived by you`} />
+        ) : null}
+        {a.missing > 0 ? <Chip label={`${a.missing} not taken`} /> : null}
+        {a.places_pending > 0 ? (
+          <Chip
+            tone="warning"
+            label={`${a.places_pending} area${a.places_pending === 1 ? "" : "s"} need places`}
+          />
+        ) : null}
+      </ChipSet>
       <span className="text-[10px] text-muted-foreground">
         · {taken} of {a.total} items on this site
       </span>

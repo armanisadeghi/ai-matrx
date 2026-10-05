@@ -26,6 +26,7 @@ import { parseSiteIntegrations } from "@/features/marketing/data/integrations-sc
 import { judgeGscBindingWrite } from "@/features/marketing/google/gsc-property";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import type { Json } from "@/types/database.types";
+import { Button as ControlButton } from "@ai-matrx/design-system/controls";
 
 export interface GscBindingRefusalLineProps {
   site: {
@@ -87,13 +88,14 @@ export function GscBindingRefusalLine({
         {refusal.headline}
         {variant === "full" ? ` ${refusal.detail}` : ""}
       </p>
-      <Link
-        href={href}
-        className="inline-flex shrink-0 items-center gap-1 rounded-md border border-destructive/50 px-2 py-0.5 text-[11px] font-medium text-destructive outline-none transition-colors hover:bg-destructive/10 focus-visible:ring-2 focus-visible:ring-ring"
+      <ControlButton
+        variant="outline"
+        tone="destructive"
+        icon={<Wrench aria-hidden />}
+        asChild
       >
-        <Wrench className="h-3 w-3" aria-hidden />
-        Fix
-      </Link>
+        <Link href={href}>Fix</Link>
+      </ControlButton>
     </div>
   );
 }

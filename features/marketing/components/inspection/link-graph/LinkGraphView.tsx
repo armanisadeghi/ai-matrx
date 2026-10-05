@@ -67,6 +67,7 @@ import {
   type LinkColorMode,
 } from "./style";
 import { LINK_LAYOUTS, type LinkLayoutId } from "./layouts";
+import { Chip } from "@ai-matrx/design-system/controls";
 
 // cytoscape + extensions touch window at import → must be client-only.
 const LinkGraphCytoscape = dynamic(() => import("./LinkGraphCytoscape"), {
@@ -106,21 +107,9 @@ function ToggleChip({
   title: string;
 }) {
   return (
-    <button
-      type="button"
-      title={title}
-      aria-pressed={active}
-      onClick={onClick}
-      className={cn(
-        "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border px-2.5 text-xs font-medium transition-colors",
-        active
-          ? "border-primary/40 bg-primary/10 text-primary"
-          : "border-border bg-card text-muted-foreground hover:text-foreground",
-      )}
-    >
-      {icon}
-      {label}
-    </button>
+    <Chip pressed={active} icon={icon} label={label} title={title} asChild>
+      <button type="button" onClick={onClick} />
+    </Chip>
   );
 }
 

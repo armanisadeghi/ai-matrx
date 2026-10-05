@@ -28,6 +28,7 @@ import {
   type MapTableRow,
   type TableColumnId,
 } from "./tableRows";
+import { Badge } from "@ai-matrx/design-system/controls";
 
 export interface MapTableColumnContext {
   /** Indent + chevrons in hierarchy mode; a muted ancestor path in flat mode. */
@@ -163,9 +164,7 @@ function IntentHeader({ id, ctx }: { id: "leaving" | "arriving"; ctx: MapTableCo
       title={`Counted over the first ${formatCount(loaded)} of ${formatCount(total)} listed pages — the rest are not in this view yet.`}
     >
       {label}
-      <span className="rounded-sm border border-warning/40 bg-warning/10 px-1 text-[10px] font-medium leading-none text-warning">
-        partial
-      </span>
+      <Badge tone="warning">partial</Badge>
     </span>
   );
 }

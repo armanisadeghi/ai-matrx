@@ -23,9 +23,9 @@ import {
   History,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { CopyButton } from "@/components/matrx/buttons/CopyButton";
 import { Button as SurfaceButton } from "@ai-matrx/design-system";
-import { Input } from "@ai-matrx/design-system/controls";
+import { CopyButton } from "@/components/matrx/buttons/CopyButton";
+import { Chip, Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -944,9 +944,7 @@ function VideoCard({
         {researchMode && (
           <div className="mb-3 flex items-center justify-between gap-2">
             {video.is_in_topic ? (
-              <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-300">
-                Already in this topic
-              </span>
+              <Chip tone="success" label="Already in this topic" />
             ) : (
               <>
                 <Button

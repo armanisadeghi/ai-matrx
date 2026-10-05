@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system/controls";
+import { Badge, Chip, Input } from "@ai-matrx/design-system/controls";
 import { Skeleton } from "@ai-matrx/design-system";
 import { toast } from "@/lib/toast";
 import { fetchMandateAssignments } from "@ai-matrx/chat/mandates/service";
@@ -164,9 +164,7 @@ export function AutonomyModesEditor({
                       {capability.label}
                     </span>
                     {isOwn ? (
-                      <span className="rounded border border-primary/40 bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
-                        Custom
-                      </span>
+                      <Badge tone="primary">Custom</Badge>
                     ) : null}
                     {capability.enforced ? (
                       <span className="flex items-center gap-1 text-[10px] font-medium text-success">
@@ -174,16 +172,15 @@ export function AutonomyModesEditor({
                         Live
                       </span>
                     ) : (
-                      <span
-                        className="flex items-center gap-1 rounded border border-warning/30 bg-warning/10 px-1.5 py-0.5 text-[10px] font-medium text-warning"
+                      <Chip
+                        tone="warning"
+                        icon={<TriangleAlert aria-hidden />}
+                        label="Not enforced"
                         title={
                           capability.enforcement_note ??
                           "Not wired to running code yet."
                         }
-                      >
-                        <TriangleAlert className="h-3 w-3" aria-hidden />
-                        Not enforced
-                      </span>
+                      />
                     )}
                   </div>
                   {capability.description ? (

@@ -78,6 +78,7 @@ import {
   LoadingSurface,
   QueryError,
 } from "@/features/marketing/components/shared/MarketingUi";
+import { Button as ControlButton } from "@ai-matrx/design-system/controls";
 
 export function BrandAssetsWorkspace({
   brandId,
@@ -302,15 +303,15 @@ export function BrandAssetsWorkspace({
               })}
             </nav>
             {order.brief.trim() && view !== "generate" ? (
-              <button
-                type="button"
+              <ControlButton
+                variant="outline"
+                tone="primary"
+                icon={<ArrowRight />}
                 onClick={() => goToView("generate", order.brief)}
                 title={order.brief}
-                className="flex items-center gap-1 rounded-md border border-primary/40 bg-primary/5 px-2 py-1 text-[10px] text-primary transition-colors hover:bg-primary/10"
               >
-                <ArrowRight className="h-3 w-3" />
                 Image order drafted — review
-              </button>
+              </ControlButton>
             ) : null}
           </div>
 

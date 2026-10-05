@@ -50,6 +50,7 @@ import { useMarketingTableState } from "@/features/marketing/data/query-state";
 import { webLocation } from "@/features/marketing/lib/copy-payloads";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
+import { Chip } from "@ai-matrx/design-system/controls";
 
 const INTERSECTIONS_EXPLAINER =
   "Websites that link to both you and this competitor. They already know your space, so they are the easiest places to ask for a link.";
@@ -578,15 +579,10 @@ export function BacklinkDimensionTable({
                 return <span className="text-xs text-muted-foreground">—</span>;
               }
               return (
-                <span
-                  className={
-                    status === 200
-                      ? "inline-flex items-center rounded border border-border bg-muted px-1 py-px text-[10px] leading-4 text-muted-foreground"
-                      : "inline-flex items-center rounded border border-destructive/30 bg-destructive/10 px-1 py-px text-[10px] font-medium leading-4 text-destructive"
-                  }
-                >
-                  {status}
-                </span>
+                <Chip
+                  tone={status === 200 ? "neutral" : "destructive"}
+                  label={String(status)}
+                />
               );
             },
           } satisfies MatrxColumnDef<BacklinkDimensionRow>,

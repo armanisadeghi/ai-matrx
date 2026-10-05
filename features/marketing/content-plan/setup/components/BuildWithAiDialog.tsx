@@ -24,7 +24,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@ai-matrx/design-system/controls";
+import { Chip, ChipSet, Input } from "@ai-matrx/design-system/controls";
 import { cn } from "@/lib/utils";
 
 import { ResearchTopicSelect } from "../../components/ResearchTopicSelect";
@@ -73,29 +73,24 @@ function ChoiceRow<T extends string>({
   return (
     <div>
       <p className="mb-1.5 text-xs font-medium text-foreground">{label}</p>
-      <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label={label}>
+      <ChipSet role="radiogroup" aria-label={label}>
         {options.map((option) => (
-          <button
+          <Chip
             key={option.value}
-            type="button"
-            role="radio"
-            aria-checked={value === option.value}
-            disabled={disabled}
-            className={cn(
-              "rounded-md border px-2.5 py-1 text-xs transition-colors disabled:opacity-50",
-              value === option.value
-                ? "border-primary bg-primary/10 font-medium text-primary"
-                : "border-border bg-card text-muted-foreground hover:bg-muted",
-            )}
-            onClick={() => onChange(option.value)}
+            pressed={value === option.value}
+            label={option.hint ? `${option.label} ${option.hint}` : option.label}
+            asChild
           >
-            {option.label}
-            {option.hint ? (
-              <span className="ml-1 text-[11px] opacity-70">{option.hint}</span>
-            ) : null}
-          </button>
+            <button
+              type="button"
+              role="radio"
+              aria-checked={value === option.value}
+              disabled={disabled}
+              onClick={() => onChange(option.value)}
+            />
+          </Chip>
         ))}
-      </div>
+      </ChipSet>
     </div>
   );
 }

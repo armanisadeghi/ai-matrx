@@ -38,6 +38,7 @@ import {
   useMarketingSiteOptional as useResolvedSiteOptional,
 } from "@/features/marketing/lib/brand-context";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { Chip } from "@ai-matrx/design-system/controls";
 
 /**
  * A site reached through the wrong brand's URL is a broken link, not a locked
@@ -232,21 +233,24 @@ export function MarketingSiteLayoutClient({
         entityLabel={current.name}
         entityStatus={
           activeCommand ? (
-            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary/12 px-1.5 py-0.5 text-[9px] font-semibold text-primary">
-              <Loader2 className="h-2.5 w-2.5 animate-spin" />
-              {SITE_COMMAND_COPY[activeCommand].runningLabel}
-            </span>
+            <Chip
+              tone="primary"
+              icon={<Loader2 className="animate-spin" />}
+              label={SITE_COMMAND_COPY[activeCommand].runningLabel}
+            />
           ) : activeCrawl ? (
-            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary/12 px-1.5 py-0.5 text-[9px] font-semibold text-primary">
-              <Loader2 className="h-2.5 w-2.5 animate-spin" />
-              Crawling
-            </span>
+            <Chip
+              tone="primary"
+              icon={<Loader2 className="animate-spin" />}
+              label="Crawling"
+            />
           ) : crawlActivity.error ? (
-            <span
-              className="inline-flex shrink-0 items-center rounded-full bg-destructive/10 px-1.5 py-0.5 text-[9px] font-semibold text-destructive"
-              title={crawlActivity.error.message}
-            >
-              Crawl status unavailable
+            <span className="inline-flex shrink-0 items-center">
+              <Chip
+                tone="destructive"
+                label="Crawl status unavailable"
+                title={crawlActivity.error.message}
+              />
               <ErrorAlchemyMenu />
             </span>
           ) : undefined

@@ -24,6 +24,7 @@ import type { ExpandedArchetype } from "../archetypes";
 import type { PreviewRow, PreviewSummary, RouteState } from "../preview";
 import type { CommitResult } from "../service";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { Chip, ChipSet } from "@ai-matrx/design-system/controls";
 
 /** Rendering every route of a 1000-page shape helps nobody; the cap is stated. */
 const RENDER_CAP = 400;
@@ -121,23 +122,18 @@ export function SetupPreviewColumn({
         <h2 className="text-xs font-semibold uppercase tracking-wider text-foreground">
           Pages that will exist
         </h2>
-        <div className="flex items-center rounded-md border border-border p-0.5">
+        <ChipSet>
           {filters.map(([key, label, count]) => (
-            <button
+            <Chip
               key={key}
-              type="button"
-              onClick={() => setFilter(key)}
-              className={cn(
-                "rounded px-2 py-0.5 text-[11px] font-medium tabular-nums transition-colors",
-                filter === key
-                  ? "bg-primary/15 text-primary"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
+              pressed={filter === key}
+              label={`${label} ${count}`}
+              asChild
             >
-              {label} {count}
-            </button>
+              <button type="button" onClick={() => setFilter(key)} />
+            </Chip>
           ))}
-        </div>
+        </ChipSet>
       </div>
 
       {counts.conflict > 0 ? (

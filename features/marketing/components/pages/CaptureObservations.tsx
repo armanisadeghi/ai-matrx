@@ -54,6 +54,7 @@ import { extractErrorMessage } from "@/utils/errors";
 import { cn } from "@/lib/utils";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { Chip } from "@ai-matrx/design-system/controls";
 
 /** Note tag stamped on every capture observation (for /notes filtering). */
 const OBSERVATION_TAG = "observation";
@@ -341,10 +342,11 @@ function CaptureObservationsDialog({
                         <div className="flex items-center justify-between gap-2">
                           <span className="flex min-w-0 items-center gap-1.5 text-[11px] text-muted-foreground">
                             {flagged ? (
-                              <span className="inline-flex shrink-0 items-center gap-1 rounded border border-warning/40 bg-warning/10 px-1 py-px text-[10px] text-warning">
-                                <TriangleAlert className="h-3 w-3" />
-                                needs fix
-                              </span>
+                              <Chip
+                                tone="warning"
+                                icon={<TriangleAlert />}
+                                label="needs fix"
+                              />
                             ) : null}
                             <span className="truncate">
                               {formatDate(note.created_at)}

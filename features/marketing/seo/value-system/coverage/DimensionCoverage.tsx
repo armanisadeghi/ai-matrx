@@ -60,6 +60,7 @@ import {
   getDimensionCoverage,
   type DimensionCoverageRow,
 } from "./data";
+import { Chip } from "@ai-matrx/design-system/controls";
 
 function share(part: number, whole: number): number {
   return whole > 0 ? (part / whole) * 100 : 0;
@@ -336,10 +337,11 @@ export function DimensionCoverage({
           worst first
         </p>
         {thin.length > 0 ? (
-          <span className="inline-flex items-center gap-1 rounded border border-warning/40 bg-warning/10 px-1.5 py-0.5 text-[10px] tabular-nums text-warning">
-            <TriangleAlert className="h-3 w-3" />
-            {thin.length} too thin to filter on
-          </span>
+          <Chip
+            tone="warning"
+            icon={<TriangleAlert />}
+            label={`${thin.length} too thin to filter on`}
+          />
         ) : null}
         <div className="ml-auto flex shrink-0 items-center gap-1.5">
           <CopyButtons

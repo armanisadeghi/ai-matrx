@@ -45,7 +45,7 @@ import AppLink from "@/components/navigation/AppLink";
 import { useRouter, useSearchParams } from "next/navigation";
 import { hasRunHistoryParams } from "./runHistoryFilters";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system/controls";
+import { Badge, Chip, Input } from "@ai-matrx/design-system/controls";
 import { ContentTransferSurfaceProvider } from "@ai-matrx/design-system/content-transfer";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -833,7 +833,7 @@ function TopicPlacementConsole({
         </p>
       ) : null}
       {pass.error ? (
-        <p className="rounded-md border border-destructive/50 bg-destructive/10 px-2.5 py-1 text-[11px] text-destructive">
+        <p className="block rounded-md border border-destructive/50 bg-destructive/10 px-2.5 py-1 text-[11px] text-destructive">
           {pass.error}
           <ErrorAlchemyMenu error={pass.error} />
         </p>
@@ -1046,21 +1046,22 @@ function TopicPlacementConsole({
                           </span>
                         )}
                         {outcome.proposed > 0 ? (
-                          <span className="inline-flex items-center gap-1 rounded border border-warning/50 bg-warning/10 px-1 py-px text-[10px] tabular-nums text-warning">
-                            <UserCheck className="h-3 w-3" />
-                            {formatCount(outcome.proposed)} need confirming
-                          </span>
+                          <Chip
+                            tone="warning"
+                            icon={<UserCheck />}
+                            label={`${formatCount(outcome.proposed)} need confirming`}
+                          />
                         ) : null}
                         {outcome.humanProtected > 0 ? (
-                          <span className="rounded border border-border px-1 py-px text-[10px] tabular-nums text-muted-foreground">
-                            {formatCount(outcome.humanProtected)} left alone
-                            (yours)
-                          </span>
+                          <Chip
+                            label={`${formatCount(outcome.humanProtected)} left alone (yours)`}
+                          />
                         ) : null}
                         {outcome.quarantined > 0 ? (
-                          <span className="rounded border border-destructive/40 px-1 py-px text-[10px] tabular-nums text-destructive">
-                            {formatCount(outcome.quarantined)} quarantined
-                          </span>
+                          <Chip
+                            tone="destructive"
+                            label={`${formatCount(outcome.quarantined)} quarantined`}
+                          />
                         ) : null}
                         {outcome.timeoutApplied > 0 ? (
                           <span className="rounded border border-border px-1 py-px text-[10px] tabular-nums text-muted-foreground">
@@ -1283,10 +1284,9 @@ function RunDecisions({
       cell: (row) => (
         <span className="text-foreground">
           {row.offering}
+          {row.proposal ? " " : null}
           {row.proposal ? (
-            <span className="ml-1 rounded border border-warning/50 bg-warning/10 px-1 py-px text-[9px] text-warning">
-              proposal
-            </span>
+            <Badge tone="warning">proposal</Badge>
           ) : null}
         </span>
       ),
