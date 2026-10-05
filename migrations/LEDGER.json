@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-05T05:12:38.578Z",
+  "generated_at": "2026-10-05T05:22:33.818Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -5509,6 +5509,12 @@
       "filename": "scopesw2c_the_access_kernel_comment_stops_naming_the_old_scopes_table.sql",
       "checksum": "710e82a06759603e6cbc9cbf7ed84b8554202fd30ef928b044c5dea41a4cc980",
       "applied_at": "2026-10-05 05:12:33.340776+00"
+    },
+    "migrations/campaign/scopesw2c_the_scope_writer_parity_instrument_is_gone.sql": {
+      "source": "matrx-frontend",
+      "filename": "scopesw2c_the_scope_writer_parity_instrument_is_gone.sql",
+      "checksum": "37be2c1543aaaeef8c679abe432f2e33eccd167a3372d49d747cf2388ede1208",
+      "applied_at": "2026-10-05 05:22:32.521363+00"
     },
     "migrations/campaign/scopesw2c_two_old_scope_table_comments_are_reworded.sql": {
       "source": "matrx-frontend",
