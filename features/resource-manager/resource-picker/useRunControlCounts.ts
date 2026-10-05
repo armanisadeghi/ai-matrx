@@ -22,10 +22,10 @@
  * the menu never shows a confident "0" that jumps to "12" a moment later.
  *
  * P24 (PACKAGE-INDEPENDENCE §3): this hook runs on every chat page, so it reads
- * the run tier (`fetchAgentRunTier`), never the definition. The run tier carries
- * the built-in tool ids but not custom tool bodies, so the Tools count is
- * withheld (absent, never a wrong number) until the custom tools are known —
- * the Tools picker loads them when opened.
+ * the run tier (`fetchAgentRunTier`), never the definition. The run tier
+ * carries the built-in tool ids plus plain counts (custom tools, active skills),
+ * so both numbers show on load; once a picker has loaded the real lists, the
+ * lists win (they dedupe per-run adds exactly).
  */
 
 import { useEffect } from "react";
@@ -63,6 +63,13 @@ export function useRunControlCounts(
     const record = agentId ? selectAgentById(s, agentId) : undefined;
     return !!record && hasField(record._loadedFields, "customTools");
   });
+  const skillConfigKnown = useAppSelector((s) => {
+    const record = agentId ? selectAgentById(s, agentId) : undefined;
+    return !!record && hasField(record._loadedFields, "skillConfig");
+  });
+  const runCounts = useAppSelector((s) =>
+    agentId ? selectAgentRunTier(s, agentId).counts : null,
+  );
   const agentToolIds = useAppSelector((s) =>
     agentId ? selectAgentTools(s, agentId) : undefined,
   );
@@ -98,18 +105,27 @@ export function useRunControlCounts(
   if (!agentId || agentReady) {
     const builtIn = Array.isArray(agentToolIds) ? agentToolIds : [];
     const custom = Array.isArray(agentCustomTools) ? agentCustomTools : [];
-    if (!agentId || customToolsKnown) {
+    const customCount = customToolsKnown
+      ? custom.length
+      : (runCounts?.customTools ?? null);
+    if (!agentId || customCount !== null) {
       counts.tools =
-        new Set([...builtIn, ...addedTools]).size + custom.length;
+        new Set([...builtIn, ...addedTools]).size + (customCount ?? 0);
     }
 
-    const config = agentSkillConfig;
-    const activeSkills = new Set<string>(addedSkills);
-    if (config && !config.disabled) {
-      for (const id of config.included) activeSkills.add(id);
-      for (const id of config.listed) activeSkills.add(id);
+    if (agentId && !skillConfigKnown && runCounts) {
+      // Run tier: the agent's active-skill count (0 when its config is
+      // disabled — then only the explicit per-run adds count, which re-enable it).
+      counts.skills = runCounts.skills + addedSkills.length;
+    } else {
+      const config = agentSkillConfig;
+      const activeSkills = new Set<string>(addedSkills);
+      if (config && !config.disabled) {
+        for (const id of config.included) activeSkills.add(id);
+        for (const id of config.listed) activeSkills.add(id);
+      }
+      counts.skills = activeSkills.size;
     }
-    counts.skills = activeSkills.size;
   }
 
   return counts;

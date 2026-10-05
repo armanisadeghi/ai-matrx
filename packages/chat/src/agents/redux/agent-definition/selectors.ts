@@ -243,6 +243,7 @@ export const selectAgentRunTier = createSelector(
         modelId: null,
         uiGates: null,
         toolIds: [],
+        counts: null,
       };
     }
     const isReady =
@@ -262,6 +263,7 @@ export const selectAgentRunTier = createSelector(
       modelId: record.modelId,
       uiGates: record.uiGates ?? null,
       toolIds: record.tools ?? [],
+      counts: record.runCounts ?? null,
     };
   },
 );

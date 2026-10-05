@@ -463,6 +463,14 @@ export interface AgentDefinition {
   sharedByEmail: string | null; // null when isOwner = true or not yet loaded
 
   /**
+   * Plain counts from the RUN TIER (`agx_get_run_tier`, P24b) so run controls
+   * can show numbers without the definition: custom tools, active skills
+   * (included ∪ listed; 0 when the skill config is disabled), connections.
+   * Absent until the run tier loads.
+   */
+  runCounts?: AgentRunCounts;
+
+  /**
    * The agent's CLASS pin as a LIST read reports it (`offering_id` on
    * agx_get_list / agx_get_list_full / agx_search / agx_list_scoped): a uuid,
    * null (no pin — the preferred class runs), or absent when the read did not
@@ -643,6 +651,16 @@ export interface AgentRunTier {
   ui_gates: UiGates | null;
   tool_ids: string[] | null;
   access_level: string;
+  custom_tool_count: number;
+  skill_count: number;
+  connection_count: number;
+}
+
+/** The run tier's plain counts, as the registry stores them (P24b). */
+export interface AgentRunCounts {
+  customTools: number;
+  skills: number;
+  connections: number;
 }
 
 /** Returned by `agx_get_execution_full(agent_id)`. */

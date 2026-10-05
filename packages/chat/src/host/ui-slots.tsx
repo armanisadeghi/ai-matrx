@@ -182,7 +182,7 @@ function slotHook<K extends keyof ChatUiSlots>(name: K, fallback?: AnyFn): ChatU
 }
 
 function slotFn<K extends keyof ChatUiSlots>(name: K, fallback?: AnyFn): ChatUiSlots[K] {
-  if (false && /^use[A-Z]/.test(name)) return slotHook(name, fallback);
+  if (/^use[A-Z]/.test(name)) return slotHook(name, fallback);
   const fn = (...args: unknown[]) => {
     const registered = slots[name] as AnyFn | undefined;
     if (registered) return registered(...args);

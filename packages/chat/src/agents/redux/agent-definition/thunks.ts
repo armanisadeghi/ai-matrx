@@ -607,6 +607,11 @@ export const fetchAgentRunTier = createAsyncThunk<
         ...(existing?.accessLevel
           ? {}
           : { accessLevel: toRegistryAccessLevel(row.access_level) }),
+        runCounts: {
+          customTools: row.custom_tool_count ?? 0,
+          skills: row.skill_count ?? 0,
+          connections: row.connection_count ?? 0,
+        },
       }),
     );
     dispatch(setAgentFetchStatus({ id: row.id, status: "execution" }));
