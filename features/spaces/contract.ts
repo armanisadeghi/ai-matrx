@@ -17,42 +17,10 @@ import type { RecordsConfig } from "@ai-matrx/records";
 export type SpaceId = string;
 export type BlockId = string;
 
-/** Notion's ten colors; "default" = none. Text and background are separate choices. */
-export type SpaceColor = "default" | "gray" | "brown" | "orange" | "yellow" | "green" | "blue" | "purple" | "pink" | "red";
-
-/** A run of inline text with marks — the content of every text-bearing block. */
-export interface RichSpan {
-  text: string;
-  bold?: boolean;
-  italic?: boolean;
-  underline?: boolean;
-  strike?: boolean;
-  code?: boolean;
-  color?: SpaceColor;
-  background?: SpaceColor;
-  link?: string;
-  /** Inline mention: a Space, a person or a date. */
-  mention?: { kind: "space"; spaceId: SpaceId } | { kind: "person"; userId: string } | { kind: "date"; iso: string };
-  equation?: string;
-}
-
-/**
- * One block. `type` names the block (parity checklist § C); `props` holds that block's own settings;
- * `children` holds nested blocks (indent, toggle body, column contents, callout body, synced copy).
- * The builder owns the `type` list and each `props` shape — add, never rename once stored.
- */
-export interface SpaceBlock<P extends Record<string, unknown> = Record<string, unknown>> {
-  id: BlockId;
-  type: string;
-  text?: RichSpan[];
-  color?: SpaceColor;
-  background?: SpaceColor;
-  props?: P;
-  children?: SpaceBlock[];
-}
-
-/** A Space's media: an uploaded file id (our file handler) or an external URL. Never a signed URL. */
-export type SpaceMedia = { fileId: string } | { url: string } | { icon: string };
+// Block, span, color, media and data-source shapes are defined ONCE in lib/spaces-blocks/types.ts
+// (shared with the Notion importer and every server-side writer); this contract re-exports them.
+import type { RichSpan, SpaceBlock, SpaceColor, SpaceDataSource, SpaceMedia } from "@/lib/spaces-blocks/types";
+export type { RichSpan, SpaceBlock, SpaceColor, SpaceDataSource, SpaceMedia };
 
 export interface SpaceDoc {
   id: SpaceId;
@@ -97,8 +65,6 @@ export interface SpacesStore {
   subscribe(id: SpaceId, onChange: (doc: SpaceDoc) => void): () => void;
 }
 
-/** Where a data block's records come from. Custom table now; built-in module (`entity:<token>`) later. */
-export type SpaceDataSource = { kind: "table"; tableId: string; viewId?: string } | { kind: "entity"; token: string };
 
 export interface SpacesDataPort {
   readonly kind: "memory" | "live";
