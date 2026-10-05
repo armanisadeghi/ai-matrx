@@ -85,6 +85,7 @@ import type { CardWithDetails } from "../../data/types";
 import type { ReviewResult } from "../../types";
 import { coerceTrustEnvelope } from "@/features/education/trust/types";
 import { CardTrustFooter } from "@/features/education/trust/components/CardTrustFooter";
+import { SourceCitations } from "@/features/education/trust/components/SourceCitations";
 import { LiveHelpAnswerBlock } from "@/features/education/tutor/components/LiveHelpAnswerBlock";
 import { FlashcardGradeButtonRow } from "./FlashcardGradeButton";
 import { FlashcardConfidenceRow } from "./FlashcardConfidenceRow";
@@ -1235,6 +1236,16 @@ export function StudyDeck(props: StudyDeckProps) {
       </div>
     ) : null;
 
+    // The revealed answer's sources — the SAME strip desktop shows under the
+    // card, so a citation is reachable on a phone without opening the drawer.
+    const mobileTrust = current ? coerceTrustEnvelope(current.metadata) : null;
+    const mobileSources =
+      isFlipped && mobileTrust && (mobileTrust.citations ?? []).length > 0 ? (
+        <div className="rounded-2xl border border-border bg-background p-2 shadow-xl">
+          <SourceCitations trust={mobileTrust} />
+        </div>
+      ) : null;
+
     return (
       <>
         <FlashcardMobileView
@@ -1250,6 +1261,7 @@ export function StudyDeck(props: StudyDeckProps) {
           onClose={() => (onExit ? onExit() : setMobileDismissed(true))}
           bottomBar={mobileBottomBar}
           toolsPanel={mobileTools}
+          answerStrip={mobileSources}
         />
         {/* Same canonical enhance flow as desktop — mounted on first open. */}
         {setId && current && enhanceOpen && (

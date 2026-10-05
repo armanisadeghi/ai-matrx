@@ -81,6 +81,12 @@ interface FlashcardMobileViewProps {
    * footer, mastery list). Scrolls internally when tall.
    */
   toolsPanel?: React.ReactNode;
+  /**
+   * `answerStrip`: always-visible strip between the card and `bottomBar` — the
+   * driver's sources strip for the revealed answer, so a citation is one tap
+   * away without opening the drawer.
+   */
+  answerStrip?: React.ReactNode;
 }
 
 // ─────────────────────────────────────────────
@@ -708,6 +714,7 @@ const FlashcardMobileView: React.FC<FlashcardMobileViewProps> = ({
   grading = false,
   bottomBar,
   toolsPanel,
+  answerStrip,
 }) => {
   const isControlledIndex = controlledIndex !== undefined;
   const isControlledFlip = controlledFlipped !== undefined;
@@ -1095,6 +1102,11 @@ const FlashcardMobileView: React.FC<FlashcardMobileViewProps> = ({
       {/* ── Driver-injected bottom bar (IC-4): the study surface's own grade /
           predict controls, always visible — grading never hides behind a
           swipe. Hidden while a panel is open so it can't fight the drawer. ── */}
+      {answerStrip && !anyPanelOpen && (
+        <div className="shrink-0 px-2 pb-1.5" data-testid="mobile-answer-strip">
+          {answerStrip}
+        </div>
+      )}
       {bottomBar && !anyPanelOpen && (
         <div className="shrink-0 px-2 pb-safe">{bottomBar}</div>
       )}
