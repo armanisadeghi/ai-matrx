@@ -17,7 +17,7 @@
  */
 
 import { useEffect, useState } from "react";
-import { fetchShapeDescriptions, fetchShapePage } from "@host/features/content-ir/browse/service";
+import { fetchShapeByKind, fetchShapePage } from "@host/features/content-ir/browse/service";
 import type { ShapeBrowseRow } from "@host/features/content-ir/browse/types";
 import type { EntityFilters, EntityListQuery, EntityListSort } from "@host/lib/entity-list/types";
 import type { ListScope } from "@host/lib/list-scope/types";
@@ -41,34 +41,62 @@ export function knownShapeLabel(kind: string): string | null {
   return KIND_LABELS.get(kind) ?? null;
 }
 
-/** Kind slug → one-line description (content_ir.kind_definition.metadata.description). */
+/** Kind slug → one-line description (`description` on the canonical list RPC's row). */
 const KIND_DESCRIPTIONS = new Map<string, string>();
+
+/** Kinds already read (found or not) — never read twice. */
+const LOOKED_UP = new Set<string>();
 
 /** The shape's description for a kind slug, or `null` when it has none (or is not read yet). */
 export function knownShapeDescription(kind: string): string | null {
   return KIND_DESCRIPTIONS.get(kind) ?? null;
 }
 
+function remember(rows: readonly ShapeBrowseRow[]): void {
+  for (const row of rows) {
+    KIND_LABELS.set(row.kind, row.label);
+    LOOKED_UP.add(row.kind);
+    const text = row.description?.trim();
+    if (text) KIND_DESCRIPTIONS.set(row.kind, text);
+  }
+}
+
 /**
- * Remember each row's label, then read the page's descriptions in one query and
- * bump `onDescriptions` when they land. A failed description read is reported
- * loudly and leaves the rows without a description line — never a blank pick.
+ * Label + description for kinds the list pages have not carried (a pinned pick
+ * off the current page, a locked agent's shape), read by kind through the same
+ * canonical reader. A failed read is returned — the picker shows it — never
+ * swallowed; `retry` reads again.
  */
-function remember(rows: readonly ShapeBrowseRow[], onDescriptions?: () => void): void {
-  for (const row of rows) KIND_LABELS.set(row.kind, row.label);
-  const missing = rows.filter((row) => !KIND_DESCRIPTIONS.has(row.kind));
-  if (missing.length === 0) return;
-  fetchShapeDescriptions(missing.map((row) => row.id))
-    .then((byId) => {
-      for (const row of missing) {
-        const text = byId.get(row.id);
-        if (text) KIND_DESCRIPTIONS.set(row.kind, text);
-      }
-      onDescriptions?.();
-    })
-    .catch((cause: unknown) => {
-      console.error("[composer-output] could not read shape descriptions", cause);
-    });
+export function useShapeDetails(kinds: readonly string[]): { error: unknown; retry: () => void } {
+  const [, setTick] = useState(0);
+  const [error, setError] = useState<unknown>(null);
+  const [attempt, setAttempt] = useState(0);
+  const wanted = kinds.filter((kind) => !LOOKED_UP.has(kind)).join("\u0000");
+  useEffect(() => {
+    if (!wanted) return;
+    let cancelled = false;
+    const missing = wanted.split("\u0000");
+    Promise.all(
+      missing.map((kind) =>
+        fetchShapeByKind(kind).then((row) => {
+          if (row) remember([row]);
+          else LOOKED_UP.add(kind);
+        }),
+      ),
+    )
+      .then(() => {
+        if (cancelled) return;
+        setError(null);
+        setTick((n) => n + 1);
+      })
+      .catch((cause: unknown) => {
+        if (!cancelled) setError(cause);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [wanted, attempt]);
+  return { error, retry: () => setAttempt((n) => n + 1) };
 }
 
 const PAGE_SIZE = 50;
@@ -135,8 +163,6 @@ export function useOutputShapeCatalog({
   const [state, setState] = useState<PageState>(EMPTY);
   const [totals, setTotals] = useState<Partial<Record<ShapeSource, number>>>({});
   const [loadingMore, setLoadingMore] = useState(false);
-  const [, setDescriptionTick] = useState(0);
-  const onDescriptions = () => setDescriptionTick((n) => n + 1);
   const key = `${source}\u0000${debounced}\u0000${attempt}`;
 
   useEffect(() => {
@@ -151,7 +177,7 @@ export function useOutputShapeCatalog({
     fetchShapePage(sourceQuery(source, debounced, 1), SORT)
       .then((result) => {
         if (cancelled) return;
-        remember(result.rows, onDescriptions);
+        remember(result.rows);
         setState({ key, rows: result.rows, total: result.total, page: 1, error: null });
         setTotals((prev) => ({ ...prev, [source]: result.total }));
       })
@@ -194,7 +220,7 @@ export function useOutputShapeCatalog({
     setLoadingMore(true);
     fetchShapePage(sourceQuery(source, debounced, nextPage), SORT)
       .then((result) => {
-        remember(result.rows, onDescriptions);
+        remember(result.rows);
         setState((prev) =>
           prev.key === requestKey ? { ...prev, rows: [...prev.rows, ...result.rows], page: nextPage } : prev,
         );

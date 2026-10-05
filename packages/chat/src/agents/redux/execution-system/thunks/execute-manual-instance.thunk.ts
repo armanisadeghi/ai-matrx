@@ -532,11 +532,7 @@ export async function assembleManualRequest(
     conversationId,
     request as { skill_config?: Record<string, unknown> },
   );
-  attachOutputKindsFromState(
-    state,
-    conversationId,
-    request as { output_kinds?: string[] | null },
-  );
+  attachOutputKindsFromState(state, conversationId, request);
 
   // Global active context scope — org / project / task. Mirrors what callApi
   // and execute-instance already send so the Builder's manual path is not the

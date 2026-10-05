@@ -372,7 +372,7 @@ export const loadConversation = createAsyncThunk<
     // composer's Output control runs the same move once it is.
     {
       const current = selectRunConfiguration(getState() as ChatRootState, conversationId);
-      const skills = selectLoadedSkillSources(getState());
+      const skills = selectLoadedSkillSources(getState() as ChatRootState);
       if (skills.length && current.addedSkills.length) {
         const moved = migrateKindSkills(
           { outputKinds: current.outputKinds, addedSkills: current.addedSkills },

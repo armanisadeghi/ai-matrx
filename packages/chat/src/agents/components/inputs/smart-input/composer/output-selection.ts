@@ -192,6 +192,29 @@ export function migrateKindSkills(
   return { outputKinds, addedSkills };
 }
 
+/**
+ * The once-per-conversation move of old kind skills into `outputKinds`, for the
+ * composer. A conversation counts as DONE only once it was evaluated with BOTH
+ * the skill list known and `addedSkills` present — a chat whose saved list
+ * arrives after the skills (or the reverse) is evaluated when the second one
+ * lands, never skipped. Returns the moved state when something moved.
+ */
+export function createKindSkillMigrator() {
+  const done = new Set<string>();
+  return (
+    conversationId: string,
+    state: OutputShapeState,
+    skills: readonly ShapeChipSkillSource[],
+  ): OutputShapeState | null => {
+    if (skills.length === 0 || state.addedSkills.length === 0 || done.has(conversationId)) {
+      return null;
+    }
+    done.add(conversationId);
+    const moved = migrateKindSkills(state, skills);
+    return moved.addedSkills.length === state.addedSkills.length ? null : moved;
+  };
+}
+
 // ── Locked agents ────────────────────────────────────────────────────────────
 
 /**
@@ -218,6 +241,20 @@ function asRecord(value: unknown): Record<string, unknown> | null {
   return value && typeof value === "object" && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : null;
+}
+
+/**
+ * Classify the answer of a `fetchAgentOutputSchemas([agentId])` read. An agent
+ * missing from the answer means the READ FAILED (that function reports a failed
+ * read by omitting the id) — it is `failed`, never `none` (= not locked).
+ */
+export function classifyLockRead(
+  byId: Readonly<Record<string, unknown>>,
+  agentId: string,
+): { status: "failed" } | { status: "none" } | { status: "locked"; shapes: string[] } {
+  if (!(agentId in byId)) return { status: "failed" };
+  const shapes = lockedShapesFromSchema(byId[agentId]);
+  return shapes.length > 0 ? { status: "locked", shapes } : { status: "none" };
 }
 
 /** Picks outside a locked agent's shapes (the server would refuse the send). */

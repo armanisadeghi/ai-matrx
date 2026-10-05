@@ -7,6 +7,7 @@
 import { attachOutputKindsFromState } from "../build-skill-config-for-request";
 import { buildContinuationBody } from "../continuation-body";
 import type { AssembledAgentStartRequest } from "../../../../types/request.types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 import type { ChatRootState } from "../../../../../store/root-state";
 
 const CONV = "c027c75d-4b45-4b57-b830-75a72d90ca58";
@@ -43,4 +44,16 @@ it("a continuation turn forwards output_kinds, including the explicit empty list
     OPTS,
   );
   expect(none.output_kinds).toEqual([]);
+});
+
+it("the generated start, chat and continue request types carry output_kinds (typed, no casts)", () => {
+  // If @ai-matrx/agents drops the field, these stop compiling (weak-type check
+  // on an all-optional target) — the test cannot pass against stale types.
+  const start: Partial<components["schemas"]["AgentStartRequest"]> = {};
+  const chat: Partial<components["schemas"]["ChatRequest"]> = {};
+  const cont: Partial<components["schemas"]["ConversationContinueRequest"]> = {};
+  for (const request of [start, chat, cont]) {
+    attachOutputKindsFromState(stateWith(["quiz_set"]), CONV, request);
+    expect(request.output_kinds).toEqual(["quiz_set"]);
+  }
 });

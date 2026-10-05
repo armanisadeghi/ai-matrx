@@ -11,7 +11,9 @@ import {
   isDefaultOutput,
   kindForSkillSlug,
   readOutputTypes,
+  classifyLockRead,
   conflictingKinds,
+  createKindSkillMigrator,
   lockedShapesFromSchema,
   migrateKindSkills,
   selectedOutputKinds,
@@ -128,5 +130,39 @@ describe("locked agents", () => {
   it("names the picks the server would refuse", () => {
     expect(conflictingKinds(["quiz_set", "timeline"], ["quiz_set"])).toEqual(["timeline"]);
     expect(conflictingKinds(["timeline"], [])).toEqual([]);
+  });
+});
+
+describe("the composer's old-chat migrator", () => {
+  it("is not spent by a pass where the saved list has not arrived", () => {
+    const migrate = createKindSkillMigrator();
+    // Skills known, addedSkills not loaded yet: nothing to do, and NOT done.
+    expect(migrate("c1", { outputKinds: [], addedSkills: [] }, SKILLS)).toBeNull();
+    // The saved list lands later: it is migrated then.
+    expect(migrate("c1", { outputKinds: [], addedSkills: ["uuid-flash", "uuid-other"] }, SKILLS)).toEqual({
+      outputKinds: ["flashcard_set"],
+      addedSkills: ["uuid-other"],
+    });
+  });
+
+  it("waits for the skill list, runs once per conversation, and stays idempotent", () => {
+    const migrate = createKindSkillMigrator();
+    const state = { outputKinds: [], addedSkills: ["uuid-timeline"] };
+    expect(migrate("c1", state, [])).toBeNull();
+    expect(migrate("c1", state, SKILLS)).toEqual({ outputKinds: ["timeline"], addedSkills: [] });
+    expect(migrate("c1", state, SKILLS)).toBeNull();
+    // Another conversation has its own turn.
+    expect(migrate("c2", state, SKILLS)).toEqual({ outputKinds: ["timeline"], addedSkills: [] });
+  });
+});
+
+describe("reading a lock", () => {
+  it("an agent missing from the read is FAILED, never unlocked", () => {
+    expect(classifyLockRead({}, "a1")).toEqual({ status: "failed" });
+    expect(classifyLockRead({ a1: null }, "a1")).toEqual({ status: "none" });
+    expect(classifyLockRead({ a1: { properties: { __kind: { const: "quiz_set" } } } }, "a1")).toEqual({
+      status: "locked",
+      shapes: ["quiz_set"],
+    });
   });
 });

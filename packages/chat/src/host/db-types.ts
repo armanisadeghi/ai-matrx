@@ -30130,14 +30130,6 @@ export type ChatDatabase = {
         Args: { p_ip?: unknown; p_organization_id: string }
         Returns: Json
       }
-      apply_template: {
-        Args: { p_org_id: string; p_template_id: string }
-        Returns: Json
-      }
-      apply_template_by_key: {
-        Args: { p_org_id: string; p_template_key: string }
-        Returns: Json
-      }
       apply_template_definition: {
         Args: { p_definition: Json; p_org_id: string }
         Returns: Json
@@ -36680,6 +36672,7 @@ export type ChatDatabase = {
           authoring_owner: string
           created_at: string
           created_by: string
+          description: string
           family: string
           has_component: boolean
           id: string

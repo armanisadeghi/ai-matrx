@@ -84,30 +84,23 @@ export async function fetchShapeFacets(
 }
 
 /**
- * The one-line description of each shape (`kind_definition.metadata.description`)
- * for a page of rows — the Shapes list RPC does not return it. Returns
- * `{ id → description }` for the shapes that have one; a failed read throws.
+ * One shape by its kind slug, through the SAME canonical reader as the list
+ * (`shx_list_scoped`, lane `all`, the `kind` column filter) — so a pinned pick
+ * or a locked agent's shape that is not on the current page still carries its
+ * label and description. `null` = no shape with exactly that slug is visible.
  */
-export async function fetchShapeDescriptions(
-  ids: readonly string[],
-): Promise<Map<string, string>> {
-  const out = new Map<string, string>();
-  if (ids.length === 0) return out;
-  const { data, error } = await supabase
-    .schema("content_ir")
-    .from("kind_definition")
-    .select("id,metadata")
-    .in("id", [...ids])
-    .is("deleted_at", null);
-  if (error) throw pgError(error);
-  for (const row of data ?? []) {
-    const meta = row.metadata;
-    if (meta && typeof meta === "object" && !Array.isArray(meta)) {
-      const description = (meta as Record<string, Json | undefined>).description;
-      if (typeof description === "string" && description.trim()) {
-        out.set(row.id, description.trim());
-      }
-    }
-  }
-  return out;
+export async function fetchShapeByKind(kind: string): Promise<ShapeBrowseRow | null> {
+  const page = await fetchShapePage(
+    {
+      scope: { kind: "all" },
+      orgId: null,
+      search: "",
+      deep: false,
+      archived: "active",
+      filters: { kind: { kind: "text", value: kind } },
+      page: 1,
+    },
+    { sort: "label", direction: "asc", favoritesFirst: false, pageSize: 50 },
+  );
+  return page.rows.find((row) => row.kind === kind) ?? null;
 }
