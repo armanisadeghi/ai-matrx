@@ -38,15 +38,6 @@ export interface SmartAgentInputSurfaceValueAnchors {
 
 interface SmartAgentInputProps {
   conversationId: string | null | undefined;
-  /**
-   * `ambient` is the quiet, single-line launcher used by scroll-revealed page
-   * assistants. It keeps the canonical composer/execution path while hiding
-   * context, variable, resource, voice, and connector chrome until the full
-   * conversation surface opens.
-   */
-  presentation?: "default" | "ambient";
-  /** Choose the ambient launcher's footprint without changing its behavior. */
-  ambientLayout?: "single-line" | "multiline";
   singleRowTextarea?: boolean;
   sendButtonVariant?: "default" | "blue";
   showSubmitOnEnterToggle?: boolean;
@@ -83,8 +74,6 @@ interface SmartAgentInputProps {
 
 export function SmartAgentInput({
   conversationId,
-  presentation = "default",
-  ambientLayout = "single-line",
   singleRowTextarea = false,
   sendButtonVariant = "default",
   showSubmitOnEnterToggle = true,
@@ -104,7 +93,8 @@ export function SmartAgentInput({
   surfaceValueAnchors,
   composer,
 }: SmartAgentInputProps) {
-  const isAmbient = presentation === "ambient";
+  // The page launcher (composer size `launcher`): the quiet box at a page's foot.
+  const isLauncher = composer?.size === "launcher";
   const touchOnly = useTouchOnlyDevice();
   const dispatch = useAppDispatch();
   // A host's style is the instance's style: written to the slice so every
@@ -130,9 +120,9 @@ export function SmartAgentInput({
   // cursor resting at the bottom of the page, and its live Send arrow on an
   // empty box sent an empty first turn (2026-10-03, conversation d6c14d03:
   // an empty user row + "messages: at least one message is required").
-  // Ambient Send is live only when the box holds something.
+  // The launcher's Send is live only when the box holds something.
   const ambientHasNothingToSend = useAppSelector((state) =>
-    isAmbient && conversationId
+    isLauncher && conversationId
       ? !selectHasUserInput(conversationId)(state)
       : false,
   );
@@ -147,7 +137,7 @@ export function SmartAgentInput({
   // surface that mounts a composer also sees / edits / withdraws its queue
   // (/Users/armanisadeghi/code/common-docs/systems/architecture/execution-runtime/TURN-BOUNDARY-INBOX.md). Renders null when the queue is empty.
   const queueStrip =
-    conversationId && !isAmbient ? (
+    conversationId && !isLauncher ? (
       <InboxQueueStrip conversationId={conversationId} />
     ) : null;
 
@@ -160,7 +150,7 @@ export function SmartAgentInput({
 
   if (
     !composer &&
-    (singleRowTextarea || (isAmbient && ambientLayout === "single-line"))
+    singleRowTextarea
   ) {
     return (
       <>
@@ -181,7 +171,6 @@ export function SmartAgentInput({
           contextRailAttachedItems={contextRailAttachedItems}
           extraRightControls={extraRightControls}
           surfaceValueAnchors={surfaceValueAnchors}
-          presentation={presentation}
         />
       </>
     );
@@ -192,7 +181,6 @@ export function SmartAgentInput({
       {queueStrip}
       <SmartAgentInputStacked
         conversationId={conversationId}
-        presentation={presentation}
         sendButtonVariant={sendButtonVariant}
         showSubmitOnEnterToggle={showSubmitOnEnterToggle && !touchOnly}
         uploadRoot={uploadRoot}

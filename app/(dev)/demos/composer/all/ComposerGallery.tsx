@@ -6,8 +6,9 @@
  * agent switching, Work/Advanced, outputs and streaming all behave exactly as
  * where it lives. Nothing here is a stand-in.
  *
- * One component (SmartAgentInput's `composer` prop), two styles:
- *   Full — top on a new chat, bottom in a conversation · Compact — one row.
+ * One component (SmartAgentInput's `composer` prop), three styles:
+ *   Full — top on a new chat, bottom in a conversation · Compact — panels and
+ *   windows · Launcher — the quiet box at a page's foot that starts a quick chat.
  * Each sits in a frame you drag from 340 to 768, or snap to a fixed width.
  * The drag writes the frame's width straight to the DOM (no React state per
  * pixel), so resizing never re-renders the composer.
@@ -43,6 +44,7 @@ const STYLES: StyleSpec[] = [
   { key: "full-top", title: "Full · top (new chat)", size: "splash" },
   { key: "full-bottom", title: "Full · bottom (conversation)", size: "page" },
   { key: "compact", title: "Compact", size: "compact" },
+  { key: "launcher", title: "Launcher (foot of notes, education, data, landings)", size: "launcher" },
 ];
 
 export function ComposerGallery({ initialMode }: { initialMode: ComposerMode | null }) {
@@ -97,6 +99,15 @@ function StyleSection({ spec, mode }: { spec: StyleSpec; mode: ComposerMode }) {
     );
   } else if (!conversationId) {
     body = <div className="m-auto h-24 w-4/5 animate-pulse rounded-[22px] bg-muted" aria-busy="true" />;
+  } else if (spec.size === "launcher") {
+    // As the page hosts mount it: faded until hovered or focused, at the foot.
+    body = (
+      <div className="mt-auto p-4">
+        <div className="opacity-75 transition-opacity hover:opacity-100 focus-within:opacity-100">
+          <SmartAgentInput conversationId={conversationId} surfaceKey={surfaceKey} composer={composer} />
+        </div>
+      </div>
+    );
   } else if (spec.size === "splash") {
     body = (
       <div className="flex h-full flex-col items-center justify-center gap-4 px-3">

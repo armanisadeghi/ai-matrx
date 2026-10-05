@@ -40,7 +40,6 @@ import { ComposerMetaRow, ComposerPills, ComposerScopeCluster } from "./composer
 import { useComposerFold } from "./composer/useComposerFold";
 interface SmartAgentInputStackedProps {
   conversationId: string | null | undefined;
-  presentation?: "default" | "ambient";
   sendButtonVariant?: "default" | "blue";
   showSubmitOnEnterToggle?: boolean;
   uploadRoot?: string;
@@ -70,7 +69,6 @@ interface SmartAgentInputStackedProps {
 
 export function SmartAgentInputStacked({
   conversationId,
-  presentation = "default",
   sendButtonVariant = "default",
   showSubmitOnEnterToggle = true,
   uploadRoot = "userContent",
@@ -90,7 +88,6 @@ export function SmartAgentInputStacked({
   composer,
 }: SmartAgentInputStackedProps) {
   const dispatch = useAppDispatch();
-  const isAmbient = presentation === "ambient";
   // Gate send (button + Enter) while the mic is recording or finishing a
   // transcript — submitting mid-voice drops the trailing audio and leaves the
   // recorder running.
@@ -137,67 +134,14 @@ export function SmartAgentInputStacked({
     // audio, context chip, attachment chips — 14–32px measured on a phone,
     // run PB-08 #2). Desktop density is untouched (globals.css).
     "matrx-touch-targets",
-    isAmbient
-      ? "min-h-[72px] rounded-[20px] border-glass-edge bg-glass shadow-glass backdrop-blur-glass backdrop-saturate-glass transition-[border-color,background-color,box-shadow] focus-within:border-primary/70 focus-within:bg-card focus-within:ring-2 focus-within:ring-primary/15 focus-within:shadow-glass-lg"
-      : "rounded-[20px] border-border bg-card shadow-[0_2px_16px_-4px_rgba(0,0,0,0.08)] transition-colors focus-within:border-foreground/25 dark:shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset,0_1px_2px_0_rgba(0,0,0,0.4)]",
+    "rounded-[20px] border-border bg-card shadow-[0_2px_16px_-4px_rgba(0,0,0,0.08)] transition-colors focus-within:border-foreground/25 dark:shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset,0_1px_2px_0_rgba(0,0,0,0.4)]",
     // Centered within its cap. `compact` is density, not width: a compact
     // host wider than 500px (a resized agent window) used to get a 500px
     // composer pinned to its left edge while the transcript used the full
     // width. The host decides the width; below the cap this changes nothing.
     "mx-auto",
-    isAmbient ? "max-w-[420px]" : "max-w-[800px]",
+    "max-w-[800px]",
   );
-
-  if (isAmbient) {
-    return (
-      <SmartInputFileDropTarget
-        conversationId={conversationId}
-        uploadRoot={uploadRoot}
-        uploadPath={uploadPath}
-        className={cn(shellClassName, "gap-0.5 px-2.5 py-1.5")}
-        data-ambient-input="multiline"
-      >
-        <AgentTextarea
-          draftAlias={draftAlias}
-          conversationId={conversationId}
-          compact
-          uploadRoot={uploadRoot}
-          uploadPath={uploadPath}
-          enablePasteImages={enablePasteImages}
-          surfaceKey={surfaceKey}
-          disableSend={sendBlocked}
-          autoFocus={false}
-          showExpandToggle={false}
-        />
-        {/* The SAME context rail every composer renders — so this box shows
-            and governs what it sends, and its conversation follows the page
-            (useConversationFollowsPage rides inside the rail). Compact: the
-            chip plus one overflow menu, on the box's existing action row. */}
-        <div className="flex min-h-6 min-w-0 items-center justify-end gap-1">
-          <ConversationContextRail
-            conversationId={conversationId}
-            className="min-w-0 flex-1 px-0 pb-0"
-            presentation="overflow-only"
-            attachedItems={contextRailAttachedItems}
-            surfaceValueName={surfaceValueAnchors?.context}
-          />
-          <SingleRowActionButtons
-            conversationId={conversationId}
-            uploadRoot={uploadRoot}
-            uploadPath={uploadPath}
-            showSendButton={showSendButton}
-            showVariableIcon={showVariableIcon}
-            sendButtonVariant={sendButtonVariant}
-            surfaceKey={surfaceKey}
-            disableSend={sendBlocked}
-            onVoiceBusyChange={setVoiceBusy}
-            extraRightControls={extraRightControls}
-            minimal
-          />
-        </div>
-      </SmartInputFileDropTarget>
-    );
-  }
 
   // Variables-only mode: hide chips + textarea + full toolbar. Render the
   // variables panel and a single Run button. Apps that want a structured
@@ -317,6 +261,77 @@ export function SmartAgentInputStacked({
       disableSend: sendBlocked,
     };
     const composerParts = { size: composer.size, mode: composer.mode, folded };
+    // ── Launcher: the quiet box at the foot of a page — text · mic · send ──
+    // The SAME engine: one drop target around the variables and the text, the
+    // context rail (it owns the page-follow rule and the realtime list), the
+    // same textarea and the same send/stop. Glass, because it floats.
+    if (composer.size === "launcher") {
+      return (
+        <div
+          ref={composerRootRef}
+          className="mx-auto flex w-full min-w-0 max-w-[420px] shrink-0 flex-col"
+          data-composer-size={composer.size}
+          data-composer-mode={composer.mode}
+          data-assist-dock-avoid=""
+        >
+          <SmartInputFileDropTarget
+            conversationId={conversationId}
+            uploadRoot={uploadRoot}
+            uploadPath={uploadPath}
+            className={cn(
+              "relative flex w-full min-h-0 flex-col gap-1 rounded-[18px] border p-1.5",
+              "border-glass-edge bg-glass shadow-glass backdrop-blur-glass backdrop-saturate-glass transition-[border-color,background-color,box-shadow]",
+              "focus-within:border-primary/70 focus-within:bg-card focus-within:ring-2 focus-within:ring-primary/15 focus-within:shadow-glass-lg",
+              "[&_[data-variable-row]]:px-2 [&_[data-variable-heading]]:px-2",
+              "[&>input[type=file]]:!hidden [&_textarea]:block",
+            )}
+          >
+            <ConversationContextRail
+              conversationId={conversationId}
+              presentation="overflow-only"
+              attachedItems={contextRailAttachedItems}
+              surfaceValueName={surfaceValueAnchors?.context}
+              withValueGroupChip={false}
+              className="px-0 pb-0"
+            />
+            <SmartAgentVariables
+              conversationId={conversationId}
+              compact
+              onSubmit={handleSubmit}
+              styleOverride={variablesPanelStyle}
+              surfaceValueName={surfaceValueAnchors?.variables}
+            />
+            <div className="flex min-w-0 items-end gap-1.5">
+              <div className="min-w-0 flex-1">
+                <AgentTextarea
+                  draftAlias={draftAlias}
+                  key={`composer-launcher-${expandRequestKey}`}
+                  conversationId={conversationId}
+                  compact
+                  uploadRoot={uploadRoot}
+                  uploadPath={uploadPath}
+                  enablePasteImages={enablePasteImages}
+                  surfaceKey={surfaceKey}
+                  disableSend={sendBlocked}
+                  autoFocus={false}
+                  showExpandToggle={false}
+                  placeholder={composer.placeholder}
+                  maxHeightPx={composer.maxInputHeightPx}
+                  minHeightPx={32}
+                  composerType
+                  flush
+                />
+              </div>
+              <InputActionButtons
+                {...buttonsProps}
+                onVoiceBusyChange={setVoiceBusy}
+                composer={{ ...composerParts, part: "launcher" }}
+              />
+            </div>
+          </SmartInputFileDropTarget>
+        </div>
+      );
+    }
     return (
       <div
         ref={composerRootRef}

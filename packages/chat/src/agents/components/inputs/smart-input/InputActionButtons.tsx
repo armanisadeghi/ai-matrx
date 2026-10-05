@@ -145,7 +145,7 @@ interface InputActionButtonsProps {
      * the card beside the text) and `"controls"` (the row under the card).
      * Absent = Full's button row inside the card.
      */
-    part?: "send" | "controls";
+    part?: "send" | "controls" | "launcher";
   };
 }
 
@@ -365,6 +365,15 @@ export function InputActionButtons({
     ) : null;
 
     if (composer.part === "send") return sendControls;
+    // Launcher: mic (with its device chevron) and send — nothing else.
+    if (composer.part === "launcher") {
+      return (
+        <span className="flex shrink-0 items-center gap-1.5">
+          {micGroup}
+          {sendControls}
+        </span>
+      );
+    }
     // Compact (Arman, 2026-10-04): the card holds the text and ↵ only; this
     // row under it carries + · mic (protected) · live audio · scope · the
     // values count, and agent · output · effort at the right end.

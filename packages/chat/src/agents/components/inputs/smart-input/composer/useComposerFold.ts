@@ -18,7 +18,8 @@ export function useComposerFold() {
   const [el, ref] = useState<HTMLDivElement | null>(null);
   const [folded, setFolded] = useState(false);
   useEffect(() => {
-    if (!el) return undefined;
+    // No ResizeObserver (a test DOM): the composer stays unfolded.
+    if (!el || typeof ResizeObserver === "undefined") return undefined;
     const observer = new ResizeObserver(([entry]) => {
       const width = entry?.contentRect.width ?? 0;
       setFolded(width > 0 && width < COMPOSER_FOLD_WIDTH_PX);
