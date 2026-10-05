@@ -1,0 +1,476 @@
+// features/spaces/store-db/supabase-store.ts — the database SpacesStore (kind "database").
+//
+// A Space is a `content.document` (type `space`, format `spaces`). Its blocks and page settings live in
+// `content.space_payload`: one full snapshot per content version = page history. Sub-pages are
+// `document → document` associations labelled `sub_page` (the child is the source, the parent the
+// target); their order is the edge `position`. Ruled design: common-docs/systems/content/spaces/STATE.md
+// § Storage design.
+//
+// React talks to Supabase directly. The only doors are the database's own:
+//   content.space_save  — compare-and-swap on `version`, writes title + icon + body projection + one snapshot
+//   content.space_list  — the person's share roots plus their sub-pages (the assoc_list reveal rule)
+//   public.assoc_link / assoc_unlink — sub-page edges
+// Archive = soft delete (`deleted_at`); the database carries it to sub-pages and back.
+
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { guardedUpdate, readAllRows } from "@ai-matrx/data/db";
+import type { Database, Json } from "@/types/database.types";
+import type { SpaceBlock, SpaceDoc, SpaceId, SpaceMedia, SpaceSummary, SpacesStore } from "../contract";
+
+type Db = SupabaseClient<Database>;
+type DocumentRow = Database["content"]["Tables"]["document"]["Row"];
+
+/** What one snapshot holds. `v` names the shape so a later reader can upgrade old snapshots. */
+export interface SpaceSnapshot {
+  v: 1;
+  settings: SpaceDoc["settings"];
+  icon: SpaceDoc["icon"];
+  cover: SpaceDoc["cover"];
+  blocks: SpaceBlock[];
+}
+
+/** One row of a page's history: the snapshot saved at that content version. */
+export interface SpaceHistoryEntry {
+  contentVersion: number;
+  savedAt: string;
+  savedBy: string | null;
+  snapshot: SpaceSnapshot;
+}
+
+const DOC_COLUMNS =
+  "id, organization_id, title, icon, format, version, content_version, created_at, updated_at, updated_by, deleted_at";
+type DocHead = Pick<
+  DocumentRow,
+  | "id"
+  | "organization_id"
+  | "title"
+  | "icon"
+  | "format"
+  | "version"
+  | "content_version"
+  | "created_at"
+  | "updated_at"
+  | "updated_by"
+  | "deleted_at"
+>;
+
+const SUB_PAGE = "sub_page";
+/** Edge positions are gapped integers; a new last child lands this far after the previous one. */
+const POSITION_GAP = 1024;
+const POSITION_WIDTH = 12;
+
+const DEFAULT_SETTINGS: SpaceDoc["settings"] = { font: "default", smallText: false, fullWidth: false, locked: false };
+
+/** Edge position → the contract's sortable string (fixed-width digits compare like the numbers). */
+function positionKey(position: number | null | undefined): string {
+  return String(Math.max(0, position ?? 0)).padStart(POSITION_WIDTH, "0");
+}
+
+function parseIcon(raw: string | null | undefined): SpaceMedia | null {
+  if (!raw) return null;
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (parsed && typeof parsed === "object") return parsed as SpaceMedia;
+  } catch {
+    // A plain-text icon written by another surface (an emoji): show it as one.
+  }
+  return { icon: raw };
+}
+
+function readSnapshot(raw: Json | null | undefined): SpaceSnapshot {
+  const s = raw && typeof raw === "object" && !Array.isArray(raw) ? (raw as Record<string, unknown>) : {};
+  return {
+    v: 1,
+    settings: { ...DEFAULT_SETTINGS, ...((s.settings as Partial<SpaceDoc["settings"]>) ?? {}) },
+    icon: (s.icon as SpaceDoc["icon"]) ?? null,
+    cover: (s.cover as SpaceDoc["cover"]) ?? null,
+    blocks: Array.isArray(s.blocks) ? (s.blocks as SpaceBlock[]) : [],
+  };
+}
+
+function toSnapshot(doc: Pick<SpaceDoc, "settings" | "icon" | "cover" | "blocks">): SpaceSnapshot {
+  return { v: 1, settings: doc.settings, icon: doc.icon ?? null, cover: doc.cover ?? null, blocks: doc.blocks };
+}
+
+/** Plain-text copy of the page for search until the server's markdown regenerator exists. */
+function projection(title: string, blocks: SpaceBlock[]): string {
+  const lines: string[] = [];
+  if (title) lines.push(`# ${title}`);
+  const walk = (list: SpaceBlock[]) => {
+    for (const b of list) {
+      const text = (b.text ?? []).map((span) => span.text).join("");
+      if (text) lines.push(text);
+      if (b.children) walk(b.children);
+    }
+  };
+  walk(blocks);
+  return lines.join("\n\n");
+}
+
+function fail(action: string, error: { message: string } | null | undefined): never {
+  throw new Error(`We couldn't ${action}: ${error?.message ?? "no answer from the database"}`);
+}
+
+export class SupabaseSpacesStore implements SpacesStore {
+  readonly kind = "database" as const;
+  private typeId: Promise<string> | null = null;
+
+  /**
+   * @param db  a signed-in Supabase client
+   * @param organizationId  the organization a new top-level Space belongs to (the active organization
+   *   for writes). A sub-page always belongs to its parent's organization.
+   */
+  constructor(
+    private readonly db: Db,
+    private readonly organizationId: string,
+  ) {}
+
+  private spaceTypeId(): Promise<string> {
+    this.typeId ??= (async () => {
+      const { data, error } = await this.db
+        .schema("platform")
+        .from("categories")
+        .select("id")
+        .eq("dimension", "document_type")
+        .eq("slug", "space")
+        .is("deleted_at", null)
+        .maybeSingle();
+      if (error || !data) fail("find the Space document type", error ?? { message: "not registered" });
+      return data.id;
+    })();
+    return this.typeId;
+  }
+
+  private async head(id: SpaceId): Promise<DocHead | null> {
+    const { data, error } = await this.db.schema("content").from("document").select(DOC_COLUMNS).eq("id", id).maybeSingle();
+    if (error) fail("open this Space", error);
+    return data;
+  }
+
+  /** The live sub_page edge of a page (null = top level, or a parent this reader cannot see). */
+  private async parentEdge(id: SpaceId): Promise<{ parentId: SpaceId; position: number | null } | null> {
+    const { data, error } = await this.db
+      .schema("platform")
+      .from("associations")
+      .select("target_id, position")
+      .eq("source_type", "document")
+      .eq("source_id", id)
+      .eq("target_type", "document")
+      .eq("label", SUB_PAGE)
+      .is("deleted_at", null)
+      .maybeSingle();
+    if (error) fail("read where this Space sits", error);
+    return data ? { parentId: data.target_id, position: data.position } : null;
+  }
+
+  private async latestSnapshot(id: SpaceId): Promise<SpaceSnapshot> {
+    const { data, error } = await this.db
+      .schema("content")
+      .from("space_payload")
+      .select("snapshot")
+      .eq("document_id", id)
+      .order("content_version", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error) fail("read this Space's content", error);
+    return readSnapshot(data?.snapshot);
+  }
+
+  private compose(head: DocHead, snapshot: SpaceSnapshot, edge: { parentId: SpaceId; position: number | null } | null): SpaceDoc {
+    return {
+      id: head.id,
+      parentId: edge?.parentId ?? null,
+      position: positionKey(edge?.position),
+      title: head.title,
+      icon: snapshot.icon,
+      cover: snapshot.cover,
+      settings: snapshot.settings,
+      blocks: snapshot.blocks,
+      isArchived: head.deleted_at != null,
+      version: head.version,
+      createdAt: head.created_at,
+      updatedAt: head.updated_at,
+      updatedBy: head.updated_by,
+    };
+  }
+
+  async list(options?: { includeArchived?: boolean }): Promise<SpaceSummary[]> {
+    const rows = await readAllRows(
+      ({ from, to }) =>
+        this.db
+          .schema("content")
+          .rpc("space_list", { p_include_archived: options?.includeArchived ?? false }, { count: "exact" })
+          .order("id", { ascending: true })
+          .range(from, to),
+      { label: "content.space_list" },
+    );
+    return rows.map((r) => ({
+      id: r.id,
+      parentId: r.parent_id ?? null,
+      position: positionKey(r.edge_position),
+      title: r.title ?? "",
+      icon: parseIcon(r.icon),
+      isArchived: r.deleted_at != null,
+      updatedAt: r.updated_at,
+    }));
+  }
+
+  async get(id: SpaceId): Promise<SpaceDoc | null> {
+    const head = await this.head(id);
+    if (!head || head.format !== "spaces") return null;
+    const [snapshot, edge] = await Promise.all([this.latestSnapshot(id), this.parentEdge(id)]);
+    return this.compose(head, snapshot, edge);
+  }
+
+  /** Page history: every saved snapshot, newest first. */
+  async history(id: SpaceId): Promise<SpaceHistoryEntry[]> {
+    const rows = await readAllRows(
+      ({ from, to }) =>
+        this.db
+          .schema("content")
+          .from("space_payload")
+          .select("content_version, created_at, created_by, snapshot", { count: "exact" })
+          .eq("document_id", id)
+          .order("content_version", { ascending: false })
+          .range(from, to),
+      { label: "content.space_payload history" },
+    );
+    return rows.map((r) => ({
+      contentVersion: r.content_version,
+      savedAt: r.created_at,
+      savedBy: r.created_by,
+      snapshot: readSnapshot(r.snapshot),
+    }));
+  }
+
+  /** Sibling edges under a parent, ordered: the slots `move`/`create` place a page between. */
+  private async siblings(parentId: SpaceId): Promise<Array<{ id: SpaceId; position: number }>> {
+    const rows = await readAllRows(
+      ({ from, to }) =>
+        this.db
+          .schema("platform")
+          .from("associations")
+          .select("source_id, position", { count: "exact" })
+          .eq("target_type", "document")
+          .eq("target_id", parentId)
+          .eq("source_type", "document")
+          .eq("label", SUB_PAGE)
+          .is("deleted_at", null)
+          .order("source_id", { ascending: true })
+          .range(from, to),
+      { label: "sub_page siblings" },
+    );
+    return rows
+      .map((r) => ({ id: r.source_id, position: r.position ?? 0 }))
+      .sort((a, b) => a.position - b.position || a.id.localeCompare(b.id));
+  }
+
+  private async link(childId: SpaceId, parentId: SpaceId, position: number): Promise<void> {
+    const { error } = await this.db.rpc("assoc_link", {
+      p_source_type: "document",
+      p_source_id: childId,
+      p_target_type: "document",
+      p_target_id: parentId,
+      p_role: SUB_PAGE,
+      p_label: SUB_PAGE,
+      p_position: position,
+    });
+    if (error) fail("place this Space under its parent", error);
+  }
+
+  private async unlink(childId: SpaceId, parentId: SpaceId): Promise<void> {
+    const { error } = await this.db.rpc("assoc_unlink", {
+      p_source_type: "document",
+      p_source_id: childId,
+      p_target_type: "document",
+      p_target_id: parentId,
+      p_role: SUB_PAGE,
+    });
+    if (error) fail("take this Space out of its parent", error);
+  }
+
+  /**
+   * An integer slot for `childId` among `parentId`'s children: right after `afterId`, or at the
+   * `key` the UI asked for (a fractional key compared against the siblings' keys), or last. When the
+   * neighbours leave no gap, the siblings are renumbered first.
+   */
+  private async slot(parentId: SpaceId, childId: SpaceId, at: { afterId?: SpaceId; key?: string }): Promise<number> {
+    let sibs = (await this.siblings(parentId)).filter((s) => s.id !== childId);
+    const indexOf = () => {
+      if (at.afterId) {
+        const i = sibs.findIndex((s) => s.id === at.afterId);
+        return i < 0 ? sibs.length : i + 1;
+      }
+      if (at.key !== undefined) {
+        const i = sibs.findIndex((s) => positionKey(s.position) > at.key!);
+        return i < 0 ? sibs.length : i;
+      }
+      return sibs.length;
+    };
+    let i = indexOf();
+    const lo = sibs[i - 1]?.position ?? 0;
+    const hi = sibs[i]?.position;
+    if (hi === undefined) return lo + POSITION_GAP;
+    if (hi - lo > 1) return Math.floor((lo + hi) / 2);
+    // No room: renumber the siblings on a fresh gap, then place between.
+    for (const [n, s] of sibs.entries()) await this.link(s.id, parentId, (n + 1) * POSITION_GAP);
+    sibs = sibs.map((s, n) => ({ ...s, position: (n + 1) * POSITION_GAP }));
+    i = indexOf();
+    return (sibs[i - 1]?.position ?? 0) + POSITION_GAP / 2;
+  }
+
+  async create(input: { parentId: SpaceId | null; title?: string; blocks?: SpaceBlock[]; afterId?: SpaceId }): Promise<SpaceDoc> {
+    let organizationId = this.organizationId;
+    if (input.parentId) {
+      const parent = await this.head(input.parentId);
+      if (!parent) throw new Error("The parent Space no longer exists, or you cannot open it.");
+      organizationId = parent.organization_id; // a sub-page is its parent's organization's work
+    }
+    const row = {
+      organization_id: organizationId,
+      document_type_id: await this.spaceTypeId(),
+      format: "spaces",
+      title: input.title ?? "",
+      visibility: "personal" as const,
+    };
+    const { data, error } = await this.db
+      .schema("content")
+      .from("document")
+      // content_hash and data_class are computed by the database (a client write of content_hash is
+      // refused 42501); the generated Insert type still lists them as required — same as documentSource.ts.
+      .insert(row as never)
+      .select(DOC_COLUMNS)
+      .single();
+    if (error || !data) fail("create the Space", error);
+    if (input.parentId) {
+      const position = await this.slot(input.parentId, data.id, { afterId: input.afterId });
+      await this.link(data.id, input.parentId, position);
+    }
+    if (input.blocks?.length) {
+      const fresh = this.compose(data, readSnapshot(null), null);
+      return this.save({ ...fresh, blocks: input.blocks }, data.version);
+    }
+    const doc = await this.get(data.id);
+    if (!doc) throw new Error("The new Space was created but could not be read back.");
+    return doc;
+  }
+
+  async save(doc: SpaceDoc, expectedVersion: number): Promise<SpaceDoc> {
+    const result = await guardedUpdate<DocHead>({
+      expectedVersion,
+      applyUpdate: async ({ expectedVersion: version }) => {
+        const { data, error } = await this.db.schema("content").rpc("space_save", {
+          p_document_id: doc.id,
+          p_expected_version: version,
+          p_snapshot: toSnapshot(doc) as unknown as Json,
+          p_title: doc.title,
+          p_projection: projection(doc.title, doc.blocks),
+          p_origin: "manual",
+        });
+        // PT409 (HTTP 409) is the door's compare-and-swap miss: hand guardedUpdate "no row" so it classifies it.
+        if (error?.code === "PT409") return { data: null, error: null, count: null, status: 200, statusText: "OK" };
+        if (error) return { data: null, error, count: null, status: 400, statusText: "Bad Request" };
+        return { data: data as DocHead, error: null, count: null, status: 200, statusText: "OK" };
+      },
+      fetchCurrent: async () => {
+        const { data, error, count, status, statusText } = await this.db
+          .schema("content")
+          .from("document")
+          .select(DOC_COLUMNS)
+          .eq("id", doc.id)
+          .is("deleted_at", null)
+          .maybeSingle();
+        return error
+          ? { data: null, error, count, status, statusText }
+          : { data, error: null, count, status, statusText };
+      },
+    });
+    if (result.status === "not_found") throw new Error("This Space no longer exists, or you cannot edit it.");
+    if (result.status === "conflict") {
+      throw new Error(
+        `This Space changed since it was opened (you had version ${expectedVersion}; it is now ${result.currentVersion}).`,
+      );
+    }
+    const edge = await this.parentEdge(doc.id);
+    return this.compose(result.row, toSnapshot(doc), edge);
+  }
+
+  async move(id: SpaceId, parentId: SpaceId | null, position: string): Promise<void> {
+    if (parentId === id) throw new Error("A Space cannot move inside itself.");
+    const current = await this.parentEdge(id);
+    // One live parent per page (database unique slot): take it out of the old parent first.
+    if (current && current.parentId !== parentId) await this.unlink(id, current.parentId);
+    if (parentId) {
+      const slot = await this.slot(parentId, id, { key: position });
+      await this.link(id, parentId, slot);
+    }
+  }
+
+  async duplicate(id: SpaceId, options: { withChildren: boolean }): Promise<SpaceDoc> {
+    const source = await this.get(id);
+    if (!source) throw new Error("This Space no longer exists.");
+    const freshIds = (blocks: SpaceBlock[]): SpaceBlock[] =>
+      blocks.map((b) => ({ ...b, id: crypto.randomUUID(), children: b.children ? freshIds(b.children) : undefined }));
+    const copy = async (from: SpaceDoc, parentId: SpaceId | null, title: string, afterId?: SpaceId): Promise<SpaceDoc> => {
+      const made = await this.create({ parentId, title, afterId });
+      return this.save(
+        { ...made, icon: from.icon, cover: from.cover, settings: from.settings, blocks: freshIds(from.blocks) },
+        made.version,
+      );
+    };
+    const top = await copy(source, source.parentId, source.title ? `${source.title} (1)` : "", source.id);
+    if (options.withChildren) {
+      const all = await this.list();
+      const walk = async (fromId: SpaceId, toId: SpaceId) => {
+        const kids = all.filter((s) => s.parentId === fromId).sort((a, b) => a.position.localeCompare(b.position));
+        for (const kid of kids) {
+          const full = await this.get(kid.id);
+          if (!full) continue;
+          const made = await copy(full, toId, full.title);
+          await walk(kid.id, made.id);
+        }
+      };
+      await walk(source.id, top.id);
+    }
+    return top;
+  }
+
+  private async setDeleted(id: SpaceId, deletedAt: string | null, action: string): Promise<void> {
+    const { data, error } = await this.db
+      .schema("content")
+      .from("document")
+      .update({ deleted_at: deletedAt })
+      .eq("id", id)
+      .select("id");
+    if (error) fail(action, error);
+    if (!data?.length) throw new Error(`We couldn't ${action}: you cannot change this Space, or it no longer exists.`);
+  }
+
+  async archive(id: SpaceId): Promise<void> {
+    await this.setDeleted(id, new Date().toISOString(), "move this Space to Trash");
+  }
+
+  async restore(id: SpaceId): Promise<void> {
+    await this.setDeleted(id, null, "restore this Space");
+    // A restored page whose parent is still in Trash comes back at the top level, as in Notion.
+    const edge = await this.parentEdge(id);
+    if (edge) {
+      const parent = await this.head(edge.parentId);
+      if (parent?.deleted_at) await this.unlink(id, edge.parentId);
+    }
+  }
+
+  subscribe(id: SpaceId, onChange: (doc: SpaceDoc) => void): () => void {
+    const channel = this.db
+      .channel(`spaces:document:${id}:${crypto.randomUUID()}`)
+      .on("postgres_changes", { event: "UPDATE", schema: "content", table: "document", filter: `id=eq.${id}` }, () => {
+        void this.get(id).then((doc) => {
+          if (doc) onChange(doc);
+        });
+      })
+      .subscribe();
+    return () => {
+      void this.db.removeChannel(channel);
+    };
+  }
+}

@@ -18143,6 +18143,7 @@ export type ChatDatabase = {
       association_types: {
         Row: {
           allows_loops: boolean
+          cascades_trash: boolean
           container_side: string
           conveys_max: Database["public"]["Enums"]["permission_level"]
           created_at: string
@@ -18155,6 +18156,7 @@ export type ChatDatabase = {
         }
         Insert: {
           allows_loops?: boolean
+          cascades_trash?: boolean
           container_side?: string
           conveys_max?: Database["public"]["Enums"]["permission_level"]
           created_at?: string
@@ -18167,6 +18169,7 @@ export type ChatDatabase = {
         }
         Update: {
           allows_loops?: boolean
+          cascades_trash?: boolean
           container_side?: string
           conveys_max?: Database["public"]["Enums"]["permission_level"]
           created_at?: string

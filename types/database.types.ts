@@ -22757,6 +22757,56 @@ export type Database = {
           },
         ]
       }
+      space_payload: {
+        Row: {
+          content_version: number
+          created_at: string
+          created_by: string | null
+          document_id: string
+          id: string
+          metadata: Json
+          organization_id: string
+          snapshot: Json
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          content_version: number
+          created_at?: string
+          created_by?: string | null
+          document_id: string
+          id?: string
+          metadata?: Json
+          organization_id: string
+          snapshot: Json
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          content_version?: number
+          created_at?: string
+          created_by?: string | null
+          document_id?: string
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          snapshot?: Json
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_payload_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "document"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       univer_payload: {
         Row: {
           content_version: number
@@ -22956,6 +23006,78 @@ export type Database = {
           type_slug: string
           updated_at: string
         }[]
+      }
+      space_list: {
+        Args: { p_include_archived?: boolean }
+        Returns: {
+          deleted_at: string
+          edge_position: number
+          icon: string
+          id: string
+          organization_id: string
+          parent_id: string
+          title: string
+          updated_at: string
+          version: number
+        }[]
+      }
+      space_save: {
+        Args: {
+          p_document_id: string
+          p_expected_version: number
+          p_origin?: string
+          p_projection?: string
+          p_snapshot: Json
+          p_title?: string
+        }
+        Returns: {
+          archived_at: string | null
+          body: string
+          char_count: number
+          content_hash: string
+          content_version: number
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          data_class: Database["platform"]["Enums"]["data_class"]
+          deleted_at: string | null
+          document_type_id: string
+          file_path: string | null
+          folder_id: string | null
+          format: string
+          icon: string | null
+          id: string
+          last_conversation_id: string | null
+          last_device_id: string | null
+          last_origin: string
+          metadata: Json
+          organization_id: string
+          payload_hash: string | null
+          preview: string
+          published_at: string | null
+          published_content_version: number | null
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          sealed_at: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          slug: string | null
+          source_hash: string | null
+          source_uri: string | null
+          summary: string | null
+          title: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+          word_count: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "document"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       thin_autosave_versions: { Args: { p_dry_run?: boolean }; Returns: Json }
       type_settings: {
@@ -82242,6 +82364,7 @@ export type Database = {
       association_types: {
         Row: {
           allows_loops: boolean
+          cascades_trash: boolean
           container_side: string
           conveys_max: Database["public"]["Enums"]["permission_level"]
           created_at: string
@@ -82254,6 +82377,7 @@ export type Database = {
         }
         Insert: {
           allows_loops?: boolean
+          cascades_trash?: boolean
           container_side?: string
           conveys_max?: Database["public"]["Enums"]["permission_level"]
           created_at?: string
@@ -82266,6 +82390,7 @@ export type Database = {
         }
         Update: {
           allows_loops?: boolean
+          cascades_trash?: boolean
           container_side?: string
           conveys_max?: Database["public"]["Enums"]["permission_level"]
           created_at?: string
