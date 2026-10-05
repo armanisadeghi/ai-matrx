@@ -11,7 +11,7 @@
  * around it (read counts, funnel, gated-out counts) come from the same value.
  */
 
-import MarkdownStream from "@/components/MarkdownStream";
+import { RichContent } from "@/components/rich-content/RichContent";
 
 import { hasContentFields, isRecord, num, records, str, strings } from "../run-document";
 import { KindCard, Pill } from "./shared";
@@ -53,10 +53,10 @@ export function NewsOpportunityReportView({ value }: { value: Record<string, unk
       ) : null}
       {markdown.trim() ? (
         <div className="text-sm">
-          <MarkdownStream
+          <RichContent level="full"
             imagePolicy="ai"
-            content={markdown}
-            isStreamActive={false}
+            source={markdown}
+            isStreaming={false}
             hideCopyButton
             allowFullScreenEditor={false}
           />

@@ -15,7 +15,7 @@
 
 import { useState } from "react";
 
-import MarkdownStream from "@/components/MarkdownStream";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { AssistStrip } from "@/features/assists/components/AssistStrip";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -134,9 +134,9 @@ export function TextView({ mapId, siteId }: MapViewProps) {
             className="mt-3 min-h-0 flex-1 overflow-auto rounded-lg bg-muted/40 p-4"
             aria-label="The map as a markdown tree"
           >
-            <MarkdownStream imagePolicy="ai"
-              content={markdown}
-              isStreamActive={false}
+            <RichContent level="full" imagePolicy="ai"
+              source={markdown}
+              isStreaming={false}
               hideCopyButton
               allowFullScreenEditor={false}
             />
