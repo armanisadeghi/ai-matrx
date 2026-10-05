@@ -165,6 +165,32 @@ function describe(approval: StoreApproval): Pick<
     };
   }
 
+  // A change to a STANDARD row (a CRM person, …): its values, by their labels; the before side
+  // is not read here, so each row shows the new value.
+  if (kind === "entity_row_change") {
+    const label = text(change["label"]) ?? "record";
+    const labels = record(change["labels"]) ?? {};
+    const values = { ...(record(change["columns"]) ?? {}), ...(record(change["custom"]) ?? {}) };
+    const archive = typeof change["archive"] === "boolean" ? change["archive"] : null;
+    if (archive !== null) {
+      return {
+        headline: archive ? `Archive ${subject}` : `Put back ${subject}`,
+        acceptEffect: archive ? `Archives this ${label}. It can be put back.` : `Brings this ${label} back.`,
+        rejectEffect,
+        fields: [],
+      };
+    }
+    return {
+      headline: `Change ${subject}`,
+      acceptEffect: `Saves the new values on this ${label}.`,
+      rejectEffect,
+      fields: Object.keys(values).map((key) => ({
+        label: text(labels[key]) ?? humanKey(key),
+        after: words(values[key]),
+      })),
+    };
+  }
+
   // Kinds the store queues that no card draws yet — described from the row itself.
   if (kind === "table_add") {
     const spec = record(change["table"]) ?? {};
@@ -222,6 +248,13 @@ function Doors({ approval }: { approval: StoreApproval }) {
         <AppLink href={openPath(subjectId)} className={link}>
           {text(row["subject_title"]) ?? "Open the record"}
         </AppLink>
+      ) : null}
+      {subjectId && subjectKind === "standard_row" && text(row["subject_token"]) ? (
+        <EntityRef
+          token={text(row["subject_token"]) ?? ""}
+          id={subjectId}
+          name={text(row["subject_title"]) ?? "Open the record"}
+        />
       ) : null}
       {conversation ? (
         <EntityRef
