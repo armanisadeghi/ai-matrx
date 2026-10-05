@@ -204,9 +204,36 @@ export class SupabaseSpacesStore implements SpacesStore {
           .range(from, to),
       { label: "content.space_list" },
     );
+    // Under a parent, order is the edge position; top-level Spaces have no edge and keep created order.
     return rows.map((r) => ({
       id: r.id,
       parentId: r.parent_id ?? null,
+      position: r.parent_id ? positionKey(r.edge_position) : positionKey(Date.parse(r.created_at)),
+      title: r.title ?? "",
+      icon: parseIcon(r.icon),
+      isArchived: r.deleted_at != null,
+      updatedAt: r.updated_at,
+    }));
+  }
+
+  /**
+   * A page's live sub-pages the person can open — the sidebar expands a share root through this.
+   * Filtered by access, never by organization, so a page shared from another organization expands.
+   */
+  async children(parentId: SpaceId): Promise<SpaceSummary[]> {
+    const rows = await readAllRows(
+      ({ from, to }) =>
+        this.db
+          .schema("content")
+          .rpc("space_children", { p_parent_id: parentId }, { count: "exact" })
+          .order("edge_position", { ascending: true })
+          .order("id", { ascending: true })
+          .range(from, to),
+      { label: "content.space_children" },
+    );
+    return rows.map((r) => ({
+      id: r.id,
+      parentId: r.parent_id ?? parentId,
       position: positionKey(r.edge_position),
       title: r.title ?? "",
       icon: parseIcon(r.icon),
@@ -320,18 +347,28 @@ export class SupabaseSpacesStore implements SpacesStore {
   }
 
   async create(input: { parentId: SpaceId | null; title?: string; blocks?: SpaceBlock[]; afterId?: SpaceId }): Promise<SpaceDoc> {
+    // A new top-level Space is Organization (`internal`): defaults lean open. A sub-page inherits its
+    // parent's organization and visibility; "Private" is a person choosing `personal` (hidden from lists).
     let organizationId = this.organizationId;
+    let visibility: DocumentRow["visibility"] = "internal";
     if (input.parentId) {
-      const parent = await this.head(input.parentId);
+      const { data: parent, error: parentError } = await this.db
+        .schema("content")
+        .from("document")
+        .select("organization_id, visibility")
+        .eq("id", input.parentId)
+        .maybeSingle();
+      if (parentError) fail("open the parent Space", parentError);
       if (!parent) throw new Error("The parent Space no longer exists, or you cannot open it.");
-      organizationId = parent.organization_id; // a sub-page is its parent's organization's work
+      organizationId = parent.organization_id;
+      visibility = parent.visibility;
     }
     const row = {
       organization_id: organizationId,
       document_type_id: await this.spaceTypeId(),
       format: "spaces",
       title: input.title ?? "",
-      visibility: "personal" as const,
+      visibility,
     };
     const { data, error } = await this.db
       .schema("content")

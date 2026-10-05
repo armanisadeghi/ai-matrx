@@ -23007,9 +23007,24 @@ export type Database = {
           updated_at: string
         }[]
       }
+      space_children: {
+        Args: { p_parent_id: string }
+        Returns: {
+          deleted_at: string
+          edge_position: number
+          icon: string
+          id: string
+          organization_id: string
+          parent_id: string
+          title: string
+          updated_at: string
+          version: number
+        }[]
+      }
       space_list: {
         Args: { p_include_archived?: boolean }
         Returns: {
+          created_at: string
           deleted_at: string
           edge_position: number
           icon: string

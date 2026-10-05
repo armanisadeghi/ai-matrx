@@ -49,10 +49,14 @@ async function main() {
     const parent = await store.create({ parentId: null, title: "Q4 launch plan" });
     made.push(parent.id);
     check("create a Space", parent.title === "Q4 launch plan" && parent.parentId === null, parent.id);
+    const visibilityOf = async (id: string) =>
+      (await admin.db.schema("content").from("document").select("visibility").eq("id", id).single()).data?.visibility;
 
     const child = await store.create({ parentId: parent.id, title: "Press outreach" });
     made.push(child.id);
     check("create a sub-Space", child.parentId === parent.id, `position ${child.position}`);
+    const [pv, cv] = [await visibilityOf(parent.id), await visibilityOf(child.id)];
+    check("a top-level Space is Organization; its sub-Space inherits it", pv === "internal" && cv === pv, `${pv} / ${cv}`);
 
     const block = (text: string) => ({ id: crypto.randomUUID(), type: "paragraph", text: [{ text }] });
     const v0 = parent.version;
@@ -106,6 +110,8 @@ async function main() {
     check("share the Space with the second account", !shareError, shareError?.message ?? "");
     check("second account opens the shared Space", (await theirs.get(parent.id)) !== null);
     check("second account opens the sub-Space through its parent", (await theirs.get(child.id)) !== null);
+    const theirChildren = await theirs.children(parent.id);
+    check("second account expands the shared Space to its sub-Space", theirChildren.some((s) => s.id === child.id));
     const theirList = await theirs.list();
     check(
       "second account's list shows the shared Space and its sub-Space",
@@ -113,6 +119,9 @@ async function main() {
       `${theirList.filter((s) => s.id === parent.id || s.id === child.id).length}/2 listed`,
     );
   } finally {
+    if (made[0]) {
+      await admin.db.rpc("revoke_resource_access", { p_resource_type: "document", p_resource_id: made[0], p_target_user_id: second.userId });
+    }
     for (const id of made.reverse()) {
       const doc = await store.get(id).catch(() => null);
       if (doc && !doc.isArchived) await store.archive(id).catch((e) => console.log(`cleanup: ${String(e)}`));
