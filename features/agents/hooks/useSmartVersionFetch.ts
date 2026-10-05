@@ -1,17 +1,17 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useAppDispatch, useAppSelector } from "../../store/hooks";
+import { useAppDispatch, useAppSelector } from "@ai-matrx/chat/store/hooks";
 import {
   fetchAgentVersionSnapshot,
-} from "../redux/agent-definition/thunks";
+} from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import {
   selectVersionsByParentAgentId,
-} from "../redux/agent-definition/selectors";
-import type { AgentVersionHistoryItem } from "../redux/agent-definition/thunks";
+} from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+import type { AgentVersionHistoryItem } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import { computeDiff } from "@ai-matrx/diff/structural";
 import type { DiffResult } from "@ai-matrx/diff/structural";
-import { AGENT_DIFF_OPTIONS } from "../components/diff/agent-diff-constants";
+import { AGENT_DIFF_OPTIONS } from "@/features/agents/components/diff/agent-diff-constants";
 
 export interface EnrichedVersion extends AgentVersionHistoryItem {
   diffSummary?: DiffResult;

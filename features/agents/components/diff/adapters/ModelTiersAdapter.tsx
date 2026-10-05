@@ -9,7 +9,7 @@ import type {
 import {
   ModelTierIdentityList,
   readModelTierIdentities,
-} from "../../model-tiers/ModelTierIdentityList";
+} from "@ai-matrx/chat/agents/components/model-tiers/ModelTierIdentityList";
 
 function ModelTiersDiffRenderer({ node }: FieldDiffProps) {
   return (

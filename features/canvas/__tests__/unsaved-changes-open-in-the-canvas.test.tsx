@@ -34,7 +34,7 @@ jest.mock("next/navigation", () => ({
   usePathname: () => "/chat/c-1",
   useRouter: () => ({ push: () => undefined }),
 }));
-jest.mock("@ai-matrx/chat/agents/components/diff/UnsavedChangesDiff", () => ({
+jest.mock("@/features/agents/components/diff/UnsavedChangesDiff", () => ({
   UnsavedChangesDiff: ({ agentId }: { agentId: string }) => <p data-diff-body="">{agentId}</p>,
 }));
 

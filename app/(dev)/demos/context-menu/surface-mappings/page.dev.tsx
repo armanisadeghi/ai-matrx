@@ -35,8 +35,8 @@ import { AgentListInlinePicker } from "@ai-matrx/agents/catalog/react";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import {
   fetchAgentsListFull,
-  fetchAgentExecutionFull,
 } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import { fetchAgentExecutionFull } from "@/features/agents/redux/builder-tier.thunks";
 import {
   selectAllAgents,
   selectAgentsSliceError,

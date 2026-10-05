@@ -6,7 +6,7 @@ import dynamic from "next/dynamic";
 import { Skeleton } from "@ai-matrx/design-system";
 
 export const AgentDiffViewer = dynamic(
-  () => import("../../agents/components/diff/AgentDiffViewer").then((m) => m.AgentDiffViewer),
+  () => import("@/features/agents/components/diff/AgentDiffViewer").then((m) => m.AgentDiffViewer),
   {
     ssr: false,
     loading: () => (

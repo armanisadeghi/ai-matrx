@@ -8,7 +8,7 @@
  *     (a renamed key would orphan persisted caches and every `state.<key>` reader);
  *   - the six chat middlewares run in today's order, as one contiguous run at today's position
  *     (order drift once lost `inboxTurnEnd` — W-34);
- *   - the root saga still forks `watchDefinitionChanges`.
+ *   - the host root saga forks `watchDefinitionChanges` (builder tier, outside the package since P25).
  * It does NOT prove a private store runs a turn — that is P24g.
  */
 
@@ -40,7 +40,8 @@ import { unsentLaunchMiddleware } from "@ai-matrx/chat/agents/redux/execution-sy
 import { inboxTurnEndMiddleware } from "@ai-matrx/chat/agents/redux/execution-system/inbox/inbox-turn-end.middleware";
 import { launchHandleReleaseMiddleware } from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/launch-handle-release.middleware";
 import { runConfigurationPersistMiddleware } from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/run-configuration-persist";
-import { watchDefinitionChanges } from "@ai-matrx/chat/agents/redux/execution-system/sagas/syncDefinitionToInstances.saga";
+import { createSlimRootSaga } from "@/lib/redux/sagas/rootSaga";
+import { watchDefinitionChanges } from "@/features/agents/redux/sagas/syncDefinitionToInstances.saga";
 import { pdfStudioPersistenceMiddleware } from "@/features/pdf-extractor/state/persistence";
 import { mandateOrgSwitchCacheMiddleware } from "@/features/mandates/redux/org-switch-cache-middleware";
 
@@ -174,7 +175,14 @@ describe("chat middlewares keep their order and position", () => {
 });
 
 describe("chat sagas", () => {
-  it("chatSagas() is watchDefinitionChanges", () => {
-    expect(chatSagas()).toEqual([watchDefinitionChanges]);
+  // P25: the definition-sync saga is builder-tier — it left the package and the
+  // HOST root saga forks it; the package forks no saga of its own.
+  it("chatSagas() is empty and the host root saga forks watchDefinitionChanges", () => {
+    expect(chatSagas()).toEqual([]);
+    const allEffect = createSlimRootSaga()().next().value as {
+      payload: { payload: { fn: unknown } }[];
+    };
+    const forked = allEffect.payload.map((e) => e.payload.fn);
+    expect(forked).toEqual([watchDefinitionChanges]);
   });
 });

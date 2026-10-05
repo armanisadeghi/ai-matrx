@@ -34,13 +34,14 @@ const DEFINITION_FETCH = /\b(?:fetchAgentExecutionFull|fetchFullAgent)\s*\(/g;
 /** A direct call of a pre-P24 execution RPC. */
 const LEGACY_RPC = /\.rpc\(\s*["'`]agx_get_execution_(?:minimal|full)["'`]/g;
 
-/** Builder tier (§3): these read the definition by design and leave at P25. */
+/**
+ * Builder tier (§3). Since P25 the builder surfaces (debug window, agent view
+ * page, compare/version diff, builder scope hook, definition-sync saga,
+ * `fetchAgentExecutionFull`) live in the app, not the package. Only the file
+ * that DEFINES `fetchFullAgent` stays exempt — voice still calls it until P24v.
+ */
 const BUILDER_TIER = new Set<string>([
   `${PKG}agents/redux/agent-definition/thunks.ts`,
-  `${PKG}window-panels/windows/agents/AgentDebugWindow.tsx`,
-  `${PKG}agents/route/AgentViewContent.tsx`,
-  `${PKG}agents/menu/agent-actions.tsx`,
-  `${PKG}agents/components/diff/AgentComparisonPage.tsx`,
 ]);
 
 /**

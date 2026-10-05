@@ -55,7 +55,7 @@ import {
   AGENT_BUILDER_CONTEXT_MENU_PROPS,
   buildAgentBuilderContextData,
 } from "@ai-matrx/chat/agents/agent-context/buildAgentBuilderContextData";
-import { useAgentBuilderSurfaceScope } from "@ai-matrx/chat/agents/hooks/useAgentBuilderSurfaceScope";
+import { useAgentBuilderSurfaceScope } from "@/features/agents/hooks/useAgentBuilderSurfaceScope";
 import { createList } from "@/features/user-lists/service";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { CustomComponentConfigurator } from "./CustomComponentConfigurator";

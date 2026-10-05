@@ -1,25 +1,25 @@
 "use client";
 
-import { AgentDiffViewer } from "../../../next/lazy/AgentDiffViewer";
+import { AgentDiffViewer } from "@/features/agents/components/diff/lazy/AgentDiffViewer";
 import { useEffect, useState, useTransition } from "react";
-import { useAppDispatch, useAppSelector } from "../../../store/hooks";
+import { useAppDispatch, useAppSelector } from "@ai-matrx/chat/store/hooks";
 import {
   fetchAgentsListFull,
   fetchFullAgent,
   fetchAgentVersionHistory,
   fetchAgentVersionSnapshot,
-} from "../../redux/agent-definition/thunks";
-import type { AgentVersionHistoryItem } from "../../redux/agent-definition/thunks";
+} from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import type { AgentVersionHistoryItem } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import {
   selectAllAgentsArray,
   selectAgentById,
   selectVersionsByParentAgentId,
-} from "../../redux/agent-definition/selectors";
-import SearchableSelect from "@host/components/matrx/SearchableSelect";
-import type { Option } from "@host/components/matrx/SearchableSelect";
+} from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+import SearchableSelect from "@/components/matrx/SearchableSelect";
+import type { Option } from "@/components/matrx/SearchableSelect";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { Skeleton } from "@ai-matrx/design-system";
-import SuspenseLoader from "@host/components/loaders/SuspenseLoader";
+import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@ai-matrx/design-system";
 import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";

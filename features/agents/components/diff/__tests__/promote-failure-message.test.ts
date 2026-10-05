@@ -1,4 +1,4 @@
-import { promoteFailureMessage } from "../promote-failure-message";
+import { promoteFailureMessage } from "@/features/agents/components/diff/promote-failure-message";
 
 describe("promoteFailureMessage", () => {
   it("names the server's refusal instead of a bare generic sentence", () => {

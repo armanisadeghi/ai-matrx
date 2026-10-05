@@ -8,9 +8,14 @@
 
 import { all, call, fork } from "redux-saga/effects";
 import { chatSagas } from "@ai-matrx/chat/store/sagas";
+import { watchDefinitionChanges } from "@/features/agents/redux/sagas/syncDefinitionToInstances.saga";
 
 export function createSlimRootSaga() {
   return function* rootSaga() {
-    yield all(chatSagas().map((saga) => fork(saga)));
+    yield all([
+      ...chatSagas().map((saga) => fork(saga)),
+      // Builder tier (P25): agent-definition edits reach live runs.
+      fork(watchDefinitionChanges),
+    ]);
   };
 }

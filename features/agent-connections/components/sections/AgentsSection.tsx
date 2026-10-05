@@ -11,7 +11,7 @@ import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
 import { useAgentModelLabel } from "@ai-matrx/chat/agents/hooks/useAgentModelLabel";
-import { fetchAgentExecutionFull } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import { fetchAgentExecutionFull } from "@/features/agents/redux/builder-tier.thunks";
 import { useAgents } from "../../hooks/useAgents";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { selectSelectedItemId, setSelectedItemId } from "../../redux/ui/slice";

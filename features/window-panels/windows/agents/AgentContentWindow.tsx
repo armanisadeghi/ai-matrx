@@ -53,7 +53,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useMemo } from "react";
 import { AgentRunWrapper } from "@ai-matrx/chat/agents/components/smart/AgentRunWrapper";
-import { AgentVersionDiffPage } from "@ai-matrx/chat/agents/components/diff/AgentVersionDiffPage";
+import { AgentVersionDiffPage } from "@/features/agents/components/diff/AgentVersionDiffPage";
 import { AgentContentHistoryPanel } from "./AgentContentHistoryPanel";
 import { AgentContentTab } from "./agent-content.types";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";

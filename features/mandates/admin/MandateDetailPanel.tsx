@@ -45,7 +45,7 @@ import type {
 import type { AgentDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { getAgentModeHref } from "@ai-matrx/chat/agents/components/shared/AgentModeController";
-import { AgentDiffViewer } from "@ai-matrx/chat/agents/components/diff/AgentDiffViewer";
+import { AgentDiffViewer } from "@/features/agents/components/diff/AgentDiffViewer";
 import { MandateNotesPanel } from "@/features/mandates/components/MandateNotesPanel";
 import { ProvisionOfferList } from "@/features/mandates/components/ProvisionOfferList";
 import { MandateGoalBlock } from "@/features/mandates/MandateGoalBlock";

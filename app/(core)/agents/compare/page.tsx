@@ -1,5 +1,5 @@
 import PageHeader from "@/features/shell/components/header/PageHeader";
-import { AgentComparisonPage } from "@ai-matrx/chat/agents/components/diff/AgentComparisonPage";
+import { AgentComparisonPage } from "@/features/agents/components/diff/AgentComparisonPage";
 
 
 /**

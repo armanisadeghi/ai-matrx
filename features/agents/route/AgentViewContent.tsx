@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, type ReactNode } from "react";
-import { useAppDispatch, useAppSelector } from "../../store/hooks";
+import { useAppDispatch, useAppSelector } from "@ai-matrx/chat/store/hooks";
 import {
   selectAgentById,
   selectAgentDefinition,
@@ -17,23 +17,23 @@ import {
   selectAgentMcpServers,
   selectAgentOutputSchema,
   selectAgentChangeNote,
-} from "../redux/agent-definition/selectors";
+} from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import {
   fetchAgentVersionHistory,
   fetchFullAgent,
   resetAgentToSource,
-} from "../redux/agent-definition/thunks";
+} from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import { confirm } from "@ai-matrx/chat/host/ui-slots";
-import { ReadFailure } from "@host/components/read-state/ReadFailure";
-import { selectCategoryById } from "../redux/agent-shortcut-categories/selectors";
-import { fetchModelOptions } from "../model-registry/modelRegistrySlice";
-import { useAgentModelLabel } from "../hooks/useAgentModelLabel";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { selectCategoryById } from "@ai-matrx/chat/agents/redux/agent-shortcut-categories/selectors";
+import { fetchModelOptions } from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
+import { useAgentModelLabel } from "@ai-matrx/chat/agents/hooks/useAgentModelLabel";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
-import { supabase } from "../../host/db";
+import { supabase } from "@ai-matrx/chat/host/db";
 import { Badge } from "@ai-matrx/design-system";
 import { Button } from "@ai-matrx/design-system";
 import { Button as ControlButton, Chip } from "@ai-matrx/design-system/controls";
-import { Card, CardContent, CardHeader, CardTitle } from "@host/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Alert,
   AlertDescription,
@@ -63,26 +63,26 @@ import {
   RefreshCw,
   type LucideIcon,
 } from "lucide-react";
-import { toast } from "../../host/notify";
+import { toast } from "@ai-matrx/chat/host/notify";
 import { cn } from "@ai-matrx/design-system";
-import type { AgentDefinitionMessage } from "../types/agent-message-types";
+import type { AgentDefinitionMessage } from "@ai-matrx/chat/agents/types/agent-message-types";
 import { RichDocument } from "@ai-matrx/chat/host/ui-slots";
-import type { ContentSource } from "@host/features/rich-document/types";
-import { JsonInspector } from "@host/components/official-candidate/json-inspector/JsonInspector";
+import type { ContentSource } from "@/features/rich-document/types";
+import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
 import {
   AiModelRef,
   AiToolRef,
-} from "@host/components/official/entity-ref/AiIdentityRef";
-import { EntityRef } from "@host/components/official/entity-ref/EntityRef";
+} from "@/components/official/entity-ref/AiIdentityRef";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { RichContent } from "@ai-matrx/chat/host/ui-slots";
-import { AccessSummaryPanel } from "@host/features/sharing/components/AccessSummaryPanel";
+import { AccessSummaryPanel } from "@/features/sharing/components/AccessSummaryPanel";
 import { CopyButtons } from "@ai-matrx/chat/host/ui-slots";
-import { agentDefinitionSummary } from "../format";
-import { agentHref } from "@host/features/agents/browse/agentPaths";
-import { buildSystemAgentAiPayload } from "./buildSystemAgentAiPayload";
-import { useAgentAddressViewer } from "../addressing/useAgentHref";
+import { agentDefinitionSummary } from "@ai-matrx/chat/agents/format";
+import { agentHref } from "@/features/agents/browse/agentPaths";
+import { buildSystemAgentAiPayload } from "@ai-matrx/chat/agents/route/buildSystemAgentAiPayload";
+import { useAgentAddressViewer } from "@ai-matrx/chat/agents/addressing/useAgentHref";
 import { asClause } from "@ai-matrx/kit/text";
-import { selectIsSuperAdmin } from "../../host/identity";
+import { selectIsSuperAdmin } from "@ai-matrx/chat/host/identity";
 import { variableRunLabel } from "@ai-matrx/agents";
 
 function extractTextContent(msg: AgentDefinitionMessage): string {

@@ -6,7 +6,7 @@ import { useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectAgentReadyForBuilder } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { useAgentAutoSave } from "@ai-matrx/chat/agents/hooks/useAgentAutoSave";
 import { useCreatorOwnershipSync } from "@ai-matrx/chat/agents/hooks/useCreatorOwnershipSync";
-import { useAgentBuilderSurfaceScope } from "@ai-matrx/chat/agents/hooks/useAgentBuilderSurfaceScope";
+import { useAgentBuilderSurfaceScope } from "@/features/agents/hooks/useAgentBuilderSurfaceScope";
 import { useAgentBuilderWriteHandlers } from "@ai-matrx/chat/agents/hooks/useAgentBuilderWriteHandlers";
 import { AGENT_BUILDER_CONTEXT_MENU_PROPS } from "@ai-matrx/chat/agents/agent-context/buildAgentBuilderContextData";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";

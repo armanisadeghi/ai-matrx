@@ -18,7 +18,7 @@
  *   fetchAgentAccessLevel        — current user's permission level on an agent
  *   fetchAgentRunTier            — TIER 2: what a run needs, never the definition (skips if ready)
  *   fetchAgentExecutionMinimal   — the run tier under its pre-P24 name (app callers)
- *   fetchAgentExecutionFull      — adds settings, tools, model (skips if ready)
+ *   fetchAgentRunControls        — what the run-control pickers show (P25)
  *   fetchFullAgent               — complete row, marks record clean
  *   fetchAgentVersionHistory     — paginated version list (returns data, no slice storage)
  *   fetchAgentVersionSnapshot    — full version snapshot → stored in agents map (isVersion = true)
@@ -76,7 +76,6 @@ import type {
   AgentListRow,
   AgentSearchRow,
   AgentRunTier,
-  AgentExecutionFull,
   UpdateFromSourceResult,
   PromoteVersionResult,
   AgentVersionLookup,
@@ -677,52 +676,8 @@ export const fetchAgentRunControls = createAsyncThunk<void, string, ThunkApi>(
   },
 );
 
-/**
- * Fetches the full execution payload: adds settings, tools, customTools, modelId.
- * Used by the agent builder preview pane and pages that allow pre-run configuration.
- *
- * Skips if all required fields are already loaded.
- */
-export const fetchAgentExecutionFull = createAsyncThunk<void, string, ThunkApi>(
-  "agentDefinition/fetchExecutionFull",
-  async (agentId, { dispatch, getState }) => {
-    if (selectAgentCustomExecutionPayload(getState(), agentId).isReady) return;
-    // Signed out: the RPC refuses `anon` — a state, never a fetch failure.
-    if (await isSignedOutVisitor()) throw new NotAuthenticatedError();
-
-    dispatch(setAgentLoading({ id: agentId, loading: true }));
-
-    const { data, error } = await supabase.rpc("agx_get_execution_full", {
-      p_agent_id: agentId,
-    });
-
-    dispatch(setAgentLoading({ id: agentId, loading: false }));
-
-    if (error) {
-      dispatch(setAgentError({ id: agentId, error: error.message }));
-      throw agentNameTakenError(error) ?? pgErrorToError(error);
-    }
-
-    const raw = Array.isArray(data) ? data[0] : data;
-    if (!raw) return;
-    const row = raw as unknown as AgentExecutionFull;
-
-    dispatch(
-      mergePartialAgent({
-        id: row.id,
-        variableDefinitions: row.variable_definitions,
-        contextPolicies: row.context_policies ?? [],
-        settings: row.settings,
-        tools: row.tools,
-        customTools: row.custom_tools,
-        modelId: row.model_id,
-        uiGates: row.ui_gates ?? {},
-        autoContextDisabled: row.auto_context_disabled === true,
-      }),
-    );
-    dispatch(setAgentFetchStatus({ id: row.id, status: "customExecution" }));
-  },
-);
+// `fetchAgentExecutionFull` (agx_get_execution_full) is builder-tier and lives
+// in the app since P25: features/agents/redux/builder-tier.thunks.ts.
 
 /**
  * Fetches the complete agent row via PostgREST and upserts it into state.

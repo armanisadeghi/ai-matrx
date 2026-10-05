@@ -9,8 +9,8 @@ import {
   DropdownMenuTrigger,
 } from "@ai-matrx/design-system";
 import { cn } from "@ai-matrx/design-system";
-import { toast } from "../../../host/notify";
-import { supabase } from "../../../host/db";
+import { toast } from "@ai-matrx/chat/host/notify";
+import { supabase } from "@ai-matrx/chat/host/db";
 import {
   GitCompareArrows,
   ArrowRight,
@@ -20,17 +20,17 @@ import {
   ShieldAlert,
   AlertTriangle,
 } from "lucide-react";
-import type { AgentVersionHistoryItem } from "../../redux/agent-definition/thunks";
-import { useSmartVersionFetch } from "../../hooks/useSmartVersionFetch";
-import type { EnrichedVersion } from "../../hooks/useSmartVersionFetch";
+import type { AgentVersionHistoryItem } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import { useSmartVersionFetch } from "@/features/agents/hooks/useSmartVersionFetch";
+import type { EnrichedVersion } from "@/features/agents/hooks/useSmartVersionFetch";
 import { formatChangeType } from "@ai-matrx/diff/structural";
-import { VersionIdBadge } from "./VersionIdBadge";
+import { VersionIdBadge } from "@/features/agents/components/diff/VersionIdBadge";
 import {
   MOBILE_TABLE,
   MOBILE_TABLE_CELL,
   MOBILE_TABLE_FROZEN_CELL,
   MOBILE_TABLE_FROZEN_HEAD,
-} from "@host/components/official/mobile-table/mobileTable";
+} from "@/components/official/mobile-table/mobileTable";
 import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 

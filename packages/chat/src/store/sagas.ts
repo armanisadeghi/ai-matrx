@@ -1,11 +1,13 @@
 // packages/chat/src/store/sagas.ts
 //
 // The chat package's root-level sagas (PACKAGE-INDEPENDENCE.md §2.2, P2). The host's root saga
-// forks each; `createChatStore()` does the same. `watchDefinitionChanges` is builder-only and
-// leaves at P25. A function for the same import-cycle reason as `chatMiddlewares()`.
+// forks each; `createChatStore()` does the same. Empty since P25: the only saga it had,
+// `watchDefinitionChanges` (builder edits -> live runs), is builder-tier and now lives with the
+// builder in the app (`features/agents/redux/sagas/syncDefinitionToInstances.saga.ts`), forked by
+// the host's root saga. A function for the same import-cycle reason as `chatMiddlewares()`.
 
-import { watchDefinitionChanges } from "../agents/redux/execution-system/sagas/syncDefinitionToInstances.saga";
+import type { Saga } from "redux-saga";
 
-export function chatSagas() {
-  return [watchDefinitionChanges] as const;
+export function chatSagas(): readonly Saga[] {
+  return [];
 }

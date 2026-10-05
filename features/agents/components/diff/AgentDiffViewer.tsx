@@ -14,19 +14,19 @@ import type {
   DiffTemporalMetadata,
   ViewMode,
 } from "@ai-matrx/diff/structural";
-import type { AgentDefinition } from "../../types/agent-definition.types";
-import { useDiffEnrichment } from "../../hooks/useDiffEnrichment";
-import { compareAgentDefinitions } from "./compare-agent-definitions";
+import type { AgentDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
+import { useDiffEnrichment } from "@ai-matrx/chat/agents/hooks/useDiffEnrichment";
+import { compareAgentDefinitions } from "@/features/agents/components/diff/compare-agent-definitions";
 
-import { MessagesAdapter } from "./adapters/MessagesAdapter";
-import { ModelAdapter } from "./adapters/ModelAdapter";
-import { ToolsAdapter } from "./adapters/ToolsAdapter";
-import { SettingsAdapter } from "./adapters/SettingsAdapter";
-import { VariablesAdapter } from "./adapters/VariablesAdapter";
-import { ContextPoliciesAdapter } from "./adapters/ContextPoliciesAdapter";
-import { CustomToolsAdapter } from "./adapters/CustomToolsAdapter";
-import { McpServersAdapter } from "./adapters/McpServersAdapter";
-import { ModelTiersAdapter } from "./adapters/ModelTiersAdapter";
+import { MessagesAdapter } from "@/features/agents/components/diff/adapters/MessagesAdapter";
+import { ModelAdapter } from "@/features/agents/components/diff/adapters/ModelAdapter";
+import { ToolsAdapter } from "@/features/agents/components/diff/adapters/ToolsAdapter";
+import { SettingsAdapter } from "@/features/agents/components/diff/adapters/SettingsAdapter";
+import { VariablesAdapter } from "@/features/agents/components/diff/adapters/VariablesAdapter";
+import { ContextPoliciesAdapter } from "@/features/agents/components/diff/adapters/ContextPoliciesAdapter";
+import { CustomToolsAdapter } from "@/features/agents/components/diff/adapters/CustomToolsAdapter";
+import { McpServersAdapter } from "@/features/agents/components/diff/adapters/McpServersAdapter";
+import { ModelTiersAdapter } from "@/features/agents/components/diff/adapters/ModelTiersAdapter";
 
 interface AgentDiffViewerProps {
   oldAgent: Partial<AgentDefinition>;

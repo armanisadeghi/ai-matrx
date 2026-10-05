@@ -76,7 +76,7 @@ import {
 } from "@/features/ai-models/preferredDecisionModel";
 import { getSystemShortcut } from "@ai-matrx/chat/agents/constants/system-shortcuts";
 import { ensureShortcutLoaded } from "@ai-matrx/chat/agents/redux/agent-shortcuts/thunks";
-import { fetchAgentExecutionFull } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import { fetchAgentExecutionFull } from "@/features/agents/redux/builder-tier.thunks";
 import { selectAgentCustomExecutionPayload } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 

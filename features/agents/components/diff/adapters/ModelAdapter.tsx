@@ -7,7 +7,7 @@ import type {
   FieldDiffProps,
   EnrichmentContext,
 } from "@ai-matrx/diff/react";
-import { AiModelRef } from "@host/components/official/entity-ref/AiIdentityRef";
+import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
 
 function ModelDiffRenderer({ node, enrichment }: FieldDiffProps) {
   const oldId = typeof node.oldValue === "string" ? node.oldValue : null;

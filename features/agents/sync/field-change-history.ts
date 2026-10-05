@@ -1,5 +1,5 @@
 import { computeDiff } from "@ai-matrx/diff/structural";
-import { AGENT_DIFF_OPTIONS } from "@ai-matrx/chat/agents/components/diff/agent-diff-constants";
+import { AGENT_DIFF_OPTIONS } from "@/features/agents/components/diff/agent-diff-constants";
 import {
   parseAgentAutoToolsDisabled,
   parseSkillConfigJson,

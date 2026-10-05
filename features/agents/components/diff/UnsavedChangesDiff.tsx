@@ -1,14 +1,14 @@
 "use client";
 
 import { useMemo } from "react";
-import { useAppSelector } from "../../../store/hooks";
+import { useAppSelector } from "@ai-matrx/chat/store/hooks";
 import {
   selectAgentById,
   selectAgentDirtyFields,
   selectAgentFieldHistory,
-} from "../../redux/agent-definition/selectors";
-import type { AgentDefinition } from "../../types/agent-definition.types";
-import { AgentDiffViewer } from "./AgentDiffViewer";
+} from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+import type { AgentDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
+import { AgentDiffViewer } from "@/features/agents/components/diff/AgentDiffViewer";
 
 interface UnsavedChangesDiffProps {
   agentId: string;

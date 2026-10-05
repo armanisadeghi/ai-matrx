@@ -1,7 +1,7 @@
 import { computeDiff } from "@ai-matrx/diff/structural";
 import type { DiffNode, DiffResult } from "@ai-matrx/diff/structural";
-import type { AgentDefinition } from "../../types/agent-definition.types";
-import { AGENT_DIFF_OPTIONS } from "./agent-diff-constants";
+import type { AgentDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
+import { AGENT_DIFF_OPTIONS } from "@/features/agents/components/diff/agent-diff-constants";
 
 /** Optional identity fields copied only when a sync requests identity. */
 const AGENT_PROFILE_FIELDS = new Set(["name", "description", "category", "tags"]);

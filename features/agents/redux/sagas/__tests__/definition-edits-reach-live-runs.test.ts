@@ -15,9 +15,9 @@ import agentDefinitionReducer, {
   setAgentControlBinding,
   setAgentSettings,
   undoAgentEdit,
-} from "../../../agent-definition/slice";
-import { watchDefinitionChanges } from "../syncDefinitionToInstances.saga";
-import type { VariableDefinition } from "../../../../types/agent-definition.types";
+} from "@ai-matrx/chat/agents/redux/agent-definition/slice";
+import { watchDefinitionChanges } from "@/features/agents/redux/sagas/syncDefinitionToInstances.saga";
+import type { VariableDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
 
 const AGENT = "3bf7e37d-26b4-4581-ac29-450462c18b22";
 const CONV = "builder-test-run";

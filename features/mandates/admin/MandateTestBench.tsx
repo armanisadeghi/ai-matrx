@@ -61,7 +61,7 @@ import {
 } from "@/lib/supabase/mandateStorage";
 import { defaultAnswerSettingsOf } from "@/features/bindings/system-answer-record";
 import { ProvisionOfferComposer } from "./ProvisionOfferComposer";
-import { fetchAgentExecutionFull } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import { fetchAgentExecutionFull } from "@/features/agents/redux/builder-tier.thunks";
 import { selectAgentCustomExecutionPayload } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { initInstanceOverrides } from "@ai-matrx/chat/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
 import {

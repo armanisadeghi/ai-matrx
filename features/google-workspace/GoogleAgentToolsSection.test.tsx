@@ -58,13 +58,15 @@ jest.mock("@ai-matrx/chat/agents/model-registry/modelRegistrySlice", () => ({
   selectModelFullyLoaded: (_state: unknown, id: string | null) =>
     modelReady(id),
 }));
+jest.mock("@/features/agents/redux/builder-tier.thunks", () => ({
+  fetchAgentExecutionFull: jest.fn((id: string) => ({ type: "agent", id })),
+}));
 jest.mock("@ai-matrx/chat/agents/redux/agent-definition/thunks", () => {
   const actual = jest.requireActual(
     "@ai-matrx/chat/agents/redux/agent-definition/thunks",
   );
   return {
     ...actual,
-    fetchAgentExecutionFull: jest.fn((id: string) => ({ type: "agent", id })),
     applyOwnedAgentToolDelta: jest.fn((input: unknown) => ({
       type: "assignment",
       input,

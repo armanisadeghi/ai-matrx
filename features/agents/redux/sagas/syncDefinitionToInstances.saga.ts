@@ -38,7 +38,7 @@
  */
 
 import { debounce, put, select, takeEvery } from "redux-saga/effects";
-import type { ChatRootState } from "../../../../store/root-state";
+import type { ChatRootState } from "@ai-matrx/chat/store/root-state";
 import {
   setAgentVariableDefinitions,
   setAgentSettings,
@@ -51,11 +51,11 @@ import {
   resetAllAgentFields,
   mergePartialAgent,
   upsertAgent,
-} from "../../agent-definition/slice";
-import { updateInstanceDefinitions } from "../instance-variable-values/instance-variable-values.slice";
-import { updateBaseSettings } from "../instance-model-overrides/instance-model-overrides.slice";
-import { buildInstanceBaseSettings } from "../instance-model-overrides/base-settings";
-import { updateBaseInputCapabilities } from "../instance-input-capabilities/instance-input-capabilities.slice";
+} from "@ai-matrx/chat/agents/redux/agent-definition/slice";
+import { updateInstanceDefinitions } from "@ai-matrx/chat/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
+import { updateBaseSettings } from "@ai-matrx/chat/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
+import { buildInstanceBaseSettings } from "@ai-matrx/chat/agents/redux/execution-system/instance-model-overrides/base-settings";
+import { updateBaseInputCapabilities } from "@ai-matrx/chat/agents/redux/execution-system/instance-input-capabilities/instance-input-capabilities.slice";
 
 // ---------------------------------------------------------------------------
 // Constants

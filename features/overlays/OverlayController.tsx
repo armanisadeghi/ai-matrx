@@ -252,7 +252,7 @@ const AgentDataStorageWindow = lazyOverlay(
   { ssr: false },
 );
 const AgentDebugWindow = lazyOverlay(
-  () => import("@ai-matrx/chat/window-panels/windows/agents/AgentDebugWindow"),
+  () => import("@/features/window-panels/windows/agents/AgentDebugWindow"),
   { ssr: false },
 );
 const AgentFindUsagesWindow = lazyOverlay(

@@ -20,9 +20,9 @@ import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 import {
   applyOwnedAgentToolDelta,
-  fetchAgentExecutionFull,
   isAvailableToolModel,
 } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import { fetchAgentExecutionFull } from "@/features/agents/redux/builder-tier.thunks";
 import {
   selectAgentById,
   selectAgentReadyForCustomExecution,

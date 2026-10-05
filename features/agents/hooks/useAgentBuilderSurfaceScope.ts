@@ -25,10 +25,10 @@
 
 import { useCallback } from "react";
 
-import { useAppStore } from "../../store/hooks";
-import { createAgentBuilderScope } from "../../surfaces/manifests/agent-builder.manifest";
-import { extractAgentSystemInstruction } from "../utils/agent-system-instruction";
-import type { SurfaceScopePayload } from "../../surfaces/types";
+import { useAppStore } from "@ai-matrx/chat/store/hooks";
+import { createAgentBuilderScope } from "@ai-matrx/chat/surfaces/manifests/agent-builder.manifest";
+import { extractAgentSystemInstruction } from "@ai-matrx/chat/agents/utils/agent-system-instruction";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 import {
   selectAgentAccessLevel,
   selectAgentCategory,
@@ -64,7 +64,7 @@ import {
   selectAgentUiGates,
   selectAgentVariableDefinitions,
   selectAgentVersion,
-} from "../redux/agent-definition/selectors";
+} from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 
 /**
  * Returns a builder that snapshots the active agent definition from Redux at

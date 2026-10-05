@@ -31,10 +31,10 @@ import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import { displayResolutionOrgId, usePageOrgFilter } from "@/features/mandates/display-org";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import {
-  fetchAgentExecutionFull,
   fetchAgentVersionSnapshot,
   resolveAgentVersionId,
 } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import { fetchAgentExecutionFull } from "@/features/agents/redux/builder-tier.thunks";
 import {
   selectAgentCustomExecutionPayload,
   selectBuiltinAgents,
