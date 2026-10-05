@@ -554,3 +554,41 @@ begin
 end
 $fn$;
 ```
+
+## R7. Round 7 — string shapes, the sentinel's own tests, attributes in the judge, Python repr, saved artifacts (2026-10-05)
+
+- [x] K1. `ToggledDataBody` refused every non-object, so a tool `result` arriving as a plain STRING of kind JSON was
+      printed raw. Now `valueCarriesKind(value)` for every shape; the same string-refusing local checks went from
+      `FirstTurnVariables` (prose strings now carry their kind too) and emission routing. Guard
+      `data-events/__tests__/a-string-held-kind-behind-show-data.test.tsx`: 6 value shapes × the function / workflow /
+      search / fetch / categorization cards (13 red before) + a source guard against a wrapper that returns false for
+      non-objects before asking `valueCarriesKind` (red before).
+- [x] K2. Sentinel tests: `settle()` advanced timers before the MutationObserver's microtask, and the install-time
+      full scan found every leak, so most tests passed with an observer that never fired. `settle` flushes microtasks
+      first, every test starts after the install scan, and a self-test reruns the 14 change-based tests against a
+      dead observer — each must FAIL (8 of them pass again if the old helper comes back).
+- [x] K3. The DOM frame judge read text only. One shared `domLeaksKind` (`kind-leak-scan.ts`: text +
+      `findKindAttributeLeaks`, the sentinel's own attribute scanner) answers for the judge; self-test plants a kind in
+      `title` / `aria-label` / `alt` (3 red before) and a marked source view stays silent.
+- [x] K4. Python repr (`{'__kind': 'flashcard_set'}`, text contexts only, key position) and a zero-width character
+      inside the key: `hasKindKey` / `firstKindSlug` strip zero-width characters, a `python` option reads the repr;
+      `markdownCarriesKind` and the screen scan use it; `normalizeKindSpellings` makes the markdown
+      (`kindTextToMarkdown` / `kindTextPreview`), one-line (`inlineKindText`) and search-snippet (`snippetKindText`)
+      converters convert both. Guard `python-repr-and-zero-width-kind.test.ts` (13 of 15 red before). Not done: the
+      block splitter/accumulator does not LIFT a Python-repr region into a kind block — a repr in a chat answer is now
+      flagged by the sentinel and converted by the text converters, but the live pipeline still draws it as prose.
+- [x] K5. Render matrix path `chat_artifact_materialized`: prose + the real id-bearing tag (`wrapArtifactText`, the
+      kind's canvas type, UUID id, version) through `ArtifactRefBlock`, every frame of every archetype judged with the
+      saved row loading / loaded / missing (canvas row source mocked; the cell proves it read the id). Full sequence
+      `stream-then-materialize-never-raw.test.tsx`: real accumulator → production `activeRequests` slice →
+      EnhancedChatMarkdown after every chunk and finalize, then the real `materializeBlocks` rewrite (only the canvas
+      row write is a stand-in) drawn with the row loading / loaded / missing. The "prose as a Code · 1 line card" state
+      was NOT reproduced on this sequence; the test asserts it never appears.
+- [x] K6. The sentinel now mounts in `(auth-pages)` and `(oauth-review)` (bare layouts, no Providers / AppShell).
+      Guard `kind-leak-sentinel-every-route-group.test.ts`: every route group's layout reaches it — (popup) and the
+      deliberately thin (lab) demo site skipped (both groups red before).
+- [x] K7. Public page `/p/e/[type]/[id]`: the title in the h1, deck heading, `<title>` and OG / Twitter meta and the
+      meta description read `kindTextLabel(displayTitle(…))` (`publicResourceText.ts`); the rich description body keeps
+      its pipeline. Test 3/3 red before. `SearchErrorBlock`: its detail is the same show-data toggle as its sibling
+      cards — NOT a deliberate debug view — so it takes `ToggledDataBody`; the error line reads a kind as its one-line
+      form (7 red before).
