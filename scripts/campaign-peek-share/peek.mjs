@@ -8,6 +8,7 @@ import { chromium } from "playwright";
 import { execFileSync } from "node:child_process";
 import { resolve } from "node:path";
 import { mkdirSync, readFileSync } from "node:fs";
+import { fillSecret } from "../lib/seat-browser.mjs";
 
 const argv = process.argv.slice(2);
 const arg = (n, d) => (argv.includes(n) ? argv[argv.indexOf(n) + 1] : d);
@@ -56,7 +57,7 @@ async function main() {
     await page.goto(`${ORIGIN}/login`, { waitUntil: "domcontentloaded", timeout: 180000 });
     await page.waitForTimeout(4000);
     await page.locator('input[type="email"], input[name="email"]').first().fill(user);
-    await page.locator('input[type="password"], input[name="password"]').first().fill(pass);
+    await fillSecret(page.locator('input[type="password"], input[name="password"]').first(), undefined, pass);
     await page.locator('button[type="submit"]').first().click();
     await page.waitForTimeout(15000);
     const who = await page.evaluate(async () => (await fetch("/api/whoami")).json()).catch(() => null);

@@ -47,14 +47,8 @@ import { ComposerModeSwitch } from "../../agents/components/inputs/smart-input/c
 import type { ComposerMode } from "../../agents/components/inputs/smart-input/composer/composer-types";
 import { COMPOSER_KNOBS } from "../../agents/components/inputs/smart-input/composer/composer-mode-cookie";
 import { registerInPlaceChatHost } from "../../agents/components/chat/in-place-chat-host";
-import { useAppDispatch } from "../../store/hooks";
 import { useSessionKnob } from "../../host/prefs-react";
-import {
-  stageRemark,
-  type RemarkItem,
-  type StageRemarkOptions,
-} from "../../agents/redux/execution-system/instance-resources/remarks";
-import { registerRemarkSink } from "../../agents/redux/execution-system/instance-resources/remark-sink";
+import { shellChatTakesToggleKey, useShellChatPageEntry, useShellChatRemarkSink } from "./shell-chat-dock-owners";
 import { CanvasChatColumn } from "./CanvasChatColumn";
 import { ChatPanelTitleMenu, useChatPanelTitle } from "./ChatPanelTitleMenu";
 import { useCanvasWorkspaceConversation } from "./useCanvasWorkspaceConversation";
@@ -100,10 +94,6 @@ function readFloatingSize(value: unknown): { width: number; height: number } {
     }
   }
   return FLOATING_FALLBACK;
-}
-
-function isToggleShortcut(e: KeyboardEvent): boolean {
-  return (e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && e.key === "\\";
 }
 
 function isTypingTarget(target: EventTarget | null): boolean {
@@ -245,7 +235,8 @@ export function ShellChatDock({ initialChat, initialWidth, initialMode = null, s
   useEffect(() => {
     const onEvent = () => onToggle();
     const onKey = (e: KeyboardEvent) => {
-      if (!signedIn || !isToggleShortcut(e)) return;
+      // A key the page already used (/spaces: its sidebar) is not the chat's.
+      if (!signedIn || !shellChatTakesToggleKey(e)) return;
       // Typing elsewhere keeps the key; inside the chat's own composer it closes the chat.
       const inChat = e.target instanceof Element && e.target.closest(".shell-chat-dock, .shell-chat-floating");
       if (isTypingTarget(e.target) && !inChat) return;
@@ -305,32 +296,15 @@ export function ShellChatDock({ initialChat, initialWidth, initialMode = null, s
     });
   }, [conversationId, hostedElsewhere, signedIn]);
 
-  // THE REMARK SINK: a comment made on this page (a board, a tile, a passage
-  // inside one, a record's thread in the canvas) rides along with the next
-  // message of THIS chat. A hidden chat opens so the person sees the chip; a
-  // chat that has not launched yet takes the remark once it has.
-  const dispatch = useAppDispatch();
-  const pendingRemarks = useRef<{ item: RemarkItem; options?: StageRemarkOptions }[]>([]);
-  const sinkHandlers = useRef({ conversationId, reveal: () => {} });
-  useEffect(() => {
-    sinkHandlers.current = { conversationId, reveal: show };
+  // The page's context entry and the remark queue are the DOCK's: the column
+  // unmounts with its sheet or floating window (shell-chat-dock-owners).
+  useShellChatPageEntry(conversationId, pageContext?.getCanvasContext);
+  useShellChatRemarkSink({
+    enabled: !hostedElsewhere && signedIn,
+    homeKey: home.surfaceKey,
+    conversationId,
+    reveal: show,
   });
-  useEffect(() => {
-    if (hostedElsewhere || !signedIn) return undefined;
-    return registerRemarkSink({
-      stage: (item, options) => {
-        const { conversationId: target, reveal } = sinkHandlers.current;
-        if (target) dispatch(stageRemark(target, item, options));
-        else pendingRemarks.current.push({ item, options });
-        reveal();
-      },
-    });
-  }, [dispatch, hostedElsewhere, signedIn]);
-  useEffect(() => {
-    if (!conversationId || pendingRemarks.current.length === 0) return;
-    const queued = pendingRemarks.current.splice(0);
-    for (const { item, options } of queued) dispatch(stageRemark(conversationId, item, options));
-  }, [conversationId, dispatch]);
 
   if (!signedIn) return null;
 

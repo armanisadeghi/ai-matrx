@@ -17,6 +17,7 @@
  */
 import { chromium } from "playwright";
 import { mkdirSync, writeFileSync } from "node:fs";
+import { fillSecret } from "../lib/seat-browser.mjs";
 
 const ORIGIN = process.env.OPENBYID_ORIGIN ?? "http://routeresolver.localhost:3001";
 const EMAIL = process.env.OPENBYID_EMAIL ?? "";
@@ -66,7 +67,7 @@ try {
   pass("signed-out-keeps-the-address", bounced.pathname.startsWith("/login") && kept, bounced.pathname + bounced.search);
 
   await page.locator("#email").fill(EMAIL);
-  await page.locator("#password").fill(PASSWORD);
+  await fillSecret(page.locator("#password"), undefined, PASSWORD);
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await page.waitForURL((u) => !u.pathname.startsWith("/login"), { timeout: 180000 });
   const who = await page.evaluate(async () => (await fetch("/api/whoami")).json().catch(() => null));

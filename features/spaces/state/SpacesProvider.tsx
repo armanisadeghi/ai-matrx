@@ -2,16 +2,21 @@
 
 // features/spaces/state/SpacesProvider.tsx — the workspace state every Spaces screen reads.
 //
-// Holds the store (memory now), the tree of summaries, favorites, recently visited, the sidebar and the
+// Holds the store (the database, through live-store.ts), the tree of summaries, favorites, recently visited, the sidebar and the
 // quick-find switch. Favorites / recent / sidebar width are per-browser view state; the documents
 // themselves live only in the store.
 
 import { useRouter } from "next/navigation";
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 
-import type { SpaceDoc, SpaceId, SpaceSummary, SpacesStore } from "../contract";
-import { getMemorySpacesStore } from "../store/memory-store";
+import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { toast } from "@/lib/toast";
+
+import type { SpaceDoc, SpaceId, SpaceSummary } from "../contract";
 import { between, byPosition } from "../store/position";
+import { addTravelingSmmSample } from "../store/sample";
+import { createLiveSpacesStore, type LiveSpacesStore } from "./live-store";
 
 const FAVORITES_KEY = "spaces:favorites";
 const RECENT_KEY = "spaces:recent";
@@ -39,8 +44,15 @@ function writeList(key: string, list: string[]) {
 export type DropPlacement = "before" | "after" | "inside";
 
 interface SpacesContextValue {
-  store: SpacesStore;
+  store: LiveSpacesStore;
   ready: boolean;
+  /** The tree could not be read (signed out, network): the screens say so instead of looking empty. */
+  loadError: string | null;
+  /** Optimistic title/icon in the tree while the open page types (Notion renames the row live). */
+  patchSummary: (id: SpaceId, patch: Partial<Pick<SpaceSummary, "title" | "icon">>) => void;
+  /** A page just created by the person: its title takes focus once it opens. */
+  takeFocusTitle: (id: SpaceId) => boolean;
+  sample: { adding: boolean; progress: string | null; add: () => Promise<void> };
   summaries: SpaceSummary[];
   archived: SpaceSummary[];
   byId: Map<SpaceId, SpaceSummary>;
@@ -75,9 +87,15 @@ export function useSpaces(): SpacesContextValue {
 
 export function SpacesProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
-  const [store] = useState(() => getMemorySpacesStore());
+  const organizationId = useAppSelector(selectActiveOrganizationId);
+  const orgRef = useRef(organizationId);
+  orgRef.current = organizationId;
+  const [store] = useState(() => createLiveSpacesStore(() => orgRef.current));
   const [all, setAll] = useState<SpaceSummary[]>([]);
   const [ready, setReady] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const focusTitle = useRef<SpaceId | null>(null);
+  const [sampleProgress, setSampleProgress] = useState<string | null>(null);
   const [favorites, setFavorites] = useState<SpaceId[]>([]);
   const [recent, setRecent] = useState<SpaceId[]>([]);
   const [quickFind, setQuickFind] = useState<SpacesContextValue["quickFind"]>({ open: false, mode: "jump" });
@@ -87,14 +105,27 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let live = true;
     const refresh = () => {
-      void store.list({ includeArchived: true }).then((list) => {
-        if (!live) return;
-        setAll(list);
-        setReady(true);
-      });
+      void store.list({ includeArchived: true }).then(
+        (list) => {
+          if (!live) return;
+          setAll(list);
+          setLoadError(null);
+          setReady(true);
+        },
+        (err: unknown) => {
+          if (!live) return;
+          setLoadError(err instanceof Error ? err.message : "We couldn't load your pages.");
+          setReady(true);
+        },
+      );
     };
     refresh();
-    const off = store.onAnyChange(refresh);
+    const off = store.onChange((change) => {
+      if (change.kind === "tree") return refresh();
+      const { id, title, icon, updatedAt, isArchived } = change.doc;
+      // Position and parent stay as the list gave them (a saved doc does not carry the list's order key).
+      setAll((prev) => prev.map((s) => (s.id === id ? { ...s, title, icon, updatedAt, isArchived } : s)));
+    });
     setFavorites(readList(FAVORITES_KEY));
     setRecent(readList(RECENT_KEY));
     return () => {
@@ -153,9 +184,37 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
   };
 
   const createSpace: SpacesContextValue["createSpace"] = async (parentId, options) => {
-    const doc = await store.create({ parentId, afterId: options?.afterId, title: options?.title });
-    if (options?.open !== false) open(doc.id);
-    return doc;
+    try {
+      const doc = await store.create({ parentId, afterId: options?.afterId, title: options?.title });
+      if (options?.open !== false) {
+        focusTitle.current = doc.id;
+        open(doc.id);
+      }
+      return doc;
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "We couldn't create the page.");
+      throw err;
+    }
+  };
+  const patchSummary: SpacesContextValue["patchSummary"] = (id, patch) => {
+    setAll((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)));
+  };
+  const takeFocusTitle = (id: SpaceId) => {
+    if (focusTitle.current !== id) return false;
+    focusTitle.current = null;
+    return true;
+  };
+  const addSample = async () => {
+    if (sampleProgress) return;
+    setSampleProgress("0");
+    try {
+      const root = await addTravelingSmmSample(store, (done, total) => setSampleProgress(`${done}/${total}`));
+      open(root.id);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "We couldn't add the sample.");
+    } finally {
+      setSampleProgress(null);
+    }
   };
   const archiveSpace = (id: SpaceId) => store.archive(id);
   const restoreSpace = (id: SpaceId) => store.restore(id);
@@ -182,6 +241,10 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
   const value: SpacesContextValue = {
     store,
     ready,
+    loadError,
+    patchSummary,
+    takeFocusTitle,
+    sample: { adding: sampleProgress !== null, progress: sampleProgress, add: addSample },
     summaries: visible,
     archived,
     byId: visibleById,

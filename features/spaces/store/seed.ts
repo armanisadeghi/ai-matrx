@@ -1,4 +1,4 @@
-// features/spaces/store/seed.ts — the sample Spaces the memory store starts with.
+// features/spaces/store/seed.ts — "The Traveling SMM™ OS" sample, added on request by store/sample.ts.
 //
 // The acceptance Space ("The Traveling SMM™ OS", rebuilt from Arman's three reference screenshots) and
 // one sub-Space for every page link in it, each with a little realistic working content. Phase-2 pieces
@@ -7,8 +7,7 @@
 import type { RichSpan, SpaceBlock, SpaceColor, SpaceDoc, SpaceMedia } from "../contract";
 import { spread } from "./position";
 
-let n = 0;
-const bid = () => `seed-block-${++n}`;
+const bid = () => crypto.randomUUID();
 
 const t = (text: string, marks: Omit<RichSpan, "text"> = {}): RichSpan => ({ text, ...marks });
 const spans = (s: string | RichSpan[]): RichSpan[] => (typeof s === "string" ? (s ? [t(s)] : []) : s);
@@ -55,6 +54,7 @@ interface PageSeed {
   blocks?: SpaceBlock[];
 }
 
+export const SEED_ROOT_ID = "seed-traveling-smm-os";
 const ROOT = "traveling-smm-os";
 
 /** Sections of the left column: heading, then the links in its box. */
@@ -237,8 +237,8 @@ function bodyFor(page: PageSeed): SpaceBlock[] {
 
 const icon = (name: string): SpaceMedia | null => (name ? { icon: name } : null);
 
+/** The sample as docs keyed by `seed-<key>` ids; the installer swaps in the database's real ids. */
 export function seedSpaces(): SpaceDoc[] {
-  n = 0;
   const stamp = new Date(Date.now() - 37 * 60 * 1000).toISOString();
   const docs: SpaceDoc[] = [];
   const idOf = (key: string) => `seed-${key}`;
@@ -325,17 +325,5 @@ export function seedSpaces(): SpaceDoc[] {
     settings: { font: "default", smallText: false, fullWidth: true, locked: false },
   });
 
-  const gettingStarted = make({ key: "getting-started", title: "Getting Started", icon: "BookOpen" }, null, "r", [
-    b.text("Click anywhere and just start typing."),
-    b.todo("Type / to see every block you can add"),
-    b.todo("Hover a block and drag the ⋮⋮ handle to move it"),
-    b.todo("Press Tab to nest a block under the one above"),
-    b.toggle("Keyboard shortcuts", [
-      b.bullet("Cmd+K or Cmd+P — find any Space"),
-      b.bullet("Cmd+\\ — hide or show the sidebar"),
-      b.bullet("Cmd+D — duplicate the current block"),
-    ]),
-  ]);
-
-  return [root, gettingStarted, ...docs];
+  return [root, ...docs];
 }

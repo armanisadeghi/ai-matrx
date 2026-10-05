@@ -42,6 +42,27 @@ export async function until(label, fn, timeoutMs = 25000) {
 }
 
 /**
+ * Fill a secret (password, token) without ever letting it reach a log. Playwright's timeout error
+ * echoes the filled value in its call log ("fill(\"…\")"), which printed the test admin's password
+ * into agent transcripts (2026-10-05). On error the value is scrubbed from message and stack and the
+ * error is rethrown. `target` is a Page (pass a selector) or a Locator (pass undefined as selector).
+ * Every script that fills a password/secret/token goes through this — guard: check:fill-secret.
+ */
+export async function fillSecret(target, selectorOrUndefined, value, options) {
+  try {
+    if (typeof selectorOrUndefined === "string") await target.fill(selectorOrUndefined, value, options);
+    else await target.fill(value, options);
+  } catch (err) {
+    const scrub = (s) => (typeof s === "string" && value ? s.split(String(value)).join("[redacted]") : s);
+    if (err && typeof err === "object") {
+      err.message = scrub(err.message);
+      err.stack = scrub(err.stack);
+    }
+    throw err;
+  }
+}
+
+/**
  * Sign in the way a person does — the login form, a password, no dev-login nonce and no token
  * in a URL. Returns the email the app itself says is signed in, so a caller never assumes.
  */
@@ -74,18 +95,7 @@ export async function signIn(page, origin, email, password, who = email) {
       if (!(await page.locator("#email").count())) break;
     }
     await page.fill("#email", email);
-    // Playwright's timeout error echoes the filled value in its call log ("fill(\"…\")"), which
-    // printed the test admin's password into agent transcripts (2026-10-05). Never let it out.
-    try {
-      await page.fill("#password", password);
-    } catch (err) {
-      const scrub = (s) => (typeof s === "string" && password ? s.split(password).join("[redacted]") : s);
-      if (err && typeof err === "object") {
-        err.message = scrub(err.message);
-        err.stack = scrub(err.stack);
-      }
-      throw err;
-    }
+    await fillSecret(page, "#password", password);
     await page.click('button:has-text("Sign in")');
     ({ v } = await until(`${who} sign-in`, whoami, attempt === 1 ? 45000 : 90000));
   }

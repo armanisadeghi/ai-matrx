@@ -3,6 +3,7 @@ import { readFileSync, existsSync } from "node:fs";
 const require = createRequire(import.meta.url);
 const { chromium } = require("playwright-core");
 import { markBrowserAgentTraffic } from "./lib/agent-traffic.mjs";
+import { fillSecret } from "./lib/seat-browser.mjs";
 
 for (const file of [".env.local", ".env"]) {
   if (!existsSync(file)) continue;
@@ -45,7 +46,7 @@ try {
   await page.goto(`${BASE}/login`, { timeout: 60000 });
   await page.waitForTimeout(3000);
   await page.fill('input[type="email"]', process.env.AI_MEMBER_USERNAME);
-  await page.fill('input[type="password"]', process.env.AI_MEMBER_PASSWORD);
+  await fillSecret(page, 'input[type="password"]', process.env.AI_MEMBER_PASSWORD);
   await page.evaluate(() => document.querySelector("form")?.requestSubmit());
   await page.waitForFunction(() => !document.querySelector('input[type="email"]'), null, { timeout: 45000 }).catch(() => {});
   await page.waitForTimeout(3000);

@@ -24,6 +24,7 @@ import { SUMMARY as VISIBILITY_SUMMARY, remedyForKey as visibilityRemedyForKey }
 import { featureRegExp } from "../lib/source-roots.cjs";
 import { remedyForKey as uiDriftRemedyForKey } from "../ui-drift/check-ui-drift.mjs";
 import { remedyForKey as oneControlRemedyForKey } from "../one-control/check-one-control.mjs";
+import { remedyForKey as fillSecretRemedyForKey } from "../fill-secret/check-fill-secret.mjs";
 import { remedyForKey as pageTopRemedyForKey } from "../page-top/check-page-top.mjs";
 
 /**
@@ -186,6 +187,15 @@ export const FINDINGS_CHECKS = [
     fix: "Render the package control (@ai-matrx/design-system/controls) as it is; className is placement only.",
     fixFor: oneControlRemedyForKey,
     ...fromRules("one-control"),
+  },
+  {
+    // A secret filled with a bare .fill( echoes in Playwright's timeout error (2026-10-05, test admin
+    // password in a transcript). scripts/lib/seat-browser.mjs fillSecret scrubs it.
+    id: "bare-secret-fill",
+    watch: /^(scripts|e2e)\/.*\.(m?js|cjs|tsx?)$/,
+    fix: "Fill it with fillSecret(page, selector, value) or fillSecret(locator, undefined, value) from scripts/lib/seat-browser.mjs.",
+    fixFor: fillSecretRemedyForKey,
+    ...fromRules("bare-secret-fill"),
   },
   {
     // PAGE-TOP TEMPLATES (features/shell/FEATURE.md § Page-top templates): a raw <PageHeader> row,

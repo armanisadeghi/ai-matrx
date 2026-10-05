@@ -7,7 +7,7 @@
  */
 import { chromium } from "playwright";
 import { mkdirSync, readFileSync } from "node:fs";
-import { until, sleep } from "./lib/seat-browser.mjs";
+import { until, sleep, fillSecret } from "./lib/seat-browser.mjs";
 
 const ORIGIN = process.env.WALK_ORIGIN ?? "http://fts2b.localhost:3001";
 const OUT = "/tmp/matrx-evidence/fts2b";
@@ -38,7 +38,7 @@ for (let n = 1; n <= 6; n += 1) {
     await page.waitForLoadState("load").catch(() => undefined);
     await sleep(2000);
     await page.fill("#email", env.AI_ADMIN_USERNAME, { timeout: 10000 });
-    await page.fill("#password", env.AI_ADMIN_PASSWORD, { timeout: 10000 });
+    await fillSecret(page, "#password", env.AI_ADMIN_PASSWORD, { timeout: 10000 });
     await page.click('button:has-text("Sign in")', { timeout: 10000 });
     await page.waitForURL((u) => !u.pathname.startsWith("/login"), { timeout: 90000 });
     await resume();

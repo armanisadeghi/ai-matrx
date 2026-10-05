@@ -64,6 +64,7 @@ import { createRequire } from "node:module";
 import os from "node:os";
 import path from "node:path";
 import { agentTrafficHeaders, markBrowserAgentTraffic } from "./lib/agent-traffic.mjs";
+import { fillSecret } from "./lib/seat-browser.mjs";
 
 const require = createRequire(import.meta.url);
 
@@ -499,7 +500,7 @@ try {
       const pass = process.env.AI_ADMIN_PASSWORD;
       if (!user || !pass) fail("AI_ADMIN_USERNAME / AI_ADMIN_PASSWORD are not set in the environment, .env.local or .env");
       await page.fill('input[type="email"]', user);
-      await page.fill('input[type="password"]', pass);
+      await fillSecret(page, 'input[type="password"]', pass);
       await page.evaluate(() => document.querySelector("form")?.requestSubmit());
       // Wait until the sign-in actually lands (a fresh profile takes longer
       // than a reused one); the email field leaving is the signal.

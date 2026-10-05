@@ -28,6 +28,7 @@ import { randomBytes } from "node:crypto";
 import { mkdirSync } from "node:fs";
 import { writeDevLoginNonce } from "../lib/dev-login-nonce.mjs";
 import { resolve } from "node:path";
+import { fillSecret } from "../lib/seat-browser.mjs";
 
 const ROOT = process.cwd();
 // One host per LANE, not per script: cookies are per host, so a second lane
@@ -165,7 +166,7 @@ async function signIn(page, next) {
     });
     await page.waitForTimeout(4000);
     await page.locator('input[type="email"], input[name="email"]').first().fill(email);
-    await page.locator('input[type="password"], input[name="password"]').first().fill(password);
+    await fillSecret(page.locator('input[type="password"], input[name="password"]').first(), undefined, password);
     await page
       .getByRole("button", { name: /sign in|log in|continue/i })
       .first()

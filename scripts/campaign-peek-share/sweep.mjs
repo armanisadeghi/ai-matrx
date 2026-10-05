@@ -19,6 +19,7 @@ import { execFileSync } from "node:child_process";
 import { resolve } from "node:path";
 import { markBrowserAgentTraffic } from "../lib/agent-traffic.mjs";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { fillSecret } from "../lib/seat-browser.mjs";
 
 const ROOT = "/Users/armanisadeghi/code/matrx-frontend";
 const argv = process.argv.slice(2);
@@ -66,7 +67,7 @@ async function main() {
     await page.goto(`${ORIGIN}/login`, { waitUntil: "domcontentloaded", timeout: 180000 });
     await page.waitForTimeout(4000);
     await page.locator('input[type="email"], input[name="email"]').first().fill(pick("AI_ADMIN_USERNAME"));
-    await page.locator('input[type="password"], input[name="password"]').first().fill(pick("AI_ADMIN_PASSWORD"));
+    await fillSecret(page.locator('input[type="password"], input[name="password"]').first(), undefined, pick("AI_ADMIN_PASSWORD"));
     await page.locator('button[type="submit"]').first().click();
     await page.waitForTimeout(15000);
   }

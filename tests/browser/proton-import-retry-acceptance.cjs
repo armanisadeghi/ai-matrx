@@ -589,8 +589,9 @@ async function main() {
         requestOrgId = headers['x-organization-id'];
     });
     await page.goto(`${FRONTEND}/login`, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+    const { fillSecret } = await import("../../scripts/lib/seat-browser.mjs");
     await page.locator('#email').fill(process.env.AI_ADMIN_USERNAME);
-    await page.locator('#password').fill(process.env.AI_ADMIN_PASSWORD);
+    await fillSecret(page.locator('#password'), undefined, process.env.AI_ADMIN_PASSWORD);
     setStage('login_submit');
     authStarted = true;
     proof.cleanup.authDisposition = 'auth_unknown';

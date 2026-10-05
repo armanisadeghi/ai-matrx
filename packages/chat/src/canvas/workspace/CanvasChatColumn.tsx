@@ -10,7 +10,8 @@
  * HOW THE CANVAS REACHES THE AGENT: as ONE named context entry, written with
  * `setContextEntries` — never as user text (THE USER-INPUT LAW,
  * common-docs/systems/agents/agent-variable-binding/FEATURE.md). Refreshed:
- *   1. when the conversation exists (and again when it changes);
+ *   1. when the conversation exists, and removed when the page leaves — by
+ *      the shell dock (`useShellChatPageEntry`), which outlives this column;
  *   2. in the CAPTURE phase of every pointerdown / Enter keydown inside the
  *      chat — before the composer's own send handler runs, so the request is
  *      assembled from the canvas as it is NOW;
@@ -18,14 +19,11 @@
  * `setContextEntries` merges by key, so re-writing replaces the snapshot.
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Building2, RotateCcw } from "lucide-react";
 import { AgentConversationColumn } from "../../agents/components/shared/AgentConversationColumn";
 import type { AttachedContextRailItem } from "../../agents/components/inputs/smart-input/ConversationContextRail";
-import {
-  removeContextEntry,
-  setContextEntries,
-} from "../../agents/redux/execution-system/instance-context/instance-context.slice";
+import { setContextEntries } from "../../agents/redux/execution-system/instance-context/instance-context.slice";
 import { useAppDispatch } from "../../store/hooks";
 import { Button } from "@ai-matrx/design-system/controls";
 import { ErrorNotice } from "@ai-matrx/chat/host/ui-slots";
@@ -119,27 +117,6 @@ export function CanvasChatColumn({
     if (!column.contains(event.target as Node)) return;
     writeContext(conversationId);
   };
-
-  // (1) Seed the moment the conversation exists — for every new one, and for
-  // every new page handing its context (the shell chat follows the person).
-  // The previous page's entry leaves with it: a conversation never keeps a
-  // snapshot of a page it is no longer beside.
-  const seeded = useRef<{
-    conversationId: string;
-    read: (() => CanvasContextEntry) | undefined;
-    key: string | null;
-  } | null>(null);
-  useEffect(() => {
-    if (!conversationId) return;
-    const previous = seeded.current;
-    if (previous?.conversationId === conversationId && previous.read === getCanvasContext) return;
-    const entry = getCanvasContext ? getCanvasContext() : null;
-    if (entry) dispatch(setContextEntries({ conversationId, entries: [entry] }));
-    if (previous?.conversationId === conversationId && previous.key && previous.key !== entry?.key) {
-      dispatch(removeContextEntry({ conversationId, key: previous.key }));
-    }
-    seeded.current = { conversationId, read: getCanvasContext, key: entry?.key ?? null };
-  }, [conversationId, dispatch, getCanvasContext]);
 
   if (conversation.state === "opening") {
     // Keyed: a fresh "slow" clock for every opening.

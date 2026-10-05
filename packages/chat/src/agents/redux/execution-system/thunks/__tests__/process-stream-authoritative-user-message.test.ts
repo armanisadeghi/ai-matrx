@@ -449,3 +449,116 @@ test("terminal host-authored empty row is authoritative without polling", async 
   expect(messages.byConversationId[CONVERSATION_ID].byId[USER_MESSAGE_ID].metadata).toEqual({ authored_by: "host" });
   expect(mockQuery.maybeSingle).toHaveBeenCalledTimes(1);
 });
+
+// THE REAL WIRE (live, 2026-10-05, /v2/ai/manual): the server finishes the
+// user row as `active` — never `completed` — so the status branch never fired
+// and the Agent Builder's bubble for a template-built turn (variables + an
+// image, nothing typed) read "This message has no displayable text". The end
+// of a successful stream reads it back.
+test("a template-built turn with an empty optimistic bubble is read back at stream end (server says active)", async () => {
+  mockQuery.eq.mockClear();
+  mockQuery.is.mockClear();
+  mockQuery.eq.mockReturnValue(mockQuery);
+  mockQuery.is.mockReturnValue(mockQuery);
+  const rendered = [
+    { type: "text", text: "Please analyze the Instagram post image I've attached." },
+    { type: "media", kind: "image", file_id: "55555555-5555-4555-8555-555555555555", mime_type: "image/jpeg" },
+  ];
+  mockQuery.maybeSingle.mockReset().mockResolvedValue({ data: row(rendered), error: null });
+
+  let messages = messagesReducer(undefined, { type: "test/init" });
+  let active = activeRequestsReducer(
+    undefined,
+    createRequest({ requestId: REQUEST_ID, conversationId: CONVERSATION_ID }),
+  );
+  const getState = () =>
+    ({
+      activeRequests: active,
+      messages,
+      conversations: { byConversationId: { [CONVERSATION_ID]: { status: "streaming", agentId: null } } },
+      instanceUserInput: { byConversationId: {} },
+      instanceUIState: { byConversationId: {} },
+      instanceResources: { byConversationId: {} },
+      instanceVariableValues: { byConversationId: {} },
+      observability: { toolCalls: {}, userRequests: {}, requests: {} },
+    }) as unknown as ChatRootState;
+  const dispatch = (action: unknown): unknown => {
+    if (typeof action === "function") {
+      return (action as (dispatch: (action: unknown) => unknown, getState: () => ChatRootState, extra: unknown) => unknown)(dispatch, getState, undefined);
+    }
+    active = activeRequestsReducer(active, action as never);
+    messages = messagesReducer(messages, action as never);
+    return action;
+  };
+  // The builder's optimistic bubble for a variables-only send: no body.
+  dispatch(addOptimisticUserMessage({ conversationId: CONVERSATION_ID, clientTempId: "temp-user", content: [], position: 0 }));
+
+  await processStream({
+    requestId: REQUEST_ID,
+    conversationId: CONVERSATION_ID,
+    response: response([
+      { event: "record_reserved", data: { db_project: "main", table: "message", record_id: USER_MESSAGE_ID, status: "pending", parent_refs: { conversation_id: CONVERSATION_ID }, metadata: { role: "user", position: 0 } } },
+      { event: "record_update", data: { db_project: "main", table: "message", record_id: USER_MESSAGE_ID, status: "active", metadata: {} } },
+      { event: "end", data: {} },
+    ]),
+    submitAt: 0,
+    conversationIdAt: null,
+    dispatch,
+    getState,
+    userMessageClientTempId: "temp-user",
+    forceLocalConversationId: true,
+  });
+
+  const record = messages.byConversationId[CONVERSATION_ID].byId[USER_MESSAGE_ID];
+  expect(extractFlatText(record)).toContain("Please analyze the Instagram post image");
+  expect(record.content).toEqual(expect.arrayContaining([expect.objectContaining({ type: "media" })]));
+});
+
+test("a typed send is never re-read at stream end (server says active)", async () => {
+  mockQuery.eq.mockClear();
+  mockQuery.is.mockClear();
+  mockQuery.maybeSingle.mockReset();
+  let messages = messagesReducer(undefined, { type: "test/init" });
+  let active = activeRequestsReducer(undefined, createRequest({ requestId: REQUEST_ID, conversationId: CONVERSATION_ID }));
+  const getState = () =>
+    ({
+      activeRequests: active,
+      messages,
+      conversations: { byConversationId: { [CONVERSATION_ID]: { status: "streaming", agentId: null } } },
+      instanceUserInput: { byConversationId: {} },
+      instanceUIState: { byConversationId: {} },
+      instanceResources: { byConversationId: {} },
+      instanceVariableValues: { byConversationId: {} },
+      observability: { toolCalls: {}, userRequests: {}, requests: {} },
+    }) as unknown as ChatRootState;
+  const dispatch = (action: unknown): unknown => {
+    if (typeof action === "function") {
+      return (action as (dispatch: (action: unknown) => unknown, getState: () => ChatRootState, extra: unknown) => unknown)(dispatch, getState, undefined);
+    }
+    active = activeRequestsReducer(active, action as never);
+    messages = messagesReducer(messages, action as never);
+    return action;
+  };
+  dispatch(addOptimisticUserMessage({ conversationId: CONVERSATION_ID, clientTempId: "temp-user", content: [{ type: "text", text: "what I typed" }], position: 0 }));
+
+  await processStream({
+    requestId: REQUEST_ID,
+    conversationId: CONVERSATION_ID,
+    response: response([
+      { event: "record_reserved", data: { db_project: "main", table: "message", record_id: USER_MESSAGE_ID, status: "pending", parent_refs: { conversation_id: CONVERSATION_ID }, metadata: { role: "user", position: 0 } } },
+      { event: "record_update", data: { db_project: "main", table: "message", record_id: USER_MESSAGE_ID, status: "active", metadata: {} } },
+      { event: "end", data: {} },
+    ]),
+    submitAt: 0,
+    conversationIdAt: null,
+    dispatch,
+    getState,
+    userMessageClientTempId: "temp-user",
+    forceLocalConversationId: true,
+  });
+
+  expect(extractFlatText(messages.byConversationId[CONVERSATION_ID].byId[USER_MESSAGE_ID])).toBe("what I typed");
+  expect(
+    mockQuery.eq.mock.calls.filter(([column, value]) => column === "id" && value === USER_MESSAGE_ID),
+  ).toHaveLength(0);
+});

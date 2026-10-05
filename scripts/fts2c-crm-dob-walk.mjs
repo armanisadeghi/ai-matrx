@@ -1,7 +1,7 @@
 /** FTS-2c: a CRM person page adds, shows and saves a date of birth (crm.party column). Headless, :3001, admin@admin.com. */
 import { chromium } from "playwright";
 import { mkdirSync, readFileSync } from "node:fs";
-import { until, sleep } from "./lib/seat-browser.mjs";
+import { until, sleep, fillSecret } from "./lib/seat-browser.mjs";
 const ORIGIN = process.env.WALK_ORIGIN ?? "http://fts2b.localhost:3001";
 const OUT = "/tmp/matrx-evidence/fts2c"; mkdirSync(OUT, { recursive: true });
 const PARTY = process.argv[2];
@@ -12,7 +12,7 @@ const resume = async () => { if (page.url().includes("__dev-walk")) { await page
 const go = async (p) => { await page.goto(`${ORIGIN}${p}`, { waitUntil: "domcontentloaded", timeout: 180000 }); await resume(); };
 await go("/login");
 for (let n = 1; n <= 6; n++) { try { await resume(); await page.waitForSelector("#email", { timeout: 60000 }); await sleep(2000);
-  await page.fill("#email", env.AI_ADMIN_USERNAME); await page.fill("#password", env.AI_ADMIN_PASSWORD); await page.click('button:has-text("Sign in")');
+  await page.fill("#email", env.AI_ADMIN_USERNAME); await fillSecret(page, "#password", env.AI_ADMIN_PASSWORD); await page.click('button:has-text("Sign in")');
   await page.waitForURL((u) => !u.pathname.startsWith("/login"), { timeout: 90000 }); await resume(); break; } catch (e) { console.log("sign-in try", n); await sleep(3000 * n); } }
 await page.waitForLoadState("load").catch(() => {}); await sleep(5000);
 const who = await page.evaluate(async () => (await (await fetch("/api/whoami")).json())?.email ?? null);

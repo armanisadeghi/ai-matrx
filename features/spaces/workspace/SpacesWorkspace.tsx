@@ -13,6 +13,7 @@ import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { QuickFind } from "../nav/QuickFind";
 import { SpacesSidebarContent } from "../sidebar/SpacesSidebar";
 import { SpacesProvider, useSpaces } from "../state/SpacesProvider";
+import { useSpacesSidebarShortcut } from "./useSpacesSidebarShortcut";
 
 const WIDTH_KEY = "spaces:sidebar-width";
 const MIN = 200;
@@ -31,17 +32,10 @@ function Frame({ children }: { children: ReactNode }) {
     if (saved >= MIN && saved <= MAX) setWidth(saved);
   }, []);
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "\\") {
-        e.preventDefault();
-        setSidebarCollapsed(!sidebarCollapsed);
-        setPeek(false);
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [sidebarCollapsed, setSidebarCollapsed]);
+  useSpacesSidebarShortcut(() => {
+    setSidebarCollapsed(!sidebarCollapsed);
+    setPeek(false);
+  });
 
   if (isMobile) {
     return (

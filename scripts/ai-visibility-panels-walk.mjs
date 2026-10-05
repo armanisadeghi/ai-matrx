@@ -11,6 +11,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { chromium } from "playwright";
+import { fillSecret } from "./lib/seat-browser.mjs";
 
 const args = process.argv.slice(2);
 const arg = (name, dflt) => {
@@ -51,7 +52,7 @@ try {
   await resumeIfParked();
   await page.waitForTimeout(4000);
   await page.fill('input[type="email"]', user);
-  await page.fill('input[type="password"]', pass);
+  await fillSecret(page, 'input[type="password"]', pass);
   await page.evaluate(() => document.querySelector("form")?.requestSubmit());
   await page.waitForFunction(() => !document.querySelector('input[type="email"]'), null, { timeout: 60000 });
   await page.goto(`${base}${route}`, { timeout: 300000 });

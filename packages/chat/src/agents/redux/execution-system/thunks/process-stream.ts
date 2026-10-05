@@ -479,6 +479,31 @@ export async function processStream({
   const reservedUserMessageIds = new Set<string>();
   const persistedConversationIdByUserMessageId = new Map<string, string>();
   const authoritativeUserMessageRefreshes: Promise<unknown>[] = [];
+  // A user row whose body only the server assembled (an agent's message
+  // template filled from variables — the Agent Builder's every run, a
+  // variables-only launch) has nothing on screen until it is read back. Read
+  // it ONLY when the client holds no body: an optimistic send already froze
+  // what the person submitted, and refetching that would rewrite history.
+  const refreshUserMessageWithoutBody = (messageId: string) => {
+    const existing = getState().messages.byConversationId[conversationId]
+      ?.byId[messageId];
+    if (hasDisplayableMessageContent(existing?.userContent ?? existing?.content)) {
+      return;
+    }
+    authoritativeUserMessageRefreshes.push(
+      Promise.resolve(
+        dispatch(
+          refetchSingleMessage({
+            conversationId,
+            messageId,
+            persistedConversationId:
+              persistedConversationIdByUserMessageId.get(messageId),
+            waitForReadable: true,
+          }),
+        ),
+      ),
+    );
+  };
 
   let reservedUserRequestId: string | null = null;
 
@@ -2587,27 +2612,7 @@ export async function processStream({
             d.status === "completed" &&
             reservedUserMessageIds.delete(d.record_id)
           ) {
-            const existing = getState().messages.byConversationId[
-              conversationId
-            ]?.byId[d.record_id];
-            const alreadyFrozen = hasDisplayableMessageContent(
-              existing?.userContent ?? existing?.content,
-            );
-            if (!alreadyFrozen) {
-              authoritativeUserMessageRefreshes.push(
-                Promise.resolve(
-                  dispatch(
-                    refetchSingleMessage({
-                      conversationId,
-                      messageId: d.record_id,
-                      persistedConversationId:
-                        persistedConversationIdByUserMessageId.get(d.record_id),
-                      waitForReadable: true,
-                    }),
-                  ),
-                ),
-              );
-            }
+            refreshUserMessageWithoutBody(d.record_id);
           }
         } else if (d.table === "user_request") {
           dispatch(
@@ -3215,6 +3220,19 @@ export async function processStream({
 
   // Final flush of any trailing buffers after the loop ends
   finalizeAccumulator();
+
+  // The server finishes a user row as `active`, never `completed` (live,
+  // 2026-10-05: /v2/ai/manual sends record_update status "active" for both
+  // rows), so the status branch above never fired for a template-built turn
+  // and the Agent Builder's bubble read "This message has no displayable
+  // text". The end of a successful stream IS the durable barrier: read every
+  // reserved user row that still has no body on screen.
+  if (streamFailure === null) {
+    for (const messageId of reservedUserMessageIds) {
+      refreshUserMessageWithoutBody(messageId);
+    }
+    reservedUserMessageIds.clear();
+  }
 
   // The terminal user-message refresh is part of this stream's transcript
   // commit, not background best effort. Its bounded retry covers a server

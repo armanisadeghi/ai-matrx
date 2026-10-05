@@ -611,8 +611,9 @@ async function main() {
       waitUntil: "domcontentloaded",
       timeout: 30_000,
     });
+    const { fillSecret } = await import("../../scripts/lib/seat-browser.mjs");
     await page.locator("#email").fill(process.env.AI_ADMIN_USERNAME);
-    await page.locator("#password").fill(process.env.AI_ADMIN_PASSWORD);
+    await fillSecret(page.locator("#password"), undefined, process.env.AI_ADMIN_PASSWORD);
     await Promise.all([
       page.waitForURL((url) => url.pathname !== "/login", { timeout: 30_000 }),
       page.getByRole("button", { name: "Sign in", exact: true }).click(),

@@ -93,6 +93,9 @@
     "page-top": {
       "no_accept": "scripts/page-top/baseline.json only shrinks (`--shrink`); a new item is fixed by moving the page onto a template — never added to the baseline."
     },
+    "bare-secret-fill": {
+      "no_accept": "scripts/fill-secret/check-fill-secret.mjs has no baseline: the repo shipped with zero bare secret fills, so every item is new — use fillSecret."
+    },
     "one-control": {
       "no_accept": "scripts/one-control/check-one-control.mjs has no baseline: the controls shipped with zero sites, so every item is new — render the package control."
     },

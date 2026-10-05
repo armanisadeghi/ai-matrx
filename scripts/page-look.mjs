@@ -67,6 +67,7 @@ import { execSync } from "node:child_process";
 import os from "node:os";
 import path from "node:path";
 import { agentTrafficHeaders, markBrowserAgentTraffic } from "./lib/agent-traffic.mjs";
+import { fillSecret } from "./lib/seat-browser.mjs";
 
 const require = createRequire(import.meta.url);
 
@@ -393,7 +394,7 @@ try {
     if (await page.locator('input[type="email"]').count()) {
       if (!LOGIN.user || !LOGIN.pass) fail(`${LOGIN.names} are not set (environment or .env.local)`);
       await page.fill('input[type="email"]', LOGIN.user);
-      await page.fill('input[type="password"]', LOGIN.pass);
+      await fillSecret(page, 'input[type="password"]', LOGIN.pass);
       await page.evaluate(() => document.querySelector("form")?.requestSubmit());
       await page.waitForFunction(() => !document.querySelector('input[type="email"]'), null, { timeout: 45000 }).catch(() => {});
       await page.waitForTimeout(2000);

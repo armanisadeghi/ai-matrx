@@ -17,6 +17,7 @@
 import { chromium } from "playwright";
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { resolve } from "node:path";
+import { fillSecret } from "./lib/seat-browser.mjs";
 
 const ROOT = resolve(new URL(".", import.meta.url).pathname, "..");
 const PORT = 3001; // the one dev server machine-wide (pnpm preview:start)
@@ -65,7 +66,7 @@ const wants = (name) => !ONLY || ONLY.includes(name);
 async function signIn(page) {
   await page.goto(`${ORIGIN}/login?redirectTo=${encodeURIComponent("/data")}`, { waitUntil: "domcontentloaded", timeout: 240000 });
   await page.locator("#email").fill(EMAIL);
-  await page.locator("#password").fill(PASSWORD);
+  await fillSecret(page.locator("#password"), undefined, PASSWORD);
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await page.waitForURL((u) => !u.pathname.startsWith("/login"), { timeout: 120000 });
   const who = await page.evaluate(async () => (await fetch("/api/whoami")).json());

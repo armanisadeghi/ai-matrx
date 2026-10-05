@@ -174,7 +174,6 @@ export function DomainConnections() {
                       eligible.find((item) => item.id === credentialId)
                         ?.display_name ?? providerLabels[provider],
                   },
-                  connectionErrorMessage,
                   connectedSchema,
                   setMessage,
                 );

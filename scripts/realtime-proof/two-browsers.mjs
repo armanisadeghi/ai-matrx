@@ -21,6 +21,7 @@
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
+import { fillSecret } from "../lib/seat-browser.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const PORT = 3001;
@@ -121,7 +122,7 @@ async function signInTest(page) {
   // client bundle has attached, and a fill that lands before that silently does nothing.
   await page.waitForSelector("#email", { timeout: 90000 });
   await page.fill("#email", TEST_EMAIL);
-  await page.fill("#password", TEST_PASSWORD);
+  await fillSecret(page, "#password", TEST_PASSWORD);
   await page.click('button:has-text("Sign in")');
   const { v } = await until("test sign-in", async () => {
     const who = await page.evaluate(async () => {
