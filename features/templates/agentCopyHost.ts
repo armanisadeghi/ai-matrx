@@ -8,7 +8,7 @@
 import type { AppDispatch } from "@/lib/redux/store";
 import { supabase } from "@/utils/supabase/client";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
-import { duplicateAgent, saveAgentField } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import { duplicateAgent, saveAgentField } from "@/features/agents/redux/builder-write.thunks";
 import { nameCopiedAgent, writeAgent } from "./agentWrites";
 import { callApi } from "@/lib/api/call-api";
 import type { components } from "@ai-matrx/agents/generated/api-types";

@@ -3,7 +3,7 @@
 import { Suspense, useMemo } from "react";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { resolveJsonPayload, artifactDedupKey } from "../artifact-renderers";
-import { useArtifactState } from "../persistence/useArtifactState";
+import { useBlockState } from "@/features/block-state/useBlockState";
 import type { SlideshowState } from "@/components/mardown-display/blocks/presentations/Slideshow";
 import Slideshow from "@/components/mardown-display/blocks/presentations/Slideshow";
 import type { ArtifactRendererProps } from "../types";
@@ -28,9 +28,9 @@ export default function PresentationArtifact({
   messageId,
   blockIndex,
 }: ArtifactRendererProps) {
-  const { state, loaded, save } = useArtifactState<
+  const { state, loaded, patch: save } = useBlockState<
     SlideshowState & Record<string, unknown>
-  >(artifactId, "generic");
+  >();
 
   const payload = useMemo(
     () =>
@@ -52,7 +52,7 @@ export default function PresentationArtifact({
   }
 
   // Wait for persisted state to load before rendering so initialState seeds correctly.
-  if (artifactId && !loaded) {
+  if (!loaded) {
     return <MatrxMiniLoader />;
   }
 

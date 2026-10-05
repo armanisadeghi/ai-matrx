@@ -45,7 +45,17 @@ describe("every restorable agent shell publishes its address", () => {
   it("the hook registers the agent token keyed by the conversation", () => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { useAgentShellAddress } = require("../useAgentShellAddress");
-    useAgentShellAddress("c-1", "sidebar");
+    // useAgentShellAddress is a host-slot hook (ui-slots.tsx latches it in a useRef since
+    // 0862a9fc03), so it must run inside a component, not bare.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { createElement } = require("react");
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { renderToString } = require("react-dom/server");
+    const Probe = () => {
+      useAgentShellAddress("c-1", "sidebar");
+      return null;
+    };
+    renderToString(createElement(Probe));
     expect(useUrlSync).toHaveBeenCalledWith("agent", "c-1", { m: "sidebar" });
   });
 });

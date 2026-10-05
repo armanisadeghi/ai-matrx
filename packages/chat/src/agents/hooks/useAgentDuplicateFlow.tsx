@@ -4,7 +4,7 @@ import { useCallback, useState } from "react";
 import { usePathname } from "../../host/navigation";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { selectAgentById } from "../redux/agent-definition/selectors";
-import { duplicateAgent } from "../redux/agent-definition/thunks";
+import { getBuilderDoor, requireBuilderDoor } from "../../host/builder-door";
 import {
   AgentDuplicateOutcomeDialog,
   type DuplicateOutcomeState,
@@ -61,7 +61,7 @@ export function useAgentDuplicateFlow(
 
     try {
       const id = await dispatch(
-        duplicateAgent({ agentId, asSystem: duplicateAsSystem }),
+        requireBuilderDoor().duplicateAgent({ agentId, asSystem: duplicateAsSystem }),
       ).unwrap();
       setNewAgentId(id);
       setState("success");
@@ -92,5 +92,7 @@ export function useAgentDuplicateFlow(
     startDuplicate,
     dialog,
     isDuplicating: open && state === "loading",
+    /** False in a host that registered no builder door: nothing offers a duplicate (reported once). */
+    available: getBuilderDoor() !== null,
   } as const;
 }

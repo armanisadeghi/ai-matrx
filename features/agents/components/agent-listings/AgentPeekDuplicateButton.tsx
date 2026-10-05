@@ -22,7 +22,7 @@ import {
   selectAgentById,
   selectAgentReadyForBuilder,
 } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
-import { duplicateAgent } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import { duplicateAgent } from "@/features/agents/redux/builder-write.thunks";
 import { agentGoHref } from "@ai-matrx/chat/agents/addressing/agentAddress";
 import { toast } from "@/lib/toast";
 import { getUserMessage } from "@/lib/api/errors";

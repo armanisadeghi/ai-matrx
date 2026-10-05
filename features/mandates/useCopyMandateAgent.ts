@@ -28,9 +28,7 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import type { AppDispatch } from "@/lib/redux/store";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
-import {
-  duplicateAgent,
-} from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import { duplicateAgent } from "@/features/agents/redux/builder-write.thunks";
 import {
   duplicateAgentVersion,
 } from "@/features/agents/redux/builder-tier.thunks";

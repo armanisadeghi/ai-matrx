@@ -22,10 +22,8 @@ import {
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import {
-  fetchAgentVersionHistory,
-  type AgentVersionHistoryItem,
-} from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import { fetchAgentVersionHistory } from "@/features/agents/redux/builder-versions.thunks";
+import { type AgentVersionHistoryItem } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import {
   selectAgentById,
   selectAgentName,

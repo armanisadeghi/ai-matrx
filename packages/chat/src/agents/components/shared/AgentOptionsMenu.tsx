@@ -2,7 +2,7 @@
 
 import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import { applyOrganizationContextHeader } from "../../../host/server/organization-context";
-import { duplicateAgent } from "../../redux/agent-definition/thunks";
+import { getBuilderDoor, requireBuilderDoor } from "../../../host/builder-door";
 import { invalidateAgentCache } from "../../redux/agent-definition/invalidate-agent-cache.thunk";
 import { selectAgentById } from "../../redux/agent-definition/selectors";
 import { useOpenAgentSettingsWindow } from "../../../host/window-openers";
@@ -329,7 +329,7 @@ export function AgentOptionsMenu({
 
     try {
       const newId = await dispatch(
-        duplicateAgent({ agentId, asSystem }),
+        requireBuilderDoor().duplicateAgent({ agentId, asSystem }),
       ).unwrap();
       setDuplicatedAgentId(newId);
       setDuplicateState("success");
@@ -344,11 +344,14 @@ export function AgentOptionsMenu({
     }
   }, [agent?.name, agentId, dispatch, isAdminContext, isBuiltin]);
 
-  const managementItems = isBuiltin
-    ? AGENT_MANAGEMENT_ITEMS.filter(
-        (item) => item.label !== "Convert to Template",
-      )
-    : AGENT_MANAGEMENT_ITEMS;
+  // Without a registered builder door (a bare host) there is no Duplicate: the row is absent
+  // and the missing door is reported once (host/builder-door), never a button that does nothing.
+  const hasBuilderDoor = getBuilderDoor() !== null;
+  const managementItems = AGENT_MANAGEMENT_ITEMS.filter(
+    (item) =>
+      (!isBuiltin || item.label !== "Convert to Template") &&
+      (hasBuilderDoor || item.label !== "Duplicate"),
+  );
 
   // Admin actions (incl. "Find Usages (Admin)") are super-admin only. The
   // server RPCs enforce is_super_admin() regardless; this hides the entry.
@@ -730,6 +733,8 @@ export function AgentOptionsMenu({
               ))}
             </>
           )}
+          {lifecycle.available && (
+            <>
           {/* ── Manage this agent ── */}
           <DropdownMenuSeparator />
           <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground/60 font-semibold">
@@ -760,6 +765,8 @@ export function AgentOptionsMenu({
             <Trash2 className="w-4 h-4 mr-2" />
             <span className="flex-1">Delete</span>
           </DropdownMenuItem>
+            </>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
       {duplicateDialog}
@@ -806,11 +813,14 @@ function MobileMenuContent({
   // for the full rationale.
   const agent = useAppSelector((state) => selectAgentById(state, agentId));
   const isBuiltin = agent?.agentType === "builtin";
-  const managementItems = isBuiltin
-    ? AGENT_MANAGEMENT_ITEMS.filter(
-        (item) => item.label !== "Convert to Template",
-      )
-    : AGENT_MANAGEMENT_ITEMS;
+  // Without a registered builder door (a bare host) there is no Duplicate: the row is absent
+  // and the missing door is reported once (host/builder-door), never a button that does nothing.
+  const hasBuilderDoor = getBuilderDoor() !== null;
+  const managementItems = AGENT_MANAGEMENT_ITEMS.filter(
+    (item) =>
+      (!isBuiltin || item.label !== "Convert to Template") &&
+      (hasBuilderDoor || item.label !== "Duplicate"),
+  );
   // Admin actions (incl. "Find Usages (Admin)") are super-admin only. The
   // server RPCs enforce is_super_admin() regardless; this hides the entry.
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
@@ -1081,6 +1091,8 @@ function MobileMenuContent({
         </>
       )}
 
+      {lifecycle.available && (
+        <>
       {/* ── Manage this agent ── */}
       <div className="h-px bg-border mx-3 my-1" />
       <div className="px-4 py-1.5">
@@ -1116,6 +1128,8 @@ function MobileMenuContent({
           <span className="flex-1 text-left">Delete</span>
         </button>
       </div>
+        </>
+      )}
     </div>
   );
 }

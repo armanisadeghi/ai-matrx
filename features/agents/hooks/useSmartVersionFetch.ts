@@ -2,13 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@ai-matrx/chat/store/hooks";
-import {
-  fetchAgentVersionSnapshot,
-} from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import { fetchAgentVersionSnapshot } from "@/features/agents/redux/builder-versions.thunks";
 import {
   selectVersionsByParentAgentId,
 } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
-import type { AgentVersionHistoryItem } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import type { AgentVersionHistoryItem } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import { computeDiff } from "@ai-matrx/diff/structural";
 import type { DiffResult } from "@ai-matrx/diff/structural";
 import { AGENT_DIFF_OPTIONS } from "@/features/agents/components/diff/agent-diff-constants";

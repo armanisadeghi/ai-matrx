@@ -9,6 +9,9 @@
 //   - feature intelligence (the icon, declared places, intelligence-page links),
 //     which the package reads through `@ai-matrx/chat/surfaces/runtime/intelligence`.
 // Renders nothing.
+import { useEffect } from "react";
+import { useAppStore } from "@/lib/redux/hooks";
+import { registerBlockStateRemarkDurability } from "@/features/block-state/remarkDurability";
 import "@/providers/chat-surface-manifests";
 // The app-feature tool renderers (SEO, topical map, notes, tasks, lists, documents, datasets,
 // knowledge search). Imported BEFORE the data-tool wrappers below, which wrap `dataset`.
@@ -37,5 +40,8 @@ registerSurfaceIntelligence({
 });
 
 export function ChatSurfaceRegistrations(): null {
+  // Unsent remark chips are kept server-side (platform.block_states), never in the browser.
+  const store = useAppStore();
+  useEffect(() => registerBlockStateRemarkDurability(store), [store]);
   return null;
 }

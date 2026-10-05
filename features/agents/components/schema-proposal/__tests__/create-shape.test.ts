@@ -333,15 +333,14 @@ function makeMockClient(options?: {
               in: () => Promise.resolve({ data: null, error: null }),
               // kind_example fix-and-retry path
               eq: () => ({
-                select: () => ({
-                  single: () =>
-                    Promise.resolve({
-                      data: {
-                        validation_status: options?.exampleStatus ?? "passed",
-                      },
-                      error: null,
-                    }),
-                }),
+                // writeOneRow (8d3be8d068) awaits `.select()` itself and expects ONE row in an
+                // array; `.single()` stays for any caller still on the old shape.
+                select: () => {
+                  const row = { validation_status: options?.exampleStatus ?? "passed" };
+                  return Object.assign(Promise.resolve({ data: [row], error: null }), {
+                    single: () => Promise.resolve({ data: row, error: null }),
+                  });
+                },
               }),
             };
           },

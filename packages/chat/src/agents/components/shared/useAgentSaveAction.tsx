@@ -12,10 +12,7 @@ import {
   selectAgentIsReadOnly,
   selectAgentAccessResolved,
 } from "../../redux/agent-definition/selectors";
-import {
-  saveAgent,
-  createAgent,
-} from "../../redux/agent-definition/thunks";
+import { getBuilderDoor, requireBuilderDoor } from "../../../host/builder-door";
 import { toast } from "../../../host/notify";
 import { agentNameTaken } from "../../redux/agent-definition/agentNameTaken";
 import { setAgentField } from "../../redux/agent-definition/slice";
@@ -106,7 +103,7 @@ export function useAgentSaveAction(
       if (isNewRoute) {
         if (!agentRecord) return;
         const newId = await dispatch(
-          createAgent({
+          requireBuilderDoor().createAgent({
             name: agentRecord.name,
             description: agentRecord.description,
             agentType: agentRecord.agentType,
@@ -131,7 +128,7 @@ export function useAgentSaveAction(
         return;
       }
 
-      await dispatch(saveAgent(agentId)).unwrap();
+      await dispatch(requireBuilderDoor().saveAgent(agentId)).unwrap();
       toast.success("Agent saved!");
       void announceReach(agentRecord?.name ?? null);
       if (modelMissing) {
@@ -210,5 +207,7 @@ export function useAgentSaveAction(
     reachBadge,
     /** The same badge as one 44pt tap target, for the mobile header. */
     reachTapBadge,
+    /** False in a host that registered no builder door: save controls are left out (reported once). */
+    available: getBuilderDoor() !== null,
   } as const;
 }

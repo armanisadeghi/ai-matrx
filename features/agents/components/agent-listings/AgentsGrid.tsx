@@ -59,12 +59,9 @@ import {
   selectAgentsSliceError,
 } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
-import {
-  fetchAgentsList,
-  deleteAgent,
-  duplicateAgent,
-  resolveAgentVersionId,
-} from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import { fetchAgentsList } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import { resolveAgentVersionId } from "@/features/agents/redux/builder-versions.thunks";
+import { deleteAgent, duplicateAgent } from "@/features/agents/redux/builder-write.thunks";
 import type {
   AgentConsumerState,
   AgentSortOption,

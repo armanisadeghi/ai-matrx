@@ -7,7 +7,7 @@ import {
   artifactDedupKey,
   resolveMarkdownPayload,
 } from "../artifact-renderers";
-import { useArtifactState } from "../persistence/useArtifactState";
+import { useBlockState } from "@/features/block-state/useBlockState";
 import type { TroubleshootingState } from "@/components/mardown-display/blocks/troubleshooting/TroubleshootingBlock";
 import TroubleshootingBlock from "@/components/mardown-display/blocks/troubleshooting/TroubleshootingBlock";
 import type { ArtifactRendererProps } from "../types";
@@ -42,23 +42,16 @@ export default function TroubleshootingArtifact({
 
   // Answer state also rides the next message as one interaction chip (the
   // shape interaction seam); view state never does.
-  const { state, loaded, save } = useArtifactState<
+  const { state, loaded, patch: save } = useBlockState<
     TroubleshootingState & Record<string, unknown>
-  >(artifactId, "generic", undefined, undefined, {
-    kind: "troubleshooting",
-    title: (troubleshooting as { title?: string } | null)?.title ?? null,
-    conversationId,
-    messageId,
-    blockIndex,
-    data: troubleshooting,
-  });
+  >({ title: (troubleshooting as { title?: string } | null)?.title ?? null, data: troubleshooting });
 
   if (!troubleshooting) {
     return isStreamActive ? <MatrxMiniLoader /> : null;
   }
 
   // Wait for persisted state to load before rendering so initialState seeds correctly.
-  if (artifactId && !loaded) {
+  if (!loaded) {
     return <MatrxMiniLoader />;
   }
 

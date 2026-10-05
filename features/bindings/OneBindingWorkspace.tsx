@@ -47,11 +47,8 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { useUserOrganizations } from "@/features/organizations/hooks";
-import {
-  resolveAgentVersionId,
-  fetchAgentVersionSnapshot,
-  fetchAgentExecutionMinimal,
-} from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import { fetchAgentExecutionMinimal } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import { resolveAgentVersionId, fetchAgentVersionSnapshot } from "@/features/agents/redux/builder-versions.thunks";
 import { fetchAgentExecutionFull } from "@/features/agents/redux/builder-tier.thunks";
 import {
   selectAgentCustomExecutionPayload,

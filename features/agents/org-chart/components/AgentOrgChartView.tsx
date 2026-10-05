@@ -50,7 +50,7 @@ import {
   updateOrgPosition,
 } from "@/features/agents/redux/orchestras/orgChartThunks";
 import { addAgentToOrchestra, removeAgentFromOrchestra } from "@/features/agents/redux/orchestras/thunks";
-import { saveAgentField } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import { saveAgentField } from "@/features/agents/redux/builder-write.thunks";
 import { archiveTeam, restoreTeam } from "@/features/organizations/service/teamsService";
 import { OrgChart, type OrgChartCrossLink } from "@/components/official/org-chart/OrgChart";
 import type { OrgChartTreeNode } from "@/components/official/org-chart/layout";

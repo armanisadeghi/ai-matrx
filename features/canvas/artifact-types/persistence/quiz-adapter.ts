@@ -7,7 +7,7 @@
  * Architecture decision — onMaterialize is a no-op:
  *   The quiz DEFINITION is the artifact (its rawContent). A quiz_sessions row
  *   represents a user's ATTEMPT/PLAY — it is created lazily when the user first
- *   starts answering (via the MultipleChoiceQuiz component's useQuizPersistence
+ *   starts answering (via the MultipleChoiceQuiz component's block state
  *   hook). Materializing an artifact should NOT create a session; that would
  *   register an empty attempt for every viewer. The adapter therefore returns void.
  *

@@ -9,9 +9,9 @@
  *   2. MINT-AFTER-SUBMIT — once a chip is part of a submitted message it is never
  *      mutated: the next stage under the same key mints a NEW resource id, and the
  *      submitted one keeps exactly what was sent.
- *   3. REHYDRATE — an unsent chip survives a reload (store + in-memory generations
- *      thrown away, localStorage kept); a sent one never comes back; an X'd one
- *      stays gone.
+ *   3. DURABILITY — an unsent comment / edit chip is written through the durability
+ *      port (server-side block state), the X retires it for good, and the send
+ *      carries `block_state_ref` so the server marks it sent.
  *
  * Use case: Dana highlights "Ship the pilot to 40 clinics in Q1" in the agent's
  * rollout answer and comments "Too aggressive — our onboarding team is two
@@ -31,14 +31,17 @@ import instanceUserInputReducer, {
 } from "../../instance-user-input/instance-user-input.slice";
 import { composerDraftMiddleware } from "../../instance-user-input/composer-draft.middleware";
 import { __resetComposerDraftGenerationsForTest } from "../../instance-user-input/composer-draft-store";
-import { restoreComposerRemarks } from "../../instance-user-input/restore-composer-remarks.thunk";
 import {
   REMARKS_BLOCK_TYPE,
+  attachRemarkRef,
+  dismissRemarkChip,
+  registerRemarkDurability,
   remarkSourceOf,
   stageRemark,
   unstageRemark,
   type RemarkItem,
 } from "../remarks";
+import { remarkToWire } from "../remarks-wire";
 
 const CID = "4b2d8e10-7c3a-4f5e-9a61-2d0c5b7e9f13";
 const ANSWER = "8d7f6e5c-4b3a-4291-8f0e-1d2c3b4a5f60";
@@ -154,54 +157,61 @@ describe("mint after submit", () => {
   });
 });
 
-describe("rehydrate", () => {
-  it("an unsent chip comes back after a reload, under its own id", () => {
-    let store = reload();
-    const id = store.dispatch(stageRemark(CID, comment, { coalesceKey: `comment:${(comment as { commentId: string }).commentId}` }));
-    store = reload();
+describe("durability port (unsent chips live server-side, never in the browser)", () => {
+  function fakeServer() {
+    const rows = new Map<string, { item: RemarkItem; retired: boolean }>();
+    const release = registerRemarkDurability({
+      save: (_c, _r, key, item) => void rows.set(key ?? "", { item, retired: false }),
+      retire: (_c, _r, key) => {
+        const row = rows.get(key ?? "");
+        if (row) row.retired = true;
+      },
+      restore: () => {},
+    });
+    return { rows, release };
+  }
+
+  it("a staged comment / edit is written through the port, and an update re-writes it", () => {
+    const server = fakeServer();
+    const store = reload();
+    store.dispatch(stageRemark(CID, comment, { coalesceKey: "comment:c5" }));
+    store.dispatch(stageRemark(CID, edit("Pilot: 10 clinics"), { coalesceKey: `edit:${ANSWER}` }));
+    store.dispatch(stageRemark(CID, edit("Pilot: 12 clinics"), { coalesceKey: `edit:${ANSWER}` }));
+    expect([...server.rows.keys()].sort()).toEqual([`comment:c5`, `edit:${ANSWER}`].sort());
+    expect(server.rows.get(`edit:${ANSWER}`)?.item).toMatchObject({ after: "Pilot: 12 clinics" });
+    server.release();
+  });
+
+  it("the X and an emptied edit retire the chip durably", () => {
+    const server = fakeServer();
+    const store = reload();
+    const id = store.dispatch(stageRemark(CID, comment, { coalesceKey: "comment:c5" }));
+    store.dispatch(stageRemark(CID, edit("Pilot: 10 clinics"), { coalesceKey: `edit:${ANSWER}` }));
+    store.dispatch(dismissRemarkChip(CID, id));
+    store.dispatch(unstageRemark(CID, `edit:${ANSWER}`));
+    expect(server.rows.get("comment:c5")?.retired).toBe(true);
+    expect(server.rows.get(`edit:${ANSWER}`)?.retired).toBe(true);
     expect(remarks(store)).toHaveLength(0);
-    expect(store.dispatch(restoreComposerRemarks(CID, null))).toBe(1);
-    expect(remarks(store).map((r) => r.resourceId)).toEqual([id]);
-    expect(remarkSourceOf(remarks(store)[0])?.remark).toEqual(comment);
-    // Restoring twice never duplicates.
-    expect(store.dispatch(restoreComposerRemarks(CID, null))).toBe(0);
-    expect(remarks(store)).toHaveLength(1);
+    server.release();
   });
 
-  it("a sent chip never comes back", () => {
-    let store = reload();
-    store.dispatch(stageRemark(CID, comment));
-    send(store);
-    store.dispatch(clearSubmittedResources(CID));
-    store = reload();
-    expect(store.dispatch(restoreComposerRemarks(CID, null))).toBe(0);
-    expect(remarks(store)).toHaveLength(0);
+  it("a chip put back from the server is not written again, and keeps its reference", () => {
+    const server = fakeServer();
+    const store = reload();
+    const ref = { id: "11111111-1111-4111-8111-111111111111", stateVersion: 3 };
+    store.dispatch(
+      stageRemark(CID, { ...comment, blockStateRef: ref }, { coalesceKey: "comment:c5", fromServer: true }),
+    );
+    expect(server.rows.size).toBe(0);
+    expect(remarkSourceOf(remarks(store)[0])?.remark.blockStateRef).toEqual(ref);
+    server.release();
   });
 
-  it("a chip staged after a send comes back; the sent one does not", () => {
-    let store = reload();
-    store.dispatch(stageRemark(CID, comment));
-    send(store);
-    const nextId = store.dispatch(stageRemark(CID, edit("Pilot: 5 clinics, Q2"), { coalesceKey: `edit:${ANSWER}` }));
-    store = reload();
-    store.dispatch(restoreComposerRemarks(CID, null));
-    expect(remarks(store).map((r) => r.resourceId)).toEqual([nextId]);
-  });
-
-  it("an X'd chip stays gone after a reload", () => {
-    let store = reload();
-    const keep = store.dispatch(stageRemark(CID, comment));
-    const drop = store.dispatch(stageRemark(CID, edit("Pilot: 10 clinics"), { coalesceKey: `edit:${ANSWER}` }));
-    store.dispatch(removeResource({ conversationId: CID, resourceId: drop }));
-    store = reload();
-    store.dispatch(restoreComposerRemarks(CID, null));
-    expect(remarks(store).map((r) => r.resourceId)).toEqual([keep]);
-  });
-
-  it("someone else's staged remarks are never offered", () => {
-    let store = reload();
-    store.dispatch(stageRemark(CID, comment));
-    store = reload();
-    expect(store.dispatch(restoreComposerRemarks(CID, "another-person"))).toBe(0);
+  it("the send carries block_state_ref beside the chip", () => {
+    const store = reload();
+    const id = store.dispatch(stageRemark(CID, comment));
+    store.dispatch(attachRemarkRef(CID, id, { id: "22222222-2222-4222-8222-222222222222", stateVersion: 4 }));
+    const wire = remarkToWire(remarkSourceOf(remarks(store)[0])!.remark) as { block_state_ref?: unknown } | null;
+    expect(wire?.block_state_ref).toEqual({ id: "22222222-2222-4222-8222-222222222222", state_version: 4 });
   });
 });

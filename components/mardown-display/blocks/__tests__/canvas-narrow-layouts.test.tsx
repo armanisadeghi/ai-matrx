@@ -76,15 +76,8 @@ jest.mock("@/features/tasks/components/ImportTasksModal", () => ({
   __esModule: true,
   default: () => null,
 }));
-jest.mock("@/hooks/useQuizPersistence", () => ({
-  useQuizPersistence: () => ({
-    session: null,
-    loading: false,
-    saveProgress: jest.fn(),
-    saveResults: jest.fn(),
-    startNewSession: jest.fn(),
-    error: null,
-  }),
+jest.mock("@/features/block-state/useBlockState", () => ({
+  useBlockState: () => ({ state: null, loaded: true, patch: jest.fn(), saveError: null, hosted: false }),
 }));
 jest.mock("@/features/canvas/hooks/useCanvasItem", () => ({
   useCanvasItem: () => ({

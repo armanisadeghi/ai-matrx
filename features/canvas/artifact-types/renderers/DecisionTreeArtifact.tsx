@@ -4,7 +4,7 @@ import { Suspense, useMemo } from "react";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { parseDecisionTreeJSON } from "@/components/mardown-display/blocks/decision-tree/parseDecisionTreeJSON";
 import { resolveJsonPayload, artifactDedupKey } from "../artifact-renderers";
-import { useArtifactState } from "../persistence/useArtifactState";
+import { useBlockState } from "@/features/block-state/useBlockState";
 import type { DecisionTreeState } from "@/components/mardown-display/blocks/decision-tree/DecisionTreeBlock";
 import DecisionTreeBlock from "@/components/mardown-display/blocks/decision-tree/DecisionTreeBlock";
 import type { ArtifactRendererProps } from "../types";
@@ -42,23 +42,16 @@ export default function DecisionTreeArtifact({
 
   // Answer state also rides the next message as one interaction chip (the
   // shape interaction seam); view state never does.
-  const { state, loaded, save } = useArtifactState<
+  const { state, loaded, patch: save } = useBlockState<
     DecisionTreeState & Record<string, unknown>
-  >(artifactId, "generic", undefined, undefined, {
-    kind: "decision_tree",
-    title: (decisionTree as { title?: string } | null)?.title ?? null,
-    conversationId,
-    messageId,
-    blockIndex,
-    data: decisionTree,
-  });
+  >({ title: (decisionTree as { title?: string } | null)?.title ?? null, data: decisionTree });
 
   if (!decisionTree) {
     return isStreamActive ? <MatrxMiniLoader /> : null;
   }
 
   // Wait for persisted state to load before rendering so initialState seeds correctly.
-  if (artifactId && !loaded) {
+  if (!loaded) {
     return <MatrxMiniLoader />;
   }
 

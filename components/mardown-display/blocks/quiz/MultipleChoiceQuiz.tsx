@@ -20,7 +20,6 @@ import {
   Flame,
   Target,
   BookOpen,
-  Save,
   Cloud,
   CloudOff,
   Printer,
@@ -50,9 +49,7 @@ import {
   formatTime,
   getPerformanceData,
 } from "./quiz-utils";
-import { useQuizPersistence } from "@/hooks/useQuizPersistence";
-import { useAppDispatch } from "@/lib/redux/hooks";
-import { emitKindInteraction } from "@/features/content-ir/react/kind-interaction";
+import { useBlockState } from "@/features/block-state/useBlockState";
 import { parseQuizJSON, type RawQuizJSON } from "./quiz-parser";
 import { InlineLatexRenderer } from "@/features/math/components/InlineLatexRenderer";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -272,34 +269,32 @@ const MultipleChoiceQuiz: React.FC<MultipleChoiceQuizProps> = ({
     );
   }, [parsedQuiz]);
 
-  // Database persistence (always call hooks)
+  // The quiz session is the block's saved state (platform.block_states through the
+  // ONE block-state hook) — held by the answer it is in, not by a content hash.
+  // Its `results` is also what the chip's score line is derived from.
   const {
-    sessionId: dbSessionId,
-    isSaving,
-    lastSaved,
-    saveError,
-    isLoading: isLoadingSession,
-    loadedSession,
-    saveNow,
-  } = useQuizPersistence(quizState || initializeQuizState([]), {
-    autoSave: enableAutoSave && !!quizState,
-    autoSaveInterval,
-    sessionId,
-    title: parsedQuiz?.title || "",
-    category: parsedQuiz?.category,
-    contentHash: parsedQuiz?.contentHash,
-    metadata: {}, // Empty for now - reserved for future custom metadata
+    state: savedBlock,
+    loaded: savedLoaded,
+    patch: saveBlock,
+    saveError: blockSaveError,
+  } = useBlockState<{ quizState?: QuizState; results?: QuizState["results"] | null } & Record<string, unknown>>({
+    title: parsedQuiz?.title || null,
   });
+  const isSaving = false;
+  const lastSaved: Date | null = null;
+  const saveError = blockSaveError ? blockSaveError.message : null;
 
-  // Load session data if available
+  // Put the saved session back ONCE, after the quiz itself has been set up.
+  const restoredRef = useRef(false);
   useEffect(() => {
-    if (loadedSession && loadedSession.state) {
-      setQuizState(loadedSession.state);
-      if (loadedSession.state.results) {
-        setShowResults(true);
-      }
+    if (restoredRef.current || !savedLoaded || !parsedQuiz || !quizState) return;
+    restoredRef.current = true;
+    const saved = savedBlock?.quizState;
+    if (saved && Array.isArray(saved.randomizedQuestions) && saved.progress) {
+      setQuizState(saved);
+      if (saved.results) setShowResults(true);
     }
-  }, [loadedSession]);
+  }, [savedLoaded, savedBlock, parsedQuiz, quizState]);
 
   // ESC key handler to exit fullscreen
   useEffect(() => {
@@ -325,28 +320,11 @@ const MultipleChoiceQuiz: React.FC<MultipleChoiceQuizProps> = ({
     return quizState.results;
   }, [showResults, quizState]);
 
-  // A finished quiz's score rides along with the person's next message as one
-  // interaction chip (the shape interaction seam). Only a NEW result stages.
-  const dispatch = useAppDispatch();
-  const stagedResultRef = useRef<string | null>(null);
+  // Every answer and the finished score are saved server-side; the chip is derived from `results`.
   useEffect(() => {
-    if (!results || !showResults) return;
-    const key = `${results.correctCount}/${results.answeredCount}/${results.totalQuestions}`;
-    if (stagedResultRef.current === key) return;
-    const first = stagedResultRef.current === null && !!loadedSession?.state?.results;
-    stagedResultRef.current = key;
-    if (first) return; // a result reloaded from a saved session is not a new action
-    void dispatch(
-      emitKindInteraction({
-        kind: "quiz",
-        title: parsedQuiz?.title || null,
-        conversationId,
-        messageId,
-        blockIndex,
-        state: { results },
-      }),
-    );
-  }, [results, showResults, dispatch, parsedQuiz?.title, conversationId, messageId, blockIndex, loadedSession]);
+    if (!quizState || !restoredRef.current) return;
+    saveBlock({ quizState, results: showResults && results ? results : null });
+  }, [quizState, results, showResults, saveBlock]);
 
   // Show loading only if quiz data not parsed yet (never block for saves/duplicate checks)
   if (!parsedQuiz || !quizState) {
@@ -675,17 +653,6 @@ const MultipleChoiceQuiz: React.FC<MultipleChoiceQuizProps> = ({
                     </div>
                   )}
                 </div>
-              )}
-
-              {enableAutoSave && (
-                <IconButton
-                  icon={Save}
-                  tooltip="Save now"
-                  onClick={saveNow}
-                  disabled={isSaving}
-                  size="md"
-                  className="bg-green-500 dark:bg-green-600 text-white hover:bg-green-600 dark:hover:bg-green-700"
-                />
               )}
 
               <IconButton

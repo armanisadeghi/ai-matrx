@@ -28,12 +28,9 @@ import {
 } from "@/features/agent-comparison/shared/battle-follow-up";
 import { loadConversation } from "@ai-matrx/chat/agents/redux/execution-system/thunks/load-conversation.thunk";
 import { followWhatIsStillInFlight } from "@ai-matrx/chat/agents/runtime-reconnect/follow-what-is-still-in-flight";
-import {
-  fetchFullAgent,
-  fetchAgentVersionHistory,
-  fetchAgentVersionSnapshot,
-  createAgent,
-} from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import { fetchFullAgent } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import { fetchAgentVersionHistory, fetchAgentVersionSnapshot } from "@/features/agents/redux/builder-versions.thunks";
+import { createAgent } from "@/features/agents/redux/builder-write.thunks";
 import {
   removeAgent,
   setAgentField,

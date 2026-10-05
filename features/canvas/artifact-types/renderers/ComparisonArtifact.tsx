@@ -5,7 +5,7 @@ import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { parseComparisonJSON } from "@/components/mardown-display/blocks/comparison/parseComparisonJSON";
 import { resolveJsonPayload, artifactDedupKey } from "../artifact-renderers";
 import type { ArtifactRendererProps } from "../types";
-import { useArtifactState } from "../persistence/useArtifactState";
+import { useBlockState } from "@/features/block-state/useBlockState";
 import type { ComparisonTableState } from "@/components/mardown-display/blocks/comparison/ComparisonTableBlock";
 import ComparisonTableBlock from "@/components/mardown-display/blocks/comparison/ComparisonTableBlock";
 
@@ -26,9 +26,9 @@ export default function ComparisonArtifact({
   messageId,
   blockIndex,
 }: ArtifactRendererProps) {
-  const { state, loaded, save } = useArtifactState<
+  const { state, loaded, patch: save } = useBlockState<
     ComparisonTableState & Record<string, unknown>
-  >(artifactId, "generic");
+  >();
 
   const comparison = useMemo(
     () =>
@@ -47,7 +47,7 @@ export default function ComparisonArtifact({
   }
 
   // Wait for persisted state to load before rendering so initialState seeds correctly.
-  if (artifactId && !loaded) {
+  if (!loaded) {
     return <MatrxMiniLoader />;
   }
 

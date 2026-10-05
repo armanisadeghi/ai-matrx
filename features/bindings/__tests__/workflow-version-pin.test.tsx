@@ -29,9 +29,12 @@ jest.mock("@/lib/redux/hooks", () => ({
 }));
 // The chat package reads these hooks through its own module (P3): one double covers both.
 jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
+jest.mock("@/features/agents/redux/builder-versions.thunks", () => ({
+  // The version control reads the agent's history through this thunk.
+  fetchAgentVersionHistory: () => ({ type: "noop" }),
+}));
 jest.mock("@ai-matrx/chat/agents/redux/agent-definition/thunks", () => ({
   fetchAgentsListFull: () => ({ type: "noop" }),
-  fetchAgentVersionHistory: () => ({ type: "noop" }),
 }));
 let pickWorkflow: ((id: string) => void) | null = null;
 jest.mock("@/features/workflow-runtime/listings/WorkflowListDropdown", () => ({

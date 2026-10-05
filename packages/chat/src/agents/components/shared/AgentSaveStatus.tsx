@@ -46,6 +46,7 @@ export function AgentSaveStatus({
     readOnlySavePrompt,
     duplicateDialog,
     reachBadge,
+    available,
   } = useAgentSaveAction(agentId, { editModeOverride });
 
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -56,6 +57,9 @@ export function AgentSaveStatus({
     setShowModelWarning(false);
     setSettingsOpen(true);
   };
+
+  // No builder door in this host: nothing here can save, so nothing is drawn (reported once).
+  if (!available) return null;
 
   return (
     <>

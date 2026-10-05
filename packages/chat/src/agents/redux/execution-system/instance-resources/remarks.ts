@@ -24,9 +24,13 @@
 // is NEVER mutated — a later stage under the same key mints a NEW resource id, so
 // the request already on its way keeps exactly what the person sent.
 //
-// Reload: unsent remarks are kept by the composer draft store (same submit
-// generation + tombstone as the typed draft) and put back by
-// `restoreComposerRemarks` when the composer mounts.
+// Reload / other devices: unsent remarks are DURABLE SERVER-SIDE through
+// platform.block_states (design: common-docs/projects/remarks/DESIGN-block-state.md).
+// An answers / interaction chip is DERIVED from its block's saved state
+// (state_version > sent_version), an edit / comment / choice chip is written
+// through the `RemarkDurability` port below (registered by the app), and every
+// chip carries `blockStateRef` so the server marks it sent with the message.
+// Nothing about an unsent chip is kept in the browser.
 
 import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import type { ManagedResource } from "../../../types/instance.types";
@@ -71,8 +75,15 @@ export interface RemarkRecordTarget {
   title: string | null;
 }
 
+/** The platform.block_states row a chip was made from / is kept in (rides the wire as `block_state_ref`). */
+export interface BlockStateRef {
+  id: string;
+  stateVersion: number;
+}
+
 export interface CommentRemark {
   kind: "comment";
+  blockStateRef?: BlockStateRef | null;
   target: RemarkTarget;
   /** The platform.comments row this comment is (null = an unsaved passage, e.g. New chat about this). */
   commentId: string | null;
@@ -98,6 +109,7 @@ export interface RemarkThreadEntry {
 
 export interface ChoiceRemark {
   kind: "choice";
+  blockStateRef?: BlockStateRef | null;
   target: RemarkTarget;
   /** The decision's title, when it has one ("Cache strategy"). */
   title: string | null;
@@ -107,6 +119,7 @@ export interface ChoiceRemark {
 
 export interface EditRemark {
   kind: "edit";
+  blockStateRef?: BlockStateRef | null;
   target: RemarkTarget;
   /** The answer text as of the last send (the diff base). */
   before: string;
@@ -136,6 +149,7 @@ export interface AnswerEditRemarkMeta {
 
 export interface AnswersRemark {
   kind: "answers";
+  blockStateRef?: BlockStateRef | null;
   target: RemarkTarget;
   /** The questionnaire's title ("Intake questions"). */
   title: string | null;
@@ -144,6 +158,7 @@ export interface AnswersRemark {
 
 export interface InteractionRemark {
   kind: "interaction";
+  blockStateRef?: BlockStateRef | null;
   target: RemarkTarget;
   /** The shape's `__kind`. */
   shape: string;
@@ -252,7 +267,43 @@ export interface StageRemarkOptions {
   coalesceKey?: string | null;
   /** Re-stage under a known id (rehydration only). */
   resourceId?: string;
+  /** The chip is being put back FROM the server (restore) — do not write it again. */
+  fromServer?: boolean;
 }
+
+// ── THE DURABILITY PORT ─────────────────────────────────────────────────────
+// An unsent chip with no block of its own (comment / edit / choice / a kind action's
+// interaction) is kept server-side (platform.block_states)
+// by the app, which registers this port; the package never imports app code and
+// never keeps the chip in the browser. A chip that arrives WITH a `blockStateRef`
+// (derived from its block's saved state — answers, kind interactions) needs no
+// `save`: that saved state IS the chip.
+
+export interface RemarkDurability {
+  /** A comment / edit / choice chip was staged or changed — write it through. */
+  save(conversationId: string, resourceId: string, coalesceKey: string | null, item: RemarkItem): void;
+  /** A chip left the composer without being sent (X, or an edit that became empty): retire it for good. */
+  retire(conversationId: string, resourceId: string, coalesceKey: string | null, item: RemarkItem): void;
+  /** The composer mounted: put this conversation's unsent chips back from the server. */
+  restore(conversationId: string): void;
+}
+
+/** Put a conversation's unsent chips back (any device) — the composer calls this once on mount. */
+export function restoreComposerRemarks(conversationId: string): void {
+  durability?.restore(conversationId);
+}
+
+let durability: RemarkDurability | null = null;
+
+/** The app registers how unsent chips are kept. Returns the release. */
+export function registerRemarkDurability(port: RemarkDurability): () => void {
+  durability = port;
+  return () => {
+    if (durability === port) durability = null;
+  };
+}
+
+
 
 /**
  * Stage one remark into `conversationId`'s composer. Returns the resource id of
@@ -273,6 +324,9 @@ export function stageRemark(conversationId: string, item: RemarkItem, options: S
       if (live) {
         dispatch(setResourceSource({ conversationId, resourceId: live.resourceId, source }));
         dispatch(setResourcePreview({ conversationId, resourceId: live.resourceId, preview: source.label }));
+        if (!options.fromServer && !item.blockStateRef) {
+          durability?.save(conversationId, live.resourceId, coalesceKey, item);
+        }
         return live.resourceId;
       }
     }
@@ -284,12 +338,44 @@ export function stageRemark(conversationId: string, item: RemarkItem, options: S
     dispatch(addResource({ conversationId, blockType: REMARKS_BLOCK_TYPE, source, resourceId }));
     // Local and complete — no resolution step; setResourcePreview marks it ready.
     dispatch(setResourcePreview({ conversationId, resourceId, preview: source.label }));
+    if (!options.fromServer && !item.blockStateRef) {
+      durability?.save(conversationId, resourceId, coalesceKey, item);
+    }
     return resourceId;
   };
 }
 
+/** Record which block_states row (and version) holds a staged chip, so the send marks it sent. */
+export function attachRemarkRef(conversationId: string, resourceId: string, ref: BlockStateRef) {
+  return (dispatch: ChatDispatch, getState: () => ChatRootState): boolean => {
+    const resource = getState().instanceResources.byConversationId[conversationId]?.[resourceId];
+    const source = resource ? remarkSourceOf(resource) : null;
+    if (!resource || !source) return false;
+    const held = source.remark.blockStateRef;
+    if (held && held.id === ref.id && held.stateVersion >= ref.stateVersion) return false;
+    dispatch(
+      setResourceSource({
+        conversationId,
+        resourceId,
+        source: { ...source, remark: { ...source.remark, blockStateRef: ref } },
+      }),
+    );
+    return true;
+  };
+}
+
+/** The X on a chip: retire it durably, then remove it. */
+export function dismissRemarkChip(conversationId: string, resourceId: string) {
+  return (dispatch: ChatDispatch, getState: () => ChatRootState): void => {
+    const resource = getState().instanceResources.byConversationId[conversationId]?.[resourceId];
+    const source = resource ? remarkSourceOf(resource) : null;
+    if (source) durability?.retire(conversationId, resourceId, source.coalesceKey, source.remark);
+    dispatch(removeResource({ conversationId, resourceId }));
+  };
+}
+
 /** Remove the unsent chip staged under `coalesceKey` (an edit whose diff became empty). */
-export function unstageRemark(conversationId: string, coalesceKey: string) {
+export function unstageRemark(conversationId: string, coalesceKey: string, options: { retire?: boolean } = {}) {
   return (dispatch: ChatDispatch, getState: () => ChatRootState): boolean => {
     const state = getState();
     const resources = state.instanceResources.byConversationId[conversationId] ?? {};
@@ -298,6 +384,10 @@ export function unstageRemark(conversationId: string, coalesceKey: string) {
       (r) => !submitted.has(r.resourceId) && remarkSourceOf(r)?.coalesceKey === coalesceKey,
     );
     if (!live) return false;
+    const source = remarkSourceOf(live);
+    if (source && options.retire !== false) {
+      durability?.retire(conversationId, live.resourceId, source.coalesceKey, source.remark);
+    }
     dispatch(removeResource({ conversationId, resourceId: live.resourceId }));
     return true;
   };
@@ -335,6 +425,7 @@ export function restageRemarks(conversationId: string, remarks: readonly StoredR
         stageRemark(conversationId, stored.item, {
           coalesceKey: stored.coalesceKey,
           resourceId: stored.resourceId,
+          fromServer: true,
         }),
       );
       restored += 1;
@@ -343,7 +434,7 @@ export function restageRemarks(conversationId: string, remarks: readonly StoredR
   };
 }
 
-/** Narrow an unknown stored value to remarks (storage is outside the type system). */
+/** Narrow an unknown handed-over value (an in-memory transfer, a server row) to remarks. */
 export function readStoredRemarks(value: unknown): StoredRemark[] {
   if (!Array.isArray(value)) return [];
   return value.flatMap((entry) => {

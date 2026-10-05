@@ -14,7 +14,7 @@
 
 import { readXmlTag } from "@ai-matrx/chat/utils/xml/readXmlTag";
 import { fenceOpenerOf, findCodeRanges } from "@ai-matrx/content-ir/source";
-import { frontMatterEnd, isJsonFenceLanguage, quotedSourceRanges } from "./json-kind-signal";
+import { frontMatterEnd, isJsonFenceLanguage, kindObjectProseBreak, quotedSourceRanges } from "./json-kind-signal";
 
 export interface EmbeddedKindJsonRegion {
   start: number;
@@ -720,10 +720,19 @@ export function findBrokenKindJsonRegions(
 
     const end = matchingJsonObjectEnd(source, start);
     if (end === null) {
-      if (
-        JSON_VALUE_OPENING.test(source.slice(start, start + 64)) &&
-        KIND_KEY_TEXT.test(source.slice(start))
-      ) {
+      const key = JSON_VALUE_OPENING.test(source.slice(start, start + 64))
+        ? source.slice(start).search(KIND_KEY_TEXT)
+        : -1;
+      if (key >= 0) {
+        // Never past where its own grammar breaks (H-1, round 9): a settled,
+        // unclosed object in prose ends there and the text after it stays.
+        const cut = kindObjectProseBreak(source.slice(start));
+        if (cut !== null) {
+          const end = start + cut;
+          broken.push({ start, end, content: source.slice(start, end) });
+          start = end - 1;
+          continue;
+        }
         broken.push({ start, end: source.length, content: source.slice(start) });
         break;
       }

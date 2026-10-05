@@ -49,11 +49,12 @@ export function AgentSaveTapButton({ agentId }: AgentSaveTapButtonProps) {
     readOnlySavePrompt,
     duplicateDialog,
     reachTapBadge,
+    available,
   } = useAgentSaveAction(agentId);
 
   const [settingsOpen, setSettingsOpen] = useState(false);
 
-  if (!isEditMode) return null;
+  if (!isEditMode || !available) return null;
 
   const ariaLabel = isReadOnlySave
     ? "View only — create your copy to save changes"

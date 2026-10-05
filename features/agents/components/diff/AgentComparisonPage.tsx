@@ -3,13 +3,9 @@
 import { AgentDiffViewer } from "@/features/agents/components/diff/lazy/AgentDiffViewer";
 import { useEffect, useState, useTransition } from "react";
 import { useAppDispatch, useAppSelector } from "@ai-matrx/chat/store/hooks";
-import {
-  fetchAgentsListFull,
-  fetchFullAgent,
-  fetchAgentVersionHistory,
-  fetchAgentVersionSnapshot,
-} from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
-import type { AgentVersionHistoryItem } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import { fetchAgentsListFull, fetchFullAgent } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import { fetchAgentVersionHistory, fetchAgentVersionSnapshot } from "@/features/agents/redux/builder-versions.thunks";
+import type { AgentVersionHistoryItem } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import {
   selectAllAgentsArray,
   selectAgentById,

@@ -26,10 +26,7 @@
 import { useCallback, useState } from "react";
 import { useRouter } from "../../host/navigation";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
-import {
-  deleteAgent,
-  saveAgentField,
-} from "../redux/agent-definition/thunks";
+import { getBuilderDoor, requireBuilderDoor } from "../../host/builder-door";
 import { selectAgentById } from "../redux/agent-definition/selectors";
 import { confirm } from "@host/components/dialogs/confirm/ConfirmDialogHost";
 import { buildAgentDeleteConfirm } from "@host/features/agents/deletion/agentDeleteConfirm";
@@ -46,6 +43,8 @@ export interface AgentLifecycleActions {
   remove: () => Promise<void>;
   /** True while either write is in flight, so a menu can disable both. */
   isBusy: boolean;
+  /** False in a host that registered no builder door: the menu leaves archive and delete out (reported once). */
+  available: boolean;
 }
 
 export function useAgentLifecycleActions(
@@ -58,6 +57,7 @@ export function useAgentLifecycleActions(
   const agent = useAppSelector((state) => selectAgentById(state, agentId));
   const [isBusy, setIsBusy] = useState(false);
 
+  const available = getBuilderDoor() !== null;
   const isArchived = Boolean(agent?.isArchived);
   const name = agent?.name ?? "";
 
@@ -65,7 +65,7 @@ export function useAgentLifecycleActions(
     setIsBusy(true);
     try {
       await dispatch(
-        saveAgentField({ agentId, field: "isArchived", value: !isArchived as never }),
+        requireBuilderDoor().saveAgentField({ agentId, field: "isArchived", value: !isArchived as never }),
       ).unwrap();
       toast.success(
         isArchived
@@ -88,7 +88,7 @@ export function useAgentLifecycleActions(
     if (!ok) return;
     setIsBusy(true);
     try {
-      await dispatch(deleteAgent(agentId)).unwrap();
+      await dispatch(requireBuilderDoor().deleteAgent(agentId)).unwrap();
       toast.success(name ? `Deleted "${name}"` : "Agent deleted");
       // This screen's subject is gone, so it does not stay on it pretending otherwise.
       router.push(basePath);
@@ -107,5 +107,6 @@ export function useAgentLifecycleActions(
     toggleArchived,
     remove,
     isBusy,
+    available,
   };
 }

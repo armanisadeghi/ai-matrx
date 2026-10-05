@@ -260,18 +260,7 @@ export function InputActionButtons({
       {(hasSomethingToSend) => (
         <>
           {/* The run in flight: the indicator in send's own place, a press stops it. */}
-          {isExecuting ? (
-            <button
-              type="button"
-              onClick={handleStop}
-              title="Stop the run (everything streamed so far is kept)"
-              aria-label="Stop the run"
-              className="group relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
-            >
-              <Loader2 className="h-4 w-4 animate-spin group-hover:hidden" />
-              <Square className="hidden h-3 w-3 fill-current group-hover:block" />
-            </button>
-          ) : null}
+          {isExecuting ? <ComposerStopButton onStop={handleStop} /> : null}
           {/* Send: always present while idle (dim with nothing to send); while
               a run streams it appears only to queue what was typed. */}
           {!isExecuting || hasSomethingToSend || shouldShowVariables ? (
@@ -433,5 +422,25 @@ function ComposerSendButton({
         )}
       </TooltipContent>
     </Tooltip>
+  );
+}
+
+/**
+ * THE stop control while a run streams — a spinner in send's own place that
+ * becomes a square on hover; a press stops the run. Every style uses this one
+ * (Full, Compact, Launcher, and Form in place of its Run).
+ */
+export function ComposerStopButton({ onStop }: { onStop: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onStop}
+      title="Stop the run (everything streamed so far is kept)"
+      aria-label="Stop the run"
+      className="group relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+    >
+      <Loader2 className="h-4 w-4 animate-spin group-hover:hidden" />
+      <Square className="hidden h-3 w-3 fill-current group-hover:block" />
+    </button>
   );
 }

@@ -30,11 +30,13 @@ import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import {
   listGeneratedFrom,
   readArtifactOrigins,
+  recordedOrigins,
   type ArtifactOrigin,
   type GeneratedArtifact,
 } from "./lineage";
 import { LineageArtifactList } from "./LineageArtifactList";
 import { Chip } from "@ai-matrx/design-system/controls";
+import { readDeckSourceDrafts } from "@/features/flashcards/data/deckSourceSet";
 
 export function MadeFromSource({
   /** The artifact's canonical token ("fc_set", "study_media", "note", "assessment"). */
@@ -47,13 +49,27 @@ export function MadeFromSource({
   className?: string;
 }) {
   // Read once per artifact (`useStoreRead`): a remount or a wake renders the kept answer.
-  const read = useStoreRead<{ origins: ArtifactOrigin[]; siblings: GeneratedArtifact[] }>(
+  const read = useStoreRead<{ origins: ArtifactOrigin[]; siblings: GeneratedArtifact[]; kit?: ArtifactOrigin }>(
     `education.made_from:${entityType}:${entityId}`,
     async () => {
       // Every Source it was made from (a deck from a PDF and a note has two).
-      const allOrigins = await readArtifactOrigins(entityType, entityId);
-      const found = allOrigins[0];
-      if (!found) return { origins: allOrigins, siblings: [] };
+      const edges = await readArtifactOrigins(entityType, entityId);
+      // A deck records every Source it was made from, as chosen — tables and
+      // pick lists included, which no lineage edge can carry. That is the list.
+      const recorded = entityType === "fc_set" ? await readDeckSourceDrafts(entityId) : null;
+      const allOrigins = recorded
+        ? recordedOrigins(
+            recorded.flatMap((d) =>
+              d.ref
+                ? [{ resourceType: d.ref.resource_type, resourceId: d.ref.resource_id, label: d.label, fileId: d.fileId }]
+                : [],
+            ),
+            edges,
+          )
+        : edges;
+      // The kit is found from a real lineage edge (siblings share its anchor).
+      const found = edges[0] ?? allOrigins[0];
+      if (!found) return { origins: allOrigins, siblings: [], kit: undefined };
       const all = await listGeneratedFrom(found.entityType, found.entityId);
       // The rest of the KIT — the artifacts, not their parts. Every generated
       // flashcard also writes its own card-level lineage edge to the anchor
@@ -63,12 +79,14 @@ export function MadeFromSource({
       // none, which is the honest discriminator rather than a type blocklist.
       return {
         origins: allOrigins,
+        kit: found,
         siblings: all.filter((a) => a.targetKind !== null && a.artifactId !== entityId),
       };
     },
   );
   const origins = read.data?.origins ?? [];
   const siblings = read.data?.siblings ?? [];
+  const kit = read.data?.kit ?? origins[0];
 
   // No lineage edge means this artifact genuinely has no recorded origin
   // (hand-made, or made before lineage was recorded). Say nothing rather than
@@ -119,7 +137,7 @@ export function MadeFromSource({
             answers "take me to the whole thing", which is the page the learner
             actually wants when they arrive on one piece of it. */}
         <Chip asChild tone="primary" icon={<Package />} label="Related" title="Everything made from this material">
-          <Link href={kitHref(origin.entityType, origin.entityId)} />
+          <Link href={kitHref((kit ?? origin).entityType, (kit ?? origin).entityId)} />
         </Chip>
       </div>
 

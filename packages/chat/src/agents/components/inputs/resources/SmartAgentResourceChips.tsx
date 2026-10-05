@@ -34,7 +34,7 @@ import { revokeTrackedObjectUrl } from "@host/lib/media/object-url-registry";
 
 import { resolveContextItemDef } from "../../context-items/registry";
 import { remarkKindDisplay } from "../../context-items/remark-display";
-import { remarkSourceOf } from "../../../redux/execution-system/instance-resources/remarks";
+import { dismissRemarkChip, remarkSourceOf } from "../../../redux/execution-system/instance-resources/remarks";
 import {
   AttachedDocumentChip,
   type AttachedDocumentSettings,
@@ -375,6 +375,11 @@ export function SmartAgentResourceChips({
       (candidate) => candidate.resourceId === resourceId,
     );
     revokeTrackedObjectUrl(getImageRef(resource?.source));
+    // A remark chip's X retires it durably (server-side), not just from this tab.
+    if (resource && remarkSourceOf(resource)) {
+      dispatch(dismissRemarkChip(conversationId, resourceId));
+      return;
+    }
     dispatch(removeResource({ conversationId, resourceId }));
   };
 

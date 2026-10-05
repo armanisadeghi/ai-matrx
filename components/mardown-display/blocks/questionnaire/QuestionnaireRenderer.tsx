@@ -28,15 +28,7 @@ import {
 } from "./QuestionnaireContext";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { Button } from "@ai-matrx/design-system";
-import { useAppDispatch } from "@/lib/redux/hooks";
-import { stageRemark } from "@ai-matrx/chat/agents/redux/execution-system/instance-resources/remarks";
 import { questionnaireAnswers } from "./questionnaire-answers";
-import {
-  questionnaireDraftKey,
-  readQuestionnaireDraft,
-  writeQuestionnaireDraft,
-} from "./questionnaire-draft-store";
-import { durableRecordId } from "@ai-matrx/kit/ids";
 
 export type QuestionOption = { name: string };
 
@@ -1006,8 +998,11 @@ const QuestionnaireRendererBody = ({
 
   // Submit (Turn References ruling 6): the answers ride along with the
   // person's next message as ONE `answers` chip, updated on a re-submit.
-  const dispatch = useAppDispatch();
-  const [submittedAnswers, setSubmittedAnswers] = useState<string | null>(null);
+  // What was submitted survives a reload: it lives in the block's saved state.
+  const [submittedAnswers, setSubmittedAnswers] = useState<string | null>(() => {
+    const saved = (initialState as { submittedAnswers?: unknown } | undefined)?.submittedAnswers;
+    return Array.isArray(saved) ? JSON.stringify(saved) : null;
+  });
 
   // Persist the user's answers via the artifact-state channel (canvas_item_state,
   // keyed by the materialized artifact id) so they survive reload AND the agent
@@ -1020,14 +1015,6 @@ const QuestionnaireRendererBody = ({
   onStateChangeRef.current = onStateChange;
 
   const lastPersistedRef = useRef<string>("");
-  // Device-local copy of the answers: what a reload puts back when there is no
-  // artifact-state row to read (the questionnaire has not materialized).
-  const draftKey = questionnaireDraftKey(
-    conversationId,
-    durableRecordId(messageId) ?? messageId,
-    blockIndex,
-  );
-
   // Rehydrate saved answers ONCE from persisted artifact state, so a reopened
   // conversation shows what the user already filled in.
   const rehydratedRef = useRef(false);
@@ -1035,13 +1022,13 @@ const QuestionnaireRendererBody = ({
     if (rehydratedRef.current) return;
     const saved =
       (initialState as { formState?: Record<string, unknown> } | undefined)
-        ?.formState ?? readQuestionnaireDraft(draftKey);
+        ?.formState;
     if (saved && Object.keys(saved).length > 0) {
       rehydratedRef.current = true;
       lastPersistedRef.current = JSON.stringify(saved); // don't echo it straight back
       setFormState(uniqueId, { ...saved });
     }
-  }, [initialState, setFormState, uniqueId, draftKey]);
+  }, [initialState, setFormState, uniqueId]);
 
   // Emit answers (debounced) to the artifact-state channel on every change.
   useEffect(() => {
@@ -1050,11 +1037,10 @@ const QuestionnaireRendererBody = ({
     if (stateString === lastPersistedRef.current) return undefined;
     const timeoutId = setTimeout(() => {
       lastPersistedRef.current = stateString;
-      writeQuestionnaireDraft(draftKey, formState);
       onStateChangeRef.current?.({ formState });
     }, 600);
     return () => clearTimeout(timeoutId);
-  }, [formState, draftKey]);
+  }, [formState]);
 
   useEffect(() => {
     const sections = data?.sections;
@@ -1220,18 +1206,8 @@ const QuestionnaireRendererBody = ({
             onSubmit={() => {
               const answers = questionnaireAnswers(Object.keys(questionData), formState);
               if (answers.length === 0) return;
-              dispatch(
-                stageRemark(
-                  conversationId,
-                  {
-                    kind: "answers",
-                    target: { conversationId, messageId: durableRecordId(messageId) ?? null, blockIndex: blockIndex ?? null },
-                    title: questionnaireTitle || null,
-                    answers,
-                  },
-                  { coalesceKey: `answers:${messageId}:${blockIndex ?? 0}` },
-                ),
-              );
+              // The block's saved state IS the chip: the host derives the answers chip from it.
+              onStateChangeRef.current?.({ submittedAnswers: answers, submittedTitle: questionnaireTitle || null });
               setSubmittedAnswers(JSON.stringify(answers));
             }}
           />

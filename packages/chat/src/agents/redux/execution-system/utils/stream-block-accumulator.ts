@@ -27,6 +27,7 @@ import {
   hasKindKey,
   isJsonFenceLanguage,
   jsonKindSignal,
+  kindObjectProseBreak,
 } from "@ai-matrx/chat/utils/content-ir/surfaces/json-kind-signal";
 import {
   findBalancedXmlClose,
@@ -652,6 +653,13 @@ export class StreamBlockAccumulator {
   }) => unknown;
   /** Same-line remainders are queued, never recursively reclassified. */
   private lineQueue: Array<{ rawLine: string; dispatch: DispatchFn }> = [];
+  /**
+   * The current line held a kind object that broke into prose
+   * (`{"__kind":"note","title":"Hi" and then…`, L-4 round 9): it is prose to
+   * its end — no opener re-reads it as JSON — and the prose leaf reads the
+   * broken object as its one-line label, exactly as a reload does.
+   */
+  private kindLineIsProse = false;
   private isProcessingLineQueue = false;
   /** Incomplete generic XML must never promote embedded JSON on finalize. */
   private genericXmlRecoverySuppressed = false;
@@ -776,6 +784,18 @@ export class StreamBlockAccumulator {
       this.pendingLineFragment = remainder.trimStart();
       this.processLine(completeRoot, dispatch);
       this.maybeOpenBareJsonFromFragment(dispatch);
+    }
+
+    // A kind object opened on THIS line that has broken into prose
+    // (`{"__kind":"note","title":"Hi" and then…`) was never a region: it
+    // becomes prose, which the prose leaf reads as label + the text after it
+    // — what a reload of the same text draws (L-4, round 9).
+    if (
+      this.subState.kind === "bare_json" &&
+      !this.currentBlockContent &&
+      kindObjectProseBreak(this.pendingLineFragment.trimStart()) !== null
+    ) {
+      this.demoteKindLineToProse();
     }
 
     // Same live-open, one level in: the JSON BODY of an attr-XML wrapper
@@ -1047,6 +1067,18 @@ export class StreamBlockAccumulator {
     this.drainLineQueue();
   }
 
+  /** The open bare-JSON region on this line is prose after all: drop its parse, keep its block as text. */
+  private demoteKindLineToProse(): void {
+    // The region's parse session is abandoned (never closed into an envelope);
+    // finalize disposes every identity this stream opened.
+    this.irSession = null;
+    this.irEnvelope = null;
+    this.irFedFragmentLen = 0;
+    this.currentBlockType = "text";
+    this.subState = { kind: "none" };
+    this.kindLineIsProse = true;
+  }
+
   /** Process queued lines in order (re-entrant calls return; the outer loop drains). */
   private drainLineQueue(): void {
     if (this.isProcessingLineQueue) return;
@@ -1065,6 +1097,12 @@ export class StreamBlockAccumulator {
   private linesRead = 0;
 
   private processLineNow(rawLine: string, dispatch: DispatchFn): void {
+    if (this.kindLineIsProse) {
+      this.kindLineIsProse = false;
+      this.linesRead++;
+      this.appendToCurrentBlock(rawLine);
+      return;
+    }
     const trimmed = rawLine.trim();
     const isFirstLine = this.linesRead === 0;
     this.linesRead++;
@@ -1171,7 +1209,8 @@ export class StreamBlockAccumulator {
     // text block as raw JSON until that block happens to close.
     if (!startsStructuralLine(rawLine)) {
       const at = proseKindObjectStart(rawLine);
-      if (at > 0) {
+      // A kind object that breaks into prose on this line stays in it (L-4).
+      if (at > 0 && kindObjectProseBreak(rawLine.slice(at)) === null) {
         const rest = rawLine.slice(at);
         const rootEnd = firstCompleteRootObjectEnd(rest);
         const parts = [rawLine.slice(0, at)];
@@ -1799,7 +1838,7 @@ export class StreamBlockAccumulator {
 
   /** The fragment twin of the complete-line split in processLineNow (A5). */
   private maybeSplitProseBeforeKindFragment(dispatch: DispatchFn): void {
-    if (this.subState.kind !== "none") return;
+    if (this.subState.kind !== "none" || this.kindLineIsProse) return;
     const fragment = this.pendingLineFragment;
     if (startsStructuralLine(fragment)) return;
     const at = proseKindObjectStart(fragment);
@@ -1838,7 +1877,7 @@ export class StreamBlockAccumulator {
         return;
       }
       inArray = true;
-    } else if (this.subState.kind !== "none") return;
+    } else if (this.subState.kind !== "none" || this.kindLineIsProse) return;
     // The fragment always begins at a LINE BOUNDARY (it is everything since
     // the last newline), so the regex below is exactly processLine's
     // `trimmed.startsWith("{")` gate: same-line prose (`Here: {"a":1}`) fails
@@ -2115,6 +2154,13 @@ export class StreamBlockAccumulator {
       }
 
       case "bare_json": {
+        // Opened on this line and broken into prose before it ended (L-4).
+        if (!this.currentBlockContent && kindObjectProseBreak(rawLine.trimStart()) !== null) {
+          this.demoteKindLineToProse();
+          this.kindLineIsProse = false;
+          this.appendToCurrentBlock(rawLine);
+          return;
+        }
         const completionEnd = firstCompleteRootObjectEnd(
           rawLine,
           this.subState.openBraces - this.subState.closeBraces,
@@ -2713,6 +2759,7 @@ export class StreamBlockAccumulator {
         // JSON) is flushed as text the moment its line completes / finalizes.
         const holdNascentJson =
           this.subState.kind === "none" &&
+          !this.kindLineIsProse &&
           ((!this.currentBlockContent &&
             this.pendingLineFragment.trimStart().startsWith("{")) ||
             // A nascent array of objects waits for its first element's first

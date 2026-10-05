@@ -37,7 +37,7 @@ export function ComposerValueGroupChip({ conversationId }: { conversationId: str
   if (!shown) return null;
   return (
     <span className="flex shrink-0 items-center">
-      <ConversationContextChip conversationId={conversationId} agentId={agentId ?? null} bare />
+      <ConversationContextChip conversationId={conversationId} agentId={agentId ?? null} />
     </span>
   );
 }

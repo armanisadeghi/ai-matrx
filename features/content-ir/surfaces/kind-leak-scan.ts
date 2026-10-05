@@ -12,7 +12,7 @@
  * QUOTED, an admin/debug window). Pure DOM reads: never mutates, never throws.
  */
 
-import { ALL_KIND_SPELLINGS, firstKindSlug, hasKindKey, withoutZeroWidth } from "@/features/content-ir/surfaces/json-kind-signal";
+import { ALL_KIND_SPELLINGS, firstKindSlug, hasExoticKindKey, hasKindKey, withoutZeroWidth } from "@/features/content-ir/surfaces/json-kind-signal";
 
 /**
  * What counts as a kind key ON SCREEN: the key itself, or its backslash-escaped
@@ -22,7 +22,9 @@ import { ALL_KIND_SPELLINGS, firstKindSlug, hasKindKey, withoutZeroWidth } from 
 export function screenTextHoldsKind(text: string): boolean {
   // Every spelling the owner ruled a kind (round 8): escaped, markdown-escaped,
   // repr, typographic quotes, entities, zero-width in the key.
-  return hasKindKey(text, ALL_KIND_SPELLINGS);
+  // Exotic spellings (double entities, `&#95;`, fullwidth quotes, bidi marks
+  // in the key) are DETECTION ONLY: reported here, converted nowhere (round 9).
+  return hasKindKey(text, ALL_KIND_SPELLINGS) || hasExoticKindKey(text);
 }
 
 /** The kind slug named in on-screen text (escaped form included), or null. */

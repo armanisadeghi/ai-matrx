@@ -37,7 +37,7 @@ jest.mock("@/utils/supabase/webDb", () => ({
 import { configureStore } from "@reduxjs/toolkit";
 import { createSlimRootReducer } from "@/lib/redux/rootReducer";
 import { mergePartialAgent } from "@ai-matrx/chat/agents/redux/agent-definition/slice";
-import { saveAgentField } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import { saveAgentField } from "@/features/agents/redux/builder-write.thunks";
 import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import {
   agentDefinitionToUpdate,

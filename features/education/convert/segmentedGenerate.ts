@@ -87,6 +87,12 @@ export interface SegmentedGenerateArgs<T> {
    * misses it is cancelled and tried once more (see THE NO-FREEZE RULE).
    */
   timeoutMs?: number;
+  /**
+   * The material split by Source (their texts joined are `source.text`).
+   * Two or more → THE EVERY-SOURCE RULE (`planCoverage`): no section spans two
+   * Sources and each gets at least one item.
+   */
+  groups?: readonly { label: string; text: string }[];
 }
 
 export interface SegmentedGenerateResult<T> {
@@ -103,6 +109,8 @@ export interface SegmentedGenerateResult<T> {
   gapNote: string | null;
   /** Sections that produced nothing. */
   missedCount: number;
+  /** The `groups` index a kept item was made from (undefined without groups). */
+  groupOf: (item: T) => number | undefined;
 }
 
 /** One section's end-to-end deadline per attempt, when the caller names none. */
@@ -191,13 +199,16 @@ export async function segmentedGenerate<T>({
   identity,
   sameAs,
   timeoutMs,
+  groups,
 }: SegmentedGenerateArgs<T>): Promise<SegmentedGenerateResult<T>> {
   const plan = await planCoverage({
     text: source.text,
     targetKind,
     depth: options?.depth,
     requestedTotal: options?.count,
+    groups,
   });
+  const madeIn = new Map<T, number>();
   const live = plan.singlePass;
   const concurrency = live ? 1 : await segmentConcurrency();
 
@@ -323,6 +334,7 @@ export async function segmentedGenerate<T>({
         if (live) conversationId = extracted.conversationId;
       }
       const items = extract(extracted.value, segment);
+      if (segment.group !== undefined) for (const item of items) madeIn.set(item, segment.group);
       settled += 1;
       // THE COUNT LAW reaches the progress line too (V4-F, 2026-09-30): a run
       // asked for 5 said "8 cards so far" because each section's spare (and any
@@ -353,6 +365,7 @@ export async function segmentedGenerate<T>({
     firstValue,
     gapNote: describeGaps(missed),
     missedCount: missed.length,
+    groupOf: (item) => madeIn.get(item),
   };
 }
 

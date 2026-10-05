@@ -12,6 +12,7 @@
 // See `~/.claude/plans/the-entity-system-which-bubbly-wind.md` for the
 // migration that produced this split.
 
+import { blockStatesReducer } from "@/features/block-state/redux/blockStatesSlice";
 import { combineReducers, type Reducer } from "@reduxjs/toolkit";
 import { applyIdentityReset } from "@/lib/sync/engine/identityReset";
 import { createModuleSlice } from "./slices/moduleSliceCreator";
@@ -304,6 +305,7 @@ export const slimReducerMap = {
 
   kgSuggestions: kgSuggestionsReducer,
   assists: assistsReducer,
+  blockStates: blockStatesReducer,
   cloudBrowser: cloudBrowserReducer,
 
   agentComparison: agentComparisonReducer,

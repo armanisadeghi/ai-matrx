@@ -69,6 +69,7 @@ import {
 } from "@/features/marketing/components/shared/MarketingUi";
 import { SiteIdentityMark } from "@/features/marketing/components/shared/SiteConnectionChips";
 import { SiteRecordsSection } from "@/features/marketing/components/site/SiteRecordsSection";
+import { BrandSearchCard } from "@/features/marketing/components/site/BrandSearchCard";
 import { CrawlScheduleSummary } from "@/features/marketing/components/crawls/CrawlScheduleSummary";
 import {
   CrawlAlreadyRunningError,
@@ -691,6 +692,8 @@ export function SiteOverview() {
                 siteSettings={site.settings}
               />
             </div>
+
+            <BrandSearchCard metadata={site.metadata} domain={site.domain} />
 
             <WorkspaceDirectory
               metrics={metrics}

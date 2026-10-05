@@ -19,7 +19,18 @@ function nonEmpty(text: string | null | undefined): string | undefined {
 
 
 /** One staged remark in wire shape, or null when it carries nothing the server can read. */
+/** `block_state_ref` is declared by the server (aidream remarks.py); the published types catch up on the next agents release. */
+type WireWithRef = WireRemark & { block_state_ref?: { id: string; state_version: number } };
+
 export function remarkToWire(item: RemarkItem): WireRemark | null {
+  const wire = remarkToWireBody(item) as WireWithRef | null;
+  if (wire && item.blockStateRef) {
+    wire.block_state_ref = { id: item.blockStateRef.id, state_version: item.blockStateRef.stateVersion };
+  }
+  return wire;
+}
+
+function remarkToWireBody(item: RemarkItem): WireRemark | null {
   const record = item.target.record;
   const target = item.target.messageId
     ? { message_id: item.target.messageId }

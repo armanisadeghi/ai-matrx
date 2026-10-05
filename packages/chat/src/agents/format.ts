@@ -8,7 +8,7 @@ import type {
   DiffNode,
   DiffResult,
 } from "@ai-matrx/diff/structural";
-import type { AgentVersionHistoryItem } from "./redux/agent-definition/thunks";
+import type { AgentVersionHistoryItem } from "./types/agent-definition.types";
 import { contextItemBindingOf } from "./utils/variable-binding";
 
 /**

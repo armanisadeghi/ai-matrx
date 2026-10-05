@@ -18,10 +18,8 @@ import {
   selectAgentOutputSchema,
   selectAgentChangeNote,
 } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
-import {
-  fetchAgentVersionHistory,
-  fetchFullAgent,
-} from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import { fetchFullAgent } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import { fetchAgentVersionHistory } from "@/features/agents/redux/builder-versions.thunks";
 import {
   resetAgentToSource,
 } from "@/features/agents/redux/builder-tier.thunks";

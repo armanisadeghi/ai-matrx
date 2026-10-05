@@ -18,12 +18,16 @@ import {
   findEmbeddedKindJsonRegions,
 } from "./embedded-kind-json";
 import {
+  closedJson,
   firstKindSlug,
-  firstSpelledKindRegion,
   hasKindKey,
+  kindObjectProseBreak,
+  mayHoldKindKey,
   normalizeKindSpellings,
   quotedSourceRanges,
-  type KindTextOptions,
+  regionJson,
+  scanKindSpellingRegions,
+  type KindSpellingRegion,
 } from "./json-kind-signal";
 
 const UNNAMED = "Structured output";
@@ -87,12 +91,16 @@ export function inlineKindText(raw: string, options: { plain?: boolean } = {}): 
   }
   out += source.slice(cursor);
   // Anything the finders could not bound (a cut-off object with no closing
-  // context): cut from the owning `{` of the first remaining key to the end.
+  // context): from the owning `{` of the first remaining key to where its
+  // grammar ends — the end of the text while it is still arriving, never past
+  // the point it breaks (H-1, round 9: the text after it stays).
   if (hasKindKey(out)) {
     const key = out.search(/(?<!\\)"(?:__kind|\\u005[fF]_kind)"\s*:/);
     const brace = key >= 0 ? out.lastIndexOf("{", key) : -1;
     if (brace >= 0 && !inside(quotedSourceRanges(out), brace)) {
-      out = out.slice(0, brace) + kindName(firstKindSlug(out.slice(key)));
+      const cut = kindObjectProseBreak(out.slice(brace));
+      const end = cut !== null ? brace + cut : out.length;
+      out = out.slice(0, brace) + kindName(firstKindSlug(out.slice(key, end))) + out.slice(end);
     }
   }
   return out;
@@ -111,54 +119,70 @@ export function catalogProseText(text: string | null | undefined): string {
   return inlineKindText(text, { plain: true });
 }
 
-/**
- * The spellings prose reads as a one-line label rather than lifting: none of
- * them is JSON the stream parser can open (round 8). The literal key, its
- * markdown-escaped form and a zero-width character inside it are LIFTED by
- * the accumulator and the splitter instead (one transform, both hosts).
- */
-const ONE_LINE_SPELLINGS: KindTextOptions = { escaped: true, python: true, smart: true, entity: true };
-
-/** A non-canonical key still arriving at the very end of the text (`{\"__k`, `{'__kind': `, `{“__`). */
+/** A non-canonical key still arriving at the very end of the text (`{\\"__k`, `{'__kind': `, `{“__`). */
 const QUOTE_SPELLING = String.raw`(?:\\+"?|&(?:quot|#0*34|#[xX]0*22);|[\u201C\u201D\u201E\u2018\u2019'])`;
 const SPELLED_PARTIAL_KIND_TAIL = new RegExp(
   String.raw`\{\s*${QUOTE_SPELLING}(?:_(?:_(?:k(?:i(?:n(?:d(?:${QUOTE_SPELLING}\s*(?::\s*)?)?)?)?)?)?)?)?$`,
 );
 
+/** The one-line form of one spelled region (complete, broken-and-settled, or still arriving). */
+function regionOneLine(region: KindSpellingRegion): string {
+  const json =
+    region.status === "complete" ? regionJson(region) : region.status === "broken" ? closedJson(region) : null;
+  if (json !== null) {
+    try {
+      const value: unknown = JSON.parse(json);
+      if (value !== null && typeof value === "object" && !Array.isArray(value)) return kindOneLine(value);
+    } catch {
+      // The kind's name alone, below.
+    }
+  }
+  return kindName(firstKindSlug(json ?? region.decoded, { python: true, js: true }));
+}
+
+/** Frames repeat (two leaves read every frame): the last few answers, by text. */
+const ONE_LINE_CACHE = new Map<string, string>();
+const ONE_LINE_CACHE_SIZE = 16;
+
 /**
  * PROSE holding a kind in a spelling no JSON reader opens — backslash-escaped
- * quotes `{\"__kind\":…}`, typographic quotes, HTML entities, Python repr —
- * with each one read as its ONE-LINE label (K4b round 7, widened round 8).
- * Never lifted into a kind block (the stream parser speaks JSON; a
- * speculative rewrite mid-stream would split live from reload), so the one
- * prose leaf every text block passes through, live and reloaded alike, calls
- * this: live ≡ reload by construction. A complete region →
- * `**Title** · Kind Name`; one still arriving at the end → the kind's name
- * (or nothing while its key types). Quoted source stays as written; text with
- * no such kind comes back as the same string.
+ * quotes `{\"__kind\":…}` at any depth, typographic quotes, HTML entities,
+ * Python repr, a JavaScript object literal, and any combination with a
+ * zero-width character or a markdown `\_` in the key — with each one read as
+ * its ONE-LINE label (K4b round 7, widened rounds 8 and 9). Never lifted into
+ * a kind block (the stream parser speaks JSON; a speculative rewrite
+ * mid-stream would split live from reload), so the one prose leaf every text
+ * block passes through, live and reloaded alike, calls this: live ≡ reload by
+ * construction. A complete region → `**Title** · Kind Name`; one still
+ * arriving at the end → the kind's name (or nothing while its key types).
+ *
+ * DO NO HARM (round 9): a region whose grammar BREAKS (a settled, unclosed
+ * object in prose — the literal key too) ends where it broke: its label, then
+ * every character after it as written. One linear pass, memoized per text.
+ * Quoted source stays as written; text with no such kind comes back as the
+ * same string.
  */
 export function spelledKindsAsOneLine(text: string): string {
-  if (!text) return text;
+  if (!text || !mayHoldKindKey(text)) return text;
+  const cached = ONE_LINE_CACHE.get(text);
+  if (cached !== undefined) return cached;
+  const out = computeSpelledKindsAsOneLine(text);
+  if (ONE_LINE_CACHE.size >= ONE_LINE_CACHE_SIZE) ONE_LINE_CACHE.delete(ONE_LINE_CACHE.keys().next().value!);
+  ONE_LINE_CACHE.set(text, out);
+  return out;
+}
+
+function computeSpelledKindsAsOneLine(text: string): string {
   let out = "";
   let cursor = 0;
-  for (;;) {
-    const region = firstSpelledKindRegion(text, ONE_LINE_SPELLINGS, cursor);
-    if (!region) break;
-    out += text.slice(cursor, region.start);
-    let value: unknown = null;
-    if (region.complete && region.json !== null) {
-      try {
-        value = JSON.parse(region.json);
-      } catch {
-        value = null;
-      }
-    }
-    const slug = firstKindSlug(region.json ?? text.slice(region.start, region.end), ONE_LINE_SPELLINGS);
-    out += value !== null && typeof value === "object" ? kindOneLine(value) : kindName(slug);
+  for (const region of scanKindSpellingRegions(text)) {
+    // A literal key is lifted by the pipeline — unless it broke in prose.
+    if (region.family === "lifted" && region.status !== "broken") continue;
+    out += text.slice(cursor, region.start) + regionOneLine(region);
     cursor = region.end;
   }
   const rest = text.slice(cursor);
-  const partial = SPELLED_PARTIAL_KIND_TAIL.exec(rest);
+  const partial = rest.includes("{") ? SPELLED_PARTIAL_KIND_TAIL.exec(rest) : null;
   if (partial && !inside(quotedSourceRanges(text), cursor + partial.index)) {
     return out + rest.slice(0, partial.index);
   }

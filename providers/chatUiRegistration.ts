@@ -6,6 +6,15 @@
 
 import dynamic from "next/dynamic";
 import { registerChatUi } from "@ai-matrx/chat/host/ui-slots";
+import { registerBuilderDoor } from "@ai-matrx/chat/host/builder-door";
+import {
+  saveAgent,
+  saveAgentField,
+  createAgent,
+  deleteAgent,
+  duplicateAgent,
+  setAgentFavorite,
+} from "@/features/agents/redux/builder-write.thunks";
 import { RichContent } from "@/components/rich-content/RichContent";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { InfoHint } from "@/components/official/InfoHint";
@@ -118,6 +127,9 @@ const ResourcePickerWindow = dynamic(
     })),
   { ssr: false },
 );
+
+// The agent builder's write thunks, for the package's agent headers (host/builder-door).
+registerBuilderDoor({ saveAgent, saveAgentField, createAgent, deleteAgent, duplicateAgent, setAgentFavorite });
 
 registerChatUi({
   WindowPanel,

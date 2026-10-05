@@ -2,7 +2,7 @@
  * Artifact persistence adapters — how an artifact's interactive state is saved.
  *
  * Two strategies (see the registry's `persistenceStrategy`):
- *  - GENERIC: state lives on the artifact itself (canvas_item_state), per viewer.
+ *  - GENERIC: state lives on the artifact itself (block_states, entity canvas_item), per viewer.
  *  - CUSTOM: a type with its own domain table (flashcards → user_flashcard_*,
  *    quiz → quiz_sessions, tasks → ctx_tasks) plugs in an adapter that creates +
  *    links the domain record on materialize and reads/writes state there.
@@ -10,7 +10,7 @@
  * Wave C ships the interface + GENERIC adapter. Wave D registers custom adapters.
  */
 
-import { canvasItemStateService } from "@/features/canvas/services/canvasItemStateService";
+import { listEntityBlockStates, setBlockState } from "@/features/block-state/blockStateService";
 
 /** Pointer to a custom domain record (mirrors cx_artifact.external_system/_id). */
 export interface ArtifactLink {
@@ -72,14 +72,29 @@ export interface ArtifactPersistenceAdapter<
   ): Promise<boolean>;
 }
 
-/** Generic adapter: state on canvas_item_state, keyed (canvas_id, user_id). */
+/**
+ * Generic adapter: the viewer's state on the artifact is a block-state row
+ * (platform.block_states, entity `canvas_item`, key `root`) — the same primitive
+ * every chat block uses. `canvas.canvas_item_state` is retired.
+ */
 export const GENERIC_ADAPTER: ArtifactPersistenceAdapter = {
-  loadState: (artifactId) => canvasItemStateService.getState(artifactId),
-  saveState: (artifactId, patch) =>
-    canvasItemStateService.saveState(
-      artifactId,
-      patch as Record<string, unknown>,
-    ),
+  loadState: async (artifactId) => {
+    const rows = await listEntityBlockStates("canvas_item", [artifactId]);
+    const row = rows.find((r) => r.entity_id === artifactId && r.block_key === "root" && r.scope === "viewer");
+    return row?.state ?? null;
+  },
+  saveState: async (artifactId, patch) => {
+    await setBlockState({
+      entityType: "canvas_item",
+      entityId: artifactId,
+      blockKey: "root",
+      kind: "artifact",
+      scope: "viewer",
+      patch: patch as Record<string, unknown>,
+      fingerprint: null,
+    });
+    return true;
+  },
 };
 
 import { FLASHCARDS_CANONICAL_ADAPTER } from "./flashcards-canonical-adapter";

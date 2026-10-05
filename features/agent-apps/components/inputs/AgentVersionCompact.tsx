@@ -22,10 +22,8 @@ import {
 import { Button } from "@/components/ui/button";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
-import {
-  fetchAgentVersionHistory,
-  type AgentVersionHistoryItem,
-} from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import { fetchAgentVersionHistory } from "@/features/agents/redux/builder-versions.thunks";
+import { type AgentVersionHistoryItem } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { cn } from "@/lib/utils";
 

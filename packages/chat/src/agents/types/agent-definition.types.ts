@@ -1024,3 +1024,25 @@ export interface AgentDefinitionSliceState {
   status: "idle" | "loading" | "succeeded" | "failed";
   error: string | null;
 }
+
+/**
+ * One `agx_get_version_history` row.
+ *
+ * Nullability mirrors the LIVE COLUMNS of `agent.definition_version`, not the
+ * generated row — Supabase marks every `RETURNS TABLE` column non-null because
+ * Postgres carries no nullability on an OUT parameter. Consumers must handle
+ * the nulls; they are the normal case for a change note and for every contract
+ * field on a version saved before contracts existed. See
+ * `parse-output-snapshot.ts` § THE RETURNS-TABLE NULLABILITY LIE.
+ */
+export interface AgentVersionHistoryItem {
+  version_id: string;
+  version_number: number;
+  name: string;
+  changed_at: string;
+  change_note: string | null;
+  contract_change: string | null;
+  contract_break_declared: string | null;
+  input_contract_hash: string | null;
+  output_contract_hash: string | null;
+}

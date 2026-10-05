@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/dialog";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
-import { saveAgentField } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import { saveAgentField } from "@/features/agents/redux/builder-write.thunks";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import type { OutputSchema } from "@ai-matrx/chat/agents/types/json-schema";
 

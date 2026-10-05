@@ -86,6 +86,12 @@ export interface KindTextOptions {
   smart?: boolean;
   /** Also read an HTML-entity key (`&quot;__kind&quot;`, `&#34;__kind&#34;`) — text contexts only (round 8). */
   entity?: boolean;
+  /**
+   * Also read a JavaScript object-literal key (`{ __kind: 'flashcard_set' }` —
+   * what Node's console prints, a sandbox tool's output) — key position with a
+   * quoted value, text contexts only (L-2, round 9).
+   */
+  js?: boolean;
 }
 
 /**
@@ -104,6 +110,7 @@ export const ALL_KIND_SPELLINGS: Readonly<KindTextOptions> = Object.freeze({
   python: true,
   smart: true,
   entity: true,
+  js: true,
 });
 
 /**
@@ -152,8 +159,46 @@ export function hasKindKey(source: string, options: KindTextOptions = {}): boole
     (options.markdown === true && MARKDOWN_KIND_KEY.test(text)) ||
     (options.escaped === true && ESCAPED_KIND_KEY.test(text)) ||
     (options.smart === true && SMART_KIND_KEY.test(text)) ||
-    (options.entity === true && ENTITY_KIND_KEY.test(text))
+    (options.entity === true && ENTITY_KIND_KEY.test(text)) ||
+    (options.js === true && JS_KIND_KEY.test(text)) ||
+    // Every realistic spelling COMBINED in one key (escaped + zero-width,
+    // repr + zero-width, `"\__kind"`, `{\"\\_\\_kind\"…}` — L-1, round 9).
+    (options.escaped === true && options.python === true && options.smart === true && options.markdown === true &&
+      hasSpelledKey(source))
   );
+}
+
+/** The key as a JavaScript object literal spells it: unquoted, key position, quoted value (L-2). */
+const JS_KIND_KEY = /[{,]\s*__kind\s*:\s*['"]/;
+
+/**
+ * EXOTIC spellings (owner ruling, round 9): double HTML entities
+ * (`&amp;quot;`), `&#95;` underscores, upper-case / padded entities, fullwidth
+ * quotes, bidi marks, invisible operators and combining joiners inside the key.
+ * DETECTION ONLY — the leak sentinel and the frame judge report them; no
+ * renderer converts them (an adversarial spelling is a defect to see, not a
+ * shape to guess at).
+ */
+export function hasExoticKindKey(text: string): boolean {
+  if (!/kind|&#|&amp;|\uFF3F/i.test(text)) return false;
+  let plain = text
+    .replace(EXOTIC_INVISIBLE, "")
+    .replace(/\uFF02/g, '"')
+    .replace(/\uFF07/g, "'")
+    .replace(/\uFF3F/g, "_");
+  for (let pass = 0; pass < 3 && plain.includes("&"); pass++) plain = plain.replace(LOOSE_ENTITY, looseEntity);
+  return plain !== text && hasKindKey(plain, ALL_KIND_SPELLINGS);
+}
+
+const EXOTIC_INVISIBLE = /[\p{Cf}\u034F\u115F\u1160\u17B4\u17B5\u180E\u3164\uFFA0]/gu;
+const LOOSE_ENTITY = /&(#[xX][0-9a-fA-F]{1,8}|#\d{1,8}|[A-Za-z]{2,8});/g;
+const LOOSE_NAMED: Record<string, string> = { quot: '"', apos: "'", amp: "&", lt: "<", gt: ">", lowbar: "_" };
+function looseEntity(whole: string, body: string): string {
+  if (body.startsWith("#")) {
+    const code = body[1] === "x" || body[1] === "X" ? Number.parseInt(body.slice(2), 16) : Number.parseInt(body.slice(1), 10);
+    return Number.isFinite(code) && code > 0 && code < 0x110000 ? String.fromCodePoint(code) : whole;
+  }
+  return LOOSE_NAMED[body.toLowerCase()] ?? whole;
 }
 
 /** Whether TEXT holds the key in ANY spelling a reader sees as `__kind` (round 8). */
@@ -182,7 +227,7 @@ export function isKindSlug(value: unknown): value is string {
 export function firstKindSlug(source: string, options: KindTextOptions = {}): string | null {
   const text = withoutZeroWidth(source);
   let literal = KIND_SLUG.exec(text)?.[1];
-  if (!literal && options.json5) {
+  if (!literal && (options.json5 || options.js)) {
     const json5 = JSON5_KIND_SLUG.exec(text)?.[1];
     literal = json5?.startsWith("'") ? JSON.stringify(json5.slice(1, -1)) : json5;
   }
@@ -473,41 +518,280 @@ export function pythonBalancedEnd(text: string, start: number): number | null {
 }
 
 /**
- * THE ONE SPELLING NORMALIZER (K4 round 7, widened round 8). Every text
- * detector, converter and label function runs it (directly, or through
- * `hasKindKeyAnySpelling`) so a kind spelled any way the screen still reads as
- * a kind converts like any other. Each spelling's region — from the `{` that
- * owns the key to its balanced close (or to the end, still arriving) — is
- * rewritten as canonical JSON:
+ * THE ONE SPELLING NORMALIZER (K4 round 7, widened round 8, rebuilt round 9).
+ * Every text detector, converter and label function runs it (directly, or
+ * through `hasKindKeyAnySpelling`) so a kind spelled any REALISTIC way the
+ * screen still reads as a kind converts like any other. Each spelled region —
+ * from the `{` that owns the key to where its own grammar ends — is rewritten
+ * as canonical JSON:
  *
  *   zero-width in the key · HTML entities · typographic quotes ·
- *   backslash-escaped quotes (any depth) · markdown-escaped `\_` · Python repr
+ *   backslash-escaped quotes (any depth) · markdown-escaped `\_` · Python repr ·
+ *   JavaScript object literal — and any combination of them in one key
  *
+ * DO NO HARM (owner ruling, round 9): only characters INSIDE a matched region
+ * change (a zero-width character only inside the key itself), a region never
+ * reaches past the point where its grammar breaks (an unclosed region in prose
+ * ends there and the text after it stays), and the scan is one linear pass.
  * Quoted source (inline code, non-JSON fences) stays as written, and a WHOLE
  * JSON text is never rewritten (a spelling inside it is a string VALUE).
  * Text with no non-canonical spelling comes back as the same string.
  */
 export function normalizeKindSpellings(source: string): string {
-  let text = source;
-  if (HAS_ZERO_WIDTH.test(text) && hasKindKey(text, ALL_KIND_SPELLINGS)) {
-    text = text.replace(ZERO_WIDTH, "");
-  }
-  if (!hasKindKey(text, { markdown: true, escaped: true, python: true, smart: true, entity: true })) return text;
+  if (!mayHoldKindKey(source)) return source;
   // Whole JSON text: a spelling in it is a string VALUE, never rewritten.
-  if (/^[{[]/.test(text.trimStart())) {
+  if (/^[{[]/.test(source.trimStart())) {
     try {
-      JSON.parse(text);
-      return text;
+      JSON.parse(source);
+      // Its own keys still read through a zero-width character (only the keys).
+      return withoutZeroWidthInKeys(source);
     } catch {
       // Not JSON: read on.
     }
   }
-  for (let pass = 0; pass < 6; pass++) {
-    const next = rewriteSpelledRegions(text);
-    if (next === text) break;
-    text = next;
+  let out = "";
+  let cursor = 0;
+  for (const region of scanKindSpellingRegions(source)) {
+    const rewritten = canonicalRegionText(source, region);
+    if (rewritten === null) continue;
+    out += source.slice(cursor, region.rewriteStart) + rewritten;
+    cursor = region.rewriteEnd;
   }
-  return text;
+  return cursor === 0 ? source : out + source.slice(cursor);
+}
+
+/** The canonical JSON a region is rewritten to by the normalizer, or null to leave it. */
+function canonicalRegionText(source: string, region: KindSpellingRegion): string | null {
+  if (region.family === "lifted") {
+    // A literal / `_` key: only a zero-width character INSIDE the key, or
+    // the markdown `\_` the stream ingress also reads, is rewritten.
+    if (region.markdown) return region.status === "broken" ? closedJson(region) ?? region.decoded : region.decoded;
+    const key = source.slice(region.rewriteStart, region.rewriteEnd);
+    return region.keyText === undefined || key === region.keyText ? null : region.keyText;
+  }
+  if (region.status === "complete") {
+    const json = regionJson(region);
+    if (json !== null) return json;
+    return region.family === "python" || region.family === "js" ? null : region.decoded;
+  }
+  if (region.status === "broken") return closedJson(region) ?? region.decoded;
+  return region.family === "python" || region.family === "js" ? null : region.decoded;
+}
+
+/** How a kind key is spelled — which decoders turn its region into JSON. */
+export type KindSpellingFamily = "lifted" | "escaped" | "markdown" | "python" | "smart" | "entity" | "js";
+
+/**
+ * A kind region in a REALISTIC spelling (round 9). `[start, end)` is the raw
+ * region (`{` to where its grammar ended); `[rewriteStart, rewriteEnd)` is what
+ * the normalizer replaces (the key alone for a literal key holding only a
+ * zero-width character). `status`: `complete` (balanced), `prefix` (still
+ * arriving — runs to the end of the text) or `broken` (its grammar failed at
+ * `end`; the text after it is NOT part of it). `decoded` is the region's text
+ * with its spelling undone (still Python / JS for those families).
+ */
+export interface KindSpellingRegion {
+  start: number;
+  end: number;
+  rewriteStart: number;
+  rewriteEnd: number;
+  family: KindSpellingFamily;
+  status: "complete" | "prefix" | "broken";
+  decoded: string;
+  /** Whether the key carried the markdown `\_` (the region was markdown-decoded). */
+  markdown: boolean;
+  /** A literal key's canonical text (the normalizer's whole rewrite for that family). */
+  keyText?: string;
+}
+
+const ZW = "[\\u200B-\\u200D\\u2060\\uFEFF\\u00AD]";
+/** One underscore of the key: literal, backslash-escaped at any depth, or `_`. */
+const KEY_UNDERSCORE = String.raw`(?:\\*_|\\u005[fF])`;
+const KEY_CORE = `${ZW}*${KEY_UNDERSCORE}${ZW}*${KEY_UNDERSCORE}${ZW}*k${ZW}*i${ZW}*n${ZW}*d${ZW}*`;
+const SMART_ANY = `[${SMART_DOUBLE}${SMART_SINGLE}]`;
+
+/**
+ * EVERY REALISTIC SPELLING of the key, and any combination of them (L-1,
+ * round 9). Groups: 1 backslashes + 2 core (the JSON family: literal,
+ * escaped at any depth, markdown-escaped, zero-width), 3 Python repr core
+ * (key position, quoted value), 4 typographic-quote core, 5 HTML-entity core,
+ * 6 JavaScript object-literal core (unquoted, key position, quoted value).
+ */
+const SPELLED_KEY_SOURCE = [
+  String.raw`(\\*)"(${KEY_CORE})\\*"\s*:`,
+  String.raw`(?<=[{,]\s*)'(${KEY_CORE})'\s*:(?=\s*['"])`,
+  `${SMART_ANY}(${KEY_CORE})[${SMART_DOUBLE}${SMART_SINGLE}"']\\s*:`,
+  `${ENTITY_QUOTE}(${KEY_CORE})${ENTITY_QUOTE}\\s*:`,
+  String.raw`(?<=[{,]\s*)(${KEY_CORE})\s*:(?=\s*['"])`,
+].join("|");
+const SPELLED_KEY = new RegExp(SPELLED_KEY_SOURCE);
+const SPELLED_KEY_G = new RegExp(SPELLED_KEY_SOURCE, "g");
+
+/** Whether text holds the key in any realistic spelling or combination (detection, round 9). */
+function hasSpelledKey(text: string): boolean {
+  return mayHoldKindKey(text) && SPELLED_KEY.test(text);
+}
+
+/**
+ * A cheap pre-check every scanner runs first: no key spelling can exist
+ * without `kind` (or a zero-width character splitting it). Linear, no regex
+ * restarts — the plain text of every frame pays only this.
+ */
+export function mayHoldKindKey(text: string): boolean {
+  return text.includes("kind") || (text.includes("_") && HAS_ZERO_WIDTH.test(text));
+}
+
+/** Per call: past this many regions the rest of the text is left as written (hard budget). */
+const MAX_REGIONS_PER_CALL = 2000;
+/** How far before a `kind` the key's opening quote may sit (backslashes + zero-width + `__`). */
+const KEY_LOOKBEHIND = 64;
+
+/** Where `kind` (or `k`+zero-width…`d`) occurs at or after `from`, or -1. */
+function nextKindHit(text: string, from: number, zeroWidth: boolean): number {
+  if (!zeroWidth) return text.indexOf("kind", from);
+  KIND_LETTERS_G.lastIndex = from;
+  const m = KIND_LETTERS_G.exec(text);
+  return m ? m.index : -1;
+}
+const KIND_LETTERS_G = new RegExp(`k${ZW}*i${ZW}*n${ZW}*d`, "g");
+
+/** The family a matched key belongs to, and its escape depth. */
+function keyFamily(m: RegExpExecArray): { family: KindSpellingFamily; core: string; levels: number } {
+  if (m[3] !== undefined) return { family: "python", core: m[3], levels: 0 };
+  if (m[4] !== undefined) return { family: "smart", core: m[4], levels: 0 };
+  if (m[5] !== undefined) return { family: "entity", core: m[5], levels: 0 };
+  if (m[6] !== undefined) return { family: "js", core: m[6], levels: 0 };
+  const backslashes = m[1]!.length;
+  const core = m[2]!;
+  if (backslashes > 0) {
+    // `\"` is one level, `\\\"` two, `\\\\\\\"` three: 2^levels − 1 backslashes.
+    return { family: "escaped", core, levels: Math.min(4, Math.ceil(Math.log2(backslashes + 1))) };
+  }
+  const plain = core.replace(ZERO_WIDTH, "");
+  if (plain === "__kind" || /^\\u005[fF]_kind$/.test(plain)) return { family: "lifted", core, levels: 0 };
+  if (plain === "\\_\\_kind") return { family: "lifted", core, levels: 0 };
+  return { family: "markdown", core, levels: 0 };
+}
+
+/**
+ * THE ONE LINEAR SCAN for kind regions in a realistic spelling (round 9):
+ * every candidate is found from a `kind` occurrence, its owning `{` from a
+ * forward-only brace cursor, quoted source once, and each region is decoded
+ * and bounded by its own grammar in work proportional to its length. Regions
+ * are returned in order and never overlap; a region's inner keys belong to it.
+ * A key whose `{` grammar fails BEFORE the key is not a region (prose braces).
+ */
+export function scanKindSpellingRegions(text: string): KindSpellingRegion[] {
+  const regions: KindSpellingRegion[] = [];
+  if (!mayHoldKindKey(text)) return regions;
+  const zeroWidth = HAS_ZERO_WIDTH.test(text);
+  let quoted: Array<[number, number]> | null = null;
+  const inQuoted = (at: number) => {
+    quoted ??= quotedSourceRanges(text);
+    let lo = 0;
+    let hi = quoted.length - 1;
+    while (lo <= hi) {
+      const mid = (lo + hi) >> 1;
+      const [a, b] = quoted[mid]!;
+      if (at < a) hi = mid - 1;
+      else if (at >= b) lo = mid + 1;
+      else return true;
+    }
+    return false;
+  };
+  let cursor = 0;
+  let braceScan = 0;
+  let lastBrace = -1;
+  let hit = nextKindHit(text, 0, zeroWidth);
+  while (hit >= 0 && regions.length < MAX_REGIONS_PER_CALL) {
+    const windowStart = Math.max(cursor, hit - KEY_LOOKBEHIND);
+    const windowEnd = Math.min(text.length, hit + KEY_LOOKBEHIND);
+    SPELLED_KEY_G.lastIndex = 0;
+    const window = text.slice(windowStart, windowEnd);
+    let m: RegExpExecArray | null = null;
+    for (let candidate = SPELLED_KEY_G.exec(window); candidate; candidate = SPELLED_KEY_G.exec(window)) {
+      if (windowStart + candidate.index + candidate[0].length > hit) {
+        m = candidate;
+        break;
+      }
+    }
+    if (!m) {
+      hit = nextKindHit(text, hit + 1, zeroWidth);
+      continue;
+    }
+    const keyAt = windowStart + m.index;
+    const keyEnd = keyAt + m[0].length;
+    const next = () => nextKindHit(text, keyEnd, zeroWidth);
+    while (braceScan < keyAt) {
+      if (text.charCodeAt(braceScan) === 123 /* { */) lastBrace = braceScan;
+      braceScan++;
+    }
+    const brace = lastBrace >= cursor ? lastBrace : -1;
+    if (brace < 0 || inQuoted(keyAt) || inQuoted(brace)) {
+      hit = next();
+      continue;
+    }
+    const { family, core, levels } = keyFamily(m);
+    const markdown = /\\_/.test(core) || (family === "escaped" && /\\{2}_/.test(core));
+    const plan = decodePlan(family, levels, markdown);
+    const region = boundRegion(text, brace, keyAt, plan);
+    if (!region) {
+      hit = next();
+      continue;
+    }
+    if (family === "lifted" && !markdown) {
+      // Literal key: the region is only scanned (so its inner keys belong to
+      // it); the normalizer rewrites the key alone when it holds a zero-width.
+      regions.push({
+        start: brace,
+        end: region.end,
+        rewriteStart: keyAt,
+        rewriteEnd: keyEnd,
+        keyText: m[0].replace(ZERO_WIDTH, ""),
+        family,
+        status: region.status,
+        decoded: withoutZeroWidthInKeys(region.decoded),
+        markdown: false,
+      });
+    } else {
+      regions.push({
+        start: brace,
+        end: region.end,
+        rewriteStart: brace,
+        rewriteEnd: region.end,
+        family,
+        status: region.status,
+        decoded: withoutZeroWidthInKeys(region.decoded),
+        markdown,
+      });
+    }
+    cursor = region.end;
+    if (region.status === "prefix") break;
+    hit = nextKindHit(text, cursor, zeroWidth);
+  }
+  return regions;
+}
+
+/** Inside decoded text, a key spelled `__kind` with zero-width characters → `__kind` (keys only). */
+const ZW_KEY_IN_DECODED = new RegExp(`(["'])${ZW}*_${ZW}*_${ZW}*k${ZW}*i${ZW}*n${ZW}*d${ZW}*\\1(?=\\s*:)`, "g");
+function withoutZeroWidthInKeys(decoded: string): string {
+  return HAS_ZERO_WIDTH.test(decoded) ? decoded.replace(ZW_KEY_IN_DECODED, (key) => key.replace(ZERO_WIDTH, "")) : decoded;
+}
+
+interface DecodePlan {
+  steps: SpellingStep[];
+  grammar: GrammarDialect;
+}
+
+function decodePlan(family: KindSpellingFamily, levels: number, markdown: boolean): DecodePlan {
+  const steps: SpellingStep[] = [];
+  if (family === "entity") steps.push(entityStep);
+  if (family === "smart") steps.push(smartStep);
+  for (let level = 0; level < levels; level++) steps.push(escapeStep);
+  if (markdown) steps.push(markdownStep);
+  const grammar: GrammarDialect =
+    family === "js" ? "js" : family === "python" || family === "smart" || family === "entity" ? "python" : "json";
+  return { steps, grammar };
 }
 
 /** One decoded text and, per decoded character, the raw index it came from (plus the raw end). */
@@ -531,69 +815,111 @@ function decodeWith(raw: string, step: SpellingStep): DecodedText {
   return { text, map };
 }
 
+/** Every step in order, the maps composed back to the raw input. */
+function decodeChain(raw: string, steps: SpellingStep[]): DecodedText {
+  if (steps.length === 0) {
+    const map = new Array<number>(raw.length + 1);
+    for (let i = 0; i <= raw.length; i++) map[i] = i;
+    return { text: raw, map };
+  }
+  let current = decodeWith(raw, steps[0]!);
+  for (let s = 1; s < steps.length; s++) {
+    const next = decodeWith(current.text, steps[s]!);
+    const prior = current.map;
+    current = { text: next.text, map: next.map.map((at) => prior[at]!) };
+  }
+  return current;
+}
+
 const ENTITY_STEP_RE = /^&(?:(quot|apos|amp|lt|gt)|#(\d{1,6})|#[xX]([0-9a-fA-F]{1,6}));/;
 const NAMED_ENTITIES: Record<string, string> = { quot: '"', apos: "'", amp: "&", lt: "<", gt: ">" };
 const ESCAPE_CHARS: Record<string, string> = { '"': '"', "\\": "\\", "/": "/", n: "\n", t: "\t", r: "\r", b: "", f: "" };
 
-/** A spelling: how its key is found, and how one level of it decodes. */
-interface KindSpelling {
-  option: "entity" | "smart" | "escaped" | "markdown";
-  key: RegExp;
-  step: SpellingStep;
+const entityStep: SpellingStep = (raw, i) => {
+  if (raw[i] !== "&") return [raw[i]!, 1];
+  const m = ENTITY_STEP_RE.exec(raw.slice(i, i + 12));
+  if (!m) return ["&", 1];
+  const ch = m[1] ? NAMED_ENTITIES[m[1]]! : String.fromCodePoint(Number.parseInt(m[2] ?? m[3]!, m[2] ? 10 : 16));
+  return [ch, m[0].length];
+};
+const smartStep: SpellingStep = (raw, i) => {
+  const ch = raw[i]!;
+  if (SMART_DOUBLE.includes(ch)) return ['"', 1];
+  if (SMART_SINGLE.includes(ch)) return ["'", 1];
+  return [ch, 1];
+};
+const escapeStep: SpellingStep = (raw, i) => {
+  if (raw[i] !== "\\") return [raw[i]!, 1];
+  const next = raw[i + 1] ?? "";
+  if (next in ESCAPE_CHARS) return [ESCAPE_CHARS[next]!, 2];
+  if (next === "u" && /^[0-9a-fA-F]{4}$/.test(raw.slice(i + 2, i + 6))) return [raw.slice(i, i + 6), 6];
+  return [raw.slice(i, i + 2), 2];
+};
+const markdownStep: SpellingStep = (raw, i) => (raw[i] === "\\" && raw[i + 1] === "_" ? ["_", 2] : [raw[i]!, 1]);
+
+/** Smallest decode window; it grows ×4 until the region's grammar settles inside it. */
+const FIRST_WINDOW = 128;
+
+/**
+ * Decode and bound the region whose `{` is at `brace`: windowed, so the work is
+ * proportional to the region, never to the rest of the text. Null when the
+ * grammar fails before the key (the `{` is not the key's object).
+ */
+function boundRegion(
+  text: string,
+  brace: number,
+  keyAt: number,
+  plan: DecodePlan,
+): { end: number; status: KindSpellingRegion["status"]; decoded: string } | null {
+  for (let width = FIRST_WINDOW; ; width *= 4) {
+    const hi = Math.min(text.length, brace + width);
+    const atEnd = hi === text.length;
+    const decoded = decodeChain(text.slice(brace, hi), plan.steps);
+    const keyDecoded = firstAtOrAfter(decoded.map, keyAt - brace);
+    const verdict = kindGrammar(decoded.text, plan.grammar);
+    if (verdict.status === "complete") {
+      if (verdict.end <= keyDecoded) return null;
+      return { end: brace + decoded.map[verdict.end]!, status: "complete", decoded: decoded.text.slice(0, verdict.end) };
+    }
+    if (verdict.status === "broken") {
+      // A break at the window edge may be a cut escape: look further.
+      if (!atEnd && decoded.map[verdict.at]! >= hi - brace - 16) continue;
+      if (!verdict.prose) {
+        // Malformed JSON, not prose: its balanced close bounds it, as before.
+        const end = balancedEnd(decoded.text, plan.grammar !== "json");
+        if (end !== null) {
+          if (end <= keyDecoded) return null;
+          return { end: brace + decoded.map[end]!, status: "complete", decoded: decoded.text.slice(0, end) };
+        }
+        if (!atEnd) continue;
+        return { end: text.length, status: "prefix", decoded: decoded.text };
+      }
+      // At the end of the text, a half-typed escape or entity (`\`, `&quo`)
+      // is still arriving, not broken.
+      if (atEnd && ARRIVING_SPELLING_TAIL.test(text.slice(brace + decoded.map[verdict.at]!))) {
+        if (verdict.at <= keyDecoded) return null;
+        return { end: text.length, status: "prefix", decoded: decoded.text };
+      }
+      if (verdict.cut <= keyDecoded) return null;
+      return { end: brace + decoded.map[verdict.cut]!, status: "broken", decoded: decoded.text.slice(0, verdict.cut) };
+    }
+    if (!atEnd) continue;
+    return { end: text.length, status: "prefix", decoded: decoded.text };
+  }
 }
 
-const SPELLINGS: KindSpelling[] = [
-  {
-    option: "entity",
-    key: new RegExp(ENTITY_KIND_KEY.source, "g"),
-    step: (raw, i) => {
-      if (raw[i] !== "&") return [raw[i]!, 1];
-      const m = ENTITY_STEP_RE.exec(raw.slice(i, i + 12));
-      if (!m) return ["&", 1];
-      const ch = m[1] ? NAMED_ENTITIES[m[1]]! : String.fromCodePoint(Number.parseInt(m[2] ?? m[3]!, m[2] ? 10 : 16));
-      return [ch, m[0].length];
-    },
-  },
-  {
-    option: "smart",
-    key: new RegExp(SMART_KIND_KEY.source, "g"),
-    step: (raw, i) => {
-      const ch = raw[i]!;
-      if (SMART_DOUBLE.includes(ch)) return ['"', 1];
-      if (SMART_SINGLE.includes(ch)) return ["'", 1];
-      return [ch, 1];
-    },
-  },
-  {
-    option: "escaped",
-    key: new RegExp(ESCAPED_KIND_KEY.source, "g"),
-    step: (raw, i) => {
-      if (raw[i] !== "\\") return [raw[i]!, 1];
-      const next = raw[i + 1] ?? "";
-      if (next in ESCAPE_CHARS) return [ESCAPE_CHARS[next]!, 2];
-      if (next === "u" && /^[0-9a-fA-F]{4}$/.test(raw.slice(i + 2, i + 6))) return [raw.slice(i, i + 6), 6];
-      return [raw.slice(i, i + 2), 2];
-    },
-  },
-  {
-    option: "markdown",
-    key: new RegExp(MARKDOWN_KIND_KEY.source, "g"),
-    step: (raw, i) => (raw[i] === "\\" && raw[i + 1] === "_" ? ["_", 2] : [raw[i]!, 1]),
-  },
-];
-
-/** The end (exclusive) of the string-aware balanced JSON value opening at 0, or null. */
-function jsonBalancedEnd(text: string): number | null {
+/** The end (exclusive) of the quote-aware balanced value opening at 0, or null. */
+function balancedEnd(text: string, singleQuotes: boolean): number | null {
   let depth = 0;
-  let inString = false;
+  let quote = "";
   for (let i = 0; i < text.length; i++) {
     const ch = text[i]!;
-    if (inString) {
+    if (quote) {
       if (ch === "\\") i++;
-      else if (ch === '"') inString = false;
+      else if (ch === quote) quote = "";
       continue;
     }
-    if (ch === '"') inString = true;
+    if (ch === '"' || (singleQuotes && ch === "'")) quote = ch;
     else if (ch === "{" || ch === "[") depth++;
     else if (ch === "}" || ch === "]") {
       depth--;
@@ -604,100 +930,234 @@ function jsonBalancedEnd(text: string): number | null {
 }
 
 /**
- * A kind region written in a NON-canonical spelling: `[start, end)` of the raw
- * text and its canonical JSON. `complete` is false for a region still
- * arriving (or cut off) — `end` is then the end of the text and `json` the
- * canonical tail. `json` is null for a complete Python repr that will not read.
+ * Where a LITERAL kind object (`text` opens at its `{`) breaks into prose —
+ * `{"__kind":"note","title":"Hi" and then…` — after its key: the end of the
+ * region, or null (complete, still arriving, or merely malformed). THE one
+ * answer the converters, the prose leaf and the live accumulator share, so a
+ * settled unclosed object reads the same live and reloaded (L-4, round 9).
  */
-export interface SpelledKindRegion {
-  start: number;
-  end: number;
-  json: string | null;
-  complete: boolean;
+export function kindObjectProseBreak(text: string): number | null {
+  const key = text.search(LITERAL_KIND_KEY);
+  if (key < 0) return null;
+  const verdict = kindGrammar(text);
+  return verdict.status === "broken" && verdict.prose && verdict.cut > key ? verdict.cut : null;
+}
+const LITERAL_KIND_KEY = new RegExp(String.raw`(?<!\\)"${KIND_KEY_BODY}"\s*:`);
+
+/** The text's tail after a break that is a spelling still typing: a lone `\` run or a partial entity. */
+const ARRIVING_SPELLING_TAIL = /^(?:\\+"?|&#?[A-Za-z0-9]{0,6})$/;
+
+/** The first index whose map value is at least `raw` (maps are non-decreasing). */
+function firstAtOrAfter(map: number[], raw: number): number {
+  let lo = 0;
+  let hi = map.length - 1;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (map[mid]! < raw) lo = mid + 1;
+    else hi = mid;
+  }
+  return lo;
+}
+
+/** Which JSON-like grammar bounds a region: strict JSON, Python repr, or a JavaScript literal. */
+export type GrammarDialect = "json" | "python" | "js";
+
+export type KindGrammarVerdict =
+  | { status: "complete"; end: number }
+  | { status: "prefix" }
+  | { status: "broken"; at: number; cut: number; prose: boolean };
+
+/**
+ * Where a JSON-like value opening at 0 ends by its OWN grammar (H-1, round 9):
+ * `complete` at its balanced close, `prefix` when the text ends while it is
+ * still valid (arriving), or `broken` at the first character that cannot
+ * continue it — `cut` is the end of the last whole token before that (after a
+ * value, a `,`, or an opener), so the text after `cut` is never part of it.
+ * A raw newline inside a string breaks it (JSON strings never hold one), so an
+ * unclosed string never runs past its line. One pass, no allocation per char.
+ */
+export function kindGrammar(
+  s: string,
+  dialect: GrammarDialect = "json",
+'): KindGrammarVerdict {
+  const closers: number[] = [];
+  const singleQuotes = dialect !== "json";
+  const bareKeys = dialect === "js";
+  const trailingCommas = dialect !== "json";
+  // 0 value, 1 value-or-close, 2 key-or-close, 3 colon, 4 after-value
+  let expect = 0;
+  let lastGood = 0;
+  const n = s.length;
+  // A break is PROSE when what stops the value is a word (or a newline inside
+  // a string) — text after an unclosed object — not JSON punctuation, which is
+  // malformed JSON (a trailing comma, a missing comma) and keeps its old reading.
+  const broken = (at: number): KindGrammarVerdict => ({
+    status: "broken",
+    at,
+    cut: lastGood,
+    prose: !/^[{}[\]:,"'0-9.+-]$/.test(s[at] ?? ""),
+  });
+  let i = 0;
+  while (i < n) {
+    const c = s.charCodeAt(i);
+    if (c === 32 || c === 9 || c === 10 || c === 13) {
+      i++;
+      continue;
+    }
+    if (expect === 4 || expect === 1 || expect === 2) {
+      if (c === 125 /* } */ || c === 93 /* ] */) {
+        if (closers.length === 0 || closers[closers.length - 1] !== c) return broken(i);
+        if (expect === 4 || trailingCommas || lastCharWasOpener(s, i)) {
+          closers.pop();
+          i++;
+          lastGood = i;
+          if (closers.length === 0) return { status: "complete", end: i };
+          expect = 4;
+          continue;
+        }
+        return broken(i);
+      }
+      if (expect === 4) {
+        if (c !== 44 /* , */) return broken(i);
+        i++;
+        lastGood = i;
+        expect = closers[closers.length - 1] === 125 ? 2 : 1;
+        continue;
+      }
+    }
+    if (expect === 3) {
+      if (c !== 58 /* : */) return broken(i);
+      i++;
+      expect = 0;
+      continue;
+    }
+    const keyPosition = expect === 2;
+    if (c === 34 /* " */ || (singleQuotes && c === 39) /* ' */) {
+      let j = i + 1;
+      for (;;) {
+        if (j >= n) return { status: "prefix" };
+        const d = s.charCodeAt(j);
+        if (d === 92 /* \ */) {
+          j += 2;
+          continue;
+        }
+        if (d === 10 || d === 13) return broken(j);
+        if (d === c) break;
+        j++;
+      }
+      i = j + 1;
+      if (keyPosition) expect = 3;
+      else {
+        expect = 4;
+        lastGood = i;
+      }
+      continue;
+    }
+    if (keyPosition) {
+      if (!bareKeys || !isIdentStart(c)) return broken(i);
+      let j = i + 1;
+      while (j < n && isIdentPart(s.charCodeAt(j))) j++;
+      if (j >= n) return { status: "prefix" };
+      i = j;
+      expect = 3;
+      continue;
+    }
+    if (c === 123 /* { */ || c === 91 /* [ */) {
+      closers.push(c === 123 ? 125 : 93);
+      i++;
+      lastGood = i;
+      expect = c === 123 ? 2 : 1;
+      continue;
+    }
+    if (c === 45 /* - */ || (c >= 48 && c <= 57)) {
+      let j = i + 1;
+      while (j < n && /[0-9eE.+-]/.test(s[j]!)) j++;
+      if (j >= n) return { status: "prefix" };
+      i = j;
+      lastGood = i;
+      expect = 4;
+      continue;
+    }
+    if (isIdentStart(c)) {
+      let j = i + 1;
+      while (j < n && isIdentPart(s.charCodeAt(j))) j++;
+      const word = s.slice(i, j);
+      if (j >= n) return VALUE_WORDS[dialect].some((w) => w.startsWith(word)) ? { status: "prefix" } : broken(i);
+      if (!VALUE_WORDS[dialect].includes(word)) return broken(i);
+      i = j;
+      lastGood = i;
+      expect = 4;
+      continue;
+    }
+    return broken(i);
+  }
+  return { status: "prefix" };
+}
+
+const VALUE_WORDS: Record<GrammarDialect, string[]> = {
+  json: ["true", "false", "null"],
+  python: ["True", "False", "None", "true", "false", "null"],
+  js: ["true", "false", "null", "undefined", "NaN", "Infinity"],
+};
+
+function isIdentStart(c: number): boolean {
+  return (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || c === 95 || c === 36;
+}
+function isIdentPart(c: number): boolean {
+  return isIdentStart(c) || (c >= 48 && c <= 57);
+}
+/** Whether the last non-space character before `at` opens a container (`{}` / `[]` are always fine). */
+function lastCharWasOpener(s: string, at: number): boolean {
+  for (let k = at - 1; k >= 0; k--) {
+    const c = s.charCodeAt(k);
+    if (c === 32 || c === 9 || c === 10 || c === 13) continue;
+    return c === 123 || c === 91;
+  }
+  return false;
+}
+
+const JSON_ONLY_FAMILIES = new Set<KindSpellingFamily>(["lifted", "escaped", "markdown"]);
+
+/** A complete region as JSON text (Python / JS converted), or null when it will not read. */
+export function regionJson(region: Pick<KindSpellingRegion, "family" | "decoded">): string | null {
+  const text = region.decoded;
+  if (region.family === "js") return json5AsJson(text);
+  if (region.family !== "python") {
+    try {
+      JSON.parse(text);
+      return text;
+    } catch {
+      // A repr-shaped body (single quotes, True/None) reads below.
+    }
+  }
+  return pythonReprAsJson(text);
 }
 
 /**
- * The first region at or after `from`, outside quoted source, whose key is
- * spelled one of the `spellings` (default: every non-canonical spelling).
- * THE one finder the normalizer and the prose one-line reader share.
+ * A BROKEN (settled, unclosed) region closed where its grammar ended: a
+ * dangling `,` or `key:` dropped, every open container closed — the reading
+ * the label is drawn from. Null when even that will not read.
  */
-export function firstSpelledKindRegion(
-  text: string,
-  spellings: KindTextOptions = ALL_KIND_SPELLINGS,
-  from = 0,
-): SpelledKindRegion | null {
-  const quoted = quotedSourceRanges(text);
-  const inQuoted = (at: number) => quoted.some(([a, b]) => at >= a && at < b);
-  let best: SpelledKindRegion | null = null;
-  const consider = (region: SpelledKindRegion) => {
-    if (!best || region.start < best.start) best = region;
-  };
-  for (const spelling of SPELLINGS) {
-    if (spellings[spelling.option] !== true) continue;
-    spelling.key.lastIndex = from;
-    for (let m = spelling.key.exec(text); m; m = spelling.key.exec(text)) {
-      if (inQuoted(m.index)) continue;
-      const brace = text.lastIndexOf("{", m.index);
-      if (brace < from || inQuoted(brace)) continue;
-      const decoded = decodeWith(text.slice(brace), spelling.step);
-      const end = jsonBalancedEnd(decoded.text);
-      consider(
-        end === null
-          ? { start: brace, end: text.length, json: decoded.text, complete: false }
-          : { start: brace, end: brace + decoded.map[end]!, json: decoded.text.slice(0, end), complete: true },
-      );
-      break;
+export function closedJson(region: Pick<KindSpellingRegion, "family" | "decoded">): string | null {
+  let body = region.decoded.replace(/\s+$/, "");
+  body = body.replace(/,?\s*(?:"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|[A-Za-z_$][\w$]*)\s*:\s*$/, "");
+  body = body.replace(/,\s*$/, "");
+  const closers: string[] = [];
+  let quote = "";
+  for (let i = 0; i < body.length; i++) {
+    const ch = body[i]!;
+    if (quote) {
+      if (ch === "\\") i++;
+      else if (ch === quote) quote = "";
+      continue;
     }
+    if (ch === '"' || (ch === "'" && !JSON_ONLY_FAMILIES.has(region.family))) quote = ch;
+    else if (ch === "{") closers.push("}");
+    else if (ch === "[") closers.push("]");
+    else if (ch === "}" || ch === "]") closers.pop();
   }
-  if (spellings.python === true) {
-    for (let i = from; i < text.length; i++) {
-      if (text[i] !== "{" || inQuoted(i)) continue;
-      const end = pythonBalancedEnd(text, i);
-      if (end === null) {
-        const tail = text.slice(i);
-        if (PYTHON_KIND_KEY.test(tail)) {
-          consider({ start: i, end: text.length, json: tail, complete: false });
-          break;
-        }
-        continue;
-      }
-      const region = text.slice(i, end);
-      if (PYTHON_KIND_KEY.test(region)) {
-        consider({ start: i, end, json: pythonReprAsJson(region), complete: true });
-        break;
-      }
-      i = end - 1;
-    }
-  }
-  return best;
-}
-
-/** One pass: the first non-canonical spelled region outside quoted source, rewritten. */
-function rewriteSpelledRegions(text: string): string {
-  const region = firstSpelledKindRegion(text, { ...ALL_KIND_SPELLINGS, python: false });
-  if (region?.json != null) return text.slice(0, region.start) + region.json + text.slice(region.end);
-  return rewritePythonRegions(text, quotedSourceRanges(text));
-}
-
-/** Every complete Python-repr dict carrying `'__kind'` outside quoted source, as its JSON. */
-function rewritePythonRegions(text: string, quoted: Array<[number, number]>): string {
-  if (!PYTHON_KIND_KEY.test(text)) return text;
-  let out = "";
-  let cursor = 0;
-  for (let i = 0; i < text.length; i++) {
-    if (text[i] !== "{") continue;
-    if (quoted.some(([a, b]) => i >= a && i < b)) continue;
-    const end = pythonBalancedEnd(text, i);
-    if (end === null) continue;
-    const region = text.slice(i, end);
-    if (!PYTHON_KIND_KEY.test(region)) continue;
-    const json = pythonReprAsJson(region);
-    if (json === null) continue;
-    out += text.slice(cursor, i) + json;
-    cursor = end;
-    i = end - 1;
-  }
-  return cursor === 0 ? text : out + text.slice(cursor);
+  if (quote) return null;
+  return regionJson({ family: region.family, decoded: body + closers.reverse().join("") });
 }
 
 /**

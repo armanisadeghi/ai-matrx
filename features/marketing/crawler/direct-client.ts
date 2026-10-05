@@ -177,12 +177,13 @@ export function mergeCrawlLiveEvents(
     .slice(-250);
 }
 
-/** The four concurrent initialize steps, in display order. */
+/** The concurrent initialize steps, in display order. */
 export const INITIALIZE_STEP_NAMES = [
   "identity",
   "screenshots",
   "sitemaps",
   "discovered",
+  "brand_search",
 ] as const;
 
 export type InitializeStepName = (typeof INITIALIZE_STEP_NAMES)[number];

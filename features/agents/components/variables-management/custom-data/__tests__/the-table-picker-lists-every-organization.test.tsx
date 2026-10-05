@@ -146,6 +146,7 @@ jest.mock("@/components/ui/select", () => {
     SelectLabel: Pass,
     SelectItem: Pass,
     SelectTrigger: Pass,
+    SelectTriggerLegacy: Pass, // EntityScopeTabs imports the legacy trigger name (a7aa1e3fb8)
     SelectValue: () => null,
   };
 });

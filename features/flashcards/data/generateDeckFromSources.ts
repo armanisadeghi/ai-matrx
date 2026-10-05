@@ -57,6 +57,9 @@ import { sectionRunTitle } from "@/features/education/convert/coverage";
  */
 export const FLASHCARD_SOURCE_DELIVERIES = ["direct"] as const;
 
+/** Source types held in the record store (no association token reaches them). */
+const RECORD_STORE_TYPES = new Set(["dataset", "structured_list"]);
+
 const CHUNK_HEADER_RE = /^### Chunk (\S+)(?: \(page (\d+)\))?[ \t]*$/gm;
 
 /** What one grounded chunk id belongs to. */
@@ -279,6 +282,8 @@ export interface CardsFromSourcesInput
 export interface CardsFromSourcesOutcome {
   cards: NewCardInput[];
   sources: ResolvedSource[];
+  /** Sources with text that no kept card came from (named in `gapNote`). */
+  unusedSources: ResolvedSource[];
   gapNote: string | null;
   sections: number;
   /** Sections that produced nothing (stalled or failed, after their retry). */
@@ -286,6 +291,31 @@ export interface CardsFromSourcesOutcome {
   singlePass: boolean;
   conversationId: string | null;
   firstValue: unknown;
+}
+
+/** Up to three names, then "and N more". */
+function namesOf(sources: ResolvedSource[]): string {
+  const shown = sources.slice(0, 3).map((s) => `"${s.label}"`);
+  const more = sources.length > 3 ? ` and ${sources.length - 3} more` : "";
+  return `${shown.join(", ")}${more}`;
+}
+
+/**
+ * The one honest note on what the deck covers: sections missed, Sources no
+ * card came from, and a count raised to one card per Source.
+ */
+export function coverageNote(
+  gapNote: string | null,
+  unused: ResolvedSource[],
+  asked: number,
+  sourceCount: number,
+): string | null {
+  const parts = [
+    sourceCount > 1 && asked < sourceCount ? `One card per source (${sourceCount}).` : null,
+    gapNote && unused.length === 0 ? gapNote : null,
+    unused.length > 0 ? `No cards from ${namesOf(unused)}. Use "Add more cards" to cover them.` : null,
+  ].filter((p): p is string => Boolean(p));
+  return parts.length ? parts.join(" ") : null;
 }
 
 /**
@@ -342,6 +372,9 @@ export async function generateCardsFromSources({
     },
     targetKind: "deck",
     options: { count, difficulty },
+    // THE EVERY-SOURCE RULE: each Source is planned on its own and earns at
+    // least one card (never folded into a neighbour and skipped).
+    groups: sources.map((s) => ({ label: s.label, text: s.text })),
     mandateKey: FC_MANDATES.generateFromSource,
     surfaceKey: "flashcards-create-from-source",
     sourceFeature: "education-flashcards",
@@ -379,10 +412,18 @@ export async function generateCardsFromSources({
       ),
   });
 
+  // Nothing dropped silently: a Source no kept card came from is named.
+  const unusedSources = [
+    ...resolved.sources.filter((s) => !s.text.trim()),
+    ...(sources.length > 1
+      ? sources.filter((_, g) => !covered.items.some((c) => covered.groupOf(c) === g))
+      : []),
+  ];
   return {
     cards: covered.items.map((c) => groundCard(c, owners, fallback)),
     sources,
-    gapNote: covered.gapNote,
+    unusedSources,
+    gapNote: coverageNote(covered.gapNote, unusedSources, count, sources.length),
     sections: covered.plan.segments.length,
     missed: covered.missedCount,
     singlePass: covered.plan.singlePass,
@@ -477,9 +518,15 @@ export async function generateDeckFromSources({
     covered.gapNote ? `${detail} - ${covered.gapNote}` : detail,
   );
 
-  // Lineage for EVERY Source — not only stored files.
+  // Lineage for EVERY included Source — not only the ones with text, and
+  // not only stored files.
+  // A table or pick list lives in the record store, which no lineage edge can
+  // point at (its old tokens are retired); the deck's own `source_set` records
+  // it, and "Made from" reads that list.
   await Promise.all(
-    sources.map((s) => recordSourceLineage(result, lineageSourceOf(s), ctx.orgId)),
+    resolved.sources
+      .filter((s) => !RECORD_STORE_TYPES.has(s.ref.resource_type))
+      .map((s) => recordSourceLineage(result, lineageSourceOf(s), ctx.orgId)),
   );
 
   return {

@@ -7,7 +7,7 @@ import {
   resolveMarkdownPayload,
   artifactDedupKey,
 } from "../artifact-renderers";
-import { useArtifactState } from "../persistence/useArtifactState";
+import { useBlockState } from "@/features/block-state/useBlockState";
 import type { ProgressTrackerState } from "@/components/mardown-display/blocks/progress/ProgressTrackerBlock";
 import ProgressTrackerBlock from "@/components/mardown-display/blocks/progress/ProgressTrackerBlock";
 import type { ArtifactRendererProps } from "../types";
@@ -42,23 +42,16 @@ export default function ProgressArtifact({
 
   // Answer state also rides the next message as one interaction chip (the
   // shape interaction seam); view state never does.
-  const { state, loaded, save } = useArtifactState<
+  const { state, loaded, patch: save } = useBlockState<
     ProgressTrackerState & Record<string, unknown>
-  >(artifactId, "generic", undefined, undefined, {
-    kind: "progress",
-    title: (tracker as { title?: string } | null)?.title ?? null,
-    conversationId,
-    messageId,
-    blockIndex,
-    data: tracker,
-  });
+  >({ title: (tracker as { title?: string } | null)?.title ?? null, data: tracker });
 
   if (!tracker) {
     return isStreamActive ? <MatrxMiniLoader /> : null;
   }
 
   // Wait for persisted state to load before rendering so initialState seeds correctly.
-  if (artifactId && !loaded) {
+  if (!loaded) {
     return <MatrxMiniLoader />;
   }
 

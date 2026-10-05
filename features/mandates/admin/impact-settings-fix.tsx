@@ -26,10 +26,8 @@ import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { setAgentSettings } from "@ai-matrx/chat/agents/redux/agent-definition/slice";
-import {
-  fetchFullAgent,
-  saveAgent,
-} from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import { fetchFullAgent } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import { saveAgent } from "@/features/agents/redux/builder-write.thunks";
 import {
   fetchModelById,
   selectAllModels,

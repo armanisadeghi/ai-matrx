@@ -69,6 +69,11 @@ export interface SourceSegment {
   total: number;
   /** Items this segment should contribute (0 for prose targets). */
   items: number;
+  /**
+   * Which of the caller's `groups` (one per Source) this segment belongs to,
+   * when the plan was made per group. A segment never spans two groups.
+   */
+  group?: number;
 }
 
 export interface CoveragePlan {
@@ -362,6 +367,15 @@ export interface PlanCoverageInput {
    * about chapter one.
    */
   requestedTotal?: number;
+  /**
+   * The material split by Source, in order (their texts joined are `text`).
+   * Given two or more, THE EVERY-SOURCE RULE holds: a section never spans two
+   * Sources and every Source gets at least one section and one item — so a
+   * small table beside a long document is never folded into it and skipped
+   * (2026-10-05: a 4-card deck from 5 Sources drew on only 3). When the ask is
+   * smaller than the number of Sources, the plan makes one item per Source.
+   */
+  groups?: readonly { label: string; text: string }[];
 }
 
 export async function planCoverage({
@@ -369,6 +383,7 @@ export async function planCoverage({
   targetKind,
   depth = "standard",
   requestedTotal,
+  groups,
 }: PlanCoverageInput): Promise<CoveragePlan> {
   const [segmentChars, maxSegments, maxItems, minItems, perSegmentDefault] =
     await Promise.all([
@@ -381,6 +396,19 @@ export async function planCoverage({
         ITEMS_KNOB[targetKind] ?? "items_per_segment_deck",
       ),
     ]);
+
+  const liveGroups = (groups ?? []).filter((g) => g.text.trim().length > 0);
+  if (liveGroups.length > 1) {
+    return planByGroup(liveGroups, {
+      segmentChars,
+      maxSegments,
+      maxItems,
+      minItems,
+      perSegment: perSegmentDefault * DEPTH_MULTIPLIER[depth],
+      requestedTotal,
+      depth,
+    });
+  }
 
   const clean = text.trim();
   const natural = packSegments(splitUnits(clean), segmentChars, maxSegments);
@@ -431,6 +459,77 @@ export async function planCoverage({
       segments.length === 1
         ? `Covering the whole source in one pass (${actualTotal} items).`
         : `Covering all ${segments.length} sections of your material (${actualTotal} items, ${depth} depth).`,
+  };
+}
+
+/** A section's label inside a per-Source plan: the Source's name first. */
+function groupSegmentLabel(group: string, first: string, last: string): string {
+  const inner = first && last && first !== last ? `${first} - ${last}` : first;
+  return inner ? `${group}: ${inner}` : group;
+}
+
+/**
+ * THE EVERY-SOURCE RULE (see `PlanCoverageInput.groups`): each Source is
+ * packed on its own, gets at least one section and one item, and sections are
+ * folded only within a Source. Items are split across Sources by size, then
+ * within a Source by section size.
+ */
+function planByGroup(
+  groups: readonly { label: string; text: string }[],
+  k: {
+    segmentChars: number;
+    maxSegments: number;
+    maxItems: number;
+    minItems: number;
+    perSegment: number;
+    requestedTotal?: number;
+    depth: CoverageDepth;
+  },
+): CoveragePlan {
+  const natural = groups.map((g) =>
+    packSegments(splitUnits(g.text.trim()), k.segmentChars, k.maxSegments),
+  );
+  const sizes = groups.map((g) => g.text.length);
+  const naturalCount = natural.reduce((a, n) => a + n.length, 0);
+  // The whole plan's items: the ask (or the source-scaled count), and never
+  // fewer than one per Source.
+  const asked = k.requestedTotal
+    ? Math.min(k.requestedTotal, k.maxItems)
+    : Math.max(k.minItems, Math.min(Math.round(k.perSegment * naturalCount), k.maxItems));
+  const total = Math.max(groups.length, asked);
+  const perGroupItems = apportionItems(sizes, total);
+  // Sections per Source: its own natural sections, folded so it has no more
+  // sections than items (THE COUNT LAW) and the plan stays under the ceiling.
+  const sectionBudget = apportionItems(sizes, Math.max(groups.length, k.maxSegments));
+  const segments: SourceSegment[] = [];
+  natural.forEach((packed, g) => {
+    const folded = foldPacked(
+      packed,
+      Math.max(1, Math.min(packed.length, perGroupItems[g], sectionBudget[g])),
+    );
+    const items = apportionItems(
+      folded.map((p) => p.text.length),
+      Math.max(perGroupItems[g], folded.length),
+    );
+    folded.forEach((p, i) => {
+      segments.push({
+        id: `s${segments.length + 1}`,
+        label: groupSegmentLabel(groups[g].label, p.first, p.last),
+        text: markForGrounding(p.text, `${segments.length + 1}_`),
+        index: segments.length + 1,
+        total: 0,
+        items: items[i] ?? 1,
+        group: g,
+      });
+    });
+  });
+  for (const seg of segments) seg.total = segments.length;
+  const actualTotal = segments.reduce((a, s) => a + s.items, 0);
+  return {
+    segments,
+    total: actualTotal,
+    singlePass: segments.length === 1,
+    rationale: `Covering all ${groups.length} sources in ${segments.length} sections (${actualTotal} items, ${k.depth} depth).`,
   };
 }
 

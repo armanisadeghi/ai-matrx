@@ -16,6 +16,8 @@ import { resolveEntityToken } from "@/features/scopes/registry/entityRegistry";
 import { educationEntityHref } from "@/features/education/data/entityRoutes";
 import type { Json } from "@/types/database.types";
 import type { TargetKind } from "./types";
+import { recordKindOfResourceType } from "@/features/education/trust/grounding";
+import { recordCitationHref } from "@/features/education/trust/recordCitation";
 
 /** One study artifact generated from an origin entity (reverse-lineage row). */
 export interface GeneratedArtifact {
@@ -127,6 +129,48 @@ export async function readArtifactOrigins(
         title: metaString(edge.metadata, "sourceTitle"),
       };
     });
+}
+
+/** One Source exactly as the artifact recorded it (a deck's `metadata.source_set`). */
+export interface RecordedOrigin {
+  resourceType: string;
+  resourceId: string;
+  label: string;
+  /** The file behind it, when known (a lineage edge may be anchored there). */
+  fileId?: string;
+}
+
+/** The door of a recorded Source: the registry's route, else its record page. */
+function recordedOriginHref(type: string, id: string): string | undefined {
+  const token = type === "cld_file" ? "file" : type;
+  const registered = peekHref(token, id);
+  if (registered) return registered;
+  const kind = recordKindOfResourceType(type);
+  if (!kind) return undefined;
+  return kind === "saved_result" ? `/shapes/instances/${encodeURIComponent(id)}` : recordCitationHref(kind, id, "", null);
+}
+
+/**
+ * "Made from", when the artifact recorded every Source it was made from: ONE
+ * origin per recorded Source, in the order chosen — the recorded set is the
+ * complete truth (a table or pick list has no lineage edge to carry it). A
+ * Source's own lineage edge, where one exists, lends its id; nothing else does.
+ */
+export function recordedOrigins(
+  recorded: readonly RecordedOrigin[],
+  edges: readonly ArtifactOrigin[],
+): ArtifactOrigin[] {
+  return recorded.map((r) => {
+    const edge = edges.find((e) => e.entityId === r.resourceId || (r.fileId && e.entityId === r.fileId));
+    const token = r.resourceType === "cld_file" ? "file" : r.resourceType;
+    return {
+      edgeId: edge?.edgeId ?? `recorded:${token}:${r.resourceId}`,
+      entityType: edge?.entityType ?? token,
+      entityId: edge?.entityId ?? r.resourceId,
+      href: edge?.href ?? recordedOriginHref(r.resourceType, r.resourceId),
+      title: r.label || edge?.title || null,
+    };
+  });
 }
 
 /** The FIRST origin an artifact was made from (see `readArtifactOrigins`). */

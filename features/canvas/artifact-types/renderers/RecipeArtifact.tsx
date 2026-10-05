@@ -7,7 +7,7 @@ import {
   resolveMarkdownPayload,
   artifactDedupKey,
 } from "../artifact-renderers";
-import { useArtifactState } from "../persistence/useArtifactState";
+import { useBlockState } from "@/features/block-state/useBlockState";
 import type { RecipeState } from "@/components/mardown-display/blocks/cooking-recipes/cookingRecipeDisplay";
 import RecipeViewer from "@/components/mardown-display/blocks/cooking-recipes/cookingRecipeDisplay";
 import type { ArtifactRendererProps } from "../types";
@@ -42,23 +42,16 @@ export default function RecipeArtifact({
 
   // Answer state also rides the next message as one interaction chip (the
   // shape interaction seam); view state never does.
-  const { state, loaded, save } = useArtifactState<
+  const { state, loaded, patch: save } = useBlockState<
     RecipeState & Record<string, unknown>
-  >(artifactId, "generic", undefined, undefined, {
-    kind: "recipe",
-    title: (recipe as { title?: string } | null)?.title ?? null,
-    conversationId,
-    messageId,
-    blockIndex,
-    data: recipe,
-  });
+  >({ title: (recipe as { title?: string } | null)?.title ?? null, data: recipe });
 
   if (!recipe) {
     return isStreamActive ? <MatrxMiniLoader /> : null;
   }
 
   // Wait for persisted state to load before rendering so initialState seeds correctly.
-  if (artifactId && !loaded) {
+  if (!loaded) {
     return <MatrxMiniLoader />;
   }
 

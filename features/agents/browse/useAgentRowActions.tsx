@@ -17,12 +17,7 @@ import { dismissRecordToasts, recordToast, toast } from "@/lib/toast";
 import { toastDoor } from "@/components/official/entity-ref/toastDoor";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
-import {
-  deleteAgent,
-  duplicateAgent,
-  saveAgentField,
-  setAgentFavorite,
-} from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import { deleteAgent, duplicateAgent, saveAgentField, setAgentFavorite } from "@/features/agents/redux/builder-write.thunks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { buildRecordReferenceFence } from "@/features/matrx-envelope/recordReference";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";

@@ -87,14 +87,13 @@ import {
   assertOwnedLiveAgentToolAssignment,
   assertRegisteredActiveToolAdditions,
   assertToolAdditionModelCapability,
-  duplicateAgent,
   fetchFullAgent,
   isAvailableToolModel,
   isToolAssignmentPhantom,
   sameStringArray,
-  saveAgentField,
   uniqueToolIds,
 } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import { duplicateAgent, saveAgentField } from "./builder-write.thunks";
 
 type ThunkApi = { dispatch: ChatDispatch; state: ChatRootState };
 

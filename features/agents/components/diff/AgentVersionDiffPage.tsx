@@ -3,14 +3,11 @@
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter, useSearchParams, usePathname } from "@ai-matrx/chat/host/navigation";
 import { useAppDispatch, useAppSelector } from "@ai-matrx/chat/store/hooks";
-import {
-  fetchAgentVersionHistory,
-  fetchAgentVersionSnapshot,
-} from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import { fetchAgentVersionHistory, fetchAgentVersionSnapshot } from "@/features/agents/redux/builder-versions.thunks";
 import {
   promoteAgentVersion,
 } from "@/features/agents/redux/builder-tier.thunks";
-import type { AgentVersionHistoryItem } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import type { AgentVersionHistoryItem } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import {
   selectAgentById,
   selectVersionsByParentAgentId,

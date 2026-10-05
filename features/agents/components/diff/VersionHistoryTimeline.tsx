@@ -20,7 +20,7 @@ import {
   ShieldAlert,
   AlertTriangle,
 } from "lucide-react";
-import type { AgentVersionHistoryItem } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import type { AgentVersionHistoryItem } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import { useSmartVersionFetch } from "@/features/agents/hooks/useSmartVersionFetch";
 import type { EnrichedVersion } from "@/features/agents/hooks/useSmartVersionFetch";
 import { formatChangeType } from "@ai-matrx/diff/structural";

@@ -13,10 +13,10 @@
  */
 
 import React, { useState } from "react";
-import { ArrowUp, Loader2 } from "lucide-react";
+import { ArrowUp } from "lucide-react";
 import { SmartAgentVariables } from "../variable-input-variations/SmartAgentVariables";
 import { AgentTextarea } from "./AgentTextarea";
-import { InputActionButtons } from "./InputActionButtons";
+import { ComposerStopButton, InputActionButtons } from "./InputActionButtons";
 import { ConversationContextRail } from "./ConversationContextRail";
 import type { AttachedContextRailItem } from "./ConversationContextRail";
 import { UninitializedShell } from "./UninitializedShell";
@@ -36,7 +36,7 @@ import type { SmartAgentInputSurfaceValueAnchors } from "./SmartAgentInput";
 import type { ComposerPresentation } from "./composer/composer-types";
 import { composerShows } from "./composer/composer-mode-visibility";
 import { ComposerChipsRow } from "./composer/ComposerChipsRow";
-import { ComposerMetaRow, ComposerPills, ComposerScopeCluster } from "./composer/ComposerMetaRow";
+import { ComposerMetaRow, ComposerPills, ComposerScopeCluster, ComposerValueGroupChip } from "./composer/ComposerMetaRow";
 import { useComposerFold } from "./composer/useComposerFold";
 interface SmartAgentInputStackedProps {
   conversationId: string | null | undefined;
@@ -146,6 +146,7 @@ export function SmartAgentInputStacked({
             surfaceValueName={surfaceValueAnchors?.context}
             withAttachments
             attachmentsSurfaceValueName={surfaceValueAnchors?.resources}
+            withValueGroupChip={false}
           />
           <SmartAgentVariables
             conversationId={conversationId}
@@ -154,26 +155,26 @@ export function SmartAgentInputStacked({
             styleOverride={variablesPanelStyle}
             surfaceValueName={surfaceValueAnchors?.variables}
           />
-          <div className="flex items-center justify-end gap-1.5">
-            {extraRightControls}
-            <Button
-              size="sm"
-              onClick={isExecuting ? handleStop : handleSubmit}
-              disabled={sendBlocked && !isExecuting}
-              className="h-8 gap-1.5 rounded-full px-3"
-            >
+          {/* ONE row under the fields: the values count (the same eye every
+              style shows) and Run — while running, the same stop control. */}
+          <div className="flex min-w-0 items-center justify-between gap-1.5">
+            <ComposerValueGroupChip conversationId={conversationId} />
+            <div className="ml-auto flex shrink-0 items-center gap-1.5">
+              {extraRightControls}
               {isExecuting ? (
-                <>
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  Stop
-                </>
+                <ComposerStopButton onStop={handleStop} />
               ) : (
-                <>
+                <Button
+                  size="sm"
+                  onClick={handleSubmit}
+                  disabled={sendBlocked}
+                  className="h-8 gap-1.5 rounded-full px-3"
+                >
                   <ArrowUp className="h-3.5 w-3.5" />
                   Run
-                </>
+                </Button>
               )}
-            </Button>
+            </div>
           </div>
         </SmartInputFileDropTarget>
       </div>

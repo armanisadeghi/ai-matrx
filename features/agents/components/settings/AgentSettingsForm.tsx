@@ -10,7 +10,7 @@ import {
   selectAllAgentsArray,
 } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { DEFAULT_AGENT_CATALOG_LABELS } from "@ai-matrx/agents/catalog";
-import { saveAgentField } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import { saveAgentField } from "@/features/agents/redux/builder-write.thunks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { Input } from "@ai-matrx/design-system/controls";
 import { AgentCategoryPicker } from "@/features/agents/components/settings/AgentCategoryPicker";

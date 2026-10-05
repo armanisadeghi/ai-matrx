@@ -24,7 +24,7 @@ import { toastDoor } from "@/components/official/entity-ref/toastDoor";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { duplicateAgent } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import { duplicateAgent } from "@/features/agents/redux/builder-write.thunks";
 import type { AgentLineageRef } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useOpenAgentConvertSystemWindow } from "@/features/overlays/openers/agentConvertSystemWindow";

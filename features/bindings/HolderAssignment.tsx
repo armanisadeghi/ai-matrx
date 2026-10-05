@@ -70,10 +70,8 @@ import {
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import type { AgentTab } from "@ai-matrx/agents/catalog";
-import {
-  fetchAgentVersionHistory,
-  type AgentVersionHistoryItem,
-} from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import { fetchAgentVersionHistory } from "@/features/agents/redux/builder-versions.thunks";
+import { type AgentVersionHistoryItem } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import { WorkflowListDropdown } from "@/features/workflow-runtime/listings/WorkflowListDropdown";
 import { listWorkflowVersionChoices, type WorkflowVersionChoice } from "./workflow-versions";
 import type { HolderDraft } from "./ScopeHolderBar";

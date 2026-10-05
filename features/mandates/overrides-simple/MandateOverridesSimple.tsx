@@ -30,10 +30,7 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import { displayResolutionOrgId, usePageOrgFilter } from "@/features/mandates/display-org";
 import { useUserOrganizations } from "@/features/organizations/hooks";
-import {
-  fetchAgentVersionSnapshot,
-  resolveAgentVersionId,
-} from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import { fetchAgentVersionSnapshot, resolveAgentVersionId } from "@/features/agents/redux/builder-versions.thunks";
 import { fetchAgentExecutionFull } from "@/features/agents/redux/builder-tier.thunks";
 import {
   selectAgentCustomExecutionPayload,

@@ -35,6 +35,7 @@ export const INITIALIZE_STEP_LABELS: Record<InitializeStepName, string> = {
   screenshots: "Screenshots",
   sitemaps: "Sitemaps",
   discovered: "Discovery",
+  brand_search: "Brand search",
 };
 
 export function emptyInitializeSteps(): InitializeStepsState {
@@ -121,6 +122,9 @@ export function queryKeysForInitializeStep(
           exact: false,
         },
       ];
+    case "brand_search":
+      // Stored on the site row's metadata — the site key, exactly.
+      return [{ queryKey: marketingKeys.site(siteId), exact: true }];
     case "discovered":
       return brandId
         ? [

@@ -102,7 +102,8 @@ export class MarkdownEscapedKindJson {
     if (this.depth > 0) return this.insideObject(ch);
     let candidate = this.pending + ch;
     let out = "";
-    while (candidate && !TARGET.startsWith(candidate)) {
+    // A zero-width character inside the escaped key reads through (L-1, round 9).
+    while (candidate && !(candidate.startsWith('"') && TARGET.startsWith(withoutZeroWidth(candidate)))) {
       const next = candidate.indexOf('"', 1);
       if (next < 0) {
         out += candidate;
@@ -112,7 +113,7 @@ export class MarkdownEscapedKindJson {
         candidate = candidate.slice(next);
       }
     }
-    if (candidate === TARGET) {
+    if (withoutZeroWidth(candidate) === TARGET) {
       this.pending = "";
       this.depth = 1;
       this.inString = false;

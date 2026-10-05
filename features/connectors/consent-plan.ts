@@ -233,18 +233,18 @@ export function buildConsentPlan({
   // identity. Never silently discard another product selected in this press.
   //
   // A RENEWAL IS NOT A NEW GRANT. When YouTube's scopes are all already held
-  // (a dead/revoked credential that holds YouTube beside other products) the
-  // request asks for exactly what the credential already holds — it widens
-  // nothing, so there is no new combination for Google to reject, and a
-  // separate connection would leave the dead one dead. Only a YouTube row that
-  // ADDS scopes is isolated; a renewal rides with the rest, in ONE press.
+  // (a dead credential) YouTube is not moved to a new connection — that would
+  // leave the dead one dead — but beside other products it is still its own
+  // labelled step. Only a YouTube row that ADDS scopes gets the isolated request.
   const youtubeEntry = wanted.find(({ product }) => product.key === "youtube");
   const youtubeAdds = youtubeEntry !== undefined && !youtubeEntry.renewal;
-  const isolatedProduct = youtubeAdds ? youtubeEntry.product : undefined;
+  // YouTube beside other products is NEVER one combined press — new grant or
+  // renewal (a renewal sends the same scope set Google rejected in dc39b03173).
+  const isolatedProduct = youtubeEntry?.product;
   if (isolatedProduct !== undefined && wanted.length > 1) {
     const others = wanted.filter(({ product }) => product.key !== "youtube");
     const separately = `Connect ${isolatedProduct.name} separately from the other selected Google products. Your existing connections are unchanged.`;
-    if (others.some(({ renewal }) => renewal)) {
+    if (youtubeEntry.renewal || others.some(({ renewal }) => renewal)) {
       // Something here is a dead grant that only a reconnect can clear: never
       // leave the person with nothing to press. Step one renews/adds the
       // others; YouTube is its own labeled step after it.

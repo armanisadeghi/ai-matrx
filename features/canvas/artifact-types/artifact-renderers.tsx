@@ -16,6 +16,8 @@
  * checks before delegating.
  */
 
+import { BlockStateHost } from "@/features/block-state/BlockStateContext";
+import { isMaterializedArtifactId } from "./artifactId";
 import React, { Suspense, lazy } from "react";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import ComparisonArtifact from "./renderers/ComparisonArtifact";
@@ -133,10 +135,22 @@ export function ArtifactRender({
   const finalProps = structuredServerData
     ? { ...props, serverData: structuredServerData }
     : props;
+  // The ONE host of block state: every interactive kind below reads its record,
+  // identity and kind through `useBlockState()` — never through ids it plumbs itself.
   return (
-    <Suspense fallback={<MatrxMiniLoader />}>
-      <R {...finalProps} />
-    </Suspense>
+    <BlockStateHost
+      kind={canvasType}
+      messageId={finalProps.messageId}
+      conversationId={finalProps.conversationId}
+      blockIndex={finalProps.blockIndex}
+      canvasItemId={isMaterializedArtifactId(finalProps.artifactId) ? finalProps.artifactId!.trim() : null}
+      content={finalProps.serverData ?? finalProps.data ?? finalProps.raw}
+      streaming={!!finalProps.isStreamActive}
+    >
+      <Suspense fallback={<MatrxMiniLoader />}>
+        <R {...finalProps} />
+      </Suspense>
+    </BlockStateHost>
   );
 }
 

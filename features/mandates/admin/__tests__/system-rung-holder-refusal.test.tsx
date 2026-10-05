@@ -54,10 +54,12 @@ jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hook
 jest.mock("@ai-matrx/chat/agents/redux/agent-definition/selectors", () => ({
   selectBuiltinAgents: () => [{ id: "system-agent-1" }],
 }));
-jest.mock("@ai-matrx/chat/agents/redux/agent-definition/thunks", () => ({
-  fetchAgentsListFull: () => ({ type: "noop" }),
+jest.mock("@/features/agents/redux/builder-versions.thunks", () => ({
   // The version control reads the agent's history through this thunk.
   fetchAgentVersionHistory: () => ({ type: "noop" }),
+}));
+jest.mock("@ai-matrx/chat/agents/redux/agent-definition/thunks", () => ({
+  fetchAgentsListFull: () => ({ type: "noop" }),
 }));
 jest.mock("@/features/agent-shortcuts/components/AgentVersionPicker", () => ({
   AgentVersionPicker: () => <div data-testid="version-picker" />,

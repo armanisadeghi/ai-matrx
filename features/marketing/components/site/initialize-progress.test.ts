@@ -145,6 +145,12 @@ describe("queryKeysForInitializeStep — the event→invalidation map", () => {
     ]);
   });
 
+  it("brand_search invalidates ONLY the site row (its metadata holds the capture)", () => {
+    expect(queryKeysForInitializeStep("brand_search", siteId, brandId)).toEqual([
+      { queryKey: marketingKeys.site(siteId), exact: true },
+    ]);
+  });
+
   it("screenshots invalidate hero + gallery", () => {
     expect(queryKeysForInitializeStep("screenshots", siteId, brandId)).toEqual([
       { queryKey: marketingKeys.heroScreenshot(siteId), exact: false },

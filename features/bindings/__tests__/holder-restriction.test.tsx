@@ -63,10 +63,12 @@ jest.mock("@ai-matrx/chat/agents/redux/agent-definition/selectors", () => ({
   selectBuiltinAgents: () => [],
 }));
 
-jest.mock("@ai-matrx/chat/agents/redux/agent-definition/thunks", () => ({
-  fetchAgentsListFull: () => ({ type: "noop" }),
+jest.mock("@/features/agents/redux/builder-versions.thunks", () => ({
   // The version control reads the agent's history through this thunk.
   fetchAgentVersionHistory: () => ({ type: "noop" }),
+}));
+jest.mock("@ai-matrx/chat/agents/redux/agent-definition/thunks", () => ({
+  fetchAgentsListFull: () => ({ type: "noop" }),
 }));
 
 jest.mock("@/features/agent-shortcuts/components/AgentVersionPicker", () => ({

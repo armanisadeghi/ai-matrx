@@ -9,9 +9,10 @@
 // remark chip per shape instance (conversationId, messageId, blockIndex),
 // updated in place while unsent and removable with its X.
 //
-// Every funnel calls `emitKindInteraction`: useArtifactState.save (works with or
-// without a canvas id — staging never depends on persistence), the kind action
-// runner's surface-write result, and explicit calls (quiz results).
+// Two funnels: the block's saved state (features/block-state `useBlockState` —
+// the chip is DERIVED from the row, durable server-side) and the kind action
+// runner's surface-write result (`emitKindInteraction`, kept server-side
+// through the remark durability port).
 //
 // Only ANSWER state is ever staged: each kind lists the state keys that are the
 // person's answer. Everything else is pure view state (a slide, a sort, an
@@ -121,6 +122,40 @@ export const KIND_INTERACTION_RULES: Readonly<Record<string, KindInteractionRule
     summarize: (s) => (typeof s.written === "string" && s.written ? `I applied: ${s.written}` : ""),
   },
 };
+
+/**
+ * Keys that are PURE VIEW state for kinds that have no answer rule: a slide, a
+ * sort, a hidden column. They stay local — never written to block state, never
+ * staged (Arman's design B4).
+ */
+const KIND_VIEW_KEYS: Readonly<Record<string, readonly string[]>> = {
+  presentation: ["currentSlide"],
+  comparison: ["sortBy", "sortDirection", "hiddenColumns", "showScores"],
+};
+
+/**
+ * Split a state patch into what the person MADE (durable, server-side) and what
+ * is only how they are LOOKING at it (local). A kind with an answer rule keeps
+ * the answer keys; a kind listed in KIND_VIEW_KEYS drops the view keys; any
+ * other kind (a questionnaire's form) keeps everything.
+ */
+/** Durable keys a kind keeps beyond its answer keys (a quiz's whole session, whose `results` is the chip). */
+const KIND_EXTRA_DURABLE_KEYS: Readonly<Record<string, readonly string[]>> = {
+  quiz: ["quizState"],
+};
+
+export function splitKindState(kind: string, patch: State): { durable: State; view: State } {
+  const canonical = canonicalInteractionKind(kind);
+  const rule = KIND_INTERACTION_RULES[canonical];
+  const viewKeys = KIND_VIEW_KEYS[canonical];
+  const durable: State = {};
+  const view: State = {};
+  for (const [key, value] of Object.entries(patch)) {
+    const isView = rule ? !rule.keys.includes(key) && !KIND_EXTRA_DURABLE_KEYS[canonical]?.includes(key) : viewKeys ? viewKeys.includes(key) : false;
+    (isView ? view : durable)[key] = value;
+  }
+  return { durable, view };
+}
 
 /** Canvas adapter/type names → the kind the rules are keyed by. */
 const KIND_ALIASES: Readonly<Record<string, string>> = {

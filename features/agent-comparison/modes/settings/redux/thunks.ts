@@ -27,11 +27,8 @@ import { runBattleFanOut } from "@/features/agent-comparison/shared/battle-follo
 import { smartExecute } from "@ai-matrx/chat/agents/redux/execution-system/thunks/smart-execute.thunk";
 import { loadConversation } from "@ai-matrx/chat/agents/redux/execution-system/thunks/load-conversation.thunk";
 import { followWhatIsStillInFlight } from "@ai-matrx/chat/agents/runtime-reconnect/follow-what-is-still-in-flight";
-import {
-  fetchFullAgent,
-  fetchAgentVersionHistory,
-  fetchAgentVersionSnapshot,
-} from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import { fetchFullAgent } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import { fetchAgentVersionHistory, fetchAgentVersionSnapshot } from "@/features/agents/redux/builder-versions.thunks";
 import { setOverrides } from "@ai-matrx/chat/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
 import { generateConversationId } from "@ai-matrx/chat/agents/redux/execution-system/utils/ids";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
