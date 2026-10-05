@@ -32,6 +32,7 @@ import {
 } from "@/features/content-ir/kinds/study-notes";
 import { cn } from "@/lib/utils";
 
+import { DisclosureHeader } from "@ai-matrx/design-system/controls";
 /**
  * Accepts either the streaming bridge output ({ notes, isComplete }) or a raw
  * document value.
@@ -117,24 +118,13 @@ export function StudyNotesGlossary({ terms }: { terms: GlossaryTerm[] }) {
 
   return (
     <div className="border-t border-border pt-3">
-      <button
-        type="button"
+      <DisclosureHeader
+        open={open}
         onClick={() => setOpen((value) => !value)}
-        aria-expanded={open}
-        className="flex w-full items-center gap-1.5 text-sm font-medium text-foreground hover:text-primary"
-      >
-        <BookOpen className="h-4 w-4 text-muted-foreground" />
-        Glossary
-        <span className="text-xs font-normal text-muted-foreground">
-          {terms.length} {terms.length === 1 ? "term" : "terms"}
-        </span>
-        <ChevronDown
-          className={cn(
-            "ml-auto h-4 w-4 text-muted-foreground transition-transform",
-            open && "rotate-180",
-          )}
-        />
-      </button>
+        icon={<BookOpen />}
+        title="Glossary"
+        meta={`${terms.length} ${terms.length === 1 ? "term" : "terms"}`}
+      />
 
       {open ? (
         <dl className="mt-3 grid gap-x-6 gap-y-2.5 sm:grid-cols-2">

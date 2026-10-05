@@ -16,7 +16,7 @@ import React, { useState, ReactNode } from 'react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ChevronRight, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Button } from "@ai-matrx/design-system/controls";
+import { Button, DisclosureHeader, Badge } from "@ai-matrx/design-system/controls";
 
 interface DiffCollapsibleProps {
   icon: ReactNode;
@@ -56,43 +56,22 @@ export const DiffCollapsible: React.FC<DiffCollapsibleProps> = ({
     <div className={cn('border border-neutral-200 dark:border-neutral-700 rounded-lg overflow-hidden my-2', className)}>
       {/* Ultra-minimal header - VS Code style */}
       <div className="flex items-center bg-muted/30">
-      <button
+      <DisclosureHeader
+        open={isOpen}
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-1.5 flex-1 min-w-0 px-2 py-1 hover:bg-muted/50 transition-colors text-left"
-      >
-        {/* Chevron - rotates on open */}
-        {isOpen ? (
-          <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground" />
-        ) : (
-          <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground" />
-        )}
-        
-        {/* Icon */}
-        <div className="shrink-0">
-          {icon}
-        </div>
-        
-        {/* Title - very small, VS Code style */}
-        <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
-          {title}
-        </span>
-
-        {/* Diff Statistics - VSCode style */}
-        {(additions !== undefined || deletions !== undefined) && (
-          <div className="ml-auto flex items-center gap-2 text-[10px] font-mono">
-            {additions !== undefined && additions > 0 && (
-              <span className="text-green-600 dark:text-green-400">
-                +{additions}
-              </span>
-            )}
-            {deletions !== undefined && deletions > 0 && (
-              <span className="text-red-600 dark:text-red-400">
-                -{deletions}
-              </span>
-            )}
-          </div>
-        )}
-      </button>
+        variant="label"
+        icon={icon}
+        title={title}
+        end={
+          additions !== undefined || deletions !== undefined ? (
+            <>
+              {additions !== undefined && additions > 0 && <Badge tone="success">+{additions}</Badge>}
+              {deletions !== undefined && deletions > 0 && <Badge tone="destructive">-{deletions}</Badge>}
+            </>
+          ) : undefined
+        }
+        className="min-w-0 flex-1"
+      />
       {headerRight && <div className="shrink-0 px-2">{headerRight}</div>}
       </div>
 
