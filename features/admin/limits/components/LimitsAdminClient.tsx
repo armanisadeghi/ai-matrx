@@ -54,7 +54,7 @@ export function LimitsAdminClient() {
         </p>
       </header>
       <Tabs defaultValue={defaultTab}>
-        <TabsList overflow="scroll" className="max-w-full">
+        <TabsList overflow="scroll">
           <TabsTrigger value="allowances">Plan allowances</TabsTrigger>
           <TabsTrigger value="addons">Account add-ons</TabsTrigger>
           <TabsTrigger value="knobs">Feature knobs</TabsTrigger>

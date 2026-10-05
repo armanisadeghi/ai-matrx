@@ -261,7 +261,7 @@ function LimitCell({
       </div>
       <p
         className={cn(
-          "mt-0.5 h-4 truncate text-right text-[11px] text-muted-foreground",
+          "mt-0.5 h-4 truncate text-right type-meta text-muted-foreground",
           isZero && "text-warning",
         )}
       >
@@ -310,13 +310,13 @@ function PlanMatrix({
                   className="min-w-28 px-1.5 py-2 text-right text-xs font-medium"
                 >
                   {showCapability && (
-                    <span className="block truncate font-mono text-[11px] text-muted-foreground">
+                    <span className="block truncate font-mono type-meta text-muted-foreground">
                       {column.capability}
                     </span>
                   )}
                   <span>{periodLabel(column.period)}</span>
                   {showCapability && cap && !cap.enforced && (
-                    <span className="block text-[10px] font-normal text-warning">
+                    <span className="block type-meta font-normal text-warning">
                       tracking only
                     </span>
                   )}
@@ -366,7 +366,7 @@ function GroupRows({
       <tr className="border-b border-border bg-muted/20">
         <td
           colSpan={columns.length + 2}
-          className="px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground"
+          className="px-3 py-1 type-meta font-semibold uppercase tracking-wide text-muted-foreground"
         >
           {label}
         </td>
@@ -377,12 +377,12 @@ function GroupRows({
             <div className="flex items-center gap-1.5">
               <span className="font-medium">{plan.name}</span>
               {plan.is_default && (
-                <Badge variant="secondary" className="px-1 py-0 text-[10px]">
+                <Badge variant="secondary" className="px-1 py-0 type-meta">
                   default
                 </Badge>
               )}
             </div>
-            <span className="block font-mono text-[10px] text-muted-foreground">
+            <span className="block font-mono type-meta text-muted-foreground">
               {plan.plan_key}
             </span>
           </td>
