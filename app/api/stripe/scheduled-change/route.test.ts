@@ -127,6 +127,8 @@ describe("scheduled plan change route", () => {
     });
     let subscriptionReads = 0;
     let scheduleCreated = false;
+    let scheduleCustomerId = "cus_harbor_dental";
+    let targetPriceAmount = 1900;
     const createSchedule = jest.fn(async () => {
       scheduleCreated = true;
       return { id: "sub_sched_harbor_dental", phases: [phase] };
@@ -165,7 +167,7 @@ describe("scheduled plan change route", () => {
                 id: targetPriceId,
                 active: true,
                 livemode: false,
-                unit_amount: 1900,
+                unit_amount: targetPriceAmount,
                 currency: "usd",
                 metadata: {
                   purpose: "platform_subscription",
@@ -180,7 +182,7 @@ describe("scheduled plan change route", () => {
         update: jest.fn(async () => ({})),
         release: jest.fn(async () => ({})),
         retrieve: jest.fn(async () => ({
-          customer: { id: "cus_harbor_dental" },
+          customer: { id: scheduleCustomerId },
           subscription: { id: "sub_harbor_dental" },
           metadata: { purpose: "matrx_personal_plan_change" },
           phases: [
@@ -296,5 +298,24 @@ describe("scheduled plan change route", () => {
     expect(await first.json()).toEqual(await second.json());
     expect(createSchedule).toHaveBeenCalledTimes(1);
     expect(withCheckoutLease).toHaveBeenCalledTimes(2);
+
+    scheduleCustomerId = "cus_other_practice";
+    const foreign = await POST(request());
+    expect(foreign.status).toBe(409);
+    expect(await foreign.json()).toEqual({
+      error:
+        "A plan change is already managed in billing. Manage it there instead.",
+    });
+    expect(createSchedule).toHaveBeenCalledTimes(1);
+
+    scheduleCustomerId = "cus_harbor_dental";
+    targetPriceAmount = 2000;
+    const catalogMismatch = await POST(request());
+    expect(catalogMismatch.status).toBe(409);
+    expect(await catalogMismatch.json()).toEqual({
+      error:
+        "The Stripe price and platform catalog disagree. No change was made.",
+    });
+    expect(createSchedule).toHaveBeenCalledTimes(1);
   });
 });
