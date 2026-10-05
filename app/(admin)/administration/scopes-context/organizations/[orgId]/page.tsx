@@ -13,7 +13,6 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { ScopeManagerPage } from "@/features/agent-context/components/scope-admin/ScopeManagerPage";
 import { AdminPageCapture } from "@/components/agent-copy/page-capture/AdminPageCapture";
 import { useRecordTitle } from "@/lib/record-title/record-title";
-import { ScopesWriterSwitch } from "@/features/unified-data/cutover/ScopesWriterSwitch";
 
 export default function AdminOrganizationScopesPage() {
   const params = useParams();
@@ -38,7 +37,6 @@ export default function AdminOrganizationScopesPage() {
                 : null}
           </span>
         </div>
-        <ScopesWriterSwitch organizationId={orgId} />
         <AdminPageCapture
           title={`${org?.name ?? "Organization"} — scopes`}
           route={`/administration/scopes-context/organizations/${orgId}`}
