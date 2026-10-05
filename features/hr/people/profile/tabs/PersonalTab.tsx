@@ -498,7 +498,7 @@ export function PersonalTab({
       ) : null}
 
       {/* Custom fields go BELOW the built-ins, never interleaved (§7.4). */}
-      <MoreSection custom={personal.custom ?? null} tabLabel="Personal" />
+      <MoreSection employeeId={profile.header.employee_id} organizationId={profile.organization_id} />
     </div>
   );
 }

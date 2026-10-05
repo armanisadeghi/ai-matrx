@@ -50,7 +50,6 @@ import type { HrEmployeeProfile } from "../../../types";
 import { formatFullDate, formatRecordedAt } from "../../shared/HrStatusChip";
 import { HrWorkerClassChip } from "../../shared/HrWorkerClassChip";
 import { HrStructureDoor } from "../../doors/HrPersonDoor";
-import { MoreSection } from "../MoreSection";
 import {
   actorKindOf,
   actorKindWords,
@@ -259,7 +258,6 @@ export function JobTab({
         workerClass={profile.header.worker_class}
       />
 
-      <MoreSection custom={profile.personal.custom ?? null} tabLabel="Job" />
 
       {/* The in-place row window; new-tab-able as ?assignment=<id>. */}
       {openRow ? (
