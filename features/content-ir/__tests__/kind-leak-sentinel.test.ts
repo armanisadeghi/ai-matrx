@@ -52,6 +52,17 @@ function deadObserver(): () => void {
   };
 }
 
+/**
+ * Every test that proves the sentinel sees a CHANGE (not the install-time
+ * scan). Registered as ordinary tests below AND re-run by the K2 self-test
+ * against an observer that never fires, where each must FAIL.
+ */
+const CHANGE_BASED: Array<[string, () => Promise<void>]> = [];
+function changeIt(name: string, body: () => Promise<void>) {
+  CHANGE_BASED.push([name, body]);
+  it(name, body);
+}
+
 describe("the kind leak sentinel (G1)", () => {
   let dispose: () => void;
   beforeEach(async () => {
@@ -69,7 +80,7 @@ describe("the kind leak sentinel (G1)", () => {
     jest.useRealTimers();
   });
 
-  it("reports a kind drawn as text in an unmarked node", async () => {
+  changeIt("reports a kind drawn as text in an unmarked node", async () => {
     const p = document.createElement("p");
     p.className = "answer-prose";
     p.textContent = `Here are your cards: ${KIND}`;
@@ -86,13 +97,13 @@ describe("the kind leak sentinel (G1)", () => {
     expect(JSON.stringify(report.raw)).toContain("answer-prose");
   });
 
-  it("reports a key split across highlighted spans", async () => {
+  changeIt("reports a key split across highlighted spans", async () => {
     document.body.innerHTML = '<pre><span>{</span><span>"__kind"</span><span>:</span><span>"note"</span>}</pre>';
     await settle();
     expect(capture).toHaveBeenCalledTimes(1);
   });
 
-  it("reports text that CHANGES into a leak (characterData)", async () => {
+  changeIt("reports text that CHANGES into a leak (characterData)", async () => {
     const p = document.createElement("p");
     p.textContent = "loading";
     document.body.appendChild(p);
@@ -103,7 +114,7 @@ describe("the kind leak sentinel (G1)", () => {
     expect(capture).toHaveBeenCalledTimes(1);
   });
 
-  it("reports once per place, not once per mutation", async () => {
+  changeIt("reports once per place, not once per mutation", async () => {
     const p = document.createElement("p");
     p.textContent = KIND;
     document.body.appendChild(p);
@@ -163,7 +174,7 @@ describe("the kind leak sentinel (G1)", () => {
     expect(capture).toHaveBeenCalledTimes(1);
   });
 
-  it("H2a: a node appended to the END of a long list is scanned (only what changed)", async () => {
+  changeIt("H2a: a node appended to the END of a long list is scanned (only what changed)", async () => {
     const list = longList(2_500);
     document.body.appendChild(list);
     await drain();
@@ -175,7 +186,7 @@ describe("the kind leak sentinel (G1)", () => {
     expect(capture).toHaveBeenCalledTimes(1);
   });
 
-  it("H2: appending to a long list reads the change, not the list (cost)", async () => {
+  changeIt("H2: appending to a long list reads the change, not the list (cost)", async () => {
     const list = longList(2_500);
     document.body.appendChild(list);
     await drain();
@@ -191,7 +202,7 @@ describe("the kind leak sentinel (G1)", () => {
     expect(read).toBeLessThan(2_000);
   });
 
-  it("H2b: a big kindless addition never drops the other pending additions", async () => {
+  changeIt("H2b: a big kindless addition never drops the other pending additions", async () => {
     const big = document.createElement("div");
     big.textContent = FILLER.repeat(2_600); // ~260k characters, one text node
     document.body.appendChild(big);
@@ -202,7 +213,7 @@ describe("the kind leak sentinel (G1)", () => {
     expect(capture).toHaveBeenCalledTimes(1);
   });
 
-  it("H2: an appended token completes a key split across sibling text nodes", async () => {
+  changeIt("H2: an appended token completes a key split across sibling text nodes", async () => {
     const p = document.createElement("p");
     for (const token of ['{"', "__", "ki"]) p.appendChild(document.createTextNode(token));
     document.body.appendChild(p);
@@ -227,7 +238,7 @@ describe("the kind leak sentinel (G1)", () => {
   // ── R3, round 6 ─────────────────────────────────────────────────────────
   const ESCAPED = '{"answer":"{\\"__kind\\":\\"flashcard_set\\",\\"title\\":\\"Cells\\"}"}';
 
-  it("R3i: reports an ESCAPED kind key on screen (a raw view of a string-held kind)", async () => {
+  changeIt("R3i: reports an ESCAPED kind key on screen (a raw view of a string-held kind)", async () => {
     const pre = document.createElement("pre");
     pre.textContent = ESCAPED;
     document.body.appendChild(pre);
@@ -246,7 +257,7 @@ describe("the kind leak sentinel (G1)", () => {
     expect(capture).not.toHaveBeenCalled();
   });
 
-  it.each(["title", "aria-label", "alt"])("R3ii: reports a kind in a %s attribute", async (attr) => {
+  for (const attr of ["title", "aria-label", "alt"]) changeIt(`R3ii: reports a kind in a ${attr} attribute`, async () => {
     const el = document.createElement(attr === "alt" ? "img" : "span");
     el.className = `attr-${attr}`;
     el.setAttribute(attr, `Skill: ${KIND}`);
@@ -256,7 +267,7 @@ describe("the kind leak sentinel (G1)", () => {
     expect(capture.mock.calls[0][0].raw.attribute).toBe(attr);
   });
 
-  it("R3ii: later attribute leaks on new nodes are each reported", async () => {
+  changeIt("R3ii: later attribute leaks on new nodes are each reported", async () => {
     const seen: string[] = [];
     for (const attr of ["title", "aria-label", "alt"]) {
       const el = document.createElement(attr === "alt" ? "img" : "span");
@@ -271,7 +282,7 @@ describe("the kind leak sentinel (G1)", () => {
     expect(seen).toEqual(["title", "aria-label", "alt"]);
   });
 
-  it("R3ii: reports a title attribute that CHANGES into a leak", async () => {
+  changeIt("R3ii: reports a title attribute that CHANGES into a leak", async () => {
     const el = document.createElement("button");
     el.setAttribute("title", "Run");
     document.body.appendChild(el);
@@ -293,5 +304,32 @@ describe("the kind leak sentinel (G1)", () => {
     document.body.innerHTML = `<div contenteditable="plaintext-only">${KIND}</div><div contenteditable="">${KIND}</div><textarea>${KIND}</textarea>`;
     await settle();
     expect(capture).not.toHaveBeenCalled();
+  });
+});
+
+describe("K2 self-test: the change-based tests need the observer", () => {
+  let dispose: () => void;
+  let restore: () => void;
+  beforeEach(async () => {
+    jest.useFakeTimers();
+    capture.mockClear();
+    resetKindLeakSentinelReports();
+    document.body.innerHTML = "";
+    restore = deadObserver();
+    dispose = installKindLeakSentinel({ root: document.body, debounceMs: 100, logToConsole: false });
+    await settle();
+  });
+  afterEach(() => {
+    dispose();
+    restore();
+    jest.useRealTimers();
+  });
+
+  it("covers every change-based test", () => {
+    expect(CHANGE_BASED.length).toBe(14);
+  });
+
+  it.each(CHANGE_BASED)("FAILS with a dead observer: %s", async (_name, body) => {
+    await expect(body()).rejects.toThrow();
   });
 });
