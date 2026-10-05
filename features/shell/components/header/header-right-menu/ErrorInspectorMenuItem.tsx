@@ -8,6 +8,7 @@ import { useToggleErrorInspector } from "@/features/admin/error-inspector/useOpe
 import { useCapturedErrorStats } from "@/lib/diagnostics/useCapturedErrors";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsAdminDebugger } from "@/lib/redux/selectors/userSelectors";
+import { Badge } from "@ai-matrx/design-system/controls";
 
 /**
  * Admin-menu entry that opens the systemwide Error Inspector. Shows a live
@@ -32,9 +33,9 @@ export function ErrorInspectorMenuItem() {
         <AlertTriangle />
         <span>Error Inspector</span>
         {red > 0 && (
-          <span className="ml-auto rounded-full bg-destructive/20 text-destructive px-1.5 text-[10px] font-semibold">
+          <Badge tone="destructive" className="ml-auto">
             {red}
-          </span>
+          </Badge>
         )}
       </button>
     </MenuItemCloseLabel>

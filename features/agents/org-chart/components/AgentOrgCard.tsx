@@ -11,7 +11,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { AlertTriangle, ArrowUpRight, Briefcase, Copy, Lightbulb, Loader2, Network, UsersRound } from "lucide-react";
-import { Button } from "@ai-matrx/design-system/controls";
+import { Button, Chip, type ChipTone } from "@ai-matrx/design-system/controls";
 import { cn } from "@/lib/utils";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { AgentPeekButton } from "@/features/agents/orchestras/components/AgentPeekButton";
@@ -203,51 +203,39 @@ export function AgentOrgCard({
         {activity && <ActivityBadge activity={activity} />}
         {who.seat && <SeatBadge stage={who.seat} />}
         {who.coverage && (
-          <span
-            className={cn(
-              "inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium",
-              who.coverage.covered === who.coverage.seats ? "bg-success/15 text-success" : "bg-muted text-muted-foreground",
-            )}
+          <Chip
+            tone={who.coverage.covered === who.coverage.seats ? "success" : "neutral"}
+            label={`${who.coverage.covered} of ${who.coverage.seats} ${who.coverage.seats === 1 ? "seat" : "seats"} covered`}
             title="Of the positions this person fills, how many have an agent doing the job"
-          >
-            {who.coverage.covered} of {who.coverage.seats} {who.coverage.seats === 1 ? "seat" : "seats"} covered
-          </span>
+          />
         )}
         {d.otherPlacements > 0 && (
-          <span
-            className={cn(
-              "inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium",
-              spreadWarnAt !== null && d.otherPlacements + 1 >= spreadWarnAt
-                ? "bg-warning/15 text-warning"
-                : "bg-muted text-muted-foreground",
-            )}
+          <Chip
+            tone={spreadWarnAt !== null && d.otherPlacements + 1 >= spreadWarnAt ? "warning" : "neutral"}
+            icon={<Copy />}
+            label={`Also in ${d.otherPlacements} more ${d.otherPlacements === 1 ? "place" : "places"}`}
             title={
               spreadWarnAt !== null && d.otherPlacements + 1 >= spreadWarnAt
                 ? `Spread thin: on ${d.otherPlacements + 1} teams`
                 : "Also appears elsewhere on the chart"
             }
-          >
-            <Copy className="h-2.5 w-2.5" />
-            Also in {d.otherPlacements} more {d.otherPlacements === 1 ? "place" : "places"}
-          </span>
+          />
         )}
         {d.unavailable && (
-          <span
-            className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-1.5 py-0.5 text-[10px] font-medium text-destructive"
+          <Chip
+            tone="destructive"
+            icon={<AlertTriangle />}
+            label="Team couldn't load"
             title="This Orchestra could not be loaded — you may not have access, or it was removed."
-          >
-            <AlertTriangle className="h-2.5 w-2.5" />
-            Team couldn&apos;t load
-          </span>
+          />
         )}
         {d.loop && (
-          <span
-            className="inline-flex items-center gap-1 rounded-full bg-warning/15 px-1.5 py-0.5 text-[10px] font-medium text-warning"
+          <Chip
+            tone="warning"
+            icon={<AlertTriangle />}
+            label="Loop — shown once above"
             title="Already sits above itself here, so the chart stops at this box."
-          >
-            <AlertTriangle className="h-2.5 w-2.5" />
-            Loop — shown once above
-          </span>
+          />
         )}
         {!activity && !d.loop && !d.unavailable && d.otherPlacements === 0 && footnote && (
           <span className="line-clamp-1 text-[10px] text-muted-foreground/80">{footnote}</span>
@@ -280,12 +268,12 @@ export function AgentOrgCard({
   );
 }
 
-const ACTIVITY_STYLE: Record<AgentActivity["state"], { dot: string; chip: string; label: string }> = {
-  running: { dot: "bg-success animate-pulse", chip: "bg-success/15 text-success", label: "Running" },
-  stalled: { dot: "bg-warning", chip: "bg-warning/15 text-warning", label: "Stalled" },
-  done: { dot: "bg-muted-foreground/60", chip: "bg-muted text-muted-foreground", label: "Done" },
-  failed: { dot: "bg-destructive", chip: "bg-destructive/10 text-destructive", label: "Failed" },
-  stopped: { dot: "bg-muted-foreground/60", chip: "bg-muted text-muted-foreground", label: "Stopped" },
+const ACTIVITY_STYLE: Record<AgentActivity["state"], { dot: string; tone: ChipTone; label: string }> = {
+  running: { dot: "bg-success animate-pulse", tone: "success", label: "Running" },
+  stalled: { dot: "bg-warning", tone: "warning", label: "Stalled" },
+  done: { dot: "bg-muted-foreground/60", tone: "neutral", label: "Done" },
+  failed: { dot: "bg-destructive", tone: "destructive", label: "Failed" },
+  stopped: { dot: "bg-muted-foreground/60", tone: "neutral", label: "Stopped" },
 };
 
 function ActivityBadge({ activity }: { activity: AgentActivity }) {
@@ -304,29 +292,26 @@ function ActivityBadge({ activity }: { activity: AgentActivity }) {
         ? `Still marked running, no activity since ${when}`
         : `Last run ${s.label.toLowerCase()} ${when}`;
   return (
-    <span
-      className={cn("inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium", s.chip)}
+    <Chip
+      tone={s.tone}
+      icon={<span className={cn("h-1.5 w-1.5 rounded-full", s.dot)} />}
+      label={text}
       title={title}
-    >
-      <span className={cn("h-1.5 w-1.5 rounded-full", s.dot)} />
-      {text}
-    </span>
+    />
   );
 }
 
-const SEAT_STYLE: Record<NonNullable<ReturnType<typeof useBoxIdentity>["seat"]>, { chip: string; label: string; title: string }> = {
-  noted: { chip: "bg-muted text-muted-foreground", label: "Noted", title: "Next: define its job" },
-  defined: { chip: "bg-warning/15 text-warning", label: "Needs an agent", title: "Its job is defined. Next: build its agent" },
-  staffed: { chip: "bg-success/15 text-success", label: "Agent at work", title: "An agent does this job" },
-  retired: { chip: "bg-destructive/10 text-destructive", label: "Job off", title: "Its job was removed or switched off" },
+const SEAT_STYLE: Record<NonNullable<ReturnType<typeof useBoxIdentity>["seat"]>, { tone: ChipTone; label: string; title: string }> = {
+  noted: { tone: "neutral", label: "Noted", title: "Next: define its job" },
+  defined: { tone: "warning", label: "Needs an agent", title: "Its job is defined. Next: build its agent" },
+  staffed: { tone: "success", label: "Agent at work", title: "An agent does this job" },
+  retired: { tone: "destructive", label: "Job off", title: "Its job was removed or switched off" },
 };
 
 function SeatBadge({ stage }: { stage: keyof typeof SEAT_STYLE }) {
   const s = SEAT_STYLE[stage];
   return (
-    <span className={cn("inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium", s.chip)} title={s.title}>
-      {s.label}
-    </span>
+    <Chip tone={s.tone} label={s.label} title={s.title} />
   );
 }
 

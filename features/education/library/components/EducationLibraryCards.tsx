@@ -29,6 +29,7 @@ import {
 } from "../artifactVisuals";
 import { libraryRowStats, type EducationLibraryRow } from "../types";
 import { StudyProgressBar } from "./StudyProgressBar";
+import { Chip } from "@ai-matrx/design-system/controls";
 
 interface Props {
   rows: EducationLibraryRow[];
@@ -73,9 +74,8 @@ export function EducationLibraryCards({
             {/* Due badge — the single most actionable fact on the card, so it
                 sits above the title where the eye lands first. */}
             {stats.dueCount > 0 && (
-              <span className="absolute right-2 top-2 z-10 inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-semibold text-amber-700 dark:text-amber-400">
-                <CalendarClock className="h-3 w-3" />
-                {stats.dueCount} due
+              <span className="absolute right-2 top-2 z-10">
+                <Chip tone="warning" icon={<CalendarClock />} label={`${stats.dueCount} due`} />
               </span>
             )}
 

@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { POWER_UP_LIST } from "../../engine/scoring";
 import type { UseGamePlayResult } from "../../data/useGamePlay";
+import { Chip } from "@ai-matrx/design-system/controls";
 
 export function PlaySurface({ game }: { game: UseGamePlayResult }) {
   const {
@@ -83,14 +84,16 @@ export function PlaySurface({ game }: { game: UseGamePlayResult }) {
           const affordable = currency >= pu.cost && !armed && !usedFifty;
           return (
             <Button
-              icon={<Zap />}
               key={pu.key}
               type="button"
-              variant={armed ? "primary" : "outline"}
+              size="sm"
+              variant={armed ? "default" : "outline"}
               disabled={!affordable}
               onClick={() => buyPowerUp(pu.key)}
               title={pu.description}
+              className="gap-1"
             >
+              <Zap className="h-3.5 w-3.5" />
               {pu.label}
               <span className="ml-1 inline-flex items-center gap-0.5 text-xs opacity-70">
                 <Coins className="h-3 w-3" />
@@ -104,9 +107,7 @@ export function PlaySurface({ game }: { game: UseGamePlayResult }) {
       {/* Question */}
       <div className="flex min-h-0 flex-1 flex-col rounded-xl border border-border bg-card p-5">
         {question.isDue && (
-          <span className="mb-2 inline-flex w-fit items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-            <TrendingUp className="h-3 w-3" /> Due for review
-          </span>
+          <Chip tone="primary" icon={<TrendingUp />} label="Due for review" className="mb-2 w-fit" />
         )}
         <p className="mb-4 text-lg font-semibold text-foreground">
           {question.prompt}

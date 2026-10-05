@@ -35,6 +35,7 @@ import {
   destinationOwnsPathname,
 } from "@/features/admin/constants/admin-navigation";
 import { ADMIN_APP_URL } from "@/features/shell/constants/nav-data";
+import { Badge } from "@ai-matrx/design-system/controls";
 
 const iconSlot =
   "flex h-4 w-4 shrink-0 items-center justify-center text-muted-foreground [&>svg]:h-4 [&>svg]:w-4 [&>svg]:max-w-none";
@@ -156,9 +157,7 @@ export default function AdminMenu() {
                                 {item.title}
                               </span>
                               {item.isNew && (
-                                <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">
-                                  New
-                                </span>
+                                <Badge tone="warning">New</Badge>
                               )}
                             </AppLink>
                           </DropdownMenuItem>

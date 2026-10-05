@@ -9,6 +9,7 @@ import { ArrowRight, Mic } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MODE_CONFIG } from "../constants";
 import { SPOKEN_PRACTICE_MODES, type SpokenPracticeMode } from "../types";
+import { Chip } from "@ai-matrx/design-system/controls";
 
 export function SpokenPracticeHome({
   onPick,
@@ -17,10 +18,7 @@ export function SpokenPracticeHome({
 }) {
   return (
     <div className="mx-auto w-full max-w-2xl space-y-6 px-4 pb-4 sm:px-6 sm:pb-6">
-      <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-        <Mic className="h-3.5 w-3.5" />
-        Voice-first · graded on meaning
-      </div>
+      <Chip tone="primary" icon={<Mic />} label="Voice-first · graded on meaning" />
 
       <div className="grid gap-3">
         {SPOKEN_PRACTICE_MODES.map((mode) => {

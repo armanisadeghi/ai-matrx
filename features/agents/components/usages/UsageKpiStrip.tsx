@@ -21,6 +21,7 @@ import type { AgentUsageHistoryCount } from "@/features/agents/redux/usages/usag
 import { DIMENSION_ORDER, HISTORY_TILE, dimensionMeta, type UsageDimension } from "./dimensions";
 import type { DimensionCount } from "./unified-rows";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { Chip } from "@ai-matrx/design-system/controls";
 
 export type DimensionReadState = "loading" | "failed" | "ready";
 
@@ -136,14 +137,9 @@ export function UsageKpiStrip({
               <span className="font-semibold tabular-nums">{count.total}</span>
             )}
             {state === "ready" && count.flagged > 0 ? (
-              <span className="inline-flex items-center gap-0.5 rounded-full bg-rose-500/10 px-1.5 text-[10px] font-semibold text-rose-600 dark:text-rose-400">
-                <TriangleAlert className="h-2.5 w-2.5" aria-hidden />
-                {count.flagged}
-              </span>
+              <Chip tone="destructive" icon={<TriangleAlert aria-hidden />} label={String(count.flagged)} />
             ) : state === "ready" && count.behind > 0 ? (
-              <span className="rounded-full bg-amber-500/10 px-1.5 text-[10px] font-semibold text-amber-600 dark:text-amber-400">
-                {count.behind} behind
-              </span>
+              <Chip tone="warning" label={`${count.behind} behind`} />
             ) : null}
           </button>
         );

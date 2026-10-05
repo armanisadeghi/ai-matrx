@@ -25,7 +25,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { Button } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { Skeleton } from "@ai-matrx/design-system";
 import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
@@ -79,6 +79,7 @@ import { KIT_MEMBER_CANDIDATE_LIMIT, parseKitDeletes, parseKitMemberAdds, parseK
 import { fetchEducationLibraryPage } from "@/features/education/library/service";
 import type { EducationLibraryRow } from "@/features/education/library/types";
 import { DEFAULT_ENTITY_LIST_QUERY } from "@/lib/entity-list/types";
+import { Chip } from "@ai-matrx/design-system/controls";
 
 const FORMAT_PROMISE: Record<TargetKind, string> = {
   deck: "Build recall one card at a time.",
@@ -137,10 +138,7 @@ function ArtifactCard({
           <Icon className="h-6 w-6" />
         </span>
         {stats?.dueCount ? (
-          <span className="inline-flex min-h-7 items-center gap-1 rounded-full bg-warning/10 px-2.5 text-xs font-semibold text-warning">
-            <CalendarClock className="h-3.5 w-3.5" />
-            {stats.dueCount} due
-          </span>
+          <Chip tone="warning" icon={<CalendarClock />} label={`${stats.dueCount} due`} />
         ) : null}
       </div>
 
@@ -700,10 +698,7 @@ export function KitHub({
           <div className="relative grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(280px,0.42fr)] lg:items-center">
             <div>
               {!proposedLayout && (
-                <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-                  <Route className="h-3.5 w-3.5" />
-                  Your study path
-                </div>
+                <Chip tone="primary" icon={<Route />} label="Your study path" className="mb-4" />
               )}
               <h1 className="max-w-2xl text-[clamp(1.75rem,1.4rem+1.5vw,2.75rem)] font-semibold leading-tight text-foreground">
                 Pick a way in. Build toward what you can prove.

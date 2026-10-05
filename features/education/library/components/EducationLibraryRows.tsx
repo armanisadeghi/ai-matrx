@@ -26,6 +26,7 @@ import {
 } from "../artifactVisuals";
 import { libraryRowStats, type EducationLibraryRow } from "../types";
 import { StudyProgressBar } from "./StudyProgressBar";
+import { Chip } from "@ai-matrx/design-system/controls";
 
 interface Props {
   rows: EducationLibraryRow[];
@@ -125,11 +126,7 @@ export function EducationLibraryRows({
             </div>
 
             {stats.dueCount > 0 && (
-              <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-semibold text-amber-700 dark:text-amber-400">
-                <CalendarClock className="h-3 w-3" />
-                {stats.dueCount}
-                <span className="max-sm:sr-only">due</span>
-              </span>
+              <Chip tone="warning" icon={<CalendarClock />} label={`${stats.dueCount} due`} />
             )}
 
             {href && (

@@ -30,6 +30,7 @@ import type {
   StudyPlanBlockRow,
   StudyPlanDayRow,
 } from "../types";
+import { Chip } from "@ai-matrx/design-system/controls";
 
 const WEEKDAY = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTH = [
@@ -161,15 +162,10 @@ function DayCard({
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               {isToday && (
-                <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-primary">
-                  Today
-                </span>
+                <Chip tone="primary" label="Today" />
               )}
               {day.is_rest_day && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                  <Coffee className="h-3 w-3" />
-                  Rest day
-                </span>
+                <Chip icon={<Coffee />} label="Rest day" />
               )}
               {!day.is_rest_day && (
                 <span className="text-xs tabular-nums text-muted-foreground">
@@ -215,10 +211,12 @@ function DayCard({
             Study blocks
           </span>
           <Button
-            icon={<Plus />}
-            variant="quiet"
+            size="sm"
+            variant="ghost"
+            className="h-7 gap-1 px-2 text-xs"
             onClick={() => onAddBlock(day, blocks.length)}
-          > Add block
+          >
+            <Plus className="h-3.5 w-3.5" /> Add block
           </Button>
         </div>
       )}
@@ -301,51 +299,68 @@ function BlockRow({
       <div className="flex shrink-0 items-center gap-1">
         {href && !done && !skipped && (
           <Button
-            iconEnd={<ChevronRight />}
+            size="sm"
             variant="outline"
+            className="h-7 gap-1 px-2 text-xs"
             onClick={() => router.push(href)}
           >
             Start
+            <ChevronRight className="h-3.5 w-3.5" />
           </Button>
         )}
         <Button
-          icon={<Pencil />} aria-label="Edit block"
-          variant="quiet"
+          size="icon"
+          variant="ghost"
+          className="h-7 w-7 text-muted-foreground"
           disabled={busy}
           title="Edit block"
           onClick={() => onEdit(block)}
-        />
+        >
+          <Pencil className="h-3.5 w-3.5" />
+        </Button>
         <Button
-          icon={<Trash2 />} aria-label="Remove block"
-          variant="quiet"
+          size="icon"
+          variant="ghost"
+          className="h-7 w-7 text-destructive"
           disabled={busy}
           title="Remove block"
           onClick={() => onDelete(block)}
-        />
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </Button>
         {done || skipped ? (
           <Button
-            icon={<Undo2 />} aria-label="Reset"
-            variant="quiet"
+            size="icon"
+            variant="ghost"
+            className="h-7 w-7 text-muted-foreground"
             disabled={busy}
             title="Reset"
             onClick={() => onStatus(block.id, "pending")}
-          />
+          >
+            <Undo2 className="h-3.5 w-3.5" />
+          </Button>
         ) : (
           <>
             <Button
-              icon={<Check />} aria-label="Mark done"
-              variant="quiet"
+              size="icon"
+              variant="ghost"
+              className="h-7 w-7 text-green-600 dark:text-green-400"
               disabled={busy}
               title="Mark done"
               onClick={() => onStatus(block.id, "done")}
-            />
+            >
+              <Check className="h-4 w-4" />
+            </Button>
             <Button
-              icon={<SkipForward />} aria-label="Skip"
-              variant="quiet"
+              size="icon"
+              variant="ghost"
+              className="h-7 w-7 text-muted-foreground"
               disabled={busy}
               title="Skip"
               onClick={() => onStatus(block.id, "skipped")}
-            />
+            >
+              <SkipForward className="h-3.5 w-3.5" />
+            </Button>
           </>
         )}
       </div>

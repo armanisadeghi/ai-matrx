@@ -17,6 +17,7 @@ import { useClassRoster, type UseClassRosterReturn } from "../hooks/useClassRost
 import { InviteStudentsSheet } from "./InviteStudentsSheet";
 import type { ClassRosterMember } from "../types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { Chip } from "@ai-matrx/design-system/controls";
 
 // Owner sees the email; a co-member sees the display name (peer emails are
 // nulled server-side — D56). Fall back to the id only if neither is present.
@@ -27,30 +28,21 @@ function memberLabel(m: ClassRosterMember): string {
 function StatusChip({ member }: { member: ClassRosterMember }) {
   if (member.role === "owner") {
     return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-        <Crown className="h-3 w-3" />
-        Owner
-      </span>
+      <Chip tone="primary" icon={<Crown />} label="Owner" />
     );
   }
   if (member.status === "pending") {
     return (
-      <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-600 dark:text-amber-400">
-        Requested
-      </span>
+      <Chip tone="warning" label="Requested" />
     );
   }
   if (member.status === "entitled") {
     return (
-      <span className="rounded-full bg-sky-500/10 px-2 py-0.5 text-xs font-medium text-sky-600 dark:text-sky-400">
-        Purchased
-      </span>
+      <Chip tone="info" label="Purchased" />
     );
   }
   return (
-    <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
-      Member
-    </span>
+    <Chip label="Member" />
   );
 }
 
@@ -112,10 +104,11 @@ export function ClassRosterPanel({
         </h2>
         {isOwner && (
           <Button
-            icon={<UserPlus />}
-            variant="primary"
+            size="sm"
+            className="h-7 gap-1.5 text-xs"
             onClick={() => setInviteOpen(true)}
           >
+            <UserPlus className="h-3.5 w-3.5" />
             Invite students
           </Button>
         )}
@@ -147,20 +140,24 @@ export function ClassRosterPanel({
                     </span>
                     <div className="flex shrink-0 items-center gap-1">
                       <Button
-                        icon={<Check />}
-                        variant="primary"
+                        size="sm"
+                        className="h-7 gap-1 text-xs"
                         disabled={roster.acting}
                         onClick={() => approve(m)}
                       >
+                        <Check className="h-3.5 w-3.5" />
                         Approve
                       </Button>
                       <Button
-                        icon={<X />}
-                        variant="quiet"
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7 text-muted-foreground hover:text-destructive"
                         disabled={roster.acting}
                         onClick={() => decline(m)}
                         aria-label="Decline request"
-                      />
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
                     </div>
                   </li>
                 ))}
@@ -182,12 +179,15 @@ export function ClassRosterPanel({
                   <StatusChip member={m} />
                   {isOwner && m.role !== "owner" && (
                     <Button
-                      icon={<UserMinus />}
-                      variant="quiet"
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7 text-muted-foreground hover:text-destructive"
                       disabled={roster.acting}
                       onClick={() => remove(m)}
                       aria-label="Remove member"
-                    />
+                    >
+                      <UserMinus className="h-4 w-4" />
+                    </Button>
                   )}
                 </div>
               </li>

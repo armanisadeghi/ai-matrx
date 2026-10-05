@@ -52,6 +52,7 @@ import {
   BottomSheetHeader,
 } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
+import { Badge } from "@ai-matrx/design-system/controls";
 
 const MobilePanelCloseContext = createContext<() => void>(() => {});
 
@@ -299,9 +300,9 @@ export function MobilePanelShell({
                   )}
                   <span className="flex-1 text-[15px]">{p.label}</span>
                   {(p.badge ?? 0) > 0 && (
-                    <span className="ml-3 rounded-full bg-primary/10 px-2 py-0.5 text-[12px] font-semibold text-primary">
+                    <Badge tone="primary" className="ml-3">
                       {p.badge}
-                    </span>
+                    </Badge>
                   )}
                 </button>
               );

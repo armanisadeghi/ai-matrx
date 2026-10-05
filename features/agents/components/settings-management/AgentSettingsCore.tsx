@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Button } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -128,6 +128,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
+import { Chip } from "@ai-matrx/design-system/controls";
 
 // ── Tab type ─────────────────────────────────────────────────────────────────
 type SettingsTab =
@@ -1932,9 +1933,7 @@ export function AgentSettingsCore({
       <TooltipProvider delayDuration={200}>
         <Tooltip>
           <TooltipTrigger asChild>
-            <span className="shrink-0 cursor-help rounded border border-sky-300 dark:border-sky-800 bg-sky-50 dark:bg-sky-950/40 px-1.5 py-0.5 text-[10px] font-medium text-sky-700 dark:text-sky-300">
-              Translated
-            </span>
+            <Chip tone="sky" label="Translated" />
           </TooltipTrigger>
           <TooltipContent side="top" className="text-xs max-w-[260px]">
             Kept as set and sent as this model's closest equivalent

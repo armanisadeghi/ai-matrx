@@ -39,7 +39,6 @@ import {
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { cn } from "@/lib/utils";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { useLiveRunHandle } from "@ai-matrx/chat/agents/hooks/useLiveRunHandle";
 import { LiveRunDisplay } from "@ai-matrx/chat/agents/components/live-run/LiveRunDisplay";
@@ -70,6 +69,7 @@ import type {
   FcSetRow,
 } from "@/features/flashcards/data/types";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { Chip } from "@ai-matrx/design-system/controls";
 
 const ANSWER_SECONDS = 12;
 const AUDIO_REVIEW_METHOD = "audio_review";
@@ -368,11 +368,13 @@ export function AudioReviewSession({
       <div className="mx-auto w-full max-w-md space-y-5 p-4">
         <div className="flex items-center gap-3">
           <Button
-            icon={<ArrowLeft />}
-            variant="quiet"
+            variant="ghost"
+            size="icon"
             onClick={() => router.push("/education/audio-study")}
             aria-label="Back"
-          />
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
           <div>
             <h1 className="text-lg font-semibold text-foreground">
               Audio review
@@ -418,7 +420,8 @@ export function AudioReviewSession({
         {heldStart.held && (
           <StudyOrganizationHoldNotice what="Starting the review" />
         )}
-        <Button icon={<Mic />} variant="primary" className="w-full" onClick={() => heldStart.start()}>
+        <Button className="w-full gap-2" onClick={() => heldStart.start()}>
+          <Mic className="h-4 w-4" />
           Start review
         </Button>
       </div>
@@ -443,7 +446,6 @@ export function AudioReviewSession({
         </div>
         <div className="flex w-full flex-col gap-2 sm:flex-row">
           <Button
-            variant="primary"
             className="flex-1"
             onClick={() => router.push("/education/flashcards/sessions")}
           >
@@ -470,7 +472,9 @@ export function AudioReviewSession({
           Card {index + 1} of {cards.length}
         </span>
         <Button
-          variant="quiet"
+          variant="ghost"
+          size="sm"
+          className="text-xs text-muted-foreground"
           onClick={quit}
         >
           Quit
@@ -480,14 +484,11 @@ export function AudioReviewSession({
       <div className="flex flex-1 flex-col items-center justify-center gap-5 text-center">
         {(phase === "asking" || phase === "answering") && card && (
           <>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-              {phase === "answering" ? (
-                <Mic className="h-3.5 w-3.5" />
-              ) : (
-                <Volume2 className="h-3.5 w-3.5" />
-              )}
-              {phase === "answering" ? "Answer out loud…" : "Listen…"}
-            </span>
+            <Chip
+              tone="primary"
+              icon={phase === "answering" ? <Mic /> : <Volume2 />}
+              label={phase === "answering" ? "Answer out loud…" : "Listen…"}
+            />
             <div className="max-w-xl text-2xl font-semibold leading-snug text-foreground">
               <CardFaceContent content={card.front} variant="inline" />
             </div>
@@ -529,8 +530,9 @@ export function AudioReviewSession({
                 <CardFaceContent content={card.back} variant="inline" />
               </div>
             </div>
-            <Button iconEnd={<ChevronRight />} variant="primary" className="w-full" onClick={next}>
+            <Button className="w-full gap-1.5" onClick={next}>
               {index + 1 >= cards.length ? "Finish" : "Next card"}
+              <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
         )}

@@ -71,6 +71,7 @@ import {
 } from "@/features/organizations/peek/useTransientPeek";
 import { variableRunLabel } from "@ai-matrx/agents";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
+import { Badge } from "@ai-matrx/design-system/controls";
 
 const OVERVIEW_MESSAGE_PREVIEW_CHARS = 200;
 
@@ -624,9 +625,7 @@ export function AgentSneakPeekContent({
                       {humanizeIdentifier(inputType)}
                     </span>
                     {v.required && (
-                      <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
-                        required
-                      </span>
+                      <Badge tone="primary">required</Badge>
                     )}
                   </div>
                   {v.helpText && (
@@ -669,9 +668,7 @@ export function AgentSneakPeekContent({
                   {outputSchema.name}
                 </span>
                 {outputSchema.strict && (
-                  <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
-                    strict
-                  </span>
+                  <Badge tone="primary">strict</Badge>
                 )}
               </div>
             )}
@@ -785,8 +782,10 @@ export function AgentSneakPeekCopyMenu({ agentId }: { agentId: string }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button icon={copied ? <Check className="text-success" /> : <Copy />} iconEnd={<ChevronDown className="opacity-70" />} variant="outline" disabled={!definition}>
+        <Button variant="outline" size="sm" disabled={!definition}>
+          {copied ? <Check className="text-success" /> : <Copy />}
           {copied ? "Copied" : "Copy"}
+          <ChevronDown className="opacity-70" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-56">
@@ -929,8 +928,9 @@ export function AgentSneakPeekModal({
           {hasNav && (
             <div className="flex items-center gap-0.5 shrink-0">
               <Button
-                variant="quiet"
-                className="w-7"
+                variant="ghost"
+                size="sm"
+                className="h-7 w-7 p-0"
                 onClick={goPrev}
                 disabled={!hasPrev}
                 title="Previous (←)"
@@ -938,8 +938,9 @@ export function AgentSneakPeekModal({
                 <ChevronLeft />
               </Button>
               <Button
-                variant="quiet"
-                className="w-7"
+                variant="ghost"
+                size="sm"
+                className="h-7 w-7 p-0"
                 onClick={goNext}
                 disabled={!hasNext}
                 title="Next (→)"
@@ -966,7 +967,8 @@ export function AgentSneakPeekModal({
           <div className="flex items-center gap-2 border-t border-border pt-3">
             <AgentSneakPeekCopyMenu agentId={currentId} />
             <Button
-              variant="quiet"
+              variant="ghost"
+              size="sm"
               onClick={onClose}
               className="ml-auto"
             >
@@ -977,17 +979,20 @@ export function AgentSneakPeekModal({
               onDuplicated={onClose}
             />
             <Link href={`/agents/go/${currentId}/build`} onClick={onClose}>
-              <Button icon={<Pencil />} type="submit" variant={onSelect ? "quiet" : "outline"}>
+              <Button variant={onSelect ? "ghost" : "outline"} size="sm">
+                <Pencil />
                 Edit
               </Button>
             </Link>
             <Link href={`/agents/go/${currentId}/run`} onClick={onClose}>
-              <Button icon={<Play />} type="submit" variant={onSelect ? "outline" : "primary"}>
+              <Button variant={onSelect ? "outline" : "default"} size="sm">
+                <Play />
                 Run
               </Button>
             </Link>
             {onSelect && (
-              <Button icon={<CircleCheck />} variant="primary" onClick={handleSelect}>
+              <Button size="sm" onClick={handleSelect}>
+                <CircleCheck />
                 {selectLabel}
               </Button>
             )}

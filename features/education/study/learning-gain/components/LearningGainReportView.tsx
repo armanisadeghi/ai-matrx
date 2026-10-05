@@ -28,6 +28,7 @@ import { createEducationProgressScope } from "@/features/surfaces/manifests/educ
 import { learningGainService } from "../learningGainService";
 import type { LearningGainPair, LearningGainReport } from "../types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { Chip } from "@ai-matrx/design-system/controls";
 
 const SURFACE_NAME = "matrx-user/education-progress";
 
@@ -83,18 +84,22 @@ export function LearningGainReportView({
       <div className="mx-auto max-w-3xl px-4 sm:px-6 py-6 sm:py-8 print:py-0">
         <div className="mb-4 flex items-center justify-between gap-2 print:hidden">
           <Button
-            icon={<ArrowLeft />}
-            variant="quiet"
+            variant="ghost"
+            size="sm"
+            className="h-8 px-2 text-xs text-muted-foreground"
             onClick={() => (backHref ? router.push(backHref) : router.back())}
           >
+            <ArrowLeft className="mr-1 h-4 w-4" />
             Back
           </Button>
           {report && report.pairs.length > 0 && (
             <Button
-              icon={<Printer />}
+              size="sm"
               variant="outline"
+              className="gap-1.5"
               onClick={() => void printLivePage()}
             >
+              <Printer className="h-4 w-4" />
               Print / Save as PDF
             </Button>
           )}
@@ -199,17 +204,10 @@ function SubjectRow({ pair }: { pair: LearningGainPair }) {
         <span className="truncate text-sm font-medium text-foreground">
           {pair.subjectLabel}
         </span>
-        <span
-          className={cn(
-            "flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums",
-            positive
-              ? "bg-green-500/10 text-green-600 dark:text-green-400"
-              : "bg-red-500/10 text-red-600 dark:text-red-400",
-          )}
-        >
-          {positive ? "+" : ""}
-          {deltaPct} pts
-        </span>
+        <Chip
+          tone={positive ? "success" : "destructive"}
+          label={`${positive ? "+" : ""}${deltaPct} pts`}
+        />
       </div>
 
       <div className="mt-3 flex items-center gap-3 text-xs">

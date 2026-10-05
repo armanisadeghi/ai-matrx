@@ -21,7 +21,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Button } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
   Rainbow,
@@ -39,6 +39,7 @@ import { extractJsonFromText } from "@ai-matrx/chat/agents/utils/json-extraction
 import { useAppSelector } from "@/lib/redux/hooks";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { Badge } from "@ai-matrx/design-system/controls";
 
 // ---------------------------------------------------------------------------
 // Minimal normalization helpers (inlined from features/prompts/utils so this
@@ -214,9 +215,7 @@ export function FullPromptOptimizer({
           <DialogTitle className="flex items-center gap-2">
             <Rainbow className="h-5 w-5 text-amber-600 dark:text-amber-400" />
             Full Prompt Optimizer
-            <span className="text-xs px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 font-normal">
-              EXPERIMENTAL
-            </span>
+            <Badge tone="warning">Experimental</Badge>
           </DialogTitle>
         </DialogHeader>
 

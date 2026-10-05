@@ -44,7 +44,7 @@ export async function ExamCuratedLibrary({
       <div className="mx-auto max-w-6xl px-4 sm:px-6 py-14 sm:py-20">
         <div className="text-center mb-10">
           <div className="inline-flex items-center gap-2 mb-3">
-            <CertifiedBadge size="md" humanVerified={anyHumanVerified} />
+            <CertifiedBadge humanVerified={anyHumanVerified} />
           </div>
           <h2 className="text-[clamp(1.5rem,1.25rem+1.5vw,2.5rem)] font-bold tracking-tight">
             {examName} study library

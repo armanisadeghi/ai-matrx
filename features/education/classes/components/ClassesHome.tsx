@@ -41,6 +41,7 @@ import {
 } from "../classAgentWrites";
 import { setAccessMode } from "../service";
 import { buildEducationClassesScope } from "../classesSurfaceScope";
+import { Chip } from "@ai-matrx/design-system/controls";
 
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
@@ -276,7 +277,8 @@ export function ClassesHome() {
     <EducationToolHeader title="My Classes" />
     <div className="matrx-touch-targets mx-auto w-full max-w-3xl space-y-5 px-4 pb-4">
       <div className="flex items-center justify-end">
-        <Button icon={<Plus />} variant="primary" onClick={() => setDialogOpen(true)}>
+        <Button size="sm" className="gap-1.5" onClick={() => setDialogOpen(true)}>
+          <Plus className="h-4 w-4" />
           New class
         </Button>
       </div>
@@ -295,7 +297,8 @@ export function ClassesHome() {
             No classes yet. Add the courses you&apos;re taking — then tag your
             study material to them.
           </p>
-          <Button icon={<Plus />} variant="primary" onClick={() => setDialogOpen(true)}>
+          <Button size="sm" className="gap-1.5" onClick={() => setDialogOpen(true)}>
+            <Plus className="h-4 w-4" />
             Add your first class
           </Button>
         </div>
@@ -330,12 +333,13 @@ export function ClassesHome() {
                   {cls.name}
                 </span>
                 <Button
-                  icon={<ArchiveRestore />}
                   variant="outline"
-                  className="shrink-0"
+                  size="sm"
+                  className="h-7 shrink-0 gap-1.5 text-xs"
                   disabled={restoringId === cls.id}
                   onClick={() => void handleRestore(cls)}
                 >
+                  <ArchiveRestore className="h-3.5 w-3.5" />
                   Restore
                 </Button>
               </li>
@@ -360,9 +364,7 @@ export function ClassesHome() {
                   settings={{ ...c.settings, accessMode: c.accessMode }}
                   statusChip={
                     JOINED_STATUS_LABEL[c.myStatus] ? (
-                      <span className="shrink-0 rounded-full bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-600 dark:text-amber-400">
-                        {JOINED_STATUS_LABEL[c.myStatus]}
-                      </span>
+                      <Chip tone="warning" label={JOINED_STATUS_LABEL[c.myStatus]} />
                     ) : undefined
                   }
                 />

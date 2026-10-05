@@ -47,6 +47,7 @@ import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { createEducationFamilyScope, type FamilyLinkEntry } from "@/features/surfaces/manifests/education-family.manifest";
 import { guardianLinkWriteHandlers } from "../guardianLinkWrites";
+import { Chip } from "@ai-matrx/design-system/controls";
 
 function displayName(link: GuardianLinkView): string {
   return link.counterpart_name?.trim() || link.counterpart_email || "Learner";
@@ -216,25 +217,26 @@ export function FamilyDashboard() {
                 </div>
                 <div className="flex shrink-0 items-center gap-1.5">
                   <Button
-                    icon={busy === `respond-${link.id}` ? (
-                      <Loader2 className="animate-spin" />
-                    ) : (
-                      <Check />
-                    )}
-                    type="submit"
-                    variant="primary"
+                    size="sm"
+                    className="h-8 gap-1"
                     disabled={busy === `respond-${link.id}`}
                     onClick={() => respond(link, true)}
                   >
+                    {busy === `respond-${link.id}` ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Check className="h-3.5 w-3.5" />
+                    )}
                     Approve
                   </Button>
                   <Button
-                    icon={<X />}
-                    type="submit"
-                    variant="quiet"
+                    size="sm"
+                    variant="ghost"
+                    className="h-8 gap-1 text-muted-foreground"
                     disabled={busy === `respond-${link.id}`}
                     onClick={() => respond(link, false)}
                   >
+                    <X className="h-3.5 w-3.5" />
                     Decline
                   </Button>
                 </div>
@@ -296,14 +298,14 @@ export function FamilyDashboard() {
                       </span>
                     </button>
                     {isVerified && (
-                      <span className="hidden shrink-0 items-center gap-1 rounded-full bg-green-500/10 px-2 py-0.5 text-[11px] font-medium text-green-600 dark:text-green-500 sm:inline-flex">
-                        <BadgeCheck className="h-3.5 w-3.5" />
-                        Consent verified
+                      <span className="hidden shrink-0 sm:contents">
+                        <Chip tone="success" icon={<BadgeCheck />} label="Consent verified" />
                       </span>
                     )}
                     <Button
-                      type="submit"
-                      variant="quiet"
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 px-2 text-xs text-muted-foreground"
                       disabled={busy === `remove-${link.id}`}
                       onClick={() => removeLink(link, isVerified)}
                     >
@@ -321,12 +323,11 @@ export function FamilyDashboard() {
                         </span>
                       </p>
                       <Button
-                        icon={<ShieldCheck />}
-                        type="submit"
-                        variant="primary"
-                        className="shrink-0"
+                        size="sm"
+                        className="h-8 shrink-0 gap-1.5"
                         onClick={() => setVerifyTarget(link)}
                       >
+                        <ShieldCheck className="h-3.5 w-3.5" />
                         Verify consent
                       </Button>
                     </div>
@@ -367,16 +368,15 @@ export function FamilyDashboard() {
             className="text-base sm:text-sm"
           />
           <Button
-            icon={busy === "request" ? (
-              <Loader2 className="animate-spin" />
-            ) : (
-              <UserPlus />
-            )}
-            variant="primary"
             type="submit"
-            className="shrink-0"
+            className="shrink-0 gap-1.5"
             disabled={busy === "request"}
           >
+            {busy === "request" ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <UserPlus className="h-4 w-4" />
+            )}
             Send request
           </Button>
         </form>
@@ -392,8 +392,9 @@ export function FamilyDashboard() {
                   Awaiting approval from {link.counterpart_email}
                 </span>
                 <Button
-                  type="submit"
-                  variant="quiet"
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 px-2 text-xs"
                   disabled={busy === `remove-${link.id}`}
                   onClick={() => removeLink(link)}
                 >
@@ -427,16 +428,16 @@ export function FamilyDashboard() {
             className="text-base sm:text-sm"
           />
           <Button
-            icon={busy === "grant" ? (
-              <Loader2 className="animate-spin" />
-            ) : (
-              <ShieldCheck />
-            )}
             type="submit"
             variant="outline"
-            className="shrink-0"
+            className="shrink-0 gap-1.5"
             disabled={busy === "grant"}
           >
+            {busy === "grant" ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <ShieldCheck className="h-4 w-4" />
+            )}
             Grant access
           </Button>
         </form>

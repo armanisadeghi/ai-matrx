@@ -34,6 +34,7 @@ import {
   type GeneratedArtifact,
 } from "./lineage";
 import { LineageArtifactList } from "./LineageArtifactList";
+import { Chip } from "@ai-matrx/design-system/controls";
 
 export function MadeFromSource({
   /** The artifact's canonical token ("fc_set", "study_media", "note", "assessment"). */
@@ -117,15 +118,9 @@ export function MadeFromSource({
         {/* The KIT door. The sibling list answers "what else exists"; this
             answers "take me to the whole thing", which is the page the learner
             actually wants when they arrive on one piece of it. */}
-        <Link
-          href={kitHref(origin.entityType, origin.entityId)}
-          title="Everything made from this material"
-          data-tap-target
-          className="inline-flex min-w-0 items-center gap-1.5 rounded-md border border-primary/40 bg-primary/10 px-2 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/15"
-        >
-          <Package className="h-3.5 w-3.5 shrink-0" />
-          <span className="truncate">Related</span>
-        </Link>
+        <Chip asChild tone="primary" icon={<Package />} label="Related" title="Everything made from this material">
+          <Link href={kitHref(origin.entityType, origin.entityId)} />
+        </Chip>
       </div>
 
       <LineageArtifactList

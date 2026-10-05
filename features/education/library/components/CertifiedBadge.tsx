@@ -1,6 +1,6 @@
 import { BadgeCheck } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
+import { Chip } from "@ai-matrx/design-system/controls";
 
 /**
  * The content trust mark. ONE component everywhere so the signal reads
@@ -27,13 +27,11 @@ import { AGENT_ICON } from "@/components/icons/domain-icons";
 export function CertifiedBadge({
   humanVerified = false,
   note,
-  size = "sm",
   className,
 }: {
   /** A human expert has signed off. Defaults to false — the honest default. */
   humanVerified?: boolean;
   note?: string | null;
-  size?: "sm" | "md";
   className?: string;
 }) {
   const Icon = humanVerified ? BadgeCheck : AGENT_ICON;
@@ -45,19 +43,12 @@ export function CertifiedBadge({
       : "Built by AI and curated by AI Matrx. A human expert has not verified it yet.");
 
   return (
-    <span
+    <Chip
+      tone={humanVerified ? "success" : "neutral"}
+      icon={<Icon />}
+      label={label}
       title={title}
-      className={cn(
-        "inline-flex items-center gap-1 rounded-full border font-medium",
-        humanVerified
-          ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-          : "border-border bg-muted text-muted-foreground",
-        size === "sm" ? "px-2 py-0.5 text-xs" : "px-2.5 py-1 text-xs",
-        className,
-      )}
-    >
-      <Icon className={size === "sm" ? "h-3.5 w-3.5" : "h-4 w-4"} />
-      {label}
-    </span>
+      className={className}
+    />
   );
 }

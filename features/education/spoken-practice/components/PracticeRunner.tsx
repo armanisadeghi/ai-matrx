@@ -32,6 +32,7 @@ import { Button } from "@/components/ui/button";
 import { MODE_CONFIG } from "../constants";
 import type { SpokenPracticeMode } from "../types";
 import type { UseSpokenPractice } from "../hooks/useSpokenPractice";
+import { Chip } from "@ai-matrx/design-system/controls";
 
 const PRONUNCIATION_DIMS: { key: keyof PronunciationAssessment; label: string }[] =
   [
@@ -92,7 +93,9 @@ export function PracticeRunner({
           {cfg.label} · {index + 1} of {total}
         </span>
         <Button
-          variant="quiet"
+          variant="ghost"
+          size="sm"
+          className="text-xs text-muted-foreground"
           onClick={practice.quit}
         >
           End session
@@ -102,23 +105,15 @@ export function PracticeRunner({
       <div className="flex flex-1 flex-col items-center justify-center gap-5 text-center">
         {(phase === "asking" || phase === "answering") && current && (
           <>
-            <span
-              className={cn(
-                "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium",
+            <Chip
+              tone={phase === "answering" ? "destructive" : "primary"}
+              icon={phase === "answering" ? <Mic /> : <Volume2 />}
+              label={
                 phase === "answering"
-                  ? "bg-red-500/10 text-red-600 dark:text-red-400"
-                  : "bg-primary/10 text-primary",
-              )}
-            >
-              {phase === "answering" ? (
-                <Mic className="h-3.5 w-3.5" />
-              ) : (
-                <Volume2 className="h-3.5 w-3.5" />
-              )}
-              {phase === "answering"
-                ? `${cfg.answerVerb} out loud…`
-                : `${cfg.persona} is speaking…`}
-            </span>
+                  ? `${cfg.answerVerb} out loud…`
+                  : `${cfg.persona} is speaking…`
+              }
+            />
 
             <p className="max-w-xl text-xl font-semibold leading-snug text-foreground sm:text-2xl">
               {current.prompt}
@@ -127,7 +122,8 @@ export function PracticeRunner({
             {phase === "answering" && (
               <>
                 <MicMeter level={micLevel} />
-                <Button icon={<Square />} variant="primary" onClick={practice.submitAnswer}>
+                <Button className="gap-2" onClick={practice.submitAnswer}>
+                  <Square className="h-4 w-4" />
                   Done answering
                 </Button>
                 <button
@@ -186,8 +182,9 @@ export function PracticeRunner({
               <SourceCitations trust={current.trust} className="mt-2" />
             </div>
 
-            <Button iconEnd={<ChevronRight />} variant="primary" className="w-full" onClick={practice.next}>
+            <Button className="w-full gap-1.5" onClick={practice.next}>
               {index + 1 >= total ? "Finish & get review" : "Next"}
+              <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
         )}

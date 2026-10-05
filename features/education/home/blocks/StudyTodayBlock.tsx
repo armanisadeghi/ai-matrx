@@ -16,7 +16,7 @@
 import Link from "next/link";
 import { ArrowRight, ChevronRight, Coffee, Flame } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Button as ControlButton, ControlRow, RowGroup, SettingRow } from "@ai-matrx/design-system/controls";
+import { Button as ControlButton, Chip, ControlRow, RowGroup, SettingRow } from "@ai-matrx/design-system/controls";
 import { MandateDoorLink } from "@/features/mandates/components/MandateDoorLink";
 import { InstallStudyAppButton } from "../../components/InstallStudyAppButton";
 import type { EducationSnapshot } from "../types";
@@ -35,15 +35,10 @@ export function StudyTodayBlock({ snapshot }: { snapshot: EducationSnapshot }) {
             Study today
           </h2>
           {totalMinutes > 0 && (
-            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-              ~{totalMinutes} min
-            </span>
+            <Chip tone="primary" label={`~${totalMinutes} min`} />
           )}
           {study.streakDays > 0 && (
-            <span className="matrx-glyph-trim inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-600 dark:text-amber-400">
-              <Flame className="h-3.5 w-3.5" />
-              {study.streakDays}-day streak
-            </span>
+            <Chip tone="amber" icon={<Flame />} label={`${study.streakDays}-day streak`} />
           )}
         </div>
         {/* One control row: every action here is the same quiet control, so the
@@ -89,7 +84,7 @@ export function StudyTodayBlock({ snapshot }: { snapshot: EducationSnapshot }) {
               Nothing due right now — get ahead with a new set or a practice quiz.
             </p>
           </div>
-          <Button asChild variant="outline">
+          <Button asChild size="sm" variant="outline">
             <Link href="/education/library">Study something</Link>
           </Button>
         </div>
