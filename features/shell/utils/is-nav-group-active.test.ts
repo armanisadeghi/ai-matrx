@@ -73,14 +73,56 @@ describe("shell navigation route ownership", () => {
     expect(owner("/chat/message-templates")).toBe("Communications");
     expect(owner("/agents/orchestras")).toBe("Workflows");
     expect(owner("/agents/all")).toBe("Agents");
-    expect(owner("/agent-connections/plugins")).toBe("Coding");
+    expect(owner("/agent-connections/plugins")).toBe("Code");
     expect(owner("/agent-connections/skills")).toBe("Agents");
-    expect(owner("/notes")).toBe("Workspace");
-    expect(owner("/transcripts/studio")).toBe("Media");
-    expect(owner("/print/qr")).toBe("Media");
+    expect(owner("/notes")).toBe("Content");
+    expect(owner("/transcripts/studio")).toBe("Audio");
+    expect(owner("/print/qr")).toBe("Publish");
     expect(owner("/legal/ca-wc/cases")).toBe("Industries");
     expect(owner("/free/games/tic-tac-toe")).toBe("Other");
-    expect(owner("/free/data-truncator")).toBe("Workspace");
+    expect(owner("/free/data-truncator")).toBe("Content");
+  });
+
+  // The corrected domain tree (Arman, 2026-10-04): each moved family lights
+  // its new strip icon.
+  it("lights the strip icon of each family the domain tree moved", () => {
+    const owner = (path: string) => findOwningNavItem(path, primaryNavItems)?.label;
+    expect(owner("/files")).toBe("Files");
+    expect(owner("/files/all")).toBe("Files");
+    expect(owner("/files/trash")).toBe("Files");
+    expect(owner("/tools/pdf-extractor")).toBe("Files");
+    expect(owner("/notes")).toBe("Content");
+    expect(owner("/notes/abc")).toBe("Content");
+    expect(owner("/workbooks")).toBe("Content");
+    expect(owner("/esign")).toBe("Content");
+    expect(owner("/data")).toBe("Data");
+    expect(owner("/data/some-table")).toBe("Data");
+    expect(owner("/shapes/all")).toBe("Data");
+    expect(owner("/scopes")).toBe("Data");
+    expect(owner("/war-room")).toBe("Board");
+    expect(owner("/war-room/all")).toBe("Board");
+    expect(owner("/board")).toBe("Board");
+    expect(owner("/board/all")).toBe("Board");
+    expect(owner("/dashboard")).toBe("Board");
+    expect(owner("/transcripts")).toBe("Audio");
+    expect(owner("/transcripts/scribe")).toBe("Audio");
+    expect(owner("/voice/playground")).toBe("Audio");
+    expect(owner("/user-settings/voice/voices")).toBe("Audio");
+    expect(owner("/images")).toBe("Media");
+    expect(owner("/libraries")).toBe("Media");
+    expect(owner("/tools/scanner")).toBe("Media");
+    expect(owner("/projects")).toBe("Projects");
+    expect(owner("/tasks")).toBe("Projects");
+    expect(owner("/scraper")).toBe("Web");
+    expect(owner("/search")).toBe("Web");
+    expect(owner("/connect-computer")).toBe("Web");
+    expect(owner("/reports")).toBe("Intelligence");
+    expect(owner("/reports/agent-drift")).toBe("Intelligence");
+    expect(owner("/acquisition")).toBe("Knowledge");
+    expect(owner("/print")).toBe("Publish");
+    expect(owner("/tools/product-capture")).toBe("Industries");
+    expect(owner("/capture/needs-you")).toBe("Industries");
+    expect(owner("/code")).toBe("Code");
   });
 
   it("activates Publish for nested CMS routes through its CMS child", () => {
@@ -153,8 +195,8 @@ describe("shell navigation route ownership", () => {
   });
 
   it("never lights a new-tab launcher as the current route", () => {
-    const workspace = primaryNavItems.find((item) => item.label === "Workspace")!;
-    expect(findActiveNavChild("/launchpad", workspace)?.label).not.toBe("Launchpad");
+    const board = primaryNavItems.find((item) => item.label === "Board")!;
+    expect(findActiveNavChild("/launchpad", board)?.label).not.toBe("Launchpad");
   });
 
   // /user-settings lit Account, /user-settings/appearance lit nothing: the

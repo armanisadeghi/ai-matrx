@@ -247,10 +247,13 @@ const CREATE_ACTIONS_BEFORE_DOMAIN_TREE: readonly string[] = [
 ];
 
 /**
- * The domain tree's product domains, in its order ("Product — what users
- * see"), then the ONE Industries menu, then the temporary Other holding pen.
+ * The domain tree's product domains (corrected tree, Arman 2026-10-04): Board
+ * (the home) with Projects beside it, then the tree's "Product — what users
+ * see" order, then the ONE Industries menu, then the temporary Other pen.
  */
 const DOMAIN_ORDER = [
+  "Board",
+  "Projects",
   "Agents",
   "Applets",
   "Chat",
@@ -258,14 +261,18 @@ const DOMAIN_ORDER = [
   "Intelligence",
   "Masterwork",
   "Knowledge",
-  "Publish",
+  "Web",
+  "Content",
+  "Data",
+  "Files",
   "Media",
-  "Workspace",
+  "Audio",
+  "Code",
+  "Publish",
   "Communications",
   "CRM",
   "Marketing",
   "Human Resources",
-  "Coding",
   "Integrations",
   "Account",
   "Industries",
@@ -275,8 +282,8 @@ const DOMAIN_ORDER = [
 /** The industries, in menu order. Adding one is ONE entry in nav-data. */
 const INDUSTRIES = ["Education", "Legal", "Commerce", "Medical"] as const;
 
-/** Top-level menus that open sub-areas instead of one long list. */
-const THREE_LEVEL_MENUS = ["Industries", "Media", "Workspace"] as const;
+/** Top-level menus whose every row is a sub-area (one per industry). */
+const THREE_LEVEL_MENUS = ["Industries"] as const;
 
 /** A flyout longer than this is the "hundreds of items all in one" Arman ruled out. */
 const MAX_FLYOUT_ROWS = 20;
@@ -572,6 +579,7 @@ const GUEST_OK_SINCE_DOMAIN_TREE: readonly string[] = [
   "/print/branded-qr",
   "/print/zpl",
   "/search",
+  "/voice",
 ];
 
 type GuestNode = Pick<ShellNavChild, "href" | "panelAction" | "action" | "guestHidden"> & {
@@ -687,7 +695,7 @@ describe("main menu — nothing is lost", () => {
     expect(medical?.href).toBe("/medical");
   });
 
-  it("opens Media and Workspace as sub-areas, not one long list", () => {
+  it("opens Industries as sub-areas only, not one long list", () => {
     for (const label of THREE_LEVEL_MENUS) {
       const rows = topItem(label).children ?? [];
       const flat = rows.filter((row) => !row.children?.length);
@@ -700,6 +708,36 @@ describe("main menu — nothing is lost", () => {
       .filter((item) => (item.children?.length ?? 0) > MAX_FLYOUT_ROWS)
       .map((item) => `${item.label} (${item.children?.length})`);
     expect(long).toEqual([]);
+  });
+
+  it("separates the five stuff domains Arman named: Content, Data, Files, Media, Audio", () => {
+    const owner = (href: string) =>
+      primaryNavItems.find((item) => {
+        let hit = false;
+        walk(item.children ?? [], (node) => {
+          if (node.href === href && isDestination(node)) hit = true;
+        });
+        return hit;
+      })?.label;
+    expect(owner("/notes")).toBe("Content");
+    expect(owner("/workbooks")).toBe("Content");
+    expect(owner("/data")).toBe("Data");
+    expect(owner("/shapes/all")).toBe("Data");
+    expect(owner("/files/all")).toBe("Files");
+    expect(owner("/tools/pdf-extractor")).toBe("Files");
+    expect(owner("/images")).toBe("Media");
+    expect(owner("/transcripts")).toBe("Audio");
+    expect(owner("/war-room")).toBe("Board");
+    expect(owner("/reports")).toBe("Intelligence");
+    expect(owner("/print")).toBe("Publish");
+    expect(owner("/tools/product-capture")).toBe("Industries");
+  });
+
+  it("never gives Knowledge the database icon (Data owns it)", () => {
+    expect(topItem("Knowledge").iconName).not.toBe("Database");
+    expect(topItem("Data").iconName).toBe("Database");
+    const icons = primaryNavItems.map((item) => item.iconName);
+    expect(icons.length).toBe(new Set(icons).size);
   });
 
   it("never nests deeper than three levels", () => {
