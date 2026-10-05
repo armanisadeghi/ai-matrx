@@ -11,8 +11,8 @@
  *     Websites · Transcripts · Conversations · Tables · Workbooks · Saved results;
  *   - `processed_document` is listed from the person's saved web pages (Websites);
  *   - `dataset` is listed from the record store: Tables AND pick lists (a Pick list is a Table;
- *     its rows carry a "Pick list" badge), every one picked as the ONE token `dataset` — the
- *     server reads the table and decides whether it is rows or a pick list's choices.
+ *     its rows carry a "Pick list" badge); a table is picked as `dataset`, a pick list as
+ *     `structured_list` — one server reader, two registry labels ("Table" / "Pick list").
  */
 
 import type { ComponentType } from "react";

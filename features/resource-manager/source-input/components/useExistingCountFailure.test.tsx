@@ -27,7 +27,7 @@ jest.mock("@/features/resource-manager/source-input/savedWebPages", () => ({
   fetchSavedSourcesPage: () => Promise.resolve([]),
 }));
 jest.mock("@/features/resource-manager/source-input/recordStoreKinds", () => ({
-  RECORD_STORE_TOKEN: { table: "dataset", pick_list: "dataset" },
+  RECORD_STORE_TOKEN: { table: "dataset", pick_list: "structured_list" },
   countTablesAndPickLists: () => Promise.resolve(3),
   fetchTablesPage: () => Promise.resolve([]),
 }));

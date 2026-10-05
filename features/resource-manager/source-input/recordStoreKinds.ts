@@ -28,8 +28,8 @@ export type RecordStoreKind = "table" | "pick_list";
 /** The Source token a picked row of each record-store kind is sent as. */
 export const RECORD_STORE_TOKEN: Record<RecordStoreKind, string> = {
   table: "dataset",
-  // ONE token for both (2026-10-05): the server reads the table and decides rows vs choices.
-  pick_list: "dataset",
+  // The server reads both with one reader; the token only names the card ("Table" / "Pick list").
+  pick_list: "structured_list",
 };
 
 /** The badge a pick list's row carries inside Tables (vocabulary: a Pick list is a Table). */
@@ -38,6 +38,8 @@ export const PICK_LIST_BADGE = "Pick list";
 /** A Tables row; `badge` set on a pick list. */
 export interface TablesItem extends KindItem {
   badge?: string;
+  /** Set on a pick list: the row is picked as this token, not the entry's. */
+  token?: string;
 }
 
 /**
@@ -54,7 +56,7 @@ export async function listTablesAndPickLists(scope: KindScope, userId: string, q
   ]);
   const listIds = new Set(lists.map((l) => l.id));
   return [
-    ...lists.map((l) => ({ ...l, badge: PICK_LIST_BADGE })),
+    ...lists.map((l) => ({ ...l, badge: PICK_LIST_BADGE, token: RECORD_STORE_TOKEN.pick_list })),
     ...tables.filter((t) => !listIds.has(t.id)),
   ].sort((a, b) => String(b.updatedAt ?? "").localeCompare(String(a.updatedAt ?? "")));
 }
