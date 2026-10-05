@@ -27,6 +27,14 @@ import {
 import { resolveCmsCaller, type CmsCaller } from "../_lib/cmsAccess";
 import { logCmsActivity } from "../_lib/activityLog";
 import {
+  cmsWritingBlockedResponse,
+  liveEditOf,
+  publishWritingCheck,
+  type PublishWritingCheckResult,
+  supabaseWritingReads,
+  withWritingCheckHeader,
+} from "../_lib/publishWritingCheck";
+import {
   splitHtmlDocument,
   slugifyTitle,
   SLUG_RE,
@@ -665,6 +673,29 @@ export async function POST(request: NextRequest) {
         const blockedResponse = cmsContentBlockedResponse(contentValidation);
         if (blockedResponse) return blockedResponse;
 
+        // A save to a published page (or one that publishes it) puts text live
+        // as surely as "publish": the same writing gate, judged on this edit.
+        const { data: liveRow } = await db
+          .from("client_pages")
+          .select("is_published, plan_node_id")
+          .eq("id", pageId)
+          .maybeSingle();
+        const live = liveRow as { is_published?: boolean; plan_node_id?: string | null } | null;
+        const goesLive = Boolean(live?.is_published) || updateData.is_published === true;
+        const liveEdit = liveEditOf(updateData);
+        let liveWritingCheck: PublishWritingCheckResult | null = null;
+        if (goesLive && (liveEdit || updateData.is_published === true)) {
+          const writingCheck = await publishWritingCheck({
+            pageId,
+            planNodeId: live?.plan_node_id,
+            accessToken,
+            reads: supabaseWritingReads(mainSupabase),
+            liveEdit: liveEdit ?? {},
+          });
+          if (writingCheck.blocked) return respond(cmsWritingBlockedResponse(writingCheck));
+          liveWritingCheck = writingCheck;
+        }
+
         const { data, error } = await writeOneRow(
           db
             .from("client_pages")
@@ -692,7 +723,9 @@ export async function POST(request: NextRequest) {
           changes: { fields: Object.keys(updateData) },
         });
 
-        return respond(NextResponse.json({ success: true, page: data }));
+        return respond(
+          withWritingCheckHeader(NextResponse.json({ success: true, page: data }), liveWritingCheck),
+        );
       }
 
       // ── Link this page to the web.page it serves ──────────────────
@@ -924,6 +957,22 @@ export async function POST(request: NextRequest) {
           );
         }
 
+        // The writing gate: an organization that set its writing check to
+        // block gets a block on an SEO page (one realizing a plan node). Warn
+        // and off never reach the server. See _lib/publishWritingCheck.ts.
+        const { data: gateRow } = await db
+          .from("client_pages")
+          .select("plan_node_id")
+          .eq("id", pageId)
+          .maybeSingle();
+        const writingCheck = await publishWritingCheck({
+          pageId,
+          planNodeId: (gateRow as { plan_node_id?: string | null } | null)?.plan_node_id,
+          accessToken,
+          reads: supabaseWritingReads(mainSupabase),
+        });
+        if (writingCheck.blocked) return cmsWritingBlockedResponse(writingCheck);
+
         const { data, error } = await db.rpc("publish_page_draft", {
           page_uuid: pageId,
           publisher_id: user.id,
@@ -950,7 +999,10 @@ export async function POST(request: NextRequest) {
           userEmail: user.email,
         });
 
-        return NextResponse.json({ success: true, published: data, page });
+        return withWritingCheckHeader(
+          NextResponse.json({ success: true, published: data, page }),
+          writingCheck,
+        );
       }
 
       // ── Discard draft (RPC) ──────────────────────────────────────

@@ -30,7 +30,11 @@ import {
   CmsPageAiActionDialog,
   type CmsPageAiIntent,
 } from "@/features/cms/components/CmsPageAiActionDialog";
-import { CmsPageService } from "@/features/cms/services/cmsService";
+import {
+  CmsPageService,
+  type CmsWritingMustFix,
+  writingBlockOf,
+} from "@/features/cms/services/cmsService";
 import { cmsPageEditorHref } from "@/features/cms/utils/cmsRoutes";
 import { CMS_PAGE_CONTEXT_MENU_PROPS } from "@/features/cms/agent-context/cmsPageContextMenuProps";
 import { createCmsPageExtraSections } from "@/features/cms/agent-context/cmsPageExtraSections";
@@ -450,9 +454,18 @@ export default function PageEditor({
     });
   };
 
+  // Organization chose to block writing tells: the refusal's list, shown in a dialog.
+  const [writingBlock, setWritingBlock] = useState<CmsWritingMustFix[] | null>(null);
+
   const handlePublish = async () => {
     if (!page) return;
-    await onPublish(page.id);
+    try {
+      await onPublish(page.id);
+    } catch (err) {
+      const mustFix = writingBlockOf(err);
+      if (mustFix === null) throw err;
+      setWritingBlock(mustFix);
+    }
   };
 
   const handleDiscard = () => {
@@ -1416,6 +1429,32 @@ export default function PageEditor({
             </EditableContextMenu>
           );
         })()}
+
+        <ConfirmDialog
+          open={writingBlock !== null}
+          onOpenChange={(open) => !open && setWritingBlock(null)}
+          title="Fix before publishing"
+          description="Your organization blocks these writing tells."
+          content={
+            <div className="space-y-2 text-sm">
+              <ul className="space-y-1.5">
+                {(writingBlock ?? []).map((item, index) => (
+                  <li key={`${item.field}-${item.rule_id}-${index}`}>
+                    <span className="font-medium">&ldquo;{item.match}&rdquo;</span>{" "}
+                    <span className="text-muted-foreground">({item.field})</span>
+                    <div className="text-muted-foreground">{item.fix_hint}</div>
+                  </li>
+                ))}
+              </ul>
+              <p className="text-xs text-muted-foreground">
+                Or allow the words, turn off the rule, or set the check to warn in Brand voice settings.
+              </p>
+            </div>
+          }
+          confirmLabel="OK"
+          cancelLabel={null}
+          onConfirm={() => setWritingBlock(null)}
+        />
 
         <ConfirmDialog
           open={discardConfirmOpen}

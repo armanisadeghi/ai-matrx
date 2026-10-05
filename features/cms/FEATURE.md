@@ -373,6 +373,13 @@ leading slash, no trailing slash, **arbitrary depth**. Sites are no longer cappe
 `POST /api/cms/pages {action: "save-draft"|"update"}` → ownership check
 (`verifyPageOwnership`) → DB write → `logCmsActivity(actor: "human")`. Publish goes through the
 `publish_page_draft` RPC the same way; discard likewise. Rollback goes through `version_restore`.
+**Writing gate:** for a page that realizes a plan node (an SEO page), "publish" — and an "update" that
+writes live text of a published page — first reads the organization's
+`brand_voice.writing_check_severity` from Supabase; only at `block` does it ask aidream
+`POST /cms/publish-check` (`app/api/cms/_lib/publishWritingCheck.ts`). Must-fix hits return 422
+`cms_writing_check_blocked` (`must_fix`, `lift`) and `PageEditor` shows them in a dialog with the
+three ways to lift the block. Warn/off never call the server; an unreachable check publishes with
+`X-Cms-Writing-Check: skipped`. Tests: `app/api/cms/cmsPublishWritingGate.test.ts`.
 
 ### 1b. Human reads / restores a version
 

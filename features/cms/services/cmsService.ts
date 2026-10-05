@@ -51,13 +51,36 @@ export class SiteNotEmptyError extends Error {
 export class CmsApiError extends Error {
   readonly status: number;
   readonly code: string | null;
+  /** The refusal's whole JSON body (e.g. `must_fix` + `lift` for a writing block). */
+  readonly details: Record<string, unknown> | null;
 
-  constructor(message: string, status: number, code: string | null) {
+  constructor(
+    message: string,
+    status: number,
+    code: string | null,
+    details: Record<string, unknown> | null = null,
+  ) {
     super(message);
     this.name = "CmsApiError";
     this.status = status;
     this.code = code;
+    this.details = details;
   }
+}
+
+/** One must-fix writing item from a `cms_writing_check_blocked` publish refusal. */
+export interface CmsWritingMustFix {
+  field: string;
+  rule_id: string;
+  match: string;
+  fix_hint: string;
+}
+
+/** The must-fix list when this error is a writing-check publish block, else null. */
+export function writingBlockOf(error: unknown): CmsWritingMustFix[] | null {
+  if (!(error instanceof CmsApiError) || error.code !== "cms_writing_check_blocked") return null;
+  const items = error.details?.must_fix;
+  return Array.isArray(items) ? (items as CmsWritingMustFix[]) : [];
 }
 
 function isResponseObject(value: unknown): value is Record<string, unknown> {
@@ -84,7 +107,7 @@ async function callApi<T = unknown>(
         ? body.error
         : `CMS API error: ${response.status}`;
     const code = typeof body?.code === "string" ? body.code : null;
-    throw new CmsApiError(message, response.status, code);
+    throw new CmsApiError(message, response.status, code, body);
   }
 
   return data as T;
