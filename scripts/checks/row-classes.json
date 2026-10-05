@@ -687,6 +687,20 @@
       "reason": "no database access in 7 file(s) reached",
       "evidence": []
     },
+    "bare-secret-fill": {
+      "label": "Bare secret fill",
+      "class": "repo-only",
+      "cmd": "pnpm check:fill-secret:strict",
+      "reason": "no database access in 2 file(s) reached",
+      "evidence": []
+    },
+    "bare-secret-fill-self-test": {
+      "label": "Bare secret fill — self-test",
+      "class": "repo-only",
+      "cmd": "pnpm check:fill-secret:self-test",
+      "reason": "no database access in 3 file(s) reached",
+      "evidence": []
+    },
     "one-control": {
       "label": "One control",
       "class": "repo-only",

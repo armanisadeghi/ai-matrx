@@ -249,6 +249,14 @@ export const CONVERTED = [
     reasonedKeys: () => Object.entries(json("scripts/ui-drift/baseline.json").reasons ?? {}).filter(([, v]) => withReason(v)).map(([k]) => k),
   },
   {
+    // No baseline: every item is new (the repo shipped with zero bare secret fills).
+    id: "bare-secret-fill",
+    cmd: "pnpm check:fill-secret:strict",
+    allowKeys: () => [],
+    keyShape: /^bare-secret-fill\|[^|]+\.(m?js|cjs|tsx?)$/,
+    mayBeClean: true,
+  },
+  {
     // No baseline: every item is new (the controls shipped with zero sites).
     id: "one-control",
     cmd: "pnpm check:one-control:strict",

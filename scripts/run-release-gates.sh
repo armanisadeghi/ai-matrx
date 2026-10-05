@@ -294,6 +294,9 @@ if $STRICT; then
         "UI drift|pnpm check:ui-drift:strict"
         # THE ONE CONTROL (owner, 2026-10-04): retired uc-* prototype classes and visual overrides
         # on @ai-matrx/design-system/controls. Loud via findings; never blocks a release.
+        # A secret filled with a bare .fill( echoes in Playwright's timeout error (2026-10-05).
+        "Bare secret fill|pnpm check:fill-secret:strict"
+        "Bare secret fill — self-test|pnpm check:fill-secret:self-test"
         "One control|pnpm check:one-control:strict"
         "One control — self-test|pnpm check:one-control:self-test"
         # PAGE-TOP TEMPLATES (owner, 2026-10-05): a page top hand-built on a raw <PageHeader>, or a
@@ -1111,6 +1114,8 @@ else
         "Floating clearance — self-test|pnpm check:floating-clearance:self-test"
         "UI drift|pnpm check:ui-drift"
         "One control|pnpm check:one-control"
+        "Bare secret fill|pnpm check:fill-secret"
+        "Bare secret fill — self-test|pnpm check:fill-secret:self-test"
         "UI drift — self-test|pnpm check:ui-drift:self-test"
         "No blocking dialogs (AI stays reachable)|pnpm check:blocking-dialogs"
         "No blocking dialogs — self-test|pnpm check:blocking-dialogs:self-test"
