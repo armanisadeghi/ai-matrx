@@ -31,7 +31,7 @@ export function SpacesHome() {
       <EmptyState
         icon={<FileText />}
         title={loadError ? "We couldn't load your pages" : "No pages yet"}
-        description={loadError ?? undefined}
+        line={loadError ?? undefined}
         action={
           loadError ? undefined : (
             <div className="flex flex-wrap justify-center gap-2">

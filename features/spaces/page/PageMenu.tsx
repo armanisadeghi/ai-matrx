@@ -73,7 +73,7 @@ export function PageMenu({
           <MoreHorizontal size={18} />
         </button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-[260px] p-1">
+      <PopoverContent surface="solid" align="end" className="w-[260px] p-1">
         <p className="px-2 pb-1 pt-1.5 text-xs text-muted-foreground">Style</p>
         <div className="grid grid-cols-3 gap-1 px-1 pb-1">
           {FONTS.map((f) => (

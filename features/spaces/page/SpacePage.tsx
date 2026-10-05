@@ -305,7 +305,7 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
               Share
             </button>
           </PopoverTrigger>
-          <PopoverContent align="end" className="w-[320px] p-2">
+          <PopoverContent surface="solid" align="end" className="w-[320px] p-2">
             <Button variant="outline" className="w-full" onClick={copyLink}>
               Copy link
             </Button>

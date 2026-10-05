@@ -4,7 +4,10 @@
  * 45px top bar). Colors: the ten content colors are a palette the writer picks (Notion's values,
  * stepped for dark); every chrome color comes from our semantic tokens. */
 
-.spaces-root {
+/* On the page root AND on <html> while Spaces is open: menus, the phone drawer and popovers portal
+ * to <body>, outside .spaces-root, and must read the same palette and the app's (not the OS's) theme. */
+.spaces-root,
+:root:has(.spaces-root) {
   --spaces-font-default: inherit;
   --spaces-font-serif: ui-serif, Georgia, Cambria, "Times New Roman", serif;
   --spaces-font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -37,7 +40,8 @@
   --spaces-bg-red: #fdebec;
 }
 
-.dark .spaces-root {
+.dark .spaces-root,
+:root.dark:has(.spaces-root) {
   --spaces-gray: #9b9b9b;
   --spaces-brown: #ba856f;
   --spaces-orange: #c77d48;

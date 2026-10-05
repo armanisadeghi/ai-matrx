@@ -29,6 +29,7 @@ import { useEffect, useState } from "react";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 import type { SpaceBlock } from "../contract";
+import { INSTANT_CLOSE, SLASH_MENU } from "./floating";
 import { makeBlockMenu, type BlockMenuActions } from "./BlockMenu";
 import { currentBlockId, duplicateBlocks, selectedOrCurrent } from "./block-actions";
 import { fromEngine, toEngine, type EngineBlock } from "./convert";
@@ -182,7 +183,7 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
       // The flash is a <style> rule, never a class on ProseMirror's DOM (its observer strips it).
       flashBlock(hash.slice("#block-".length));
     };
-    go(40);
+    go(100);
     const onHash = () => go(10);
     window.addEventListener("hashchange", onHash);
     return () => {
@@ -216,9 +217,10 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
       }}
       className="spaces-editor"
     >
-      <SuggestionMenuController triggerCharacter="/" getItems={async (query) => filterSuggestionItems(slashItems(editor, slash), query)} />
+      <SuggestionMenuController triggerCharacter="/" floatingUIOptions={SLASH_MENU} getItems={async (query) => filterSuggestionItems(slashItems(editor, slash), query)} />
       {editable ? (
       <SideMenuController
+        floatingUIOptions={INSTANT_CLOSE}
         sideMenu={(props) => (
           <SideMenu {...props}>
             <AddBlockButton />
@@ -229,6 +231,7 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
       ) : null}
       {editable ? (
       <FormattingToolbarController
+        floatingUIOptions={INSTANT_CLOSE}
         formattingToolbar={() => (
           <FormattingToolbar>
             <AskAiButton onClick={menu.askAi} />

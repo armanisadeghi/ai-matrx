@@ -60,7 +60,7 @@ function RowMenu({ space, onRename }: { space: SpaceSummary; onRename: () => voi
           <MoreHorizontal size={15} />
         </button>
       </PopoverTrigger>
-      <PopoverContent align="start" side="right" className="w-[240px] p-1" onClick={(e) => e.stopPropagation()}>
+      <PopoverContent surface="solid" align="start" side="right" className="w-[240px] p-1" onClick={(e) => e.stopPropagation()}>
         <button type="button" className="spaces-menu-row" onClick={act(() => spaces.toggleFavorite(space.id))}>
           <span className="spaces-menu-row-icon">{fav ? <StarOff size={16} /> : <Star size={16} />}</span>
           {fav ? "Remove from Favorites" : "Add to Favorites"}
@@ -141,7 +141,7 @@ function RenamePopover({ space, open, onOpenChange, children }: { space: SpaceSu
       }}
     >
       <PopoverAnchor asChild>{children}</PopoverAnchor>
-      <PopoverContent align="start" className="w-[300px] p-1.5">
+      <PopoverContent surface="solid" align="start" className="w-[300px] p-1.5">
         <Input
           autoFocus
           value={title}
@@ -314,7 +314,7 @@ function TemplatesPopover() {
           {sample.adding ? <span className="ml-auto text-xs text-muted-foreground">{sample.progress}</span> : null}
         </button>
       </PopoverTrigger>
-      <PopoverContent side="right" align="end" className="w-[300px] p-1">
+      <PopoverContent surface="solid" side="right" align="end" className="w-[300px] p-1">
         <button
           type="button"
           className="spaces-menu-row"
@@ -346,7 +346,7 @@ function TrashPopover() {
           Trash
         </button>
       </PopoverTrigger>
-      <PopoverContent side="right" align="end" className="w-[400px] p-2">
+      <PopoverContent surface="solid" side="right" align="end" className="w-[400px] p-2">
         <SearchField placeholder="Search pages in Trash" value={q} onChange={(e) => setQ(e.target.value)} className="w-full" />
         <div className="mt-2 max-h-[320px] overflow-y-auto">
           {list.map((s) => (

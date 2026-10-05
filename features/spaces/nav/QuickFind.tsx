@@ -8,6 +8,8 @@ import { Input } from "@ai-matrx/design-system/controls";
 import { CornerDownLeft, Search } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
+import { useClaimSearchKeys } from "@/features/shell/hooks/useClaimSearchKeys";
+
 import type { SpaceDoc } from "../contract";
 import { plainText } from "../editor/convert";
 import { SpaceIcon } from "../page/SpaceIcon";
@@ -33,22 +35,14 @@ export function QuickFind() {
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Cmd+K / Cmd+P anywhere in Spaces.
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey && (e.key === "k" || e.key === "p")) {
-        // Inside the editor Cmd+K is "add link" when text is selected (Notion does the same).
-        const sel = window.getSelection();
-        if (e.key === "k" && sel && !sel.isCollapsed && (e.target as HTMLElement | null)?.closest?.(".bn-editor")) return;
-        // Inside Spaces, Cmd+K is Spaces' own quick find (Notion), not the app-wide search.
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        openQuickFind("jump");
-      }
-    };
-    window.addEventListener("keydown", onKey, { capture: true });
-    return () => window.removeEventListener("keydown", onKey, { capture: true });
-  }, [openQuickFind]);
+  // Cmd+K / Cmd+P anywhere in Spaces: the route owns both keys (shell's sanctioned claim).
+  useClaimSearchKeys(["k", "p"], (key, e) => {
+    // Inside the editor Cmd+K is "add link" when text is selected (Notion does the same).
+    const sel = window.getSelection();
+    if (key === "k" && sel && !sel.isCollapsed && (e.target as HTMLElement | null)?.closest?.(".bn-editor")) return false;
+    openQuickFind("jump");
+    return true;
+  });
 
   useEffect(() => {
     if (!quickFind.open) return;

@@ -57,7 +57,7 @@ function CoverPicker({ onPick, children }: { onPick: (cover: CoverValue | null) 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>{children}</PopoverTrigger>
-      <PopoverContent align="end" className="w-[540px] max-w-[calc(100vw-16px)] p-0">
+      <PopoverContent surface="solid" align="end" className="w-[540px] max-w-[calc(100vw-16px)] p-0">
         <div className="flex items-center gap-1 border-b border-border px-2">
           <Tabs
             aria-label="Cover source"
