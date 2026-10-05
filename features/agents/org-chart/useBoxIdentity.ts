@@ -105,6 +105,12 @@ export function loadOrgDirectory(refresh = false): Promise<Directory> {
   return directory;
 }
 
+/** Hear every newer directory read (a Retry, an archive). Returns the stop function. */
+export function onOrgDirectoryRefreshed(listener: (d: Directory) => void): () => void {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
 /** The member holding this user id, preferring the given organization. */
 export function memberForUser(dir: Directory, userId: string, organizationId?: string): OrgMember | null {
   let best: OrgMember | null = null;

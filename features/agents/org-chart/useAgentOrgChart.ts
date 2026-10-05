@@ -12,7 +12,7 @@
 
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectAllAgents } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { fetchOrchestras, loadOrchestra } from "@/features/agents/redux/orchestras/thunks";
@@ -32,6 +32,7 @@ import { onMandateCacheInvalidated } from "@ai-matrx/chat/mandates/service";
 import { useEnsureAgentsLoaded } from "@/features/agents/orchestras/hooks/useEnsureAgentsLoaded";
 import { buildAgentOrgForest, type OrchestraShape } from "./buildAgentOrgForest";
 import { boxId, parseBoxId } from "./constants";
+import { loadOrgDirectory, onOrgDirectoryRefreshed } from "./useBoxIdentity";
 
 export function useAgentOrgChart(opts: { rootIds?: string[] } = {}) {
   const dispatch = useAppDispatch();
@@ -46,18 +47,31 @@ export function useAgentOrgChart(opts: { rootIds?: string[] } = {}) {
   const positions = useAppSelector(selectOrgPositions);
   const agents = useAppSelector(selectAllAgents);
 
-  // A position in Trash keeps its links (so a restore puts it back in place);
-  // once positions are known, those links are not drawn.
+  // An archived record keeps its links (so a restore puts it back in place);
+  // it is simply not drawn: a position in Trash (once positions are known), an
+  // archived agent, an archived team.
   const livePositions = new Set(positions.map((p) => p.id));
-  const manualEdges =
-    positionsStatus === "ready"
-      ? storedEdges.filter((e) =>
-          [e.managerId, e.reportId].every((b) => {
-            const { type, id } = parseBoxId(b);
-            return type !== "position" || livePositions.has(id);
-          }),
-        )
-      : storedEdges;
+  const isArchivedAgent = (id: string) => Boolean(agents[id]?.isArchived);
+  const [archivedTeams, setArchivedTeams] = useState<ReadonlySet<string>>(new Set());
+  useEffect(() => {
+    let live = true;
+    const read = (d: Awaited<ReturnType<typeof loadOrgDirectory>>) =>
+      live && setArchivedTeams(new Set([...d.teams.values()].filter((t) => t.archivedAt).map((t) => t.id)));
+    void loadOrgDirectory().then(read);
+    const stop = onOrgDirectoryRefreshed(read);
+    return () => {
+      live = false;
+      stop();
+    };
+  }, []);
+  const drawn = (b: string) => {
+    const { type, id } = parseBoxId(b);
+    if (type === "position") return positionsStatus !== "ready" || livePositions.has(id);
+    if (type === "agent") return !isArchivedAgent(id);
+    if (type === "team") return !archivedTeams.has(id);
+    return true;
+  };
+  const manualEdges = storedEdges.filter((e) => drawn(e.managerId) && drawn(e.reportId));
 
   useEffect(() => {
     dispatch(fetchOrchestras());
@@ -65,8 +79,8 @@ export function useAgentOrgChart(opts: { rootIds?: string[] } = {}) {
   }, [dispatch]);
 
   // Plain agent ids (the Orchestra store's keys).
-  const conductorIds = new Set(list.map((o) => o.conductorId));
-  for (const [id, e] of Object.entries(entries)) if (e.exists) conductorIds.add(id);
+  const conductorIds = new Set(list.map((o) => o.conductorId).filter((id) => !isArchivedAgent(id)));
+  for (const [id, e] of Object.entries(entries)) if (e.exists && !isArchivedAgent(id)) conductorIds.add(id);
 
   const failedIds = new Set(
     Object.entries(entries)
@@ -76,15 +90,19 @@ export function useAgentOrgChart(opts: { rootIds?: string[] } = {}) {
 
   const orchestras = new Map<string, OrchestraShape>();
   for (const [id, e] of Object.entries(entries)) {
-    if (e.status === "ready" && e.exists) {
-      orchestras.set(id, { members: e.members, accent: e.config.accent, mode: e.config.mode });
+    if (e.status === "ready" && e.exists && !isArchivedAgent(id)) {
+      orchestras.set(id, {
+        members: e.members.filter((m) => !isArchivedAgent(m.agentId)),
+        accent: e.config.accent,
+        mode: e.config.mode,
+      });
     }
   }
 
   // Everything reachable from the roots (every kind of link), or everyone. Box ids.
   const reachable = new Set<string>();
   if (!opts.rootIds) {
-    for (const id of [...conductorIds, ...Object.keys(agents)]) reachable.add(boxId("agent", id));
+    for (const id of [...conductorIds, ...Object.keys(agents).filter((a) => !isArchivedAgent(a))]) reachable.add(boxId("agent", id));
     for (const o of orchestras.values()) o.members.forEach((m) => reachable.add(boxId("agent", m.agentId)));
     for (const p of positions) reachable.add(boxId("position", p.id));
     for (const e of manualEdges) {

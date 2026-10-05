@@ -75,6 +75,11 @@ fill — vocabulary row ruled 2026-10-04). Box ids are `type:entityId` (`constan
 
 ## Change log
 
+- 2026-10-05 — Removal: every card's menu ends with "Remove from the chart…" (all recorded links,
+  Undo; Orchestra membership stays and the confirm says so) and "Archive agent/team/position…"
+  (archived records keep their links and are simply not drawn; Undo restores). Multi-select removes
+  many at once. Both ways to make an Orchestra; seat-job Suggest.
+
 - 2026-10-05 — Open-position ladder rungs 1–4 live (define the job → mandate → build its agent → the
   seat reads "Agent at work"). Health check menu. Suggestions at rung 2 and the department-from-a-
   description summit are parked in the node task list.

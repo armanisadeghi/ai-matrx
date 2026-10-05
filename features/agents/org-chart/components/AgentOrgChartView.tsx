@@ -22,8 +22,10 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowDownToLine,
   ArrowRightLeft,
+  Archive,
   ArrowUpToLine,
   ClipboardList,
+  Eraser,
   Stethoscope,
   Focus,
   LinkIcon,
@@ -32,7 +34,6 @@ import {
   PencilLine,
   Plus,
   Share2,
-  Trash2,
   Unlink,
   UserRoundPlus,
   X,
@@ -48,6 +49,8 @@ import {
   updateOrgPosition,
 } from "@/features/agents/redux/orchestras/orgChartThunks";
 import { addAgentToOrchestra, removeAgentFromOrchestra } from "@/features/agents/redux/orchestras/thunks";
+import { saveAgentField } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import { archiveTeam, restoreTeam } from "@/features/organizations/service/teamsService";
 import { OrgChart, type OrgChartCrossLink } from "@/components/official/org-chart/OrgChart";
 import type { OrgChartTreeNode } from "@/components/official/org-chart/layout";
 import { Button } from "@ai-matrx/design-system/controls";
@@ -424,12 +427,107 @@ export function AgentOrgChartView({
       return;
     }
     announceReversible({
-      verb: "delete",
+      verb: "archive",
       noun: "position",
       subject: p.name,
       undo: async () => {
         const back = await dispatch(restoreOrgPosition(p));
         if (!back.ok) throw new Error(back.error ?? "Could not restore it.");
+      },
+    });
+  };
+
+  /**
+   * Take boxes off the chart: every recorded link they hold (above, below,
+   * hand-offs, dotted lines) goes, with Undo. Orchestra membership is the
+   * Orchestra's, so it stays — the confirm says so.
+   */
+  const removeFromChart = async (boxIds: string[]) => {
+    const ids = new Set(boxIds);
+    const links = manualEdges.filter((e) => !e.edgeId.startsWith("pending:") && (ids.has(e.managerId) || ids.has(e.reportId)));
+    const inOrchestra = boxIds.some((b) =>
+      [...orchestras.values()].some((o) => o.members.some((m) => boxId("agent", m.agentId) === b)),
+    );
+    const what = boxIds.length === 1 ? nameOf(boxIds[0]) : `these ${boxIds.length}`;
+    if (links.length === 0 && !inOrchestra) {
+      toast.info(`${what} has no recorded links to remove.`);
+      return;
+    }
+    const ok = await confirm({
+      title: `Remove ${what} from the chart?`,
+      description: [
+        links.length ? `${links.length} recorded ${links.length === 1 ? "link goes" : "links go"}.` : null,
+        inOrchestra ? "Orchestra membership stays; take it out of its Orchestra separately." : null,
+      ]
+        .filter(Boolean)
+        .join(" "),
+      confirmLabel: "Remove",
+      variant: "destructive",
+    });
+    if (!ok) return;
+    const removed: typeof links = [];
+    for (const e of links) {
+      const res = await dispatch(removeManualManager(e.managerId, e.reportId));
+      if (res.ok) removed.push(e);
+      else fail(res.error);
+    }
+    if (!removed.length) return;
+    announceReversible({
+      verb: "remove",
+      noun: boxIds.length === 1 ? nounOf(boxIds[0]) : "boxes",
+      subject: `${what} from the chart`,
+      undo: async () => {
+        for (const e of removed) {
+          const back = ORG_LINK_KIND_META[e.kind].tree
+            ? await dispatch(setManualManager(e.managerId, e.reportId))
+            : await dispatch(addCrossLink(e.managerId, e.reportId, e.kind as CrossKind));
+          if (!back.ok) throw new Error(back.error ?? "Could not put it back.");
+        }
+      },
+    });
+  };
+
+  /** Archive the record itself (agent, team or position): it leaves the chart and every list, restorable. */
+  const archiveBox = async (b: string) => {
+    const { type, id } = parseBoxId(b);
+    const name = nameOf(b);
+    const ok = await confirm({
+      title: `Archive ${name}?`,
+      description:
+        type === "agent"
+          ? "It leaves the chart and your agent lists. Its runs and history are kept."
+          : type === "team"
+            ? "The team is archived for everyone in the organization and leaves the chart."
+            : "The position leaves the chart. Its links are kept for a restore.",
+      confirmLabel: "Archive",
+      variant: "destructive",
+    });
+    if (!ok) return;
+    if (type === "position") {
+      const p = positionById.get(id);
+      if (p) await deletePosition(p);
+      return;
+    }
+    try {
+      if (type === "agent") await dispatch(saveAgentField({ agentId: id, field: "isArchived", value: true as never })).unwrap();
+      else if (type === "team") {
+        await archiveTeam(id);
+        void loadOrgDirectory(true);
+      } else return;
+    } catch (e) {
+      fail(e instanceof Error ? e.message : "It could not be archived.");
+      return;
+    }
+    announceReversible({
+      verb: "archive",
+      noun: nounOf(b),
+      subject: name,
+      undo: async () => {
+        if (type === "agent") await dispatch(saveAgentField({ agentId: id, field: "isArchived", value: false as never })).unwrap();
+        else {
+          await restoreTeam(id);
+          void loadOrgDirectory(true);
+        }
       },
     });
   };
@@ -533,6 +631,9 @@ export function AgentOrgChartView({
       return !targetKey.startsWith(`${k}/`);
     });
   };
+
+  const selectedBoxIds = () =>
+    [...new Set(selection.map((k) => byKey.get(k)?.data.boxId).filter((x): x is string => Boolean(x)))];
 
   const onDelete = (keys: string[]) => {
     for (const k of keys) {
@@ -669,10 +770,7 @@ export function AgentOrgChartView({
                 Mark as open
               </Item>
             )}
-            <Item onSelect={() => void deletePosition(position)}>
-              <Trash2 className="mr-2 h-4 w-4" />
-              Delete position
-            </Item>
+
           </>
         )}
         <Sep />
@@ -703,6 +801,18 @@ export function AgentOrgChartView({
           <Item onSelect={() => void leaveOrchestra(parseBoxId(d.parentId as string).id, d.entityId)}>
             <Unlink className="mr-2 h-4 w-4" />
             Take out of the {nameOf(d.parentId)} Orchestra…
+          </Item>
+        )}
+        <Sep />
+        <Label className="text-xs text-muted-foreground">Remove</Label>
+        <Item onSelect={() => void removeFromChart(many ? selectedBoxIds() : [d.boxId])}>
+          <Eraser className="mr-2 h-4 w-4" />
+          {many ? `Remove ${selection.length} from the chart…` : "Remove from the chart…"}
+        </Item>
+        {!many && d.boxType !== "membership" && (
+          <Item onSelect={() => void archiveBox(d.boxId)}>
+            <Archive className="mr-2 h-4 w-4" />
+            Archive {ORG_BOX_LABEL[d.boxType].toLowerCase()}…
           </Item>
         )}
         {outgoing.length > 0 && (
