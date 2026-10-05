@@ -12,7 +12,9 @@ export async function GET() {
 }
 
 function invoiceRecovery(invoice: Stripe.Invoice | null): { url: string | null; status: string | null; requiresAction: boolean } {
-  const paymentIntent = invoice?.payment_intent;
+  const paymentIntent = invoice?.payments?.data
+    .map(({ payment }) => payment)
+    .find((payment) => payment.type === "payment_intent")?.payment_intent;
   const paymentStatus = typeof paymentIntent === "string" ? null : paymentIntent?.status ?? null;
   return {
     url: invoice?.hosted_invoice_url ?? null,
@@ -56,7 +58,9 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
     if (error) throw error;
     if (!subscription?.stripe_subscription_id) return NextResponse.json({ invoice: null });
-    const stripeSubscription = await getStripe().subscriptions.retrieve(subscription.stripe_subscription_id, { expand: ["latest_invoice.payment_intent"] });
+    const stripeSubscription = await getStripe().subscriptions.retrieve(subscription.stripe_subscription_id, {
+      expand: ["latest_invoice.payments.data.payment.payment_intent"],
+    });
     const latestInvoice = typeof stripeSubscription.latest_invoice === "string" ? null : stripeSubscription.latest_invoice;
     return NextResponse.json({ invoice: invoiceRecovery(latestInvoice) });
   } catch (error) {
