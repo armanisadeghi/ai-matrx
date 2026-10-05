@@ -130,6 +130,7 @@ const capabilities: GoogleCapabilityMetadata[] = keys.map((key, index) => ({
   rollout_phase: index > 6 ? "internal_test" : "available",
   native_tool_actions: [],
   mcp_tool_actions: [],
+  consent_requestable: true,
   limitation: "A bounded limitation.",
   remedy: "Use the available management path.",
   eligible: true,
@@ -240,7 +241,7 @@ describe("GoogleWorkspaceOverviewBody", () => {
     mockCapabilities.mockReturnValue({
       data: [...capabilities, {
         ...capabilities[0], key: "chat_messages", title: "Google Chat messages",
-        rollout_phase: "internal_test", eligible: true,
+        rollout_phase: "internal_test", eligible: true, consent_requestable: false,
         required_scopes: [{ scope: GOOGLE_SCOPE.chatMessagesReadonly, provider_classification: "restricted" }],
       }],
       isLoading: false, isError: false, refetch: jest.fn(),
@@ -251,6 +252,29 @@ describe("GoogleWorkspaceOverviewBody", () => {
     expect(host.textContent).not.toContain("Enable Google Chat messages");
     expect(host.textContent).not.toContain("Connect Google Chat messages");
     expect(mockOpenConsent).not.toHaveBeenCalled();
+  });
+
+  it("does not offer or press consent for any non-requestable capability", () => {
+    mockCapabilities.mockReturnValue({
+      data: capabilities.map((capability) =>
+        capability.key === "contacts"
+          ? { ...capability, consent_requestable: false }
+          : capability,
+      ),
+      isLoading: false,
+      isError: false,
+      refetch: jest.fn(),
+    });
+
+    renderOverview();
+
+    const contactsCard = Array.from(host.querySelectorAll("article")).find(
+      (article) => article.textContent?.includes("Google Contacts import"),
+    );
+    expect(contactsCard?.textContent).not.toContain("Enable Google Contacts import");
+    expect(contactsCard?.textContent).not.toContain("Continue in this tab");
+    expect(mockRequestAuthorizationCode).not.toHaveBeenCalled();
+    expect(mockStartAuthorizationCodeRedirect).not.toHaveBeenCalled();
   });
 
   it("mounts the read-only Business Profile reviewer for an admitted internal tester", () => {
@@ -278,6 +302,7 @@ describe("GoogleWorkspaceOverviewBody", () => {
           title: "Business Profile reviews",
           rollout_phase: "internal_test",
           eligible: true,
+          consent_requestable: false,
           required_scopes: [
             {
               scope: GOOGLE_SCOPE.businessManage,
@@ -312,6 +337,7 @@ describe("GoogleWorkspaceOverviewBody", () => {
           title: "Business Profile reviews",
           rollout_phase: "internal_test",
           eligible: true,
+          consent_requestable: false,
           ...override,
         },
       ],
@@ -358,6 +384,7 @@ describe("GoogleWorkspaceOverviewBody", () => {
           title: "Business Profile reviews",
           rollout_phase: "internal_test",
           eligible: true,
+          consent_requestable: false,
         },
       ],
       isLoading: false,

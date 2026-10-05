@@ -163,6 +163,7 @@ function GoogleWorkspaceOverviewBodyContent({
     if (
       !connection ||
       !capabilityKey ||
+      !capability.consent_requestable ||
       !capability.eligible ||
       connection.health !== "connected" ||
       requiredScopes.every((scope) =>
@@ -502,7 +503,7 @@ function CapabilityCatalog({
           );
           const capabilityKey = googleCapabilityKey(capability.key);
           const canEnable = Boolean(
-            capability.key !== "chat_messages" &&
+            capability.consent_requestable &&
             capabilityKey &&
             capability.eligible &&
             connection?.health === "connected" &&
