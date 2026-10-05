@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { ChevronDown, Stars, Plus, Library } from "lucide-react";
+import { Stars, Plus, Library } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface SectionToolbarProps {
@@ -41,7 +41,7 @@ export function SectionToolbar({
           "focus:outline-none focus:ring-1 focus:ring-ring",
         )}
       />
-      {browseLabel && (
+      {browseLabel && onBrowse && (
         <button
           type="button"
           onClick={onBrowse}
@@ -55,32 +55,21 @@ export function SectionToolbar({
           {browseLabel}
         </button>
       )}
-      {generateLabel && (
-        <div className="inline-flex rounded-md overflow-hidden shadow-sm">
-          <button
-            type="button"
-            onClick={onGenerate}
-            className={cn(
-              "inline-flex items-center gap-1.5 h-8 px-3 text-sm font-medium",
-              "bg-sky-600 hover:bg-sky-500 text-white transition-colors",
-            )}
-          >
-            <Stars className="h-3.5 w-3.5" />
-            {generateLabel}
-          </button>
-          <button
-            type="button"
-            aria-label="More generation options"
-            className={cn(
-              "inline-flex items-center justify-center h-8 w-7 border-l border-sky-700/60",
-              "bg-sky-600 hover:bg-sky-500 text-white transition-colors",
-            )}
-          >
-            <ChevronDown className="h-3.5 w-3.5" />
-          </button>
-        </div>
+      {/* A button with no handler is a dead end — it renders only when wired. */}
+      {generateLabel && onGenerate && (
+        <button
+          type="button"
+          onClick={onGenerate}
+          className={cn(
+            "inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-sm font-medium shadow-sm",
+            "bg-sky-600 hover:bg-sky-500 text-white transition-colors",
+          )}
+        >
+          <Stars className="h-3.5 w-3.5" />
+          {generateLabel}
+        </button>
       )}
-      {showAddButton && (
+      {showAddButton && onAdd && (
         <button
           type="button"
           onClick={onAdd}

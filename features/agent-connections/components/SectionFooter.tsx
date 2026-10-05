@@ -16,7 +16,8 @@ export function SectionFooter({
   return (
     <div className="border-t border-border/50 px-4 py-3 shrink-0">
       <p className="text-sm text-muted-foreground">{description}</p>
-      {learnMoreLabel && (
+      {/* "#" is a placeholder, not a destination — never render a dead link. */}
+      {learnMoreLabel && learnMoreHref && learnMoreHref !== "#" && (
         <a
           href={learnMoreHref}
           className="mt-1 inline-block text-sm text-sky-500 hover:text-sky-400 hover:underline"

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { Panel, type Layout } from "react-resizable-panels";
 import { ListTree } from "lucide-react";
@@ -27,7 +27,11 @@ import { AgentConnectionsHeaderControls } from "./AgentConnectionsHeaderControls
 import { AgentConnectionsNavProvider } from "./AgentConnectionsNavContext";
 import { AGENT_CONNECTIONS_BASE, segmentToSection } from "../routing";
 import { SIDEBAR_SECTIONS } from "../constants";
-import { selectSelectedItemId, selectViewScope } from "../redux/ui/slice";
+import {
+  selectSelectedItemId,
+  selectViewScope,
+  setActiveSection,
+} from "../redux/ui/slice";
 
 const GROUP_ID = "agent-connections";
 const GROUP_KEY = "root";
@@ -73,6 +77,17 @@ export function AgentConnectionsRouteShell({
   const pathname = usePathname();
   const pathnameRef = useRef(pathname);
   pathnameRef.current = pathname;
+
+  // Route mode switches sections through <Link>, never `setActiveSection`, so
+  // the open item would otherwise ride along: a render block's id opened in
+  // Skills as "We couldn't find this skill". Keep Redux on the URL's section,
+  // which also clears the selection.
+  const routeSection = segmentToSection(
+    (pathname ?? "").split("/").filter(Boolean)[1],
+  );
+  useEffect(() => {
+    dispatch(setActiveSection(routeSection));
+  }, [dispatch, routeSection]);
 
   const getScope = () => {
     const state = store.getState();

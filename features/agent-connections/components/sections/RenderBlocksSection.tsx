@@ -11,7 +11,8 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import MarkdownStream from "@/components/markdown";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { SectionToolbar } from "../SectionToolbar";
 import { SectionFooter } from "../SectionFooter";
@@ -87,10 +88,10 @@ export function RenderBlocksSection() {
       <SectionToolbar
         search={search}
         onSearchChange={setSearch}
-        generateLabel="Generate Block"
+        searchPlaceholder="Search render blocks…"
       />
       <div className="flex-1 min-h-0 flex overflow-hidden">
-        <div className="w-full">
+        <div className="w-full min-w-0">
           {loading && definitions.length === 0 ? (
             <div className="flex items-center justify-center py-10 text-muted-foreground text-sm gap-2">
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -102,7 +103,7 @@ export function RenderBlocksSection() {
               <ErrorAlchemyMenu error={error} />
             </div>
           ) : (
-            <ScrollArea className="h-full">
+            <div className="h-full overflow-y-auto overflow-x-hidden scrollbar-thin">
               <div className="p-2">
                 {categoryTree.length === 0 ? (
                   <div className="px-4 py-10 text-center text-sm text-muted-foreground">
@@ -118,6 +119,7 @@ export function RenderBlocksSection() {
                       selectedItemId={selectedItemId}
                       onPickItem={(id) => dispatch(setSelectedItemId(id))}
                       matchesSearch={matchesSearch}
+                      forceOpen={lowerSearch.length > 0}
                     />
                   ))
                 )}
@@ -129,16 +131,73 @@ export function RenderBlocksSection() {
                   />
                 )}
               </div>
-            </ScrollArea>
+            </div>
           )}
         </div>
       </div>
       <SectionFooter
-        description="Render blocks are structured LLM output templates that map 1:1 to React components across every surface."
+        description="Templates that turn AI output into live components."
         learnMoreLabel="Learn more about render blocks"
         learnMoreHref="#"
       />
     </div>
+  );
+}
+
+function RenderBlockRow({
+  def,
+  indent,
+  selected,
+  onPick,
+}: {
+  def: SklRenderDefinition;
+  indent: number;
+  selected: boolean;
+  onPick: (id: string) => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onPick(def.id)}
+      style={{ paddingLeft: indent }}
+      className={cn(
+        "w-full flex items-start gap-2 py-1.5 pr-2 text-left rounded-md transition-colors",
+        selected ? "bg-accent text-foreground" : "hover:bg-muted/50",
+      )}
+    >
+      <Blocks className="h-3.5 w-3.5 mt-0.5 text-muted-foreground shrink-0" />
+      <span className="flex-1 min-w-0">
+        <span className="flex items-center gap-1.5 min-w-0">
+          <span className="text-sm text-foreground truncate">{def.label}</span>
+          <ClassificationBadges def={def} />
+          {!def.isActive && (
+            <span className="text-[10px] text-muted-foreground shrink-0">
+              inactive
+            </span>
+          )}
+        </span>
+        {def.description && (
+          <span className="block text-xs text-muted-foreground truncate">
+            {def.description}
+          </span>
+        )}
+      </span>
+      <span className="hidden md:block max-w-[14rem] truncate text-[11px] font-mono text-muted-foreground/70 pt-0.5">
+        {def.blockId}
+      </span>
+    </button>
+  );
+}
+
+/** A folder shows only when it, or a folder beneath it, holds a matching block. */
+function branchHasMatch(
+  node: CategoryTreeNode,
+  byCategoryId: Record<string, SklRenderDefinition[]>,
+  matchesSearch: (d: SklRenderDefinition) => boolean,
+): boolean {
+  if ((byCategoryId[node.category.id] ?? []).some(matchesSearch)) return true;
+  return node.children.some((c) =>
+    branchHasMatch(c, byCategoryId, matchesSearch),
   );
 }
 
@@ -149,6 +208,7 @@ function CategoryTreeBranch({
   selectedItemId,
   onPickItem,
   matchesSearch,
+  forceOpen,
 }: {
   node: CategoryTreeNode;
   depth: number;
@@ -156,12 +216,13 @@ function CategoryTreeBranch({
   selectedItemId: string | null;
   onPickItem: (id: string) => void;
   matchesSearch: (d: SklRenderDefinition) => boolean;
+  forceOpen: boolean;
 }) {
-  const [open, setOpen] = useState(depth < 1);
+  const [openState, setOpen] = useState(depth < 1);
+  const open = forceOpen || openState;
   const items = (byCategoryId[node.category.id] ?? []).filter(matchesSearch);
   const hasItems = items.length > 0;
-  const hasChildren = node.children.length > 0;
-  if (!hasItems && !hasChildren) return null;
+  if (!branchHasMatch(node, byCategoryId, matchesSearch)) return null;
   return (
     <div>
       <button
@@ -169,7 +230,7 @@ function CategoryTreeBranch({
         onClick={() => setOpen((v) => !v)}
         style={{ paddingLeft: depth * 12 + 4 }}
         className={cn(
-          "w-full flex items-center gap-1 px-2 py-1 rounded-md text-xs text-left",
+          "w-full flex items-center gap-1.5 px-2 py-1.5 rounded-md text-xs font-medium text-left",
           "hover:bg-muted/50 text-foreground/90 transition-colors",
         )}
       >
@@ -193,28 +254,13 @@ function CategoryTreeBranch({
       {open && (
         <>
           {items.map((d) => (
-            <button
+            <RenderBlockRow
               key={d.id}
-              type="button"
-              onClick={() => onPickItem(d.id)}
-              style={{ paddingLeft: (depth + 1) * 12 + 20 }}
-              className={cn(
-                "w-full flex items-center gap-1.5 py-1 pr-2 text-xs text-left",
-                "rounded-md transition-colors",
-                d.id === selectedItemId
-                  ? "bg-accent text-foreground"
-                  : "hover:bg-muted/50 text-foreground/80",
-              )}
-            >
-              <Blocks className="h-3 w-3 text-muted-foreground shrink-0" />
-              <span className="truncate flex-1">{d.label}</span>
-              <ClassificationBadges def={d} />
-              {!d.isActive && (
-                <span className="text-[10px] text-muted-foreground">
-                  inactive
-                </span>
-              )}
-            </button>
+              def={d}
+              indent={(depth + 1) * 12 + 4}
+              selected={d.id === selectedItemId}
+              onPick={onPickItem}
+            />
           ))}
           {node.children.map((child) => (
             <CategoryTreeBranch
@@ -225,6 +271,7 @@ function CategoryTreeBranch({
               selectedItemId={selectedItemId}
               onPickItem={onPickItem}
               matchesSearch={matchesSearch}
+              forceOpen={forceOpen}
             />
           ))}
         </>
@@ -264,21 +311,13 @@ function UncategorizedBranch({
       </button>
       {open &&
         items.map((d) => (
-          <button
+          <RenderBlockRow
             key={d.id}
-            type="button"
-            onClick={() => onPickItem(d.id)}
-            className={cn(
-              "w-full flex items-center gap-1.5 py-1 pl-8 pr-2 text-xs text-left rounded-md transition-colors",
-              d.id === selectedItemId
-                ? "bg-accent text-foreground"
-                : "hover:bg-muted/50 text-foreground/80",
-            )}
-          >
-            <Blocks className="h-3 w-3 text-muted-foreground shrink-0" />
-            <span className="truncate flex-1">{d.label}</span>
-            <ClassificationBadges def={d} />
-          </button>
+            def={d}
+            indent={16}
+            selected={d.id === selectedItemId}
+            onPick={onPickItem}
+          />
         ))}
     </div>
   );
@@ -314,23 +353,34 @@ function RenderBlockDetail({
           </div>
         </div>
       </div>
-      <div className="flex-1 overflow-auto scrollbar-thin p-4 space-y-3 text-sm">
-        {def.description && (
-          <p className="text-foreground/90">{def.description}</p>
-        )}
-        <div>
-          <div className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
-            Template
-          </div>
+      <Tabs
+        defaultValue="preview"
+        className="flex-1 min-h-0 flex flex-col gap-0"
+      >
+        <div className="px-4 pt-3 shrink-0 space-y-2">
+          {def.description && (
+            <p className="text-sm text-foreground/90">{def.description}</p>
+          )}
+          <TabsList>
+            <TabsTrigger value="preview">Preview</TabsTrigger>
+            <TabsTrigger value="template">Template</TabsTrigger>
+          </TabsList>
+        </div>
+        <TabsContent
+          value="preview"
+          className="flex-1 min-h-0 overflow-auto scrollbar-thin p-4"
+        >
+          <MarkdownStream imagePolicy="ai" content={def.template} />
+        </TabsContent>
+        <TabsContent
+          value="template"
+          className="flex-1 min-h-0 overflow-auto scrollbar-thin p-4"
+        >
           <pre className="text-xs font-mono bg-muted/30 p-3 rounded-md whitespace-pre-wrap">
             {def.template}
           </pre>
-        </div>
-        <p className="text-xs text-muted-foreground pt-4 border-t border-border/40">
-          Three-pane editor + live preview via BlockRenderer coming with the
-          DetailEditor rollout.
-        </p>
-      </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
