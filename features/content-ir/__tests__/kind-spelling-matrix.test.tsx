@@ -23,6 +23,7 @@ import React from "react";
 import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
 import { StreamBlockAccumulator } from "@ai-matrx/chat/agents/redux/execution-system/utils/stream-block-accumulator";
 import { BlockRenderer } from "@/components/mardown-display/chat-markdown/block-registry/BlockRenderer";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { splitContentIntoBlocksV2 } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
 import {
   ALL_KIND_SPELLINGS,
@@ -220,5 +221,15 @@ describe("spelling matrix — rendered chat prose (live char-by-char + reload)",
     // Lifted spellings draw the kind (its cards); unparseable ones its one-line label.
     expect(liveText).toMatch(/What makes ATP|Cell biology[_*\s]*· Flashcard/i);
     expect(liveText).toBe(squash(await reloadText(answer)));
+  });
+});
+
+describe("spelling matrix — content-fed RichContent", () => {
+  it.each(SPELLINGS)("%s: RichContent never draws it raw", async (_spelling, spelled) => {
+    const verdict = await domElementVerdict(
+      React.createElement(RichContent, { level: "full", imagePolicy: "ai", source: prose(spelled) }),
+    );
+    expect(verdict.raw).toBe(false);
+    expect(squash(verdict.text)).toMatch(/What makes ATP|Cell biology[_*\s]*· Flashcard/i);
   });
 });
