@@ -23,12 +23,17 @@ jest.mock("@ai-matrx/chat/host/identity", () => ({
   isSignedOutVisitor: async () => false,
 }));
 
-import React from "react";
+import React, { act } from "react";
+import { createRoot } from "react-dom/client";
 import { Provider } from "react-redux";
-import { act, renderHook, waitFor } from "@testing-library/react";
 import { configureStore } from "@reduxjs/toolkit";
 import agentDefinitionReducer from "@ai-matrx/chat/agents/redux/agent-definition/slice";
-import { useRunControlCounts } from "../useRunControlCounts";
+import {
+  useRunControlCounts,
+  type ResourcePickerCounts,
+} from "../useRunControlCounts";
+
+(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 const AGENT_ID = "harbor-front-desk-helper";
 const CONVERSATION_ID = "conv-counts";
@@ -91,15 +96,27 @@ describe("run-control counts come from the run tier", () => {
 
   it("shows Tools and Skills on load without fetching the definition", async () => {
     const store = makeStore();
-    const wrapper = ({ children }: { children: React.ReactNode }) => (
-      <Provider store={store}>{children}</Provider>
-    );
-    const { result } = renderHook(() => useRunControlCounts(CONVERSATION_ID), {
-      wrapper,
+    const seen: { current: ResourcePickerCounts } = { current: {} };
+    function Probe() {
+      seen.current = useRunControlCounts(CONVERSATION_ID);
+      return null;
+    }
+    const host = document.createElement("div");
+    const root = createRoot(host);
+    await act(async () => {
+      root.render(
+        <Provider store={store}>
+          <Probe />
+        </Provider>,
+      );
     });
-
-    await waitFor(() => expect(result.current.tools).toBeDefined());
-    await act(async () => {});
+    // Let the run-tier read settle and the hook re-render.
+    for (let i = 0; i < 5 && seen.current.tools === undefined; i++) {
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 0));
+      });
+    }
+    const result = seen;
 
     // 2 built-in + 1 added + 2 custom (from the run tier's count).
     expect(result.current.tools).toBe(5);
