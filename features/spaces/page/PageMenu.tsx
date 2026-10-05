@@ -1,11 +1,11 @@
 "use client";
 
 // features/spaces/page/PageMenu.tsx — the ••• page menu (A7): style, small text, full width, lock,
-// copy link, duplicate, move to, delete (= move to Trash), undo.
+// copy link, duplicate, move to, delete (= move to Trash), undo, page history.
 
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { Button, Switch } from "@ai-matrx/design-system/controls";
-import { Copy, CornerUpRight, Link, Lock, MoreHorizontal, MoveHorizontal, Trash2, Type, Undo2 } from "lucide-react";
+import { Copy, CornerUpRight, History, Link, Lock, MoreHorizontal, MoveHorizontal, Trash2, Type, Undo2 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 
 import type { SpaceDoc } from "../contract";
@@ -50,6 +50,7 @@ export function PageMenu({
   onMove,
   onDelete,
   onUndo,
+  onHistory,
   updatedLabel,
 }: {
   settings: Settings;
@@ -59,6 +60,7 @@ export function PageMenu({
   onMove: () => void;
   onDelete: () => void;
   onUndo: () => void;
+  onHistory: () => void;
   updatedLabel: string;
 }) {
   const [open, setOpen] = useState(false);
@@ -99,6 +101,7 @@ export function PageMenu({
         <Row icon={<Trash2 size={16} />} label="Move to Trash" onClick={act(onDelete)} danger />
         <div className="my-1 border-t border-border" />
         <Row icon={<Undo2 size={16} />} label="Undo" onClick={act(onUndo)} />
+        <Row icon={<History size={16} />} label="Page history" onClick={act(onHistory)} />
         <p className="px-2 pb-1.5 pt-2 type-secondary text-muted-foreground">{updatedLabel}</p>
       </PopoverContent>
     </Popover>

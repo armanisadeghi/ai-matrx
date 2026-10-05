@@ -11,6 +11,7 @@ import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 import type { SpaceBlock, SpaceDoc, SpaceId, SpaceSummary, SpacesStore } from "../contract";
 import { createDatabaseSpacesStore } from "../store-db/create-store";
+import type { SpaceHistoryEntry } from "../store-db/supabase-store";
 
 export type SpacesChange = { kind: "saved"; doc: SpaceDoc; origin?: string } | { kind: "tree" };
 
@@ -18,6 +19,8 @@ export interface LiveSpacesStore extends SpacesStore {
   /** Save, naming who saved so the saver can ignore its own echo. */
   saveFrom(origin: string, doc: SpaceDoc, expectedVersion: number): Promise<SpaceDoc>;
   onChange(listener: (change: SpacesChange) => void): () => void;
+  /** Page history: every saved version of a page, newest first. */
+  history(id: SpaceId): Promise<SpaceHistoryEntry[]>;
 }
 
 export function createLiveSpacesStore(getOrganizationId: () => string | null): LiveSpacesStore {
@@ -56,6 +59,7 @@ export function createLiveSpacesStore(getOrganizationId: () => string | null): L
     archive: (id) => tree(base.archive(id)),
     restore: (id) => tree(base.restore(id)),
     subscribe: (id, onChange) => base.subscribe(id, onChange),
+    history: (id) => base.history(id),
     onChange(listener) {
       listeners.add(listener);
       return () => listeners.delete(listener);

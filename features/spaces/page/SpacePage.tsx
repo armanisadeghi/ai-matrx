@@ -12,6 +12,7 @@ import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { toast } from "@/lib/toast";
 
 import { useSourcePicker } from "../data/SourcePicker";
+import { PageHistory } from "./PageHistory";
 
 import type { SpaceBlock, SpaceDoc } from "../contract";
 import { fromEngine, type EngineBlock } from "../editor/convert";
@@ -89,6 +90,7 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
   /** Bumped when the page is replaced by a newer stored copy: the editor remounts on it. */
   const [editorRound, setEditorRound] = useState(0);
   const [focusTitle, setFocusTitle] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const editorRef = useRef<SpacesEditor | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const headerRef = useRef<HTMLDivElement | null>(null);
@@ -376,6 +378,7 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
             })().catch((e: unknown) => toast.error(e instanceof Error ? e.message : "We couldn't move this page to Trash."));
           }}
           onUndo={() => editorRef.current?.undo()}
+          onHistory={() => setHistoryOpen(true)}
           updatedLabel={editedAgo(doc.updatedAt, now)}
         />
       </header>
@@ -453,6 +456,19 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
             menu={{ moveBlocksTo, askAi: () => toast.info("AI is not connected yet") }}
           />
           {sourcePicker}
+          <PageHistory
+            open={historyOpen}
+            onOpenChange={setHistoryOpen}
+            spaceId={doc.id}
+            editable={editable}
+            onRestore={(entry) => {
+              // A restore is a new version with that version's content; the editor remounts on it.
+              const { blocks, settings, icon, cover } = entry.snapshot;
+              update({ blocks, settings, icon, cover }, 0);
+              setEditorRound((r) => r + 1);
+              toast.success("Version restored");
+            }}
+          />
           {editable ? (
             // Notion's page end: the room under the last block is a click target that puts the caret
             // in an empty line at the end (making one when the last block is not an empty line).
