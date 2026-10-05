@@ -26,7 +26,7 @@ import {
   userInputPartToMessagePart,
 } from "@ai-matrx/chat/agents/redux/execution-system/instance-resources/instance-resources.selectors";
 import { initInstanceUserInput } from "@ai-matrx/chat/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
-import type { ChatRootState } from "@ai-matrx/chat/store/root-state";
+import type { ChatDispatch, ChatRootState } from "@ai-matrx/chat/store/root-state";
 import { applySampleToComposer } from "@/features/agents/samples/apply-sample";
 import { SAMPLE_INPUT_CONTENT_KEY } from "@/features/agents/samples/service";
 
@@ -53,6 +53,8 @@ function makeStore() {
 
 type Store = ReturnType<typeof makeStore>;
 const root = (store: Store) => store.getState() as unknown as ChatRootState;
+/** The slices under test are the chat store's own; its thunks run on them. */
+const chatDispatch = (store: Store) => store.dispatch as unknown as ChatDispatch;
 
 /** Attach the way the pickers do: addResource + a label (which readies it). */
 function attach(
@@ -98,7 +100,7 @@ describe("Use on a test case", () => {
     const { sent, sample } = savedTestCase(store);
     expect(sent).toHaveLength(4);
 
-    const unattached = store.dispatch(
+    const unattached = chatDispatch(store)(
       applySampleToComposer({ conversationId: TESTER, sample }),
     );
 
@@ -136,7 +138,7 @@ describe("Use on a test case", () => {
       height: 480,
       metadata: { display_title: "scan.jpg" },
     };
-    store.dispatch(
+    chatDispatch(store)(
       applySampleToComposer({
         conversationId: TESTER,
         sample: {
@@ -169,7 +171,7 @@ describe("Use on a test case", () => {
       context_name: "Brand voice",
       context_data: { tone: "warm" },
     };
-    const unattached = store.dispatch(
+    const unattached = chatDispatch(store)(
       applySampleToComposer({
         conversationId: TESTER,
         sample: {
