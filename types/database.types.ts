@@ -82526,6 +82526,78 @@ export type Database = {
         }
         Relationships: []
       }
+      block_states: {
+        Row: {
+          block_key: string
+          client_request_id: string | null
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          deleted_at: string | null
+          entity_id: string
+          entity_type: string
+          fingerprint: string | null
+          id: string
+          kind: string
+          metadata: Json
+          organization_id: string
+          scope: string
+          sent_version: number
+          state: Json
+          state_version: number
+          updated_at: string
+          updated_by: string | null
+          version: number
+          viewer_id: string | null
+        }
+        Insert: {
+          block_key: string
+          client_request_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          entity_id: string
+          entity_type: string
+          fingerprint?: string | null
+          id?: string
+          kind: string
+          metadata?: Json
+          organization_id: string
+          scope?: string
+          sent_version?: number
+          state?: Json
+          state_version?: number
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          viewer_id?: string | null
+        }
+        Update: {
+          block_key?: string
+          client_request_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          entity_id?: string
+          entity_type?: string
+          fingerprint?: string | null
+          id?: string
+          kind?: string
+          metadata?: Json
+          organization_id?: string
+          scope?: string
+          sent_version?: number
+          state?: Json
+          state_version?: number
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          viewer_id?: string | null
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           color: string | null
@@ -89856,6 +89928,27 @@ export type Database = {
         Args: { p_batch?: number; p_definition_id: string }
         Returns: Json
       }
+      block_state_broadcast: {
+        Args: {
+          p_op: string
+          p_row: Database["platform"]["Tables"]["block_states"]["Row"]
+        }
+        Returns: undefined
+      }
+      block_state_fork_copy: { Args: { p_msg_map: Json }; Returns: number }
+      block_state_mark_sent_for: {
+        Args: { p_refs: Json; p_user: string }
+        Returns: number
+      }
+      block_state_merge_patch: {
+        Args: { p_base: Json; p_patch: Json }
+        Returns: Json
+      }
+      block_state_topic: {
+        Args: { p_entity_id: string; p_entity_type: string; p_viewer?: string }
+        Returns: string
+      }
+      block_states_topic_admits: { Args: { p_topic: string }; Returns: boolean }
       build_lifecycle_reference_map: { Args: never; Returns: Json }
       canonical_actor_tier: { Args: { p_tier: string }; Returns: string }
       capture_decision_items: {
@@ -96579,6 +96672,17 @@ export type Database = {
           updated_at: string
         }[]
       }
+      agx_get_run_controls: {
+        Args: { p_agent_id: string; p_version_id?: string }
+        Returns: {
+          auto_tools_disabled: boolean
+          custom_tool_names: string[]
+          id: string
+          mcp_servers: string[]
+          skill_config: Json
+          tool_ids: string[]
+        }[]
+      }
       agx_get_run_tier: {
         Args: { p_agent_id: string; p_version_id?: string }
         Returns: {
@@ -97543,6 +97647,29 @@ export type Database = {
       auth_is_org_owner: {
         Args: { org_id: string; user_id: string }
         Returns: boolean
+      }
+      block_state_dismiss_chip: { Args: { p_id: string }; Returns: Json }
+      block_state_list: {
+        Args: { p_entity_ids: string[]; p_entity_type: string }
+        Returns: Json
+      }
+      block_state_list_conversation: {
+        Args: { p_conversation_id: string }
+        Returns: Json
+      }
+      block_state_mark_sent: { Args: { p_refs: Json }; Returns: number }
+      block_state_set: {
+        Args: {
+          p_block_key: string
+          p_client_request_id?: string
+          p_entity_id: string
+          p_entity_type: string
+          p_fingerprint?: string
+          p_kind: string
+          p_patch?: Json
+          p_scope?: string
+        }
+        Returns: Json
       }
       bump_version: { Args: { p_file_id: string }; Returns: number }
       calculate_trending_score: {
