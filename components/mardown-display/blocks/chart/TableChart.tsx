@@ -22,7 +22,7 @@ import {
   X,
 } from "lucide-react";
 import { Skeleton } from "@ai-matrx/design-system";
-import { Button } from "@ai-matrx/design-system";
+import { Button, ControlRow, SegmentedControl } from "@ai-matrx/design-system/controls";
 import { cn } from "@/lib/utils";
 import type { ChartType } from "./chart-spec";
 import { chartNotice, chartableTypes, tableToChartSpec, type PlainTable } from "./table-chart";
@@ -59,13 +59,13 @@ export function ChartThisButton({
   return (
     <Button
       variant="outline"
-      size="sm"
+      tone={active ? "primary" : undefined}
+      icon={<BarChart3 />}
       onClick={onToggle}
       aria-pressed={active}
       aria-label={active ? "Hide chart" : "Chart this table"}
-      className={cn("flex items-center gap-2 hover:bg-blue-100 dark:hover:bg-blue-800/30", active && "bg-primary/10 text-primary", className)}
+      className={className}
     >
-      <BarChart3 className="h-4 w-4" />
       {active ? "Hide chart" : "Chart this"}
     </Button>
   );
@@ -96,40 +96,20 @@ export function TableChartPanel({
     >
       <div className="flex items-center justify-between gap-2 border-b border-border bg-muted/50 px-2 py-1">
         <span className="truncate pl-1 text-sm font-medium text-foreground">{heading}</span>
-        <div className="flex items-center gap-0.5" role="radiogroup" aria-label="Chart type">
-          {types.map((t) => {
-            const { Icon, label } = TYPE_META[t];
-            const on = (picked ?? spec.type) === t;
-            return (
-              <button
-                key={t}
-                type="button"
-                role="radio"
-                aria-checked={on}
-                aria-label={`${label} chart`}
-                title={`${label} chart`}
-                onClick={() => setPicked(t)}
-                className={cn(
-                  "rounded p-1.5 transition-colors",
-                  on ? "bg-primary/15 text-primary" : "text-muted-foreground hover:bg-primary/10 hover:text-primary",
-                )}
-              >
-                <Icon className="h-3.5 w-3.5" />
-              </button>
-            );
-          })}
+        <ControlRow nowrap>
+          <SegmentedControl
+            aria-label="Chart type"
+            value={picked ?? spec.type}
+            onValueChange={setPicked}
+            data={types.map((t) => {
+              const { Icon, label } = TYPE_META[t];
+              return { value: t, label: <Icon />, ariaLabel: `${label} chart`, title: `${label} chart` };
+            })}
+          />
           {onClose && (
-            <button
-              type="button"
-              aria-label="Close chart"
-              title="Close chart"
-              onClick={onClose}
-              className="ml-1 rounded p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
+            <Button variant="quiet" icon={<X />} aria-label="Close chart" title="Close chart" onClick={onClose} />
           )}
-        </div>
+        </ControlRow>
       </div>
       {notice && (
         <p className="border-b border-border px-3 py-1.5 text-xs text-muted-foreground" role="status">
