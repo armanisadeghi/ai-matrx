@@ -414,6 +414,13 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
     labelPlural: "Boards",
     hrefFor: (id) => `/board/${id}`,
   },
+  // content.document — opens in the Markdown Studio. NOT `/documents/[id]`,
+  // which loads the cloud table (`udt_document` below).
+  document: {
+    Icon: FileText,
+    labelPlural: "Markdown documents",
+    hrefFor: (id) => `/markdown-studio?source=document&id=${encodeURIComponent(id)}`,
+  },
   udt_document: {
     Icon: FileText,
     // "Documents" (A5-P, plain words). content.document (Markdown Studio) stays distinct as

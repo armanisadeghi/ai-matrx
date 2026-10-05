@@ -48,8 +48,9 @@ export function recordKindOfResourceType(resourceType: string | null | undefined
     case "content_ir_kind_instance":
       return "saved_result";
     case "document":
-    case "udt_document":
       return "document";
+    case "udt_document":
+      return "udt_document";
     default:
       return null;
   }

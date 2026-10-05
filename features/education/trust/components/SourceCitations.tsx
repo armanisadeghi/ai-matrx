@@ -31,6 +31,8 @@ import { useDocumentPassage } from "../useDocumentPassage";
 import { headingLabel } from "../documentPassage";
 import { useOpenCitation } from "@/features/rag/components/source-inspector/useOpenCitation";
 
+const isDocumentKind = (k: string | undefined) => k === "document" || k === "udt_document";
+
 const KIND_ICON = {
   url: LinkIcon,
   web: LinkIcon,
@@ -79,18 +81,19 @@ function TrustCitationChip({
   const openCitation = useOpenCitation();
   // A markdown document names its place by the section the quote sits in.
   const docPlace = useDocumentPassage(
-    record?.kind === "document" ? record.recordId : null,
+    isDocumentKind(record?.kind) ? record!.recordId : null,
     c.excerpt,
+    record?.kind === "udt_document" ? "udt_document" : "document",
   );
   const recordLabel =
-    record?.kind === "document"
+    isDocumentKind(record?.kind)
       ? docPlace.passage
         ? headingLabel(docPlace.passage.headings)
         : null
       : (record?.label ?? null);
   const openRecord = record
     ? () => {
-        if (record.kind === "conversation" || record.kind === "document") {
+        if (record.kind === "conversation" || isDocumentKind(record.kind)) {
           openCitation({
             sourceKind: record.kind,
             sourceId: record.recordId,

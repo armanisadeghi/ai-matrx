@@ -90,7 +90,8 @@ export type RecordCitationKind =
   | "table"
   | "pick_list"
   | "saved_result"
-  | "document";
+  | "document" // a markdown document (content.document)
+  | "udt_document"; // a cloud document (workbench.udt_documents)
 
 export const RECORD_CITATION_KINDS: readonly RecordCitationKind[] = [
   "conversation",
@@ -98,6 +99,7 @@ export const RECORD_CITATION_KINDS: readonly RecordCitationKind[] = [
   "pick_list",
   "saved_result",
   "document",
+  "udt_document",
 ];
 
 /**

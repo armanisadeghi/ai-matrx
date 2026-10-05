@@ -122,9 +122,13 @@ function ConversationCitationBody(props: SourceInspectorPaneProps) {
   );
 }
 
-/** A markdown-document citation: its text, the cited passage marked and scrolled to. */
+/** A document citation (markdown or cloud): its text, the cited passage marked and scrolled to. */
 function DocumentCitationBody(props: SourceInspectorPaneProps) {
-  const { loading, doc, passage } = useDocumentPassage(props.sourceId, props.snippet ?? null);
+  const { loading, doc, passage } = useDocumentPassage(
+    props.sourceId,
+    props.snippet ?? null,
+    props.sourceKind === "udt_document" ? "udt_document" : "document",
+  );
   const markRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     markRef.current?.scrollIntoView({ block: "start", behavior: "smooth" });
@@ -176,7 +180,9 @@ function DocumentCitationBody(props: SourceInspectorPaneProps) {
 
 export function SourceInspectorPane(props: SourceInspectorPaneProps) {
   if (props.sourceKind === "conversation") return <ConversationCitationBody {...props} />;
-  if (props.sourceKind === "document") return <DocumentCitationBody {...props} />;
+  if (props.sourceKind === "document" || props.sourceKind === "udt_document") {
+    return <DocumentCitationBody {...props} />;
+  }
   return <PageSourceInspector {...props} />;
 }
 

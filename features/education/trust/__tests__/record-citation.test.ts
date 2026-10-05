@@ -1,5 +1,7 @@
 import { citationIsOpenable, coerceTrustEnvelope, type SourceCitation } from "../types";
 import { sourceRefFromCitation } from "../sourceRef";
+import { recordKindOfResourceType } from "../grounding";
+import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import {
   cellsOfExcerpt,
   fieldLabelOfPart,
@@ -75,9 +77,31 @@ describe("a saved result citation opens AT its field", () => {
   });
 });
 
-describe("a markdown document citation", () => {
-  it("opens the document", () => {
-    expect(recordCitationTarget(cite({ recordKind: "document", sourceId: `${ID}:2` }))?.href).toBe(`/documents/${ID}`);
+describe("a document citation opens the route of ITS OWN kind", () => {
+  it("a markdown document opens in the Markdown Studio, never /documents (the cloud table)", () => {
+    expect(recordCitationTarget(cite({ recordKind: "document", sourceId: `${ID}:2` }))?.href).toBe(
+      `/markdown-studio?source=document&id=${ID}`,
+    );
+  });
+  it("a cloud document opens at /documents/<id>", () => {
+    const t = recordCitationTarget(cite({ recordKind: "udt_document", sourceId: `${ID}:2` }));
+    expect(t?.kind).toBe("udt_document");
+    expect(t?.href).toBe(`/documents/${ID}`);
+  });
+  it("the Source's resource type names which kind it is", () => {
+    expect(recordKindOfResourceType("document")).toBe("document");
+    expect(recordKindOfResourceType("udt_document")).toBe("udt_document");
+  });
+  it("the persisted cloud kind survives coercion", () => {
+    const env = coerceTrustEnvelope({
+      confidence: "grounded",
+      citations: [{ sourceId: `${ID}:1`, recordKind: "udt_document" }],
+    });
+    expect(env?.citations[0]?.recordKind).toBe("udt_document");
+  });
+  it("the entity registry agrees: markdown document and cloud document have different doors", () => {
+    expect(tryGetEntityInfo("document")?.hrefFor?.(ID)).toBe(`/markdown-studio?source=document&id=${ID}`);
+    expect(tryGetEntityInfo("udt_document")?.hrefFor?.(ID)).toBe(`/documents/${ID}`);
   });
 });
 
