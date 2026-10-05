@@ -101,7 +101,7 @@ export function BillingSummary({ scope }: { scope: BillingScope }) {
 
   const title = scope.kind === "personal" ? "Personal billing" : "Organization billing";
   const activeRead = readScope === scopeKey ? read : null;
-  const retry = () => { setModeError(null); setRecoveryError(null); setRetryNonce((value) => value + 1); };
+  const retry = () => { setModeError(null); setRecoveryError(null); setReadScope(null); setInvoice(null); setInvoiceScope(null); setRetryNonce((value) => value + 1); };
   if (modeError) return <ErrorNotice title="Billing is unavailable" message={modeError} actions={<Button size="sm" variant="outline" onClick={retry}>Retry</Button>} />;
   if (!activeRead || livemode === null) return <div className="flex items-center gap-2 rounded-md border border-border bg-card p-4 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" aria-hidden />Loading {title.toLowerCase()}…</div>;
   if (!activeRead.ok) return <ErrorNotice title="Billing could not be loaded" message={activeRead.reason} actions={<Button size="sm" variant="outline" onClick={retry}>Retry</Button>} />;
@@ -126,6 +126,7 @@ export function BillingSummary({ scope }: { scope: BillingScope }) {
       <div className="mt-4 flex flex-wrap gap-2">
         {invoiceUrl ? <Button size="sm" onClick={() => window.location.assign(invoiceUrl)}>{invoice?.requiresAction ? "Complete payment" : "Pay invoice"}</Button> : null}
         <SubscriptionControls livemode={livemode} scope={scope.kind === "personal" ? { kind: "personal" } : { kind: "organization", organizationId: scope.organizationId }} label="Manage billing" />
+        <Button size="sm" variant="ghost" onClick={retry}>Refresh billing</Button>
       </div>
     </section>
   );

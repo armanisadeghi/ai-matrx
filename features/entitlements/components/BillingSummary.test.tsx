@@ -109,8 +109,10 @@ describe("BillingSummary account switching", () => {
     await act(async () => { root.render(<BillingSummary scope={{ kind: "personal", userId: "member-harbor" }} />); });
     await act(async () => {});
     expect(host.textContent).toContain("Pay invoice");
-    await act(async () => { root.render(<BillingSummary scope={{ kind: "personal", userId: "member-harbor" }} />); });
-    await act(async () => {});
+    const refresh = Array.from(host.querySelectorAll("button")).find((button) => button.textContent === "Refresh billing");
+    expect(refresh).toBeDefined();
+    await act(async () => { refresh?.dispatchEvent(new MouseEvent("click", { bubbles: true })); });
     expect(host.textContent).not.toContain("Pay invoice");
+    expect(host.textContent).toContain("Active");
   });
 });
