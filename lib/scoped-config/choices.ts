@@ -4,7 +4,7 @@ import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 // THE ONE PLACE A SETTING'S CHOICES GET THEIR WORDS.
 //
 // 🚨 WHAT THIS EXISTS FOR (lane FRONT-DOOR, 2026-09-21; the defect is
-// VERIFIER-8 MEDIUM-2). `/data-v2/try-everything` printed, in its header, to a
+// VERIFIER-8 MEDIUM-2). `/data/try-everything` printed, in its header, to a
 // non-technical person:
 //
 //     Set to "all_records", which this screen has no words for

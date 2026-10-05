@@ -232,6 +232,9 @@ jobs:
         run: pnpm check:no-session-read-only
       - name: the session-read-only guard can still fail (self-test)
         run: pnpm check:no-session-read-only:self-test
+      - name: the record store lives at /data (no data-v2 links, no retired-table reads)
+        # 2026-10-04: /data-v2 moved to /data; the address survives only as the redirect in next.config.js.
+        run: pnpm check:no-data-v2 && pnpm check:no-data-v2:self-test
       - name: the no-fake-data guard can still fail (self-test)
         # A guard you cannot demonstrate failing is not a guard. This plants a
         # seed file carrying Acme, a sequential name and an example.com mailbox
@@ -345,7 +348,7 @@ jobs:
         # SMS leg is refused outright as deep_link_not_live. Measured
         # 2026-09-21: `platform.route_manifest` was EIGHT DAYS stale and 63
         # routes — the table-invitation accept page, `/notifications` (the deep
-        # link every agent digest declares), the whole `/data-v2/**` store,
+        # link every agent digest declares), the whole `/data/**` store,
         # `/approvals`, `/decisions` — were being rewritten with nothing red
         # anywhere. This script existed and ran in NO job and NO gate.
         # This is the DB-FREE half (app/ vs the checked-in lockfile) so it runs

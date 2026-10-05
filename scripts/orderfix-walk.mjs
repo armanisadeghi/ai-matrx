@@ -47,7 +47,7 @@ const sortMode = async () =>
   sheet().locator("[data-sort-mode]").first().getAttribute("data-sort-mode").catch(() => null);
 const sortText = async () => (await sheet().locator("[data-sort-mode]").first().innerText().catch(() => "")).replace(/\s+/g, " ");
 async function open() {
-  await page.goto(`${ORIGIN}/data-v2/${TABLE}?view=sheet`, { waitUntil: "domcontentloaded", timeout: 240000 });
+  await page.goto(`${ORIGIN}/data/${TABLE}?view=sheet`, { waitUntil: "domcontentloaded", timeout: 240000 });
   await page.waitForSelector("[data-sheet-layout] [data-cell$='::task']", { timeout: 240000 });
   await page.waitForTimeout(2500);
 }

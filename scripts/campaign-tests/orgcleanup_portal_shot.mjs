@@ -13,10 +13,10 @@ const OUT = "/tmp/matrx-evidence/2026-09-22";
 const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage({ viewport: { width: 1600, height: 1400 } });
 console.log("seat:", await signIn(page, ORIGIN, process.env.AI_ADMIN_USERNAME, process.env.AI_ADMIN_PASSWORD));
-await page.goto(`${ORIGIN}/data-v2`, { waitUntil: "domcontentloaded", timeout: 120000 });
+await page.goto(`${ORIGIN}/data`, { waitUntil: "domcontentloaded", timeout: 120000 });
 await sleep(4000);
 await setOrganization(page, "Rincon Plumbing Co");
-await page.goto(`${ORIGIN}/data-v2/try-everything`, { waitUntil: "domcontentloaded", timeout: 120000 });
+await page.goto(`${ORIGIN}/data/try-everything`, { waitUntil: "domcontentloaded", timeout: 120000 });
 await sleep(14000);
 // Section 10 is the outsider portal; open it and read the sentence that counts the portals.
 await page.evaluate(() => {

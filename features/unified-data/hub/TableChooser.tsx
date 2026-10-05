@@ -133,7 +133,7 @@ export function TableChooser({
         }
         searchPlaceholder="Search your tables…"
         noun="table"
-        manageAction={{ label: "Open Data to add or edit tables", href: "/data-v2" }}
+        manageAction={{ label: "Open Data to add or edit tables", href: "/data" }}
         footerActions={
           appKeptCount > 0
             ? [

@@ -20,7 +20,7 @@ function RecordCrumbs({ tableId, recordId }: { tableId: string; recordId: string
   const record = useRecord(recordId);
   const tableName = table.data?.name?.trim() || "Table";
   const recordName = record.data?.document ? recordNameIn(table.data, record.data.document) : "";
-  const tableHref = `/data-v2/${encodeURIComponent(tableId)}`;
+  const tableHref = `/data/${encodeURIComponent(tableId)}`;
   return (
     <RouteHeader
       left={

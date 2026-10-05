@@ -15,7 +15,7 @@
  *   S3 owner, the tables list under the hub: every row carries a chip naming Tacoma Yard; its own
  *      Show everything reveals Material choices with the store's sentence for who keeps it
  *   S4 owner: a row chip opens the panel — Scale tickets lives in Tacoma Yard, Portland Depot offered
- *   S5 outsider (shared Scale tickets by name, member of neither yard): /data-v2?scope=all lists it
+ *   S5 outsider (shared Scale tickets by name, member of neither yard): /data?scope=all lists it
  *      under Tacoma Yard with a chip naming Tacoma Yard; the panel offers her no move
  */
 import { chromium } from "playwright";
@@ -58,9 +58,9 @@ try {
     const page = await context.newPage();
     const who = await signIn(page, ORIGIN, ...seats.admin, "owner seat");
     pass("S0 owner signed in", who === seats.admin[0], who === seats.admin[0] ? "the admin seat" : "someone else");
-    await page.goto(`${ORIGIN}/data-v2`, { waitUntil: "domcontentloaded", timeout: 240000 });
+    await page.goto(`${ORIGIN}/data`, { waitUntil: "domcontentloaded", timeout: 240000 });
     await setOrganization(page, "Cascade Electronics Recovery - Tacoma Yard");
-    await page.goto(`${ORIGIN}/data-v2`, { waitUntil: "domcontentloaded", timeout: 240000 });
+    await page.goto(`${ORIGIN}/data`, { waitUntil: "domcontentloaded", timeout: 240000 });
     const hubControl = page.locator("[data-hub-show-everything]");
     await hubControl.waitFor({ timeout: 240000 });
     const strip = (await page.locator("[data-hub-scope]").first().innerText()).replace(/\s+/g, " ");
@@ -122,7 +122,7 @@ try {
     const page = await context.newPage();
     const who = await signIn(page, ORIGIN, ...seats.test, "outsider seat");
     pass("S0 outsider signed in", who === seats.test[0], who === seats.test[0] ? "the test seat" : "someone else");
-    await page.goto(`${ORIGIN}/data-v2?scope=all`, { waitUntil: "domcontentloaded", timeout: 240000 });
+    await page.goto(`${ORIGIN}/data?scope=all`, { waitUntil: "domcontentloaded", timeout: 240000 });
     const chip = page.locator(`[data-where-it-lives="${IDS.table}"]`).first();
     await chip.waitFor({ timeout: 240000 });
     const chipText = ((await chip.textContent()) ?? "").trim();

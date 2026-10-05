@@ -2,7 +2,7 @@
 
 // features/unified-data/home/DataHomeRoute.tsx — LANE DATA-HOME-3A
 //
-// WHICH DATA HOME /data-v2 SHOWS: the knob `custom.data_home_shell` (platform default off = the old
+// WHICH DATA HOME /data SHOWS: the knob `custom.data_home_shell` (platform default off = the old
 // hub), or `?home=new` / `?home=old` for one visit, so old and new can be opened side by side
 // (Arman, 2026-10-01: no redirects until validated; copy mode; one flip later). Until the knob
 // answers (and the server did not hand one down), the old page is shown — it is what everybody sees today, and a knob that never answers

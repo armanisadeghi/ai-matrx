@@ -1,6 +1,6 @@
 // scripts/urlstate-walk.mjs — LANE URL-STATE headless proof on the shared preview (live database).
 //
-// admin@admin.com's own Invoices table on /data-v2/[tableId]: switching the layout
+// admin@admin.com's own Invoices table on /data/[tableId]: switching the layout
 //   1. fires NO `?_rsc=` request (no server round trip) and no grid re-read;
 //   2. moves the address (?view=) and the page follows it (the chosen layout is on screen);
 //   3. keeps the page mounted (a DOM node from before the switch is still in the document);
@@ -42,7 +42,7 @@ const view = () => new URL(page.url()).searchParams.get("view");
 try {
   const who = await signIn(page, ORIGIN, env.AI_ADMIN_USERNAME, env.AI_ADMIN_PASSWORD, "admin");
   check("seat", who === "admin@admin.com", who);
-  await page.goto(`${ORIGIN}/data-v2/${TABLE}`, { waitUntil: "domcontentloaded", timeout: 240000 });
+  await page.goto(`${ORIGIN}/data/${TABLE}`, { waitUntil: "domcontentloaded", timeout: 240000 });
   await page.waitForSelector("[data-table-toolbar]", { timeout: 240000 });
   await page.waitForTimeout(6000); // let the first reads settle
   await page.screenshot({ path: `${OUT}/0-grid.png` });

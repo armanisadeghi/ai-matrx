@@ -4,7 +4,7 @@
  *
  * THE USE CASE. Harbor Dental Group's office manager opens the organization's Tables page. She
  * sees Hygiene Recall Schedule; she does not see "Insurance Carriers" (the choice list behind a
- * column) until she presses Show everything — the same as on /data-v2. No workbench table is read.
+ * column) until she presses Show everything — the same as on /data. No workbench table is read.
  */
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";

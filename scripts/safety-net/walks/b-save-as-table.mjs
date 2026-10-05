@@ -4,7 +4,7 @@
 //   A04 a note holding a markdown table → right-click → Save to a table… → Make the table
 //   A05 the same table, rendered in Read mode, selected → the selection bar's More → Save to a table…
 //   A03 a chat answer that is a markdown table → right-click → Save to a table…
-// Each must end on the new table's page (/data-v2/<id>, the record store) with the four columns named exactly as the
+// Each must end on the new table's page (/data/<id>, the record store) with the four columns named exactly as the
 // source and the deciding marker row in the grid. Same walk on LIVE (www.aimatrx.com) and on the CLONE preview.
 // Fixtures carry the run stamp, live in Cedar Ridge Physical Therapy, and are archived at the end through the
 // table's own Settings → Archive this table (ctx.cleanup).
@@ -43,8 +43,8 @@ async function makeAndJudge(page, marker, label) {
   const ok = await until("made", async () => (await dlg.innerText()).includes("was made"), 90000);
   if (!ok.v) return { ok: false, detail: `the dialog never said the table was made: ${(await dlg.innerText()).slice(0, 240)}` };
   await dlg.getByRole("button", { name: "Open the table" }).click();
-  const grid = await until("the grid", async () => page.url().includes("/data-v2/") && (await page.locator("thead th").count()) > 1, 120000);
-  const id = (page.url().match(/\/data-v2\/([0-9a-f-]{36})/) ?? [])[1];
+  const grid = await until("the grid", async () => page.url().includes("/data/") && (await page.locator("thead th").count()) > 1, 120000);
+  const id = (page.url().match(/\/data\/([0-9a-f-]{36})/) ?? [])[1];
   if (id) made.push(id);
   if (!grid.v || !id) return { ok: false, detail: `no table page opened (url ${page.url()})` };
   await sleep(4000);
@@ -95,7 +95,7 @@ try {
   const page = await ctx.page("admin");
   ctx.cleanup(async () => {
     for (const id of made) {
-      await ctx.goto(page, `/data-v2/${id}?rail=settings`);
+      await ctx.goto(page, `/data/${id}?rail=settings`);
       const found = await until("archive button", async () => (await page.getByRole("button", { name: "Archive this table" }).count()) > 0, 120000);
       if (!found.v) throw new Error(`table ${id}: no Archive this table button`);
       await page.getByRole("button", { name: "Archive this table" }).first().click();

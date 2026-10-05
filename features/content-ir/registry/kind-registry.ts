@@ -552,7 +552,7 @@ class KindRegistry {
         const source = await loadTableKindSource();
         if (!this.tableStructureHeard) {
           this.tableStructureHeard = true;
-          // This page changed a Table's shape (a rename in /data-v2 in this tab): every table
+          // This page changed a Table's shape (a rename in /data in this tab): every table
           // kind it names — or all of them, when the door named none — re-reads.
           source.hearTableStructure((tableId) => {
             for (const held of [...this.tableReadAt.keys()]) {

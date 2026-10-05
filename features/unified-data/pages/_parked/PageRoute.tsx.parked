@@ -2,7 +2,7 @@
 
 // features/unified-data/pages/PageRoute.tsx — v6 lane 11, wave D: ONE PAGE BUILT FROM TABLES.
 //
-// /data-v2/pages/<id> opens a page; /data-v2/pages/new?table=<id> makes one on that table (its
+// /data/pages/<id> opens a page; /data/pages/new?table=<id> makes one on that table (its
 // starter: the table's records and a record panel) and replaces the address with the new page's.
 // The page's organization is the store's answer (`custom.where_id_opens` — for a new page, the
 // table's), never the active organization. The screen itself is records-ui's `PageScreen`, mounted
@@ -23,7 +23,7 @@ import { useRecordsDataSource } from "@/features/data-tables/records-ui-host/rec
 import { useObjectOrganization } from "@/features/unified-data/objectOrganization";
 import { MakeMount } from "@/features/make/MakeMount";
 
-const PAGES_HOME = "/data-v2/pages";
+const PAGES_HOME = "/data/pages";
 
 export function PageRoute({ pageId }: { pageId: string }) {
   const router = useRouter();
@@ -86,7 +86,7 @@ export function PageRoute({ pageId }: { pageId: string }) {
           {...(making ? { newOnTable: tableId } : { pageId })}
           viewerUserId={userId}
           startEditing={search.get("edit") === "1"}
-          onCreated={(id) => router.replace(`/data-v2/pages/${id}?edit=1`)}
+          onCreated={(id) => router.replace(`/data/pages/${id}?edit=1`)}
           onArchived={() => router.push(PAGES_HOME)}
           header={header}
         />

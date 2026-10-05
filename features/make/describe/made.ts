@@ -69,7 +69,7 @@ export function madeSince(
   for (const t of after.tables) {
     if (t.organization_id !== organizationId || before.tables.has(t.table_id)) continue;
     if (t.kept_by_the_app || t.kind !== "table") continue;
-    made.push({ kind: "table", id: t.table_id, title: t.table_name, href: `/data-v2/${t.table_id}` });
+    made.push({ kind: "table", id: t.table_id, title: t.table_name, href: `/data/${t.table_id}` });
   }
   const bookingIds = new Set(
     after.items.filter((i) => i.kind === "booking").map((i) => str(i.item_row.form_id) ?? i.item_id),
@@ -87,7 +87,7 @@ export function madeSince(
         kind: "form",
         id,
         title,
-        href: tableId ? `/data-v2/${tableId}?rail=forms&item=${id}` : `/f/${id}`,
+        href: tableId ? `/data/${tableId}?rail=forms&item=${id}` : `/f/${id}`,
         ...(published ? { publicHref: `/f/${id}` } : {}),
       });
     } else if (i.kind === "booking") {
@@ -95,7 +95,7 @@ export function madeSince(
         kind: "booking",
         id,
         title,
-        href: tableId ? `/data-v2/${tableId}?rail=bookings&item=${id}` : `/b/${id}`,
+        href: tableId ? `/data/${tableId}?rail=bookings&item=${id}` : `/b/${id}`,
         ...(published ? { publicHref: `/b/${id}` } : {}),
       });
     } else {
@@ -107,10 +107,10 @@ export function madeSince(
         title,
         href:
           i.kind === "dashboard" && tableId
-            ? `/data-v2/${tableId}?dashboard=${i.item_id}`
+            ? `/data/${tableId}?dashboard=${i.item_id}`
             : tableId
-              ? `/data-v2/${tableId}`
-              : "/data-v2",
+              ? `/data/${tableId}`
+              : "/data",
       });
     }
   }

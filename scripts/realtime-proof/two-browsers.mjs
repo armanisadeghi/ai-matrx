@@ -33,7 +33,7 @@ const ORG = "6069a466-1445-42df-a64e-cf37ecdc1b99"; // Rincon Plumbing Co
 const OXNARD_TABLE = "f9d61a79-0780-4cd2-9b58-3e2a25042714"; // Ridgeline's appointments table
 const ORG_NAME = "Rincon Plumbing Co";
 const JOBS = "af3bfff6-a255-41e5-9ac2-879d53816163"; // its Jobs table
-const TABLE_URL = `${ORIGIN}/data-v2/${JOBS}`;
+const TABLE_URL = `${ORIGIN}/data/${JOBS}`;
 const TEST_EMAIL = "test@test.com";
 const TEST_PASSWORD = "Password1234#";
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -186,7 +186,7 @@ async function main() {
     const marcoWho = await signInTest(marcoPage);
     console.log(`  Dana=${ADMIN_EMAIL} (signed-in client, through the same doors)  Marco=${marcoWho}`);
     // The org picker is on whatever page he landed on after signing in.
-    await marcoPage.goto(`${ORIGIN}/data-v2`, { waitUntil: "commit", timeout: 120000 });
+    await marcoPage.goto(`${ORIGIN}/data`, { waitUntil: "commit", timeout: 120000 });
     await setOrganization(marcoPage, ORG_NAME);
     await sleep(3000);
 

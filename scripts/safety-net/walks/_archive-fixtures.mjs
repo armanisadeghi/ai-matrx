@@ -10,7 +10,7 @@ try {
   const page = await ctx.page("admin");
   for (const id of ids) {
     await ctx.step([], `archive fixture ${id}`, page, async () => {
-      await ctx.goto(page, `/data-v2/${id}?rail=settings`);
+      await ctx.goto(page, `/data/${id}?rail=settings`);
       await sleep(5000);
       if (await page.getByText("This table is archived").count()) return { ok: true, detail: "already archived" };
       // An archive a killed walk interrupted says so and offers "Carry on archiving" (it resumes).

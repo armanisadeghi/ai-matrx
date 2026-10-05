@@ -375,7 +375,7 @@ function selfTest(): number {
 
   // RED-1: an object route that mounts the store for the active organization.
   write(
-    "app/(core)/data-v2/[tableId]/page.tsx",
+    "app/(core)/data/[tableId]/page.tsx",
     `import { TablePage } from "@ai-matrx/records-ui";\nimport { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";\nexport default function P() { const { organizationId } = useOrganizationRequired(); return organizationId; }\n`,
   );
   // RED-2: a helper reading the Redux active organization with a reasonless exemption.
@@ -385,7 +385,7 @@ function selfTest(): number {
   );
   // GREEN-1: a list route (no dynamic segment) may read the active organization.
   write(
-    "app/(core)/data-v2/page.tsx",
+    "app/(core)/data/page.tsx",
     `import { OrganizationHub } from "@/features/unified-data/hub/OrganizationHub";\nimport { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";\nconst x = useOrganizationRequired();\n`,
   );
   // GREEN-2: an object route that resolves from the object.
@@ -401,7 +401,7 @@ function selfTest(): number {
 
   const red1 = scan(dir, []).findings;
   expect("RED-1 an object route reading useOrganizationRequired fails", red1.some((f) => f.file.includes("[tableId]")));
-  expect("GREEN-1 a list route (no dynamic segment) is not scanned", !red1.some((f) => f.file === join("app", "(core)", "data-v2", "page.tsx")));
+  expect("GREEN-1 a list route (no dynamic segment) is not scanned", !red1.some((f) => f.file === join("app", "(core)", "data", "page.tsx")));
   expect("GREEN-2 an object route using useObjectOrganization passes", !red1.some((f) => f.file.includes("[sheetId]")));
   const red2 = scan(dir, ["features/x/helper.ts"]).findings;
   expect("RED-2 a reasonless object-org-exempt fails", red2.some((f) => f.file === "features/x/helper.ts" && /no reason/.test(f.why)));
@@ -412,7 +412,7 @@ function selfTest(): number {
 
   const excusedStale = scan(dir, [], { "app/(link)/capture/[sheetId]/page.tsx": "fixture reason long enough" }).findings;
   expect("RED-4 an exception for a file that is already clean fails as STALE", excusedStale.some((f) => /STALE/.test(f.why)));
-  const excusedHeld = scan(dir, [], { "app/(core)/data-v2/[tableId]/page.tsx": "fixture reason long enough" }).findings;
+  const excusedHeld = scan(dir, [], { "app/(core)/data/[tableId]/page.tsx": "fixture reason long enough" }).findings;
   expect("GREEN-4 a recorded exception holds its file", !excusedHeld.some((f) => f.file.includes("[tableId]")));
 
   // GUESSED REFUSAL: an object page telling her the sender "was in a different organization".
@@ -441,7 +441,7 @@ function selfTest(): number {
   );
   write("features/x/shareDialog.tsx", `import { selectOrganizationId } from "r";\nconst org = useAppSelector(selectOrganizationId);\n`);
   write(
-    "app/(core)/data-v2/[tableId]/Launch.tsx",
+    "app/(core)/data/[tableId]/Launch.tsx",
     `import { TablePage } from "@ai-matrx/records-ui";\nconst go = () => launchMandate(KEY, { surfaceKey: "s", runtime: { context: { t: 1 } } });\n`,
   );
   const red7 = scan(dir, [], {}, {}, ["features/x/shareService.ts"]).findings;

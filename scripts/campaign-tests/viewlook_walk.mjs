@@ -87,7 +87,7 @@ const storedGroup = async () => {
 
 // ── the browser ────────────────────────────────────────────────────────────────────────────────
 const browser = await chromium.launch({ headless: true });
-const url = `${ORIGIN}/data-v2/${tableId}`;
+const url = `${ORIGIN}/data/${tableId}`;
 
 async function seat(which) {
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });

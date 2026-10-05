@@ -1,7 +1,7 @@
 // scripts/data-home/data-home-shell-walk.mjs — LANE DATA-HOME-3A
 //
 // THE REBUILT DATA HOME, WALKED FROM A REAL SEAT (headless), at 1440, 1024 and 390 px. Signs in the
-// way a person does, opens /data-v2 (`?home=new` shows the shell whatever the knob says; `?home=old`
+// way a person does, opens /data (`?home=new` shows the shell whatever the knob says; `?home=old`
 // the old hub), and actually clicks: types a search, sorts, filters by a token chip, toggles cards,
 // groups by Kind and by Organization, stars a row, opens a row. Writes PASS/FAIL lines and the
 // named screenshots.
@@ -78,14 +78,14 @@ const ROW = "tr[data-row-id]:visible, [data-data-home-cards] [data-row-id]:visib
 const rowsShown = () => page.locator(ROW).count();
 const waitRows = async () => (await until("rows", async () => (await rowsShown()) > 0, 90000)).v;
 const goto = async (query = "") => {
-  await page.goto(`${ORIGIN}/data-v2?home=new${query}`, { waitUntil: "domcontentloaded", timeout: 180000 });
+  await page.goto(`${ORIGIN}/data?home=new${query}`, { waitUntil: "domcontentloaded", timeout: 180000 });
   await waitRows();
   await sleep(800);
 };
 
 try {
   if (!ONLY || ONLY === "before" || BEFORE_ONLY) {
-    await page.goto(`${ORIGIN}/data-v2?home=old`, { waitUntil: "domcontentloaded", timeout: 180000 });
+    await page.goto(`${ORIGIN}/data?home=old`, { waitUntil: "domcontentloaded", timeout: 180000 });
     await until("old hub", async () => (await page.locator("[data-hub-root]").count()) > 0, 90000);
     await sleep(2500);
     await shot("before-home");
@@ -106,13 +106,13 @@ try {
   const sorted = (xs, dir) =>
     xs.every((x, i) => i === 0 || (dir === "asc" ? xs[i - 1].localeCompare(x, undefined, { sensitivity: "base", numeric: true }) <= 0 : xs[i - 1].localeCompare(x, undefined, { sensitivity: "base", numeric: true }) >= 0));
   for (const dir of ["asc", "desc"]) {
-    await page.goto(`${ORIGIN}/data-v2?home=new&sort=name&dir=${dir}`, { waitUntil: "domcontentloaded", timeout: 180000 });
+    await page.goto(`${ORIGIN}/data?home=new&sort=name&dir=${dir}`, { waitUntil: "domcontentloaded", timeout: 180000 });
     await waitRows();
     await sleep(800);
     const xs = await names();
     pass(`Name sorts ${dir}`, xs.length > 3 && sorted(xs, dir), xs.slice(0, 3).join(" · "));
   }
-  await page.goto(`${ORIGIN}/data-v2?home=new&sort=updated&dir=desc`, { waitUntil: "domcontentloaded", timeout: 180000 });
+  await page.goto(`${ORIGIN}/data?home=new&sort=updated&dir=desc`, { waitUntil: "domcontentloaded", timeout: 180000 });
   await waitRows();
 
   // Type a search; it is in the address, ranked.
@@ -175,7 +175,7 @@ try {
   await sleep(1200);
 
   // Open a row.
-  const href = await page.locator("[data-row-id]:visible a[href^='/data-v2/']").first().getAttribute("href");
+  const href = await page.locator("[data-row-id]:visible a[href^='/data/']").first().getAttribute("href");
   pass("a row's name is its door", Boolean(href), href ?? "");
 
   // The archive and the inbox wait below the list and are read when the person scrolls to them.

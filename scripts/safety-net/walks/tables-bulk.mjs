@@ -98,11 +98,11 @@ async function settle(page, query, { needFile = false } = {}) {
   await sleep(1500);
 }
 async function open(page, tid, query = "?view=grid", opts = {}) {
-  await ctx.goto(page, `/data-v2/${tid}${query}`);
+  await ctx.goto(page, `/data/${tid}${query}`);
   await settle(page, query, opts);
 }
 async function newTable(name) {
-  await ctx.goto(admin, "/data-v2");
+  await ctx.goto(admin, "/data");
   const nt = admin.getByRole("button", { name: "New table", exact: true }).first();
   await until("New table", async () => (await nt.count()) > 0, 90000);
   // The header button is server-rendered before the page hydrates; a click that lands first is lost
@@ -117,13 +117,13 @@ async function newTable(name) {
   if (!opened.v) throw new Error("New table never opened the dialog after repeated clicks");
   await nameInput.fill(name);
   await admin.getByRole("button", { name: "Create", exact: true }).click();
-  await until("the new table", async () => /\/data-v2\/[0-9a-f-]{36}/.test(admin.url()), 120000);
-  const id = admin.url().match(/\/data-v2\/([0-9a-f-]{36})/)?.[1] ?? null;
+  await until("the new table", async () => /\/data\/[0-9a-f-]{36}/.test(admin.url()), 120000);
+  const id = admin.url().match(/\/data\/([0-9a-f-]{36})/)?.[1] ?? null;
   if (id) fixtures.push({ id, name });
   return id;
 }
 async function archive(id) {
-  await ctx.goto(admin, `/data-v2/${id}?rail=settings`);
+  await ctx.goto(admin, `/data/${id}?rail=settings`);
   await sleep(7000);
   if (await admin.getByText("This table is archived").count()) return "already archived";
   const btn = admin.getByRole("button", { name: "Archive this table", exact: true });

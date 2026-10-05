@@ -115,13 +115,13 @@ async function openOnce(query = "", { width = 1600, height = 1000, dark = false 
   await page.setViewportSize({ width, height });
   await page.emulateMedia({ colorScheme: dark ? "dark" : "light" });
   query = withGrid(query);
-  await page.goto(`${ORIGIN}/data-v2/${TABLE}${query}`, { waitUntil: "domcontentloaded", timeout: 300000 });
+  await page.goto(`${ORIGIN}/data/${TABLE}${query}`, { waitUntil: "domcontentloaded", timeout: 300000 });
   // The walk cap parks an idle preview behind "Resume this preview", at the same address or at
   // /__dev-walk; a person presses Resume, and so does the walk.
   if (page.url().includes("__dev-walk") || (await page.getByRole("button", { name: /Resume/ }).count())) {
     await page.getByRole("button", { name: /Resume/ }).first().click().catch(() => {});
     await sleep(6000);
-    await page.goto(`${ORIGIN}/data-v2/${TABLE}${query}`, { waitUntil: "domcontentloaded", timeout: 300000 });
+    await page.goto(`${ORIGIN}/data/${TABLE}${query}`, { waitUntil: "domcontentloaded", timeout: 300000 });
   }
   const ready = await until("the grid", async () => (await page.locator("thead th").count()) > 1, 240000);
   if (!ready.v) throw new Error("the table did not draw");

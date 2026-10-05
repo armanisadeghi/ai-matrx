@@ -1,8 +1,8 @@
 "use client";
 
-// Data home rows (/data-v2) for the right-click demo. Both sides use the real wrapper a Data home row
+// Data home rows (/data) for the right-click demo. Both sides use the real wrapper a Data home row
 // uses (`ItemContextMenu`, sourceFeature "udt", surface "matrx-user/data-tables"):
-//   today    — the row menu /data-v2 ships right now (Open, Open in new tab, Favorite)
+//   today    — the row menu /data ships right now (Open, Open in new tab, Favorite)
 //   proposed — the ONE table action list (`tableActions` in @ai-matrx/records-ui) through its
 //              frontend adapter, which is what the Data home adopts next.
 // Rows are fixtures; every handler only says what it would run.
@@ -52,7 +52,7 @@ function proposedConfig(table: TableActionSubject, viewer: boolean): ItemMenuCon
 }
 
 function todayConfig(table: TableActionSubject): ItemMenuConfig {
-  const href = `/data-v2/${table.id}`;
+  const href = `/data/${table.id}`;
   return {
     sections: [
       {

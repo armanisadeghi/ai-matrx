@@ -124,7 +124,7 @@ export function archivedTableRow(table: ArchivedEverywhereRow, me: string | null
     records: null,
     changedBy: table.archived_by_name,
     details: ["Archived", when, table.archived_by_name ? `by ${table.archived_by_name}` : null].filter(Boolean).join(" "),
-    href: `/data-v2/${table.id}`,
+    href: `/data/${table.id}`,
     publicHref: null,
     publicLabel: null,
     trouble: null,
@@ -151,7 +151,7 @@ export function archivedPortalRow(portal: ArchivedPortalEverywhereRow): DataHome
     name: portal.title || "Untitled portal",
     kind: "portal",
     parentName: portal.client_table,
-    href: `/data-v2/${portal.client_table_id}?rail=portals&item=${portal.portal_id}`,
+    href: `/data/${portal.client_table_id}?rail=portals&item=${portal.portal_id}`,
   };
 }
 

@@ -10,7 +10,7 @@ p.on("response", async r => {
     console.log(`[http ${r.status()}] ${r.url().slice(0,160)}\n   ${body}`);
   }
 });
-await signIn(p, "/data-v2");
+await signIn(p, "/data");
 await useOrganization(p, A);
 await settleOnTable(p, A.table);
 await p.getByRole("button", { name: /^Forms$/ }).first().click();

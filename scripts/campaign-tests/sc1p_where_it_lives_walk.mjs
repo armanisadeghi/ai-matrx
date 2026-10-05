@@ -12,7 +12,7 @@
  * from the environment and are never printed. Headless only, the real login form.
  *
  * Clauses (exit 0 only when every one passes):
- *   W1 owner: /data-v2/<table> says "Lives in" and names Tacoma Yard, from the table
+ *   W1 owner: /data/<table> says "Lives in" and names Tacoma Yard, from the table
  *   W2 owner: the chip opens, says where it lives, and offers Portland Depot as a Move button
  *   W3 owner: Move states the consequence first, then lands — the toast and the chip say Portland
  *   W4 outsider (test@test.com, shared by name, member of neither yard): the chip names Portland
@@ -65,7 +65,7 @@ async function chipText(page) {
 }
 
 async function openTable(page) {
-  await page.goto(`${ORIGIN}/data-v2/${IDS.table}`, { waitUntil: "domcontentloaded", timeout: 240000 });
+  await page.goto(`${ORIGIN}/data/${IDS.table}`, { waitUntil: "domcontentloaded", timeout: 240000 });
   await page.locator(`[data-where-it-lives="${IDS.table}"]`).first().waitFor({ timeout: 240000 });
 }
 
@@ -154,7 +154,7 @@ try {
     page.on("console", (m) => {
       if (m.type() === "error" && /table_home|where_id_opens|tableHome|objectOrganization/.test(m.text())) errors.push(m.text().slice(0, 200));
     });
-    await page.goto(`${ORIGIN}/data-v2/${quietTable}?view=sheet`, { waitUntil: "domcontentloaded", timeout: 240000 });
+    await page.goto(`${ORIGIN}/data/${quietTable}?view=sheet`, { waitUntil: "domcontentloaded", timeout: 240000 });
     await page.locator(`[data-where-it-lives="${quietTable}"]`).first().waitFor({ timeout: 240000 });
     await page.waitForTimeout(8000);
     const named = (await page.locator(`[data-where-it-lives="${quietTable}"]`).first().textContent()) ?? "";

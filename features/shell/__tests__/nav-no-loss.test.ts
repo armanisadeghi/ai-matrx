@@ -42,9 +42,8 @@ const HREFS_BEFORE_DOMAIN_TREE: readonly string[] = [
   "/crm/outreach-lists",
   "/crm/sending-identities",
   "/dashboard",
+  // The old data-v2 address and "/data/create" became redirects to "/data" (Arman, 2026-10-04: "use 'data' instead of data-v2").
   "/data",
-  "/data-v2",
-  "/data/create",
   "/decisions",
   "/devices",
   "/documents",
@@ -349,9 +348,8 @@ const GUEST_VISIBLE_BEFORE_DOMAIN_TREE: readonly string[] = [
   "/cms",
   "/code",
   "/dashboard",
+  // The old data-v2 address and "/data/create" became redirects to "/data" (Arman, 2026-10-04: "use 'data' instead of data-v2").
   "/data",
-  "/data-v2",
-  "/data/create",
   "/decisions",
   "/devices",
   "/documents",

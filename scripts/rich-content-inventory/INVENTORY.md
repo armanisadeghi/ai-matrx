@@ -2448,7 +2448,7 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 - [ ] `features/connectors/ConnectorPromptCard.tsx:168` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{provider.prompt.body}`
 - [ ] `features/dashboard/components/DiscoverSection.tsx:34` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.description}`
 
-### route /data-v2/try-everything
+### route /data/try-everything
 
 - [ ] `features/unified-data/test-bench/TryEverythingScreen.tsx:70` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
 

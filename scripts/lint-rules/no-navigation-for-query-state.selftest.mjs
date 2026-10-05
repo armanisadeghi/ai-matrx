@@ -19,7 +19,7 @@ const tester = new RuleTester({
 });
 
 const inFeatures = "/repo/features/example/Example.tsx";
-const inApp = "/repo/app/(core)/data-v2/[tableId]/page.tsx";
+const inApp = "/repo/app/(core)/data/[tableId]/page.tsx";
 const inLib = "/repo/lib/example/example.ts";
 const inHooks = "/repo/hooks/example/useExample.ts";
 const inComponents = "/repo/components/example/Example.tsx";
@@ -45,7 +45,7 @@ tester.run("no-navigation-for-query-state", rule, {
     { filename: inFeatures, code: 'text.replace("?", "");' },
   ],
   invalid: [
-    // app/(core)/data-v2/[tableId]/page.tsx onViewChanged
+    // app/(core)/data/[tableId]/page.tsx onViewChanged
     { filename: inApp, code: "router.replace(`${pathname}?${next.toString()}`, { scroll: false });", errors: query },
     // features/unified-data/hub/OrganizationHub.tsx
     { filename: inFeatures, code: "router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });", errors: query },

@@ -122,7 +122,7 @@ try {
   said.organization_found = await setOrganization(page, ORG_NAME);
 
   // ── 1 — THE JOBS TABLE AS IT STANDS: five real jobs, and no customer on any of them.
-  await page.goto(`${ORIGIN}/data-v2/${JOBS}`, { waitUntil: "domcontentloaded", timeout: 180000 });
+  await page.goto(`${ORIGIN}/data/${JOBS}`, { waitUntil: "domcontentloaded", timeout: 180000 });
   const { v: grid } = await until("the Jobs grid", async () => (await text(page)).includes("RPS-3101"), 120000);
   if (!grid) throw new Error(`the Jobs grid never drew RPS-3101 — screen said: ${(await text(page)).slice(0, 400)}`);
   said.jobs_before = await text(page);
@@ -294,7 +294,7 @@ try {
   // 🚨 THE ONLY PROOF THAT COUNTS: reload the page from nothing and read the cell again. The
   // picker showing her name proves the picker can draw a name; only a fresh read proves the
   // JOB now names its customer.
-  await page.goto(`${ORIGIN}/data-v2/${JOBS}`, { waitUntil: "domcontentloaded", timeout: 180000 });
+  await page.goto(`${ORIGIN}/data/${JOBS}`, { waitUntil: "domcontentloaded", timeout: 180000 });
   // WHICH job is read off the grid rather than assumed: the rail opens the row the grid has in
   // hand, and the grid's own default sort decides which that is. What is being proved is that
   // A JOB NAMES ITS CUSTOMER in the two columns she chose — not which job number got there.

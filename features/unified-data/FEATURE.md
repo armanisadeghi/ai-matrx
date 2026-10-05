@@ -18,9 +18,9 @@ live in the custom-data node (`STATE.md`, `HANDOFF.md`, `DECISIONS.md`, `VISION.
 
 | Path | What it holds |
 |---|---|
-| `home/` | The data home at `/data-v2`. `DataHomeRoute.tsx` picks the new list-shell home or the old hub |
+| `home/` | The data home at `/data`. `DataHomeRoute.tsx` picks the new list-shell home or the old hub |
 | `hub/` | The old hub and its listing; `hub/doors.ts` is the only file that calls store doors the `@ai-matrx/records` client does not carry yet |
-| `table-page/` | The table page at `/data-v2/<tableId>` (`UnifiedDataTablePage.tsx`, `UnifiedTable.tsx`) |
+| `table-page/` | The table page at `/data/<tableId>` (`UnifiedDataTablePage.tsx`, `UnifiedTable.tsx`) |
 | `cutover/` | Switch-era clients: `seamSwitches.ts` (the one client for `platform.cutover_seams` / `cutover_seam_press`), `copyAgain.ts`, the switch cards |
 | `records*.ts(x)` at the root | Host ports handed to `@ai-matrx/records-ui`: files, file images, clean text, references and kinds, toasts |
 | `whereThisTableLives.ts`, `objectOrganization.ts` | A table's organization, read from its own id through `custom.where_id_opens` |
@@ -32,7 +32,7 @@ live in the custom-data node (`STATE.md`, `HANDOFF.md`, `DECISIONS.md`, `VISION.
 | `test-bench/` | The try-everything screen |
 | `__tests__/` | Behaviour tests for the host code |
 
-Routes outside this directory: `app/(core)/data-v2/`, `app/(core)/data/page.tsx` (redirects to `/data-v2`),
+Routes outside this directory: `app/(core)/data/`, `app/(core)/data/page.tsx` (redirects to `/data`),
 `app/(core)/lists/` with `features/user-lists/`.
 
 ## Mechanics

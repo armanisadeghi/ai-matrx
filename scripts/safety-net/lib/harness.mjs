@@ -173,7 +173,7 @@ export async function openWalk(name, { headless = true } = {}) {
       if (who !== s.email) throw new Error(`signed in as ${who}, expected ${s.email}`);
       page.__seat = seat;
       if (org) {
-        await page.goto(`${ORIGIN}/data-v2`, { waitUntil: "domcontentloaded", timeout: 180000 });
+        await page.goto(`${ORIGIN}/data`, { waitUntil: "domcontentloaded", timeout: 180000 });
         await sleep(2500);
         const ok = await setOrganization(page, org).catch((e) => {
           console.log(`[harness] could not pick ${org}: ${String(e).slice(0, 160)}`);

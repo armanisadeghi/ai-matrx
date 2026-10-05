@@ -8,13 +8,13 @@
  *   node scripts/campaign-front-door/shots.mjs --out <dir> [--label before|after]
  *
  * It does three things and prints what it measured:
- *   1. `/data-v2/<Jobs>` — how long the relation column (CUSTOMER) says
+ *   1. `/data/<Jobs>` — how long the relation column (CUSTOMER) says
  *      "Loading…", and how many `/rest/v1/rpc/*` calls the page makes while it
  *      does. VERIFIER-8 MEDIUM-1 measured 10–13 s against a door that answers
  *      in 268 ms, which is the per-cell-fetch shape.
- *   2. `/data-v2/<Jobs>?view=kanban` — what actually renders (VERIFIER-8
+ *   2. `/data/<Jobs>?view=kanban` — what actually renders (VERIFIER-8
  *      HIGH-2: it rendered the grid).
- *   3. `/data-v2/try-everything` — section 16's badge and sentence
+ *   3. `/data/try-everything` — section 16's badge and sentence
  *      (VERIFIER-8 HIGH-1: "Not built yet" + an access refusal the page
  *      provoked with the zero UUID).
  *
@@ -62,7 +62,7 @@ async function main() {
 
   const nonce = randomBytes(16).toString("hex");
   writeDevLoginNonce(HOST, nonce);
-  await page.goto(`${ORIGIN}/api/dev-login?nonce=${nonce}&next=${encodeURIComponent("/data-v2")}`, {
+  await page.goto(`${ORIGIN}/api/dev-login?nonce=${nonce}&next=${encodeURIComponent("/data")}`, {
     waitUntil: "domcontentloaded",
     timeout: 180000,
   });
@@ -73,7 +73,7 @@ async function main() {
   // ── 1. THE RELATION COLUMN ────────────────────────────────────────────────
   rpc.length = 0;
   const t0 = Date.now();
-  await page.goto(`${ORIGIN}/data-v2/${JOBS}`, { waitUntil: "domcontentloaded", timeout: 180000 });
+  await page.goto(`${ORIGIN}/data/${JOBS}`, { waitUntil: "domcontentloaded", timeout: 180000 });
   await page.waitForSelector("table tbody tr", { timeout: 180000 }).catch(() => {});
   const rowsAt = Date.now() - t0;
 
@@ -105,7 +105,7 @@ async function main() {
   );
 
   // ── 2. ?view=kanban ───────────────────────────────────────────────────────
-  await page.goto(`${ORIGIN}/data-v2/${JOBS}?view=kanban`, { waitUntil: "domcontentloaded", timeout: 180000 });
+  await page.goto(`${ORIGIN}/data/${JOBS}?view=kanban`, { waitUntil: "domcontentloaded", timeout: 180000 });
   await page.waitForTimeout(6000);
   const drew = await page.evaluate(() => ({
     gridRows: document.querySelectorAll("table tbody tr").length,
@@ -115,7 +115,7 @@ async function main() {
   console.log(`[front-door] ?view=kanban → grid rows ${drew.gridRows}; pressed ${JSON.stringify(drew.pressed)}`);
 
   // ── 3. THE CAPABILITY PAGE, SECTION 16 ────────────────────────────────────
-  await page.goto(`${ORIGIN}/data-v2/try-everything`, { waitUntil: "domcontentloaded", timeout: 180000 });
+  await page.goto(`${ORIGIN}/data/try-everything`, { waitUntil: "domcontentloaded", timeout: 180000 });
   await page.waitForSelector("#try-16", { timeout: 180000 }).catch(() => {});
   await page.waitForTimeout(8000);
   const section16 = await page.evaluate(() => {

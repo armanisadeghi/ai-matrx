@@ -3,7 +3,7 @@
  * A FAILED CHECK IS NEVER RENDERED AS A FACT.
  *
  * 🚨 WHAT THIS EXISTS FOR (lane SHARE-OUT, item 3, 21 September; the defect is
- * lane PEEK-SHARE's §6). `/data-v2` printed
+ * lane PEEK-SHARE's §6). `/data` printed
  *
  *     "This organization does not keep its data in the unified record store yet"
  *
@@ -75,7 +75,7 @@ const HONEST = /UNIFIED_DATA_CAMPAIGN_UNAVAILABLE_SENTENCE|UnifiedDataSwitchNoti
  * VERIFIER-8 HIGH-1).
  *
  * The same class came back on the owner's own "everything the record store can
- * do" page. `/data-v2/try-everything` section 16 printed "Not built yet" for
+ * do" page. `/data/try-everything` section 16 printed "Not built yet" for
  * the pipeline, quoted an access refusal as though the store had said it about
  * the owner's organization, and named a blocker that was not the blocker —
  * because the page probed `custom.pipeline_read` with the ZERO UUID. Asked
@@ -155,7 +155,7 @@ function scan(root: string): Finding[] {
         detail:
           `a catch block returns \`${bare}\` with nothing to tell the caller the read FAILED. ` +
           "That is how \"switched off\" and \"nobody could look\" became one value, and how " +
-          "/data-v2 stated a fact about an organization nobody had measured. Return a " +
+          "/data stated a fact about an organization nobody had measured. Return a " +
           "discriminated answer ({ state: \"on\" | \"off\" | \"unavailable\", cause }) and let the " +
           "boolean reader be written in terms of it.",
       });
@@ -248,7 +248,7 @@ if (process.argv.includes("--self-test")) {
     "utf8",
   );
   writeFileSync(join(dir, "lib/knobs/unifiedDataCampaignRamp.ts"), "export const x = 1;\n", "utf8");
-  // THE SECOND SET OF SHIPPED BYTES — `/data-v2/try-everything` as VERIFIER-8
+  // THE SECOND SET OF SHIPPED BYTES — `/data/try-everything` as VERIFIER-8
   // read it on 2026-09-21: the zero-UUID probe, and the refusal handler that
   // declared the pipeline absent.
   mkdirp(join(dir, "features/unified-data/test-bench"));

@@ -2,7 +2,7 @@
 
 /**
  * The record-store provider for ONE bound Table — the custom-data binding editor's table details
- * and its summary chip. The same seam /data-v2 mounts (`recordsDataSource` over the session
+ * and its summary chip. The same seam /data mounts (`recordsDataSource` over the session
  * client, `personActor`), bound to THE ORGANIZATION THE TABLE LIVES IN.
  *
  * 🚨 NEVER THE ACTIVE ORGANIZATION (lane ORG-FILTER-CLASS, Arman 2026-09-30). This provider used

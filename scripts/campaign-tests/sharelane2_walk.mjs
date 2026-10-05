@@ -56,7 +56,7 @@ try {
   pass("admin seat signed in", (await signIn(a, ORIGIN, "admin@admin.com", ADMIN_PW, "admin seat")) === "admin@admin.com", "admin@admin.com");
 
   // 1. the owner, not named, meets the honest no-access page and the offer
-  await a.goto(`${ORIGIN}/data-v2/${TABLE}`, { waitUntil: "domcontentloaded", timeout: SLOW });
+  await a.goto(`${ORIGIN}/data/${TABLE}`, { waitUntil: "domcontentloaded", timeout: SLOW });
   const offer = await until("the transfer offer", () => q(a, "[data-table-transfer-offer]"), SLOW);
   const page1 = await text(a);
   const refused = /not been shared|not been given|no access|don't have access|do not have access|not shared with you/i.test(page1);
@@ -101,7 +101,7 @@ try {
   await shot(a, "5-transferred", 1600);
 
   // 3. the owner, now its owner, reads it
-  await a.goto(`${ORIGIN}/data-v2/${TABLE}`, { waitUntil: "domcontentloaded", timeout: SLOW });
+  await a.goto(`${ORIGIN}/data/${TABLE}`, { waitUntil: "domcontentloaded", timeout: SLOW });
   const reads = await until("the note", () => a.evaluate((r) => document.body.innerText.includes(r), ROW), SLOW);
   pass("3. the new owner reads the note", !!reads.v, ROW);
   await sleep(1500);
@@ -113,7 +113,7 @@ try {
   const tctx = await browser.newContext({ viewport: { width: 1600, height: 1000 } });
   const t = await tctx.newPage();
   pass("test seat signed in", (await signIn(t, ORIGIN, "test@test.com", TEST_PW, "test seat")) === "test@test.com", "test@test.com");
-  await t.goto(`${ORIGIN}/data-v2/${TABLE}`, { waitUntil: "domcontentloaded", timeout: SLOW });
+  await t.goto(`${ORIGIN}/data/${TABLE}`, { waitUntil: "domcontentloaded", timeout: SLOW });
   const still = await until("her note", () => t.evaluate((r) => document.body.innerText.includes(r), ROW), SLOW);
   pass("4. Dr. Reyes still reads her notes (named as editor)", !!still.v, ROW);
   await sleep(1500);

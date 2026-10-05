@@ -342,7 +342,7 @@ async function proofRefusal(browser) {
   }
 
   // The platform never picks an organization for anyone: pick one the viewer belongs to.
-  await page.goto(`${VIEWER_ORIGIN}/data-v2`, { waitUntil: "domcontentloaded", timeout: 240000 });
+  await page.goto(`${VIEWER_ORIGIN}/data`, { waitUntil: "domcontentloaded", timeout: 240000 });
   await page.waitForTimeout(12000);
   // Through the ONE seat helper: the picker hides test-fixture organizations behind a disclosure.
   // Since FIXTURE-ORGS there is exactly one "Ironclad Mobile Mechanic", and the picker prints an
@@ -351,13 +351,13 @@ async function proofRefusal(browser) {
   record.organization = VIEWER_ORG;
   await page.waitForTimeout(12000);
 
-  await page.goto(`${VIEWER_ORIGIN}/data-v2`, { waitUntil: "domcontentloaded", timeout: 240000 });
+  await page.goto(`${VIEWER_ORIGIN}/data`, { waitUntil: "domcontentloaded", timeout: 240000 });
   await page.waitForTimeout(12000);
   record.screenshots.push(await shot(page, "close-refusal-01-viewer-data"));
   // 🚨 THE CARD IS A `<button>` INSIDE AN `<li>`, and `querySelectorAll` answers in DOCUMENT
   // order, not selector order — so a query listing `li` alongside `button` hands back the LI
   // first, and a click on the LI never reaches React's handler on the button. The first run of
-  // this walk "clicked" the table and stayed on /data-v2. Only the button is clicked.
+  // this walk "clicked" the table and stayed on /data. Only the button is clicked.
   const opened = await page.evaluate((name) => {
     const card = Array.from(document.querySelectorAll("a[href], button, [role=button]"))
       .filter((e) => e.getClientRects().length)

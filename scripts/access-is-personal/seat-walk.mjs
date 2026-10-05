@@ -9,15 +9,15 @@
 //
 // CLAUSES (headless Chromium, the real login form, the organization picked through the picker —
 // scripts/lib/seat-browser.mjs; never a cookie, never a URL):
-//   member-elsewhere  Active = Alex Hart's Workspace. /data-v2/<Rincon Jobs> OPENS (grid, no
+//   member-elsewhere  Active = Alex Hart's Workspace. /data/<Rincon Jobs> OPENS (grid, no
 //                     "not in the organization" sentence), and the active organization is unchanged.
-//   not-given         /data-v2/<a table she was never given> and /data-v2/<a table of an
+//   not-given         /data/<a table she was never given> and /data/<a table of an
 //                     organization she is not in> say "You have not been given this table".
 //   share-link        Active = Alex Hart's Workspace. The invitation link opens and accepts; the
 //                     table opens with "Shared with you by Ironclad Mobile Mechanic"; her own
-//                     organization did NOT move; then with Rincon active the bare /data-v2/<id>
+//                     organization did NOT move; then with Rincon active the bare /data/<id>
 //                     (no ?org=) still opens with the same line.
-//   hub-scope         /data-v2 names the organization it lists and "All my organizations" lists
+//   hub-scope         /data names the organization it lists and "All my organizations" lists
 //                     every organization's tables, each opening where it lives.
 //   portal-accept     (when AP_PORTAL_TOKEN is set) Active = Alex Hart's Workspace. A portal
 //                     invitation accepts and the portal opens; her organization did NOT move.
@@ -56,7 +56,7 @@ page.on("response", (r) => {
 const text = () => page.evaluate(() => document.body.innerText);
 const shot = (name) => page.screenshot({ path: `${SHOTS}/${name}.png`, fullPage: false });
 const activeOrgLine = async () => {
-  await page.goto(`${ORIGIN}/data-v2`, { waitUntil: "domcontentloaded", timeout: 180000 });
+  await page.goto(`${ORIGIN}/data`, { waitUntil: "domcontentloaded", timeout: 180000 });
   const { v } = await until("the hub's scope line", async () => {
     const t = await text();
     const m = t.match(/Showing what is in (.+)/);
@@ -65,7 +65,7 @@ const activeOrgLine = async () => {
   return v;
 };
 const openTable = async (id, expectName = null, query = "") => {
-  await page.goto(`${ORIGIN}/data-v2/${id}${query}`, { waitUntil: "domcontentloaded", timeout: 180000 });
+  await page.goto(`${ORIGIN}/data/${id}${query}`, { waitUntil: "domcontentloaded", timeout: 180000 });
   const { v } = await until(`table ${id} settles`, async () => {
     const t = await text();
     if (/You have not been given this table/.test(t)) return "not-given";
@@ -85,7 +85,7 @@ const wants = (clause) => ONLY.length === 0 || ONLY.includes(clause);
 try {
   const who = await signIn(page, ORIGIN, process.env.AP_EMAIL, process.env.AP_PASSWORD);
   pass("seat", who === "test@test.com", `/api/whoami answered ${who}`);
-  await page.goto(`${ORIGIN}/data-v2`, { waitUntil: "domcontentloaded", timeout: 180000 });
+  await page.goto(`${ORIGIN}/data`, { waitUntil: "domcontentloaded", timeout: 180000 });
   await setOrganization(page, HOME_ORG);
   const before = await activeOrgLine();
   pass("active-org", before === HOME_ORG, `the hub reads "Showing what is in ${before}"`);
@@ -161,11 +161,11 @@ try {
   const bareText = await text();
   await shot("share-link-bare-address-rincon-active");
   pass("share-link-any-active-org", bare === "opened" && /Shared with you by/.test(bareText),
-    `with Rincon Plumbing Co active, the bare /data-v2/<${SHARED_NAME}> (no ?org=): ${bare}`);
+    `with Rincon Plumbing Co active, the bare /data/<${SHARED_NAME}> (no ?org=): ${bare}`);
 
   // ── hub-scope ──
   await setOrganization(page, HOME_ORG);
-  await page.goto(`${ORIGIN}/data-v2`, { waitUntil: "domcontentloaded", timeout: 180000 });
+  await page.goto(`${ORIGIN}/data`, { waitUntil: "domcontentloaded", timeout: 180000 });
   const allBtn = await until("All my organizations", async () => page.$('button:has-text("All my organizations")'), 90000);
   if (allBtn.v) await allBtn.v.click();
   const listed = await until("the grouped list", async () => {

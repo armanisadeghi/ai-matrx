@@ -8,11 +8,11 @@ const b = await chromium.launch({ headless: true });
 const p = await (await b.newContext({ viewport: { width: 1600, height: 1000 } })).newPage();
 const nonce = randomBytes(16).toString("hex");
 writeDevLoginNonce(HOST, nonce);
-await p.goto(`${ORIGIN}/api/dev-login?nonce=${nonce}&next=${encodeURIComponent("/data-v2")}`, { waitUntil: "domcontentloaded", timeout: 180000 });
+await p.goto(`${ORIGIN}/api/dev-login?nonce=${nonce}&next=${encodeURIComponent("/data")}`, { waitUntil: "domcontentloaded", timeout: 180000 });
 await p.waitForTimeout(6000);
 const row = p.getByRole("option").filter({ hasText: "home-renovation" }).last();
 if (await row.count()) { await row.click({ timeout: 20000 }).catch(()=>{}); await p.waitForTimeout(6000); }
-await p.goto(`${ORIGIN}/data-v2/${QUOTES}`, { waitUntil: "domcontentloaded", timeout: 180000 });
+await p.goto(`${ORIGIN}/data/${QUOTES}`, { waitUntil: "domcontentloaded", timeout: 180000 });
 await p.waitForTimeout(12000);
 const info = await p.evaluate(() => ({
   buttons: Array.from(document.querySelectorAll("button")).map(b => (b.textContent||"").trim()).filter(Boolean).slice(0, 60),

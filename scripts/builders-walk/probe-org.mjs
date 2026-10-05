@@ -3,8 +3,8 @@ import { CASES, ORIGIN, signIn, shot } from "./walk.mjs";
 const T = CASES.portal;
 const b = await chromium.launch({ headless: true });
 const p = await (await b.newContext({ viewport: { width: 1680, height: 1020 } })).newPage();
-await signIn(p, "/data-v2");
-await p.goto(`${ORIGIN}/data-v2/${T.table}`, { waitUntil: "domcontentloaded", timeout: 180000 });
+await signIn(p, "/data");
+await p.goto(`${ORIGIN}/data/${T.table}`, { waitUntil: "domcontentloaded", timeout: 180000 });
 await p.waitForTimeout(9000);
 const info = await p.evaluate(() => ({
   searchBoxes: Array.from(document.querySelectorAll('input[type=text],input[type=search],input:not([type])'))

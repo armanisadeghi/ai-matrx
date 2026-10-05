@@ -42,7 +42,7 @@ if (!window.matchMedia) {
 
 jest.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(""),
-  usePathname: () => "/data-v2",
+  usePathname: () => "/data",
   useRouter: () => ({ push: () => undefined, replace: () => undefined, prefetch: () => undefined, refresh: () => undefined }),
 }));
 jest.mock("next/link", () => {

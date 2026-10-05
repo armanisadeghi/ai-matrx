@@ -44,7 +44,7 @@ const PARAMS = new URLSearchParams();
 jest.mock("next/navigation", () => ({
   useRouter: () => ROUTER,
   useSearchParams: () => PARAMS,
-  usePathname: () => "/data-v2",
+  usePathname: () => "/data",
 }));
 jest.mock("next/link", () => ({
   __esModule: true,

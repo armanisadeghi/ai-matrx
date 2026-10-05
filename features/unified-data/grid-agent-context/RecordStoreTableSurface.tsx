@@ -3,7 +3,7 @@
 /**
  * THE AGENT SURFACE OF A RECORD-STORE TABLE (records-ui merge tranche 6l, inventory H1 / H2).
  *
- * The merged grid on /data-v2 tells the page where the person is (`onGridContext`); this mounts
+ * The merged grid on /data tells the page where the person is (`onGridContext`); this mounts
  * the `matrx-user/data-tables` surface runtime over the table page, so an agent in the side chat
  * sees the table, its columns, the cell / block / ticked rows and the rows on screen, and may write
  * ONE confirmed cell — through `@ai-matrx/records` (`custom.record_update`), never the older doors.

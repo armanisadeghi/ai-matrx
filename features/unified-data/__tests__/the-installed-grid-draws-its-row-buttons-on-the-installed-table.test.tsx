@@ -7,7 +7,7 @@
  * descriptors and threw on React content. records-ui's source moved to a `customActions` column,
  * but its publishes failed for hours, so npm still served records-ui 0.93.146 — which hands JSX
  * to `rowActions`. Every `@ai-matrx/*` dependency resolves `latest`, so THIS app installed the
- * broken pair, and every record-store grid (/data-v2, the Board's Table tile) fell into its error
+ * broken pair, and every record-store grid (/data, the Board's Table tile) fell into its error
  * boundary. Each package's own suite was green: each tests its source against its sibling's
  * SOURCE, never against the version npm actually serves.
  *

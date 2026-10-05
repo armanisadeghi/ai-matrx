@@ -11,14 +11,14 @@ const rpc=[];
 p.on("request",r=>{const u=r.url(); if(u.includes("/rest/v1/rpc/")) rpc.push({t:Date.now(),n:u.split("/rpc/")[1].split("?")[0]});});
 const n=randomBytes(16).toString("hex");
 writeDevLoginNonce(HOST, n);
-await p.goto(`${ORIGIN}/api/dev-login?nonce=${n}&next=%2Fdata-v2`,{waitUntil:"domcontentloaded",timeout:180000});
+await p.goto(`${ORIGIN}/api/dev-login?nonce=${n}&next=%2Fdata`,{waitUntil:"domcontentloaded",timeout:180000});
 const who = await p.evaluate(async () => (await fetch("/api/whoami")).json());
 if(!who?.email) throw new Error("no identity");
 console.log("signed in as", who.email);
 await p.waitForTimeout(2000);
 rpc.length=0;
 const t0=Date.now();
-await p.goto(`${ORIGIN}/data-v2/${JOBS}`,{waitUntil:"domcontentloaded",timeout:180000});
+await p.goto(`${ORIGIN}/data/${JOBS}`,{waitUntil:"domcontentloaded",timeout:180000});
 const samples=[];
 for(let i=0;i<300;i++){
   const s=await p.evaluate(()=>{

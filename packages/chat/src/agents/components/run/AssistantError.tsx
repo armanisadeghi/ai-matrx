@@ -118,7 +118,7 @@ export function AssistantError({
                 label: unresolved.tableName
                   ? `Open ${unresolved.tableName}`
                   : "Open the table",
-                href: `/data-v2/${tableId}`,
+                href: `/data/${tableId}`,
               },
             ]
           : []),

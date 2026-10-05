@@ -1,8 +1,8 @@
-// STORE-ON seat re-verify — both test identities see the record store ON at /data-v2.
+// STORE-ON seat re-verify — both test identities see the record store ON at /data.
 //
 // Owner ruling 2026-09-23: the record store's default is ON. This signs in the way a person
 // does (the login form, headless Playwright, never the in-app browser pane) as admin@admin.com
-// and as test@test.com, opens /data-v2 in the organization each is working in, and records:
+// and as test@test.com, opens /data in the organization each is working in, and records:
 // whether any store-off or could-not-check sentence is on the screen, what the hub shows, the
 // console errors and every response >= 400. A screenshot per seat lands in for-arman.
 //
@@ -56,11 +56,11 @@ async function run(seat) {
     // the page, so it is retried and every retry is said out loud.
     for (let i = 1; ; i++) {
       try {
-        await page.goto(`${ORIGIN}/data-v2`, { waitUntil: "domcontentloaded", timeout: 180000 });
+        await page.goto(`${ORIGIN}/data`, { waitUntil: "domcontentloaded", timeout: 180000 });
         break;
       } catch (e) {
         if (i >= 4) throw e;
-        console.error(`[retry ${i}] /data-v2 navigation: ${String(e).split("\n")[0]}`);
+        console.error(`[retry ${i}] /data navigation: ${String(e).split("\n")[0]}`);
         await page.waitForTimeout(5000);
       }
     }

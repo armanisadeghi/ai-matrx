@@ -298,7 +298,7 @@ export const loadConversation = createAsyncThunk<
     // block used to run at step 5, after an awaited capability read, so every
     // restored panel fired an empty `POST /v2/ai/conversations/<id>` in that
     // window ("This request ends with an assistant response…", found live
-    // 2026-09-26 on /data-v2). So: display first, and auto-run pinned off —
+    // 2026-09-26 on /data). So: display first, and auto-run pinned off —
     // over a stored `metadata.display.autoRun` and a caller override alike.
     // Sending the next message is untouched; it never reads autoRun.
     const metaObj =

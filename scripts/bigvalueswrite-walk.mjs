@@ -41,7 +41,7 @@ const consoleErrors = [];
 page.on("console", (m) => m.type() === "error" && consoleErrors.push(m.text().slice(0, 200)));
 const row = () => page.locator("tbody tr").filter({ hasText: ROW }).first();
 async function open() {
-  await page.goto(`${ORIGIN}/data-v2/${TABLE}`, { waitUntil: "domcontentloaded", timeout: 240000 });
+  await page.goto(`${ORIGIN}/data/${TABLE}`, { waitUntil: "domcontentloaded", timeout: 240000 });
   await until("row", () => row().isVisible(), 180000);
   await page.waitForTimeout(2500);
 }

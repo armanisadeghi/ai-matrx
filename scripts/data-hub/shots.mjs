@@ -1,6 +1,6 @@
 // scripts/data-hub/shots.mjs — LANE DATA-HUB
 //
-// THE HEADLESS PROOF of /data-v2's organization hub, from BOTH seats, on a real
+// THE HEADLESS PROOF of /data's organization hub, from BOTH seats, on a real
 // organization and on one with nothing in it yet.
 //
 // It signs in the way a person does — the login form, through
@@ -164,7 +164,7 @@ async function walk(context, label, { email, password, organization, slug, shots
   }
   say(`${label}: organization set to ${organization}${slug ? ` (${slug})` : ""}`);
 
-  await page.goto(`${ORIGIN}/data-v2`, { waitUntil: "domcontentloaded", timeout: 120000 });
+  await page.goto(`${ORIGIN}/data`, { waitUntil: "domcontentloaded", timeout: 120000 });
   const state = await settled(page);
   say(`${label}: hub settled=${state.settled} after ${state.ms} ms`);
   const hub = await readHub(page);

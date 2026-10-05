@@ -83,7 +83,7 @@ const main = async () => {
 
   // 1. THE LINK THE SUMMARY SENDS — cold, and it must land on the records.
   {
-    const { context, text } = await cold(browser, `/data-v2/${TABLE}?org=${ORG}`);
+    const { context, text } = await cold(browser, `/data/${TABLE}?org=${ORG}`);
     clause(
       1,
       !PICKER.test(text),
@@ -101,7 +101,7 @@ const main = async () => {
 
   // 2. THE SAME LINK WITHOUT ITS ORGANIZATION — the defect, still reproducible.
   {
-    const { context, text } = await cold(browser, `/data-v2/${TABLE}`);
+    const { context, text } = await cold(browser, `/data/${TABLE}`);
     clause(
       3,
       PICKER.test(text),
@@ -113,7 +113,7 @@ const main = async () => {
 
   // 3. A LINK FOR AN ORGANIZATION THIS ACCOUNT IS NOT IN — refused, in words.
   {
-    const { context, whole } = await cold(browser, `/data-v2/${TABLE}?org=${NOT_MINE}`);
+    const { context, whole } = await cold(browser, `/data/${TABLE}?org=${NOT_MINE}`);
     const text = whole;
     const refuses = /not a member of/i.test(text);
     clause(

@@ -93,7 +93,7 @@ const WRITE_CHAIN =
  * `features/assists/service.ts` opens with `const TABLE = "assists" as const;` and then
  * writes `.schema("platform").from(TABLE).update(…)` ELEVEN times. The doors-only closure
  * withdrew every write grant on `platform.assists` from `authenticated`, so all eleven
- * became `42501` — and every `/data-v2/*` page load printed one of them (a 403 plus
+ * became `42501` — and every `/data/*` page load printed one of them (a 403 plus
  * `[assists] resolve failed: permission denied for table assists`) into the console, which
  * is exactly the class this guard exists to catch. It stayed green the whole time, because
  * the old pattern required a QUOTED string inside `.from(...)` and this file passes a

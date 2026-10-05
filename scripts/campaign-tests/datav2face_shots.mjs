@@ -1,6 +1,6 @@
 /**
  * LANE DATA-V2-FACE — headless screenshots and a census of everything drawn above the records on
- * /data-v2/<table> and /data-v2, from both seats, at 1440 and 390 wide.
+ * /data/<table> and /data, from both seats, at 1440 and 390 wide.
  *
  *   FACE_ORIGIN=http://<session>.localhost:3001 FACE_PHASE=before|after \
  *   FACE_EMAIL_ADMIN=… FACE_EMAIL_TEST=… FACE_PASSWORD=… \
@@ -70,8 +70,8 @@ try {
       if (who !== email) throw new Error(`${seat}: the app says someone else is signed in`);
       const ONLY = process.env.FACE_ONLY ?? "";
       for (const [where, path] of [
-        ["table", `/data-v2/${seat === "test" && process.env.FACE_TABLE_TEST ? process.env.FACE_TABLE_TEST : TABLE}`],
-        ["list", "/data-v2"],
+        ["table", `/data/${seat === "test" && process.env.FACE_TABLE_TEST ? process.env.FACE_TABLE_TEST : TABLE}`],
+        ["list", "/data"],
       ].filter(([where]) => ONLY === "" || ONLY === where)) {
         await page.goto(`${ORIGIN}${path}`, { waitUntil: "domcontentloaded", timeout: 240000 });
         // The page reads where the table lives, then the store; give it the time a person waits.

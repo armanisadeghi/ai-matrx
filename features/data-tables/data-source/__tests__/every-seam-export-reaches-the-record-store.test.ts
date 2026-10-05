@@ -14,7 +14,7 @@ const from = jest.fn(() => {
 });
 const storeRpc = jest.fn(async (fn: string) =>
   fn === "where_id_opens"
-    ? { data: { kind: "table", organization_id: ORG, path: "/data-v2/t", live: true }, error: null }
+    ? { data: { kind: "table", organization_id: ORG, path: "/data/t", live: true }, error: null }
     : { data: null, error: { message: `unexpected store door ${fn}` } },
 );
 const schema = jest.fn(() => ({ rpc: storeRpc, from }));

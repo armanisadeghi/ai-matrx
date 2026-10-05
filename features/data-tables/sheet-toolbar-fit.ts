@@ -1,7 +1,7 @@
 /**
  * THE SHEET'S ONE TOOLBAR ROW FITS ITS WIDTH (lane DATA-V2-BASICS-2, 2026-09-28).
  *
- * MEASURED on /data-v2 (Clinic Supplies Count, the Sheet): the row needs about 1300 px with every
+ * MEASURED on /data (Clinic Supplies Count, the Sheet): the row needs about 1300 px with every
  * tool's words. At 1600 the last two tools (Colors, Get reference) sat under the page's own
  * settings and "…" buttons; at 1280 Reorder, Clean, Colors and Get reference were past the row's
  * edge, reachable only by scrolling a row that shows no scrollbar. Now, when the words do not fit,

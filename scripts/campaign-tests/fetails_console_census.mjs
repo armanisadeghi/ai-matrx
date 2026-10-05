@@ -71,7 +71,7 @@ try {
     };
   };
 
-  await walk("sheet-designated", `/data-v2/${DESIGNATED}`, "[data-sheet-layout]", async () => ({
+  await walk("sheet-designated", `/data/${DESIGNATED}`, "[data-sheet-layout]", async () => ({
     sheet: Boolean(await page.$("[data-sheet-layout]")),
     rows: await page.locator("[data-sheet-layout] tbody tr").count(),
     chip: await page.locator("[data-where-it-lives]").allTextContents(),
@@ -87,7 +87,7 @@ try {
     }
     return { chips: chips.slice(0, 6), chipCount: chips.length, panelOpened: panel ? panel.slice(0, 160) : null };
   });
-  await walk("hub-all-organizations", `/data-v2?org=${ORG}&scope=all`, "[data-hub-all-organizations]", async () => ({
+  await walk("hub-all-organizations", `/data?org=${ORG}&scope=all`, "[data-hub-all-organizations]", async () => ({
     list: Boolean(await page.$("[data-hub-all-organizations]")),
     chips: (await page.locator("[data-hub-all-organizations] [data-where-it-lives]").allTextContents()).slice(0, 6),
     chipCount: await page.locator("[data-hub-all-organizations] [data-where-it-lives]").count(),

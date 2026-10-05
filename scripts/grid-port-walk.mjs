@@ -31,7 +31,7 @@ const arg = (name) => {
 const SEAT = arg("seat") ?? "admin";
 // WHICH SURFACE THE GRID IS WALKED ON. "data" = the older route /data/<id>; "sheet" = the
 // owner's ruling of 2026-09-23 — the ported grid as the Sheet layout of the one table page,
-// /data-v2/<id>?view=sheet. The older example table is always walked at /data (the older half).
+// /data/<id>?view=sheet. The older example table is always walked at /data (the older half).
 const SURFACE = arg("surface") ?? "data";
 const ONLY = arg("only")?.split(",") ?? null;
 const EMAIL = process.env.GRID_PORT_EMAIL ?? "";
@@ -113,14 +113,14 @@ function inGrid(page) {
 /** Where a table's grid lives on the surface under walk. */
 function tableUrl(tableId) {
   return SURFACE === "sheet" && tableId !== TABLES.olderExample
-    ? `${ORIGIN}/data-v2/${tableId}?view=sheet`
+    ? `${ORIGIN}/data/${tableId}?view=sheet`
     : `${ORIGIN}/data/${tableId}`;
 }
 /** Is the page showing this table's grid on the surface under walk? */
 function onTable(url, tableId) {
   return SURFACE === "sheet" && tableId !== TABLES.olderExample
-    ? url.includes(`/data-v2/${tableId}`) && /[?&]view=sheet\b/.test(url)
-    : url.includes(`/data/${tableId}`) && !url.includes("/data-v2/");
+    ? url.includes(`/data/${tableId}`) && /[?&]view=sheet\b/.test(url)
+    : url.includes(`/data/${tableId}`) && !url.includes("/data/");
 }
 
 /** Open a table at the OLDER grid's route and wait until a known cell is drawn. */
@@ -1138,7 +1138,7 @@ async function main() {
     }
 
     // ── /data REDIRECTS NOTHING (owner's ruling 2026-09-23: "don't redirect anything at all
-    // right now"). The older route opens the older viewer; it never lands on /data-v2 and
+    // right now"). The older route opens the older viewer; it never lands on /data and
     // never says a table moved — old and new are compared side by side.
     // ── DRAWN (the owner's verdict on his copy: "No colors, no custom actions"): what the
     //    mover carried — color by a choice column, a row rule, a column highlight, a row
@@ -1213,7 +1213,7 @@ async function main() {
       const url = page.url();
       const text = await page.evaluate(() => document.body.innerText);
       await page.screenshot({ path: `${OUT}/gridport-${SEAT}-19-data-redirects-nothing.png` });
-      pass("noredirect-stays", url.includes(`/data/${TABLES.calls}`) && !url.includes("/data-v2"), url.replace(ORIGIN, ""));
+      pass("noredirect-stays", url.includes(`/data/${TABLES.calls}`) && !url.includes("/data"), url.replace(ORIGIN, ""));
       pass("noredirect-no-moved-sentence", !/moved to its new home|have moved to the new data home|has moved/i.test(text), "no sentence about a move");
       await page.goto(`${ORIGIN}/data`, { waitUntil: "domcontentloaded", timeout: 240000 });
       await page.waitForTimeout(8000);

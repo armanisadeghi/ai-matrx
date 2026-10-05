@@ -54,7 +54,7 @@ await sleep(2500);
 await setOrganization(page, "Rincon Plumbing Co");
 await sleep(2000);
 
-await page.goto(`${ORIGIN}/data-v2/${JOBS}`, { waitUntil: "domcontentloaded" });
+await page.goto(`${ORIGIN}/data/${JOBS}`, { waitUntil: "domcontentloaded" });
 await page.waitForSelector("tbody tr", { timeout: 90000 });
 await sleep(6000);
 await page.screenshot({ path: `${OUT}/fix13-relation-1-jobs-grid.png` });

@@ -3,7 +3,7 @@
 // features/unified-data/components/TableSwitcher.tsx — lane TABLE-PAGE-CHROME
 //
 // THE TABLE'S NAME IS THE SWITCHER (owner, 2026-09-25: "Enable clickable table title to switch
-// between tables"). The /data-v2/<table> header carries the table's name as the ONE identity
+// between tables"). The /data/<table> header carries the table's name as the ONE identity
 // control, the way /data/<id> (`TableIdentityMenu`) and /agents/<id> do: press it and the tables
 // this person can open in the table's organization are listed, with search, and "All tables".
 // Where the table lives (and Move) sits at the foot of the same popover, so the organization is
@@ -105,7 +105,7 @@ export function TableSwitcher({ tableId, name, allTablesHref, footer }: TableSwi
                 <Link
                   key={table.id}
                   role="listitem"
-                  href={`/data-v2/${table.id}`}
+                  href={`/data/${table.id}`}
                   onClick={() => setOpen(false)}
                   aria-current={current ? "page" : undefined}
                   data-table-switcher-item={table.id}

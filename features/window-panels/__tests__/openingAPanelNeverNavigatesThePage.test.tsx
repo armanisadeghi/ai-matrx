@@ -2,7 +2,7 @@
  * LANE PANEL-REMOUNT (2026-09-24) — opening or closing a window panel must
  * never make the page that opened it do any work.
  *
- * The measured defect: on /data-v2/[tableId], pressing a row's agent button
+ * The measured defect: on /data/[tableId], pressing a row's agent button
  * opened the agent in a flexible panel, the panel published its address
  * (`?panels=agent:<id>:m-flexible-panel`), and `UrlPanelManager` wrote that
  * address with `router.replace`. In the App Router `router.replace` is a
@@ -72,7 +72,7 @@ jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({
 import { UrlPanelManager } from "@/features/window-panels/url-sync/UrlPanelManager";
 
 /**
- * Stands in for a page like /data-v2/[tableId]: it reads the address (as the
+ * Stands in for a page like /data/[tableId]: it reads the address (as the
  * real page does for `?view=`, `?record=`, `?filter=`) and loads its data once
  * per mount.
  */
@@ -101,7 +101,7 @@ describe("opening a window panel never navigates the page that opened it", () =>
     navigations.length = 0;
     pageMounts = 0;
     pageDataReads = 0;
-    window.history.replaceState(null, "", "/data-v2/table-1?view=grid");
+    window.history.replaceState(null, "", "/data/table-1?view=grid");
     container = document.createElement("div");
     document.body.appendChild(container);
     root = createRoot(container);
@@ -137,7 +137,7 @@ describe("opening a window panel never navigates the page that opened it", () =>
     // The address carries the panel, and keeps what the page put there.
     expect(panelsParam()).toBe("agent:run-1:m-flexible-panel");
     expect(new URLSearchParams(window.location.search).get("view")).toBe("grid");
-    expect(window.location.pathname).toBe("/data-v2/table-1");
+    expect(window.location.pathname).toBe("/data/table-1");
 
     // …and the page did nothing at all.
     expect(navigations).toHaveLength(0);
@@ -170,7 +170,7 @@ describe("opening a window panel never navigates the page that opened it", () =>
     window.history.replaceState(
       null,
       "",
-      `/data-v2/table-1?view=kanban&panels=${encodeURIComponent("notes:default")}`,
+      `/data/table-1?view=kanban&panels=${encodeURIComponent("notes:default")}`,
     );
 
     act(() => {

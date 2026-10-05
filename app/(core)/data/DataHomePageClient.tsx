@@ -1,11 +1,11 @@
 "use client";
 
-// app/(core)/data-v2/DataHomePageClient.tsx — THE MOUNT, AND NOTHING MORE (page.tsx reads the home knob on the server and hands it here).
+// app/(core)/data/DataHomePageClient.tsx — THE MOUNT, AND NOTHING MORE (page.tsx reads the home knob on the server and hands it here).
 //
 // Every screen on this page comes from `@ai-matrx/records-ui` and every byte it
 // shows comes through `@ai-matrx/records`' doors. There is no data access here,
 // no layout logic and no per-table code: a capability this page seems to want
-// belongs in the package, where /data-v2, a portal, an embed and an agent's
+// belongs in the package, where /data, a portal, an embed and an agent's
 // link all inherit it at once.
 //
 // No switch: the record store is never off (CHAIR-ALWAYS-ON, 2026-10-03).
@@ -83,7 +83,7 @@ function UnifiedDataPage({ making }: { making: DataHomeMaking }) {
   const chooseOrganization = useCallback(
     (next: string | null) => {
       const href = dataHomeOrganizationHref(
-        "/data-v2",
+        "/data",
         new URLSearchParams(searchParams.toString()),
         next ?? ALL_ORGANIZATIONS,
       );
@@ -119,7 +119,7 @@ function UnifiedDataPage({ making }: { making: DataHomeMaking }) {
 
   const goBack = useCallback(() => {
     if (typeof window !== "undefined" && window.history.length > 1) router.back();
-    else router.replace("/data-v2");
+    else router.replace("/data");
   }, [router]);
 
   return (
@@ -183,7 +183,7 @@ function UnifiedDataPage({ making }: { making: DataHomeMaking }) {
             {/* THE ORGANIZATION'S HUB — every capability the record store has, each
                 read through the ONE door that answers for the whole organization,
                 with the lanes as filters and the tables list inside it. This is
-                /data-v2's landing; there is deliberately no second route family
+                /data's landing; there is deliberately no second route family
                 for it. Lane DATA-HUB, 2026-09-22. */}
             <OrganizationHub
               organizationId={organizationId}
@@ -212,7 +212,7 @@ function UnifiedDataPage({ making }: { making: DataHomeMaking }) {
                      inside the organization it LIVES in. */
                   onOpenRecord={(recordId, tableId) =>
                     router.push(
-                      openPath(recordId, { fallback: `/data-v2/${tableId}?record=${recordId}` }),
+                      openPath(recordId, { fallback: `/data/${tableId}?record=${recordId}` }),
                     )
                   }
                 />

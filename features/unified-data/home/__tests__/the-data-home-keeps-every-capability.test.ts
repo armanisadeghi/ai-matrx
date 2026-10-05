@@ -94,7 +94,7 @@ describe("census items that the rows decide", () => {
   it("7 · every row keeps its door, its table, its facts, who changed it, its public link and its trouble", async () => {
     const all = await rows();
     const form = all.find((r) => r.kind === "form")!;
-    expect(form.href).toBe("/data-v2/t-recall?rail=forms&item=f1");
+    expect(form.href).toBe("/data/t-recall?rail=forms&item=f1");
     expect(form.parentName).toBe("Patient Recall");
     expect(form.details).toContain("12 answers");
     expect(form.changedBy).toBe("Sam Ortiz");
@@ -111,7 +111,7 @@ describe("census items that the rows decide", () => {
     const offer = all.find((r) => r.itemId === "inv-1")!;
     expect(offer.href).toBe("/invitations/table/accept/tok-1");
     const outside = all.find((r) => r.tableId === "t-out")!;
-    expect(outside.href).toBe("/data-v2/t-out?org=o-cedar");
+    expect(outside.href).toBe("/data/t-out?org=o-cedar");
     expect(outside.access).toBe("shared");
     expect(outside.organizationName).toBe("Cedar Ridge Dental");
   });
@@ -202,7 +202,7 @@ describe("census items that are wiring", () => {
 
   it("the old page is behind the knob, untouched beside the new one (copy mode)", () => {
     expect(route).toContain("DATA_HOME_SHELL_KNOB");
-    const appPage = readFileSync(join(__dirname, "../../../../app/(core)/data-v2/DataHomePageClient.tsx"), "utf8");
+    const appPage = readFileSync(join(__dirname, "../../../../app/(core)/data/DataHomePageClient.tsx"), "utf8");
     expect(appPage).toMatch(/<DataHomeRoute[^>]*old=\{\(making\) => <UnifiedDataPage making=\{making\} \/>\}/);
     expect(appPage).toContain("<OrganizationHub");
   });

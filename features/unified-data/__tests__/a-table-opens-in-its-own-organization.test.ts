@@ -21,7 +21,7 @@ function clientAnswering(answer: "table" | "not-given" | Error): { client: Supab
     if (fn !== "where_id_opens") return { data: null, error: { message: `unexpected door ${fn}` } };
     if (answer instanceof Error) return { data: null, error: { message: answer.message } };
     if (answer === "not-given") return { data: null, error: null };
-    return { data: { kind: "table", organization_id: ADMIN_WORKSPACE, path: `/data-v2/${HEAT_PUMP}`, live: true }, error: null };
+    return { data: { kind: "table", organization_id: ADMIN_WORKSPACE, path: `/data/${HEAT_PUMP}`, live: true }, error: null };
   };
   const client = { schema: () => ({ rpc }), rpc } as unknown as SupabaseClient;
   return { client, asked };
@@ -31,7 +31,7 @@ describe("a table opens in its own organization", () => {
   it("a table he may open answers its own organization, asked of one door", async () => {
     const { client, asked } = clientAnswering("table");
     const where = await whereThisTableLives(client, HEAT_PUMP);
-    expect(where).toEqual({ kind: "record_store", href: `/data-v2/${HEAT_PUMP}`, organizationId: ADMIN_WORKSPACE });
+    expect(where).toEqual({ kind: "record_store", href: `/data/${HEAT_PUMP}`, organizationId: ADMIN_WORKSPACE });
     expect(asked).toEqual(["where_id_opens"]);
   });
 

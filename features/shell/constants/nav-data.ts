@@ -544,14 +544,6 @@ export const DATA_NAV_CHILDREN: ShellNavChild[] = [
     color: "cyan",
   },
   {
-    // The unified record store's tables.
-    label: "Records",
-    href: "/data-v2",
-    iconName: "Table",
-    description: "Tables, fields and records on the unified store",
-    color: "cyan",
-  },
-  {
     // Installable bundles — tables + an agent bound to them + a workflow.
     label: KIT_WORD.many,
     href: KIT_ROUTES.gallery,
@@ -592,7 +584,7 @@ export const DATA_NAV_CHILDREN: ShellNavChild[] = [
   // Actions — collected at the bottom below a divider.
   {
     label: "New Table",
-    href: "/data/create",
+    href: "/data",
     iconName: "Plus",
     actionItem: true,
   },

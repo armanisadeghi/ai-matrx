@@ -1,5 +1,5 @@
 // Data-doctrine crew E2 — try the CSV import wizard on a live unified-store
-// table through the real /data-v2 screen (headless Playwright), and log
+// table through the real /data screen (headless Playwright), and log
 // exactly what happens (works / partly / absent).
 import { chromium } from "playwright";
 import { randomBytes } from "node:crypto";
@@ -26,7 +26,7 @@ async function main() {
 
   const nonce = randomBytes(16).toString("hex");
   writeDevLoginNonce(HOST, nonce);
-  await page.goto(`${ORIGIN}/api/dev-login?nonce=${nonce}&next=${encodeURIComponent(`/data-v2/${tableId}`)}`, {
+  await page.goto(`${ORIGIN}/api/dev-login?nonce=${nonce}&next=${encodeURIComponent(`/data/${tableId}`)}`, {
     waitUntil: "domcontentloaded",
     timeout: 120000,
   });

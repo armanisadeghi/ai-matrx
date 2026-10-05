@@ -513,7 +513,7 @@ interface UserTableViewerProps {
    */
   emitSurfaceScope?: boolean;
   /**
-   * THE PAGE AROUND THE GRID OWNS THE TABLE'S MENU (the /data-v2 table page's chrome, for
+   * THE PAGE AROUND THE GRID OWNS THE TABLE'S MENU (the /data table page's chrome, for
    * every layout — ruling 2026-09-23; TABLE-ACTIONS item 11). The grid's own Share, export,
    * ⋯ and table sections are absent: the page's header ⋯ is the table's one menu.
    */

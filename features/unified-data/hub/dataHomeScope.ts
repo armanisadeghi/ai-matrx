@@ -1,7 +1,7 @@
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 // features/unified-data/hub/dataHomeScope.ts — LANE DATA-HOME-1
 //
-// THE DATA HOME'S FIVE FILTERS (Arman, 2026-09-27 21:20 PT). He opened /data-v2 and "Mine" read
+// THE DATA HOME'S FIVE FILTERS (Arman, 2026-09-27 21:20 PT). He opened /data and "Mine" read
 // 0 of everything: the home showed ONE organization, and he had made his tables in another. The
 // ruling, under his doctrine "access is personal": the home opens on EVERYTHING the person can see
 // across ALL their organizations, each row labelled with its organization, and it offers exactly

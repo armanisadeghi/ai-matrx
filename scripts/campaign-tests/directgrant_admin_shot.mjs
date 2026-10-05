@@ -12,7 +12,7 @@ try {
   const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } });
   const page = await ctx.newPage();
   await signIn(page, ORIGIN, "admin@admin.com", "Password1234#", "admin seat");
-  await page.goto(`${ORIGIN}/data-v2/${TABLE}`, { waitUntil: "domcontentloaded", timeout: 60000 });
+  await page.goto(`${ORIGIN}/data/${TABLE}`, { waitUntil: "domcontentloaded", timeout: 60000 });
   await sleep(3000);
   const openBtn = page.getByRole("button", { name: new RegExp(`Open ${ROW_TEXT.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`, "i") }).first();
   await openBtn.click({ timeout: 10000 });

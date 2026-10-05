@@ -3,10 +3,10 @@
  * check-page-imports — ONLY A ROUTE MAY IMPORT A ROUTE'S PAGE.
  *
  * WHAT HAPPENED (2026-10-01). `features/user-lists/components/PicklistWindowBody.tsx` imported
- * `@/app/(core)/data-v2/[tableId]/page` to mount the table page inside a window. The admin build
+ * `@/app/(core)/data/[tableId]/page` to mount the table page inside a window. The admin build
  * (Vercel `ai-matrx-manage`, MATRX_PROFILE=admin) PARKS app/(core) out of the tree, and the window
  * is reachable from the root layout (OverlayController), so manage.aimatrx.com failed to build on
- * main: "Module not found: Can't resolve '@/app/(core)/data-v2/[tableId]/page'". Locally nothing is
+ * main: "Module not found: Can't resolve '@/app/(core)/data/[tableId]/page'". Locally nothing is
  * ever parked (THE PARK LAW in next.config.js), so no local build or tsc can see it.
  *
  * THE RULE. A route leaf (page, layout, template, default, loading, error, not-found, global-error)

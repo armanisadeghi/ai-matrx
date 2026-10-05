@@ -47,7 +47,7 @@ const q = (page, sel) => page.evaluate((s) => document.querySelector(s)?.textCon
 const lane = (page) => page.evaluate(() => document.querySelector("[data-who-can-see]")?.getAttribute("data-lane") ?? null);
 
 async function openTable(page, expectRow = true) {
-  await page.goto(`${ORIGIN}/data-v2/${TABLE}`, { waitUntil: "domcontentloaded", timeout: SLOW });
+  await page.goto(`${ORIGIN}/data/${TABLE}`, { waitUntil: "domcontentloaded", timeout: SLOW });
   if (!expectRow) return true;
   const rows = await until("the table's row", () => page.evaluate((t) => document.body.innerText.includes(t), ROW), SLOW);
   await sleep(1500);

@@ -1,6 +1,6 @@
 "use client";
 
-// app/(core)/data-v2/[tableId]/r/[recordId]/page.tsx — THE MOUNT, AND NOTHING MORE. The screen is
+// app/(core)/data/[tableId]/r/[recordId]/page.tsx — THE MOUNT, AND NOTHING MORE. The screen is
 // `UnifiedRecordPage` (features/unified-data/table-page): the record panel, full page.
 
 import { use } from "react";

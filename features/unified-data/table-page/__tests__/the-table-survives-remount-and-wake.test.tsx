@@ -4,7 +4,7 @@
  * THE TABLE SURVIVES A WAKE AND A REMOUNT (lane REMOUNT-SAFETY, owner's law 2026-10-02: every
  * screen survives hide/show/remount with no lost work and no repeated side effects).
  *
- * A record-store table — the /data-v2 page and the Board's Table and Record tiles — sits behind
+ * A record-store table — the /data page and the Board's Table and Record tiles — sits behind
  * three gates: where the table lives (`useObjectOrganization`), whether that organization's record
  * store is on (`useUnifiedDataCampaign`) and whether it is a share (`useSharedTable`). Each kept
  * its answer in component state and set it back to null at the top of its effect, so:
@@ -29,7 +29,7 @@ const TABLE = "c1aabdc0-4d94-42d4-9ddc-91b68ef9c0a7";
 const ITS_ORG = "3e790542-fdaf-40b2-8bf3-658bf94fe67f";
 
 const whereIdOpens = jest.fn(async () => ({
-  data: { kind: "table", organization_id: ITS_ORG, path: `/data-v2/${TABLE}`, live: true, resolved_id: TABLE },
+  data: { kind: "table", organization_id: ITS_ORG, path: `/data/${TABLE}`, live: true, resolved_id: TABLE },
   error: null,
 }));
 const sharedWithMe = jest.fn(async () => ({ ok: true as const, data: [] }));

@@ -2,7 +2,7 @@ import { openWalk, sleep } from "../lib/harness.mjs";
 const ctx = await openWalk("dh-explore");
 try {
   const page = await ctx.page("admin");
-  await ctx.goto(page, "/data-v2?kind=table");
+  await ctx.goto(page, "/data?kind=table");
   await sleep(25000);
   console.log(await page.evaluate(() => [...document.querySelectorAll('[data-hub-listing="tables"] li[data-hub-row]')].slice(0,4).map(li=>li.innerHTML.slice(0,700)).join("\n----\n")));
   console.log(await page.evaluate(() => [...document.querySelectorAll("[data-hub-kind] option")].map(o=>o.value+"="+o.textContent).join(" | ")));

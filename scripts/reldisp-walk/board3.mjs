@@ -10,7 +10,7 @@ await signIn(page, ORIGIN, process.env.AI_ADMIN_USERNAME, process.env.AI_ADMIN_P
 await setOrganization(page, "Rincon Plumbing Co");
 await page.keyboard.press("Escape");
 await page.evaluate(() => { for (const id of ["#menu-group-organization","#shell-sidebar-toggle"]) { const e=document.querySelector(id); if(e instanceof HTMLInputElement && e.checked) e.click(); } });
-await page.goto(`${ORIGIN}/data-v2/${JOBS}?view=kanban`, { waitUntil: "domcontentloaded", timeout: 120000 });
+await page.goto(`${ORIGIN}/data/${JOBS}?view=kanban`, { waitUntil: "domcontentloaded", timeout: 120000 });
 await sleep(11000);
 console.log("selects on the page:", await page.evaluate(() => Array.from(document.querySelectorAll("select")).map(s=>({label:s.getAttribute("aria-label"), opts:Array.from(s.options).map(o=>o.textContent)}))));
 const set = await page.evaluate(() => {

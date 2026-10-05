@@ -172,7 +172,7 @@ export function UnifiedDataRampScreen() {
   /**
    * OPEN THE TABLES OF THE ORGANIZATION ON THIS SCREEN — which is what the
    * button always claimed and never did. It used to be a plain link to
-   * `/data-v2`, and that page reads the app's ACTIVE organization, not the one
+   * `/data`, and that page reads the app's ACTIVE organization, not the one
    * picked in the selector above; on 19 September an admin turned the store on
    * for a brand-new organization, pressed this, and landed in a different
    * organization's store with nothing on the screen saying which one they were
@@ -195,7 +195,7 @@ export function UnifiedDataRampScreen() {
     [organizationId, nameOf, dispatch, router],
   );
 
-  const openTables = useCallback(() => goToStore("/data-v2", "its tables"), [goToStore]);
+  const openTables = useCallback(() => goToStore("/data", "its tables"), [goToStore]);
 
   /**
    * THE TEST BENCH. The same organization switch, then the one page that shows
@@ -204,7 +204,7 @@ export function UnifiedDataRampScreen() {
    * lands on reads the ACTIVE organization, not the one this selector names.
    */
   const openTryEverything = useCallback(
-    () => goToStore("/data-v2/try-everything", "everything it can do"),
+    () => goToStore("/data/try-everything", "everything it can do"),
     [goToStore],
   );
 

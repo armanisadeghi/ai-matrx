@@ -144,7 +144,7 @@ for (const key of which) {
   const started = Date.now();
 
   try {
-    const who = await signIn(page, "/data-v2");
+    const who = await signIn(page, "/data");
     if (who.email !== "admin@admin.com") throw new Error(`signed in as ${who.email}`);
     await useOrganization(page, { ...A, table: A.tables[0].id });
 

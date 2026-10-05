@@ -166,7 +166,7 @@ if $STRICT; then
         # `pnpm test:release-route-manifest`. On 2026-09-21 it was measured EIGHT
         # DAYS stale: 63 routes built since 13 September had no row, among them
         # the table-invitation accept page, `/notifications` (the deep link every
-        # agent digest declares), the whole `/data-v2/**` store, `/approvals` and
+        # agent digest declares), the whole `/data/**` store, `/approvals` and
         # `/decisions`. A route with no row is `unbuilt`, so for eight days every
         # link to one of them was silently rewritten to an ancestor on email and
         # in-app and refused outright on SMS. Nothing was red, because

@@ -92,7 +92,7 @@ const SAVE_PROTOCOL: Partial<Record<MakeFlow, { builder: string; save: (props: P
 
 /** A tile whose made thing opens on its own page (it never comes back to /make). */
 function leavesForItsOwnPage(tile: MakeTile): boolean {
-  // The Table flow is TablesHome `makingOnly`, which opens /data-v2/<new id> the moment it is made.
+  // The Table flow is TablesHome `makingOnly`, which opens /data/<new id> the moment it is made.
   return Boolean(tile.href) || tile.flow === "table";
 }
 

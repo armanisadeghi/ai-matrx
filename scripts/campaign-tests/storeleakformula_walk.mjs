@@ -32,7 +32,7 @@ try {
     });
     const who = await signIn(page, ORIGIN, EMAIL, PASSWORD, "test seat");
     if (who !== EMAIL) throw new Error(`signed in as ${who}, not ${EMAIL}`);
-    await page.goto(`${ORIGIN}/data-v2/${TABLE}`, { waitUntil: "domcontentloaded", timeout: 120000 });
+    await page.goto(`${ORIGIN}/data/${TABLE}`, { waitUntil: "domcontentloaded", timeout: 120000 });
     for (let i = 0; i < 60; i++) {
       const t = await page.evaluate(() => document.body.innerText);
       if (/Kitchen/.test(t)) break;

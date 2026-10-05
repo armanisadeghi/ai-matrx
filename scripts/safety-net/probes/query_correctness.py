@@ -91,7 +91,7 @@ LLM = os.environ.get("SN_QC_LLM") == "1"
 ORG = "0a54df90-eab8-4d07-ab29-81a45fb41e04"  # Cedar Ridge Physical Therapy
 #: The chat agent for the LLM leg: an explicit override, else the one the PRODUCT gives a member on a table page.
 RECORDS_AGENT = os.environ.get("SN_QC_AGENT") or None
-TABLE_PAGE_MANDATE = "ambient.page_guidance"  # /data-v2/<table> is not a mapped module, so the system ambient rung answers
+TABLE_PAGE_MANDATE = "ambient.page_guidance"  # /data/<table> is not a mapped module, so the system ambient rung answers
 FORBIDDEN = ("3e790542-fdaf-40b2-8bf3-658bf94fe67f", "c1aabdc0-4d94-42d4-9ddc-91b68ef9c0a7")
 UA = {"user-agent": "matrx-safety-net-query-correctness/1.0", "X-Matrx-Agent-Traffic": "safety-net-query-correctness"}  # marker mirrors lib/agent-traffic/marker.ts
 

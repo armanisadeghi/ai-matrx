@@ -169,7 +169,7 @@ interface TableToolbarProps {
   /** Mobile-only view controls (sort, saved views, columns) hosted in the same drawer. */
   mobileViewControls?: React.ReactNode;
   /**
-   * The page around the grid owns Share and export (the /data-v2 table page's chrome, for
+   * The page around the grid owns Share and export (the /data table page's chrome, for
    * every layout — ruling 2026-09-23). The grid's own Share button and Copy / transform /
    * export control are then absent: the same actions, in one place.
    */

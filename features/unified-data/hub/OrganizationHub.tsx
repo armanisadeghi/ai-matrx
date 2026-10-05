@@ -2,8 +2,8 @@
 
 // features/unified-data/hub/OrganizationHub.tsx — LANE DATA-HUB
 //
-// THE ORGANIZATION'S FRONT DOOR FOR THE RECORD STORE, and it is /data-v2's own
-// landing rather than a second route family. Before this, /data-v2 listed an
+// THE ORGANIZATION'S FRONT DOOR FOR THE RECORD STORE, and it is /data's own
+// landing rather than a second route family. Before this, /data listed an
 // organization's TABLES and nothing else: forms, bookings, portals, dashboards,
 // digests, checklists, automations, sharing and the archive existed only as
 // rails inside ONE table's page, so "what forms do we have?" meant opening
@@ -110,7 +110,7 @@ export interface OrganizationHubProps {
    * 🚨 IT USED TO BE THE FIRST THING ON THE ORGANIZATION'S FRONT DOOR
    * (VERIFIER-14 §3, measured on Rincon Plumbing Co): an `Inbox 37` stack of
    * approval cards filled the whole first screen at 1600 px and two screens at
-   * 390 px, so a person opening /data-v2 met somebody's field-proposal queue
+   * 390 px, so a person opening /data met somebody's field-proposal queue
    * before they met the front door. The queue is not less important for being
    * lower — it is one section among the organization's own, and it is still one
    * scroll away with its own count on it.

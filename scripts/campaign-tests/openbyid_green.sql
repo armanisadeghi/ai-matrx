@@ -137,23 +137,23 @@ begin
   perform set_config('request.jwt.claims', c_dana_j, true);
   v_a := platform.resolve_id(v_appts);
   if v_a ->> 'state' <> 'opens' or v_a ->> 'kind' <> 'table'
-     or v_a ->> 'path' <> '/data-v2/' || v_appts || '?org=' || v_org then
-    raise exception 'A1: Appointments did not open on /data-v2 in the clinic: %', v_a;
+     or v_a ->> 'path' <> '/data/' || v_appts || '?org=' || v_org then
+    raise exception 'A1: Appointments did not open on /data in the clinic: %', v_a;
   end if;
   v_a := platform.resolve_id(v_r3);
-  if v_a ->> 'kind' <> 'record' or v_a ->> 'path' <> '/data-v2/' || v_appts || '?record=' || v_r3 || '&org=' || v_org then
+  if v_a ->> 'kind' <> 'record' or v_a ->> 'path' <> '/data/' || v_appts || '?record=' || v_r3 || '&org=' || v_org then
     raise exception 'A2: Moose''s visit did not open inside Appointments: %', v_a;
   end if;
   v_a := platform.resolve_id(v_dash);
-  if v_a ->> 'kind' <> 'dashboard' or v_a ->> 'path' <> '/data-v2/' || v_appts || '?dashboard=' || v_dash || '&org=' || v_org then
+  if v_a ->> 'kind' <> 'dashboard' or v_a ->> 'path' <> '/data/' || v_appts || '?dashboard=' || v_dash || '&org=' || v_org then
     raise exception 'A3: the day-sheet dashboard did not open on its table: %', v_a;
   end if;
   v_a := platform.resolve_id(v_digest);
-  if v_a ->> 'kind' <> 'digest' or v_a ->> 'path' <> '/data-v2/' || v_appts || '?rail=notifications&item=' || v_digest || '&org=' || v_org then
+  if v_a ->> 'kind' <> 'digest' or v_a ->> 'path' <> '/data/' || v_appts || '?rail=notifications&item=' || v_digest || '&org=' || v_org then
     raise exception 'A4: the Monday no-show digest did not open in the notifications rail: %', v_a;
   end if;
   v_a := platform.resolve_id(v_form);
-  if v_a ->> 'kind' <> 'form' or v_a ->> 'path' <> '/data-v2/' || v_appts || '?rail=forms&item=' || v_form || '&org=' || v_org then
+  if v_a ->> 'kind' <> 'form' or v_a ->> 'path' <> '/data/' || v_appts || '?rail=forms&item=' || v_form || '&org=' || v_org then
     raise exception 'A5: the intake form did not open in the forms rail: %', v_a;
   end if;
   raise notice 'A PASS — Appointments, Moose''s visit, the day-sheet dashboard, the no-show digest and the intake form each open on their own screen, stamped with the clinic';
@@ -161,7 +161,7 @@ begin
   -- ══ B — the hospital's shared table opens as the HOSPITAL's, for a non-member ═══════════════
   v_a := platform.resolve_id(v_referrals);
   if v_a ->> 'state' <> 'opens' or (v_a ->> 'organization_id')::uuid is distinct from v_er
-     or v_a ->> 'path' <> '/data-v2/' || v_referrals || '?org=' || v_er then
+     or v_a ->> 'path' <> '/data/' || v_referrals || '?org=' || v_er then
     raise exception 'B1: the hospital''s Referrals did not open as the hospital''s for Marisol: %', v_a;
   end if;
   raise notice 'B PASS — Bend Animal Emergency''s Referrals, shared with Marisol, opens in the hospital (she is not a member and nothing asked which organization she had selected)';
@@ -173,7 +173,7 @@ begin
     raise exception 'C1: her older kennel log did not open the older screen: %', v_a;
   end if;
   v_a := platform.resolve_id(v_moved);
-  if v_a ->> 'kind' <> 'table' or v_a ->> 'path' <> '/data-v2/' || v_moved || '?org=' || v_org
+  if v_a ->> 'kind' <> 'table' or v_a ->> 'path' <> '/data/' || v_moved || '?org=' || v_org
      or v_a -> 'sides' <> '{"old": true, "new": true}'::jsonb then
     raise exception 'C2: the moved vaccine list did not open its live, new side: %', v_a;
   end if;
@@ -189,7 +189,7 @@ begin
   if v_a ->> 'state' <> 'no_such_side' then
     raise exception 'C5: side=old on a store-born table was not refused in words: %', v_a;
   end if;
-  raise notice 'C PASS — the kennel log opens /data, the moved vaccine list opens /data-v2 and side=old opens its archived copy; a side that is not there says so';
+  raise notice 'C PASS — the kennel log opens /data, the moved vaccine list opens /data and side=old opens its archived copy; a side that is not there says so';
 
   -- ══ D — nothing leaks ═════════════════════════════════════════════════════════════════════
   v_never := platform.resolve_id(gen_random_uuid());

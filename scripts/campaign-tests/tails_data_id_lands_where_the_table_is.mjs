@@ -1,5 +1,5 @@
 // Headless proof for lane TAILS item 2: /data/<record-store table id> no longer
-// answers "We couldn't open this dataset" — it lands the person on /data-v2/<id>.
+// answers "We couldn't open this dataset" — it lands the person on /data/<id>.
 //
 // Ironline Fitness's `members` table, 60df8b1e-…, owned by admin@admin.com.
 import { chromium } from "playwright";
@@ -39,7 +39,7 @@ await page.goto(target, { waitUntil: "domcontentloaded", timeout: 120000 });
 
 for (let i = 0; i < 40; i++) {
   await page.waitForTimeout(1000);
-  if (page.url().includes("/data-v2/")) break;
+  if (page.url().includes("/data/")) break;
 }
 const finalUrl = page.url();
 const body = (await page.locator("body").innerText().catch(() => "")).slice(0, 1500);
@@ -51,9 +51,9 @@ say("BODY (first 600 chars):\n" + body.slice(0, 600));
 await page.screenshot({ path: process.env.SHOT || "/tmp/tails-data-id.png", fullPage: false });
 await browser.close();
 
-if (finalUrl.includes(`/data-v2/${TABLE}`)) {
+if (finalUrl.includes(`/data/${TABLE}`)) {
   say("PASS — the older viewer sent the person to the record store viewer.");
   process.exit(0);
 }
-say("FAIL — did not land on /data-v2/<id>.");
+say("FAIL — did not land on /data/<id>.");
 process.exit(1);

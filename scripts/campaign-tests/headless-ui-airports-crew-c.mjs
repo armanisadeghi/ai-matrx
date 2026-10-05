@@ -1,5 +1,5 @@
 // Data crew C, path 3 (HEADLESS UI SCREENS): create the airports table and its
-// columns entirely through the app's own /data-v2 screens (no store-door
+// columns entirely through the app's own /data screens (no store-door
 // shortcuts), then add a representative sample of real rows the same way,
 // observing whether the grid offers any bulk entry (paste) or whether each
 // cell must be clicked and typed individually.
@@ -30,7 +30,7 @@ async function main() {
 
   const nonce = randomBytes(16).toString("hex");
   writeDevLoginNonce(HOST, nonce);
-  await page.goto(`${ORIGIN}/api/dev-login?nonce=${nonce}&next=${encodeURIComponent("/data-v2")}`, { waitUntil: "domcontentloaded", timeout: 60000 });
+  await page.goto(`${ORIGIN}/api/dev-login?nonce=${nonce}&next=${encodeURIComponent("/data")}`, { waitUntil: "domcontentloaded", timeout: 60000 });
   await page.waitForTimeout(3500);
 
   // Pick the active organization from the empty-state screen, as a person would.
@@ -44,14 +44,14 @@ async function main() {
   } else {
     limit("locate the Compass Route Relocation Advisors option in the org picker", "getByRole('option', {name: /Compass Route.../}) matched 0 elements", "the organization card to be selectable by role=option");
   }
-  await page.goto(`${ORIGIN}/data-v2`, { waitUntil: "domcontentloaded", timeout: 30000 });
+  await page.goto(`${ORIGIN}/data`, { waitUntil: "domcontentloaded", timeout: 30000 });
   await page.waitForTimeout(2500);
   await page.screenshot({ path: resolve(OUT_DIR, "airports-1-data-v2-home.png"), fullPage: true }).catch(() => {});
 
   // Create a new table entirely through the UI.
   const newTableBtn = page.getByRole("button", { name: /New table|Create table|\+ Table/i }).first();
   if (!(await newTableBtn.count())) {
-    limit("look for a 'new table' control on /data-v2", "no button matching New table / Create table / + Table text was found", "a visible control to create a table from this screen");
+    limit("look for a 'new table' control on /data", "no button matching New table / Create table / + Table text was found", "a visible control to create a table from this screen");
   } else {
     await newTableBtn.click({ timeout: 5000 }).catch((e) => limit("click the new-table control", String(e), "a dialog or inline field to name the new table"));
     await page.waitForTimeout(1500);
@@ -73,7 +73,7 @@ async function main() {
 
   console.log("url after table creation attempt:", page.url());
   const bodyText1 = await page.locator("body").innerText().catch(() => "");
-  findings.push({ when: new Date().toISOString(), crew: "C", use_case: "US large airports relocation route planning", doing: "create a new table by name through /data-v2's own UI", said: bodyText1.slice(0, 2000), expected: "an empty table ready for columns" });
+  findings.push({ when: new Date().toISOString(), crew: "C", use_case: "US large airports relocation route planning", doing: "create a new table by name through /data's own UI", said: bodyText1.slice(0, 2000), expected: "an empty table ready for columns" });
 
   // Add columns through "Add field", one per dataset column we care about.
   const fieldsToAdd = [
@@ -116,7 +116,7 @@ async function main() {
   console.log(`paste control present: ${hasPaste}`);
   if (!hasPaste) {
     limit(
-      "look for a bulk-paste-rows control on the /data-v2 grid before entering 50 airports one at a time",
+      "look for a bulk-paste-rows control on the /data grid before entering 50 airports one at a time",
       "no 'Paste' control was found on this table's toolbar",
       "a way to paste many rows at once (as a spreadsheet or the older /data 'Paste' button offers), since typing 50 rows through individual cell clicks is not how a practitioner would enter this dataset",
     );

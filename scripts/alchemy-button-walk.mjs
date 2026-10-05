@@ -155,7 +155,7 @@ async function phaseTwo() {
     `On the same inspector page the app's own browser client (the one every screen uses) attempted an insert into custom.record naming a column that does not exist, so PostgREST refused it before any SQL ran: ${JSON.stringify(report.refusedWrite)}. Then the Alchemy menu → "Everything on this page".`, c2);
 
   // ── 03. The table page, "Everything, with records" (capped and stated). ──
-  await page.goto(`${ORIGIN}/data-v2/${TABLE}`, { waitUntil: "domcontentloaded", timeout: 240000 });
+  await page.goto(`${ORIGIN}/data/${TABLE}`, { waitUntil: "domcontentloaded", timeout: 240000 });
   await until("table page", async () => (await page.locator("[data-page-capture]").count()) > 0, 240000);
   await page.waitForTimeout(5000);
   const c3 = await copyVariant("Everything, with records");
@@ -252,7 +252,7 @@ try {
 
   // ── 2. A data-v2 table page (read-only; the quick copy reads no records). ──
   if (TABLE) {
-    await page.goto(`${ORIGIN}/data-v2/${TABLE}`, { waitUntil: "domcontentloaded", timeout: 240000 });
+    await page.goto(`${ORIGIN}/data/${TABLE}`, { waitUntil: "domcontentloaded", timeout: 240000 });
     await until("table page", async () => (await page.locator("[data-page-capture]").count()) > 0, 240000);
     await page.waitForTimeout(4000);
     await page.screenshot({ path: `${OUT}/2-table-page.png`, fullPage: false, timeout: 90000 }).catch(() => undefined);

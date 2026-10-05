@@ -1,4 +1,4 @@
-// scripts/data-home/failed-requests-probe.mjs — every failed request and console error on /data-v2 for one seat.
+// scripts/data-home/failed-requests-probe.mjs — every failed request and console error on /data for one seat.
 import { chromium } from "playwright";
 import { setOrganization, signIn, until } from "../lib/seat-browser.mjs";
 const ORIGIN = process.env.O ?? "https://www.aimatrx.com";
@@ -28,7 +28,7 @@ if (!ORIGIN.includes("aimatrx.com")) {
   await new Promise((r) => setTimeout(r, 6000));
 }
 const who = await signIn(page, ORIGIN, process.env.E, process.env.P);
-for (const path of (process.env.PATHS ?? "/data-v2").split(",")) {
+for (const path of (process.env.PATHS ?? "/data").split(",")) {
   failed.length = 0; errors.length = 0;
   await page.goto(ORIGIN + path, { waitUntil: "domcontentloaded", timeout: 180000 });
   let r = await until("home", async () => page.evaluate(() => document.querySelector("[data-hub-root]") ? "home" : /An organization is needed/.test(document.body.innerText) ? "needs-org" : null), 120000);

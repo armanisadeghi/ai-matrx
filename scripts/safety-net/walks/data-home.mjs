@@ -1,6 +1,6 @@
 // scripts/safety-net/walks/data-home.mjs — check `datahome.walk-home`, items D01–D06 + "the data home is quiet".
 //
-// REWRITTEN 2026-10-01 ~13:50 PT (SAFETY-NET, at the chair's request) for the NEW /data-v2: the list-shell
+// REWRITTEN 2026-10-01 ~13:50 PT (SAFETY-NET, at the chair's request) for the NEW /data: the list-shell
 // page (features/unified-data/home/, knob custom.data_home_shell = true since 13:10 PT). The previous walk
 // (lane SN-DH) read the old hub's markers (data-hub-*) and graded D01–D06 FAIL on the new page while the
 // page itself was fine — a change of intended page, so the steps changed; what must hold did not:
@@ -28,7 +28,7 @@ const mark = () => ctx.errors.http.length;
 const httpSince = (n) => ctx.errors.http.slice(n).filter((e) => !/__dev-walk/.test(e.url));
 
 async function home(page, query = "") {
-  await ctx.goto(page, `/data-v2${query}`);
+  await ctx.goto(page, `/data${query}`);
   const r = await until("the list", async () => {
     const n = await page.locator(ROW).count();
     if (n > 0) return "rows";
@@ -174,7 +174,7 @@ try {
       const r = await rows(page);
       return { ok: /All organizations/.test(label ?? "") || r.length === 0, detail: `control says ${JSON.stringify(label)}; ${r.length} rows` };
     });
-    await ctx.step(["D02"], `${seat}: the pick is never remembered — a fresh /data-v2 is All organizations again`, page, async () => {
+    await ctx.step(["D02"], `${seat}: the pick is never remembered — a fresh /data is All organizations again`, page, async () => {
       await home(page);
       const label = await orgFilterLabel(page);
       return { ok: /All organizations/.test(label ?? "") && !new URL(page.url()).searchParams.has("org_filter"), detail: `control says ${JSON.stringify(label)}; address ${new URL(page.url()).search || "(none)"}` };
@@ -236,11 +236,11 @@ try {
         await btn.click();
         await page.getByPlaceholder("Table name").fill(NAME);
         await page.getByRole("button", { name: "Create", exact: true }).click();
-        const opened = await until("the new table opens", async () => page.url().match(/\/data-v2\/([0-9a-f-]{36})/)?.[1] ?? null, 120000);
+        const opened = await until("the new table opens", async () => page.url().match(/\/data\/([0-9a-f-]{36})/)?.[1] ?? null, 120000);
         tableId = opened.v;
         if (!tableId) return { ok: false, detail: `the new table did not open (still at ${page.url()}) with the filter on ${other}` };
         ctx.cleanup(async () => {
-          await ctx.goto(page, `/data-v2/${tableId}?rail=settings`);
+          await ctx.goto(page, `/data/${tableId}?rail=settings`);
           await sleep(5000);
           if (await page.getByText("This table is archived").count()) return;
           const carry = page.getByRole("button", { name: "Carry on archiving", exact: true });

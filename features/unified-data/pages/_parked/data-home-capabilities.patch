@@ -24,7 +24,7 @@ index cb51d8d459..f0340a9562 100644
 +              kind: "page",
 +              title: dash.name || "(untitled page)",
 +              facts: [plural(blocks, "block")],
-+              href: `/data-v2/pages/${dash.dashboard_id}`,
++              href: `/data/pages/${dash.dashboard_id}`,
 +            };
 +          }
            return {

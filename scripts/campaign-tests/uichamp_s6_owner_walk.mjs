@@ -41,7 +41,7 @@ try {
     page.on("console", (m) => { if (m.type() === "error") consoleErrors.push(m.text().slice(0, 300)); });
     const who = await signIn(page, ORIGIN, process.env.AI_ADMIN_USERNAME, process.env.AI_ADMIN_PASSWORD, "owner");
     clause(`${label}: signed in as admin@admin.com`, who === "admin@admin.com", who);
-    await page.goto(`${ORIGIN}/data-v2/${TABLE}?rail=portals&item=${PORTAL}`, { waitUntil: "domcontentloaded", timeout: 300000 });
+    await page.goto(`${ORIGIN}/data/${TABLE}?rail=portals&item=${PORTAL}`, { waitUntil: "domcontentloaded", timeout: 300000 });
     const editor = page.getByRole("region", { name: "Look and forms" });
     const found = await editor.waitFor({ timeout: 180000 }).then(() => true).catch(() => false);
     clause(`${label}: the portal card carries the look-and-forms editor`, found, (await text(page)).slice(0, 400));

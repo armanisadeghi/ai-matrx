@@ -1,7 +1,7 @@
 /**
  * DATA-PAGE-DEFECTS (safety net T01 + L02): THE FIRST "NEW TABLE" PRESS IS NEVER LOST.
  *
- * Root cause (probed on the clone preview, 2026-10-02): /data-v2 shows the old data home until the
+ * Root cause (probed on the clone preview, 2026-10-02): /data shows the old data home until the
  * knob `custom.data_home_shell` answers, then swaps to the new shell. The old home's header draws a
  * working New table ~2 s before the swap; a press in that window was counted in the old page's own
  * state, the swap unmounted it, and the new shell started from zero — the name box never opened.

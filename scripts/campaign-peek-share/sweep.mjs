@@ -81,7 +81,7 @@ async function main() {
     await ctx.addCookies([{ name: "matrx-active-org", value: `${ADMIN_ID}:${org}`, domain: host, path: "/", sameSite: "Lax" }]);
     let state = null;
     for (let attempt = 0; attempt < 3; attempt += 1) {
-      await page.goto(`${ORIGIN}/data-v2/${table}?record=${record}`, { waitUntil: "domcontentloaded", timeout: 180000 });
+      await page.goto(`${ORIGIN}/data/${table}?record=${record}`, { waitUntil: "domcontentloaded", timeout: 180000 });
       await page.waitForTimeout(attempt === 0 ? 14000 : 20000);
       state = await page.evaluate(() => {
         const txt = document.body.innerText;

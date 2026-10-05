@@ -1,4 +1,4 @@
-// Data-doctrine crew E2 — enter one table's data through the real /data-v2 app
+// Data-doctrine crew E2 — enter one table's data through the real /data app
 // screens (headless Playwright), against the shared dev server on :3001, using
 // this session's own hostname so we don't evict another agent's cookie jar.
 import { chromium } from "playwright";
@@ -27,7 +27,7 @@ async function main() {
 
   const nonce = randomBytes(16).toString("hex");
   writeDevLoginNonce(HOST, nonce);
-  await page.goto(`${ORIGIN}/api/dev-login?nonce=${nonce}&next=${encodeURIComponent(`/data-v2/${tableId}`)}`, {
+  await page.goto(`${ORIGIN}/api/dev-login?nonce=${nonce}&next=${encodeURIComponent(`/data/${tableId}`)}`, {
     waitUntil: "domcontentloaded",
     timeout: 120000,
   });

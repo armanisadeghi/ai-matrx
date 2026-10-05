@@ -1,9 +1,9 @@
 "use client";
 
 /**
- * ONE RECORD-STORE TABLE, MOUNTED — the part of `/data-v2/[tableId]` that is not route chrome.
+ * ONE RECORD-STORE TABLE, MOUNTED — the part of `/data/[tableId]` that is not route chrome.
  *
- * `/data-v2/[tableId]` and a Board tile (`features/board/items/data-items.tsx`) render the SAME
+ * `/data/[tableId]` and a Board tile (`features/board/items/data-items.tsx`) render the SAME
  * table page: records-ui's `TablePage` inside `RecordsMount`, reading as the TABLE's organization,
  * with the same ports, realtime, Sheet layout, merged-grid knob, table action list and
  * `matrx-user/data-tables` agent surface (`RecordStoreTableSurface`). Only the route adds route
@@ -166,8 +166,8 @@ export function useUnifiedTable({ tableId, address }: { tableId: string; address
       </span>
     ) : null;
   const allTablesHref = readingOrganizationId
-    ? `/data-v2?org=${encodeURIComponent(readingOrganizationId)}`
-    : "/data-v2";
+    ? `/data?org=${encodeURIComponent(readingOrganizationId)}`
+    : "/data";
 
   /** A TEST COPY SAYS SO IN THE TABLE MENU, NOT IN A BANNER (lane COPY-WRITABLE). */
   const [copyVersion, setCopyVersion] = useState(0);
@@ -398,7 +398,7 @@ export function UnifiedTableBody({
         token="record"
         id={tableId}
         onRetry={object.retry}
-        fallbackHref="/data-v2"
+        fallbackHref="/data"
         fallbackLabel="Back to your tables"
         footer={<TableTransferOffer tableId={tableId} onTransferred={object.retry} />}
       />

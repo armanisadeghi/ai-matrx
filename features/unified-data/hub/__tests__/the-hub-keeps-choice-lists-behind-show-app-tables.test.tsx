@@ -64,7 +64,7 @@ const CHOICE_LISTS = [
 jest.mock("next/navigation", () => ({
   useRouter: () => ({ replace: () => undefined, refresh: () => undefined, push: () => undefined, prefetch: () => undefined }),
   useSearchParams: () => new URLSearchParams(""),
-  usePathname: () => "/data-v2",
+  usePathname: () => "/data",
 }));
 jest.mock("next/link", () => ({
   __esModule: true,

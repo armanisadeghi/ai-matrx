@@ -33,7 +33,7 @@ export async function whereThisTableLives(client: SupabaseClient, tableId: strin
     tableId,
   );
   if (own.state === "found" && own.kind === "table") {
-    return { kind: "record_store", href: `/data-v2/${tableId}`, organizationId: own.organizationId };
+    return { kind: "record_store", href: `/data/${tableId}`, organizationId: own.organizationId };
   }
   if (own.state === "found" || own.state === "not-given") return { kind: "nowhere" };
   return { kind: "unknown", why: own.state === "unavailable" ? own.why : "the record store did not say where this table lives" };

@@ -8,7 +8,7 @@
  * 🚨 WHY THIS EXISTS, MEASURED. `platform.route_manifest` was last synced on
  * 2026-09-13 and was still eight days stale on 2026-09-21: **63 routes built in
  * that window had no row at all** — among them `/notifications` (the deep link
- * every `agent.*` digest declares), the whole `/data-v2/**` store, `/approvals`,
+ * every `agent.*` digest declares), the whole `/data/**` store, `/approvals`,
  * `/decisions`, `/capture/**`, `/libraries/**` and the archived-organization
  * pages. A route with no row is `unbuilt` to
  * `aidream/services/routes/liveness.py`, so for eight days

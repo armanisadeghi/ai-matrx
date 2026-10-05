@@ -59,14 +59,14 @@ const main = async () => {
 
   const nonce = randomBytes(16).toString("hex");
   writeDevLoginNonce(HOST, nonce);
-  await page.goto(`${ORIGIN}/api/dev-login?nonce=${nonce}&next=${encodeURIComponent("/data-v2")}`, {
+  await page.goto(`${ORIGIN}/api/dev-login?nonce=${nonce}&next=${encodeURIComponent("/data")}`, {
     waitUntil: "domcontentloaded",
   });
   await page.waitForLoadState("networkidle").catch(() => {});
 
   // THE ORGANIZATION IS SET, NEVER ASSUMED. `ensureOrgId` holds every request until the
   // person picks one, so a walk that skipped this would photograph the hold screen.
-  await page.goto(`${ORIGIN}/data-v2`, { waitUntil: "domcontentloaded" });
+  await page.goto(`${ORIGIN}/data`, { waitUntil: "domcontentloaded" });
   await page.waitForTimeout(4000);
   const picked = await page.evaluate(() => {
     let hit = null;
@@ -89,14 +89,14 @@ const main = async () => {
   }
 
   // 1 — THE INBOX: a checklist step is a work item, and it reached the person it belongs to.
-  await page.goto(`${ORIGIN}/data-v2`, { waitUntil: "domcontentloaded" });
+  await page.goto(`${ORIGIN}/data`, { waitUntil: "domcontentloaded" });
   await shoot(page, "01-inbox-checklist-steps-are-work", [
     "Verify the state dental hygiene licence",
     "Submit credentialing to Delta and Cigna",
   ]);
 
   // 2 — THE PIPELINE BOARD, through the saved view's kanban layout.
-  await page.goto(`${ORIGIN}/data-v2/${DEALS}`, { waitUntil: "domcontentloaded" });
+  await page.goto(`${ORIGIN}/data/${DEALS}`, { waitUntil: "domcontentloaded" });
   await page.waitForTimeout(2500);
   const board = page.getByRole("button", { name: "Kanban", exact: true }).first();
   await board.waitFor({ timeout: 45_000 });
@@ -108,7 +108,7 @@ const main = async () => {
   //     inbox reaches it: the link that names the record. Needs records-ui 0.44.0 in the app;
   //     before that the parameter is read by nobody and the record stays shut, so this SKIPS
   //     rather than photographing a table and calling it a record page.
-  await page.goto(`${ORIGIN}/data-v2/${PEOPLE}?record=${RECORD}`, { waitUntil: "domcontentloaded" });
+  await page.goto(`${ORIGIN}/data/${PEOPLE}?record=${RECORD}`, { waitUntil: "domcontentloaded" });
   await page.waitForTimeout(5000);
   // THE RAIL, NOT THE HEADER BUTTON. The page always carries a "Checklists" control; the
   // record rail is an <aside>, and `ChecklistRunner` inside it carries its own test id. A
@@ -129,7 +129,7 @@ const main = async () => {
     [DEALS, "Bookings", "04-bookings-panel", ["Book a new-patient consult"]],
     [PEOPLE, "Checklists", "05-checklists-panel", ["New hygienist onboarding"]],
   ]) {
-    await page.goto(`${ORIGIN}/data-v2/${table}`, { waitUntil: "domcontentloaded" });
+    await page.goto(`${ORIGIN}/data/${table}`, { waitUntil: "domcontentloaded" });
     await page.waitForTimeout(3000);
     const control = page.getByRole("button", { name: rail, exact: true }).first();
     if ((await control.count()) === 0) {

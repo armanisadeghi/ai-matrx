@@ -1,6 +1,6 @@
 "use client";
 
-// app/(core)/data-v2/pages/[pageId]/page.tsx — THE MOUNT, AND NOTHING MORE. One page built from
+// app/(core)/data/pages/[pageId]/page.tsx — THE MOUNT, AND NOTHING MORE. One page built from
 // tables (v6 lane 11, wave D); `new?table=<id>` makes one. The screen is `PageRoute`.
 import { use } from "react";
 

@@ -50,7 +50,7 @@ try {
     });
     const signed = await signIn(page, ORIGIN, seat.email, seat.password, seat.who);
     check(`${seat.who}: signed in through the login form as ${seat.email}`, signed === seat.email, signed);
-    await page.goto(`${ORIGIN}/data-v2`, { waitUntil: "domcontentloaded", timeout: 180000 });
+    await page.goto(`${ORIGIN}/data`, { waitUntil: "domcontentloaded", timeout: 180000 });
 
     const got = await until(`${seat.who}: the badge asks inbox_counts`, async () => answers.find((a) => Array.isArray(a.rows)), 120000);
     check(`${seat.who}: the badge reads custom.inbox_counts (every organization of theirs)`, !!got.v && got.v.status === 200, got.v ? `${got.v.rows.length} organizations, HTTP ${got.v.status}` : "no answer");
@@ -102,7 +102,7 @@ try {
       check(`${seat.who}: put back`, !u.error && u.data?.changed === true, u.error?.message ?? u.data?.sentence);
 
       // The pinned row opens that organization's inbox, whichever organization is selected.
-      await page.goto(`${ORIGIN}/data-v2`, { waitUntil: "domcontentloaded", timeout: 180000 });
+      await page.goto(`${ORIGIN}/data`, { waitUntil: "domcontentloaded", timeout: 180000 });
       await sleep(3000);
       await page.locator("[data-inbox-header-button] button").first().click();
       await sleep(1500);
@@ -110,9 +110,9 @@ try {
       if (await pin.count()) {
         await pin.click();
         const went = await until(`${seat.who}: navigates to the organization's inbox`, async () => (page.url().includes(`org=${target.organization_id}`) ? page.url() : null), 60000);
-        check(`${seat.who}: the pinned row opens /data-v2?org=<that organization>`, !!went.v, went.v ?? page.url());
+        check(`${seat.who}: the pinned row opens /data?org=<that organization>`, !!went.v, went.v ?? page.url());
       } else {
-        check(`${seat.who}: the pinned row opens /data-v2?org=<that organization>`, false, "row not found");
+        check(`${seat.who}: the pinned row opens /data?org=<that organization>`, false, "row not found");
       }
     }
     await ctx.close();

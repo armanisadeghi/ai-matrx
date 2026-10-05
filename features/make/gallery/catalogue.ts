@@ -263,17 +263,17 @@ export function hrefForMade(m: MadeObject): string | null {
   if (!m.id) return null;
   switch (m.kind) {
     case "table":
-      return `/data-v2/${m.id}`;
+      return `/data/${m.id}`;
     case "view":
-      return m.table_id ? `/data-v2/${m.table_id}?view=${m.id}` : null;
+      return m.table_id ? `/data/${m.table_id}?view=${m.id}` : null;
     case "form":
-      return m.table_id ? `/data-v2/${m.table_id}?rail=forms&item=${m.id}` : `/f/${m.id}`;
+      return m.table_id ? `/data/${m.table_id}?rail=forms&item=${m.id}` : `/f/${m.id}`;
     case "dashboard":
-      return m.table_id ? `/data-v2/${m.table_id}?dashboard=${m.id}` : null;
+      return m.table_id ? `/data/${m.table_id}?dashboard=${m.id}` : null;
     case "document":
-      return m.table_id ? `/data-v2/${m.table_id}` : null;
+      return m.table_id ? `/data/${m.table_id}` : null;
     case "portal":
-      return m.table_id ? `/data-v2/${m.table_id}?rail=portals&item=${m.id}` : null;
+      return m.table_id ? `/data/${m.table_id}?rail=portals&item=${m.id}` : null;
     default:
       return null;
   }

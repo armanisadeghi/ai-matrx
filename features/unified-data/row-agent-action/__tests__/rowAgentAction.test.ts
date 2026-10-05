@@ -1,5 +1,5 @@
 /**
- * TABLE-PARITY M3 on /data-v2: an agent button hands the row to `data.row_action` exactly as
+ * TABLE-PARITY M3 on /data: an agent button hands the row to `data.row_action` exactly as
  * the older grid does. Cedar Ridge Veterinary Clinic's Appointments table, "Draft reminder".
  */
 import { rowAgentLaunch, rowAgentMappedValues, rowAgentOffer, type RowAgentActionTarget } from "../rowAgentAction";

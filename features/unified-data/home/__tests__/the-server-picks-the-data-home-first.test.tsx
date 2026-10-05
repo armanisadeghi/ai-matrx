@@ -1,5 +1,5 @@
 /**
- * DATA-PAGE-DEFECTS: /data-v2 DRAWS THE RIGHT HOME FIRST, with no swap.
+ * DATA-PAGE-DEFECTS: /data DRAWS THE RIGHT HOME FIRST, with no swap.
  *
  * The page used to render the old home until the browser's read of `custom.data_home_shell` landed
  * (~2 s) and then swap. page.tsx now reads the knob on the server and hands it to the route; this

@@ -4,7 +4,7 @@
 // first, each naming its organization. Read once through the data home's one call
 // (`custom.data_home`, features/unified-data/hub/doors.ts) and built into rows by the data home's
 // own builder (`buildDataHomeRows`), so a row's address, kind word and organization are exactly the
-// ones /data-v2 lists.
+// ones /data lists.
 //
 // WHAT NEVER SHOWS (guard G2, __tests__/recent-skips-archived-and-test-rows.test.ts):
 //   · an archived or removed row — the door already skips them (deleted_at / archived_at); this is

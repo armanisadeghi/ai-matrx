@@ -32,7 +32,7 @@ const source = (file: string) =>
   PLANT_REF
     ? execFileSync("git", ["show", `${PLANT_REF}:${file}`], { cwd: REPO, encoding: "utf8" })
     : readFileSync(path.join(REPO, file), "utf8");
-const HOMES = ["features/unified-data/home/DataHomeShellPage.tsx", "app/(core)/data-v2/DataHomePageClient.tsx"];
+const HOMES = ["features/unified-data/home/DataHomeShellPage.tsx", "app/(core)/data/DataHomePageClient.tsx"];
 
 let ACTIVE: { organizationId: string | null; organizationState: string } = { organizationId: null, organizationState: "required" };
 

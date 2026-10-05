@@ -3,7 +3,7 @@
 // app/(core)/lists/[id]/StoreListPage.tsx — A PICK LIST'S PAGE.
 //
 // Every list lives in the record store as a Table of choices under the same id. /lists/<id> opens it
-// as the store's table page (records-ui TablePage, the very screen /data/<id> and /data-v2/<id> are)
+// as the store's table page (records-ui TablePage, the very screen /data/<id> and /data/<id> are)
 // — its choices are the table's rows, edited there — under one line saying what the page is.
 
 import Link from "next/link";

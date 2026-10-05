@@ -2,7 +2,7 @@
 
 // features/unified-data/table-page/UnifiedDataTablePage.tsx — THE TABLE PAGE, MOUNTABLE ANYWHERE.
 //
-// The screen /data-v2/<id> renders, as a feature component so every other mount (/data/<id>,
+// The screen /data/<id> renders, as a feature component so every other mount (/data/<id>,
 // /lists/<id>, the picklist windows) imports THIS and never the route's `page` module: a route
 // group is parked out of some Vercel builds (manage.aimatrx.com parks app/(core)), so a feature
 // that imports a page breaks that build. `pnpm check:page-imports` holds the line.
@@ -207,7 +207,7 @@ export function UnifiedDataTablePage({ tableId }: { tableId: string }) {
   usePageCapture(() =>
     tablePageCapture({
       title: "Data table",
-      route: `/data-v2/${tableId}`,
+      route: `/data/${tableId}`,
       table: { id: tableId, name: null },
       view: address.view ?? "the table's default view (none named in the address)",
       selection: {
@@ -278,7 +278,7 @@ export function UnifiedDataTablePage({ tableId }: { tableId: string }) {
             fallback
             left={
               <>
-                <ChevronLeftTapButton variant="transparent" href="/data-v2" ariaLabel="Back to your tables" />
+                <ChevronLeftTapButton variant="transparent" href="/data" ariaLabel="Back to your tables" />
                 <span className="truncate px-1.5 text-sm font-medium text-foreground">Data</span>
               </>
             }

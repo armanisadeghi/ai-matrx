@@ -170,7 +170,7 @@ describe("URL hydration registry", () => {
       );
     });
 
-    // 🚨 2026-09-26 (/data-v2 side chat): a reload restored the window but not
+    // 🚨 2026-09-26 (/data side chat): a reload restored the window but not
     // its page binding, so the next turn went out with NO `context`. The token
     // carries the surface (`s-<surface>`) and the restore stamps it back once
     // the conversation is loaded — never before, or the DB record drops it.

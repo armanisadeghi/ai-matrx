@@ -13,7 +13,7 @@ config({ path: ".env.local", override: false });
 const ORIGIN = process.env.FIX10C_ORIGIN ?? "http://fix10c.localhost:3001";
 const OUT = "/tmp/matrx-evidence/2026-09-22";
 const JOBS =
-  "/data-v2/af3bfff6-a255-41e5-9ac2-879d53816163" +
+  "/data/af3bfff6-a255-41e5-9ac2-879d53816163" +
   "?view=2e467657-77d4-44ff-bf25-910d381ef9ce&org=6069a466-1445-42df-a64e-cf37ecdc1b99";
 
 const b = await chromium.launch({ headless: true });

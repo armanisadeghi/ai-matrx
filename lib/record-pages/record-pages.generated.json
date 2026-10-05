@@ -6,15 +6,14 @@
   "route.none": 35,
   "route.tokens": 16,
   "route.host": 1,
-  "window.pending": 181,
+  "window.pending": 182,
   "window.none": 1,
   "window.host": 1,
   "window.tokens": 2,
   "peek.tokens": 19,
   "peek.none": 5,
   "peek.any": 1,
-  "route.manifestRowWithoutFile": 1,
-  "table.pending": 242,
+  "table.pending": 243,
   "table.noncanonical": 26,
   "table.none": 4,
   "table.set": 1
@@ -438,6 +437,10 @@
   },
   "route:/administration/billing": {
    "file": "app/(admin)/administration/billing/page.tsx",
+   "pending": true
+  },
+  "route:/administration/billing/plans": {
+   "file": "app/(admin)/administration/billing/plans/page.tsx",
    "pending": true
   },
   "route:/administration/billing/spend": {
@@ -994,6 +997,10 @@
   },
   "route:/administration/users/change-policy": {
    "file": "app/(admin)/administration/users/change-policy/page.tsx",
+   "pending": true
+  },
+  "route:/administration/users/coupons": {
+   "file": "app/(admin)/administration/users/coupons/page.tsx",
    "pending": true
   },
   "route:/administration/users/email": {
@@ -1872,32 +1879,20 @@
    "file": "app/(core)/data/page.tsx",
    "pending": true
   },
-  "route:/data-v2": {
-   "file": "app/(core)/data-v2/page.tsx",
+  "route:/data/[tableId]": {
+   "file": "app/(core)/data/[tableId]/page.tsx",
    "pending": true
   },
-  "route:/data-v2/[tableId]": {
-   "file": "app/(core)/data-v2/[tableId]/page.tsx",
+  "route:/data/[tableId]/r/[recordId]": {
+   "file": "app/(core)/data/[tableId]/r/[recordId]/page.tsx",
    "pending": true
   },
-  "route:/data-v2/[tableId]/r/[recordId]": {
-   "file": "app/(core)/data-v2/[tableId]/r/[recordId]/page.tsx",
+  "route:/data/connect": {
+   "file": "app/(core)/data/connect/page.tsx",
    "pending": true
   },
-  "route:/data-v2/connect": {
-   "file": "app/(core)/data-v2/connect/page.tsx",
-   "pending": true
-  },
-  "route:/data-v2/try-everything": {
-   "file": "app/(core)/data-v2/try-everything/page.tsx",
-   "pending": true
-  },
-  "route:/data/[id]": {
-   "file": "app/(core)/data/[id]/page.tsx",
-   "pending": true
-  },
-  "route:/data/create": {
-   "file": "app/(core)/data/create/page.tsx",
+  "route:/data/try-everything": {
+   "file": "app/(core)/data/try-everything/page.tsx",
    "pending": true
   },
   "route:/decisions": {
@@ -4714,6 +4709,10 @@
    "file": "app/(core)/rag/visualization/page.tsx",
    "none": "a visualization page"
   },
+  "route:/redeem": {
+   "file": "app/(core)/redeem/page.tsx",
+   "pending": true
+  },
   "route:/registered-results": {
    "file": "app/(transitional)/registered-results/page.tsx",
    "pending": true
@@ -5732,6 +5731,10 @@
    "file": "features/window-panels/windows/admin/user-search/UserSearchWindow.tsx",
    "pending": true
   },
+  "window:features/window-panels/windows/agent-from-chat/AgentFromChatWindow.tsx": {
+   "file": "features/window-panels/windows/agent-from-chat/AgentFromChatWindow.tsx",
+   "pending": true
+  },
   "window:features/window-panels/windows/agents/AgentAdminFindUsagesWindow.tsx": {
    "file": "features/window-panels/windows/agents/AgentAdminFindUsagesWindow.tsx",
    "pending": true
@@ -6380,6 +6383,7 @@
   "features/admin/unwired/UnwiredConsole.tsx": "pending",
   "features/admin/users/components/AccountsTableClient.tsx": "pending",
   "features/admin/users/components/AnnouncementsTableClient.tsx": "pending",
+  "features/admin/users/components/CouponsAdminClient.tsx": "pending",
   "features/admin/users/components/EntitlementsTableClient.tsx": "pending",
   "features/admin/users/components/InvitationsTableClient.tsx": "pending",
   "features/admin/users/components/OrganizationsAdminClient.tsx": "pending",

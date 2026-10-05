@@ -363,6 +363,8 @@
     "check:access-errors:write": "tsx scripts/access-errors/check-access-errors.ts --write",
     "check:access-errors:self-test": "tsx scripts/access-errors/narrowed-read.self-test.ts",
     "check:dead-ends": "tsx scripts/dead-ends/check-dead-ends.ts",
+    "check:no-data-v2": "tsx scripts/check-no-data-v2.ts",
+    "check:no-data-v2:self-test": "tsx scripts/check-no-data-v2.ts --self-test",
     "check:interface-text": "node scripts/interface-text/check-interface-text.mjs",
     "check:interface-text:self-test": "node scripts/interface-text/check-interface-text.mjs --self-test",
     "check:owner-words": "node scripts/interface-text/check-owner-words.mjs",

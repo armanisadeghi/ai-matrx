@@ -125,7 +125,7 @@ describe("the shell's group-by, tokens and chips", () => {
   }
 
   it("a fresh visit is flat and paged; ?group=kind asks for every row and draws group headers", async () => {
-    window.history.replaceState(null, "", "/data-v2");
+    window.history.replaceState(null, "", "/data");
     const flat: Array<{ q: EntityListQuery; s: EntityListSort }> = [];
     await mount(flat);
     expect(flat[flat.length - 1]!.s.pageSize).toBeLessThan(1000);
@@ -133,7 +133,7 @@ describe("the shell's group-by, tokens and chips", () => {
     act(() => root.unmount());
     container.remove();
 
-    window.history.replaceState(null, "", "/data-v2?group=kind");
+    window.history.replaceState(null, "", "/data?group=kind");
     const grouped: Array<{ q: EntityListQuery; s: EntityListSort }> = [];
     await mount(grouped);
     expect(grouped[grouped.length - 1]!.s.pageSize).toBeGreaterThanOrEqual(ROWS.length);
@@ -143,14 +143,14 @@ describe("the shell's group-by, tokens and chips", () => {
   });
 
   it("a column the surface does not offer reads as no grouping", async () => {
-    window.history.replaceState(null, "", "/data-v2?group=name");
+    window.history.replaceState(null, "", "/data?group=name");
     const seen: Array<{ q: EntityListQuery; s: EntityListSort }> = [];
     await mount(seen);
     expect(seen[seen.length - 1]!.s.pageSize).toBeLessThan(1000);
   });
 
   it("typing `kind:form ` moves the token into the filter bag and shows it as a removable chip", async () => {
-    window.history.replaceState(null, "", "/data-v2");
+    window.history.replaceState(null, "", "/data");
     const seen: Array<{ q: EntityListQuery; s: EntityListSort }> = [];
     await mount(seen);
     const box = container.querySelector('input[type="search"]') as HTMLInputElement;
@@ -175,7 +175,7 @@ describe("the shell's group-by, tokens and chips", () => {
 
   it("3,000 rows grouped stay a virtual window: fewer than 120 rows in the DOM", async () => {
     ROWS = Array.from({ length: 3000 }, (_, i) => ({ id: `big${i}`, name: `Estimate ${i}`, kind: i % 3 === 0 ? "form" : "table" }));
-    window.history.replaceState(null, "", "/data-v2?group=kind");
+    window.history.replaceState(null, "", "/data?group=kind");
     const seen: Array<{ q: EntityListQuery; s: EntityListSort }> = [];
     await mount(seen);
     expect(seen[seen.length - 1]!.s.pageSize).toBeGreaterThanOrEqual(3000);

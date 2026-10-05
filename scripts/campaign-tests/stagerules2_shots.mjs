@@ -49,7 +49,7 @@ const ORIGIN = `http://${HOST}:${PORT}`;
 const ORG = "1a7fefc6-77e1-4c48-826f-003b1a2e17fd";
 const ORG_SLUG = "home-renovation";
 const QUOTES = "0e108f31-5078-48ec-9a15-b492baa414ba";
-const TABLE_URL = `/data-v2/${QUOTES}`;
+const TABLE_URL = `/data/${QUOTES}`;
 /**
  * The card every one of these pictures is about: Ferro & Sons' $11,400 bid, the only bid on
  * the Primary Bedroom. The board titles a card by the Table's `title_field`, which on this
@@ -170,7 +170,7 @@ async function main() {
 
   const nonce = randomBytes(16).toString("hex");
   writeDevLoginNonce(HOST, nonce);
-  await page.goto(`${ORIGIN}/api/dev-login?nonce=${nonce}&next=${encodeURIComponent("/data-v2")}`, {
+  await page.goto(`${ORIGIN}/api/dev-login?nonce=${nonce}&next=${encodeURIComponent("/data")}`, {
     waitUntil: "domcontentloaded",
     timeout: 180000,
   });

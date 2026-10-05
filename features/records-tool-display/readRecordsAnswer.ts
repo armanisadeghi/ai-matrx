@@ -187,5 +187,5 @@ export function writeSentence(answer: Extract<RecordsAnswer, { kind: "write" }>,
 
 /** The record page, or the table page when there is no one record. */
 export function tableHref(tableId: string, recordId?: string | null): string {
-  return recordId ? `/data-v2/${tableId}?record=${encodeURIComponent(recordId)}` : `/data-v2/${tableId}`;
+  return recordId ? `/data/${tableId}?record=${encodeURIComponent(recordId)}` : `/data/${tableId}`;
 }

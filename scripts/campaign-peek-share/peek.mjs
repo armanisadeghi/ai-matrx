@@ -24,7 +24,7 @@ const ADMIN_ID = "87a6e699-3622-4869-8843-d0867456c0dd";
 const ORIGIN_OVERRIDE = arg("--origin");
 mkdirSync(OUT, { recursive: true });
 
-const target = RECORD ? `/data-v2/${TABLE}?record=${RECORD}` : `/data-v2/${TABLE}`;
+const target = RECORD ? `/data/${TABLE}?record=${RECORD}` : `/data/${TABLE}`;
 
 async function main() {
   let ORIGIN, loginUrl = null;

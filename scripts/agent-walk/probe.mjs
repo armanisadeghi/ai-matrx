@@ -25,7 +25,7 @@ const T = CASES[which];
 const browser = await chromium.launch({ headless: true });
 const page = await (await browser.newContext({ viewport: { width: 1680, height: 1020 } })).newPage();
 
-const who = await signIn(page, "/data-v2");
+const who = await signIn(page, "/data");
 console.log(`[probe] signed in as ${who.email}`);
 await useOrganization(page, T);
 await settleOnTable(page, T.table);

@@ -1,5 +1,5 @@
 /**
- * LANE TABLE-PAGE-CHROME — headless walk of /data-v2/<table> on the shared preview (LIVE database,
+ * LANE TABLE-PAGE-CHROME — headless walk of /data/<table> on the shared preview (LIVE database,
  * installed @ai-matrx/records-ui), as admin@admin.com, READ-ONLY except admin's own active
  * organization choice.
  *
@@ -57,7 +57,7 @@ async function rowsAbove(page) {
 }
 
 async function openTable(page, id) {
-  await page.goto(`${ORIGIN}/data-v2/${id}`, { waitUntil: "domcontentloaded", timeout: 240000 });
+  await page.goto(`${ORIGIN}/data/${id}`, { waitUntil: "domcontentloaded", timeout: 240000 });
   await until("the table's rows", () =>
     page.evaluate(() => [...document.querySelectorAll("tbody tr")].some((tr) => (tr.textContent ?? "").trim().length > 2)), 180000);
   await sleep(4000);
@@ -112,7 +112,7 @@ try {
   await page.evaluate(() => document.documentElement.classList.remove("dark"));
 
   // ── Admin's own table, opened while working in another organization ──
-  await page.goto(`${ORIGIN}/data-v2`, { waitUntil: "domcontentloaded", timeout: 240000 });
+  await page.goto(`${ORIGIN}/data`, { waitUntil: "domcontentloaded", timeout: 240000 });
   await sleep(3000);
   const how = await setOrganization(page, "AI Matrx").catch((e) => `could not: ${e.message}`);
   pass("admin works in AI Matrx (picked the way a person does)", !String(how).startsWith("could not"), how);
@@ -132,7 +132,7 @@ try {
     await page.locator(`[data-table-switcher-item='${other.id}']`).click();
     await until("the other table's address", () => page.url().includes(other.id), 60000);
     pass("picking a table in the switcher opens it", page.url().includes(other.id), other);
-    await page.goto(`${ORIGIN}/data-v2/${ADMINS}`, { waitUntil: "domcontentloaded" });
+    await page.goto(`${ORIGIN}/data/${ADMINS}`, { waitUntil: "domcontentloaded" });
     await sleep(6000);
   } else {
     pass("picking a table in the switcher opens it", false, "no other table listed");

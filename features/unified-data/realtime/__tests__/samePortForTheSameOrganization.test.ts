@@ -3,7 +3,7 @@
  *
  * `<RecordsProvider>` (from `@ai-matrx/records/react`) rebuilds its records client whenever
  * `config.realtime` changes identity, and every grid hook re-reads on a new client. The
- * /data-v2 pages build this port inline in `config`, so a fresh object per call meant that ANY
+ * /data pages build this port inline in `config`, so a fresh object per call meant that ANY
  * re-render of the page — a window panel writing `?panels=`, a `?view=` change — re-read
  * `table_kernel_id`, `applicable_fields`, `my_levels`, … and redrew every row. Measured
  * headless on the shared preview: a bare `history.replaceState` to `?probe=1` fired nine grid

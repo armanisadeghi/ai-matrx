@@ -85,4 +85,4 @@ export async function refreshSyncedTable(organizationId: string, tableId: string
 export const OUTSIDE_DATABASE_PROVIDER = "postgres";
 
 /** Where the Connect a database page lives. */
-export const CONNECT_DATABASE_PATH = "/data-v2/connect";
+export const CONNECT_DATABASE_PATH = "/data/connect";

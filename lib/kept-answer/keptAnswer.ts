@@ -9,7 +9,7 @@
 // record store on for this organization", "is this a share" — kept its answer in `useState` and
 // set it back to `null` at the top of its effect. So every remount AND every wake of a sleeping
 // tile (React `<Activity>` re-runs every effect) dropped the gate to "resolving" for one round
-// trip, and the screen behind the gate UNMOUNTED: a /data-v2 grid lost its scroll, selection,
+// trip, and the screen behind the gate UNMOUNTED: a /data grid lost its scroll, selection,
 // open cell edit and column state, then re-read every row it already had.
 //
 // THE SHAPE. One store per question (`createKeptAnswers`), one entry per key (the record, the

@@ -42,7 +42,7 @@ const shot = async (page, tag) => {
 };
 
 async function openShare(page) {
-  await page.goto(`${ORIGIN}/data-v2/${TABLE}`, { waitUntil: "domcontentloaded", timeout: 180000 });
+  await page.goto(`${ORIGIN}/data/${TABLE}`, { waitUntil: "domcontentloaded", timeout: 180000 });
   // The grid first: a Share pressed while the page is still reading the table opens nothing.
   await until(
     "the table's rows",

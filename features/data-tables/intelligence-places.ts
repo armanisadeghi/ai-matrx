@@ -12,7 +12,7 @@ const K = MANDATE_KEYS;
 export const DATA_PLACES: FeaturePlaces = {
   feature: "data",
   label: "Data tables",
-  roots: ["features/data-tables", "components/user-generated-table-data", "app/(core)/data-v2", "app/(core)/data"],
+  roots: ["features/data-tables", "components/user-generated-table-data", "app/(core)/data"],
   places: [
     {
       id: "table",
@@ -26,7 +26,7 @@ export const DATA_PLACES: FeaturePlaces = {
       id: "table-v2",
       label: "A table (new grid)",
       trigger: "Row actions, page assistant",
-      urlPattern: "/data-v2/[tableId]",
+      urlPattern: "/data/[tableId]",
       mandateKeys: [K.data__row_action, K.data__page_guidance],
       sources: ["features/data-tables/records-ui-host/recordsUiHost.tsx"],
     },

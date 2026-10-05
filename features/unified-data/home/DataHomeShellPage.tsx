@@ -2,7 +2,7 @@
 
 // features/unified-data/home/DataHomeShellPage.tsx — LANE DATA-HOME-3A
 //
-// /data-v2 ON THE LIST SHELL: the same mount as the old page (`app/(core)/data-v2/page.tsx`'s
+// /data ON THE LIST SHELL: the same mount as the old page (`app/(core)/data/page.tsx`'s
 // UnifiedDataPage — header, the per-organization store switch, `RecordsMount` with its realtime,
 // chat, share and members ports), with the list shell where the ten hand-drawn sections were.
 // Shown when the knob `custom.data_home_shell` says so (see dataHomeKnobs.ts); the old page is
@@ -74,7 +74,7 @@ export function DataHomeShellPage({ making }: { making: DataHomeMaking }) {
 
   const goBack = useCallback(() => {
     if (typeof window !== "undefined" && window.history.length > 1) router.back();
-    else router.replace("/data-v2");
+    else router.replace("/data");
   }, [router]);
 
   return (
@@ -130,7 +130,7 @@ export function DataHomeShellPage({ making }: { making: DataHomeMaking }) {
                       <ActionInbox
                         className="max-h-64"
                         onOpenRecord={(recordId, tableId) =>
-                          router.push(openPath(recordId, { fallback: `/data-v2/${tableId}?record=${recordId}` }))
+                          router.push(openPath(recordId, { fallback: `/data/${tableId}?record=${recordId}` }))
                         }
                       />
                     </MountWhenNear>

@@ -25,8 +25,8 @@ from the code; nothing here reads or writes it.
   path. `pnpm check:old-system-unreachable` goes red on any reader of the removed doors.
 - **The grid's shapes** (`Dataset`, `DatasetField`, `DatasetRow`, `RowVersion` in `types.ts`) are
   built by `data-source/record-store-shape.ts` from the store's Fields and documents.
-- **Routes:** `/data` and `/data/create` redirect to `/data-v2`; `/data/<id>` mounts the table
-  page (`app/(core)/data-v2/[tableId]/page.tsx`), the same screen as `/data-v2/<id>`.
+- **Routes:** `/data` and `/data/create` redirect to `/data`; `/data/<id>` mounts the table
+  page (`app/(core)/data/[tableId]/page.tsx`), the same screen as `/data/<id>`.
 - **Hosts outside the table page** open a table by id through `components/LocatedTableViewer.tsx`
   (records-ui's table page via `records-ui-host/recordsUiHost.tsx`). The **Sheet** layout
   (`components/SheetLayout.tsx` → `components/user-generated-table-data/UserTableViewer.tsx`) is the
@@ -469,7 +469,7 @@ own writes never arrive (every write carries an op id the port drops). Workbook 
   (`useCellUndo.recordStep`). Phone still shows as typed: the shared `formatPhone` is not exported by
   `@ai-matrx/records-ui` yet.
 - `2026-10-01` — claude (lane OLD-READERS-REMOVAL FE-SEAM): the seam lost its older store. Every
-  export answers from the record store; `/data` and `/data/create` redirect to `/data-v2`,
+  export answers from the record store; `/data` and `/data/create` redirect to `/data`,
   `/data/<id>` mounts the table page; the older `/data` home, its modals, `useTableRealtime`,
   `tableLivesIn`, the both-stores de-dupe and `utils/user-table-utls` (folded into this folder:
   `table-shapes.ts`, `grid-import.ts`, `type-inference.ts`, `template-utils.ts`) are gone. The

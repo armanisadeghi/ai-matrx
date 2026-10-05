@@ -27,7 +27,7 @@ async function main() {
 
   const nonce = randomBytes(16).toString("hex");
   writeDevLoginNonce(HOST, nonce);
-  await page.goto(`${ORIGIN}/api/dev-login?nonce=${nonce}&next=${encodeURIComponent(`/data-v2/${tableId}`)}`, { waitUntil: "domcontentloaded", timeout: 60000 });
+  await page.goto(`${ORIGIN}/api/dev-login?nonce=${nonce}&next=${encodeURIComponent(`/data/${tableId}`)}`, { waitUntil: "domcontentloaded", timeout: 60000 });
   await page.waitForTimeout(3000);
 
   const orgOption = page.getByRole("option", { name: /The Offside Rule/i }).first();
@@ -35,7 +35,7 @@ async function main() {
     await orgOption.scrollIntoViewIfNeeded().catch(() => {});
     await orgOption.click({ timeout: 5000, force: true }).catch(() => {});
     await page.waitForTimeout(2000);
-    await page.goto(`${ORIGIN}/data-v2/${tableId}`, { waitUntil: "domcontentloaded", timeout: 30000 });
+    await page.goto(`${ORIGIN}/data/${tableId}`, { waitUntil: "domcontentloaded", timeout: 30000 });
     await page.waitForTimeout(2500);
   }
   await page.screenshot({ path: resolve(OUT_DIR, "fifa-1-grid.png"), fullPage: true }).catch(() => {});

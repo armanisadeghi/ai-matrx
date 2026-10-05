@@ -27,7 +27,7 @@ const TABLE = arg("--table");
 const ADMIN_ID = "87a6e699-3622-4869-8843-d0867456c0dd";
 mkdirSync(OUT, { recursive: true });
 
-const target = `/data-v2/${TABLE}`;
+const target = `/data/${TABLE}`;
 
 async function main() {
   const out = execFileSync("bash", [resolve(ROOT, "scripts/dev-login.sh"), target], { cwd: ROOT }).toString();

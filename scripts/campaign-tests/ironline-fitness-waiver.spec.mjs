@@ -30,7 +30,7 @@ mkdirSync(OUT, { recursive: true });
 // THE UNIFIED RECORD STORE'S OWN SCREEN. `/data/<id>` is the OLDER user-generated-table
 // viewer and answers "We couldn't open this dataset" for a record-store table — a real
 // thing to know, and not this lane's to change.
-const ROUTE = `/data-v2/${fixture.tableId}`;
+const ROUTE = `/data/${fixture.tableId}`;
 
 /** `pnpm dev-login` mints this session's own host and a single-use nonce, and prints the URL. */
 async function loginUrl(next) {

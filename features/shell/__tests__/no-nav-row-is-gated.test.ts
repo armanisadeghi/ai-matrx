@@ -75,7 +75,7 @@ describe("no nav row is gated", () => {
 
   it("Make, Records and Kits are always in the Data menu", () => {
     const hrefs = DATA_NAV_CHILDREN.map((child) => child.href);
-    expect(hrefs).toEqual(expect.arrayContaining(["/make", "/data-v2"]));
+    expect(hrefs).toEqual(expect.arrayContaining(["/make", "/data"]));
     expect(DATA_NAV_CHILDREN.some((child) => /kit/i.test(child.href ?? ""))).toBe(true);
   });
 

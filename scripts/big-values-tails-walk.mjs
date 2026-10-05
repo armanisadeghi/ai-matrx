@@ -1,7 +1,7 @@
 // scripts/big-values-tails-walk.mjs — lane BIG-VALUES-TAILS headless proof.
 //
 // A value too big for one cell is kept as a file and the cell holds its first words. On
-// /data-v2/<table>, as admin@admin.com, on the shared preview (live database): the cell names the
+// /data/<table>, as admin@admin.com, on the shared preview (live database): the cell names the
 // file and opens it on the file's own page, and the table's CSV export writes the WHOLE text.
 //
 //   TABLE=<store table id> SHA=<sha256 of the whole text> BYTES=<n> [FILE=<file id> FILE_NAME=<name>] \
@@ -37,7 +37,7 @@ try {
   if (out.signed_in_as !== "admin@admin.com") throw new Error(`signed in as ${out.signed_in_as}`);
 
   // THE CELL. The copied table opens on the Sheet; the records-ui Grid draws the pointer cell.
-  await page.goto(`${ORIGIN}/data-v2/${TABLE}`, { waitUntil: "domcontentloaded", timeout: 180000 });
+  await page.goto(`${ORIGIN}/data/${TABLE}`, { waitUntil: "domcontentloaded", timeout: 180000 });
   await until("table page", () => page.locator("text=Knowledge search results").first().isVisible(), 120000);
   const grid = page.getByRole("button", { name: /^Grid$/ }).first();
   if (await grid.isVisible().catch(() => false)) await grid.click();
@@ -75,7 +75,7 @@ try {
   }
 
   // THE EXPORT writes the whole text.
-  await page.goto(`${ORIGIN}/data-v2/${TABLE}?rail=export`, { waitUntil: "domcontentloaded", timeout: 180000 });
+  await page.goto(`${ORIGIN}/data/${TABLE}?rail=export`, { waitUntil: "domcontentloaded", timeout: 180000 });
   const csv = page.getByRole("button", { name: /^CSV$/ }).first();
   await until("export rail", () => csv.isVisible(), 90000);
   const [download] = await Promise.all([page.waitForEvent("download", { timeout: 180000 }), csv.click()]);

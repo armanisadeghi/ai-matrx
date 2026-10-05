@@ -1,5 +1,5 @@
 /**
- * "All kinds" on /data-v2 offers Forms, Dashboards and Portals even when no table row carries
+ * "All kinds" on /data offers Forms, Dashboards and Portals even when no table row carries
  * those kinds (CENSUS-HUB-CREATE item 7): they are items of `custom.data_home`, not table kinds,
  * so a kind list built from table rows alone never named them. Choosing Portals shows the
  * portals listing.

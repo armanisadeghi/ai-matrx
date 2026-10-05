@@ -6,7 +6,7 @@
 // OF ONE PERSON, IN THE ORGANIZATION THEY ARE ALREADY IN.
 //
 // It is not a demo and it holds no sample data. Every section below mounts the
-// SAME component `/data-v2` mounts, against the SAME doors, in the SAME
+// SAME component `/data` mounts, against the SAME doors, in the SAME
 // organization — so anything that happens here really happened, and anything
 // that refuses really refuses. The only thing this file adds is the order, the
 // one-line explanations and, for the parts that are NOT finished, a note that
@@ -369,7 +369,7 @@ export default function TryEverythingScreen({ routes }: { routes: RoutesInThisBu
                 organizationName={organizationName ?? null}
                 userId={userId ?? null}
                 routes={routes}
-                onOpenTable={(tableId) => router.push(`/data-v2/${tableId}`)}
+                onOpenTable={(tableId) => router.push(`/data/${tableId}`)}
             />
         </RecordsMount>
     );

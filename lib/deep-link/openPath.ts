@@ -5,7 +5,7 @@
 // ## The defect this closes (lane ROUTE-RESOLVER, 2026-09-23)
 //
 // Every producer of a link had to know two things it usually could not: WHICH of the
-// platform's screens its id belonged on (`/data/<id>` or `/data-v2/<id>`, `?record=`,
+// platform's screens its id belonged on (`/data/<id>` or `/data/<id>`, `?record=`,
 // `?dashboard=`, `?rail=forms&item=`, `/chat/<id>`, …) and WHICH organization to open it in.
 // When it guessed, the person landed on "This table is not here" for a table they own,
 // because the screen read whichever organization they happened to have selected. The owner:

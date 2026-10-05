@@ -1,7 +1,7 @@
 /**
  * LANE POST-PUBLISH-FE — headless proof on the shared preview after records-ui 0.85.6 landed:
  * the organization hub lists its tables once (pick lists only behind Show everything), and
- * /data-v2/<table> for a designated table (the Sheet) and a plain one at 1440 and 390, with the
+ * /data/<table> for a designated table (the Sheet) and a plain one at 1440 and 390, with the
  * organization chip from records-ui and no stand-in row. Optionally the non-admin seat on Rooms'
  * Sheet, to read a withheld cell.
  *
@@ -88,7 +88,7 @@ try {
     if (who !== EMAIL) throw new Error("the app says someone else is signed in");
     result[`who-${width}`] = who === EMAIL ? "admin seat confirmed by /api/whoami" : who;
 
-    await page.goto(`${ORIGIN}/data-v2?org=${ORG}`, { waitUntil: "domcontentloaded", timeout: 240000 });
+    await page.goto(`${ORIGIN}/data?org=${ORG}`, { waitUntil: "domcontentloaded", timeout: 240000 });
     await settle(page);
     await page.screenshot({ path: `${OUT}/hub-admin-${width}.png`, fullPage: width === 1440 });
     result[`hub-${width}`] = await hubFacts(page);
@@ -101,7 +101,7 @@ try {
     }
 
     for (const [which, table] of [["designated", DESIGNATED], ["plain", PLAIN]]) {
-      await page.goto(`${ORIGIN}/data-v2/${table}`, { waitUntil: "domcontentloaded", timeout: 240000 });
+      await page.goto(`${ORIGIN}/data/${table}`, { waitUntil: "domcontentloaded", timeout: 240000 });
       await settle(page);
       const shot = `${OUT}/${which}-table-admin-${width}.png`;
       await page.screenshot({ path: shot });
@@ -116,7 +116,7 @@ try {
     const page = await context.newPage();
     const who = await signIn(page, ORIGIN, TEST_EMAIL, PASSWORD, "test seat");
     if (who === TEST_EMAIL) {
-      await page.goto(`${ORIGIN}/data-v2/${ROOMS}?view=sheet`, { waitUntil: "domcontentloaded", timeout: 240000 });
+      await page.goto(`${ORIGIN}/data/${ROOMS}?view=sheet`, { waitUntil: "domcontentloaded", timeout: 240000 });
       await settle(page);
       await page.screenshot({ path: `${OUT}/rooms-sheet-test-1440.png` });
       result["rooms-test-1440"] = await facts(page);

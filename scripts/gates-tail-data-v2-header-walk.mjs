@@ -1,4 +1,4 @@
-// LANE GATES-TAIL (VERIFIER-21 #7) — headless proof: open a table at /data-v2/<id> in a FRESH
+// LANE GATES-TAIL (VERIFIER-21 #7) — headless proof: open a table at /data/<id> in a FRESH
 // session (no organization picked) and record (a) every 4xx response, (b) the console errors,
 // (c) what the shell header says about the organization. READ-ONLY: every write-shaped store
 // door is aborted at the network before it leaves the browser.
@@ -39,7 +39,7 @@ try {
     }
   });
   page.on("console", (m) => { if (m.type() === "error") report.consoleErrors.push(m.text().slice(0, process.env.GT_LONG ? 3000 : 240)); });
-  await page.goto(`${ORIGIN}/data-v2/${TABLE}`, { waitUntil: "domcontentloaded", timeout: 240000 });
+  await page.goto(`${ORIGIN}/data/${TABLE}`, { waitUntil: "domcontentloaded", timeout: 240000 });
   await page.waitForTimeout(20000);
   report.header = await page.evaluate(() => {
     const h = document.querySelector("header.shell-header");

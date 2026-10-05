@@ -99,7 +99,7 @@ try {
   said.organization_found = await setOrganization(page, ORG_NAME);
 
   // ── 1 — THE JOB THAT HAS NOBODY ON IT YET.
-  await page.goto(`${ORIGIN}/data-v2/${JOBS}`, { waitUntil: "domcontentloaded", timeout: 180000 });
+  await page.goto(`${ORIGIN}/data/${JOBS}`, { waitUntil: "domcontentloaded", timeout: 180000 });
   const { v: grid } = await until("the Jobs grid", async () => (await text(page)).includes(JOB), 120000);
   if (!grid) throw new Error(`the Jobs grid never drew ${JOB} — screen said: ${(await text(page)).slice(0, 400)}`);
   said.grid_before = (await text(page)).slice(0, 700);
@@ -216,7 +216,7 @@ try {
   // 🚨 THE ONLY PROOF THAT COUNTS: load the page again from nothing and read the column. The
   // picker drawing a name proves a picker can draw a name; only a fresh read proves the JOB
   // names a customer who did not exist when she opened it.
-  await page.goto(`${ORIGIN}/data-v2/${JOBS}`, { waitUntil: "domcontentloaded", timeout: 180000 });
+  await page.goto(`${ORIGIN}/data/${JOBS}`, { waitUntil: "domcontentloaded", timeout: 180000 });
   const { v: back } = await until(
     "the new customer on the reloaded Jobs grid",
     async () => (await text(page)).includes(NEW_CUSTOMER),
@@ -235,7 +235,7 @@ try {
   await shot(page, "after-a-full-reload-the-job-names-her");
 
   // ── 7 — AND SHE IS IN THE CUSTOMERS BOOK, as a record of that Table, not a loose string.
-  await page.goto(`${ORIGIN}/data-v2/${process.env.TAILS7_CUSTOMERS ?? ""}`, {
+  await page.goto(`${ORIGIN}/data/${process.env.TAILS7_CUSTOMERS ?? ""}`, {
     waitUntil: "domcontentloaded",
     timeout: 180000,
   });

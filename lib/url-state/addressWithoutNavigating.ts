@@ -6,7 +6,7 @@
  * bookkeeping about the page you are on, never a new page. `router.replace` /
  * `router.push` are App Router NAVIGATIONS: each one fetches a fresh RSC
  * payload for the route (a `?_rsc=` request, a server round trip) and, on
- * commit, can remount the page — measured on /data-v2/[tableId]: one `?_rsc=`
+ * commit, can remount the page — measured on /data/[tableId]: one `?_rsc=`
  * request per layout switch, and before PANEL-REMOUNT the whole grid re-read.
  *
  * `history.pushState` / `history.replaceState` are patched by Next's app

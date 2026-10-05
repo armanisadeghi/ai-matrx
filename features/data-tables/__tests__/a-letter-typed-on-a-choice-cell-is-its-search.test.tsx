@@ -1,7 +1,7 @@
 /**
  * A LETTER TYPED ON A CHOICE CELL IS ITS LIST'S SEARCH, NEVER ITS VALUE (lane DATA-V2-BASICS).
  *
- * Measured on /data-v2 (the Sheet, production, 2026-09-27): selecting a Status cell ("In Progress")
+ * Measured on /data (the Sheet, production, 2026-09-27): selecting a Status cell ("In Progress")
  * and typing "Waiting on parts" put "W" on the picker's trigger — as the cell's VALUE — and
  * "aiting on parts" in its search box. Pressing Escape then SAVED "W" to the record (read back from
  * the store), and Cmd-Z could not take it back. Sheets and Airtable: typing on a choice cell opens

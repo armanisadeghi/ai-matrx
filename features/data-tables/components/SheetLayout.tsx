@@ -4,7 +4,7 @@
  * THE SHEET LAYOUT — the classic /data grid as one layout of the one table page.
  *
  * Owner's ruling (2026-09-23): there is no switch on /data. The table page at
- * /data-v2/[tableId] draws Grid, Kanban, Calendar and Gallery from records-ui's
+ * /data/[tableId] draws Grid, Kanban, Calendar and Gallery from records-ui's
  * TablePage; the classic grid becomes a fifth layout beside them, "Sheet",
  * rendered through the same data seam (`features/data-tables/service.ts`) over
  * the record store.

@@ -1,6 +1,6 @@
 // lib/entity-list/columnPriority.ts
 //
-// THE LEAST IMPORTANT COLUMN LEAVES FIRST (DATA-HOME-3E, 2026-10-01). At 1024 px /data-v2's seven
+// THE LEAST IMPORTANT COLUMN LEAVES FIRST (DATA-HOME-3E, 2026-10-01). At 1024 px /data's seven
 // columns added up past the list's width: the table scrolled sideways inside itself, Owner and
 // Access sat off the right edge, and a floating `>` chevron covered Updated. Linear's list drops
 // its lowest-priority properties as the window narrows and brings them back when it widens; this

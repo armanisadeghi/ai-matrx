@@ -2,7 +2,7 @@
 
 // features/data-tables/components/sheet-body-row.tsx — ONE SHEET ROW AT A TIME (lane RENDER-AUDIT).
 //
-// Measured 2026-09-26 on /data-v2 with the React profiler hook (a copied table of 8 rows, which
+// Measured 2026-09-26 on /data with the React profiler hook (a copied table of 8 rows, which
 // opens in the Sheet): one cell edit rendered ~2,700 components and a colleague's realtime patch
 // ~1,500 — every cell of every row, every time — because every row was inline JSX in
 // `UserTableViewer`, a 6,000-line component the React Compiler SKIPS (its six disabled

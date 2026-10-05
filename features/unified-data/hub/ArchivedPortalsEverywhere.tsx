@@ -45,7 +45,7 @@ export function ArchivedPortalsEverywhere({ dataSource }: { dataSource: RecordsD
             <span className="text-sm text-foreground">{row.title || "(untitled portal)"}</span>
             {row.organization_name ? <span className="text-xs text-muted-foreground">{row.organization_name}</span> : null}
             <Link
-              href={`/data-v2/${row.client_table_id}?rail=portals&item=${row.portal_id}`}
+              href={`/data/${row.client_table_id}?rail=portals&item=${row.portal_id}`}
               className="ml-auto text-xs text-primary underline-offset-2 hover:underline"
             >
               Open to bring it back

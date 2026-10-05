@@ -511,9 +511,9 @@ export function seedDataTable(): void {
   // features/unified-data/objectOrganization.ts `WhereIdOpens`
   seedRpc("where_id_opens", (args: Record<string, unknown> | undefined) => {
     const id = String((args as { p_id?: string } | undefined)?.p_id);
-    if (id === TABLE_ID) return { kind: "table", organization_id: ORGANIZATION.id, path: `/data-v2/${TABLE_ID}`, live: true, resolved_id: id };
+    if (id === TABLE_ID) return { kind: "table", organization_id: ORGANIZATION.id, path: `/data/${TABLE_ID}`, live: true, resolved_id: id };
     if (id === DATA_RECORD_ID)
-      return { kind: "record", organization_id: ORGANIZATION.id, path: `/data-v2/${TABLE_ID}?record=${id}`, live: true, resolved_id: id };
+      return { kind: "record", organization_id: ORGANIZATION.id, path: `/data/${TABLE_ID}?record=${id}`, live: true, resolved_id: id };
     return null;
   });
   // features/unified-data/hub/doors.ts — nothing shared with this person from elsewhere.

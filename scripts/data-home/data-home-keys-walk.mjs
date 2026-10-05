@@ -60,7 +60,7 @@ const shot = (name) => page.screenshot({ path: `${SHOTS}/${SEAT}-${name}.png`, f
 const ROW = "[data-row-id]:visible";
 const waitRows = async () => (await until("rows", async () => (await page.locator(ROW).count()) > 0, 120000)).v;
 const goto = async (query = "") => {
-  await page.goto(`${ORIGIN}/data-v2?home=new${query}`, { waitUntil: "domcontentloaded", timeout: 180000 });
+  await page.goto(`${ORIGIN}/data?home=new${query}`, { waitUntil: "domcontentloaded", timeout: 180000 });
   await waitRows();
   await sleep(1200);
 };
@@ -218,7 +218,7 @@ try {
     }
     const before = page.url();
     await page.keyboard.press("Enter");
-    const went = await until("cmdk open", async () => page.url() !== before && page.url().includes("/data-v2/"), 60000).then(
+    const went = await until("cmdk open", async () => page.url() !== before && page.url().includes("/data/"), 60000).then(
       () => true,
       () => false,
     );

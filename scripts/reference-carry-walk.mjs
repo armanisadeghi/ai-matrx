@@ -58,9 +58,9 @@ async function unpark() {
 }
 
 async function open(tableId) {
-  await page.goto(`${ORIGIN}/data-v2/${tableId}`, { waitUntil: "domcontentloaded", timeout: 300000 });
+  await page.goto(`${ORIGIN}/data/${tableId}`, { waitUntil: "domcontentloaded", timeout: 300000 });
   await unpark();
-  if (page.url().includes("__dev-walk")) await page.goto(`${ORIGIN}/data-v2/${tableId}`, { waitUntil: "domcontentloaded", timeout: 300000 });
+  if (page.url().includes("__dev-walk")) await page.goto(`${ORIGIN}/data/${tableId}`, { waitUntil: "domcontentloaded", timeout: 300000 });
   const ready = await until("the grid", async () => (await page.locator("thead th").count()) > 1, 240000);
   if (!ready.v) throw new Error(`the table ${tableId} did not draw`);
   await sleep(3500);

@@ -126,7 +126,7 @@ export function joinTableLive(
   };
 }
 
-/** This page's own structure changes (a rename in /data-v2 in the same tab). */
+/** This page's own structure changes (a rename in /data in the same tab). */
 export function hearTableStructure(listener: (tableId: string | null) => void): () => void {
   return onTableStructureChanged(listener);
 }

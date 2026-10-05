@@ -37,7 +37,7 @@ function makeItem(id: string, title: string, tableId: string): HubItem {
         tableName: title,
         lane: null,
         facts: [],
-        href: `/data-v2/${tableId}`,
+        href: `/data/${tableId}`,
         changedAt: null,
         changedBy: null,
     };
@@ -115,7 +115,7 @@ describe("HubListing groups same-titled 'kept by the app' rows", () => {
             (el) => el.textContent === "Saved views",
         );
         expect(savedViewsLink).toBeDefined();
-        expect(savedViewsLink?.getAttribute("href")).toBe("/data-v2/t-saved-views");
+        expect(savedViewsLink?.getAttribute("href")).toBe("/data/t-saved-views");
     });
 
     // ONE COUNT FROM ONE DOOR (ACCESS-FIX-18, VERIFIER-18 M3). The header counted the GROUPS

@@ -90,7 +90,7 @@ try {
   const who = await signIn(op, ORIGIN, ADMIN, ADMIN_PASSWORD, "admin@admin.com");
   say(`owner signed in as ${who}`);
   await setOrganization(op, GREENLINE.name);
-  await op.goto(`${ORIGIN}/data-v2/${SCHEDULE}?rail=share`, { waitUntil: "domcontentloaded", timeout: 120000 });
+  await op.goto(`${ORIGIN}/data/${SCHEDULE}?rail=share`, { waitUntil: "domcontentloaded", timeout: 120000 });
   const field = await until("the outside-invite field", async () => ((await op.locator("#outside-email").count()) > 0 ? true : null), 60000);
   if (!field.v) {
     const body = (await op.evaluate(() => document.body.innerText)).replace(/\s+/g, " ").slice(0, 400);
@@ -119,7 +119,7 @@ try {
   const me = await signIn(mp, ORIGIN, TEST, TEST_PASSWORD, "test@test.com");
   say(`member signed in as ${me}`);
   await setOrganization(mp, "Rincon Plumbing Co");
-  await mp.goto(`${ORIGIN}/data-v2`, { waitUntil: "domcontentloaded", timeout: 120000 });
+  await mp.goto(`${ORIGIN}/data`, { waitUntil: "domcontentloaded", timeout: 120000 });
   await settledHub(mp);
   let rows = await sharedRows(mp);
   const offer = rows.find((r) => r.href.startsWith("/invitations/table/accept/") && r.text.includes("Schedule"));
@@ -147,10 +147,10 @@ try {
     say("member: no pending Schedule offer — it was accepted on an earlier run; proving step 3 alone");
   }
 
-  await mp.goto(`${ORIGIN}/data-v2`, { waitUntil: "domcontentloaded", timeout: 120000 });
+  await mp.goto(`${ORIGIN}/data`, { waitUntil: "domcontentloaded", timeout: 120000 });
   await settledHub(mp);
   rows = await sharedRows(mp);
-  const accepted = rows.find((r) => r.href.includes(`/data-v2/${SCHEDULE}?org=`));
+  const accepted = rows.find((r) => r.href.includes(`/data/${SCHEDULE}?org=`));
   clause("the ACCEPTED share stays under Shared with me", Boolean(accepted), accepted ? `${accepted.text} → ${accepted.href}` : rows.map((r) => r.text).join(" | ") || "no rows");
   if (accepted) {
     await mp.goto(`${ORIGIN}${accepted.href}`, { waitUntil: "domcontentloaded", timeout: 120000 });

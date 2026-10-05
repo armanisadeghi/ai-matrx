@@ -8,7 +8,7 @@ import type { ReversibleFoundAt } from "@ai-matrx/kit/reversible";
 
 export const ARCHIVED_TABLES_SPOT = "archived-tables";
 
-export const ARCHIVED_TABLES_HREF = "/data-v2?archived=archived";
+export const ARCHIVED_TABLES_HREF = "/data?archived=archived";
 
 export const ARCHIVED_TABLES_PLACE: ReversibleFoundAt = {
   label: "Archived tables",

@@ -5,7 +5,7 @@
 // THE PAGE'S OBJECT KNOWS ITS ORGANIZATION; THE SHELL HEADER BELIEVES IT.
 //
 // The shell header's red "Choose org" is a warning for pages that need a picked organization to
-// do anything. On an OBJECT page — a table at /data-v2/<id>, a file at /files/f/<id> — the
+// do anything. On an OBJECT page — a table at /data/<id>, a file at /files/f/<id> — the
 // organization is read from the object (access is personal: the object opens whatever is
 // picked), so a red "Choose org" there is a lie: nothing on the page is waiting for a choice.
 //

@@ -46,7 +46,7 @@ async function draw(id: string) {
   document.body.append(host);
   const root = createRoot(host);
   await act(async () => {
-    root.render(<AccessDeniedView context={MISSING} id={id} onChanged={() => {}} fallbackHref="/data-v2" fallbackLabel="Back to your tables" />);
+    root.render(<AccessDeniedView context={MISSING} id={id} onChanged={() => {}} fallbackHref="/data" fallbackLabel="Back to your tables" />);
   });
   return { host, root };
 }

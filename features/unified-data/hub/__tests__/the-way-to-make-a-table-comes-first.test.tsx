@@ -1,7 +1,7 @@
 // features/unified-data/hub/__tests__/the-way-to-make-a-table-comes-first.test.tsx
 //
 // THE USE CASE (lane HANDOVER, 2026-09-27). The owner of Cedar Ridge Physical Therapy, a new
-// organization, opens /data-v2 to make her first table. The Tables section says "No tables yet".
+// organization, opens /data to make her first table. The Tables section says "No tables yet".
 // The ONLY way to make one, New table, was drawn at the very bottom of the hub, under nine more
 // listings, the inbox and the archive: below the first screen at 1600x900 and four screens down on
 // a phone. RED on the hub before the lane: the making row came after every listing.
@@ -20,7 +20,7 @@ const PARAMS = new URLSearchParams();
 jest.mock("next/navigation", () => ({
   useRouter: () => ROUTER,
   useSearchParams: () => PARAMS,
-  usePathname: () => "/data-v2",
+  usePathname: () => "/data",
 }));
 jest.mock("next/link", () => ({
   __esModule: true,

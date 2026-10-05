@@ -41,7 +41,7 @@ if (!window.matchMedia) {
 
 jest.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(""),
-  usePathname: () => "/data-v2",
+  usePathname: () => "/data",
   useRouter: () => ({ push: () => undefined, replace: () => undefined, prefetch: () => undefined, refresh: () => undefined }),
 }));
 jest.mock("next/link", () => {
@@ -123,7 +123,7 @@ let host: HTMLDivElement;
 let root: Root;
 beforeEach(() => {
   // Every test opens a fresh address: a filter one test chose lives in the URL, and must not leak.
-  window.history.replaceState(null, "", "/data-v2");
+  window.history.replaceState(null, "", "/data");
   host = document.createElement("div");
   document.body.appendChild(host);
   root = createRoot(host);

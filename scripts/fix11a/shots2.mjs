@@ -26,7 +26,7 @@ for (let attempt = 1; attempt <= 3 && !picked; attempt++) {
 if (!picked) throw new Error("could not reach Rincon Plumbing Co in the picker");
 console.log("matrx-active-org =", (await page.context().cookies()).find((c) => c.name === "matrx-active-org")?.value);
 
-await page.goto(`${ORIGIN}/data-v2/${JOBS}`, { waitUntil: "domcontentloaded", timeout: 120000 });
+await page.goto(`${ORIGIN}/data/${JOBS}`, { waitUntil: "domcontentloaded", timeout: 120000 });
 await until("grid", async () => (await page.locator("body").innerText()).includes("New record"), 90000);
 await sleep(2500);
 const before = (await page.locator("body").innerText()).replace(/\s+/g, " ");

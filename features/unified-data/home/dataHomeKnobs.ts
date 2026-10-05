@@ -3,7 +3,7 @@
 // The two Feature Knobs of the rebuilt data home, at their registry addresses (seeded by
 // migrations/campaign/datahome3a_the_data_home_on_the_list_shell_is_a_knob.sql).
 //
-// `custom.data_home_shell` — WHICH DATA HOME /data-v2 SHOWS. Arman's rollout rule (2026-10-01): no
+// `custom.data_home_shell` — WHICH DATA HOME /data SHOWS. Arman's rollout rule (2026-10-01): no
 // redirects until validated; copy mode, old and new side by side, one flip later. Platform default
 // false (the old hub); a person may turn it on for themselves; the platform flip is one press on
 // the knob. Resolved at the person / platform tier, never in the active organization.

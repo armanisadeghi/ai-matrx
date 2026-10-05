@@ -198,8 +198,8 @@ async function sharedStoreItem(
 
   const kernel = await custom.rpc("table_kernel_id");
   if (kernel.error || typeof kernel.data !== "string") return null;
-  // A record's page is /data-v2/<its table>?record=<id>; the table is named, not the row.
-  const tableId = where.kind === "table" ? (where.resolved_id ?? id) : where.path.split("/data-v2/")[1]?.split("?")[0];
+  // A record's page is /data/<its table>?record=<id>; the table is named, not the row.
+  const tableId = where.kind === "table" ? (where.resolved_id ?? id) : where.path.split("/data/")[1]?.split("?")[0];
   if (!tableId) return null;
   const read = await custom.rpc("read_records_by_ids", {
     p_organization_id: where.organization_id,

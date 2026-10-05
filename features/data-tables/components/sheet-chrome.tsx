@@ -3,7 +3,7 @@
 // features/data-tables/components/sheet-chrome.tsx — THE SHEET'S TOOLBAR SLOTS AND COLUMN HEADERS,
 // EACH ITS OWN COMPILED COMPONENT (lane RENDER-3, 2026-09-27).
 //
-// Measured on /data-v2 (Hygiene Recall Schedule, a copied table that opens in the Sheet) after
+// Measured on /data (Hygiene Recall Schedule, a copied table that opens in the Sheet) after
 // RENDER-2: one cell edit still rendered the toolbar 181 times and the column headers 291 times —
 // once per Sheet render, three per edit — because `UserTableViewer` handed the toolbar four JSX
 // slots rebuilt on every render (`viewControls`, `copyControls`, `mobileViewControls`,

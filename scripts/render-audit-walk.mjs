@@ -2,7 +2,7 @@
 //
 // Installs a minimal React DevTools hook before any page script (scripts/lib/render-counter.js),
 // signs in as admin@admin.com through the login form (credentials from .env.local, never printed),
-// opens /data-v2/<table>, and for each action counts which components rendered and why:
+// opens /data/<table>, and for each action counts which components rendered and why:
 // page load, a cell edit, a realtime patch written by ANOTHER client, opening the Settings rail,
 // typing in search, scrolling, a toast. Writes one JSON per run to <outDir>.
 //
@@ -102,7 +102,7 @@ try {
 
   // ── PAGE LOAD ─────────────────────────────────────────────
   rpcs = [];
-  await page.goto(`${ORIGIN}/data-v2/${TABLE}`, { waitUntil: "domcontentloaded", timeout: 240000 });
+  await page.goto(`${ORIGIN}/data/${TABLE}`, { waitUntil: "domcontentloaded", timeout: 240000 });
   await page.evaluate(() => window.__rc.mark("load"));
   await page.waitForSelector("table tbody tr td", { timeout: 180000 }).catch(() => undefined);
   await settle(30000);

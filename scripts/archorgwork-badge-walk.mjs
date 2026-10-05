@@ -39,7 +39,7 @@ try {
   });
   const signed = await signIn(page, ORIGIN, env.AI_ADMIN_USERNAME, env.AI_ADMIN_PASSWORD, "admin");
   check("signed in through the login form as admin@admin.com", signed === env.AI_ADMIN_USERNAME, signed);
-  await page.goto(`${ORIGIN}/data-v2`, { waitUntil: "domcontentloaded", timeout: 180000 });
+  await page.goto(`${ORIGIN}/data`, { waitUntil: "domcontentloaded", timeout: 180000 });
   const got = await until("the badge asks inbox_counts", async () => answers.find((a) => Array.isArray(a.rows)), 120000);
   const rows = got.v?.rows ?? [];
   check("the bell reads custom.inbox_counts (HTTP 200)", got.v?.status === 200, `${rows.length} organizations: ${rows.map((r) => `${r.organization_name} ${r.waiting}`).join(", ")}`);

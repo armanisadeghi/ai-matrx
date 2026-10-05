@@ -6,7 +6,7 @@ import TablesLanding from "@/features/auth/components/module-landing/landings/Ta
 import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { ScrollAssistantLauncher } from "@ai-matrx/chat/agents/components/ambient-assistant/ScrollAssistantLauncher";
 
-// The Data home and every table/record page under it (moved from /data-v2, 2026-10-04).
+// The Data home and every table/record page under it (moved from /data, 2026-10-04).
 export const metadata = createRouteMetadata("/data", {
   title: "Data",
   description: "Work with your organization's shared records, tables, and assigned actions.",

@@ -88,7 +88,7 @@ const ROWS = [
   notice("n3", "https://example.com/x"),
   notice("n4", null),
   notice("n5", "/notifications", { bucket: "direct", event_key: "agent.work_completed" }),
-  notice("n6", "/data-v2/t1", { bucket: "updates", event_key: "records.changed", target_kind: "custom.record", target_id: "r1" }),
+  notice("n6", "/data/t1", { bucket: "updates", event_key: "records.changed", target_kind: "custom.record", target_id: "r1" }),
 ];
 
 const noop = () => Promise.resolve();

@@ -17,7 +17,7 @@ await page.evaluate(() => {
   const s = document.querySelector("#shell-sidebar-toggle");
   if (s instanceof HTMLInputElement && s.checked) s.click();
 });
-await page.goto(`${ORIGIN}/data-v2/${JOBS}`, { waitUntil: "domcontentloaded", timeout: 120000 });
+await page.goto(`${ORIGIN}/data/${JOBS}`, { waitUntil: "domcontentloaded", timeout: 120000 });
 await sleep(9000);
 await page.evaluate(() => {
   const bs = Array.from(document.querySelectorAll("button")).filter((x)=>(x.textContent??"").trim()==="Settings");

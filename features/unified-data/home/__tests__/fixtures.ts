@@ -35,7 +35,7 @@ export function row(partial: Partial<DataHomeRow> & { name: string }): DataHomeR
     records: null,
     changedBy: null,
     details: "",
-    href: `/data-v2/row-${n}`,
+    href: `/data/row-${n}`,
     publicHref: null,
     publicLabel: null,
     trouble: null,

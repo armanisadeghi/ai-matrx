@@ -11,7 +11,7 @@
 //   2. sends them to that screen with `?org=` naming the OBJECT's organization, never whichever
 //      organization they happened to have selected (access is to the person);
 //   3. never redirects between the older tables and the record store: an older dataset opens
-//      `/data/<id>`, a record-store table opens `/data-v2/<id>`; `?side=new|old` opens one side
+//      `/data/<id>`, a record-store table opens `/data/<id>`; `?side=new|old` opens one side
 //      to compare, and only when that side exists.
 //
 // Everything else is said on this page in the door's own words: not yours (identical for an id
@@ -101,7 +101,7 @@ function noticeFor(
     case "in_trash":
       return { title: "This was archived", body: answer.says, action: { href: "/trash", label: "Open the trash" } };
     case "no_screen":
-      return { title: "This has no screen of its own", body: answer.says, action: { href: "/data-v2", label: "Your tables" } };
+      return { title: "This has no screen of its own", body: answer.says, action: { href: "/data", label: "Your tables" } };
     case "no_such_side":
       return {
         title: "That side of the table is not there",

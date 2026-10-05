@@ -43,7 +43,7 @@ const shot = (name) => page.screenshot({ path: `${SHOTS}/${name}.png`, fullPage:
 
 /** The Data hub names the organization she is working in ("Showing what is in <org>"). */
 async function activeOrgLine() {
-  await page.goto(`${ORIGIN}/data-v2`, { waitUntil: "domcontentloaded", timeout: 180000 });
+  await page.goto(`${ORIGIN}/data`, { waitUntil: "domcontentloaded", timeout: 180000 });
   const { v } = await until("the hub's scope line", async () => {
     const m = (await text()).match(/Showing what is in (.+)/);
     return m ? m[1].split("\n")[0].replace(/\s*Change.*$/, "").trim() : null;

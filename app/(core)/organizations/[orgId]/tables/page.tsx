@@ -20,7 +20,7 @@ const SELECT_COLS = "id, table_name, description, version, updated_at";
 /**
  * THE ORGANIZATION'S TABLES (lane PROOF-DEFECTS, D5): one call to `custom.table_list_everywhere` —
  * the list door (GRID-PRIMITIVES G9) the table pickers use — which also answers whether the app
- * keeps a table for itself, so a column's choice list stays behind Show everything as on /data-v2.
+ * keeps a table for itself, so a column's choice list stays behind Show everything as on /data.
  * A list that cannot be read is a failure the page shows, never a silently shorter list.
  */
 async function listTables(orgId: string): Promise<{ rows: Array<Record<string, unknown>>; kept: Array<Record<string, unknown>> }> {
@@ -76,7 +76,7 @@ export default function OrgTablesPage() {
   const userId = useAppSelector(selectUserId);
   // A table moved from a card re-reads the list (the moved card leaves this organization's page).
   const [reread, setReread] = React.useState(0);
-  // THE SAME "SHOW EVERYTHING" AS /data-v2 (KeptByTheAppLine): the tables the app keeps for
+  // THE SAME "SHOW EVERYTHING" AS /data (KeptByTheAppLine): the tables the app keeps for
   // itself are counted, and listed only when asked.
   const [showEverything, setShowEverything] = React.useState(false);
   const [keptCount, setKeptCount] = React.useState(0);
@@ -118,7 +118,7 @@ export default function OrgTablesPage() {
             selectColumns={SELECT_COLS}
             ownedQuery={ownedQuery}
             mapRow={mapRow}
-            getHref={(id) => `/data-v2/${id}`}
+            getHref={(id) => `/data/${id}`}
             emptyTitle="No shared tables yet"
             emptyDescription="Data tables owned by this organization will appear here, along with tables other members share."
             emptyIcon={

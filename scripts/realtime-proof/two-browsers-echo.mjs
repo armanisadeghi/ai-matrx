@@ -42,7 +42,7 @@ const JOBS = "af3bfff6-a255-41e5-9ac2-879d53816163"; // its Jobs board
 // FIXTURE-ORGS 2026-09-23: repointed from an archived duplicate to the family's one kept org: the Oxnard branch was archived; Ridgeline Physical Therapy is admin-only, so Marco (test@test.com) is NOT a member.
 const OXNARD_ORG = "0fec03d8-afe5-4ea0-bf14-d0ab18e4a536";
 const OXNARD_TABLE = "f9d61a79-0780-4cd2-9b58-3e2a25042714"; // Ridgeline's appointments table
-const TABLE_URL = `${ORIGIN}/data-v2/${JOBS}`;
+const TABLE_URL = `${ORIGIN}/data/${JOBS}`;
 const TEST_EMAIL = "test@test.com";
 const TEST_PASSWORD = "Password1234#";
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -147,7 +147,7 @@ async function main() {
       [dana, "Dana"],
       [marco, "Marco"],
     ]) {
-      await page.goto(`${ORIGIN}/data-v2`, { waitUntil: "commit", timeout: 150000 });
+      await page.goto(`${ORIGIN}/data`, { waitUntil: "commit", timeout: 150000 });
       const how = await setOrganization(page, ORG_NAME);
       console.log(`  (${who} picked ${ORG_NAME} — ${how})`);
       await sleep(2500);

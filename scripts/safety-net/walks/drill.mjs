@@ -73,7 +73,7 @@ try {
   // another page enters it: a two-level address. Status is a choice column, so it is a Dimension (B4-05).
   await ctx.step(["R01", "R02", "R03"], "a clinic table drills (two levels) and its groups add up to the total", admin, async () => {
     doors.length = 0;
-    await ctx.goto(admin, `/data-v2/${TABLE}?view=grid&by=status,insurance_provider&show=count`);
+    await ctx.goto(admin, `/data/${TABLE}?view=grid&by=status,insurance_provider&show=count`);
     await settle(admin);
     await sleep(800);
     const r = await read(admin);

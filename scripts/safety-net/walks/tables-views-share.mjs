@@ -81,7 +81,7 @@ const board = (page) =>
 const inColumn = (cols, column, patient) => (cols.find((c) => c.name === column)?.cards ?? []).some((c) => c.includes(patient));
 
 async function openTable(page, id, view, ready) {
-  const path = `/data-v2/${id}${view ? `?view=${view}` : ""}`;
+  const path = `/data/${id}${view ? `?view=${view}` : ""}`;
   await go(page, path);
   const r = await until(`${view ?? "table"} draws`, async () => {
     await unpark(page);
@@ -92,16 +92,16 @@ async function openTable(page, id, view, ready) {
 }
 
 async function newTable(page, name) {
-  await go(page, "/data-v2");
+  await go(page, "/data");
   const nt = page.getByRole("button", { name: "New table" }).first();
   await nt.waitFor({ timeout: 150000 });
   await nt.click();
   await page.getByPlaceholder("Table name").fill(name);
   await page.getByRole("button", { name: "Create", exact: true }).click();
-  const opened = await until("the new table opens", async () => /\/data-v2\/[0-9a-f-]{36}/.test(page.url()), 150000);
+  const opened = await until("the new table opens", async () => /\/data\/[0-9a-f-]{36}/.test(page.url()), 150000);
   if (!opened.v) throw new Error("the new table did not open");
   await sleep(4000);
-  return page.url().match(/\/data-v2\/([0-9a-f-]{36})/)[1];
+  return page.url().match(/\/data\/([0-9a-f-]{36})/)[1];
 }
 
 async function addColumn(page, path, name, kind, options = []) {
@@ -150,7 +150,7 @@ async function addRow(page, path, title, extra = {}) {
 
 async function archive(page, id, why) {
   if (!id || !page) return;
-  await go(page, `/data-v2/${id}?rail=settings`);
+  await go(page, `/data/${id}?rail=settings`);
   await sleep(4000);
   if (await page.getByText("This table is archived").count()) return;
   const btn = page.getByRole("button", { name: "Archive this table", exact: true });
@@ -189,7 +189,7 @@ try {
     tid = await newTable(admin, NAME);
     made.push(tid);
     ctx.cleanup(async () => archive(admin, tid, "cleanup follow-up list"));
-    const path = `/data-v2/${tid}?view=sheet`;
+    const path = `/data/${tid}?view=sheet`;
     await go(admin, path);
     await admin.getByRole("button", { name: /^Column$/ }).first().waitFor({ timeout: 150000 });
     await addColumn(admin, path, "Status", /^Choice/, ["New", "Scheduled", "Completed"]);
@@ -233,7 +233,7 @@ if (tid && want("views")) {
     });
 
     // T38 board + the drag, persisted
-    const boardUrl = `/data-v2/${tid}?view=kanban`;
+    const boardUrl = `/data/${tid}?view=kanban`;
     await ctx.step(["T38"], "board: grouped by Status — New / Scheduled / Completed with the right cards", admin, async () => {
       await go(admin, boardUrl);
       const sel = admin.locator("#view-field-kanban");
@@ -276,7 +276,7 @@ if (tid && want("views")) {
 if (tid && want("views")) {
   try {
     await ctx.step(["T39"], "calendar: each patient sits on their follow-up date", admin, async () => {
-      const path = `/data-v2/${tid}?view=calendar`;
+      const path = `/data/${tid}?view=calendar`;
       await go(admin, path);
       await until("the calendar draws", async () => {
         await unpark(admin);
@@ -306,7 +306,7 @@ if (tid && want("views")) {
     });
 
     await ctx.step(["T40"], "gallery: every patient has a card", admin, async () => {
-      await go(admin, `/data-v2/${tid}?view=gallery`);
+      await go(admin, `/data/${tid}?view=gallery`);
       await until("the gallery draws", async () => {
         await unpark(admin);
         return (await main(admin)).includes("Dana Whitcomb");
@@ -326,7 +326,7 @@ if (want("make")) try {
   await ctx.step([], "make the plain callback list (title only, 3 patients)", admin, async () => {
     pid = await newTable(admin, PLAIN);
     ctx.cleanup(async () => archive(admin, pid, "cleanup callback list"));
-    const path = `/data-v2/${pid}?view=sheet`;
+    const path = `/data/${pid}?view=sheet`;
     await go(admin, path);
     await admin.getByRole("button", { name: /^Row$/ }).first().waitFor({ timeout: 150000 });
     for (const t of ["Dana Whitcomb - knee rehab follow-up", "Luis Ortega - reschedule Thursday visit", "Priya Nair - insurance pre-authorization"]) await addRow(admin, path, t);
@@ -334,7 +334,7 @@ if (want("make")) try {
   });
   if (pid) {
     const offers = async (view, sentence) => {
-      await go(admin, `/data-v2/${pid}?view=${view}`);
+      await go(admin, `/data/${pid}?view=${view}`);
       await until("the offer", async () => {
         await unpark(admin);
         return (await main(admin)).includes("Make it work");
@@ -418,7 +418,7 @@ if (want("visit")) try {
   await ctx.step([], "make the visit log (300 visits pasted)", admin, async () => {
     vid = await newTable(admin, `Visit Log ${STAMP}`);
     ctx.cleanup(async () => archive(admin, vid, "cleanup visit log"));
-    const path = `/data-v2/${vid}?view=sheet`;
+    const path = `/data/${vid}?view=sheet`;
     await go(admin, path);
     await guard(admin, path, async () => {
       await admin.getByRole("button", { name: /^Paste$/ }).first().click({ timeout: 150000 });
@@ -437,7 +437,7 @@ if (want("visit")) try {
   });
   if (vid) {
     await ctx.step(["T40"], "gallery of 300 visits: every visit reachable, or an honest count", admin, async () => {
-      await go(admin, `/data-v2/${vid}?view=gallery`);
+      await go(admin, `/data/${vid}?view=gallery`);
       await until("the gallery draws", async () => {
         await unpark(admin);
         return (await main(admin)).includes("Visit 0");
@@ -483,7 +483,7 @@ if (tid && want("share")) {
       return i < 0 ? "" : t.slice(i, i + 200);
     };
     const openRail = async () => {
-      await go(admin, `/data-v2/${tid}?rail=share`);
+      await go(admin, `/data/${tid}?rail=share`);
       await rail().waitFor({ timeout: 150000 });
       await until("the rail settles", async () => !/Loading/i.test(await access()), 40000);
       await sleep(1500);
@@ -528,7 +528,7 @@ if (tid && want("share")) {
       await member.keyboard.press("Escape");
       const ticks = await member.locator('tbody td[data-matrx-cell-col="called_back"] [role="checkbox"]').evaluateAll((els) => els.map((e) => e.hasAttribute("disabled") || e.hasAttribute("data-disabled") || e.getAttribute("aria-disabled") === "true"));
       // the board: grouped by Status (her own look), no card can be picked up, a drag changes nothing
-      await go(member, `/data-v2/${tid}?view=kanban`);
+      await go(member, `/data/${tid}?view=kanban`);
       const sel = member.locator("#view-field-kanban");
       await sel.waitFor({ timeout: 150000 });
       await sel.selectOption({ label: "Status" });

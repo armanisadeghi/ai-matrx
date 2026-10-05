@@ -52,7 +52,7 @@ try {
   const who = await signIn(page, ORIGIN, ADMIN.email, ADMIN.password, "admin");
   check("signed in as admin@admin.com", who === "admin@admin.com", who);
   await setOrganization(page, ORG_NAME);
-  await page.goto(`${ORIGIN}/data-v2`, { waitUntil: "domcontentloaded", timeout: 180000 });
+  await page.goto(`${ORIGIN}/data`, { waitUntil: "domcontentloaded", timeout: 180000 });
   const got = await until("the inbox's own work_inbox answer for Rincon", async () =>
     answers.find((a) => a.req.p_organization_id === ORG && Array.isArray(a.rows)), 120000);
   const first = got.v;
@@ -75,7 +75,7 @@ try {
     const text = (await inbox.innerText()).replace(/\s+/g, " ");
     check("the drawn inbox names none of the archived tables' withdrawn changes as waiting", !/route book|truck binder/i.test(text), text.slice(0, 160));
   } else {
-    check("the hub draws the inbox", false, "no [aria-label=Inbox] on /data-v2");
+    check("the hub draws the inbox", false, "no [aria-label=Inbox] on /data");
   }
 } finally {
   await browser.close();

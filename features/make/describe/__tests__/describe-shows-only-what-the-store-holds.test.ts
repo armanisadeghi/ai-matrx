@@ -63,9 +63,9 @@ describe("the describe box shows only what the sentence made", () => {
       ["form", "New patient intake"],
       ["booking", "Book your first visit"],
     ]);
-    expect(made[0].href).toBe("/data-v2/t-new");
-    expect(made[1]).toMatchObject({ href: "/data-v2/t-new?rail=forms&item=f-new", publicHref: "/f/f-new" });
-    expect(made[2]).toMatchObject({ href: "/data-v2/t-new?rail=bookings&item=b-new", publicHref: "/b/b-new" });
+    expect(made[0].href).toBe("/data/t-new");
+    expect(made[1]).toMatchObject({ href: "/data/t-new?rail=forms&item=f-new", publicHref: "/f/f-new" });
+    expect(made[2]).toMatchObject({ href: "/data/t-new?rail=bookings&item=b-new", publicHref: "/b/b-new" });
   });
 
   it("shows a booking page once, never again as a form", () => {
@@ -100,7 +100,7 @@ describe("the describe box shows only what the sentence made", () => {
     draft.item_row = { ...draft.item_row, published_at: null };
     const [made] = madeSince(before, { tables: [], items: [draft] }, CEDAR);
     expect(made.publicHref).toBeUndefined();
-    expect(made.href).toBe("/data-v2/t-new?rail=forms&item=f-draft");
+    expect(made.href).toBe("/data/t-new?rail=forms&item=f-draft");
   });
 
   it("a rule that tells someone the moment an answer arrives reads as a Notification, a weekly one as a Digest", () => {

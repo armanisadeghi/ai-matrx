@@ -103,8 +103,6 @@ export const PAGE_CLEANUP_ROWS: readonly CleanupRow[] = [
   { path: "/agents/browse", area: "redirect-only aliases", what: "Redirect-only alias", rec: "KILL", reason: "Old URL only; audit says worth killing pre-launch", group: "lower", href: "/agents/browse", note: null },
   { path: "/chat", area: "redirect-only aliases", what: "Redirect-only alias", rec: "ALIAS", reason: "Linked in-app; goes to /chat/new", group: "lower", href: "/chat", note: null },
   { path: "/chat/talk", area: "redirect-only aliases", what: "Redirect-only alias", rec: "ALIAS", reason: "Linked in-app; goes to /chat/new", group: "lower", href: "/chat/talk", note: null },
-  { path: "/data/create", area: "redirect-only aliases", what: "Redirect-only alias", rec: "ALIAS", reason: "Linked in-app; goes to /data-v2", group: "lower", href: "/data/create", note: null },
-  { path: "/data", area: "redirect-only aliases", what: "Redirect-only alias", rec: "ALIAS", reason: "Linked in-app; goes to /data-v2", group: "lower", href: "/data", note: null },
   { path: "/education/fastfire/capture-test", area: "redirect-only aliases", what: "Redirect-only alias", rec: "ALIAS", reason: "Old URL only; goes to /administration/education/fastfire-capture-test", group: "lower", href: "/education/fastfire/capture-test", note: null },
   { path: "/education/flashcards-2", area: "redirect-only aliases", what: "Redirect-only alias", rec: "KILL", reason: "Old URL only; audit says worth killing pre-launch", group: "lower", href: "/education/flashcards-2", note: null },
   { path: "/education/flashcards/progress", area: "redirect-only aliases", what: "Redirect-only alias", rec: "ALIAS", reason: "Old URL only; goes to /education/progress", group: "lower", href: "/education/flashcards/progress", note: null },

@@ -1,6 +1,6 @@
 // ORG-CLEANUP — the admin seat still reaches every crew the owner guide keeps, after the archive.
 // Each kept crew is opened the way a person opens it (picker, by address where the name repeats),
-// then /data-v2 is read back for the tables it holds.
+// then /data is read back for the tables it holds.
 import fs from "node:fs";
 import path from "node:path";
 import { chromium } from "playwright";
@@ -34,10 +34,10 @@ console.log("seat:", await signIn(page, ORIGIN, process.env.AI_ADMIN_USERNAME, p
 
 const report = [];
 for (const [name, slug] of CREWS) {
-  await page.goto(`${ORIGIN}/data-v2`, { waitUntil: "domcontentloaded", timeout: 120000 });
+  await page.goto(`${ORIGIN}/data`, { waitUntil: "domcontentloaded", timeout: 120000 });
   await sleep(3500);
   const how = slug ? await setOrganizationBySlug(page, name, slug) : await setOrganization(page, name);
-  await page.goto(`${ORIGIN}/data-v2/try-everything`, { waitUntil: "domcontentloaded", timeout: 120000 });
+  await page.goto(`${ORIGIN}/data/try-everything`, { waitUntil: "domcontentloaded", timeout: 120000 });
   await sleep(12000);
   const seen = await page.evaluate((wanted) => {
     const main = document.querySelector("main") ?? document.body;

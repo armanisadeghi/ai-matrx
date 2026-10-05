@@ -62,7 +62,7 @@ function plantDataHome() {
     row.setAttribute("data-row-id", `r${i}`);
     // The row's own link (its name cell to the menu), then copy + menu at the right.
     const link = el("a", { top, bottom: top + 32, left: 56, right: W - 84 }, row);
-    link.setAttribute("href", `/data-v2/t/r${i}`);
+    link.setAttribute("href", `/data/t/r${i}`);
     el("button", { top: top + 4, bottom: top + 28, left: W - 80, right: W - 52 }, row);
     el("button", { top: top + 4, bottom: top + 28, left: W - 48, right: W - 20 }, row);
     rows.push(row);

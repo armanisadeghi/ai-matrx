@@ -4,7 +4,7 @@
  *
  * One case per caller SHAPE the lane moved onto lib/url-state/addressWithoutNavigating:
  *
- *   A. `router.replace(\`${pathname}?…\`)`     — useSurfacesAdminSelection (and /data-v2's ?view=)
+ *   A. `router.replace(\`${pathname}?…\`)`     — useSurfacesAdminSelection (and /data's ?view=)
  *   B. `router.push(\`${pathname}?…\`)`        — useSourceFilters
  *   C. `history.*State(window.history.state…)` — files' navigateFilesFolderPath (chat, code
  *      workspace, org manage had the same bytes)

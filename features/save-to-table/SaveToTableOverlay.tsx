@@ -116,7 +116,7 @@ export function SaveToTableOverlay({
               }
               onOpenTable={(tableId) => {
                 onClose();
-                router.push(`/data-v2/${tableId}`);
+                router.push(`/data/${tableId}`);
               }}
               onClose={onClose}
             />

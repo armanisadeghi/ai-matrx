@@ -10,7 +10,7 @@ await signIn(page, ORIGIN, process.env.AI_ADMIN_USERNAME, process.env.AI_ADMIN_P
 await setOrganization(page, "Kessler Lab for Applied Microbial Ecology");
 await page.keyboard.press("Escape");
 await page.evaluate(() => { for (const id of ["#menu-group-organization","#shell-sidebar-toggle"]) { const e=document.querySelector(id); if(e instanceof HTMLInputElement && e.checked) e.click(); } });
-await page.goto(`${ORIGIN}/data-v2/${EXPERIMENTS}`, { waitUntil: "domcontentloaded", timeout: 120000 });
+await page.goto(`${ORIGIN}/data/${EXPERIMENTS}`, { waitUntil: "domcontentloaded", timeout: 120000 });
 await sleep(11000);
 await page.evaluate(() => { const bs=Array.from(document.querySelectorAll("button")).filter(x=>(x.textContent??"").trim()==="Settings"); bs[bs.length-1]?.click(); });
 await sleep(3500);

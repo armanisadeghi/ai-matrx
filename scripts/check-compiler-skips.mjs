@@ -7,7 +7,7 @@
 // component has NO memoisation at all: every render above it rebuilds every callback and object
 // it hands down and redraws every child. Measured 2026-09-26 (RENDER-AUDIT): 1,573 of 13,538
 // functions skipped — the Sheet (`UserTableViewer`) among them, which is how one cell edit on
-// /data-v2 redrew 2,726 components.
+// /data redrew 2,726 components.
 //
 // Offline and read-only: runs the compiler the app builds with (babel-plugin-react-compiler, the
 // same defaults Next uses: compilationMode "infer", panicThreshold "none") over every tracked
@@ -43,7 +43,7 @@ const CACHE_DIR = join(ROOT, "node_modules/.cache/compiler-skips");
 const SCOPE = ["app/(core)", "features", "packages/chat/src", "components"];
 
 /**
- * THE DATA SURFACES (lane RENDER-2): the Sheet, its toolbar, its row, the /data-v2 route. They
+ * THE DATA SURFACES (lane RENDER-2): the Sheet, its toolbar, its row, the /data route. They
  * compile today; the report names each one so a regression here reads as what it is.
  */
 const DATA_SURFACES = [
@@ -307,7 +307,7 @@ async function main() {
   console.log("  By the compiler's reason:");
   for (const [k, n] of Object.entries(reasons).sort((a, b) => b[1] - a[1]).slice(0, 12)) console.log(`   ${String(n).padStart(5)}  ${k}`);
 
-  console.log("\n  The data surfaces (the Sheet, its toolbar, its row, the /data-v2 route):");
+  console.log("\n  The data surfaces (the Sheet, its toolbar, its row, the /data route):");
   for (const f of DATA_SURFACES) {
     const r = results[f];
     const line = !r ? "not found" : r.skipped.length === 0 ? `compiles (${r.compiled} fn${r.optedOut.length ? `, ${r.optedOut.length} opted out by name` : ""})` : `SKIPPED ${r.skipped.map((s) => `${s.name}: ${s.reason}`).join("; ")}`;

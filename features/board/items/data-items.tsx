@@ -2,9 +2,9 @@
 
 /**
  * Custom data on a board: a Table and one Record, from the record store (`@ai-matrx/records`,
- * the `custom` schema — the `/data-v2` system; the older `/data` is not built on).
+ * the `custom` schema — the `/data` system; the older `/data` is not built on).
  *
- * - **Table.** The body IS `/data-v2/<table>`'s table page: `useUnifiedTable` + `UnifiedTableBody`
+ * - **Table.** The body IS `/data/<table>`'s table page: `useUnifiedTable` + `UnifiedTableBody`
  *   (`features/unified-data/table-page/UnifiedTable.tsx`), the one component the route renders —
  *   `TablePage` inside `RecordsMount`, reading as the table's own organization, with the same
  *   ports, realtime, Sheet layout, merged-grid knob, table-menu extras and the
@@ -290,7 +290,7 @@ export const DATA_ITEMS: readonly BoardItemType[] = [
     bringIn: { label: "Table", Picker: TablePicker },
     href: (s) => {
       const id = tableIdOf(s);
-      return id ? `/data-v2/${id}` : null;
+      return id ? `/data/${id}` : null;
     },
   },
   {
@@ -308,7 +308,7 @@ export const DATA_ITEMS: readonly BoardItemType[] = [
     bringIn: { label: "Record", Picker: RecordPicker },
     href: (s) => {
       const ids = recordIdsOf(s);
-      return ids ? `/data-v2/${ids.tableId}?record=${ids.recordId}` : null;
+      return ids ? `/data/${ids.tableId}?record=${ids.recordId}` : null;
     },
   },
 ];

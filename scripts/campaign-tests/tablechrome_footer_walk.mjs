@@ -55,7 +55,7 @@ try {
   const page = await context.newPage();
   const who = await signIn(page, ORIGIN, EMAIL, PASSWORD, "admin seat");
   pass("signed in as the admin test seat", who === EMAIL, who === EMAIL ? "admin@admin.com" : "someone else");
-  await page.goto(`${ORIGIN}/data-v2/${ADMINS}`, { waitUntil: "domcontentloaded", timeout: 240000 });
+  await page.goto(`${ORIGIN}/data/${ADMINS}`, { waitUntil: "domcontentloaded", timeout: 240000 });
   await until("the table's rows", () =>
     page.evaluate(() => [...document.querySelectorAll("tbody tr")].some((tr) => (tr.textContent ?? "").trim().length > 2)), 180000);
   await sleep(3000);

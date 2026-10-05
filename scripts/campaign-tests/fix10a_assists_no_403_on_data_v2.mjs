@@ -2,7 +2,7 @@
  * FIX-10A-ASSISTS — THE GATE: no 403 and no `[assists] …` line on the data pages, from
  * BOTH seats, on a real organization's real table.
  *
- * VERIFIER-10 finding F14: every `/data-v2/*` load from the admin seat logged
+ * VERIFIER-10 finding F14: every `/data/*` load from the admin seat logged
  * `403` and `[assists] resolve failed: permission denied for table assists`.
  * Nothing visibly broke and the page swallowed it, which is why it survived.
  *
@@ -55,7 +55,7 @@ async function run(seat) {
   console_.length = 0;
   failed.length = 0;
 
-  await page.goto(`${ORIGIN}/data-v2`, { waitUntil: "networkidle", timeout: 120000 });
+  await page.goto(`${ORIGIN}/data`, { waitUntil: "networkidle", timeout: 120000 });
   await sleep(6000);
   await page.screenshot({ path: resolve(OUT, seat.shot), fullPage: false });
 
@@ -63,11 +63,11 @@ async function run(seat) {
   // dispatcher's real ticket table, the one VERIFIER-10 worked in. Taken by id and
   // not from the list, because the list offered no anchor on the first run of this
   // script and a green that never opened a table page proves nothing.
-  const NAMED_TABLE = "/data-v2/adeb37a2-476e-451a-b4a4-7800303f550f";
+  const NAMED_TABLE = "/data/adeb37a2-476e-451a-b4a4-7800303f550f";
   const href = await page.evaluate(() =>
-    (Array.from(document.querySelectorAll('a[href^="/data-v2/"]'))
+    (Array.from(document.querySelectorAll('a[href^="/data/"]'))
       .map((a) => a.getAttribute("href"))
-      .find((h) => h && h !== "/data-v2" && !h.includes("try-everything"))) ?? null,
+      .find((h) => h && h !== "/data" && !h.includes("try-everything"))) ?? null,
   );
   const tablePages = [...new Set([href, NAMED_TABLE].filter(Boolean))];
   for (const path of tablePages) {
@@ -89,7 +89,7 @@ for (const seat of SEATS) {
     const assists = r.console_.filter((l) => /\[assists\]/.test(l));
     const forbidden = r.failed.filter((l) => l.startsWith("403"));
     console.log(`\n===== SEAT ${seat.email} — app says signed in as: ${r.who} =====`);
-    console.log(`organization picked ${r.picked}; pages: /data-v2 and ${r.tablePage ?? "(no table link on the list)"}`);
+    console.log(`organization picked ${r.picked}; pages: /data and ${r.tablePage ?? "(no table link on the list)"}`);
     console.log(`console messages: ${r.console_.length}; [assists] lines: ${assists.length}`);
     assists.forEach((l) => console.log("  ASSIST: " + l));
     console.log(`failed responses: ${r.failed.length}; 403s: ${forbidden.length}`);

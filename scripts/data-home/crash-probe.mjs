@@ -1,4 +1,4 @@
-// scripts/data-home/crash-probe.mjs — does /data-v2 crash for this seat? (lane DATA-HOME-2, 2026-09-29)
+// scripts/data-home/crash-probe.mjs — does /data crash for this seat? (lane DATA-HOME-2, 2026-09-29)
 import { chromium } from "playwright";
 import { setOrganization, signIn, until } from "../lib/seat-browser.mjs";
 const ORIGIN = process.env.O ?? "https://www.aimatrx.com";
@@ -27,7 +27,7 @@ const state = async () => page.evaluate(() => {
   if (/Something went wrong|Application error/i.test(t)) return "ERROR: " + t.slice(0, 300);
   return null;
 });
-for (const path of ["/data-v2", "/data-v2?org=all", "/data-v2?scope=mine"]) {
+for (const path of ["/data", "/data?org=all", "/data?scope=mine"]) {
   await page.goto(ORIGIN + path, { waitUntil: "domcontentloaded", timeout: 180000 });
   let r = await until("state", state, 90000);
   if (r.v === "needs-org") { await setOrganization(page, process.env.W ?? "admin's Workspace"); await page.goto(ORIGIN + path, { waitUntil: "domcontentloaded" }); r = await until("state", state, 90000); }

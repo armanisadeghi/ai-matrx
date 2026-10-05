@@ -7,7 +7,7 @@
 -- Visit Tracker as the control. From test@test.com's seat (`set local role authenticated` + her claims),
 -- every list door is asked twice — as a default list asks, and with p_include_app_tables => true:
 --   P  custom.table_kept_out_of_lists — the one predicate: agent_output yes; choices, context, null no.
---   H  custom.data_home_tables — /data-v2's rows, one organization and all of them.
+--   H  custom.data_home_tables — /data's rows, one organization and all of them.
 --   D  custom.data_home — ⌘K and the data home's one call, unsearched and searched.
 --   L  custom.table_list_everywhere — the resource picker, quick sheet, scheduling, webhooks.
 --   K  no regression: every other kept table (lists behind columns, scopes, forms …) is still listed by
@@ -92,7 +92,7 @@ begin
 exception when others then insert into res values ('H data_home_tables answers', false, sqlerrm);
 end $$;
 
--- D — custom.data_home (⌘K and /data-v2's one call)
+-- D — custom.data_home (⌘K and /data's one call)
 do $$
 declare c uuid := current_setting('t.cedar')::uuid; o text := current_setting('t.outputs'); v jsonb;
 begin

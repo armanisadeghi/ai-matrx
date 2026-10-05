@@ -77,7 +77,7 @@ export function ConnectDatabasePage() {
     try {
       const made = await connectTable(organizationId, connection.trim(), table);
       setConnection("");
-      router.push(`/data-v2/${made.table_id}`);
+      router.push(`/data/${made.table_id}`);
     } catch (err) {
       setError(extractErrorMessage(err));
       setStep({ phase: "pick", answer });

@@ -20,7 +20,7 @@ await page.evaluate(() => {
   if (s instanceof HTMLInputElement && s.checked) s.click();
 });
 await sleep(1500);
-await page.goto(`${ORIGIN}/data-v2/${JOBS}`, { waitUntil: "domcontentloaded", timeout: 120000 });
+await page.goto(`${ORIGIN}/data/${JOBS}`, { waitUntil: "domcontentloaded", timeout: 120000 });
 await sleep(9000);
 await page.screenshot({ path: resolve(OUT, "x5-grid.png") });
 

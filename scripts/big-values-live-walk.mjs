@@ -1,7 +1,7 @@
 // scripts/big-values-live-walk.mjs — lane BIG-VALUES-LIVE headless proof on a table read from the store.
 //
 // A value too big for one cell is kept as a file and the cell holds its first words. On
-// /data-v2/<table>, as admin@admin.com: the cell shows the head text and "Open the whole text",
+// /data/<table>, as admin@admin.com: the cell shows the head text and "Open the whole text",
 // and that link opens the file's own page as the person.
 //
 //   ORIGIN=<site> TABLE=<store table id> FILE=<file id> FILE_NAME=<name> SHOTS=<dir> node scripts/big-values-live-walk.mjs
@@ -31,7 +31,7 @@ const page = await context.newPage();
 try {
   out.signed_in_as = await signIn(page, ORIGIN, env.AI_ADMIN_USERNAME, env.AI_ADMIN_PASSWORD, "admin");
   if (out.signed_in_as !== "admin@admin.com") throw new Error(`signed in as ${out.signed_in_as}`);
-  await page.goto(`${ORIGIN}/data-v2/${TABLE}`, { waitUntil: "domcontentloaded", timeout: 180000 });
+  await page.goto(`${ORIGIN}/data/${TABLE}`, { waitUntil: "domcontentloaded", timeout: 180000 });
   const cell = page.locator(`[data-whole-value-file="${FILE}"]`).first();
   const anyCell = page.locator("[data-whole-value-file]").first();
   const grid = page.getByRole("button", { name: /^Grid$/ }).first();

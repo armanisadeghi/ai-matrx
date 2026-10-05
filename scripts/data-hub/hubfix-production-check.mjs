@@ -63,7 +63,7 @@ try {
   await setOrganization(page, "Rincon Plumbing Co");
   say("organization set to Rincon Plumbing Co");
 
-  await page.goto(`${ORIGIN}/data-v2`, { waitUntil: "domcontentloaded", timeout: 120000 });
+  await page.goto(`${ORIGIN}/data`, { waitUntil: "domcontentloaded", timeout: 120000 });
   const { v: ready, ms } = await until(
     "the hub settled",
     async () =>

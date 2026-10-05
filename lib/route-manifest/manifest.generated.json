@@ -1,7 +1,7 @@
 {
   "version": 1,
   "app": "matrx-frontend",
-  "routeCount": 1336,
+  "routeCount": 1333,
   "routes": [
     {
       "pattern": "/",
@@ -2284,39 +2284,24 @@
       "source": "app/(core)/data/page.tsx"
     },
     {
-      "pattern": "/data-v2",
+      "pattern": "/data/[tableId]",
       "status": "live",
-      "source": "app/(core)/data-v2/page.tsx"
+      "source": "app/(core)/data/[tableId]/page.tsx"
     },
     {
-      "pattern": "/data-v2/[tableId]",
+      "pattern": "/data/[tableId]/r/[recordId]",
       "status": "live",
-      "source": "app/(core)/data-v2/[tableId]/page.tsx"
+      "source": "app/(core)/data/[tableId]/r/[recordId]/page.tsx"
     },
     {
-      "pattern": "/data-v2/[tableId]/r/[recordId]",
+      "pattern": "/data/connect",
       "status": "live",
-      "source": "app/(core)/data-v2/[tableId]/r/[recordId]/page.tsx"
+      "source": "app/(core)/data/connect/page.tsx"
     },
     {
-      "pattern": "/data-v2/connect",
+      "pattern": "/data/try-everything",
       "status": "live",
-      "source": "app/(core)/data-v2/connect/page.tsx"
-    },
-    {
-      "pattern": "/data-v2/try-everything",
-      "status": "live",
-      "source": "app/(core)/data-v2/try-everything/page.tsx"
-    },
-    {
-      "pattern": "/data/[id]",
-      "status": "live",
-      "source": "app/(core)/data/[id]/page.tsx"
-    },
-    {
-      "pattern": "/data/create",
-      "status": "live",
-      "source": "app/(core)/data/create/page.tsx"
+      "source": "app/(core)/data/try-everything/page.tsx"
     },
     {
       "pattern": "/decisions",

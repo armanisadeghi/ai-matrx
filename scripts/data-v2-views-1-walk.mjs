@@ -70,7 +70,7 @@ try {
   out.signed_in_as = await signIn(page, ORIGIN, env.AI_ADMIN_USERNAME, env.AI_ADMIN_PASSWORD, "admin");
   step("signed in", { as: out.signed_in_as });
   if (out.signed_in_as !== "admin@admin.com") throw new Error(`wrong seat: ${out.signed_in_as}`);
-  await page.goto(`${ORIGIN}/data-v2`, { waitUntil: "domcontentloaded", timeout: 180000 });
+  await page.goto(`${ORIGIN}/data`, { waitUntil: "domcontentloaded", timeout: 180000 });
   // A table page takes its organization from the table; only a NEW table needs the active one.
   try {
     await setOrganization(page, ORG);
@@ -83,7 +83,7 @@ try {
   let table = existsSync(join(SHOTS, "table.json")) ? JSON.parse(readFileSync(join(SHOTS, "table.json"), "utf8")).table : null;
 
   if (PHASE === "probe") {
-    await page.goto(`${ORIGIN}/data-v2/${table}`, { waitUntil: "domcontentloaded", timeout: 180000 });
+    await page.goto(`${ORIGIN}/data/${table}`, { waitUntil: "domcontentloaded", timeout: 180000 });
     await page.getByRole("button", { name: "New record" }).first().waitFor({ timeout: 120000 });
     await sleep(3000);
     await page.getByRole("button", { name: "New record" }).first().click();
@@ -93,7 +93,7 @@ try {
   }
 
   if (PHASE === "rows") {
-    await page.goto(`${ORIGIN}/data-v2/${table}`, { waitUntil: "domcontentloaded", timeout: 180000 });
+    await page.goto(`${ORIGIN}/data/${table}`, { waitUntil: "domcontentloaded", timeout: 180000 });
     await page.getByRole("button", { name: "New record" }).first().waitFor({ timeout: 120000 });
     await sleep(3000);
     for (const who of ["Dana Whitcomb — knee rehab follow-up", "Luis Ortega — reschedule Thursday visit", "Priya Nair — insurance pre-authorization"]) {
@@ -111,7 +111,7 @@ try {
 
   if (PHASE === "tidy") {
     // The empty row left by the first probe of "New record": archived through the grid's own Delete.
-    await page.goto(`${ORIGIN}/data-v2/${table}?view=grid`, { waitUntil: "domcontentloaded", timeout: 180000 });
+    await page.goto(`${ORIGIN}/data/${table}?view=grid`, { waitUntil: "domcontentloaded", timeout: 180000 });
     await until("the grid", async () => (await text()).includes("Dana Whitcomb"), 120000);
     await sleep(3000);
     const rows = page.locator("tbody tr[data-row-id]");
@@ -138,12 +138,12 @@ try {
   if (PHASE === "b4") {
     // BREAKER-4 B4-04 on its own fixture: "Visit Log B4", 300 visits. Restored first, archived after.
     const FIXTURE = "cf27240e-2256-44f8-9aff-8e6cea876d94";
-    await page.goto(`${ORIGIN}/data-v2/${FIXTURE}`, { waitUntil: "domcontentloaded", timeout: 180000 });
+    await page.goto(`${ORIGIN}/data/${FIXTURE}`, { waitUntil: "domcontentloaded", timeout: 180000 });
     await sleep(8000);
     const back = page.getByRole("button", { name: "Bring it back" });
     if (await back.count()) { await back.click(); await sleep(8000); step("restored Visit Log B4"); }
     for (const layout of ["gallery", "kanban", "calendar"]) {
-      await page.goto(`${ORIGIN}/data-v2/${FIXTURE}?view=${layout}`, { waitUntil: "domcontentloaded", timeout: 180000 });
+      await page.goto(`${ORIGIN}/data/${FIXTURE}?view=${layout}`, { waitUntil: "domcontentloaded", timeout: 180000 });
       await sleep(10000);
       const pager = async () => (await page.locator("[data-view-pager]").innerText().catch(() => "")).replace(/\s+/g, " ");
       const before = await pager();
@@ -161,7 +161,7 @@ try {
 
   if (PHASE === "b222") {
     // B2-22 on the preview: the Calendar's Ask AI opens with the ask typed and the chips in words.
-    await page.goto(`${ORIGIN}/data-v2/${table}?view=calendar`, { waitUntil: "domcontentloaded", timeout: 180000 });
+    await page.goto(`${ORIGIN}/data/${table}?view=calendar`, { waitUntil: "domcontentloaded", timeout: 180000 });
     await until("the calendar's offer", async () => (await text()).includes("Make it work"), 120000);
     await sleep(2000);
     await page.getByRole("button", { name: "Ask AI" }).first().click();
@@ -185,7 +185,7 @@ try {
       page.locator("section[data-board-column]").evaluateAll((els) =>
         els.map((e) => ({ name: e.getAttribute("data-board-column"), cards: [...e.querySelectorAll("li")].map((l) => (l.textContent ?? "").trim().slice(0, 40)) })),
       );
-    await page.goto(`${ORIGIN}/data-v2/${FIXTURE}`, { waitUntil: "domcontentloaded", timeout: 180000 });
+    await page.goto(`${ORIGIN}/data/${FIXTURE}`, { waitUntil: "domcontentloaded", timeout: 180000 });
     await sleep(8000);
     const back = page.getByRole("button", { name: "Bring it back" });
     if (await back.count()) {
@@ -193,7 +193,7 @@ try {
       await sleep(8000);
       step("restored the fixture");
     }
-    await page.goto(`${ORIGIN}/data-v2/${FIXTURE}?view=kanban`, { waitUntil: "domcontentloaded", timeout: 180000 });
+    await page.goto(`${ORIGIN}/data/${FIXTURE}?view=kanban`, { waitUntil: "domcontentloaded", timeout: 180000 });
     await page.locator("#view-field-kanban").waitFor({ timeout: 120000 });
     await page.selectOption("#view-field-kanban", { label: "Visit Status" });
     await sleep(6000);
@@ -233,7 +233,7 @@ try {
       await page.keyboard.press("Escape");
     } else step("B2-30 settings button not found", { buttons: (await page.locator("button:visible").allInnerTexts()).filter(Boolean).slice(0, 30) });
     // B2-22: the Calendar's Ask AI (Visit Date is text here, so the calendar needs a date column).
-    await page.goto(`${ORIGIN}/data-v2/${FIXTURE}?view=calendar`, { waitUntil: "domcontentloaded", timeout: 180000 });
+    await page.goto(`${ORIGIN}/data/${FIXTURE}?view=calendar`, { waitUntil: "domcontentloaded", timeout: 180000 });
     await sleep(8000);
     const ask = page.getByRole("button", { name: "Ask AI" }).first();
     if (await ask.count()) {
@@ -248,7 +248,7 @@ try {
       await page.keyboard.press("Escape");
     } else step("B2-22: no Ask AI on the calendar (the table has a date column?)", { text: (await text()).slice(0, 300) });
     // B2-29: a record's history, from the grid.
-    await page.goto(`${ORIGIN}/data-v2/${FIXTURE}?view=grid`, { waitUntil: "domcontentloaded", timeout: 180000 });
+    await page.goto(`${ORIGIN}/data/${FIXTURE}?view=grid`, { waitUntil: "domcontentloaded", timeout: 180000 });
     await sleep(8000);
     const open = page.locator("tbody tr[data-row-id]").first().getByRole("button", { name: /⤢|Open/ }).first();
     if (await open.count()) {
@@ -264,14 +264,14 @@ try {
 
   if (PHASE === "b2probe") {
     const FIXTURE = "031d3690-4a02-4cee-a575-454ffd96c992";
-    await page.goto(`${ORIGIN}/data-v2/${FIXTURE}`, { waitUntil: "domcontentloaded", timeout: 180000 });
+    await page.goto(`${ORIGIN}/data/${FIXTURE}`, { waitUntil: "domcontentloaded", timeout: 180000 });
     await sleep(12000);
     await shot("b2-probe-fixture");
     step("fixture page", { text: (await text()).slice(0, 500), buttons: (await page.locator("main button:visible").allInnerTexts()).filter(Boolean).slice(0, 30) });
   }
 
   if (PHASE === "boardshot") {
-    await page.goto(`${ORIGIN}/data-v2/${table}?view=kanban`, { waitUntil: "domcontentloaded", timeout: 180000 });
+    await page.goto(`${ORIGIN}/data/${table}?view=kanban`, { waitUntil: "domcontentloaded", timeout: 180000 });
     await until("the board", async () => (await text()).includes("No value"), 180000);
     await sleep(4000);
     const overlay = await page.locator("nextjs-portal").count();
@@ -281,7 +281,7 @@ try {
 
   if (PHASE === "attach") {
     // A PATIENT'S PHOTO, ATTACHED THROUGH THE GRID'S OWN FILE WINDOW, THEN SEEN ON HER GALLERY CARD.
-    await page.goto(`${ORIGIN}/data-v2/${table}?view=grid`, { waitUntil: "domcontentloaded", timeout: 180000 });
+    await page.goto(`${ORIGIN}/data/${table}?view=grid`, { waitUntil: "domcontentloaded", timeout: 180000 });
     await until("the grid", async () => (await text()).includes("Dana Whitcomb"), 120000);
     await sleep(3000);
     const row = page.locator("tbody tr[data-row-id]", { hasText: "Dana Whitcomb" }).first();
@@ -303,7 +303,7 @@ try {
     if (await confirm.count()) { await confirm.last().click(); await sleep(5000); }
     await shot("f4-cell");
     step("cell", { text: (await row.innerText()).replace(/\s+/g, " ") });
-    await page.goto(`${ORIGIN}/data-v2/${table}?view=gallery`, { waitUntil: "domcontentloaded", timeout: 180000 });
+    await page.goto(`${ORIGIN}/data/${table}?view=gallery`, { waitUntil: "domcontentloaded", timeout: 180000 });
     await until("the gallery", async () => (await text()).includes("Dana Whitcomb"), 120000);
     await sleep(8000);
     await shot("f5-gallery-picture");
@@ -311,7 +311,7 @@ try {
   }
 
   if (PHASE === "attachprobe") {
-    await page.goto(`${ORIGIN}/data-v2/${table}?view=grid`, { waitUntil: "domcontentloaded", timeout: 180000 });
+    await page.goto(`${ORIGIN}/data/${table}?view=grid`, { waitUntil: "domcontentloaded", timeout: 180000 });
     await until("the grid", async () => (await text()).includes("Dana Whitcomb"), 120000);
     await sleep(3000);
     const cell = page.locator('td[data-matrx-cell-col="photo"]').first();
@@ -338,7 +338,7 @@ try {
         bad.push({ status: r.status(), url: r.url().slice(0, 200), body });
       }
     });
-    await page.goto(`${ORIGIN}/data-v2/${table}?view=kanban`, { waitUntil: "domcontentloaded", timeout: 180000 });
+    await page.goto(`${ORIGIN}/data/${table}?view=kanban`, { waitUntil: "domcontentloaded", timeout: 180000 });
     await until("the empty state", async () => (await text()).includes("Make it work"), 120000);
     await sleep(2000);
     await page.getByRole("button", { name: "Ask AI" }).first().click();
@@ -359,7 +359,7 @@ try {
   if (PHASE === "askai") {
     // ASK AI, END TO END: the board's empty state → the assistant → the ask sent → the agent's
     // column held for approval → approved → the board draws by it.
-    await page.goto(`${ORIGIN}/data-v2/${table}?view=kanban`, { waitUntil: "domcontentloaded", timeout: 180000 });
+    await page.goto(`${ORIGIN}/data/${table}?view=kanban`, { waitUntil: "domcontentloaded", timeout: 180000 });
     await until("the empty state", async () => (await text()).includes("Make it work"), 120000);
     await sleep(2000);
     await shot("a1-kanban-before");
@@ -391,7 +391,7 @@ try {
       seen = body.slice(-600);
     }
     step("agent tail", { seen });
-    await page.goto(`${ORIGIN}/data-v2/${table}?view=kanban`, { waitUntil: "domcontentloaded", timeout: 180000 });
+    await page.goto(`${ORIGIN}/data/${table}?view=kanban`, { waitUntil: "domcontentloaded", timeout: 180000 });
     await sleep(8000);
     await shot("a6-kanban-after");
     step("kanban after", { text: (await text()).slice(0, 500) });
@@ -399,7 +399,7 @@ try {
 
   if (PHASE === "views") {
     const open = async (view) => {
-      await page.goto(`${ORIGIN}/data-v2/${table}?view=${view}`, { waitUntil: "domcontentloaded", timeout: 180000 });
+      await page.goto(`${ORIGIN}/data/${table}?view=${view}`, { waitUntil: "domcontentloaded", timeout: 180000 });
       await until(`the ${view} draws`, async () => (await text()).includes("Dana Whitcomb") || (await text()).includes("Make it work"), 120000);
       await sleep(3000);
     };
@@ -471,15 +471,15 @@ try {
   }
 
   if (PHASE === "make") {
-    await page.goto(`${ORIGIN}/data-v2`, { waitUntil: "domcontentloaded", timeout: 180000 });
+    await page.goto(`${ORIGIN}/data`, { waitUntil: "domcontentloaded", timeout: 180000 });
     const nt = page.getByRole("button", { name: "New table" }).first();
     await nt.waitFor({ timeout: 120000 });
     await nt.click();
     await page.getByPlaceholder("Table name").fill(process.env.TABLE_NAME ?? "Patient Callback List");
     await page.getByRole("button", { name: "Create", exact: true }).click();
-    const opened = await until("the new table opens", async () => /\/data-v2\/[0-9a-f-]{36}/.test(page.url()), 120000);
+    const opened = await until("the new table opens", async () => /\/data\/[0-9a-f-]{36}/.test(page.url()), 120000);
     if (!opened.v) throw new Error("the new table did not open");
-    table = page.url().match(/\/data-v2\/([0-9a-f-]{36})/)[1];
+    table = page.url().match(/\/data\/([0-9a-f-]{36})/)[1];
     writeFileSync(join(SHOTS, "table.json"), JSON.stringify({ table, org: ORG }, null, 2));
     step("table made", { table });
     await sleep(6000);

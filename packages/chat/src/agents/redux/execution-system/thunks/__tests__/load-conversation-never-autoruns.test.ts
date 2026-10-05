@@ -2,7 +2,7 @@
  * Guard: reopening a conversation from the database is never a decision to run.
  *
  * The defect (lane data-tables-grid-overhaul, 2026-09-26): reloading
- * `/data-v2/<table>?panels=agent:<id>:m-flexible-panel` fired an EMPTY
+ * `/data/<table>?panels=agent:<id>:m-flexible-panel` fired an EMPTY
  * `POST /v2/ai/conversations/<id>` on load — the transcript gained "This
  * request ends with an assistant response and has no new user or tool turn to
  * send". `loadConversation` hydrated the record as `status: "ready"` first and

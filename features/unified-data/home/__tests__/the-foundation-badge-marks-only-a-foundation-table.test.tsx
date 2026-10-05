@@ -106,7 +106,7 @@ describe("the mark is the table's own, never a thing built on it", () => {
     tableName: "Patients",
     lane: "internal" as never,
     facts: [],
-    href: `/data-v2/${PATIENTS}`,
+    href: `/data/${PATIENTS}`,
     organizationId: CLINIC,
     organizationName: "Cedar Ridge Physical Therapy",
     ...patch,

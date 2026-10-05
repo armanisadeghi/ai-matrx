@@ -1,7 +1,7 @@
 /**
  * @jest-environment jsdom
  *
- * LIVE. Renders the two `/data-v2` route files against the real main database,
+ * LIVE. Renders the two `/data` route files against the real main database,
  * signed in as `admin@admin.com` — the one identity this repo's policy names
  * for UI testing, never a real person's account.
  *
@@ -97,7 +97,7 @@ const canRun = Boolean(ADMIN_EMAIL && ADMIN_PASSWORD && SUPABASE_URL?.startsWith
 if (!canRun) {
   // eslint-disable-next-line no-console
   console.warn(
-    "/data-v2 route-mount live test SKIPPED — set AI_ADMIN_USERNAME, AI_ADMIN_PASSWORD, " +
+    "/data route-mount live test SKIPPED — set AI_ADMIN_USERNAME, AI_ADMIN_PASSWORD, " +
       "NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY (this repo's .env.local " +
       "has all four) to run it against the main database.",
   );
@@ -177,7 +177,7 @@ const routeQuery = new URLSearchParams();
 jest.mock("next/navigation", () => ({
   useRouter: () => ({ push: jest.fn(), replace: jest.fn(), refresh: jest.fn(), back: jest.fn() }),
   useSearchParams: () => routeQuery,
-  usePathname: () => "/data-v2",
+  usePathname: () => "/data",
 }));
 // The table route's "ask an agent for a form" button launches a MANDATE
 // through the platform's agent launcher. That launcher lives on the real redux
@@ -212,7 +212,7 @@ const describeLive = canRun ? describe : describe.skip;
 
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-describeLive("/data-v2 — the route files bind the store, live main database", () => {
+describeLive("/data — the route files bind the store, live main database", () => {
   let container: HTMLDivElement;
   let root: Root;
 

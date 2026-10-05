@@ -26,7 +26,7 @@ export const KIT_ROUTES = {
   gallery: "/kits",
   detail: (key: string) => `/kits/${encodeURIComponent(key)}`,
   installed: (key: string) => `/kits/${encodeURIComponent(key)}/installed`,
-  table: (tableId: string) => `/data-v2/${encodeURIComponent(tableId)}`,
+  table: (tableId: string) => `/data/${encodeURIComponent(tableId)}`,
   agent: (agentId: string) => `/agents/${encodeURIComponent(agentId)}`,
   // The workflow's own page (set it up, run it) — the registry's `hrefFor`. There is no
   // separate step/canvas editor route in this app; `/design` is the run-page designer.

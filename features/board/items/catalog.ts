@@ -12,7 +12,7 @@
  *   scope-items.tsx    scope (one scope: its page body and its own surface)
  *   education-items.tsx flashcard deck · study kit (/education)
  *   meeting-items.tsx  meeting notes (one part of a meeting: transcript, decisions…)
- *   data-items.tsx     data table · data record (the record store, /data-v2)
+ *   data-items.tsx     data table · data record (the record store, /data)
  *   list-items.tsx     picklist (/lists — a Table of choices in the record store)
  *   content-items.tsx  web page · image · write-up · label
  *   page-items.tsx     any page of the app, framed (until its feature is a native item)

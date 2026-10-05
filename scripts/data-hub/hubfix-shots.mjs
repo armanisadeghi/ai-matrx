@@ -192,7 +192,7 @@ const HONEST_REFUSALS = [
 ];
 async function itemRowsOpenTheItem(page, label, shots) {
   for (const { id, rail } of ITEM_LISTINGS) {
-    await page.goto(`${ORIGIN}/data-v2`, { waitUntil: "domcontentloaded", timeout: 120000 });
+    await page.goto(`${ORIGIN}/data`, { waitUntil: "domcontentloaded", timeout: 120000 });
     await settled(page);
     await openEveryListing(page);
     const row = page.locator(`[data-hub-listing="${id}"] li a`).first();
@@ -241,7 +241,7 @@ async function itemRowsOpenTheItem(page, label, shots) {
  * were not moved" over it.
  */
 async function acceptedShareOpens(page, label, shots) {
-  await page.goto(`${ORIGIN}/data-v2`, { waitUntil: "domcontentloaded", timeout: 120000 });
+  await page.goto(`${ORIGIN}/data`, { waitUntil: "domcontentloaded", timeout: 120000 });
   await settled(page);
   await openEveryListing(page);
   const rows = await page.evaluate(() =>
@@ -302,7 +302,7 @@ const ARCHIVED_SHARE_OWNERS = [
   "e9e7e190-ddac-4824-bd10-a02c9d1239c0",
 ];
 async function lanesTellTheTruth(page, label, { expectSharedOnly }) {
-  await page.goto(`${ORIGIN}/data-v2`, { waitUntil: "domcontentloaded", timeout: 120000 });
+  await page.goto(`${ORIGIN}/data`, { waitUntil: "domcontentloaded", timeout: 120000 });
   await settled(page);
   await openEveryListing(page);
   const everything = await readHub(page);
@@ -410,7 +410,7 @@ async function walk(context, label, { email, password, organization, slug, shots
   }
   say(`${label}: organization set to ${organization}`);
 
-  await page.goto(`${ORIGIN}/data-v2`, { waitUntil: "domcontentloaded", timeout: 120000 });
+  await page.goto(`${ORIGIN}/data`, { waitUntil: "domcontentloaded", timeout: 120000 });
   const state = await settled(page);
   say(`${label}: hub settled=${state.settled} after ${state.ms} ms`);
   const hub = await readHub(page);

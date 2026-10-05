@@ -82,10 +82,10 @@ async function step(items, label, fn) {
 }
 /** Open the table (Sheet by default), pressing "Try again" while the store is slow to answer. */
 async function open(query = "?view=sheet", { needRows = false } = {}) {
-  await ctx.goto(page, `/data-v2/${tid}${query}`);
+  await ctx.goto(page, `/data/${tid}${query}`);
   for (let k = 0; k < 20; k++) {
     await sleep(4000);
-    if (await unpark()) await ctx.goto(page, `/data-v2/${tid}${query}`);
+    if (await unpark()) await ctx.goto(page, `/data/${tid}${query}`);
     const ths = await page.locator("thead th").count();
     const named = await page.evaluate(() => [...document.querySelectorAll("thead th")].some((t) => /title/i.test(t.innerText))).catch(() => false);
     if (ths > 1 && named && (!needRows || (await page.locator("tbody tr").count()) > 1)) break;
@@ -306,15 +306,15 @@ try {
   if (page.__org !== "Cedar Ridge Physical Therapy") throw new Error(`the account rail does not name Cedar Ridge Physical Therapy (${page.__org})`);
 
   await step(["T01"], "New table from the data home", async () => {
-    await ctx.goto(page, "/data-v2");
+    await ctx.goto(page, "/data");
     const nt = page.getByRole("button", { name: "New table", exact: true }).first();
     await until("New table", async () => (await nt.count()) > 0, 90000);
     await nt.click();
     await sleep(1200);
     await page.getByPlaceholder("Table name").fill(TABLE_NAME);
     await page.getByRole("button", { name: "Create", exact: true }).click();
-    await until("the new table", async () => /\/data-v2\/[0-9a-f-]{36}/.test(page.url()), 120000);
-    tid = page.url().match(/\/data-v2\/([0-9a-f-]{36})/)?.[1] ?? null;
+    await until("the new table", async () => /\/data\/[0-9a-f-]{36}/.test(page.url()), 120000);
+    tid = page.url().match(/\/data\/([0-9a-f-]{36})/)?.[1] ?? null;
     if (!tid) return { ok: false, detail: `Create did not open a table: ${page.url()}` };
     ctx.cleanup(async () => archiveIfLive("cleanup"));
     await open("");
@@ -458,7 +458,7 @@ async function archiveTable() {
 
 async function archiveIfLive(why) {
   if (!tid || !page) return;
-  await ctx.goto(page, `/data-v2/${tid}`);
+  await ctx.goto(page, `/data/${tid}`);
   await sleep(6000);
   if (await page.getByText("This table is archived").count()) return;
   const r = await archiveTable();

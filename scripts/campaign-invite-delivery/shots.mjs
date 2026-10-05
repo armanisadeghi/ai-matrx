@@ -106,7 +106,7 @@ async function main() {
   const errors = [];
   page.on("console", (m) => { if (m.type() === "error") errors.push(m.text().slice(0, 200)); });
 
-  const target = `/data-v2/${TABLE}`;
+  const target = `/data/${TABLE}`;
   const ORIGIN = await signIn(ctx, page, target);
   const who = await page.evaluate(async () => (await fetch("/api/whoami")).json()).catch(() => null);
   if (who?.email !== "admin@admin.com") throw new Error(`wrong identity: ${JSON.stringify(who)}`);
@@ -259,7 +259,7 @@ async function main() {
   if (!landed.seesJobs) throw new Error("she accepted and did not land in the table's rows");
 
   // ── 6. AND NOTHING ELSE OF THE BRANCH'S. ───────────────────────────────────
-  await guest.goto(`${ORIGIN}/data-v2/${OTHER_TABLE}`, { waitUntil: "domcontentloaded", timeout: 180000 });
+  await guest.goto(`${ORIGIN}/data/${OTHER_TABLE}`, { waitUntil: "domcontentloaded", timeout: 180000 });
   await guest.waitForTimeout(10000);
   await guest.screenshot({ path: resolve(OUT, "invite-delivery-7-invoices-are-not-hers.png") });
   const other = await guest.evaluate(() => {

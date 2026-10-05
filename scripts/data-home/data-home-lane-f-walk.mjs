@@ -1,6 +1,6 @@
 // scripts/data-home/data-home-lane-f-walk.mjs — LANE DATA-HOME-3F
 //
-// Walks the three fix-before-Arman defects of VERIFY-DATA-HOME-3 Verify 2 on `/data-v2?home=new`
+// Walks the three fix-before-Arman defects of VERIFY-DATA-HOME-3 Verify 2 on `/data?home=new`
 // from a real seat (headless) and takes the named screenshots:
 //   W3 390   — phone cards: height of each, how many fit the first screen, no "more fields"
 //   W5 1440  — Cards view: every Table card's Records is a count once the store answers, and the
@@ -51,7 +51,7 @@ check("identity matches seat", who === EMAIL, { seat: SEAT });
 const ROW = "[data-row-id]:visible";
 const shot = (name) => page.screenshot({ path: `${SHOTS}/f-${SEAT}-${name}-${SCHEME}.png`, fullPage: false });
 const goto = async () => {
-  await page.goto(`${ORIGIN}/data-v2?home=new`, { waitUntil: "domcontentloaded", timeout: 180000 });
+  await page.goto(`${ORIGIN}/data?home=new`, { waitUntil: "domcontentloaded", timeout: 180000 });
   await until("rows", async () => (await page.locator(ROW).count()) > 0, 180000);
   await sleep(2500);
 };
@@ -97,7 +97,7 @@ try {
     const line = page.locator("[data-entity-phone-card-line]").first();
     const box = await line.boundingBox();
     if (box) await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
-    const opened = await until("opened", async () => /\/data-v2\/[^?]/.test(new URL(page.url()).pathname), 60000)
+    const opened = await until("opened", async () => /\/data\/[^?]/.test(new URL(page.url()).pathname), 60000)
       .then((r) => Boolean(r.v));
     check("phone: a tap on the card's second line opens the row", opened, { url: new URL(page.url()).pathname });
   }

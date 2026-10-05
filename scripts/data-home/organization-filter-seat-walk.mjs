@@ -3,7 +3,7 @@
 // THE DATA HOME'S ORGANIZATION DROPDOWN, WALKED FROM A REAL SEAT (headless).
 //
 // Arman, 2026-09-28 ~14:00 PT: "with titanium selected in the organization filter, the home still
-// lists every organization." This walk signs in the way a person does, opens /data-v2, and:
+// lists every organization." This walk signs in the way a person does, opens /data, and:
 //   before — screenshots the bar and the Tables listing as they are (the defect);
 //   after  — proves the bar order (five filters, Kind, then the organization dropdown, on All Orgs
 //            for a person who never picked), picks one organization, proves every lane lists only
@@ -62,7 +62,7 @@ async function session() {
   const who = await signIn(page, ORIGIN, EMAIL, PASSWORD, SEAT);
   pass("seat", who === EMAIL, `/api/whoami answered ${who}`);
   // A fresh session may be working in no organization yet; a person picks one in the header.
-  await page.goto(`${ORIGIN}/data-v2`, { waitUntil: "domcontentloaded", timeout: 180000 });
+  await page.goto(`${ORIGIN}/data`, { waitUntil: "domcontentloaded", timeout: 180000 });
   const state = await until(
     "the home or its organization notice",
     async () =>
@@ -80,7 +80,7 @@ async function session() {
 }
 
 async function openHome(page, query = "") {
-  await page.goto(`${ORIGIN}/data-v2${query}`, { waitUntil: "domcontentloaded", timeout: 180000 });
+  await page.goto(`${ORIGIN}/data${query}`, { waitUntil: "domcontentloaded", timeout: 180000 });
   const read = await until(
     "the Tables listing",
     async () => {

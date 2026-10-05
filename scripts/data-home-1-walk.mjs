@@ -1,13 +1,13 @@
 // scripts/data-home-1-walk.mjs — lane DATA-HOME-1, from a real seat, headless.
 //
-// The data home (/data-v2): Arman's three rulings of 2026-09-27 21:20 PT, walked the way a person
+// The data home (/data): Arman's three rulings of 2026-09-27 21:20 PT, walked the way a person
 // walks them. Read-only: it opens pages and presses filters and Back; it writes nothing.
 //
 //   PHASE=before  the page as it was (point ORIGIN at the deployed site): the home, "All my
 //                 organizations", then the browser's Back — where does it land?
 //   PHASE=after   the page now (the shared preview): the home opens on All with every
-//                 organization's tables labelled; each of the five filters; /data-v2 → All →
-//                 Back lands on /data-v2; a direct ?scope=all → the header's back arrow.
+//                 organization's tables labelled; each of the five filters; /data → All →
+//                 Back lands on /data; a direct ?scope=all → the header's back arrow.
 //
 //   SEAT=admin (admin@admin.com, AI_ADMIN_* from .env.local) | SEAT=member (test@test.com,
 //   password in SEAT_PASSWORD — never printed).
@@ -56,7 +56,7 @@ const path = () => {
 };
 
 async function home(query = "") {
-  await page.goto(`${ORIGIN}/data-v2${query}`, { waitUntil: "domcontentloaded", timeout: 180000 });
+  await page.goto(`${ORIGIN}/data${query}`, { waitUntil: "domcontentloaded", timeout: 180000 });
   const ready = await until("the hub", async () => (await page.locator("[data-hub-root]").count()) > 0, 180000);
   if (!ready.v) {
     await page.screenshot({ path: join(SHOTS, `${PHASE}-${SEAT}-did-not-draw.png`) });
@@ -96,7 +96,7 @@ async function tablesListing() {
 
 const who = await signIn(page, ORIGIN, email, password, SEAT);
 step("signed in as", { who });
-await page.goto(`${ORIGIN}/data-v2`, { waitUntil: "domcontentloaded", timeout: 180000 });
+await page.goto(`${ORIGIN}/data`, { waitUntil: "domcontentloaded", timeout: 180000 });
 await until(
   "the hub or the organization notice",
   async () =>
@@ -175,21 +175,21 @@ if (PHASE === "before") {
   }
   step("after four browser Backs", { path: path() });
 
-  // THE BRIEF'S WALK: /data-v2 → ?scope=all → Back → /data-v2.
+  // THE BRIEF'S WALK: /data → ?scope=all → Back → /data.
   await home();
   await page.locator('[data-hub-scope-choice="all"]').click();
   await until("?scope=all", async () => path().includes("scope=all"), 20000);
   step("pressed All", { path: path() });
   await page.goBack({ timeout: 30000 });
-  await until("back on /data-v2", async () => path() === "/data-v2", 20000);
+  await until("back on /data", async () => path() === "/data", 20000);
   step("browser Back from ?scope=all", { path: path() });
   await shot("03-back-landed-on-data-v2");
 
-  // The header's arrow: /data-v2 → ?scope=all (typed), then the arrow.
+  // The header's arrow: /data → ?scope=all (typed), then the arrow.
   await home();
   await home("?scope=all");
   await page.locator('[aria-label="Go back"]').first().click();
-  await until("arrow back on /data-v2", async () => path() === "/data-v2", 20000);
+  await until("arrow back on /data", async () => path() === "/data", 20000);
   step("header back arrow from ?scope=all", { path: path() });
 }
 

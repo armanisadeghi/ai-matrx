@@ -15,7 +15,7 @@
 /**
  * ONE ROW OF CONTROLS ABOVE THE FIRST CARD ON A PHONE (DATA-HOME-3E, 2026-10-01; VERIFY V5).
  *
- * At 390 px /data-v2 stacked four rows of chrome over its first card (lane select + organization
+ * At 390 px /data stacked four rows of chrome over its first card (lane select + organization
  * filter · search · Filters/Columns/View · the table's view tabs, copy and group select). Below `sm`
  * the shell now draws ONE row: lane select, organization filter, a search icon that opens the box
  * in place, Filters and View; the table's own row stays off the phone. jsdom has no layout, so the

@@ -153,7 +153,7 @@ if (STEP === "note") {
   console.log("after:", made.slice(0, 600));
   state.tableName = made.match(/“([^”]+)” was made/)?.[1] ?? null;
   await dlg.getByRole("button", { name: "Open the table" }).click();
-  await until("the grid", async () => page.url().includes("/data-v2/") && (await page.locator("thead th").count()) > 1, 120000);
+  await until("the grid", async () => page.url().includes("/data/") && (await page.locator("thead th").count()) > 1, 120000);
   await sleep(4000);
   state.tableUrl = page.url();
   await shot("01-note-after-table");
@@ -253,7 +253,7 @@ if (STEP === "csv") {
   await openRegistryAction(box, { x: 120, y: 40 });
   const dlg = await makeNewTable("03-csv");
   await dlg.getByRole("button", { name: "Open the table" }).click();
-  await until("the grid", async () => page.url().includes("/data-v2/") && (await page.locator("thead th").count()) > 1, 120000);
+  await until("the grid", async () => page.url().includes("/data/") && (await page.locator("thead th").count()) > 1, 120000);
   await sleep(4000);
   state.csvTableUrl = page.url();
   await shot("03-csv-after-table");
@@ -406,7 +406,7 @@ if (STEP === "agent") {
 if (STEP === "archive") {
   // The test tables go the way a person archives a table: Settings → Archive this table → confirm.
   for (const id of (process.env.TABLES ?? "").split(",").filter(Boolean)) {
-    await goto(`/data-v2/${id}?rail=settings`);
+    await goto(`/data/${id}?rail=settings`);
     const found = await until("the archive button", async () => (await page.getByRole("button", { name: "Archive this table" }).count()) > 0, 120000);
     if (!found.v) {
       await shot(`archive-${id.slice(0, 8)}-missing`);

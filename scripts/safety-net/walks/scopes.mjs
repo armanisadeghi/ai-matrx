@@ -51,7 +51,7 @@ async function seat(name) {
   if (!page.__org) {
     await sleep(5000);
     for (let i = 0; i < 2 && !page.__org; i += 1) {
-      await go(page, "/data-v2").catch(() => {});
+      await go(page, "/data").catch(() => {});
       await sleep(6000);
       if (await setOrganization(page, "Cedar Ridge Physical Therapy").catch(() => false)) page.__org = "Cedar Ridge Physical Therapy";
     }

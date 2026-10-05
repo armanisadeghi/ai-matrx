@@ -170,7 +170,7 @@ export const CAMPAIGN_STORE_TABLES: readonly string[] = [
  * THE REGISTER — census taken 2026-09-15 against the working tree.
  *
  * READ THIS BEFORE YOU READ THE LIST: the first three `runtime` entries landed
- * on 2026-09-18 — the two `/data-v2` route files and the CRM record page's
+ * on 2026-09-18 — the two `/data` route files and the CRM record page's
  * custom-fields section. Every one of them is served to users on any lane's
  * `release*:` commit, so every one of them reads the switch: the guard fails
  * unless a `runtime` file both appears here and calls
@@ -292,14 +292,14 @@ export const ENTRY_POINTS: readonly CampaignEntryPoint[] = [
     kind: "runtime",
     why:
       "Lane HUB-FIX — the door law for the hub's \"Shared with me\" listing. Every row there " +
-      "opened /data-v2/<table> and landed on \"This table is not here\", because the table " +
+      "opened /data/<table> and landed on \"This table is not here\", because the table " +
       "belongs to ANOTHER organization by definition. The row now carries ?org= the way " +
       "platform.link_carries_its_organization makes a notification link name its organization, " +
       "and this hook reads it: it asks custom.table_share_outside_for_me — the store's own " +
       "door, answering only for the person signed in — whether that share is real before the " +
       "route mounts the store as that organization. It trusts no ?org= from an address and it " +
       "never changes which organization the person is working in. Served only inside " +
-      "app/(core)/data-v2/[tableId], which is already behind UNIFIED_DATA_CAMPAIGN's switch.",
+      "app/(core)/data/[tableId], which is already behind UNIFIED_DATA_CAMPAIGN's switch.",
   },
   {
     id: "make-mount",
@@ -348,8 +348,8 @@ export const ENTRY_POINTS: readonly CampaignEntryPoint[] = [
     file: "features/unified-data/hub/OrganizationHub.tsx",
     kind: "runtime",
     why:
-      "Lane DATA-HUB — /data-v2's landing: the organization's front door for the record store. " +
-      "It is mounted INSIDE RecordsMount on app/(core)/data-v2/page.tsx, which is already behind " +
+      "Lane DATA-HUB — /data's landing: the organization's front door for the record store. " +
+      "It is mounted INSIDE RecordsMount on app/(core)/data/page.tsx, which is already behind " +
       "UNIFIED_DATA_CAMPAIGN's one per-organization switch, so with the store off this component " +
       "never renders and the honest switch notice stays in its place.",
   },
@@ -481,7 +481,7 @@ export const ENTRY_POINTS: readonly CampaignEntryPoint[] = [
     },
     {
         id: "data-v2-tables",
-        file: "app/(core)/data-v2/page.tsx",
+        file: "app/(core)/data/page.tsx",
         kind: "runtime",
         why: "THE unified data page: a person's tables from the new record store, in four lanes, with create and import. Served to users, so it reads the switch and shows the off sentence when it is off.",
     },
@@ -489,7 +489,7 @@ export const ENTRY_POINTS: readonly CampaignEntryPoint[] = [
         id: "data-v2-try-everything",
         file: "features/unified-data/test-bench/TryEverythingScreen.tsx",
         kind: "runtime",
-        why: "THE TEST BENCH at /data-v2/try-everything: one page that mounts the real screens of every part of the store — tables and grid, sharing and the Access tab, relations and rollups, custom fields on a CRM contact, forms, the approval inbox, the agent's door, history, dashboards, documents and notify rules — against this organization's live data, with an honest note on each unfinished part. It is served to users and it reads the switch itself; its frames and labels live in TestBenchChrome.tsx, which reaches nothing and is deliberately not registered.",
+        why: "THE TEST BENCH at /data/try-everything: one page that mounts the real screens of every part of the store — tables and grid, sharing and the Access tab, relations and rollups, custom fields on a CRM contact, forms, the approval inbox, the agent's door, history, dashboards, documents and notify rules — against this organization's live data, with an honest note on each unfinished part. It is served to users and it reads the switch itself; its frames and labels live in TestBenchChrome.tsx, which reaches nothing and is deliberately not registered.",
     },
     {
         id: "rendered-document-page",
@@ -499,7 +499,7 @@ export const ENTRY_POINTS: readonly CampaignEntryPoint[] = [
     },
     {
         id: "data-v2-table",
-        file: "app/(core)/data-v2/[tableId]/page.tsx",
+        file: "app/(core)/data/[tableId]/page.tsx",
         kind: "runtime",
         why: "THE unified table page: views, the four layouts, peek with history and comments, settings, the action inbox, import and export. Served to users, so it reads the switch.",
     },
@@ -514,12 +514,6 @@ export const ENTRY_POINTS: readonly CampaignEntryPoint[] = [
         file: "features/unified-data/whereThisTableLives.ts",
         kind: "door_gated",
         why: "THE TABLE'S OWN ORGANIZATION, read from the object. Every table lives in the record store; this asks custom.where_id_opens as the signed-in person, through the store's own client door, which reads the switch itself: with the campaign off that door refuses and this returns `unknown` with the door's own sentence, never `nowhere`.",
-    },
-    {
-        id: "data-id-sends-you-to-the-other-store",
-        file: "app/(core)/data/[id]/DataTableDetailClient.tsx",
-        kind: "door_gated",
-        why: "/data/<id> is the table page itself: it mounts the /data-v2/<id> route (records-ui TablePage), whose doors call custom.assert_store_door, which reads custom/system_enabled — with the switch off they refuse in words. The older viewer and its older-store read are deleted (lane OLD-READERS-REMOVAL).",
     },
     {
         id: "kit-install",

@@ -23,7 +23,7 @@ const browser = await chromium.launch({ headless: true });
 const page = await (await browser.newContext({ viewport: { width: 1680, height: 1020 } })).newPage();
 const notes = [];
 
-const who = await signIn(page, `/data-v2`);
+const who = await signIn(page, `/data`);
 notes.push(`signed in as ${who.email}`);
 await useOrganization(page, T);
 

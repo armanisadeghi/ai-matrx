@@ -605,7 +605,7 @@ function BuilderFor({
   onClose: () => void;
   onName: (name: string | null) => void;
 }) {
-  const tableHref = `/data-v2/${tableId}`;
+  const tableHref = `/data/${tableId}`;
   // Made and saved: from the address on a reload, or the moment the builder answers its id.
   const [saved, setSaved] = useState(Boolean(madeId));
   const keep = (id: string) => {

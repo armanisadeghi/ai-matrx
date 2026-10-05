@@ -136,13 +136,13 @@ try {
   // ── L02: a table whose "Visit type" column takes its choices from the list ──────────────────────────
   await ctx.step(["L02"], `"${TABLE_NAME}" is made with a Visit type column bound to the list`, page, async () => {
     if (!listId) return { skip: "no list was made" };
-    await ctx.goto(page, "/data-v2");
+    await ctx.goto(page, "/data");
     const nt = page.getByRole("button", { name: "New table" }).first();
     await nt.waitFor({ timeout: 120000 });
     await nt.click();
     await page.getByPlaceholder("Table name").fill(TABLE_NAME);
     await page.getByRole("button", { name: "Create", exact: true }).click();
-    tableId = (await until("the new table opens", async () => page.url().match(/\/data-v2\/([0-9a-f-]{36})/)?.[1] ?? null, 120000)).v;
+    tableId = (await until("the new table opens", async () => page.url().match(/\/data\/([0-9a-f-]{36})/)?.[1] ?? null, 120000)).v;
     if (!tableId) return { ok: false, detail: `the new table did not open (still at ${page.url()})` };
     ctx.cleanup(async () => {
       for (let i = 0; i < 20; i++) {
@@ -166,7 +166,7 @@ try {
   });
 
   async function chipsOnPage() {
-    await ctx.goto(page, `/data-v2/${tableId}`);
+    await ctx.goto(page, `/data/${tableId}`);
     await until("the Visit type column", async () => (await page.locator("thead th", { hasText: "Visit type" }).count()) > 0 || null, 120000);
     await sleep(2000);
     // open the column's settings: its choices read from the list

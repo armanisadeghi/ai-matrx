@@ -53,7 +53,7 @@ const currentAccess = (page) =>
   });
 
 async function openTable(page) {
-  await page.goto(`${ORIGIN}/data-v2/${TABLE}`, { waitUntil: "domcontentloaded", timeout: 240000 });
+  await page.goto(`${ORIGIN}/data/${TABLE}`, { waitUntil: "domcontentloaded", timeout: 240000 });
   const rows = await until("the table's row", () => page.evaluate((t) => document.body.innerText.includes(t), ROW), 240000);
   await sleep(1500);
   return !!rows.v;

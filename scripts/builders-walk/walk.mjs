@@ -197,7 +197,7 @@ async function useOrganization(page, target) {
   // of this helper believed the answer was always "wrong" and then fell through
   // to an avatar button that is not there once an organization IS chosen.
   const onTarget = async () => {
-    await page.goto(`${ORIGIN}/data-v2/${target.table}`, {
+    await page.goto(`${ORIGIN}/data/${target.table}`, {
       waitUntil: "domcontentloaded",
       timeout: 180000,
     });
@@ -375,7 +375,7 @@ async function useOrganization(page, target) {
  * on this page can be clicked.
  */
 async function settleOnTable(page, tableId, ms = 240000) {
-  await page.goto(`${ORIGIN}/data-v2/${tableId}`, {
+  await page.goto(`${ORIGIN}/data/${tableId}`, {
     waitUntil: "domcontentloaded",
     timeout: ms,
   });
@@ -413,7 +413,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const context = await browser.newContext({ viewport: { width: 1680, height: 1020 } });
   const page = await context.newPage();
   const target = CASES[only ?? "form"];
-  const who = await signIn(page, `/data-v2/${target.table}`);
+  const who = await signIn(page, `/data/${target.table}`);
   console.log(`[walk] signed in as ${who.email} on ${ORIGIN}`);
   await useOrganization(page, target);
   await page.reload({ waitUntil: "domcontentloaded" });

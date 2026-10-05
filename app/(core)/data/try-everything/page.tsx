@@ -1,4 +1,4 @@
-// app/(core)/data-v2/try-everything/page.tsx — THE MOUNT, AND THE ROUTE TREE.
+// app/(core)/data/try-everything/page.tsx — THE MOUNT, AND THE ROUTE TREE.
 //
 // One page where a person can try every part of the unified record store in
 // the organization they are already in: real components, real doors, real
@@ -31,7 +31,7 @@ export default async function TryEverythingRoute() {
             <div className="h-full overflow-y-auto pt-[var(--shell-header-h)] p-4">
                 <div className="mx-auto mb-3 max-w-3xl">
                     <Link
-                        href="/data-v2"
+                        href="/data"
                         className="inline-flex items-center gap-1 text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
                     >
                         <ArrowLeft className="h-3.5 w-3.5" aria-hidden />

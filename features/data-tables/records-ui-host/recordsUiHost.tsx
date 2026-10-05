@@ -3,13 +3,13 @@
 /**
  * THE ONE RECORDS-UI HOST BINDING (one-grid merge, step 7).
  *
- * Every place in this app that draws a record-store table — the /data-v2 table page, the table
+ * Every place in this app that draws a record-store table — the /data table page, the table
  * window, the dataset overlay, a chat table artifact, the quick data sheet, the tables picker,
  * the chat "view table" modal — hands `@ai-matrx/records-ui` the SAME ports: links, toasts, files,
  * members, share, the record chat, agent row actions, "ask an agent", number click-through, the
  * app's file window for an attachment cell (`pickFiles`), and (merged grid) the agent grid context,
  * Clean HTML, the icon picker and markdown cells (`renderText` slot "cell"). Before this module the
- * list lived inline in `app/(core)/data-v2/[tableId]/page.tsx` and nothing else had it; a second
+ * list lived inline in `app/(core)/data/[tableId]/page.tsx` and nothing else had it; a second
  * copy would drift within a week. `recordsUiHostFor` is the list, written once; the hook
  * `useRecordsUiPorts` builds the ports that need React (the launcher, the organization list).
  *
@@ -84,7 +84,7 @@ export interface RecordsUiHostArgs {
   merged: boolean;
   /** The merged grid's agent channel (`useGridContextChannel`); bound only when `merged`. */
   gridContext?: GridContextChannel | null;
-  /** Layouts the host draws beside the package's own (the /data-v2 page's Sheet). */
+  /** Layouts the host draws beside the package's own (the /data page's Sheet). */
   layouts?: HostLayout[];
   /**
    * The host's own narrower answer (records-ui `rights` port): a PREVIEW is read-only whatever the
@@ -139,7 +139,7 @@ export function recordsUiHostFor({ ports, merged, gridContext, layouts, rights }
     runAgentAction: ports.runAgentAction,
     share: recordStoreShare,
     // EVERY RECORD OPENS ITS OWN PAGE (no-dead-ends): the grid's ⤢, a card's Open / new tab / Copy
-    // link and the peek's Open all reach /data-v2/<table>/r/<record> (records-ui `hrefForRecord`).
+    // link and the peek's Open all reach /data/<table>/r/<record> (records-ui `hrefForRecord`).
     hrefForRecord: ({ table, recordId }) => recordPageHref(table.id, recordId),
     // The platform's ONE chat column bound to the record (AGT-N-9) — never a second chat.
     chat: (ctx) => <RecordScopedChat ctx={ctx} organizationId={ports.organizationId} />,
@@ -265,7 +265,7 @@ export function useRecordsUiPorts({
       if (ask.filter && Object.keys(ask.filter).length > 0) {
         next.set("filter", JSON.stringify(ask.filter));
       }
-      router.push(`/data-v2/${ask.tableId}?${next.toString()}`);
+      router.push(`/data/${ask.tableId}?${next.toString()}`);
     },
     [router],
   );

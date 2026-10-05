@@ -56,12 +56,12 @@ try {
   if (!password) throw new Error("AI_ADMIN_PASSWORD is not in the environment");
   note.signedInAs = await signIn(page, ORIGIN, "admin@admin.com", password);
 
-  await page.goto(`${ORIGIN}/data-v2`, { waitUntil: "domcontentloaded", timeout: 120000 });
+  await page.goto(`${ORIGIN}/data`, { waitUntil: "domcontentloaded", timeout: 120000 });
   await sleep(2500);
   await setOrganization(page, ORG);
   await sleep(2000);
 
-  await page.goto(`${ORIGIN}/data-v2/${DONORS_TABLE}`, {
+  await page.goto(`${ORIGIN}/data/${DONORS_TABLE}`, {
     waitUntil: "domcontentloaded",
     timeout: 120000,
   });

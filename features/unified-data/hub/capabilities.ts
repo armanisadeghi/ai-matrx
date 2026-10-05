@@ -3,7 +3,7 @@
 // THE DECLARATION. Every capability the record store has is ONE row in this
 // file, and `HubListing` draws all of them with the same component.
 //
-// Why a declaration and not ten components: on 20 September /data-v2 listed an
+// Why a declaration and not ten components: on 20 September /data listed an
 // organization's TABLES and nothing else, while forms, bookings, portals,
 // dashboards, digests, checklists, automations, sharing and the archive lived
 // only as rails INSIDE one table's page. A person with forty tables had no way
@@ -264,7 +264,7 @@ export const HUB_CAPABILITIES: readonly HubCapability[] = [
             system: row.system ?? false,
           },
           facts: row.member ? [] : ["shared with you"],
-          href: row.member ? `/data-v2/${row.table_id}` : `/data-v2/${row.table_id}?org=${row.organization_id}`,
+          href: row.member ? `/data/${row.table_id}` : `/data/${row.table_id}?org=${row.organization_id}`,
           changedAt: row.updated_at,
         })),
       };
@@ -306,7 +306,7 @@ export const HUB_CAPABILITIES: readonly HubCapability[] = [
             ].filter(Boolean) as string[],
             // THE FORM'S OWN BUILDER, on the table it writes to — not that table's
             // grid (VERIFIER-14 item 2; records-ui 0.82.0's `?rail=` + `?item=`).
-            href: `/data-v2/${form.table_id}?rail=forms&item=${form.form_id}`,
+            href: `/data/${form.table_id}?rail=forms&item=${form.form_id}`,
             publicHref: form.published_at ? `/f/${form.form_id}` : undefined,
             publicLabel: form.published_at ? "The link a stranger follows" : undefined,
           };
@@ -352,7 +352,7 @@ export const HUB_CAPABILITIES: readonly HubCapability[] = [
             ].filter(Boolean) as string[],
             // THE BOOKING PAGE ITSELF, marked in the table's Bookings rail
             // (VERIFIER-16 M4) — never the bare grid.
-            href: `/data-v2/${booking.table_id}?rail=bookings&item=${booking.form_id}`,
+            href: `/data/${booking.table_id}?rail=bookings&item=${booking.form_id}`,
             publicHref: booking.published_at ? `/b/${booking.form_id}` : undefined,
             publicLabel: booking.published_at ? "The page somebody books on" : undefined,
           };
@@ -397,7 +397,7 @@ export const HUB_CAPABILITIES: readonly HubCapability[] = [
               plural(portal.tables ?? 0, "table"),
               `${portal.invited ?? 0} invited, ${portal.signed_in ?? 0} signed in`,
             ],
-            href: `/data-v2/${firstShown ?? portal.client_table_id}?rail=portals&item=${portal.portal_id}`,
+            href: `/data/${firstShown ?? portal.client_table_id}?rail=portals&item=${portal.portal_id}`,
             trouble: firstShown
               ? undefined
               : "This portal shows no table yet, so there is nothing for a client to see. Open its clients table, press Portals, and add the table they should see.",
@@ -428,7 +428,7 @@ export const HUB_CAPABILITIES: readonly HubCapability[] = [
             id: dash.dashboard_id,
             title: dash.name || "(untitled dashboard)",
             facts: [plural(dash.block_count ?? 0, "block")],
-            href: dash.table_id ? `/data-v2/${dash.table_id}?dashboard=${dash.dashboard_id}` : "/data-v2",
+            href: dash.table_id ? `/data/${dash.table_id}?dashboard=${dash.dashboard_id}` : "/data",
             trouble: dash.table_id
               ? undefined
               : "This dashboard names no table, so there is nothing for it to count. Open it from the table it was meant for, or make it again.",
@@ -474,9 +474,9 @@ export const HUB_CAPABILITIES: readonly HubCapability[] = [
             // table's notifications rail on this rule inside the organization the rule LIVES in.
             href: sub.table_id
               ? openPath(sub.rule_id, {
-                  fallback: `/data-v2/${sub.table_id}?rail=notifications&item=${sub.rule_id}`,
+                  fallback: `/data/${sub.table_id}?rail=notifications&item=${sub.rule_id}`,
                 })
-              : "/data-v2",
+              : "/data",
             trouble: sub.table_id
               ? undefined
               : "This subscription names no table any more, so nothing can send it. Open the table it watched and write it again.",
@@ -518,7 +518,7 @@ export const HUB_CAPABILITIES: readonly HubCapability[] = [
               plural(template.steps ?? 0, "step"),
               `${template.open_runs ?? 0} open of ${template.total_runs ?? 0} runs`,
             ],
-            href: template.about_table_id ? `/data-v2/${template.about_table_id}` : "/data-v2",
+            href: template.about_table_id ? `/data/${template.about_table_id}` : "/data",
             trouble: template.about_table_id
               ? undefined
               : "This checklist is not about a table, so a run has nothing to attach to. Point it at one before starting it.",
@@ -560,7 +560,7 @@ export const HUB_CAPABILITIES: readonly HubCapability[] = [
             facts: board.broken
               ? []
               : [`${board.stage_label ?? "Stage"}: ${plural(board.stages, "stage")}`, plural(board.rules, "rule")],
-            href: `/data-v2/${board.table_id}?view=kanban`,
+            href: `/data/${board.table_id}?view=kanban`,
             trouble: board.broken ?? undefined,
             changedAt: board.updated_at,
           };
@@ -602,7 +602,7 @@ export const HUB_CAPABILITIES: readonly HubCapability[] = [
             facts: [share.level_label, share.joined ? "joined" : share.expired ? "run out" : "invited"],
             // THE SHARE DIALOG over that table — where the invitation is resent, changed or taken
             // back — not the table's grid.
-            href: `/data-v2/${share.table_id}?rail=share`,
+            href: `/data/${share.table_id}?rail=share`,
             trouble: share.expired ? (share.say ?? undefined) : undefined,
             changedAt: share.invited_at,
           };
@@ -649,7 +649,7 @@ export const HUB_CAPABILITIES: readonly HubCapability[] = [
           // organization. The link judge knows a share admits
           // (`linkOrganizationAdmission.ts`), and the table route opens it as
           // that organization's guest and says whose table it is.
-          href: `/data-v2/${share.table_id}?org=${share.organization_id}`,
+          href: `/data/${share.table_id}?org=${share.organization_id}`,
           trouble: share.opens ? undefined : share.say,
           changedAt: share.shared_at,
         });

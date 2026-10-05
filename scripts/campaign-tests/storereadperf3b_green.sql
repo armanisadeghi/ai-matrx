@@ -1,7 +1,7 @@
 -- LANE STORE-READ-PERF-3 — WHICH TABLES SHE SEES IS ASKED ONCE PER GROUP, FOR EVERY ORGANIZATION.
 -- Guard for migrations/campaign/storereadperf3b_which_tables_she_sees_is_asked_once_per_group.sql.
 --
--- THE REAL USE CASE: the data home (/data-v2) opens on everything a person can see across ALL her
+-- THE REAL USE CASE: the data home (/data) opens on everything a person can see across ALL her
 -- organizations. admin@admin.com is in 47, test@test.com in 14 — two of them share only what is
 -- shared. Every answer below is asked from her seat (`authenticated`), as a browser asks.
 --

@@ -72,7 +72,7 @@ export async function fetchKnobIndex(options: {
  * and the index row already carries everything a control needs. It exists so a
  * screen that renders ONE setting does not have to know that "ask for the
  * feature prefix and find your key" is how the door is shaped — the alternative
- * is what produced a hand-typed choice list on `/data-v2/try-everything`
+ * is what produced a hand-typed choice list on `/data/try-everything`
  * (VERIFIER-8 MEDIUM-2).
  *
  * `null` means the key has no registry row in this organization's answer, which

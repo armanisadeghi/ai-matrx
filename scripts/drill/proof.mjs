@@ -70,7 +70,7 @@ async function main() {
   say(`organization: ${ORG}`);
 
   // ── 1. THE DASHBOARD, AND THE NUMBER ───────────────────────────────────────
-  await page.goto(`${ORIGIN}/data-v2/${JOBS}?view=dashboards&dashboard=${BOARD}`, {
+  await page.goto(`${ORIGIN}/data/${JOBS}?view=dashboards&dashboard=${BOARD}`, {
     waitUntil: "domcontentloaded",
     timeout: 120000,
   });

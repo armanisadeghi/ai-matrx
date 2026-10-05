@@ -99,7 +99,7 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
    * the record screen and the table screen. `rlsUsesHasPermission` is false on
    * purpose — schema `custom` is read through its own doors (W4-DOOR), never
    * through the generic has_permission arm. `urlPathTemplate` stays empty: a
-   * record's page is /data-v2/{tableId} plus the record, which this one-id
+   * record's page is /data/{tableId} plus the record, which this one-id
    * template cannot express, and an honest "no link" beats a broken one.
    */
   record: {

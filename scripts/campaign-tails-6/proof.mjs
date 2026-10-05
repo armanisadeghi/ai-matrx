@@ -24,7 +24,7 @@ const page = await ctx.newPage();
 console.log("signed in as", await signIn(page, ORIGIN, process.env.AI_ADMIN_USERNAME, process.env.AI_ADMIN_PASSWORD));
 console.log("org:", ORG, await setOrganization(page, ORG));
 
-await page.goto(`${ORIGIN}/data-v2`, { waitUntil: "domcontentloaded" });
+await page.goto(`${ORIGIN}/data`, { waitUntil: "domcontentloaded" });
 await sleep(5000);
 await page.evaluate((want) => {
   const leaf = Array.from(document.querySelectorAll("body *")).find(

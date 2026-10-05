@@ -30,7 +30,7 @@ console.log("signed in as", who);
 const how = await setOrganization(page, ORG);
 console.log("org:", ORG, how);
 
-await page.goto(`${ORIGIN}/data-v2`, { waitUntil: "domcontentloaded" });
+await page.goto(`${ORIGIN}/data`, { waitUntil: "domcontentloaded" });
 await sleep(5000);
 // The table tiles are buttons, not links — click the one named on the command line.
 const WANT = process.argv[4] ?? "Jobs";
@@ -48,7 +48,7 @@ console.log("opened table tile", WANT, opened);
 await sleep(6000);
 const target = new URL(page.url()).pathname;
 console.log("landed on", target);
-if (!/\/data-v2\/[0-9a-f-]{36}/.test(target)) {
+if (!/\/data\/[0-9a-f-]{36}/.test(target)) {
   await page.screenshot({ path: resolve(OUT, "no-tables.png"), fullPage: true });
   await browser.close();
   process.exit(1);

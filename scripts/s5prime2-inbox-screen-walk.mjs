@@ -43,7 +43,7 @@ const workOrg = orgs.find((o) => o.rows.some((r) => r.kind === "assignment"));
 const browser = await chromium.launch({ headless: true });
 const page = await (await browser.newContext({ viewport: { width: 1440, height: 1000 } })).newPage();
 const inboxAt = async (orgId) => {
-  await page.goto(`${ORIGIN}/data-v2?org=${orgId}`, { waitUntil: "domcontentloaded", timeout: 180000 });
+  await page.goto(`${ORIGIN}/data?org=${orgId}`, { waitUntil: "domcontentloaded", timeout: 180000 });
   const got = await until("the inbox", async () => ((await page.locator('[aria-label="Inbox"]').count()) ? true : null), 120000);
   const inbox = page.locator('[aria-label="Inbox"]').first();
   await inbox.scrollIntoViewIfNeeded().catch(() => {});

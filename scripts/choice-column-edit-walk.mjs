@@ -51,7 +51,7 @@ const toastText = async () =>
   (await page.locator("[data-sonner-toast]").allInnerTexts().catch(() => [])).join(" | ").replace(/\s+/g, " ");
 
 async function openTable() {
-  await page.goto(`${ORIGIN}/data-v2/${TABLE}`, { waitUntil: "domcontentloaded", timeout: 180000 });
+  await page.goto(`${ORIGIN}/data/${TABLE}`, { waitUntil: "domcontentloaded", timeout: 180000 });
   const ready = await until("the grid", async () => (await page.locator("th", { hasText: COLUMN }).count()) > 0, 180000);
   if (!ready.v) throw new Error("the Sheet did not draw the Insurance carrier column");
   await sleep(1500);

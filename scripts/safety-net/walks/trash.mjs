@@ -58,7 +58,7 @@ try {
 
   // ── helpers over the screens ───────────────────────────────────────────────────────────────────
   async function openTable(query = "") {
-    await ctx.goto(page, `/data-v2/${tableId}${query}`);
+    await ctx.goto(page, `/data/${tableId}${query}`);
     for (let k = 0; k < 10; k++) {
       await sleep(5000);
       if ((await page.locator("thead th").count()) > 1 || (await page.locator("[data-sheet-layout]").count()) > 0) return true;
@@ -100,7 +100,7 @@ try {
 
   // ── setup: the table, a column, a record, a view, a dashboard — through the screens ────────────
   await ctx.step([], "setup: New table", page, async () => {
-    await ctx.goto(page, "/data-v2");
+    await ctx.goto(page, "/data");
     await sleep(6000);
     const nt = page.getByRole("button", { name: "New table", exact: true }).first();
     await nt.waitFor({ timeout: 90000 });
@@ -108,8 +108,8 @@ try {
     await sleep(1200);
     await page.getByPlaceholder("Table name").fill(TABLE);
     await page.getByRole("button", { name: "Create", exact: true }).click();
-    const r = await until("the new table opens", async () => /\/data-v2\/[0-9a-f-]{36}/.test(page.url()), 90000);
-    tableId = page.url().match(/\/data-v2\/([0-9a-f-]{36})/)?.[1] ?? null;
+    const r = await until("the new table opens", async () => /\/data\/[0-9a-f-]{36}/.test(page.url()), 90000);
+    tableId = page.url().match(/\/data\/([0-9a-f-]{36})/)?.[1] ?? null;
     ctx.cleanup(async () => {
       // archive again at the end, from the table page (the product's own control), unless a step already left it archived
       if (!tableId) return;

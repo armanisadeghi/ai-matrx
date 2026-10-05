@@ -17,7 +17,7 @@
 //                table's own builder, made NEW on open (records-ui createOnMount / startNew).
 //   portal     — PortalBuilder, which asks for its own clients' table.
 //   list       — a link to /lists, where New pick list lives.
-//   database   — a link to /data-v2/connect: one outside Postgres table becomes a Synced table
+//   database   — a link to /data/connect: one outside Postgres table becomes a Synced table
 //                (lane VISION-REACH wave 3).
 
 /** The flows a tile can open. Every one is drawn by `features/make/MakeFlowSheet.tsx`. */
@@ -130,7 +130,7 @@ export const MAKE_TILES: readonly MakeTile[] = [
     kind: "table",
     champion: "Airtable Sync, Notion synced databases, Supabase connect",
     asksForTable: false,
-    href: "/data-v2/connect",
+    href: "/data/connect",
   },
 ];
 

@@ -1923,7 +1923,7 @@ function newFieldTypeFor(dataType: string): Pick<NewFieldSpec, "type" | "multi" 
 
 /**
  * Make a NEW Table in the record store with its columns, through `declareTable` — the
- * records-ui primitive the /data-v2 "New table" button uses, so a table saved from a chat
+ * records-ui primitive the /data "New table" button uses, so a table saved from a chat
  * answer and a table made on the tables page are the same kind of thing. The older
  * `description` is written onto the Table record afterwards (the declaration has no slot);
  * a table whose description was refused is still made and says so in `warning`.

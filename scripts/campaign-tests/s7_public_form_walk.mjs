@@ -63,7 +63,7 @@ async function owner(browser) {
   clause("owner signed in through the login form as admin@admin.com", who === EMAIL, { who });
   await setOrganization(page, "Ridgeline Physical Therapy").catch((e) => clause("owner picked Ridgeline Physical Therapy", false, { error: String(e) }));
 
-  await page.goto(`${ORIGIN}/data-v2/${TABLE}`, { waitUntil: "domcontentloaded", timeout: 240000 });
+  await page.goto(`${ORIGIN}/data/${TABLE}`, { waitUntil: "domcontentloaded", timeout: 240000 });
   // The Forms rail, then the builder for this table's form.
   const forms = await until("forms rail", async () => {
     const b = page.getByRole("button", { name: /^Forms/ }).first();

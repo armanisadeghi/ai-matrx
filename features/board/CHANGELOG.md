@@ -154,7 +154,7 @@ History moved out of FEATURE.md; each rule it taught lives in FEATURE.md. Older 
   from the board pane, so it moved and resized with the workspace around it. Pure rules + tests:
   `engine/tile-gestures.ts`, `routeWheel`, `__tests__/tile-gestures.test.ts`.
 
-- 2026-09-28 — Custom data: Table tile (`data-table`) renders `/data-v2`'s own table (`UnifiedTable`, shared
+- 2026-09-28 — Custom data: Table tile (`data-table`) renders `/data`'s own table (`UnifiedTable`, shared
   with the route) and carries `matrx-user/data-tables` via `RecordStoreTableSurface`; Record tile renders
   `Peek` and carries `matrx-user/data-tables` scoped to that one row (`RecordStoreRecordSurface`). The table
   surface mounts only under the merged grid (`data_tables.merged_grid` knob, default off until merge step 8).

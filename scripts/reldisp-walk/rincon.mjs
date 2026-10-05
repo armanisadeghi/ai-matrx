@@ -51,7 +51,7 @@ await page.evaluate(() => {
 });
 
 // ── 1. BEFORE ────────────────────────────────────────────────────────────────
-await page.goto(`${ORIGIN}/data-v2/${JOBS}`, { waitUntil: "domcontentloaded", timeout: 120000 });
+await page.goto(`${ORIGIN}/data/${JOBS}`, { waitUntil: "domcontentloaded", timeout: 120000 });
 await sleep(10000);
 results.steps.before = await customerCells(page);
 console.log("1. BEFORE — the customer column reads:", results.steps.before.slice(0, 6));
@@ -119,14 +119,14 @@ await sleep(7000);
 await shot(page, "04-saved");
 
 // ── 5. THE GRID ──────────────────────────────────────────────────────────────
-await page.goto(`${ORIGIN}/data-v2/${JOBS}`, { waitUntil: "domcontentloaded", timeout: 120000 });
+await page.goto(`${ORIGIN}/data/${JOBS}`, { waitUntil: "domcontentloaded", timeout: 120000 });
 await sleep(11000);
 results.steps.gridAfter = await customerCells(page);
 console.log("5. THE GRID now reads:", results.steps.gridAfter.slice(0, 6));
 await shot(page, "05-grid-after");
 
 // ── 6. THE BOARD ─────────────────────────────────────────────────────────────
-await page.goto(`${ORIGIN}/data-v2/${JOBS}?view=kanban`, { waitUntil: "domcontentloaded", timeout: 120000 });
+await page.goto(`${ORIGIN}/data/${JOBS}?view=kanban`, { waitUntil: "domcontentloaded", timeout: 120000 });
 await sleep(11000);
 const board = await txt(page);
 results.steps.boardMentionsJoined = /Maria Chen, (Rincon|Ojai)/.test(board);
@@ -135,7 +135,7 @@ console.log("6. THE BOARD reads joined words:", results.steps.boardMentionsJoine
 await shot(page, "06-board-after");
 
 // ── 7. THE RECORD VIEW ───────────────────────────────────────────────────────
-await page.goto(`${ORIGIN}/data-v2/${JOBS}`, { waitUntil: "domcontentloaded", timeout: 120000 });
+await page.goto(`${ORIGIN}/data/${JOBS}`, { waitUntil: "domcontentloaded", timeout: 120000 });
 await sleep(10000);
 await page.evaluate(() => {
   const b = Array.from(document.querySelectorAll('[aria-label="Edit Job Number"]')).find((x) => (x.textContent ?? "").trim().startsWith("RPC-"));

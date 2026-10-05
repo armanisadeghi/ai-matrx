@@ -23,7 +23,7 @@ await setOrganization(page, "Rincon Plumbing Co");
 const cookie = (await page.context().cookies()).find((c) => c.name === "matrx-active-org");
 console.log("matrx-active-org =", cookie && cookie.value);
 
-await page.goto(`${ORIGIN}/data-v2`, { waitUntil: "domcontentloaded", timeout: 120000 });
+await page.goto(`${ORIGIN}/data`, { waitUntil: "domcontentloaded", timeout: 120000 });
 await until("tables listed", async () => (await page.locator("body").innerText()).length > 400, 60000);
 await sleep(3000);
 await page.screenshot({ path: `${OUT}/fix11a-v11a-rincon-data.png`, fullPage: false });

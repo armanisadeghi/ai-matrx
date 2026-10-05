@@ -36,7 +36,7 @@ page.on("console", (m) => {
   if (m.type() === "error") pageErrors.push(`console: ${m.text().slice(0, 200)}`);
 });
 
-const who = await signIn(page, `/data-v2`);
+const who = await signIn(page, `/data`);
 notes.push(`signed in as ${who.email}`);
 await useOrganization(page, T);
 

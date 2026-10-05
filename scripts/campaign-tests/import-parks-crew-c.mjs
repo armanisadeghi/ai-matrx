@@ -1,5 +1,5 @@
 // Data crew C, path 1 (IMPORT WIZARD): open the National Parks table's own
-// page in /data-v2 as admin@admin.com (headless Playwright, dev-login on the
+// page in /data as admin@admin.com (headless Playwright, dev-login on the
 // shared machine-wide dev server, this crew's own *.localhost host) and try
 // the Import action with the CSV exactly as scraped/downloaded.
 import { chromium } from "playwright";
@@ -23,7 +23,7 @@ async function main() {
 
   const nonce = randomBytes(16).toString("hex");
   writeDevLoginNonce(HOST, nonce);
-  await page.goto(`${ORIGIN}/api/dev-login?nonce=${nonce}&next=${encodeURIComponent(`/data-v2/${tableId}`)}`, {
+  await page.goto(`${ORIGIN}/api/dev-login?nonce=${nonce}&next=${encodeURIComponent(`/data/${tableId}`)}`, {
     waitUntil: "domcontentloaded",
     timeout: 60000,
   });
@@ -46,7 +46,7 @@ async function main() {
     await page.waitForTimeout(2500);
     console.log("clicked. url now:", page.url());
     // Re-navigate to the table page now that an org is active.
-    await page.goto(`${ORIGIN}/data-v2/${tableId}`, { waitUntil: "domcontentloaded", timeout: 30000 }).catch(() => {});
+    await page.goto(`${ORIGIN}/data/${tableId}`, { waitUntil: "domcontentloaded", timeout: 30000 }).catch(() => {});
     await page.waitForTimeout(2500);
   }
 
@@ -61,9 +61,9 @@ async function main() {
     const bodyText = await page.locator("body").innerText().catch(() => "");
     findings.push({
       when: new Date().toISOString(), crew: "C", use_case: "US National Parks itineraries",
-      doing: `open /data-v2/${tableId} looking for an Import action`,
+      doing: `open /data/${tableId} looking for an Import action`,
       said: "no element with the exact text \"Import\" is present on the table page",
-      expected: "an Import action reachable from the table page, per the coordinator's stated path (/data-v2/<tableId> -> Import)",
+      expected: "an Import action reachable from the table page, per the coordinator's stated path (/data/<tableId> -> Import)",
       page_url: page.url(), page_title: await page.title(),
       body_excerpt: bodyText.slice(0, 1500),
     });

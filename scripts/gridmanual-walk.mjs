@@ -45,7 +45,7 @@ const sortLine = async () => {
   return { mode: await el.getAttribute("data-sort-mode"), text: (await el.innerText()).replace(/\s+/g, " ").trim() };
 };
 async function open() {
-  await page.goto(`${ORIGIN}/data-v2/${TABLE}`, { waitUntil: "domcontentloaded", timeout: 240000 });
+  await page.goto(`${ORIGIN}/data/${TABLE}`, { waitUntil: "domcontentloaded", timeout: 240000 });
   await page.waitForSelector("[data-table-toolbar]", { timeout: 240000 });
   await page.getByRole("button", { name: /Morning run/ }).first().click();
   await page.waitForTimeout(4000);

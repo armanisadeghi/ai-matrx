@@ -1713,7 +1713,7 @@
           "signal": "admin Supabase client (createAdminClient)"
         },
         {
-          "file": "app/(core)/data-v2/__tests__/route-mount.live.test.tsx",
+          "file": "app/(core)/data/__tests__/route-mount.live.test.tsx",
           "signal": "live database host"
         }
       ]

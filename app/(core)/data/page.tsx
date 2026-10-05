@@ -1,4 +1,4 @@
-// app/(core)/data-v2/page.tsx — the server half of /data-v2.
+// app/(core)/data/page.tsx — the server half of /data.
 //
 // WHICH DATA HOME DRAWS FIRST IS DECIDED ON THE SERVER (lane DATA-PAGE-DEFECTS): the page used to
 // render the old home until the browser's read of `custom.data_home_shell` landed (~2 s), then swap to

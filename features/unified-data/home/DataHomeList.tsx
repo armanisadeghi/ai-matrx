@@ -2,7 +2,7 @@
 
 // features/unified-data/home/DataHomeList.tsx — LANE DATA-HOME-3A
 //
-// THE DATA HOME ON THE CANONICAL LIST SHELL (DATA-HOME-3-SPEC §2). /data-v2 was the only major list
+// THE DATA HOME ON THE CANONICAL LIST SHELL (DATA-HOME-3-SPEC §2). /data was the only major list
 // page that did not use `EntityListPage`; the ten hand-drawn sections had no table, no column sort,
 // no title search and no cards. This mounts the shell — the same one /agents/all uses — over one
 // row type with a `kind` column, served in hand from the home's one door (`custom.data_home`).

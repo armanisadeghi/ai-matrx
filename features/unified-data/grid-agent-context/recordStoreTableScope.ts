@@ -1,7 +1,7 @@
 /**
  * THE `matrx-user/data-tables` SCOPE FOR A RECORD-STORE TABLE (records-ui merge tranche 6l, H1/H2).
  *
- * The merged grid on /data-v2 tells its host where the person is (`RecordsUiHost.onGridContext`,
+ * The merged grid on /data tells its host where the person is (`RecordsUiHost.onGridContext`,
  * a `GridContextSnapshot` in the store's own shapes). This turns that snapshot into the SAME scope
  * the older /data grid published — the same manifest keys, built by the same
  * `buildDataTablesScope` — so an agent in the side chat reads a record-store table exactly as it

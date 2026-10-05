@@ -15,7 +15,7 @@ describe("page items — any page of the app on the board", () => {
   });
   it("titles a page from its address until it names itself", () => {
     expect(pageTitleFor("/meetings")).toBe("Meetings");
-    expect(pageTitleFor("/data-v2/6ccf5064-1d7a-4c4f-9a62-1bbd0f3a2e11")).toBe("Page");
+    expect(pageTitleFor("/data/6ccf5064-1d7a-4c4f-9a62-1bbd0f3a2e11")).toBe("Page");
     expect(pageTitleFor("/research/topics")).toBe("Topics");
   });
   it("the same page is one tile on a board", () => {

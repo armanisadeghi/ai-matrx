@@ -28,7 +28,7 @@ const OUT =
 const SUBJECT = "Monday donor summary";
 const DEEP_LINK =
   process.env.WALK_DEEP_LINK ??
-  "/data-v2/335be3d6-39ed-4fe6-9725-c28952bc18c3?view=a41cd349-7a02-4a3f-b121-be94ca714f29";
+  "/data/335be3d6-39ed-4fe6-9725-c28952bc18c3?view=a41cd349-7a02-4a3f-b121-be94ca714f29";
 
 const note = { ranAt: new Date().toISOString(), subject: SUBJECT, deepLink: DEEP_LINK };
 const shot = async (page, name) => {
@@ -71,7 +71,7 @@ try {
   await shot(page, "tails3-digest-09-link-followed-cold");
 
   // 2b. AND WITH THE ORGANIZATION PICKED, to tell a broken link from a held one.
-  await page.goto(`${ORIGIN}/data-v2`, { waitUntil: "domcontentloaded", timeout: 120000 });
+  await page.goto(`${ORIGIN}/data`, { waitUntil: "domcontentloaded", timeout: 120000 });
   await sleep(2500);
   await setOrganization(page, "Hands & Hope Alliance");
   await sleep(2500);

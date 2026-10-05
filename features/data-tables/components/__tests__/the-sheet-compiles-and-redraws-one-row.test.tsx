@@ -1,7 +1,7 @@
 /**
  * THE SHEET COMPILES, AND ONE CELL EDIT REDRAWS ONE ROW (lane RENDER-2, 2026-09-27).
  *
- * Measured on /data-v2 (a copied table, which opens in the Sheet — `UserTableViewer`): one cell
+ * Measured on /data (a copied table, which opens in the Sheet — `UserTableViewer`): one cell
  * edit rendered 2,726 components before RENDER-AUDIT, 1,683 after its row memo, and 318 once the
  * Sheet COMPILED — because the React Compiler had silently skipped the whole 5,700-line component
  * (six disabled hook-lint lines, `try … finally`, `throw` inside `try`, refs read in render,
@@ -37,11 +37,11 @@ const SHEET_FILES = [
   "components/user-generated-table-data/UserTableViewer.tsx",
   "components/user-generated-table-data/TableToolbar.tsx",
   "features/data-tables/components/sheet-body-row.tsx",
-  "app/(core)/data-v2/[tableId]/page.tsx",
+  "app/(core)/data/[tableId]/page.tsx",
 ];
 
 describe("the Sheet compiles", () => {
-  it("the React Compiler skips none of the Sheet, its toolbar, its row or the /data-v2 route", () => {
+  it("the React Compiler skips none of the Sheet, its toolbar, its row or the /data route", () => {
     let out = "";
     let code = 0;
     try {
@@ -200,7 +200,7 @@ describe.each(MODULES)("the Sheet's row boundary (%s)", (_label, load) => {
 
 // ── 3. The Sheet's toolbar and column headers hold still on a cell edit (lane RENDER-3) ─────────
 //
-// Measured on /data-v2 (Hygiene Recall Schedule) after RENDER-2: one cell edit redrew the toolbar
+// Measured on /data (Hygiene Recall Schedule) after RENDER-2: one cell edit redrew the toolbar
 // 181 times and the column headers 291 times — once per Sheet render, three per edit — because the
 // Sheet handed the toolbar four JSX slots rebuilt every render plus the page's rows, and drew every
 // header inline with fresh closures. After: toolbar 7 (the Undo pair alone, as its count moves),

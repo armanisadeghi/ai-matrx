@@ -58,7 +58,7 @@ describeLive("the share email names the table", () => {
     const got = await getResourceDetails(client as unknown as SupabaseServerClient, type, PARTS_ON_ORDER);
     expect(got).toEqual({
       title: "Rincon Plumbing — Parts on order",
-      url: `https://www.aimatrx.com/data-v2/${PARTS_ON_ORDER}#org=${RINCON}`,
+      url: `https://www.aimatrx.com/data/${PARTS_ON_ORDER}#org=${RINCON}`,
     });
   });
 

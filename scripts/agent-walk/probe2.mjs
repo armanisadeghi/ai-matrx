@@ -4,7 +4,7 @@ const A = { org:"11d47e36-4b1e-46b8-bdf6-8ef928b730fb", orgName:"Ironline Fitnes
 const b = await chromium.launch({ headless: true });
 const p = await (await b.newContext({ viewport:{width:1680,height:1020} })).newPage();
 p.on("console", m => { if (m.type()==="error") console.log("[console.error]", m.text().slice(0,200)); });
-await signIn(p, "/data-v2");
+await signIn(p, "/data");
 await useOrganization(p, A);
 await settleOnTable(p, A.table);
 await p.getByRole("button", { name: /^Forms$/ }).first().click();

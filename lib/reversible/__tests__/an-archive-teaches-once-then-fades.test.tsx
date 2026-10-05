@@ -12,7 +12,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { configureStore } from "@reduxjs/toolkit";
 
-jest.mock("next/navigation", () => ({ usePathname: () => "/data-v2" }));
+jest.mock("next/navigation", () => ({ usePathname: () => "/data" }));
 jest.mock("next/link", () => ({
   __esModule: true,
   default: ({ href, children, ...rest }: { href: string; children: React.ReactNode }) => (
@@ -91,7 +91,7 @@ async function archiveTable(name: string, undo: () => Promise<void> = async () =
       noun: "table",
       subject: name,
       undo,
-      foundAt: { label: "Archived tables", href: "/data-v2", highlight: "archived-tables" },
+      foundAt: { label: "Archived tables", href: "/data", highlight: "archived-tables" },
     }).tier;
   });
   await settle();
@@ -120,7 +120,7 @@ it("the teaching card names where it went, links there, and stays", async () => 
   expect(card.dataset.reversibleNotice).toBe("teach");
   expect(card.textContent).toContain("Archived “Home Exercise Plans”");
   expect(card.textContent).toContain("It waits in Archived tables.");
-  expect(card.querySelector("a[data-reversible-found]")?.getAttribute("href")).toBe("/data-v2?found=archived-tables");
+  expect(card.querySelector("a[data-reversible-found]")?.getAttribute("href")).toBe("/data?found=archived-tables");
 });
 
 it("the teaching card outlasts the guided window; a guided one leaves on its clock", async () => {

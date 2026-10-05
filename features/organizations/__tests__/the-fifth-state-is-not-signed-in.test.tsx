@@ -146,7 +146,7 @@ describe("the fifth state — nobody is signed in", () => {
 
   it("sends them back to the address they were sent, `?org=` and all", () => {
     const deepLink =
-      "/data-v2/af3bfff6-a255-41e5-9ac2-879d53816163" +
+      "/data/af3bfff6-a255-41e5-9ac2-879d53816163" +
       "?view=2e467657-77d4-44ff-bf25-910d381ef9ce&org=6069a466-1445-42df-a64e-cf37ecdc1b99";
     window.history.replaceState({}, "", deepLink);
 
@@ -157,7 +157,7 @@ describe("the fifth state — nobody is signed in", () => {
     // The organization the LINK named survives the round trip — that is what
     // makes `resolveActiveOrgContext`'s rung −1 fire on the way back in.
     expect(decodeURIComponent(href)).toContain("org=6069a466-1445-42df-a64e-cf37ecdc1b99");
-    expect(decodeURIComponent(href)).toContain("/data-v2/af3bfff6-a255-41e5-9ac2-879d53816163");
+    expect(decodeURIComponent(href)).toContain("/data/af3bfff6-a255-41e5-9ac2-879d53816163");
   });
 
   it("a gated control asks for a sign-in, not for an organization", () => {

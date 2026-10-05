@@ -7,7 +7,7 @@
 // 🚨 THE DEAD ROW THIS CLOSES (VERIFIER-14 item 2, measured on production from
 // the member seat). The hub's "Shared with me" listing exists precisely to show
 // tables ANOTHER organization has given the person signed in. Every row on it
-// linked to `/data-v2/<table>` — the table route, which mounts the store for
+// linked to `/data/<table>` — the table route, which mounts the store for
 // the organization the person is currently working in — so every row landed on:
 //
 //     "This table is not here. This table is not in the organization you are

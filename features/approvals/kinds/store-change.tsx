@@ -309,7 +309,7 @@ function useSource(): ApprovalSource {
     loading: Boolean(userId) && read.isLoading,
     error: read.error,
     refetch: () => void read.refetch(),
-    ...(full ? { moreHref: "/data-v2", moreLabel: "Open your data inbox" } : {}),
+    ...(full ? { moreHref: "/data", moreLabel: "Open your data inbox" } : {}),
   };
 }
 

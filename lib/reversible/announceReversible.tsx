@@ -14,7 +14,7 @@
 //   announceReversible({
 //     verb: "archive", noun: "table", subject: "Patient Visit Tracker",
 //     undo: () => restore(tableId),                       // throw an Error with the plain reason
-//     foundAt: { label: "Archived tables", href: "/data-v2", highlight: "archived-tables" },
+//     foundAt: { label: "Archived tables", href: "/data", highlight: "archived-tables" },
 //   });
 //
 // The policy (tiers, counting, windows, the ⌘Z rule) is `@ai-matrx/kit/reversible`; the person's

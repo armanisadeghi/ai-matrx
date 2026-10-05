@@ -6,7 +6,7 @@
 import { DATA_NAV_CHILDREN, primaryNavItems } from "../constants/nav-data";
 import { searchNavDestinations } from "./search-nav";
 
-const dataRows = DATA_NAV_CHILDREN.filter((child) => ["/make", "/data-v2", "/kits"].includes(child.href ?? ""));
+const dataRows = DATA_NAV_CHILDREN.filter((child) => ["/make", "/data", "/kits"].includes(child.href ?? ""));
 
 describe("phone menu search finds the Data destinations for everyone", () => {
   it("has the three rows to test", () => {

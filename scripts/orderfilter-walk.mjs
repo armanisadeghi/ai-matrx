@@ -67,7 +67,7 @@ try {
   const who = await signIn(page, ORIGIN, env.AI_ADMIN_USERNAME, env.AI_ADMIN_PASSWORD, "admin");
   check("seat", who === "admin@admin.com", who);
 
-  await page.goto(`${ORIGIN}/data-v2/${TABLE}`, { waitUntil: "domcontentloaded", timeout: 240000 });
+  await page.goto(`${ORIGIN}/data/${TABLE}`, { waitUntil: "domcontentloaded", timeout: 240000 });
   await page.waitForSelector("tbody tr", { timeout: 240000 });
   const p1 = await settle(EXPECTED[0]);
   await page.waitForTimeout(2000);

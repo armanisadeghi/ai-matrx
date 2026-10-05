@@ -1,6 +1,6 @@
 -- LANE DATA-HOME-1 — THE DATA HOME KNOWS WHOSE EACH TABLE IS.
 --
--- THE REAL USE CASE (admin@admin.com, the data home at /data-v2, 2026-09-27): the owner of Cedar
+-- THE REAL USE CASE (admin@admin.com, the data home at /data, 2026-09-27): the owner of Cedar
 -- Ridge Physical Therapy opens the data home and presses Mine. It must show every table she MADE,
 -- in every one of her organizations — not 0 because the home opened on one organization.
 --

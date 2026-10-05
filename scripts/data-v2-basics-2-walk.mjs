@@ -1,7 +1,7 @@
 // scripts/data-v2-basics-2-walk.mjs — lane DATA-V2-BASICS-2, the table page's certification walk.
 //
 // Signs in through the app's own login form (scripts/lib/seat-browser.mjs, headless) on the shared
-// preview (live database) and walks /data-v2 as a person does. Test beds (admin@admin.com's test
+// preview (live database) and walks /data as a person does. Test beds (admin@admin.com's test
 // organizations, never Arman's):
 //   Harbor Dental Group  — "Insurance Plan Accounts" 377b783a… (moved from /data, Sheet)
 //                           "Operatory Supply Orders" a224d20e… (moved, Sheet)
@@ -96,9 +96,9 @@ async function unpark() {
 async function open(tableId, query = "", { width = 1600, height = 1000, dark = false } = {}) {
   await page.setViewportSize({ width, height });
   await page.emulateMedia({ colorScheme: dark ? "dark" : "light" });
-  await page.goto(`${ORIGIN}/data-v2/${tableId}${query}`, { waitUntil: "domcontentloaded", timeout: 300000 });
+  await page.goto(`${ORIGIN}/data/${tableId}${query}`, { waitUntil: "domcontentloaded", timeout: 300000 });
   await unpark();
-  if (page.url().includes("__dev-walk")) await page.goto(`${ORIGIN}/data-v2/${tableId}${query}`, { waitUntil: "domcontentloaded", timeout: 300000 });
+  if (page.url().includes("__dev-walk")) await page.goto(`${ORIGIN}/data/${tableId}${query}`, { waitUntil: "domcontentloaded", timeout: 300000 });
   const ready = await until("the grid", async () => (await page.locator("thead th").count()) > 1, 240000);
   if (!ready.v) throw new Error(`the table ${tableId} did not draw`);
   await sleep(2500);
@@ -670,7 +670,7 @@ try {
   }
 
   if (PHASE === "look-home") {
-    await page.goto(`${ORIGIN}/data-v2`, { waitUntil: "domcontentloaded", timeout: 300000 });
+    await page.goto(`${ORIGIN}/data`, { waitUntil: "domcontentloaded", timeout: 300000 });
     await unpark();
     await sleep(8000);
     if (await page.getByText("An organization is needed").count()) {
@@ -708,7 +708,7 @@ try {
       await sleep(3000);
     };
     // A table left archived by an earlier stopped run is brought back the way a person does.
-    await page.goto(`${ORIGIN}/data-v2/${tid}`, { waitUntil: "domcontentloaded", timeout: 300000 });
+    await page.goto(`${ORIGIN}/data/${tid}`, { waitUntil: "domcontentloaded", timeout: 300000 });
     await sleep(6000);
     if (await page.getByText("This table is archived").count()) {
       await page.getByRole("button", { name: "Bring it back" }).click();
@@ -787,7 +787,7 @@ try {
     let tid = process.env.TABLE ?? null;
     if (!tid) {
       const name = `Patient Visit Tracker ${n}`;
-      await page.goto(`${ORIGIN}/data-v2`, { waitUntil: "domcontentloaded", timeout: 300000 });
+      await page.goto(`${ORIGIN}/data`, { waitUntil: "domcontentloaded", timeout: 300000 });
       await unpark();
       await sleep(6000);
       if (await page.getByText("An organization is needed").count()) {
@@ -800,8 +800,8 @@ try {
       await sleep(1200);
       await page.getByPlaceholder("Table name").fill(name);
       await page.getByRole("button", { name: "Create", exact: true }).click();
-      await until("the new table", async () => /\/data-v2\/[0-9a-f-]{36}/.test(page.url()), 60000);
-      tid = page.url().match(/\/data-v2\/([0-9a-f-]{36})/)?.[1];
+      await until("the new table", async () => /\/data\/[0-9a-f-]{36}/.test(page.url()), 60000);
+      tid = page.url().match(/\/data\/([0-9a-f-]{36})/)?.[1];
       step("made the table", { name, tid });
 
     }
@@ -982,7 +982,7 @@ try {
   if (PHASE === "home-error") {
     const errs = [];
     page.on("console", (m) => { if (m.type() === "error") errs.push(m.text().slice(0, 3000)); });
-    await page.goto(`${ORIGIN}/data-v2`, { waitUntil: "domcontentloaded", timeout: 300000 });
+    await page.goto(`${ORIGIN}/data`, { waitUntil: "domcontentloaded", timeout: 300000 });
     await sleep(8000);
     if (await page.getByText("An organization is needed").count()) {
       await page.getByRole("button", { name: "Choose organization" }).last().click();
@@ -1293,7 +1293,7 @@ try {
   if (PHASE === "askai") {
     // BREAKER-2 B2-22 / BREAKER-3 B3-12: Gallery on a table with no file column, Ask AI.
     await open(process.env.TABLE, "?view=sheet");
-    await page.goto(`${ORIGIN}/data-v2/${process.env.TABLE}?view=gallery`, { waitUntil: "domcontentloaded", timeout: 300000 });
+    await page.goto(`${ORIGIN}/data/${process.env.TABLE}?view=gallery`, { waitUntil: "domcontentloaded", timeout: 300000 });
     await until("the Ask AI offer", async () => (await page.getByRole("button", { name: "Ask AI", exact: true }).count()) > 0, 60000);
     const offer = (await page.locator("main").innerText()).replace(/\s+/g, " ").match(/[^.]*(?:no|needs)[^.]*(?:file|photo|picture|image)[^.]*\./i)?.[0] ?? null;
     await page.getByRole("button", { name: "Ask AI", exact: true }).first().click();
@@ -1318,7 +1318,7 @@ try {
       let tid = process.env.BIG ?? null;
       if (!tid) {
         const name = `Visit Log 300 ${String(Date.now()).slice(-4)}`;
-        await page.goto(`${ORIGIN}/data-v2`, { waitUntil: "domcontentloaded", timeout: 300000 });
+        await page.goto(`${ORIGIN}/data`, { waitUntil: "domcontentloaded", timeout: 300000 });
         await unpark();
         await sleep(6000);
         if (await page.getByText("An organization is needed").count()) {
@@ -1331,8 +1331,8 @@ try {
         await sleep(1200);
         await page.getByPlaceholder("Table name").fill(name);
         await page.getByRole("button", { name: "Create", exact: true }).click();
-        await until("the new table", async () => /\/data-v2\/[0-9a-f-]{36}/.test(page.url()), 60000);
-        tid = page.url().match(/\/data-v2\/([0-9a-f-]{36})/)?.[1];
+        await until("the new table", async () => /\/data\/[0-9a-f-]{36}/.test(page.url()), 60000);
+        tid = page.url().match(/\/data\/([0-9a-f-]{36})/)?.[1];
         await open(tid, "?view=sheet");
         await page.getByRole("button", { name: /^Paste$/ }).first().click();
         const dlg = page.getByRole("dialog").filter({ hasText: /Paste Rows|Confirm Pasted Rows/ });
@@ -1348,7 +1348,7 @@ try {
         await page.getByRole("button", { name: /^Done$/ }).first().click().catch(() => page.keyboard.press("Escape"));
         step("made a 300-row table through the Paste dialog", { tid, name, report });
       }
-      await page.goto(`${ORIGIN}/data-v2/${tid}?view=grid`, { waitUntil: "domcontentloaded", timeout: 300000 });
+      await page.goto(`${ORIGIN}/data/${tid}?view=grid`, { waitUntil: "domcontentloaded", timeout: 300000 });
       await until("the grid", async () => (await page.locator("tbody tr").count()) > 5, 240000);
       await sleep(5000);
       // Sort by Title from the header, as a person does.
@@ -1372,7 +1372,7 @@ try {
     }
     // ── B3-07: the reference editor on the last column before Actions ──────────────────────
     if (!process.env.SKIP_B307) {
-      await page.goto(`${ORIGIN}/data-v2/${process.env.TABLE}?view=grid`, { waitUntil: "domcontentloaded", timeout: 300000 });
+      await page.goto(`${ORIGIN}/data/${process.env.TABLE}?view=grid`, { waitUntil: "domcontentloaded", timeout: 300000 });
       await until("the grid", async () => (await page.locator("tbody tr").count()) > 0, 240000);
       await sleep(5000);
       // A walk that pressed Duplicate by mistake leaves copies of "Alpha0": each goes the way a person
@@ -1473,7 +1473,7 @@ try {
     const width = Number(process.env.WIDTH ?? 1600);
     await page.setViewportSize({ width, height: width < 700 ? 844 : 900 });
     for (const view of ["grid", "sheet"]) {
-      await page.goto(`${ORIGIN}/data-v2/${process.env.TABLE}?view=${view}`, { waitUntil: "domcontentloaded", timeout: 300000 });
+      await page.goto(`${ORIGIN}/data/${process.env.TABLE}?view=${view}`, { waitUntil: "domcontentloaded", timeout: 300000 });
       await until(`the ${view}`, async () => (await page.locator("tbody tr").count()) > 0, 240000);
       await sleep(5000);
       const triggers = await page.locator('[data-table-menu]:visible, button[aria-label="Table menu"]:visible').count();

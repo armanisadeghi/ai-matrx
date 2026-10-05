@@ -22,7 +22,7 @@ try {
   await page.screenshot({ path: resolve(OUT, "1-signed-in.png") });
 
   console.log("=== STEP: navigate to the table page (table itself was NOT shared) ===");
-  await page.goto(`${ORIGIN}/data-v2/${TABLE}`, { waitUntil: "domcontentloaded", timeout: 60000 });
+  await page.goto(`${ORIGIN}/data/${TABLE}`, { waitUntil: "domcontentloaded", timeout: 60000 });
   page.on("console", (m) => console.log("[console]", m.type(), m.text()));
   page.on("response", (r) => {
     if (r.url().includes("supabase") || r.url().includes("rpc") || r.status() >= 400) {

@@ -1,5 +1,5 @@
 /**
- * LANE DATA-V2-FACE-2 — headless after-screenshots of /data-v2/<table> from both seats at 1440 and
+ * LANE DATA-V2-FACE-2 — headless after-screenshots of /data/<table> from both seats at 1440 and
  * 390: a table whose default view is designated the Sheet, and a table nobody designated.
  *
  *   FACE_ORIGIN=http://data-v2-face-2.localhost:3001 FACE_EMAIL_ADMIN=… FACE_EMAIL_TEST=… FACE_PASSWORD=… \
@@ -72,7 +72,7 @@ try {
       const who = await signIn(page, ORIGIN, email, PASSWORD, `${seat} seat`);
       if (who !== email) throw new Error(`${seat}: the app says someone else is signed in`);
       for (const [which, table] of [["designated", DESIGNATED], ["plain", PLAIN[seat]]]) {
-        await page.goto(`${ORIGIN}/data-v2/${table}`, { waitUntil: "domcontentloaded", timeout: 240000 });
+        await page.goto(`${ORIGIN}/data/${table}`, { waitUntil: "domcontentloaded", timeout: 240000 });
         await page
           .waitForSelector("table, [data-sheet-layout], [data-host-layout], [role='grid']", { timeout: 120000 })
           .catch(() => {});

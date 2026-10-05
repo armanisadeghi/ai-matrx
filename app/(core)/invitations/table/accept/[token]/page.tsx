@@ -186,7 +186,7 @@ export default function AcceptTableSharePage() {
             it is stays honest when copied. */}
         <Button
           onClick={() =>
-            router.push(`/data-v2/${opened.table_id}?org=${opened.organization_id}`)
+            router.push(`/data/${opened.table_id}?org=${opened.organization_id}`)
           }
         >
           Open {opened.table}
@@ -311,8 +311,8 @@ export default function AcceptTableSharePage() {
           onClick={() =>
             router.push(
               peek.organization_id
-                ? `/data-v2/${peek.table_id}?org=${peek.organization_id}`
-                : `/data-v2/${peek.table_id}`,
+                ? `/data/${peek.table_id}?org=${peek.organization_id}`
+                : `/data/${peek.table_id}`,
             )
           }
         >

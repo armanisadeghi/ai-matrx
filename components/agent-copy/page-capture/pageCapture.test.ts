@@ -116,7 +116,7 @@ describe("pageCapture", () => {
   });
 
   it("each surface kind states its own identity", () => {
-    const t = tablePageCapture({ title: "Clients", route: "/data-v2/t/x", table: { id: "t1", name: "Clients" }, view: "Grid", sections: [] });
+    const t = tablePageCapture({ title: "Clients", route: "/data/t/x", table: { id: "t1", name: "Clients" }, view: "Grid", sections: [] });
     expect(t.kind).toBe("table-page");
     expect(pageCaptureMarkdown(t)).toContain("Table: Clients (t1)");
     expect(pageCaptureMarkdown(t)).toContain("View: Grid");
@@ -136,7 +136,7 @@ describe("loadable sections", () => {
     const load = jest.fn(async () => [{ id: "r1", name: "Acme" }]);
     const c = tablePageCapture({
       title: "Clients",
-      route: "/data-v2/t1",
+      route: "/data/t1",
       table: { id: "t1", name: "Clients" },
       sections: [
         { id: "records", title: "Records", role: "data", value: "Not in the quick copy.", load },
@@ -153,7 +153,7 @@ describe("loadable sections", () => {
 });
 
 it("a descendant names what the page left unnamed, never overriding a name the page gave", () => {
-  const base = tablePageCapture({ title: "Data table", route: "/data-v2/t1", table: { id: "t1", name: null }, view: "grid", sections: [] });
+  const base = tablePageCapture({ title: "Data table", route: "/data/t1", table: { id: "t1", name: null }, view: "grid", sections: [] });
   const merged = mergePageCapture(base, [
     { owner: "mount", sections: [], identity: { Table: { id: "t1", name: "Clients" }, View: "kanban" } },
   ]);
@@ -169,7 +169,7 @@ it("every variant builds through the kit's real envelope (xml-safe kind and cont
     expect(text).toContain(`AI Matrx (${ORG})`);
     expect(text).toContain(`Apps (${TYPE})`);
   }
-  const t = tablePageCapture({ title: "Clients", route: "/data-v2/t1", table: { id: "t1", name: "Clients" }, sections: [] });
+  const t = tablePageCapture({ title: "Clients", route: "/data/t1", table: { id: "t1", name: "Clients" }, sections: [] });
   expect(() => buildAgentPayload(pageCapturePayload(t, "everything"))).not.toThrow();
 });
 
@@ -210,7 +210,7 @@ function awkwardTableCapture(): PageCapture {
   declaration["self"] = declaration; // a cycle
   return tablePageCapture({
     title: "Data table",
-    route: "/data-v2/2db204d9-0000-4000-8000-000000000001",
+    route: "/data/2db204d9-0000-4000-8000-000000000001",
     table: { id: "2db204d9-0000-4000-8000-000000000001", name: "Linden Row fourplex — turnover tasks" },
     view: "kanban",
     selection: { "Board grouped by": "trade" },

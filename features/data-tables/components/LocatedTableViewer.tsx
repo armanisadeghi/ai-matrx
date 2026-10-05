@@ -6,7 +6,7 @@
  * Every host that opens a table by id — the Quick Data sheet, the table window, the chat "view
  * table" modal, a canvas table, a tool result's dataset overlay, the agent-resources preview —
  * asks where the table opens (`locateTable`: its own organization, for this person) BEFORE
- * anything mounts, then mounts records-ui's table page through the ONE host binding the /data-v2
+ * anything mounts, then mounts records-ui's table page through the ONE host binding the /data
  * page uses (`RecordStoreTableHost`). A table the person was not given, or a store that could not
  * be asked, is said in words — never an empty grid.
  */

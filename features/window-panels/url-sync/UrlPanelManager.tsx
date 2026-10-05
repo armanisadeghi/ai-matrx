@@ -419,7 +419,7 @@ export function UrlPanelManager({ managedTypeKeys }: UrlPanelManagerProps) {
       // panel's address is bookkeeping about the window layer, not a new page:
       // `router.replace` is an App Router NAVIGATION — it fetched a fresh RSC
       // payload for the route and, on commit, remounted the page that opened
-      // the panel (on /data-v2 the whole grid re-read table_kernel_id,
+      // the panel (on /data the whole grid re-read table_kernel_id,
       // applicable_fields, my_levels…). The history write updates the address
       // and `useSearchParams` with zero page work.
       replaceAddressWithoutNavigating(

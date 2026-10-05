@@ -3,7 +3,7 @@
  */
 /**
  * One focus, one request: every mounted picker refreshes on window focus, and
- * on /data-v2 that was five or six identical GETs per focus (Vercel,
+ * on /data that was five or six identical GETs per focus (Vercel,
  * 2026-10-03). Instances that refresh together share one request — the list
  * lives in the store, so the pickers are three views of one read.
  */

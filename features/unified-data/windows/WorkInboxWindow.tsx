@@ -2,7 +2,7 @@
 
 /**
  * What waits on you in your tables, as a window — the record store's own
- * `ActionInbox` (`@ai-matrx/records-ui`), the same component `/data-v2` mounts,
+ * `ActionInbox` (`@ai-matrx/records-ui`), the same component `/data` mounts,
  * across EVERY organization of the person (`organizationId: null` — the store's
  * doors answer for the person; never the active organization).
  *
@@ -27,7 +27,7 @@ import { OrganizationContextNotice } from "@/features/organizations/components/O
 const dataSource = recordsDataSource(createClient());
 
 function openRecordInNewTab(recordId: string, tableId: string) {
-  const href = openPath(recordId, { fallback: `/data-v2/${tableId}?record=${recordId}` });
+  const href = openPath(recordId, { fallback: `/data/${tableId}?record=${recordId}` });
   window.open(new URL(href, window.location.origin).toString(), "_blank", "noopener,noreferrer");
 }
 

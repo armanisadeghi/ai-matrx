@@ -19,7 +19,7 @@ import { TableRowsPanel } from "./_components/TableRowsPanel";
 type SurfaceKey = "table" | "quiz" | "note";
 
 const SURFACES: { key: SurfaceKey; title: string; noun: string }[] = [
-  { key: "table", title: "Data table · /data-v2 row", noun: "table" },
+  { key: "table", title: "Data table · /data row", noun: "table" },
   { key: "quiz", title: "Quiz · /education/quizzes row", noun: "quiz" },
   { key: "note", title: "Note · /notes editor", noun: "note" },
 ];

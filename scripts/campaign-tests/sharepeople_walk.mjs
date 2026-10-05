@@ -44,7 +44,7 @@ const shot = async (page, tag) => {
 };
 
 async function openTable(page, id, rowText) {
-  await page.goto(`${ORIGIN}/data-v2/${id}`, { waitUntil: "domcontentloaded", timeout: 180000 });
+  await page.goto(`${ORIGIN}/data/${id}`, { waitUntil: "domcontentloaded", timeout: 180000 });
   const rows = await until("the table's rows", () => page.evaluate((t) => document.body.innerText.includes(t), rowText), 180000);
   await sleep(1500);
   return !!rows.v;

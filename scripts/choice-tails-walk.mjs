@@ -47,7 +47,7 @@ const shot = async (name) => {
 };
 
 async function openTable(query = "") {
-  await page.goto(`${ORIGIN}/data-v2/${TABLE}${query}`, { waitUntil: "domcontentloaded", timeout: 180000 });
+  await page.goto(`${ORIGIN}/data/${TABLE}${query}`, { waitUntil: "domcontentloaded", timeout: 180000 });
   const ready = await until("the grid", async () => (await page.locator("th, [role=columnheader]", { hasText: COLUMN }).count()) > 0, 180000);
   if (!ready.v) throw new Error(`the table did not draw the ${COLUMN} column`);
   await sleep(1500);

@@ -3,7 +3,7 @@
  * A SETTING'S CHOICES GET THEIR WORDS FROM THE REGISTRY, NOT FROM A SCREEN.
  *
  * 🚨 WHAT THIS EXISTS FOR (lane FRONT-DOOR, 2026-09-21; the defect is
- * VERIFIER-8 MEDIUM-2). `/data-v2/try-everything` printed, in its header, at a
+ * VERIFIER-8 MEDIUM-2). `/data/try-everything` printed, in its header, at a
  * non-technical person:
  *
  *     Set to "all_records", which this screen has no words for
@@ -57,7 +57,7 @@ const SCOPE = [
   "lib/scoped-config",
   "features/settings/universal",
   "features/unified-data",
-  "app/(core)/data-v2",
+  "app/(core)/data",
 ];
 
 /** THE one place a knob's choices and their words are decided. */

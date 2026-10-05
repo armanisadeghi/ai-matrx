@@ -2,7 +2,7 @@
 //
 // RECORDS-UI MERGE TRANCHES 6l + 6m — THE PAGE'S BINDINGS.
 //
-// THE USE CASE. The front desk at Cedar Ridge Veterinary Clinic has Appointments open on /data-v2
+// THE USE CASE. The front desk at Cedar Ridge Veterinary Clinic has Appointments open on /data
 // with the merged grid, her cursor on Maple's desk note, two rows ticked. She asks the side chat
 // "what does this note say, and mark Pepper as checked in". The agent must read the SAME
 // `matrx-user/data-tables` keys it reads on /data — column names that are the Field KEYS, the page
@@ -11,7 +11,7 @@
 // A note pasted from an email is cleaned by the platform's one value cleaner.
 //
 // RED before this lane: none of these modules existed — the merged grid told the page nothing and
-// /data-v2 mounted no agent surface.
+// /data mounted no agent surface.
 
 import type { GridContextSnapshot } from "../grid-agent-context/recordStoreTableScope";
 

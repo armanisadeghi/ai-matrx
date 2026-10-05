@@ -20,7 +20,7 @@ const OUT = "/tmp/matrx-evidence/2026-09-22";
 // Rincon Plumbing Co (the working copy) → its Jobs table → the saved view the
 // digest actually linked to. Taken verbatim from the live digest row.
 const DEEP_LINK =
-  "/data-v2/af3bfff6-a255-41e5-9ac2-879d53816163" +
+  "/data/af3bfff6-a255-41e5-9ac2-879d53816163" +
   "?view=2e467657-77d4-44ff-bf25-910d381ef9ce&org=6069a466-1445-42df-a64e-cf37ecdc1b99";
 
 const say = (...a) => console.log(...a);

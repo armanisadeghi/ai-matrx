@@ -172,7 +172,7 @@ afterEach(() => {
   declared.length = 0;
 });
 
-describe("the /data-v2 table route", () => {
+describe("the /data table route", () => {
   it("renders the header and the table page, and nothing else in the body", async () => {
     await mount();
     expect(host.querySelector("[data-testid='table-page']")).not.toBeNull();

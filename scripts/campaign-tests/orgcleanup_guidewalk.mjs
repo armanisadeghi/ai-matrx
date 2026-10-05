@@ -22,10 +22,10 @@ console.log("seat:", await signIn(page, ORIGIN, process.env.AI_ADMIN_USERNAME, p
 const out = {};
 
 // ---- Birchwood, the one whose address reads home-renovation ----
-await page.goto(`${ORIGIN}/data-v2`, { waitUntil: "domcontentloaded", timeout: 120000 });
+await page.goto(`${ORIGIN}/data`, { waitUntil: "domcontentloaded", timeout: 120000 });
 await sleep(4000);
 await setOrganizationBySlug(page, "Birchwood Avenue Renovation", "home-renovation");
-await page.goto(`${ORIGIN}/data-v2`, { waitUntil: "domcontentloaded", timeout: 120000 });
+await page.goto(`${ORIGIN}/data`, { waitUntil: "domcontentloaded", timeout: 120000 });
 await sleep(8000);
 const opened = await page.evaluate(() => {
   // The table list draws each table as a clickable row reading "<name>\n<n> fields".
@@ -75,10 +75,10 @@ await page.screenshot({ path: `${OUT}/orgcleanup-birchwood-board.png`, fullPage:
 console.log("birchwood:", JSON.stringify(out.birchwood_board), out.birchwood_url);
 
 // ---- Rincon ----
-await page.goto(`${ORIGIN}/data-v2`, { waitUntil: "domcontentloaded", timeout: 120000 });
+await page.goto(`${ORIGIN}/data`, { waitUntil: "domcontentloaded", timeout: 120000 });
 await sleep(4000);
 await setOrganization(page, "Rincon Plumbing Co");
-await page.goto(`${ORIGIN}/data-v2/try-everything`, { waitUntil: "domcontentloaded", timeout: 120000 });
+await page.goto(`${ORIGIN}/data/try-everything`, { waitUntil: "domcontentloaded", timeout: 120000 });
 await sleep(14000);
 out.rincon = await page.evaluate(() => {
   const t = (document.querySelector("main") ?? document.body).innerText;

@@ -18,7 +18,7 @@ console.log("signed in as", who);
 const how = await setOrganization(page, "Rincon Plumbing Co");
 console.log("organization picked:", how);
 
-await page.goto(`${ORIGIN}/data-v2/${JOBS}`, { waitUntil: "domcontentloaded", timeout: 120000 });
+await page.goto(`${ORIGIN}/data/${JOBS}`, { waitUntil: "domcontentloaded", timeout: 120000 });
 await sleep(9000);
 await page.screenshot({ path: resolve(OUT, "explore-jobs-grid.png"), fullPage: false });
 const text = await page.evaluate(() => document.body.innerText);

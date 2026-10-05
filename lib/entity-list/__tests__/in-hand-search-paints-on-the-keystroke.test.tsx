@@ -2,7 +2,7 @@
 /**
  * AN IN-HAND LIST REPAINTS ON THE KEYSTROKE (DATA-HOME-3E, 2026-10-01; VERIFY-DATA-HOME-3 V2).
  *
- * /data-v2 waited 250 ms after every keystroke before its in-hand ranker ran, then a promise hop
+ * /data waited 250 ms after every keystroke before its in-hand ranker ran, then a promise hop
  * and a second render: the list repainted 230-700 ms after the letter. A service that holds its
  * rows answers `peek` synchronously, and a surface that sets `searchDebounceMs: 0` gets that
  * answer in the keystroke's OWN render. Each test types through the real input with a SYNCHRONOUS

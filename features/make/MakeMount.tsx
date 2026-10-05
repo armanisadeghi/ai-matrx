@@ -95,7 +95,7 @@ export function NewTableBody({ what }: { what?: "create" | "examples" | undefine
         makingOnly
         {...(asked ? { askedBy: asked } : {})}
         onOpenTable={(tableId: string, dashboardId?: string | null) =>
-          router.push(dashboardId ? `/data-v2/${tableId}?dashboard=${dashboardId}` : `/data-v2/${tableId}`)
+          router.push(dashboardId ? `/data/${tableId}?dashboard=${dashboardId}` : `/data/${tableId}`)
         }
       />
     </MakeMount>
@@ -115,7 +115,7 @@ export function NewTableDialog({ what, onClose }: { what: "create" | "examples" 
             {/* An outside Postgres table as a Synced table (lane VISION-REACH wave 3). */}
             {what === "create" ? (
               <Button asChild size="sm" variant="ghost" className="gap-1.5 text-muted-foreground" data-connect-database-entry="">
-                <Link href="/data-v2/connect" onClick={onClose}>
+                <Link href="/data/connect" onClick={onClose}>
                   <Database className="h-3.5 w-3.5 shrink-0" aria-hidden />
                   Connect a database
                 </Link>

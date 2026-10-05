@@ -27,7 +27,7 @@ const TABLE_TREES = [
   "features/unified-data",
   "features/data-tables",
   "components/user-generated-table-data",
-  "app/(core)/data-v2",
+  "app/(core)/data",
 ];
 
 /** The registry's renderers in this app — the lawful home of table actions. */

@@ -64,7 +64,7 @@ await page.waitForLoadState("domcontentloaded");
 await sleep(6000);
 await setOrganization(page, "Rincon Plumbing Co");
 
-await page.goto(`${ORIGIN}/data-v2/${TABLE}`, { waitUntil: "domcontentloaded", timeout: 120000 });
+await page.goto(`${ORIGIN}/data/${TABLE}`, { waitUntil: "domcontentloaded", timeout: 120000 });
 await sleep(12000);
 
 // 1. A ticket that is in the grid right now — chosen from the screen, never invented.
@@ -142,7 +142,7 @@ if (archivedBtn) {
     await page.screenshot({ path: resolve(OUT, "fix10a-archived-restored.png"), fullPage: true });
 
     // 5. It is in the grid again, and the history carries both moments.
-    await page.goto(`${ORIGIN}/data-v2/${TABLE}`, { waitUntil: "domcontentloaded", timeout: 120000 });
+    await page.goto(`${ORIGIN}/data/${TABLE}`, { waitUntil: "domcontentloaded", timeout: 120000 });
     await sleep(10000);
     const backInGrid = await page.evaluate((n) => (document.body.textContent ?? "").includes(n), name);
     backInGrid ? ok(`${name} is in the grid again`) : fail(`${name} is not back in the grid`);

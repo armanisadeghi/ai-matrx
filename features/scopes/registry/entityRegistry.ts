@@ -528,7 +528,7 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
     hrefFor: (id) => `/meet/${encodeURIComponent(id)}`,
   },
   // A FORM OR A BOOKING PAGE (both are `custom.anon_form` rows; a booking page's presentation
-  // carries `booking`). Its builder lives on the table it writes to — `/data-v2/<table>?rail=forms|
+  // carries `booking`). Its builder lives on the table it writes to — `/data/<table>?rail=forms|
   // bookings&item=<id>` — which an id alone cannot spell, so it opens at the one address that
   // resolves any id (`/o/<id>` → `custom.where_id_opens`), asked as the person (W2.2).
   anon_form: {

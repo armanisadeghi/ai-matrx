@@ -1,6 +1,6 @@
 /**
  * THE LEAST IMPORTANT COLUMN LEAVES FIRST (DATA-HOME-3E; VERIFY V3: at 1024 px Owner and Access sat
- * off the right edge of /data-v2). Pure rule over declared widths.
+ * off the right edge of /data). Pure rule over declared widths.
  */
 import { columnsWithoutRoom, ROW_ACTIONS_WIDTH } from "../columnPriority";
 import type { EntityColumnSpec } from "../columns";

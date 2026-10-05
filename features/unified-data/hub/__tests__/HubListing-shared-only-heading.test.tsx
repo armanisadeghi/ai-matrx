@@ -37,7 +37,7 @@ const ONE_SHARED_TABLE = {
       tableName: "Parts Used",
       lane: null,
       facts: ["6 columns"],
-      href: "/data-v2/t-1",
+      href: "/data/t-1",
       changedAt: null,
       changedBy: null,
     },

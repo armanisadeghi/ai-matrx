@@ -2,7 +2,7 @@
 //
 // THE USE CASE (lane DATA-HOME-1, Arman 2026-09-27 21:20 PT). The owner of Harbor Dental Group
 // also keeps the books for Rincon Plumbing Co; Ojai Valley Home Services shared its "Backflow test
-// schedule" with her. She opens the data home (/data-v2) while working in Rincon Plumbing and
+// schedule" with her. She opens the data home (/data) while working in Rincon Plumbing and
 // presses Mine — it read 0 of everything, because the home showed ONE organization and she made
 // her tables in Harbor Dental. The ruling:
 //
@@ -209,7 +209,7 @@ let PARAMS = new URLSearchParams();
 jest.mock("next/navigation", () => ({
   useRouter: () => ROUTER,
   useSearchParams: () => PARAMS,
-  usePathname: () => "/data-v2",
+  usePathname: () => "/data",
 }));
 jest.mock("next/link", () => ({
   __esModule: true,
@@ -486,7 +486,7 @@ describe("the data home · Back returns", () => {
     await act(async () => {
       laneTab("Mine")?.click();
     });
-    expect(ROUTER.push).toHaveBeenCalledWith("/data-v2?scope=mine", { scroll: false });
+    expect(ROUTER.push).toHaveBeenCalledWith("/data?scope=mine", { scroll: false });
     expect(ROUTER.replace).not.toHaveBeenCalled();
   });
 });
@@ -524,7 +524,7 @@ describe("the data home · hides nothing, and a Kind filter narrows it", () => {
       kind.value = "list";
       kind.dispatchEvent(new Event("change", { bubbles: true }));
     });
-    expect(ROUTER.push).toHaveBeenCalledWith("/data-v2?kind=list", { scroll: false });
+    expect(ROUTER.push).toHaveBeenCalledWith("/data?kind=list", { scroll: false });
   });
 });
 

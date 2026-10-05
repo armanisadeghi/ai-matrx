@@ -399,7 +399,7 @@ function BoundTableDetails({
             noun="record"
             manageAction={{
               label: "Open this table to add records",
-              href: `/data-v2/${tableId}`,
+              href: `/data/${tableId}`,
             }}
             footerActions={
               recordsCapped

@@ -1,6 +1,6 @@
 -- LANE HANDOVER — "ALL MY ORGANIZATIONS" ANSWERS IN ONE QUERY.
 --
--- THE REAL USE CASE (admin@admin.com, the data home at /data-v2, 2026-09-27): the owner of Cedar
+-- THE REAL USE CASE (admin@admin.com, the data home at /data, 2026-09-27): the owner of Cedar
 -- Ridge Physical Therapy presses "All my organizations" to see every table she can open. She belongs
 -- to 46 organizations. The door `custom.tables_i_can_open()` answered 500: its body ran one query per
 -- organization and took 11.8 s, over the 8 s a signed-in request may run.

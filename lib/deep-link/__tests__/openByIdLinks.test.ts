@@ -36,13 +36,13 @@ describe("readResolvedId — the door's answer, read strictly", () => {
         state: "opens",
         kind: "record",
         organization_id: "org-1",
-        path: `/data-v2/t?record=${ID}&org=org-1`,
+        path: `/data/t?record=${ID}&org=org-1`,
       }),
-    ).toEqual({ state: "opens", kind: "record", organizationId: "org-1", path: `/data-v2/t?record=${ID}&org=org-1` });
+    ).toEqual({ state: "opens", kind: "record", organizationId: "org-1", path: `/data/t?record=${ID}&org=org-1` });
   });
 
   it("keeps the two sides a table answer carries", () => {
-    const read = readResolvedId({ state: "opens", kind: "table", organization_id: "o", path: "/data-v2/x?org=o", sides: { old: true, new: true } });
+    const read = readResolvedId({ state: "opens", kind: "table", organization_id: "o", path: "/data/x?org=o", sides: { old: true, new: true } });
     expect(read).toMatchObject({ state: "opens", sides: { old: true, new: true } });
   });
 
@@ -94,7 +94,7 @@ describe("the address's own inputs", () => {
 });
 
 describe("ahead of its door — the caller's previous link", () => {
-  const old = `/data-v2/t1?record=${ID}`;
+  const old = `/data/t1?record=${ID}`;
 
   it("rides on the link, encoded, only when it is one of our paths", () => {
     const link = openPath(ID, { fallback: old });

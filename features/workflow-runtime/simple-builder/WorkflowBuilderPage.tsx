@@ -110,14 +110,14 @@ function editorHref(
         : null;
     case "subscriptions":
       return {
-        href: `/data-v2/${tableId}?rail=notifications`,
+        href: `/data/${tableId}?rail=notifications`,
         external: false,
       };
     case "row_actions":
     case "pipeline":
     case "webhooks":
     case "enrich":
-      return { href: `/data-v2/${tableId}?rail=settings`, external: false };
+      return { href: `/data/${tableId}?rail=settings`, external: false };
     default:
       return null;
   }
@@ -423,7 +423,7 @@ export function WorkflowBuilderPage({ tableId }: { tableId: string }) {
     : null;
   const header = (
     <EntityModeHeader
-      backHref={`/data-v2/${tableId}`}
+      backHref={`/data/${tableId}`}
       entityLabel={
         view ? view.name : organizationId ? "New workflow" : "Workflows"
       }

@@ -6,7 +6,7 @@
  * Trash). The walk:
  *   1. declares the disposable table in Harbor Dental Group (an organization admin@admin.com owns)
  *      with two realistic cycles, through the store's own doors as admin;
- *   2. opens /data-v2/<table>, Settings -> This table -> Archive this table (the page's own control);
+ *   2. opens /data/<table>, Settings -> This table -> Archive this table (the page's own control);
  *   3. /trash lists it under Table; Restore from the page; the table page opens again;
  *   4. archives it again from its page; Organization settings -> Trash lists it; Restore there;
  *   5. ends by archiving it again (archive, never delete).
@@ -78,7 +78,7 @@ const who = await signIn(page, ORIGIN, env.AI_ADMIN_USERNAME, env.AI_ADMIN_PASSW
 check("browser seat is admin@admin.com (the app says so)", who === "admin@admin.com", who);
 
 async function archiveFromPage(label) {
-  await page.goto(`${ORIGIN}/data-v2/${tableId}`, { waitUntil: "domcontentloaded", timeout: 180000 });
+  await page.goto(`${ORIGIN}/data/${tableId}`, { waitUntil: "domcontentloaded", timeout: 180000 });
   await page.getByText("SC-0412").first().waitFor({ timeout: 90000 });
   await shot(page, `${label}-1-table-page`);
   // The table page's own path: Table menu -> Settings (the panel whose "This table" section archives).
@@ -117,7 +117,7 @@ if (listed) {
   await shot(page, "b-2-personal-trash-after-restore");
   check("Restore on /trash removes it from Trash", !!gone.v);
 }
-await page.goto(`${ORIGIN}/data-v2/${tableId}`, { waitUntil: "domcontentloaded", timeout: 180000 });
+await page.goto(`${ORIGIN}/data/${tableId}`, { waitUntil: "domcontentloaded", timeout: 180000 });
 const back = await page.getByText("SC-0413").first().waitFor({ timeout: 90000 }).then(() => true, () => false);
 await shot(page, "b-3-table-back-with-its-records");
 check("the table page opens again with its records (SC-0413 visible)", back);
@@ -138,7 +138,7 @@ if (olisted) {
   await shot(page, "d-2-organization-trash-after-restore");
   check("Restore in Organization Trash removes it from Trash", !!ogone.v);
 }
-await page.goto(`${ORIGIN}/data-v2/${tableId}`, { waitUntil: "domcontentloaded", timeout: 180000 });
+await page.goto(`${ORIGIN}/data/${tableId}`, { waitUntil: "domcontentloaded", timeout: 180000 });
 const back2 = await page.getByText("SC-0412").first().waitFor({ timeout: 90000 }).then(() => true, () => false);
 await shot(page, "d-3-table-back-again");
 check("the table page opens again after the organization restore", back2);

@@ -76,13 +76,13 @@ try {
   // ── a table ──────────────────────────────────────────────────────────────────────────────
   {
     const r = await landed(page, "table", IDS.appts);
-    pass("table", r.url.pathname === `/data-v2/${IDS.appts}` && r.url.searchParams.get("org") === IDS.org
+    pass("table", r.url.pathname === `/data/${IDS.appts}` && r.url.searchParams.get("org") === IDS.org
       && !NOT_HERE.test(r.text) && /Patient|Appointments/.test(r.text), r.rel);
   }
   // ── a record ─────────────────────────────────────────────────────────────────────────────
   {
     const r = await landed(page, "record", IDS.r3);
-    pass("record", r.url.pathname === `/data-v2/${IDS.appts}` && r.url.searchParams.get("record") === IDS.r3
+    pass("record", r.url.pathname === `/data/${IDS.appts}` && r.url.searchParams.get("record") === IDS.r3
       && r.url.searchParams.get("org") === IDS.org && !NOT_HERE.test(r.text) && /Moose/.test(r.text), r.rel);
   }
   // ── an older dataset ─────────────────────────────────────────────────────────────────────
@@ -94,14 +94,14 @@ try {
   // ── a form ───────────────────────────────────────────────────────────────────────────────
   {
     const r = await landed(page, "form", IDS.form);
-    pass("form", r.url.pathname === `/data-v2/${IDS.appts}` && r.url.searchParams.get("rail") === "forms"
+    pass("form", r.url.pathname === `/data/${IDS.appts}` && r.url.searchParams.get("rail") === "forms"
       && r.url.searchParams.get("item") === IDS.form && r.url.searchParams.get("org") === IDS.org
       && !NOT_HERE.test(r.text) && /New patient intake/.test(r.text), r.rel);
   }
   // ── a share link: the hospital's table, Marisol NOT a member ─────────────────────────────
   {
     const r = await landed(page, "share-link", IDS.referrals);
-    pass("share-link", r.url.pathname === `/data-v2/${IDS.referrals}` && r.url.searchParams.get("org") === IDS.er
+    pass("share-link", r.url.pathname === `/data/${IDS.referrals}` && r.url.searchParams.get("org") === IDS.er
       && !NOT_HERE.test(r.text) && /Shared with you by/.test(r.text) && /Moose \(Delgado\)/.test(r.text), r.rel);
   }
   // ── an id nobody minted ──────────────────────────────────────────────────────────────────

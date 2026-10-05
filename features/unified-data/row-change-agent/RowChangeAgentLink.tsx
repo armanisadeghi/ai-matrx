@@ -5,7 +5,7 @@
  *
  * The older grid offers this from its Actions column menu: it opens the schedule form with the
  * "table change" trigger set to this table, and the schedule runs the person's agent whenever a
- * row is added, changed, archived or restored. The default grid on /data-v2 offered nothing.
+ * row is added, changed, archived or restored. The default grid on /data offered nothing.
  *
  * 🚨 ABSENT UNTIL IT CAN FIRE. A record-store row change reaches the scheduler only once G8 is on
  * the database, and `custom.record_change_actions` (lane GRID-PORT) arrives with it — so the door

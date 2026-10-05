@@ -6,7 +6,7 @@ const p = await (await b.newContext({ viewport: { width: 1680, height: 1050 } })
 await signIn(p, ORIGIN, process.env.AI_ADMIN_USERNAME, process.env.AI_ADMIN_PASSWORD);
 await setOrganization(p, "Rincon Plumbing Co");
 await p.route("**/rest/v1/rpc/checklist_templates*", (r) => r.abort("failed"));
-await p.goto(`${ORIGIN}/data-v2/af3bfff6-a255-41e5-9ac2-879d53816163`, { waitUntil: "domcontentloaded" });
+await p.goto(`${ORIGIN}/data/af3bfff6-a255-41e5-9ac2-879d53816163`, { waitUntil: "domcontentloaded" });
 await sleep(6000);
 await p.evaluate(() => Array.from(document.querySelectorAll("button")).find((x)=>x.textContent?.trim()==="Checklists")?.click());
 await sleep(6000);
@@ -34,7 +34,7 @@ console.log("ACCESSIBILITY TREE mentions SQLSTATE :", /SQLSTATE/i.test(say));
 console.log("ACCESSIBILITY TREE mentions the honest sentence:", /could not reach your data/i.test(say));
 console.log("DOM still keeps it for engineers:", await p.evaluate(() => !!document.querySelector("[data-for-engineers]")));
 // And the Group by picker on the drill-through board.
-await p.goto(`${ORIGIN}/data-v2/af3bfff6-a255-41e5-9ac2-879d53816163?view=kanban&group=job_number&from=By+job_number+%C2%B7+RPC-1019`, { waitUntil: "domcontentloaded" });
+await p.goto(`${ORIGIN}/data/af3bfff6-a255-41e5-9ac2-879d53816163?view=kanban&group=job_number&from=By+job_number+%C2%B7+RPC-1019`, { waitUntil: "domcontentloaded" });
 await sleep(9000);
 console.log("Group by picker says:", await p.evaluate(() => {
   const s = document.querySelector("select#view-field-kanban");

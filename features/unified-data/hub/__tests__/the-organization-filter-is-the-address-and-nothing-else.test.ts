@@ -5,7 +5,7 @@
 // on every visit, is never remembered and never set from the active organization.
 //
 // THE USE CASE: the owner of Harbor Dental Group also keeps the books for Rincon Plumbing Co. She
-// narrows the home to Harbor Dental, closes the tab, and opens /data-v2 tomorrow while working in
+// narrows the home to Harbor Dental, closes the tab, and opens /data tomorrow while working in
 // Rincon Plumbing: it opens on All organizations — not on yesterday's pick, and not on Rincon.
 //
 // RED on the DATA-HOME-2 code before the law: the pick was saved to her account
@@ -39,11 +39,11 @@ describe("the organization filter is the address and nothing else", () => {
 
   it("the address word is org_filter, never org (the link that switches the active organization)", () => {
     expect(scope.ORG_FILTER_PARAM).toBe("org_filter");
-    expect(scope.dataHomeOrganizationHref("/data-v2", new URLSearchParams("scope=mine"), HARBOR)).toBe(
-      `/data-v2?scope=mine&org_filter=${HARBOR}`,
+    expect(scope.dataHomeOrganizationHref("/data", new URLSearchParams("scope=mine"), HARBOR)).toBe(
+      `/data?scope=mine&org_filter=${HARBOR}`,
     );
-    expect(scope.dataHomeOrganizationHref("/data-v2", new URLSearchParams(`org_filter=${HARBOR}`), "all")).toBe(
-      "/data-v2",
+    expect(scope.dataHomeOrganizationHref("/data", new URLSearchParams(`org_filter=${HARBOR}`), "all")).toBe(
+      "/data",
     );
   });
 });

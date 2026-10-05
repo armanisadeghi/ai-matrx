@@ -68,9 +68,9 @@ it("saves only checked rows and shows the table door after the actual callback",
   await act(async () => { (host.querySelector("input[type=checkbox]") as HTMLInputElement).click(); });
   await press("Save selected rows");
   expect(mockOpen).toHaveBeenCalledWith(expect.objectContaining({ organizationId: "org-1", grid: expect.objectContaining({ rows: [["Google Forms", "person@example.com", "account-1", "Survey", "form-1", "r1", "2026-09-26T12:00:00Z", "Good"]] }) }));
-  expect(host.querySelector('a[href="/data-v2/table-1"]')).toBeNull();
+  expect(host.querySelector('a[href="/data/table-1"]')).toBeNull();
   await act(async () => mockOpen.mock.calls[0][0].onSaved({ type: "saved", tableId: "table-1", tableName: "Survey", how: "new" }));
-  expect(host.querySelector('a[href="/data-v2/table-1"]')).not.toBeNull();
+  expect(host.querySelector('a[href="/data/table-1"]')).not.toBeNull();
 });
 
 it("drops a pending old-account result and closes its save overlay", async () => {
@@ -95,7 +95,7 @@ it("closes a save overlay on account change and ignores its late receipt", async
   await render("account-2");
   expect(mockClose).toHaveBeenCalledTimes(1);
   await act(async () => onSaved({ type: "saved", tableId: "old-table", tableName: "Old", how: "new" }));
-  expect(host.querySelector('a[href="/data-v2/old-table"]')).toBeNull();
+  expect(host.querySelector('a[href="/data/old-table"]')).toBeNull();
 });
 
 it("shows a retry control on failure and never treats it as a saved page", async () => {

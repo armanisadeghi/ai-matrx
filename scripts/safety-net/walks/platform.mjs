@@ -14,7 +14,7 @@ const TABLE = process.env.SN_PLATFORM_TABLE ?? "6d3b427c-f272-4118-8f14-3f431c78
 const BUDGET = { P07: 1000, P08: 3000, P09: 3000 };
 
 const ctx = await openWalk("platform");
-const appPages = ["/data-v2", `/data-v2/${TABLE}`, "/lists/v3", "/trash", "/scopes", "/notes", "/tasks", "/chat", "/schedules"];
+const appPages = ["/data", `/data/${TABLE}`, "/lists/v3", "/trash", "/scopes", "/notes", "/tasks", "/chat", "/schedules"];
 const adminPages = ["/administration/usage", "/administration/database/final-switch"];
 
 async function visit(page, path, origin = ctx.origin) {
@@ -101,8 +101,8 @@ try {
       await ctx.step([item], `390 ${scheme}: sign in on a phone`, null, async () => ({ ok: false, detail: String(e).slice(0, 200) }));
       continue;
     }
-    for (const path of ["/data-v2", `/data-v2/${TABLE}`]) {
-      await ctx.step([item], `390 ${scheme}: ${path === "/data-v2" ? "data home" : "Patients table"} fits the screen`, phone, async () => {
+    for (const path of ["/data", `/data/${TABLE}`]) {
+      await ctx.step([item], `390 ${scheme}: ${path === "/data" ? "data home" : "Patients table"} fits the screen`, phone, async () => {
         await ctx.goto(phone, `${ctx.origin}${path}`);
         await sleep(6000);
         const m = await phone.evaluate(() => ({
@@ -120,8 +120,8 @@ try {
   // ── P07 / P08 / P09 timings ───────────────────────────────────────────────────────────────
   const home = await timeTo(
     admin,
-    `${ctx.origin}/data-v2`,
-    // The new /data-v2 (list shell, 2026-10-01 13:10 PT): its first table rows; the old hub's Tables
+    `${ctx.origin}/data`,
+    // The new /data (list shell, 2026-10-01 13:10 PT): its first table rows; the old hub's Tables
     // listing toggle is kept as the second marker so a switch back is still timed.
     () => {
       if (document.querySelectorAll("tr[data-row-id]").length > 0) return true;
@@ -136,7 +136,7 @@ try {
   }));
   const table = await timeTo(
     admin,
-    `${ctx.origin}/data-v2/${TABLE}`,
+    `${ctx.origin}/data/${TABLE}`,
     () => document.querySelectorAll('[role="row"], tbody tr, [data-matrx-grid-row], [data-row-id]').length > 1,
     "first grid row",
   );

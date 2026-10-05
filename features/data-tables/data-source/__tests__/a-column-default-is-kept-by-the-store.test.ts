@@ -1,7 +1,7 @@
 /**
  * A COLUMN'S DEFAULT IS KEPT BY THE STORE (lane DATA-V2-BASICS-2, Arman 2026-09-27).
  *
- * Arman added a column with a default on /data-v2 and was refused: *"A record-store column has no
+ * Arman added a column with a default on /data and was refused: *"A record-store column has no
  * default value. Leave it empty and fill the rows you need."* — false: the store keeps a Field's
  * `default`, and since `databasics2_a_column_default_fills_a_new_record.sql` every new record that
  * does not name the column starts with it. The seam passes the dialog's default through: as

@@ -10,7 +10,7 @@
 // active org is meaningless."
 //
 // 🚨 THE DEFECT THIS CLOSES (VERIFIER-15 M8, VERIFIER-16 verdict 2). Every object page in the
-// record store — a table at /data-v2/<id>, a record inside it, a crew capture sheet, the old
+// record store — a table at /data/<id>, a record inside it, a crew capture sheet, the old
 // /data/<id> link — mounted the store for the organization the person had PICKED, and every
 // store door (`custom.read_record(p_organization_id, …)` and its siblings) decides the
 // organization wall first. So a member of Rincon Plumbing Co working in her franchise group
@@ -60,7 +60,7 @@ export type ObjectOrganizationAnswer =
       state: "found";
       organizationId: string;
       kind: ObjectKind;
-      /** The screen the store says opens it (`/data-v2/<table>?record=…`), or null for a part with none. */
+      /** The screen the store says opens it (`/data/<table>?record=…`), or null for a part with none. */
       path: string | null;
       /** False when it is in the trash — the person may still open it, to bring it back. */
       live: boolean;

@@ -34,7 +34,7 @@ console.log(`signed in as ${who}`);
 await setOrganization(page, "Rincon Plumbing Co");
 console.log("organization set");
 
-await page.goto(`${ORIGIN}/data-v2/${TABLE}?ps=100`, { waitUntil: "domcontentloaded", timeout: 120000 });
+await page.goto(`${ORIGIN}/data/${TABLE}?ps=100`, { waitUntil: "domcontentloaded", timeout: 120000 });
 // A SKELETON SATISFIES `tbody tr`. Wait for a real dispatch ticket to be on screen.
 const { v } = await until("real rows", async () =>
   page.evaluate(() => document.body.innerText.includes("RPC-T2-")), 90000);

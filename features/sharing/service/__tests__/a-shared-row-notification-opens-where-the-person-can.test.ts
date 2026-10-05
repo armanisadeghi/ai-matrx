@@ -25,8 +25,8 @@ function storeClient(kind: "record" | "table") {
       return {
         data:
           kind === "record"
-            ? { kind: "record", organization_id: ORG, path: `/data-v2/${TABLE}?record=${ROW}` }
-            : { kind: "table", organization_id: ORG, path: `/data-v2/${TABLE}`, resolved_id: TABLE },
+            ? { kind: "record", organization_id: ORG, path: `/data/${TABLE}?record=${ROW}` }
+            : { kind: "table", organization_id: ORG, path: `/data/${TABLE}`, resolved_id: TABLE },
         error: null,
       };
     }
@@ -52,13 +52,13 @@ describe("a shared row's notification opens where its recipient can open it", ()
 
   it("a member gets the row in its table", async () => {
     const got = await getResourceDetails(storeClient("record"), "record", ROW, member);
-    expect(got?.path).toBe(`/data-v2/${TABLE}?record=${ROW}`);
-    expect(got?.url).toBe(`https://www.aimatrx.com/data-v2/${TABLE}?record=${ROW}?org=${ORG}`);
+    expect(got?.path).toBe(`/data/${TABLE}?record=${ROW}`);
+    expect(got?.url).toBe(`https://www.aimatrx.com/data/${TABLE}?record=${ROW}?org=${ORG}`);
   });
 
   it("a whole Table never points at a row page, whoever receives it", async () => {
     const got = await getResourceDetails(storeClient("table"), "record", TABLE, outside);
     expect(got?.title).toBe("Appointments");
-    expect(got?.path).toBe(`/data-v2/${TABLE}`);
+    expect(got?.path).toBe(`/data/${TABLE}`);
   });
 });

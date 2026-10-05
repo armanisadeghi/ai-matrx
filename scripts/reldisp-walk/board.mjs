@@ -12,14 +12,14 @@ await page.keyboard.press("Escape");
 await page.evaluate(() => { for (const id of ["#menu-group-organization","#shell-sidebar-toggle"]) { const e=document.querySelector(id); if(e instanceof HTMLInputElement && e.checked) e.click(); } });
 
 // THE TWO MARIA CHENS, on the grid.
-await page.goto(`${ORIGIN}/data-v2/${JOBS}`, { waitUntil: "domcontentloaded", timeout: 120000 });
+await page.goto(`${ORIGIN}/data/${JOBS}`, { waitUntil: "domcontentloaded", timeout: 120000 });
 await sleep(11000);
 const cells = await page.evaluate(() => Array.from(document.querySelectorAll('[aria-label="Edit Customer"]')).map(b=>(b.textContent??"").trim()).filter(t=>t&&t!=="—"));
 console.log("THE MARIA CHEN ROWS NOW READ:", [...new Set(cells.filter(c=>c.startsWith("Maria Chen")))]);
 console.log("any bare 'Maria Chen' left:", cells.filter(c=>c==="Maria Chen").length);
 
 // THE BOARD — what does a card actually carry?
-await page.goto(`${ORIGIN}/data-v2/${JOBS}?view=kanban`, { waitUntil: "domcontentloaded", timeout: 120000 });
+await page.goto(`${ORIGIN}/data/${JOBS}?view=kanban`, { waitUntil: "domcontentloaded", timeout: 120000 });
 await sleep(12000);
 await page.screenshot({ path: resolve(OUT, "reldisp-06-board-after.png") });
 const t = await page.evaluate(() => document.body.innerText);
@@ -30,7 +30,7 @@ console.log("board mentions any city:", /Ashport|Dellwood|Fairhaven|Millbrook|Ri
 console.log("board mentions RPC- card titles:", (t.match(/RPC-\d+/g)??[]).slice(0,5));
 // What is the board grouped by, and what does a card show?
 console.log("---- GALLERY, which shows more of a record ----");
-await page.goto(`${ORIGIN}/data-v2/${JOBS}?view=gallery`, { waitUntil: "domcontentloaded", timeout: 120000 });
+await page.goto(`${ORIGIN}/data/${JOBS}?view=gallery`, { waitUntil: "domcontentloaded", timeout: 120000 });
 await sleep(12000);
 await page.screenshot({ path: resolve(OUT, "reldisp-08-gallery-after.png") });
 const g = await page.evaluate(() => document.body.innerText);
