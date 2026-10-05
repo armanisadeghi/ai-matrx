@@ -1,7 +1,7 @@
 /**
- * A person can delete a frame (2026-10-04: neither a person nor the agent saw a way). Clicking the
- * frame's label selects it; the trash button beside the label (and Delete / Backspace, through the
- * board's `deleteSelected`) removes the frame as one undoable step — its tiles stay.
+ * A person can delete a frame (2026-10-04: neither a person nor the agent saw a way). A selected
+ * frame shows a trash button beside its label (Delete / Backspace go through the board's
+ * `deleteSelected`); either removes the frame as one undoable step — its tiles stay.
  */
 import { act } from "react";
 import { createRoot } from "react-dom/client";
@@ -15,7 +15,7 @@ import { BoardStore } from "../board/board-store";
 const RECT = { x: 0, y: 0, w: 400, h: 300 };
 
 describe("deleting a frame", () => {
-  it("clicking the label selects the frame and offers Delete, which calls the board's remove", async () => {
+  it("a selected frame offers Delete beside its label, which calls the board's remove", async () => {
     const store = new BoardCameraStore({ x: 0, y: 0, z: 1 });
     const onRemove = jest.fn();
     const host = document.createElement("div");
@@ -29,8 +29,8 @@ describe("deleting a frame", () => {
       ),
     );
     expect(host.querySelector('[aria-label="Delete frame Move-Out Essentials"]')).toBeNull();
-    await act(async () => (host.querySelector('[title="Fly to Move-Out Essentials"]') as HTMLButtonElement).click());
-    expect(store.getSelected()).toBe("f1");
+    // Selecting (a click on the title strip that never moves — multi-select.test.ts) is the store's.
+    await act(async () => store.select("f1"));
     const del = host.querySelector('[aria-label="Delete frame Move-Out Essentials"]') as HTMLButtonElement | null;
     expect(del).not.toBeNull();
     await act(async () => del?.click());
