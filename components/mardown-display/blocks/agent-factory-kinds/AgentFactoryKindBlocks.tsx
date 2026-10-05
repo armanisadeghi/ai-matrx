@@ -389,12 +389,20 @@ const OUTCOME_TONE: Record<string, ChipTone> = {
   failed: "bad",
   send_backs_exhausted: "warn",
   workflow_sized: "warn",
+  saved_unproven: "warn",
+  judge_not_blind: "warn",
+  no_proof_inputs: "warn",
+  needs_new_kind: "warn",
 };
 const OUTCOME_LABEL: Record<string, string> = {
   passed: "Passed",
   failed: "Failed",
   send_backs_exhausted: "Send-backs used up",
   workflow_sized: "Workflow-sized",
+  saved_unproven: "Saved unproven",
+  judge_not_blind: "Not judged blind",
+  no_proof_inputs: "Needs examples",
+  needs_new_kind: "Needs new shape",
 };
 
 export function outcomeChip(outcome: string | null) {

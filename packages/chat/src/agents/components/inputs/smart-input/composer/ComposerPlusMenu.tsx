@@ -57,10 +57,8 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { useAppDispatch, useAppSelector } from "../../../../../store/hooks";
 import { ResourcePickerMenu } from "../../../../../host/ui-slots";
-import {
-  flattenResourcePickerItems,
-  type ResourcePickerViewId,
-} from "../../../../../host/ui-slots";
+import { flattenResourcePickerItems } from "../../../../../host/ui-slots";
+import type { ResourcePickerViewId } from "@ai-matrx/chat/agents/resources/picker-view-id";
 import { useKnowledgeAttachSearch } from "@ai-matrx/chat/host/ui-slots";
 import { useRunControlCounts } from "../../../../../host/ui-slots";
 import {

@@ -67,9 +67,9 @@ import { FACTORY_BASE_PATH } from "./FactoryBuildsPage";
 
 const POLL_MS = 3000;
 
-type RowStatus = "done" | "running" | "failed" | "skipped" | "pending";
+export type RowStatus = "done" | "running" | "failed" | "skipped" | "pending";
 
-interface RunRow {
+export interface RunRow {
   key: string;
   step: FactoryStepName;
   status: RowStatus;
@@ -86,7 +86,7 @@ interface RunRow {
 
 /* ----------------------------------------------------------- the timeline */
 
-function buildRows(detail: FactoryBuildDetail): RunRow[] {
+export function buildRows(detail: FactoryBuildDetail): RunRow[] {
   const state = detail.state ?? {};
   const over = spineIsOver(detail.spineStatus);
   const failedHere = detail.spineStatus === "failed" ? state.current_step : null;
@@ -182,7 +182,7 @@ function buildRows(detail: FactoryBuildDetail): RunRow[] {
 
 /* ------------------------------------------------------------- the pieces */
 
-const StatusIcon: React.FC<{ status: RowStatus }> = ({ status }) => {
+export const StatusIcon: React.FC<{ status: RowStatus }> = ({ status }) => {
   const box = "flex size-5 shrink-0 items-center justify-center rounded-full";
   switch (status) {
     case "done":

@@ -8,8 +8,9 @@ import type { AiModel } from "../types";
 let duplicate: (model: AiModel) => Promise<void>;
 let rows: AiModel[] = [];
 let refresh: () => Promise<void>;
+let tableLoadError: string | null = null;
 const push = jest.fn();
-jest.mock("./AiModelTable", () => ({ __esModule: true, default: (props: { models: AiModel[]; onDuplicate: typeof duplicate; onRefresh: typeof refresh }) => { refresh = props.onRefresh; duplicate = props.onDuplicate; rows = props.models; return null; } }));
+jest.mock("./AiModelTable", () => ({ __esModule: true, default: (props: { models: AiModel[]; loadError?: string | null; onDuplicate: typeof duplicate; onRefresh: typeof refresh }) => { tableLoadError = props.loadError ?? null; refresh = props.onRefresh; duplicate = props.onDuplicate; rows = props.models; return null; } }));
 jest.mock("./AiModelTabBar", () => ({ __esModule: true, default: () => null }));
 jest.mock("./AiModelDetailPanel", () => ({ __esModule: true, default: () => null }));
 jest.mock("./DeprecatedModelsAudit", () => ({ __esModule: true, default: () => null }));
@@ -73,6 +74,15 @@ it("shows a persistent catalog failure and recovers through Retry", async () => 
   try {
     await act(async () => root.render(<AiModelsContainer />));
     await act(async () => { jest.runOnlyPendingTimers(); });
+    // Nothing loaded yet: the table's own read state says the failure (3ee389b990 / 14dddc8efb), so the
+    // stale-catalog strip stays absent and the table is handed the message.
+    expect(tableLoadError).toContain("Could not load the model catalog");
+    expect(container.querySelector('[role="alert"]')).toBeNull();
+    // Models on screen, then a refresh fails: the strip says it once and Retry recovers.
+    await act(async () => { await refresh(); });
+    expect(tableLoadError).toBeNull();
+    jest.mocked(aiModelService.fetchAll).mockRejectedValueOnce(new Error("offline"));
+    await act(async () => { await refresh(); });
     expect(container.querySelector('[role="alert"]')?.textContent).toContain("Could not load the model catalog");
     const retry = Array.from(container.querySelectorAll("button")).find(button => button.textContent === "Retry");
     expect(retry).toBeDefined();

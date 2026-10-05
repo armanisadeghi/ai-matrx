@@ -9,6 +9,8 @@ const retry = jest.fn();
 
 jest.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams("execution_id=saved-1"),
+  // The cost display (60b7bd7b85) reads the pathname to decide whether admin views show dollars too.
+  usePathname: () => "/administration/ai-models",
 }));
 jest.mock("@/features/organizations/useOrganizationRequired", () => ({
   useOrganizationRequired: () => ({ organizationState, retry }),

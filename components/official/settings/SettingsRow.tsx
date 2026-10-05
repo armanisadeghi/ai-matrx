@@ -110,14 +110,18 @@ export function SettingsRow({
   // button), so every control on a screen ends at one edge instead of
   // shifting when a value changes.
   const resetButton = onReset ? (
-    <span className="flex h-9 w-9 shrink-0 items-center justify-center">
-      {modified && !disabled ? (
-        <ResetTapButton
-          variant="transparent"
-          ariaLabel={resetLabel ?? `Reset ${label.toLowerCase()} to default`}
-          onClick={onReset}
-        />
-      ) : null}
+    // The slot is the tap button's own box (never a fixed-size wrapper, which
+    // squeezed the button off its geometry); hidden, not removed, so the slot
+    // stays reserved and `visibility: hidden` drops it from the tab order.
+    <span
+      className={cn("inline-flex shrink-0", !(modified && !disabled) && "invisible")}
+      aria-hidden={modified && !disabled ? undefined : true}
+    >
+      <ResetTapButton
+        variant="transparent"
+        ariaLabel={resetLabel ?? `Reset ${label.toLowerCase()} to default`}
+        onClick={onReset}
+      />
     </span>
   ) : null;
 

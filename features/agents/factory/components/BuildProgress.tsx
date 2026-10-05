@@ -1,0 +1,307 @@
+"use client";
+
+/**
+ * BuildProgress — the ONE progress primitive every agent-creating door mounts
+ * while an Agent Factory build runs (PLAN-CUTOVER P2 + P6, rulings R34/R35).
+ *
+ * Compact form of the admin `FactoryBuildPage`: the same timeline rows
+ * (`buildRows`, `StatusIcon`) folded to one row per step, live while the build
+ * runs (polls the build's latest checkpoint every 3s, read straight from the
+ * spine under the person's own RLS — they started it), then the honest outcome:
+ *  - passed → open the agent;
+ *  - saved unproven → the badge; its first 3 real runs are judged;
+ *  - refused with a saved draft (archived, R15) → today's agent stays, the
+ *    reasons, and "Keep it anyway" (un-archives, marked unproven — O4);
+ *  - too few examples → "Build unproven" (R34, a person's choice; the server
+ *    refuses it on headless doors);
+ *  - needs a new shape / a workflow / an error → said plainly.
+ * Admins get a link to the full build page (the way into the admin section).
+ */
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { ExternalLink, Repeat } from "lucide-react";
+import { Badge, Button, RegionSkeleton } from "@ai-matrx/design-system/controls";
+import { cn } from "@/lib/utils";
+import { toast } from "@/lib/toast";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectIsAdminPerson } from "@/lib/redux/selectors/userSelectors";
+import { outcomeChip } from "@/components/mardown-display/blocks/agent-factory-kinds/AgentFactoryKindBlocks";
+import { StateChip, isRecord } from "@/components/mardown-display/blocks/result-kinds/result-kind-shared";
+import { getFactoryBuild, keepBuildAnyway, startAgentBuild } from "../service";
+import {
+  KEPT_OUTCOMES,
+  STEP_LABEL,
+  spineIsOver,
+  type FactoryBuildDetail,
+  type FactoryBuildState,
+  type FactoryStepName,
+} from "../types";
+import { buildRows, StatusIcon, type RowStatus } from "./FactoryBuildPage";
+import { formatDuration } from "./factory-shared";
+
+const POLL_MS = 3000;
+const ADMIN_BUILD_PATH = "/administration/agents/factory";
+
+export interface BuildProgressProps {
+  buildId: string;
+  /** Called once when the build ends (any outcome) — doors use it to pick up the agent id. */
+  onFinished?: (state: FactoryBuildState) => void;
+  /** Called when the person starts a follow-up build (Build unproven) — the door tracks the new id. */
+  onRebuilt?: (buildId: string) => void;
+  className?: string;
+}
+
+interface StepCell {
+  step: FactoryStepName;
+  status: RowStatus;
+  attempts: number;
+}
+
+/** One cell per step, latest status wins; attempts count the send-back loops. */
+function stepCells(detail: FactoryBuildDetail): StepCell[] {
+  const cells = new Map<FactoryStepName, StepCell>();
+  for (const row of buildRows(detail)) {
+    if (row.label) continue;
+    const prev = cells.get(row.step);
+    cells.set(row.step, {
+      step: row.step,
+      status: row.status,
+      attempts: Math.max(prev?.attempts ?? 0, row.attempt ?? 1),
+    });
+  }
+  return [...cells.values()];
+}
+
+function decisionReason(state: FactoryBuildState): string | null {
+  const decision = (state as Record<string, unknown>).pass_decision;
+  if (isRecord(decision) && typeof decision.reason === "string") return decision.reason;
+  return null;
+}
+
+function OutcomePanel({
+  state,
+  busy,
+  onKeep,
+  onBuildUnproven,
+}: {
+  state: FactoryBuildState;
+  busy: boolean;
+  onKeep: () => void;
+  onBuildUnproven: () => void;
+}) {
+  const outcome = state.outcome ?? null;
+  const greenfield = state.facts?.greenfield ?? !state.request?.mandate_key;
+  const agentId = state.agent_id ?? null;
+  const kept = Boolean(outcome && KEPT_OUTCOMES.has(outcome));
+  const reason = decisionReason(state);
+
+  const openAgent = agentId ? (
+    <Button asChild variant="primary">
+      <Link href={`/agents/${agentId}/build`}>Open agent</Link>
+    </Button>
+  ) : null;
+
+  let line: string | null = null;
+  let actions: React.ReactNode = null;
+  if (outcome === "passed") {
+    line = "Ready. It passed its proof.";
+    actions = openAgent;
+  } else if (outcome === "saved_unproven") {
+    line = "Saved unproven. Its first 3 runs are judged.";
+    actions = openAgent;
+  } else if ((outcome === "send_backs_exhausted" || outcome === "judge_not_blind") && agentId) {
+    line = greenfield
+      ? "The draft did not pass your examples."
+      : "Today's agent stays. The new draft did not beat it.";
+    actions = (
+      <Button variant="outline" onClick={onKeep} disabled={busy}>
+        Keep it anyway
+      </Button>
+    );
+  } else if (outcome === "no_proof_inputs") {
+    line = "The proof needs 3 example inputs.";
+    actions = (
+      <Button variant="outline" onClick={onBuildUnproven} disabled={busy}>
+        Build unproven
+      </Button>
+    );
+  } else if (outcome === "needs_new_kind") {
+    line = "This job needs a new output shape first.";
+  } else if (outcome === "workflow_sized") {
+    line = "This job needs a workflow, not one agent.";
+  } else if (outcome) {
+    line = "The build stopped.";
+  }
+
+  const cases = (state.proof ?? []).filter((c) => c.preferred);
+  return (
+    <div className="flex min-w-0 flex-col gap-2 border-t border-border pt-2.5">
+      <div className="flex min-w-0 flex-wrap items-center gap-2">
+        {outcomeChip(outcome)}
+        {kept && outcome === "saved_unproven" ? <Badge tone="warning">Unproven</Badge> : null}
+        {line ? <span className="min-w-0 text-sm">{line}</span> : null}
+        <span className="ml-auto flex items-center gap-2">{actions}</span>
+      </div>
+      {cases.length > 0 ? (
+        <div className="flex flex-wrap gap-1.5">
+          {cases.map((c, i) => (
+            <StateChip
+              key={c.case_id}
+              label={`Case ${i + 1} · ${c.preferred === "candidate" ? "won" : c.preferred === "baseline" ? "lost" : c.preferred}`}
+              tone={c.preferred === "candidate" ? "good" : c.preferred === "baseline" || c.preferred === "both_fail" ? "bad" : "neutral"}
+            />
+          ))}
+        </div>
+      ) : null}
+      {!kept && (reason || state.error) ? (
+        <details className="rounded-md border border-border">
+          <summary className="px-2.5 py-1.5 text-xs font-medium">Why</summary>
+          <p className="whitespace-pre-wrap break-words border-t border-border p-2.5 text-xs text-muted-foreground">
+            {reason ?? state.error}
+          </p>
+        </details>
+      ) : null}
+    </div>
+  );
+}
+
+export function BuildProgress({ buildId, onFinished, onRebuilt, className }: BuildProgressProps) {
+  const [currentId, setCurrentId] = useState(buildId);
+  const [detail, setDetail] = useState<FactoryBuildDetail | null | undefined>(undefined);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [keptAgent, setKeptAgent] = useState<string | null>(null);
+  const isAdmin = useAppSelector(selectIsAdminPerson);
+
+  useEffect(() => setCurrentId(buildId), [buildId]);
+
+  // One effect per build id: load now, poll every 3s, stop once the spine row is over.
+  useEffect(() => {
+    let live = true;
+    let timer: ReturnType<typeof setInterval> | null = null;
+    const tick = async () => {
+      try {
+        const next = await getFactoryBuild(currentId);
+        if (!live) return;
+        setDetail(next);
+        setError(null);
+        if ((!next || spineIsOver(next.spineStatus)) && timer) clearInterval(timer);
+      } catch (e) {
+        if (live) setError(e instanceof Error ? e.message : "Could not load the build");
+      }
+    };
+    setDetail(undefined);
+    timer = setInterval(() => void tick(), POLL_MS);
+    void tick();
+    return () => {
+      live = false;
+      if (timer) clearInterval(timer);
+    };
+  }, [currentId]);
+
+  const over = detail ? spineIsOver(detail.spineStatus) : false;
+
+  const [reported, setReported] = useState<string | null>(null);
+  useEffect(() => {
+    if (over && detail?.state && reported !== currentId) {
+      setReported(currentId);
+      onFinished?.(detail.state);
+    }
+  }, [over, detail, currentId, reported, onFinished]);
+
+  const cells = detail ? stepCells(detail) : [];
+
+  const keep = async () => {
+    setBusy(true);
+    try {
+      setKeptAgent(await keepBuildAnyway(currentId));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not keep the draft");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const buildUnproven = async () => {
+    const req = detail?.state?.request;
+    if (!req?.spec) return;
+    setBusy(true);
+    try {
+      const next = await startAgentBuild({ spec: req.spec, mandateKey: req.mandate_key ?? null, unproven: true });
+      setCurrentId(next);
+      onRebuilt?.(next);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not start the build");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (detail === undefined && !error) {
+    return <RegionSkeleton shape="rows" count={3} aria-label="Loading build" className={className} />;
+  }
+  if (error || !detail) {
+    return (
+      <div className={cn("rounded-md border border-border p-3 text-sm text-muted-foreground", className)}>
+        {error ?? "No build has this id."}
+      </div>
+    );
+  }
+
+  const state = detail.state ?? {};
+  const name = (state.request?.spec?.display_name as string | undefined) ?? (state.request?.spec?.name as string | undefined) ?? "New agent";
+  const sendBacks = state.send_backs ?? 0;
+
+  return (
+    <div className={cn("flex min-w-0 flex-col gap-2.5 rounded-md border border-border bg-card p-3", className)}>
+      <div className="flex min-w-0 items-center gap-2">
+        <span className="truncate text-sm font-medium">{name}</span>
+        {!over ? <StateChip label="Building" tone="accent" /> : null}
+        {sendBacks > 0 ? (
+          <StateChip label={`${sendBacks} send-back${sendBacks === 1 ? "" : "s"}`} tone="warn" icon={<Repeat className="size-3" />} />
+        ) : null}
+        <span className="ml-auto shrink-0 text-xs tabular-nums text-muted-foreground">
+          {formatDuration(detail.startedAt ?? detail.createdAt, detail.endedAt ?? new Date().toISOString())}
+        </span>
+        {isAdmin ? (
+          <Link
+            href={`${ADMIN_BUILD_PATH}/${currentId}`}
+            className="flex shrink-0 items-center gap-1 text-xs text-primary hover:underline"
+          >
+            Full build
+            <ExternalLink className="size-3" />
+          </Link>
+        ) : null}
+      </div>
+
+      <ol className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5">
+        {cells.map((c) => (
+          <li
+            key={c.step}
+            className={cn("flex items-center gap-1.5 text-xs", c.status === "pending" && "opacity-50")}
+            aria-current={c.status === "running" ? "step" : undefined}
+          >
+            <StatusIcon status={c.status} />
+            <span className={cn(c.status === "running" && "font-medium")}>{STEP_LABEL[c.step]}</span>
+            {c.attempts > 1 ? <span className="tabular-nums text-muted-foreground">×{c.attempts}</span> : null}
+          </li>
+        ))}
+      </ol>
+
+      {over ? (
+        keptAgent ? (
+          <div className="flex items-center gap-2 border-t border-border pt-2.5">
+            <Badge tone="warning">Unproven</Badge>
+            <span className="text-sm">Kept. Its first 3 runs are judged.</span>
+            <Button asChild variant="primary" className="ml-auto">
+              <Link href={`/agents/${keptAgent}/build`}>Open agent</Link>
+            </Button>
+          </div>
+        ) : (
+          <OutcomePanel state={state} busy={busy} onKeep={() => void keep()} onBuildUnproven={() => void buildUnproven()} />
+        )
+      ) : null}
+    </div>
+  );
+}

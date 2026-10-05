@@ -1,5 +1,6 @@
 "use client";
 
+import { AgentProofBadge } from "@/features/agents/factory/components/AgentProofBadge";
 import Link from "next/link";
 import { useState } from "react";
 import {
@@ -241,6 +242,7 @@ export function AgentListItem({
                 showIcon={false}
               />
             </h4>
+            <AgentProofBadge agentId={id} className="flex-shrink-0" />
             {isArchived && (
               <span className="flex-shrink-0 text-[10px] font-medium px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
                 Archived

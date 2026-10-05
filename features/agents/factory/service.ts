@@ -194,3 +194,39 @@ export async function startFactoryBuild(input: StartFactoryBuildInput): Promise<
   if (!data?.build_id) throw new Error("The Agent Factory did not return a build id");
   return data.build_id;
 }
+
+/* ------------------------------------------------- person-owned build doors */
+
+export interface StartAgentBuildInput {
+  /** The spec as the server's `AgentSpec` (name, purpose, variables, sample_inputs …). */
+  spec: Record<string, unknown>;
+  mandateKey?: string | null;
+  /** R34 "Build unproven": save with fewer than 3 examples, judged on its first 3 runs. */
+  unproven?: boolean;
+  idempotencyKey?: string;
+}
+
+/**
+ * POST /agent-factory/builds for the signed-in person (202; the build is theirs and
+ * runs detached). Every door's UI starts builds through this one call.
+ */
+export async function startAgentBuild(input: StartAgentBuildInput): Promise<string> {
+  const { data } = await postJson<{ build_id: string }>("/agent-factory/builds", {
+    spec: input.spec,
+    mandate_key: input.mandateKey ?? null,
+    unproven: input.unproven ?? false,
+    idempotency_key: input.idempotencyKey ?? `person-build:${crypto.randomUUID()}`,
+  });
+  if (!data?.build_id) throw new Error("The Agent Factory did not return a build id");
+  return data.build_id;
+}
+
+/** Keep it anyway (R35 O4): un-archive a refused build's draft, marked unproven. */
+export async function keepBuildAnyway(buildId: string): Promise<string> {
+  const { data } = await postJson<{ agent_id: string }>(
+    `/agent-factory/builds/${encodeURIComponent(buildId)}/keep`,
+    {},
+  );
+  if (!data?.agent_id) throw new Error("The Agent Factory did not return the kept agent");
+  return data.agent_id;
+}

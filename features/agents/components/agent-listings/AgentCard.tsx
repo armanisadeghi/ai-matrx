@@ -1,5 +1,6 @@
 "use client";
 
+import { AgentProofBadge } from "@/features/agents/factory/components/AgentProofBadge";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import IconButton from "@/components/official/IconButton";
@@ -281,6 +282,7 @@ export function AgentCard({
 
       <FavoriteAgentButton id={id} disabled={isDisabled} />
 
+      <AgentProofBadge agentId={id} className="absolute bottom-3 right-3 z-10" />
       {isArchived && (
         <div className="absolute top-3 right-8 z-10 flex items-center gap-1 px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
           <Archive className="h-3 w-3" />

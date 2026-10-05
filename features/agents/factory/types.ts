@@ -86,8 +86,23 @@ export interface FactoryModelChoice {
   reason?: string;
 }
 
+export type FactoryOutcome =
+  | "passed"
+  | "saved_unproven"
+  | "failed"
+  | "workflow_sized"
+  | "send_backs_exhausted"
+  | "judge_not_blind"
+  | "no_proof_inputs"
+  | "needs_new_kind";
+
+/** Outcomes that keep the saved agent active (pipeline.KEPT_OUTCOMES). */
+export const KEPT_OUTCOMES: ReadonlySet<string> = new Set(["passed", "saved_unproven"]);
+
 export interface FactoryBuildRequest {
-  spec?: {
+  unproven?: boolean;
+  door?: string | null;
+  spec?: Record<string, unknown> & {
     name?: string;
     display_name?: string | null;
     model_id?: string | null;
@@ -111,8 +126,10 @@ export interface FactoryBuildState {
   agent_id?: string | null;
   version_ids?: string[];
   proof?: FactoryProofCase[];
+  /** R15: an unpassed build archived the agent it saved. */
+  archived_agent?: boolean;
   send_backs?: number;
-  outcome?: "passed" | "failed" | "workflow_sized" | "send_backs_exhausted" | null;
+  outcome?: FactoryOutcome | null;
   error?: string | null;
   /** The finished build as the registered `agent_factory_build` kind. */
   build?: Record<string, unknown> | null;
