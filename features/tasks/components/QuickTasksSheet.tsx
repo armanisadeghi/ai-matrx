@@ -397,8 +397,9 @@ function QuickTasksSheetContent({ className, prePopulate, onPrePopulated }: Quic
               {/* Quick Add Task Form — first, so capture is immediate */}
               <div className="py-1 px-2">
                 <div className="space-y-1">
-                  <div className="flex items-center gap-0">
-                    <div className="flex-1 min-w-0">
+                  <div className="flex items-center">
+                    {/* The Cancel tap box carries 3px of unseen space; its input neighbour adds its own 3px. */}
+                    <div className={cn("flex-1 min-w-0", showExpandedForm && "mr-[3px]")}>
                       <ProInput
                         ref={newTaskInputRef}
                         value={newTaskTitle}
