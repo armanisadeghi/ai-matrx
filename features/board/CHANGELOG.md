@@ -1,5 +1,12 @@
 # CHANGELOG — Board (`features/board`)
 
+## 2026-10-04 — Boards are a list like every saved record; "My board" is gone
+
+- Owner: "I have 'My board' and then other boards. That's strange." `/board` is now the boards list (the canonical list shell, recents first by last opened, "New board"); a board opens at `/board/<id>`; `/board/all` redirects to `/board`. The Workspace menu's Board area is Boards + the "Add to your board" rows; profile menu and dashboard point at Boards.
+- `/board?add=<key>` opens the board the person opened last (`getLastOpenedBoardId`, skipping deleted and meeting boards; a board never opened counts by its edit time), or makes a new one when they have none, then `UserBoard` starts the item (`boards/AddToBoardRedirect.tsx`).
+- The home concept is removed from code: `useSavedBoard({home:true})`, `getHomeBoard`, `pickHomeId`, `isHome`/`is_home`, the delete protection and the restore-time unflagging, `HOME_BOARD_TITLE`. Rows already flagged `settings.home` stay as ordinary boards in the list, titles untouched (no data change); a copy still drops the flag. The /board route is no longer canvas chrome (only `/board/<id>`), so the shell header and chat dock show on the list like any list page.
+- Guards: `__tests__/boards-list-front-door.test.tsx` (list at /board, add -> last-opened board / new board, menu has no My board and no /board/all), `board-trash.test.tsx` (`pickLastOpenedId`), `board-persistence.test.ts` (every board opens at /board/<id>); all red on the previous code.
+
 ## 2026-10-04 — The Board's agent context scales fairly with the item count
 
 - `board_items` basics were first-come until a 6000-character budget ran out; later items got "Basics left out" and nothing. Now each item with basics gets `budget / count` (budget 8000, floor 70, ceiling 1200 characters): a 3-item board shows four values of up to 160 characters per item, a 40-item board two values of about 60 characters, 80 items the floor (name plus one fact, text shortened to 8 characters if needed). Values follow the manifest's `briefValues` order. `BOARD_ITEMS_MAX` 60 -> 80; items past it are a compact `more_items` tail (id + title, up to 300). One top-level `read_in_full` line says `board_open_item(id)` reads any item. `surfaceBrief` takes optional `{maxValues, textChars}`; `briefValue` cuts single long lines (it used to pass them whole only when short).

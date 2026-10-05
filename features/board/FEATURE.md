@@ -2,8 +2,8 @@
 
 ## Status — what is live at /board (2026-10-04)
 
-- Routes: `/board` (the person's own board in the active organization), `/board/<id>` (any of their boards), `/board/all` (the list: open, rename, duplicate, delete; deleted boards restorable, Archived filter). Saved boards live in `projects.boards`.
-- Board is its own Workspace menu item: My board, All boards, and one "Add to your board" row per item type (`/board?add=<item key>` starts that type on the person's board). `__tests__/board-menu-items.test.ts` fails when a type has no row or a row names a missing type. The nav has no feature-board sub-entries yet (Open item 1).
+- Routes: `/board` is the boards LIST (recents first by last opened; open, rename, duplicate, delete; deleted boards restorable, Archived filter; "New board"), `/board/<id>` opens one, `/board?add=<key>` opens the board the person opened last (a new one when they have none) and starts that item, `/board/all` redirects to `/board`. There is no special home board. Saved boards live in `projects.boards`.
+- Board is its own Workspace menu item: Boards (the list) and one "Add to your board" row per item type (`/board?add=<item key>` starts that type on the last-opened board). `__tests__/board-menu-items.test.ts` fails when a type has no row or a row names a missing type. The nav has no feature-board sub-entries yet (Open item 1).
 - Item types: note, file, chat, table, record, picklist (`list`), document, task, war room, meeting, workflow run, research, project, flashcard deck (`fc_set`), study kit (`study-kit`, the education "study set"), scope, web page, image, write-up, label, meeting_part, Page (any app page as a tile).
 - Every item type passes the remount quiet law (record, table, task, project, meeting, chat fixed 2026-10-04). The one source of which types sleep and which laws each passes is the ledger `__tests__/remount-safety/cases.ts` (enforced by `remount-ledger.test.ts`); never list sleepers in prose here.
 - Agent bridge in two requests (`board_items` value, then `board_open_item` / `board_item_act`), 13 `board_*` tools, surface `matrx-user/board` (values `board_title`, `board_items`, `selected_tile`). Board comments: the Board's own thread plus one comment door per tile. Tile errors are isolated by an error boundary per tile.
@@ -52,14 +52,14 @@ Closed 2026-10-04 (details in CHANGELOG.md): Board as its own menu item with eve
 `projects.boards` (token `board`, certified, soft delete, versioned; columns
 `title`, `description`, `camera`, `nodes`, `edges`, `settings`, `last_opened_at` + the base
 contract). The stored shape is `board/document.ts` (parse reports every malformed node; groups and
-shapes ride in `nodes` flagged; JSON Canvas 1.0 export). The home board is the row whose
-`settings.home` is true, per person per organization. Service + hook: `persistence/` (see The Board).
+shapes ride in `nodes` flagged; JSON Canvas 1.0 export). Every board is an ordinary saved record;
+rows an older build flagged `settings.home` are plain boards (the flag is data nothing reads; a copy
+drops it). Service + hook: `persistence/` (see The Board).
 
-- **Delete is a soft delete, and a board comes back.** `/board/all`'s Archived filter (`query.archived`
+- **Delete is a soft delete, and a board comes back.** `/board`'s Archived filter (`query.archived`
   → `listBoards(archived)`) shows deleted boards; their row offers Restore (`restoreBoard` → Trash's
-  `restoreFromTrash` / `entity_undelete`); /trash lists them too. ONE home: every reader takes the
-  oldest live `settings.home` row (`pickHomeId`, same as `getHomeBoard`), and a deleted home restored
-  while another home is live loses its flag before it comes back (`__tests__/board-trash.test.tsx`).
+  `restoreFromTrash` / `entity_undelete`); /trash lists them too (`__tests__/board-trash.test.tsx`).
+- **"Add to my board" = the last-opened board.** `getLastOpenedBoardId` / `pickLastOpenedId`: the live, non-meeting board with the newest `last_opened_at` (a never-opened board counts by its last edit). `boards/AddToBoardRedirect.tsx` sends `/board?add=<key>` to `/board/<id>?add=<key>`, where `UserBoard`'s `addKey` effect starts the item; with no board it makes one first. Guard `__tests__/boards-list-front-door.test.tsx`.
 
 - **The saved board is CONTENT only** (`nodes`, `edges`). The camera is each viewer's own view
   (Figma, Miro): kept per person per board in this browser (`persistence/viewerCamera.ts`,
@@ -253,18 +253,18 @@ Room FEATURE.md Board section).
 
 ## The Board (`/board`) — a person's own canvas, the main way in
 
-`/board` is the person's home board in the active organization; `/board/<id>` any of their boards;
-`/board/all` manages them (open, rename, duplicate, delete). The nav item "Board" lists My board, All boards and one "Add to your board" row per item type
+`/board` is the boards list (the canonical list shell, recents first); `/board/<id>` opens one board
+(canvas chrome — the header steps aside); `/board/all` redirects to `/board`. The nav item "Board" lists Boards and one "Add to your board" row per item type
 (`/board?add=<key>`, guard `__tests__/board-menu-items.test.ts`). The feature boards (War Room, Meetings,
 Workflow runs) are views inside their features, not nav entries yet (Open item 1).
 
 | Piece | File |
 |---|---|
-| Page: the ONE chat-beside-a-canvas layout (`ChatCanvasWorkspace`, `packages/chat/src/canvas/workspace`) with the saved board as canvas; title menu Rename / New board / All boards; byline shows save state | `home/BoardPage.tsx`, `app/(core)/board/**` |
+| Page: the ONE chat-beside-a-canvas layout (`ChatCanvasWorkspace`, `packages/chat/src/canvas/workspace`) with the saved board as canvas; title menu Rename / New board / Boards; byline shows save state | `home/BoardPage.tsx`, `app/(core)/board/**` |
 | The board: placement, Add menu, Start panel (empty board), drop + paste, tools, shelf, layers, agent tools host | `home/UserBoard.tsx`, `home/AddMenu.tsx` |
 | What a paste/drop of text becomes (a link → web page / image, other text → a new Note) | `home/board-intake.ts` |
-| Saving: `useSavedBoard({home:true} \| {boardId})` — debounced autosave (`AUTOSAVE_DELAY_MS`) of a lazily built document, flush on unmount, keepalive flush on hide / pagehide; the viewer's camera via `saveCamera` (see Saved boards). `saveBoardDocument(id, doc, { expectedVersion, baseFingerprint })` is version-guarded (`guardedUpdate`): a version moved only by a rename or the opened stamp retries; a document changed elsewhere is a `conflict` the person is told about | `persistence/` |
-| Manage page | `boards/`, `app/(core)/board/all` |
+| Saving: `useSavedBoard({boardId} \| {meeting})` — debounced autosave (`AUTOSAVE_DELAY_MS`) of a lazily built document, flush on unmount, keepalive flush on hide / pagehide; the viewer's camera via `saveCamera` (see Saved boards). `saveBoardDocument(id, doc, { expectedVersion, baseFingerprint })` is version-guarded (`guardedUpdate`): a version moved only by a rename or the opened stamp retries; a document changed elsewhere is a `conflict` the person is told about | `persistence/` |
+| The boards list (`/board`) and the add-to-last-board redirect | `boards/`, `app/(core)/board/page.tsx` |
 
 **Item types — how a feature gets onto every board.** `items/types.ts` is the contract: a
 `BoardItemType` says how to start a new one (`startNew`, synchronous — the person starts at once),
