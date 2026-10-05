@@ -115,16 +115,16 @@ export function collectImports(file, text) {
     const spec = stmt.moduleSpecifier;
     if (!spec || !ts.isStringLiteral(spec) || !spec.text.startsWith(SCOPE)) continue;
     const line = sf.getLineAndCharacterOfPosition(stmt.getStart(sf)).line + 1;
-    const push = (name) => found.push({ specifier: spec.text, name, line });
+    const push = (name, typeOnly) => found.push({ specifier: spec.text, name, line, typeOnly: Boolean(typeOnly) });
     if (ts.isImportDeclaration(stmt) && stmt.importClause) {
       const clause = stmt.importClause;
-      if (clause.name) push("default");
+      if (clause.name) push("default", clause.isTypeOnly);
       const nb = clause.namedBindings;
       if (nb && ts.isNamedImports(nb)) {
-        for (const el of nb.elements) push((el.propertyName ?? el.name).text);
+        for (const el of nb.elements) push((el.propertyName ?? el.name).text, clause.isTypeOnly || el.isTypeOnly);
       }
     } else if (ts.isExportDeclaration(stmt) && stmt.exportClause && ts.isNamedExports(stmt.exportClause)) {
-      for (const el of stmt.exportClause.elements) push((el.propertyName ?? el.name).text);
+      for (const el of stmt.exportClause.elements) push((el.propertyName ?? el.name).text, stmt.isTypeOnly || el.isTypeOnly);
     }
   }
   return found;
@@ -201,6 +201,101 @@ function toDeclaration(pkgDir, file) {
   return null;
 }
 
+// The RUNTIME side. A .d.ts can promise a value the shipped JavaScript does not carry (a
+// hand-written declaration, a bundler that dropped a re-export); the bundler then fails on the
+// JS, not the types. So every VALUE import is also looked up in the runtime entry's own exports.
+const RUNTIME_CONDITIONS = ["import", "module", "browser", "node", "default", "require"];
+
+/** Resolve an exports target to its runtime JS file (never the `types` condition). */
+function pickRuntime(target) {
+  if (typeof target === "string") return /\.d\.[cm]?ts$/.test(target) ? null : target;
+  if (Array.isArray(target)) {
+    for (const t of target) {
+      const r = pickRuntime(t);
+      if (r) return r;
+    }
+    return null;
+  }
+  if (target && typeof target === "object") {
+    for (const cond of RUNTIME_CONDITIONS) {
+      if (cond in target) {
+        const r = pickRuntime(target[cond]);
+        if (r) return r;
+      }
+    }
+  }
+  return null;
+}
+
+function resolveRelativeJs(fromFile, spec) {
+  const base = resolve(dirname(fromFile), spec);
+  for (const c of [base, `${base}.js`, `${base}.mjs`, join(base, "index.js"), join(base, "index.mjs")]) {
+    try {
+      if (existsSync(c) && !lstatSync(c).isDirectory()) return c;
+    } catch {
+      /* next candidate */
+    }
+  }
+  return null;
+}
+
+const runtimeCache = new Map();
+/**
+ * The names an ESM file exports at RUNTIME, following relative `export * from`. Returns null
+ * ("open") when that cannot be known statically — CommonJS, or `export *` from another package —
+ * and then the runtime half of the check stays silent for that entry rather than guessing.
+ */
+export function runtimeExportsOf(file, stack = new Set()) {
+  if (runtimeCache.has(file)) return runtimeCache.get(file);
+  if (stack.has(file)) return new Set();
+  stack.add(file);
+  let result = new Set();
+  try {
+    if (/\.cjs$/.test(file)) throw new Error("commonjs");
+    const text = readFileSync(file, "utf8");
+    const sf = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, false, ts.ScriptKind.JS);
+    let sawEsm = false;
+    const hasMod = (node, kind) => (ts.getModifiers?.(node) ?? node.modifiers ?? []).some((m) => m.kind === kind);
+    const addBinding = (name) => {
+      if (ts.isIdentifier(name)) result.add(name.text);
+      else for (const el of name.elements ?? []) if (el.name) addBinding(el.name);
+    };
+    for (const stmt of sf.statements) {
+      if (ts.isImportDeclaration(stmt)) sawEsm = true;
+      if (ts.isExportDeclaration(stmt)) {
+        sawEsm = true;
+        const from = stmt.moduleSpecifier && ts.isStringLiteral(stmt.moduleSpecifier) ? stmt.moduleSpecifier.text : null;
+        if (!stmt.exportClause) {
+          if (!from || !from.startsWith(".")) throw new Error("open star");
+          const target = resolveRelativeJs(file, from);
+          if (!target) throw new Error("unresolved star");
+          const inner = runtimeExportsOf(target, stack);
+          if (inner === null) throw new Error("open star");
+          for (const n of inner) if (n !== "default") result.add(n);
+        } else if (ts.isNamespaceExport(stmt.exportClause)) {
+          result.add(stmt.exportClause.name.text);
+        } else {
+          for (const el of stmt.exportClause.elements) result.add(el.name.text);
+        }
+      } else if (ts.isExportAssignment(stmt)) {
+        sawEsm = true;
+        result.add("default");
+      } else if (hasMod(stmt, ts.SyntaxKind.ExportKeyword)) {
+        sawEsm = true;
+        if (hasMod(stmt, ts.SyntaxKind.DefaultKeyword)) result.add("default");
+        else if (ts.isVariableStatement(stmt)) for (const d of stmt.declarationList.declarations) addBinding(d.name);
+        else if (stmt.name) result.add(stmt.name.text);
+      }
+    }
+    if (!sawEsm) throw new Error("not esm");
+  } catch {
+    result = null;
+  }
+  stack.delete(file);
+  runtimeCache.set(file, result);
+  return result;
+}
+
 /** { entry } | { missingSubpath: true } | { unresolved: reason } */
 function resolveSubpath(pkgDir, manifest, sub) {
   const exp = manifest.exports;
@@ -232,14 +327,22 @@ function resolveSubpath(pkgDir, manifest, sub) {
   const file = pickTypes(target);
   if (!file) return { unresolved: "exports target has no usable condition" };
   const entry = toDeclaration(pkgDir, file);
-  return entry ? { entry } : { unresolved: `no declaration beside ${file}` };
+  const runtimeRel = pickRuntime(target);
+  const runtime = runtimeRel && /\.m?js$/.test(runtimeRel) && existsSync(join(pkgDir, runtimeRel)) ? join(pkgDir, runtimeRel) : null;
+  return entry ? { entry, runtime } : { unresolved: `no declaration beside ${file}` };
 }
 
 // ── the run ──────────────────────────────────────────────────────────────────
 
-export function audit(root) {
+export function audit(root, { only = null } = {}) {
   root = resolve(root);
-  const files = listFiles(root);
+  // `only` narrows the scan to the given repo-relative files/directories (`pnpm findings <paths>`,
+  // a changed-files run). A narrowed run never claims a full scan (no end-of-scan marker).
+  const files = listFiles(root).filter((f) => {
+    if (!only) return true;
+    const rel = relative(root, f).split(sep).join("/");
+    return only.some((o) => o === "" || rel === o || rel.startsWith(`${o}/`));
+  });
   const imports = []; // { file, line, specifier, name, pkgDir, version, sub, entry }
   const findings = [];
   const skipped = { workspace: 0, notInstalled: new Set(), unresolved: [] };
@@ -256,7 +359,12 @@ export function audit(root) {
       const { name: pkg, sub } = splitSpecifier(imp.specifier);
       const pkgDir = findInstalled(dirname(file), pkg, root);
       if (!pkgDir) {
+        // NOT A SKIP. 2026-10-05: a lockfile bump to a version whose tarball still 404'd made
+        // `pnpm install --frozen-lockfile` fail half-way and left node_modules WITHOUT
+        // @ai-matrx/design-system and @ai-matrx/agents. An import of a package that is not
+        // installed is exactly the broken build this check exists to name.
         skipped.notInstalled.add(pkg);
+        findings.push({ file: relative(root, file), line: imp.line, pkg, version: "(not installed)", sub, name: imp.name, why: "not-installed" });
         continue;
       }
       if (isWorkspaceSource(pkgDir)) {
@@ -274,12 +382,25 @@ export function audit(root) {
         skipped.unresolved.push(`${pkg}@${manifest.version} ${sub}: ${res.unresolved}`);
         continue;
       }
-      imports.push({ file: rel, line: imp.line, pkg, version: manifest.version, sub, name: imp.name, entry: res.entry });
+      imports.push({
+        file: rel,
+        line: imp.line,
+        pkg,
+        version: manifest.version,
+        sub,
+        name: imp.name,
+        typeOnly: imp.typeOnly,
+        entry: res.entry,
+        runtime: res.runtime,
+      });
     }
   }
 
   // A JSON subpath (`@ai-matrx/x/package.json`) exports its top-level keys + default.
   const exportsOf = new Map();
+  const valuesOf = new Map();
+  const runtimeOpen = new Set();
+  let runtimeChecked = 0;
   for (const entry of new Set(imports.map((i) => i.entry))) {
     if (!entry.endsWith(".json")) continue;
     const data = JSON.parse(readFileSync(entry, "utf8"));
@@ -307,16 +428,43 @@ export function audit(root) {
       skipped.unresolved.push(`${relative(root, entry)}: not a module (no exports to check)`);
       continue;
     }
-    const names = new Set(checker.getExportsOfModule(sym).map((s) => s.escapedName.toString()));
+    const exported = checker.getExportsOfModule(sym);
+    const names = new Set(exported.map((s) => s.escapedName.toString()));
     if (sym.exports?.has("export=")) names.add("default").add("*export=*");
     exportsOf.set(entry, names);
+    // Which of those names the declaration promises as a VALUE (only those must exist at runtime;
+    // an interface imported without `type` is erased and never reaches the bundler).
+    const values = new Set();
+    for (const s of exported) {
+      let target = s;
+      try {
+        if (s.flags & ts.SymbolFlags.Alias) target = checker.getAliasedSymbol(s);
+      } catch {
+        /* unresolvable alias: treat as not-a-value, never guess a finding */
+      }
+      if (target.flags & ts.SymbolFlags.Value) values.add(s.escapedName.toString());
+    }
+    valuesOf.set(entry, values);
   }
   for (const imp of imports) {
     const names = exportsOf.get(imp.entry);
     if (!names || names.has("*export=*")) continue;
-    if (!names.has(imp.name)) findings.push({ ...imp, why: "export" });
+    if (!names.has(imp.name)) {
+      findings.push({ ...imp, why: "export" });
+      continue;
+    }
+    // Runtime half: a value the types promise must be in the JavaScript the bundler will load.
+    if (imp.typeOnly || !imp.runtime || !valuesOf.get(imp.entry)?.has(imp.name)) continue;
+    const runtimeNames = runtimeExportsOf(imp.runtime);
+    if (runtimeNames === null) {
+      runtimeOpen.add(relative(root, imp.runtime));
+      continue;
+    }
+    runtimeChecked++;
+    if (!runtimeNames.has(imp.name)) findings.push({ ...imp, why: "runtime" });
   }
-  return { files: files.length, imports: imports.length, findings, skipped };
+  skipped.runtimeOpen = runtimeOpen;
+  return { files: files.length, imports: imports.length, runtimeChecked, findings, skipped, narrowed: Boolean(only) };
 }
 
 function report(result) {

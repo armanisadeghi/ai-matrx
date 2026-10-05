@@ -174,6 +174,10 @@ export function SigningSurface({
   const [step, setStep] = useState<Step>("review");
   /** The envelope is complete: from the load, or from the answer to this signer's own Sign. */
   const [everyoneSigned, setEveryoneSigned] = useState(false);
+  /** An outsider who has signed: the one-time hint that prefills their address at sign-up. */
+  const [signupHint, setSignupHint] = useState<string | null>(null);
+  /** Once complete, each document is shown as its signed copy (marks stamped in), by document id. */
+  const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
   const [typedName, setTypedName] = useState("");
   const [mark, setMark] = useState<SignatureMark>("typed");
   const [drawing, setDrawing] = useState<string | null>(null);
@@ -220,6 +224,7 @@ export function SigningSurface({
         if (drawAllowed && (!typeAllowed || window.matchMedia("(pointer: coarse)").matches)) setMark("drawn");
         const envelopeDone = text(load.envelope, "status") === "completed";
         setEveryoneSigned(envelopeDone);
+        if (typeof load.signup_hint === "string") setSignupHint(load.signup_hint);
         setStep(text(me, "signed_at") || envelopeDone ? "done" : text(me, "consented_at") ? "sign" : "review");
         const listed: DocView[] = (load.documents ?? []).map((d) => ({
           id: String(d.id),
@@ -276,6 +281,44 @@ export function SigningSurface({
       setDocs((all) => all.map((d) => (d.id === wantedId ? { ...d, ...patch } : d)));
     });
   }, [dispatch, door, wantedId]);
+
+  // A completed envelope is shown as its SIGNED COPY — every mark stamped where it was placed —
+  // never the clean original with empty boxes. The copy is made at the last signature; when it is
+  // still being made, ask again once.
+  const showSigned = step === "done" && everyoneSigned;
+  useEffect(() => {
+    if (!showSigned) return;
+    let live = true;
+    const made: string[] = [];
+    async function fetchCopies(attempt: number) {
+      try {
+        const answer = await signingAct(dispatch, door, "signed_copy");
+        if (!live) return;
+        const copies = answer.granted && Array.isArray(answer.signed_copies) ? answer.signed_copies : [];
+        if (copies.length === 0) {
+          if (attempt < 2) setTimeout(() => void fetchCopies(attempt + 1), 3000);
+          return;
+        }
+        const next: Record<string, string> = {};
+        for (const copy of copies) {
+          const id = typeof copy.document_id === "string" ? copy.document_id : null;
+          const data = typeof copy.content_base64 === "string" ? copy.content_base64 : null;
+          if (!id || !data) continue;
+          const url = URL.createObjectURL(new Blob([decodeBase64(data)], { type: "application/pdf" }));
+          made.push(url);
+          next[id] = url;
+        }
+        setSignedUrls(next);
+      } catch {
+        // The original stays on screen; the Download button says why if the copy cannot be had.
+      }
+    }
+    void fetchCopies(0);
+    return () => {
+      live = false;
+      for (const url of made) URL.revokeObjectURL(url);
+    };
+  }, [dispatch, door, showSigned]);
 
   function patchDoc(id: string, patch: Partial<DocView>) {
     setDocs((current) => current.map((d) => (d.id === id ? { ...d, ...patch } : d)));
@@ -469,6 +512,7 @@ export function SigningSurface({
       if (signed.granted) {
         const progress = signed.envelope;
         setEveryoneSigned(typeof progress === "object" && progress !== null && "completed" in progress && progress.completed === true);
+        if (typeof signed.signup_hint === "string") setSignupHint(signed.signup_hint);
         setStep("done");
       }
       else setNotice(reasonText(signed.reason));
@@ -529,7 +573,10 @@ export function SigningSurface({
   const canType = load.signature_options?.typed !== false;
   const canDraw = load.signature_options?.drawn !== false;
   const allSeen = docs.length > 0 && docs.every((d) => d.rendered && d.seenHash);
-  const current = docs[activeDoc] ?? null;
+  const original = docs[activeDoc] ?? null;
+  // Complete: the signed copy, not the clean original (the frozen bytes stay the evidence).
+  const signedUrl = original ? signedUrls[original.id] : undefined;
+  const current = original && signedUrl ? { ...original, url: signedUrl, mimeType: "application/pdf" } : original;
   // Who else has already signed: their boxes read "Signed", not an empty placeholder.
   const signedSigners = new Set(
     (load.other_signers ?? [])
@@ -577,10 +624,13 @@ export function SigningSurface({
                 onPage={(page) => setPageByDoc((pages) => ({ ...pages, [current.id]: page }))}
                 renderFields={(pageNumber, rotation) => (
                   <SigningFields
-                    // A signed document reopened later shows no boxes: the signed copy has the marks.
-                    fields={current.fields.filter(
-                      (f) => f.page === pageNumber && (step !== "done" || fieldValues !== null),
-                    )}
+                    // The signed copy carries its marks; boxes drawn over it would print them twice.
+                    // A signed document whose copy is not ready yet shows no empty boxes either.
+                    fields={
+                      signedUrl
+                        ? []
+                        : current.fields.filter((f) => f.page === pageNumber && (step !== "done" || fieldValues !== null))
+                    }
                     rotation={rotation}
                     myId={myId}
                     signedSigners={signedSigners}
@@ -694,6 +744,7 @@ export function SigningSurface({
               door={door}
               title={title}
               everyoneSigned={everyoneSigned}
+              signupHint={signupHint}
               signedAt={text(load.me, "signed_at")}
             />
           )}
@@ -793,7 +844,8 @@ function DocumentFrame({
     return (
       <Suspense fallback={<Loader2 className="m-auto h-5 w-5 animate-spin text-muted-foreground" />}>
         <PdfDocumentRenderer
-          key={doc.id}
+          // The bytes, not just the document: swapping in the signed copy must reload the viewer.
+          key={`${doc.id}:${doc.url}`}
           blobUrl={doc.url}
           fileName={doc.name}
           className="h-full w-full"

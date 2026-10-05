@@ -54,14 +54,14 @@ import { withSurfaceDocumentEvidence } from "../../../../surfaces/utils/document
 import { alwaysOnSurfaceKeys } from "../../../../surfaces/utils/always-on-context";
 import {
   ensureAgentIdentity,
-  fetchAgentExecutionFull,
+  fetchAgentRunTier,
 } from "../../agent-definition/thunks";
 import {
   isSignedOutVisitor,
   NotAuthenticatedError,
 } from "../../../../host/identity";
 import { applyLaunchModelOverrides } from "../instance-model-overrides/launch-model-overrides";
-import { selectAgentCustomExecutionPayload } from "../../agent-definition/selectors";
+import { selectAgentRunTier } from "../../agent-definition/selectors";
 import { getShortcutRecordFromState } from "../../agent-shortcuts/selectors";
 import { ensureShortcutLoaded } from "../../agent-shortcuts/thunks";
 import { resolveShortcutMappings } from "@host/features/agent-shortcuts/utils/resolveShortcutMappings";
@@ -532,7 +532,7 @@ export const launchAgentExecution = createAsyncThunk<
       void dispatch(ensureAgentIdentity(agentId));
     }
     const preState = getState() as ChatRootState;
-    const payload = selectAgentCustomExecutionPayload(preState, agentId);
+    const payload = selectAgentRunTier(preState, agentId);
     const debugProjectCreate = isProjectCreateFlow(sourceFeature, agentId);
 
     if (debugProjectCreate) {
@@ -547,26 +547,26 @@ export const launchAgentExecution = createAsyncThunk<
     if (!payload.isReady) {
       if (debugProjectCreate) {
         logProjectCreateAiStage(
-          "Step 0.5 — calling agx_get_execution_full (RLS-sensitive)",
+          "Step 0.5 — calling agx_get_run_tier (RLS-sensitive)",
           { agentId },
         );
       }
       try {
-        await dispatch(fetchAgentExecutionFull(agentId)).unwrap();
+        await dispatch(fetchAgentRunTier(agentId)).unwrap();
       } catch (err) {
         if (debugProjectCreate) {
-          warnProjectCreateAi("Step 0.5 — agx_get_execution_full FAILED", {
+          warnProjectCreateAi("Step 0.5 — agx_get_run_tier FAILED", {
             agentId,
-            rpc: "agx_get_execution_full",
+            rpc: "agx_get_run_tier",
             error: err instanceof Error ? err.message : String(err),
-            hint: "System/builtin agents need agx_get_execution_full RLS or SECURITY DEFINER access. Empty variable fields usually mean this RPC returned nothing.",
+            hint: "agx_get_run_tier is SECURITY INVOKER: it answers only what agent.definition RLS lets the caller read. No row means the caller cannot read this agent.",
           });
         }
         throw err;
       }
 
       const postState = getState() as ChatRootState;
-      const postPayload = selectAgentCustomExecutionPayload(postState, agentId);
+      const postPayload = selectAgentRunTier(postState, agentId);
       const agentError =
         postState.agentDefinition.agents?.[agentId]?._error ?? null;
 
@@ -579,7 +579,7 @@ export const launchAgentExecution = createAsyncThunk<
               agentError: agentError ?? "(none)",
               variableDefinitionCount:
                 postPayload.variableDefinitions?.length ?? 0,
-              hint: "RPC returned no row or missing fields (variable_definitions, model_id, settings, …).",
+              hint: "RPC returned no row or missing fields (variable_definitions, context_policies, model_id).",
             },
           );
         } else {

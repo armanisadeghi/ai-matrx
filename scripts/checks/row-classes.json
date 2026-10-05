@@ -5,8 +5,8 @@
     "repo-only": "reads the repository and nothing else"
   },
   "counts": {
-    "repo-only": 134,
-    "live-db": 62
+    "repo-only": 139,
+    "live-db": 63
   },
   "rows": {
     "every-ai-matrx-package-is-declared-and-installed-at-npm-late": {
@@ -617,6 +617,13 @@
       "reason": "no database access in 2 file(s) reached",
       "evidence": []
     },
+    "a-run-never-fetches-the-agent-definition-run-tier": {
+      "label": "A run never fetches the agent definition (run tier)",
+      "class": "repo-only",
+      "cmd": "pnpm check:agent-run-tier",
+      "reason": "no database access in 1 file(s) reached",
+      "evidence": []
+    },
     "one-door-for-an-agent-request-s-context": {
       "label": "One door for an agent request's context",
       "class": "repo-only",
@@ -656,28 +663,42 @@
       "label": "UI drift",
       "class": "repo-only",
       "cmd": "pnpm check:ui-drift:strict",
-      "reason": "no database access in 6 file(s) reached",
+      "reason": "no database access in 7 file(s) reached",
       "evidence": []
     },
     "one-control": {
       "label": "One control",
       "class": "repo-only",
       "cmd": "pnpm check:one-control:strict",
-      "reason": "no database access in 9 file(s) reached",
+      "reason": "no database access in 10 file(s) reached",
       "evidence": []
     },
     "one-control-self-test": {
       "label": "One control — self-test",
       "class": "repo-only",
       "cmd": "pnpm check:one-control:self-test",
-      "reason": "no database access in 10 file(s) reached",
+      "reason": "no database access in 11 file(s) reached",
+      "evidence": []
+    },
+    "page-top": {
+      "label": "Page top",
+      "class": "repo-only",
+      "cmd": "pnpm check:page-top:strict",
+      "reason": "no database access in 3 file(s) reached",
+      "evidence": []
+    },
+    "page-top-self-test": {
+      "label": "Page top — self-test",
+      "class": "repo-only",
+      "cmd": "pnpm check:page-top:self-test",
+      "reason": "no database access in 3 file(s) reached",
       "evidence": []
     },
     "ui-drift-self-test": {
       "label": "UI drift — self-test",
       "class": "repo-only",
       "cmd": "pnpm check:ui-drift:self-test",
-      "reason": "no database access in 6 file(s) reached",
+      "reason": "no database access in 7 file(s) reached",
       "evidence": []
     },
     "no-blocking-dialogs-ai-stays-reachable": {
@@ -1218,7 +1239,7 @@
       "label": "Authentication destinations and gates",
       "class": "repo-only",
       "cmd": "pnpm check:auth-destinations",
-      "reason": "no database access in 9 file(s) reached",
+      "reason": "no database access in 10 file(s) reached",
       "evidence": []
     },
     "auth-doors-blind-to-a-split-cookie-jar": {
@@ -1305,6 +1326,30 @@
         {
           "file": "scripts/lib/direct-db.ts",
           "signal": "direct-db loader (loadDbEnv)"
+        }
+      ]
+    },
+    "every-surface-row-names-its-executor": {
+      "label": "Every surface row names its executor",
+      "class": "live-db",
+      "cmd": "pnpm check:surface-executors",
+      "reason": "reaches code that can open the live database",
+      "evidence": [
+        {
+          "file": "scripts/check-surface-executors.ts",
+          "signal": "direct-db loader (loadDbEnv)"
+        },
+        {
+          "file": "scripts/lib/direct-db-env.ts",
+          "signal": "live database host"
+        },
+        {
+          "file": "scripts/lib/direct-db-env.ts",
+          "signal": "nightly dev clone connection"
+        },
+        {
+          "file": "scripts/lib/direct-db-env.ts",
+          "signal": "SUPABASE_MATRIX_* direct Postgres credentials"
         }
       ]
     },
@@ -1691,7 +1736,7 @@
       "label": "Content IR / kinds test suite",
       "class": "repo-only",
       "cmd": "pnpm test:content-ir",
-      "reason": "no database access in 188 file(s) reached",
+      "reason": "no database access in 204 file(s) reached",
       "evidence": []
     },
     "whole-jest-suite-every-suite-not-ci-s-four-scopes": {
@@ -1895,6 +1940,20 @@
       "class": "repo-only",
       "cmd": "pnpm check:motion-standard:self-test",
       "reason": "no database access in 2 file(s) reached",
+      "evidence": []
+    },
+    "history-write-that-skips-next-s-router-sync-window-history-s": {
+      "label": "History write that skips Next's router sync (window.history.state)",
+      "class": "repo-only",
+      "cmd": "pnpm check:history-state-bypass",
+      "reason": "no database access in 1 file(s) reached",
+      "evidence": []
+    },
+    "history-state-bypass-guard-self-test": {
+      "label": "History-state bypass guard self-test",
+      "class": "repo-only",
+      "cmd": "pnpm check:history-state-bypass:self-test",
+      "reason": "no database access in 1 file(s) reached",
       "evidence": []
     },
     "disabled-state-turns-pointer-events-off-swallows-the-cursor": {

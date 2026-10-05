@@ -480,17 +480,15 @@ export function AgentVersionDiffPage({
       >
         {/* Toolbar */}
         <div className="shrink-0 flex items-center gap-3 px-4 py-2 border-b border-border bg-card/50">
-          <TabsList className="h-7 p-0.5 bg-muted/50">
+          <TabsList>
             <TabsTrigger
               value="compare"
-              className="h-6 px-2 text-xs gap-1 data-[state=active]:bg-background"
             >
               <GitCompareArrows className="w-3 h-3" />
               Compare
             </TabsTrigger>
             <TabsTrigger
               value="history"
-              className="h-6 px-2 text-xs gap-1 data-[state=active]:bg-background"
             >
               <History className="w-3 h-3" />
               History

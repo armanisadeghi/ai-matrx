@@ -225,6 +225,48 @@ export const selectAgentExecutionPayload = createSelector(
 );
 
 /**
+ * TIER 2 — the RUN TIER record (PACKAGE-INDEPENDENCE §3, P24): what a run
+ * reads, filled by `fetchAgentRunTier` (`agx_get_run_tier`). `isReady` is
+ * false until the run tier (or anything above it) has landed, including the
+ * default model the override diff needs. A run never needs more than this.
+ */
+export const selectAgentRunTier = createSelector(
+  [selectAgentById],
+  (record) => {
+    if (!record) {
+      return {
+        isReady: false as const,
+        resolvedId: null,
+        isVersion: false as const,
+        variableDefinitions: null,
+        contextPolicies: [],
+        modelId: null,
+        uiGates: null,
+        toolIds: [],
+      };
+    }
+    const isReady =
+      (record._fetchStatus === "execution" ||
+        record._fetchStatus === "customExecution" ||
+        record._fetchStatus === "full" ||
+        record._fetchStatus === "versionSnapshot") &&
+      hasField(record._loadedFields, "variableDefinitions") &&
+      hasField(record._loadedFields, "contextPolicies") &&
+      hasField(record._loadedFields, "modelId");
+    return {
+      isReady,
+      resolvedId: record.id,
+      isVersion: record.isVersion,
+      variableDefinitions: record.variableDefinitions,
+      contextPolicies: record.contextPolicies,
+      modelId: record.modelId,
+      uiGates: record.uiGates ?? null,
+      toolIds: record.tools ?? [],
+    };
+  },
+);
+
+/**
  * Custom execution payload — adds settings, tools, model for pre-run overrides.
  * Works for both live agents and version snapshots.
  * isReady: false → thunk must call fetchAgentExecutionFull (agx_get_execution_full) first.

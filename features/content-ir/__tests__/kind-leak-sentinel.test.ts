@@ -20,19 +20,49 @@ import * as scan from "../surfaces/kind-leak-scan";
 const KIND = '{"__kind":"flashcard_set","title":"Cells","cards":[]}';
 const capture = captureError as jest.Mock;
 
+/**
+ * Let the sentinel see a change: FIRST the MutationObserver's microtask (it
+ * is what schedules the debounce), THEN the timers (debounce + idle slices),
+ * then any follow-up microtasks. K2 (round 7): advancing timers first let the
+ * install-time full-page scan find every leak, so the change-tracking path
+ * was never exercised — 16 of 22 tests passed with an observer that never fired.
+ */
+async function flushMicrotasks() {
+  for (let i = 0; i < 5; i += 1) await Promise.resolve();
+}
 async function settle() {
+  await flushMicrotasks();
   jest.advanceTimersByTime(1000);
-  await Promise.resolve();
+  await flushMicrotasks();
+}
+
+/** Swap in an observer that never fires (the K2 self-test's planted break). */
+function deadObserver(): () => void {
+  const real = globalThis.MutationObserver;
+  class NeverFires {
+    observe() {}
+    disconnect() {}
+    takeRecords() {
+      return [];
+    }
+  }
+  (globalThis as { MutationObserver: unknown }).MutationObserver = NeverFires;
+  return () => {
+    (globalThis as { MutationObserver: unknown }).MutationObserver = real;
+  };
 }
 
 describe("the kind leak sentinel (G1)", () => {
   let dispose: () => void;
-  beforeEach(() => {
+  beforeEach(async () => {
     jest.useFakeTimers();
     capture.mockClear();
     resetKindLeakSentinelReports();
     document.body.innerHTML = "";
     dispose = installKindLeakSentinel({ root: document.body, debounceMs: 100, logToConsole: false });
+    // Finish the install-time scan of the (empty) page, so every test below
+    // that changes the page is seen ONLY through the change-tracking path.
+    await settle();
   });
   afterEach(() => {
     dispose();

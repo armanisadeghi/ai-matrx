@@ -83,7 +83,26 @@ rail's icon column (x = 12px) — collapsed = icon, expanded = icon + name.
 - New floating chrome carries `data-matrx-floating-bottom`. A page opts out only with `data-floating-clearance="off"` + `// ui-exception:`. Never hand-write `pb-safe` / big `pb-*` on a page scroller.
 - Guards: `useFloatingClearanceGuard` (dev; `[floating-clearance]` console error + dashed outline when content is still in the floating band at scroll end; `window.__matrxFloatingClearanceProbe()` runs it on demand) and `pnpm check:floating-clearance` (`--self-test`).
 
+## PAGE-TOP TEMPLATES — every page top is one of four (owner, 2026-10-05)
+
+A page picks a template; it never hand-builds its top. Named options only — a need a template lacks is added to the template as a named option (`common-docs/policies/one-ui-system.md`).
+
+| Template | Component | For | Options |
+|---|---|---|---|
+| Marketing | `PublicHeader` + `ModuleLanding` (`features/auth/components/module-landing/`) | signed-out pitch / front door | see `module-landing-pages` skill |
+| Module home (list) | `EntityListPage` (`lib/entity-list/`) | "all" pages: lanes, org filter, search, New | see `lib/entity-list/FEATURE.md` |
+| Internal record page | `RecordPageHeader` (`components/header/templates/RecordPageHeader.tsx`) | a record or sub-page | `backHref`, `parents: Crumb[]` (link + sibling menu each), `record: { name, siblings? }`, `status?: { label, tone }`, `modes?`, `activeModeHref?`, `onModeSelect?`, `actions?: { label, icon, href/onPress, primary/destructive/warning, showLabel, newTab, pinnedOnPhone, phoneOnly }[]` |
+| Full-bleed | the workspace header (`data-page-header-target="workspace"`, ChatCanvasWorkspace) + glass only on a bar floating over the canvas | canvas, editors | (not yet a single component — open) |
+
+**Internal record page is ONE line**: back chevron, parents, the record as the last crumb, modes centered, actions right. No second line of text, no sentence under it. Phone: back + record name + one `…` (modes and actions). Built on `EntityModeHeader` (its new `trail`), which is built on `RouteHeader` → `PageHeader`. Only `features/shell/components/header/**` may render `<PageHeader>` directly.
+
+**Specimens render the real template.** `<HeaderSpecimen>` (`templates/HeaderSpecimen.tsx`) is a stand-in shell band: inside it `PageHeaderPortal` renders in place and the phone ⋮ host reads as absent (`header-specimen-context.ts`). The system page (`/demos/ui-unification/system`, Navigation) uses it — never a mock.
+
+**Guard:** `pnpm check:page-top` (findings row `page-top`, `--self-test`): `raw-page-header` (a file outside the header module importing `PageHeader`) and `sentence-under-title` (the interface-text `page-description` scanner). Baseline `scripts/page-top/baseline.json` only shrinks (`--shrink`).
+
 ## Change log
+
+- `2026-10-05` — claude: **Page-top templates.** `RecordPageHeader` (internal record page, ONE line: back + parents + record + modes + actions; named options only), `EntityModeHeader` gains `trail`, `CrumbNode` exported, `HeaderSpecimen` + specimen context so the system page shows the real template (the old mock drew two lines under a back chevron — owner: "busy and sloppy"). Guard `check:page-top` + shrink-only baseline (593 → 583 after wave 1: 10 raw `PageHeader` pages moved onto `RecordPageHeader`).
 
 - `2026-10-04` — claude: **The floating clearance is a shell primitive.** The education-overview sample lost its bottom room and the chat dock sat on its last row; instead of a page fix, `FloatingClearanceSync` + the `::after` runway in `shell.css` give every page scroll owner a live-measured end runway, with a runtime guard and a static check (section above). Tagged floating chrome: assists dock (desktop pill + phone FAB), window tray, `MobileActionBar`, `UnifiedActionBar`.
 - `2026-10-04` — claude: **The mobile dock has no reserve of its own.** A `[data-show-dock]` route padded `.shell-main` by the dock height (86px) and the floating runway (which measures `.shell-dock`) stacked on top: 222px of blank at 375px on /user-settings and /research. The per-route reservation is deleted; the floating clearance is the only source. Guard: `styles/__tests__/no-overlay-layout-reservation.test.ts`.

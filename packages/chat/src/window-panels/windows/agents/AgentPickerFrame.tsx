@@ -11,13 +11,15 @@
 import type { ReactNode } from "react";
 import { AgentListPanel } from "@ai-matrx/agents/catalog/react";
 import { WindowPanel } from "../../../host/ui-slots";
+import { CHAT_WINDOWS } from "../../../host/windows";
 
 export const AGENT_PICKER_WINDOW_CONSUMER_ID = "agent-picker-window";
 
+/** The windows this frame frames: the host's picker window plus two package windows. */
 type AgentPickerFrameOverlayId =
   | "agentPickerWindow"
-  | "sendToAgentWindow"
-  | "customAgentWindow";
+  | typeof CHAT_WINDOWS.sendToAgentWindow
+  | typeof CHAT_WINDOWS.customAgentWindow;
 
 export interface AgentPickerFrameProps {
   /** Window-manager id — unique per open window. */

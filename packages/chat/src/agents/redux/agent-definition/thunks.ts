@@ -16,7 +16,8 @@
  *   fetchSharedAgents            — agents shared with me (for "shared" tab)
  *   fetchSharedAgentsForChat     — minimal shared list for chat agent picker
  *   fetchAgentAccessLevel        — current user's permission level on an agent
- *   fetchAgentExecutionMinimal   — id + variableDefinitions + contextPolicies (skips if ready)
+ *   fetchAgentRunTier            — TIER 2: what a run needs, never the definition (skips if ready)
+ *   fetchAgentExecutionMinimal   — the run tier under its pre-P24 name (app callers)
  *   fetchAgentExecutionFull      — adds settings, tools, model (skips if ready)
  *   fetchFullAgent               — complete row, marks record clean
  *   fetchAgentVersionHistory     — paginated version list (returns data, no slice storage)
@@ -41,6 +42,7 @@
 
 import { agentNotReadableError } from "./agent-not-readable";
 import { createAsyncThunk } from "@reduxjs/toolkit";
+import { hasField } from "@ai-matrx/agents/field-flags";
 import { supabase } from "../../../host/db";
 import { guardedUpdate, tryWriteOne, writeOneRow } from "@ai-matrx/data/db";
 import type { AgentSummary } from "@ai-matrx/agents/catalog";
@@ -73,7 +75,7 @@ import type {
   AgentDefinition,
   AgentListRow,
   AgentSearchRow,
-  AgentExecutionMinimal,
+  AgentRunTier,
   AgentExecutionFull,
   UpdateFromSourceResult,
   PromoteVersionResult,
@@ -516,9 +518,15 @@ export const ensureAgentIdentity = createAsyncThunk<void, string, ThunkApi>(
  *
  * Skips the network call once the record reached `"execution"` status.
  */
-export const fetchAgentRunTier = createAsyncThunk<void, string, ThunkApi>(
+export const fetchAgentRunTier = createAsyncThunk<
+  void,
+  string | { agentId: string; force: true },
+  ThunkApi
+>(
   "agentDefinition/fetchRunTier",
-  async (agentId, { dispatch, getState }) => {
+  async (arg, { dispatch, getState }) => {
+    const agentId = typeof arg === "string" ? arg : arg.agentId;
+    const force = typeof arg !== "string" && arg.force;
     // Readiness is the FETCH STATUS the thunks set, never field presence: a
     // record from the list fetch can carry `contextPolicies: []` and
     // `autoContextDisabled: false` it never read, and skipping here left a
@@ -527,9 +535,10 @@ export const fetchAgentRunTier = createAsyncThunk<void, string, ThunkApi>(
     // older payload without it is refetched once.
     const existing = getState().agentDefinition.agents?.[agentId];
     if (
+      !force &&
       selectAgentReadyForExecution(getState(), agentId) &&
-      existing?._loadedFields?.has?.("modelId") !== false &&
-      existing?.modelId
+      existing &&
+      hasField(existing._loadedFields, "modelId")
     )
       return;
     // Signed out: the RPC refuses `anon` ("permission denied for function").
@@ -597,7 +606,7 @@ export const fetchAgentRunTier = createAsyncThunk<void, string, ThunkApi>(
           : { description: row.description ?? "" }),
         ...(existing?.accessLevel
           ? {}
-          : { accessLevel: row.access_level as AccessLevel }),
+          : { accessLevel: toRegistryAccessLevel(row.access_level) }),
       }),
     );
     dispatch(setAgentFetchStatus({ id: row.id, status: "execution" }));

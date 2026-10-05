@@ -28,6 +28,7 @@ import {
   withInviteToken,
 } from "@/utils/auth/invitation-links";
 import { lookupInvitedEmail } from "@/utils/auth/invited-email-lookup";
+import { lookupSignerEmail, readSignerHint } from "@/utils/auth/signer-email-lookup";
 import {
   couponAwareDestination,
   readCouponToken,
@@ -65,6 +66,9 @@ export default async function SignUp({ searchParams }: SignUpProps) {
   // editable: a person whose address really differs is never locked out.
   const inviteToken = readInviteToken(awaitedSearchParams);
   const invitedEmail = await lookupInvitedEmail(inviteToken);
+  // Someone who just signed a document from an emailed link: the same pattern, a one-time hint
+  // resolved to the address they signed with (utils/auth/signer-email-lookup.ts).
+  const signerEmail = invitedEmail ? null : await lookupSignerEmail(readSignerHint(awaitedSearchParams));
   const error = awaitedSearchParams.error as string;
   const success = awaitedSearchParams.success as string;
 
@@ -125,7 +129,7 @@ export default async function SignUp({ searchParams }: SignUpProps) {
               type="email"
               autoComplete="email"
               required
-              defaultValue={invitedEmail ?? couponEmail ?? undefined}
+              defaultValue={invitedEmail ?? couponEmail ?? signerEmail ?? undefined}
               className="block w-full"
               placeholder="you@example.com"
               data-lpignore="true"

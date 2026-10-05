@@ -13,6 +13,7 @@ import { CheckCircle2, FileSignature, ShieldCheck } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { loginHref, signUpHref } from "@/utils/auth/auth-destination";
+import { withSignerHint } from "@/utils/auth/signer-hint-link";
 
 import { SignedCopy } from "./SignedCopy";
 import type { SigningDoor } from "./signingService";
@@ -22,12 +23,15 @@ export function SignedDone({
   title,
   everyoneSigned,
   signedAt,
+  signupHint,
 }: {
   door: SigningDoor;
   title: string;
   /** True once the envelope is complete; otherwise others still have to sign. */
   everyoneSigned: boolean;
   signedAt: string | null;
+  /** An outsider's one-time hint: sign-up opens with the address they signed with. */
+  signupHint?: string | null;
 }) {
   const outsider = door.kind === "outsider";
   const when = signedAt ? new Date(signedAt) : new Date();
@@ -59,7 +63,7 @@ export function SignedDone({
           </div>
           <p className="text-sm text-muted-foreground">Free AI Matrx account. Send your own for signature too.</p>
           <Button variant="primary" asChild>
-            <Link href={signUpHref("/esign")}>Create free account</Link>
+            <Link href={withSignerHint(signUpHref("/esign"), signupHint)}>Create free account</Link>
           </Button>
           <Button variant="quiet" asChild>
             <Link href={loginHref("/esign")}>I have an account</Link>

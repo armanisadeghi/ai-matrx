@@ -166,20 +166,41 @@ function Step({
   );
 }
 
+/** Claude's own "Add custom connector" dialog, opened directly. */
+const CLAUDE_ADD_CONNECTOR_URL = "https://claude.ai/new?modal=add-custom-connector#customize/connectors/yours";
+const CONNECTOR_NAME = "AI Matrx";
+
+/** One box of the other app's form: what to type, with a copy. */
+function ConnectorField({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center gap-3 px-3 py-2">
+      <dt className="w-28 shrink-0 text-xs text-muted-foreground">{label}</dt>
+      <dd className="m-0 min-w-0 flex-1 truncate font-mono text-xs text-foreground" title={value}>
+        {value}
+      </dd>
+      <CopyAction text={value} label="Copy" variant="outline" />
+    </div>
+  );
+}
+
 function ConnectActions({ client, onDone }: { client: Client; onDone: () => void }) {
   switch (client) {
     case "claude":
     case "chatgpt": {
-      const href =
-        client === "claude" ? "https://claude.ai/settings/connectors" : "https://chatgpt.com/#settings/Connectors";
+      const href = client === "claude" ? CLAUDE_ADD_CONNECTOR_URL : "https://chatgpt.com/#settings/Connectors";
       return (
-        <div className="flex flex-wrap items-center gap-0">
-          <Button variant="primary" icon={<ExternalLink />} asChild>
-            <a href={href} target="_blank" rel="noopener noreferrer" onClick={onDone}>
-              {client === "claude" ? "Open Claude connectors" : "Open ChatGPT connectors"}
-            </a>
-          </Button>
-          <CopyAction text={MATRX_MCP_URL} label="Copy address" variant="outline" />
+        <div className="flex flex-col gap-3">
+          <div>
+            <Button variant="primary" icon={<ExternalLink />} asChild>
+              <a href={href} target="_blank" rel="noopener noreferrer" onClick={onDone}>
+                {client === "claude" ? "Open Claude" : "Open ChatGPT"}
+              </a>
+            </Button>
+          </div>
+          <dl className="m-0 flex flex-col divide-y divide-border rounded-lg border border-border bg-card">
+            <ConnectorField label="Name" value={CONNECTOR_NAME} />
+            <ConnectorField label={client === "claude" ? "MCP server URL" : "MCP Server URL"} value={MATRX_MCP_URL} />
+          </dl>
         </div>
       );
     }
@@ -203,8 +224,8 @@ function ConnectActions({ client, onDone }: { client: Client; onDone: () => void
 }
 
 const CONNECT_HINT: Record<Client, string> = {
-  claude: "Add custom connector → paste → Connect",
-  chatgpt: "Create → paste → sign in",
+  claude: "Open it, fill in these two, click Add, then Connect",
+  chatgpt: "Open it, click Create, fill in these two, sign in",
   "claude-code": "Paste it into Claude — it does the rest",
   cursor: "Opens Cursor — then sign in to AI Matrx",
 };

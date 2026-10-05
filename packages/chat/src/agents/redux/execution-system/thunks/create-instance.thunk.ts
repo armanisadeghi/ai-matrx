@@ -31,7 +31,7 @@ import { getShortcutRecordFromState } from "../../agent-shortcuts/selectors";
 import { fetchShortcutMandateKey } from "@host/lib/supabase/shortcutStorage";
 import { supabase } from "../../../../host/db";
 import { hasField } from "@ai-matrx/agents/field-flags";
-import { fetchAgentExecutionFull } from "../../agent-definition/thunks";
+import { fetchAgentRunTier } from "../../agent-definition/thunks";
 import { executeInstance } from "./execute-instance.thunk";
 
 import { generateConversationId } from "../utils/ids";
@@ -112,13 +112,13 @@ function readAgentSnapshot(
   // Loud recovery signal: snapshotting before the agent's model/settings are
   // loaded seeds an instance with an empty base model, which silently breaks
   // the model picker and the override delta guard. The launch orchestrator
-  // (Step 0.5, fetchAgentExecutionFull) guarantees these fields on the
+  // (Step 0.5, fetchAgentRunTier) guarantees these fields on the
   // direct-agent path — if this fires, a creation path skipped that guarantee.
   if (agent && !hasField(agent._loadedFields, "modelId")) {
     console.warn(
       `[readAgentSnapshot] Agent ${agentId} snapshotted before modelId loaded — ` +
-        "instance baseSettings.model will be empty. Ensure the full execution " +
-        "payload is fetched before instance creation (launch-agent-execution Step 0.5).",
+        "instance baseSettings.model will be empty. Ensure the run tier " +
+        "is fetched before instance creation (launch-agent-execution Step 0.5).",
     );
   }
   return {
@@ -235,7 +235,10 @@ export const createManualInstance = createAsyncThunk<
 
   const conversationId = providedConversationId ?? generateConversationId();
 
-  // Execution-mode instances must snapshot a complete agent payload. Most
+  // Execution-mode instances must snapshot the RUN TIER (never the
+  // definition — P24: `baseSettings` is the default model plus whatever
+  // settings a builder already loaded, so the override delta is exactly the
+  // touched keys and the server owns the merge). Most
   // launches pass through launchAgentExecution's preload, but cold resume and
   // several shared hosts call this canonical factory directly. On a fresh
   // page those callers may only have the list/minimal row, which previously
@@ -249,7 +252,7 @@ export const createManualInstance = createAsyncThunk<
     preSnapshotAgent &&
     !hasField(preSnapshotAgent._loadedFields, "modelId")
   ) {
-    await (dispatch as ChatDispatch)(fetchAgentExecutionFull(agentId)).unwrap();
+    await (dispatch as ChatDispatch)(fetchAgentRunTier(agentId)).unwrap();
   }
 
   const state = getState() as ChatRootState;

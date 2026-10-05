@@ -45320,6 +45320,7 @@ export type Database = {
       envelope_sender: { Args: { p_envelope_id: string }; Returns: Json }
       generate_certificate: { Args: { p_envelope_id: string }; Returns: Json }
       may_send_in: { Args: { p_organization_id: string }; Returns: boolean }
+      mint_signup_hint: { Args: { p_signer_id: string }; Returns: string }
       org_member_by_email: {
         Args: { p_email: string; p_organization_id: string }
         Returns: string
@@ -95191,6 +95192,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      _edu_refuse_archived: { Args: { p_scope: unknown[] }; Returns: undefined }
       _edu_resource_progress: {
         Args: { p_resource: string; p_token: string; p_user: string }
         Returns: Json
@@ -99139,6 +99141,7 @@ export type Database = {
         Returns: Json
       }
       esign_my_signer_row: { Args: { p_envelope_id: string }; Returns: Json }
+      esign_peek_signer_email: { Args: { p_hint: string }; Returns: string }
       esign_provider_dispatch: {
         Args: { p_envelope_id: string }
         Returns: Json

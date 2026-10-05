@@ -33,7 +33,7 @@ import {
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system/controls";
 import { Skeleton } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import { familyService } from "../familyService";
@@ -364,7 +364,6 @@ export function FamilyDashboard() {
             placeholder="student@example.com"
             value={studentEmail}
             onChange={(e) => setStudentEmail(e.target.value)}
-            className="text-base sm:text-sm"
           />
           <Button
             icon={busy === "request" ? (
@@ -424,7 +423,6 @@ export function FamilyDashboard() {
             placeholder="parent@example.com"
             value={guardianEmail}
             onChange={(e) => setGuardianEmail(e.target.value)}
-            className="text-base sm:text-sm"
           />
           <Button
             icon={busy === "grant" ? (

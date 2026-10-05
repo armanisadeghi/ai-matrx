@@ -27875,6 +27875,7 @@ export type ChatDatabase = {
           isSetofReturn: false
         }
       }
+      _edu_refuse_archived: { Args: { p_scope: unknown[] }; Returns: undefined }
       _edu_resource_progress: {
         Args: { p_resource: string; p_token: string; p_user: string }
         Returns: Json
@@ -31823,6 +31824,7 @@ export type ChatDatabase = {
         Returns: Json
       }
       esign_my_signer_row: { Args: { p_envelope_id: string }; Returns: Json }
+      esign_peek_signer_email: { Args: { p_hint: string }; Returns: string }
       esign_provider_dispatch: {
         Args: { p_envelope_id: string }
         Returns: Json

@@ -41,20 +41,26 @@ describe("createManualInstance execution payload", () => {
       data: [
         {
           id: AGENT_ID,
+          is_version: false,
+          version_id: null,
+          name: "Cold resume agent",
+          description: null,
           variable_definitions: [],
           context_policies: [],
-          settings: { temperature: 0.25 },
-          tools: [],
-          custom_tools: [],
+          auto_context_disabled: false,
           model_id: "model-loaded-before-snapshot",
           ui_gates: {},
+          tool_ids: [],
+          access_level: "owner",
         },
       ],
       error: null,
     });
   });
 
-  it("loads the full agent before a cold execution-mode snapshot", async () => {
+  // P24: the cold snapshot reads the RUN TIER (never the definition), so the
+  // base is the default model alone and the override delta is the touched keys.
+  it("loads the run tier before a cold execution-mode snapshot", async () => {
     const store = makeStore();
     store.dispatch(
       mergePartialAgent({
@@ -75,14 +81,17 @@ describe("createManualInstance execution payload", () => {
       )
       .unwrap();
 
-    expect(mockRpc).toHaveBeenCalledWith("agx_get_execution_full", {
+    expect(mockRpc).toHaveBeenCalledWith("agx_get_run_tier", {
       p_agent_id: AGENT_ID,
     });
+    expect(mockRpc).not.toHaveBeenCalledWith(
+      "agx_get_execution_full",
+      expect.anything(),
+    );
     expect(
       store.getState().instanceModelOverrides.byConversationId[CONVERSATION_ID]
         ?.baseSettings,
     ).toEqual({
-      temperature: 0.25,
       model: "model-loaded-before-snapshot",
     });
   });
