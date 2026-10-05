@@ -14,13 +14,13 @@ function startForRange(range: UsageHistoryQuery["range"], now: Date): string | n
  */
 export async function fetchPersonalUsageHistory(
   query: UsageHistoryQuery,
-  options: { now?: Date } = {},
+  options: { now?: Date; client?: ReturnType<typeof createClient> } = {},
 ): Promise<UsageHistoryPage> {
   const now = options.now ?? new Date();
   const from = query.page * USAGE_HISTORY_PAGE_SIZE;
   const to = from + USAGE_HISTORY_PAGE_SIZE;
   const rangeStart = startForRange(query.range, now);
-  const client = createClient();
+  const client = options.client ?? createClient();
 
   let request = client
     .schema("billing")

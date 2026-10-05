@@ -2,7 +2,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { UsageHistory } from "./UsageHistory";
 import { fetchPersonalUsageHistory } from "./service";
-import { toUsageHistoryEntry } from "./types";
+import { USAGE_HISTORY_PAGE_SIZE, toUsageHistoryEntry } from "./types";
 
 jest.mock("./service", () => ({ fetchPersonalUsageHistory: jest.fn() }));
 
@@ -32,6 +32,38 @@ describe("personal usage history", () => {
       metadata: { execution_type: "agent_run", status: "failed" },
     } as never);
     expect(entry).toMatchObject({ quantity: null, activity: "Agent Run", outcome: "Failed" });
+  });
+
+  it("queries the caller's ledger with a stable extra-row page boundary", async () => {
+    const calls: Array<[string, unknown?]> = [];
+    const request = {
+      select: jest.fn(() => request),
+      eq: jest.fn((...args: [string, unknown]) => { calls.push(args); return request; }),
+      is: jest.fn((...args: [string, unknown]) => { calls.push(args); return request; }),
+      gte: jest.fn((...args: [string, unknown]) => { calls.push(args); return request; }),
+      order: jest.fn((...args: [string, unknown]) => { calls.push(args); return request; }),
+      range: jest.fn(async (from: number, to: number) => {
+        calls.push(["range", [from, to]]);
+        return { data: [], error: null };
+      }),
+    };
+    const client = {
+      auth: { getUser: async () => ({ data: { user: { id: "member-harbor" } } }) },
+      schema: jest.fn(() => ({ from: jest.fn(() => request) })),
+    };
+
+    await fetchPersonalUsageHistory(
+      { range: "7d", activity: "executions", page: 1 },
+      { now: new Date("2026-10-04T12:00:00.000Z"), client: client as never },
+    );
+
+    expect(calls).toContainEqual(["created_by", "member-harbor"]);
+    expect(calls).toContainEqual(["capability", "platform.points"]);
+    expect(calls).toContainEqual(["deleted_at", null]);
+    expect(calls).toContainEqual(["metadata->>source", "runtime.global_execution"]);
+    expect(calls).toContainEqual(["range", [USAGE_HISTORY_PAGE_SIZE, USAGE_HISTORY_PAGE_SIZE * 2]]);
+    expect(calls).toContainEqual(["created_at", { ascending: false }]);
+    expect(calls).toContainEqual(["id", { ascending: false }]);
   });
 
   it("renders an honest empty state", async () => {
