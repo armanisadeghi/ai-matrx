@@ -71,9 +71,11 @@ chat, so cookies, `?chat=` links and this device's remembered conversation carri
 ## Key flows
 
 **Page context → agent.** Every conversation already follows the page SURFACE (`useConversationFollowsPage`).
-A canvas with no surface of its own hands ONE entry via `useShellChatContext`; the column writes it with
-`setContextEntries` when the conversation exists, again in the CAPTURE phase of pointerdown / Enter / focus
-inside the chat's own DOM, and removes it (`removeContextEntry`) when the page releases it. It never rides
+A canvas with no surface of its own hands ONE entry via `useShellChatContext`; the DOCK seeds it with
+`setContextEntries` when the conversation exists and removes it (`removeContextEntry`) when the page releases
+it or the chat moves to another conversation (`useShellChatPageEntry`, `shell-chat-dock-owners.ts` — the dock
+outlives the column, which unmounts with a closed sheet or floating window); the column re-writes it in the
+CAPTURE phase of pointerdown / Enter / focus inside the chat's own DOM. It never rides
 `user_input` (THE USER-INPUT LAW). A `contextChip` with `contextKey` equal to the entry's key REPLACES the
 rail's generic pill for it.
 
@@ -109,6 +111,13 @@ floating window, or the phone sheet. History rows, "New chat", a pinned agent an
 
 ## Change Log
 
+- **2026-10-05** — **Dock-owned page entry, home-keyed remarks, ⌘\ yields to the page.** The page's context
+  entry is owned by the dock (`useShellChatPageEntry`), not a ref in the column that died with a closed sheet —
+  a page left with the sheet closed no longer leaves its entry on the conversation. Remarks queued while the
+  chat had no conversation are keyed by home (`useShellChatRemarkSink`): never staged into another home's chat;
+  a stranded one is announced with a toast. ⌘\ skips a `defaultPrevented` key; /spaces takes it in the capture
+  phase (`useSpacesSidebarShortcut`). Tests: `shell-chat-dock-owners.test.tsx`,
+  `features/spaces/workspace/__tests__/spaces-sidebar-shortcut.test.tsx`.
 - **2026-10-05** — **One chat.** `ChatCanvasWorkspace` no longer draws a chat (docked panel, floating window,
   phone chat sheet, ⌘\, in-place host, remark sink and its conversation all deleted from it): the Board,
   Education and the demos show the shell's `ShellChatDock`, which gained pop-out, the remark sink, full-screen
