@@ -54,7 +54,7 @@ end; $function$;
 CREATE OR REPLACE FUNCTION public._scope_system_resolve_type_id(p_org_id uuid, p_op jsonb, p_kind text)
  RETURNS uuid
  LANGUAGE plpgsql
- SECURITY DEFINER
+ SECURITY INVOKER
  SET search_path TO 'public', 'pg_temp'
 AS $function$
 declare
@@ -62,6 +62,8 @@ declare
   v_type_id uuid;
   v_other_org uuid;
 begin
+  -- INVOKER (FTS-1g): its only caller is public.scope_system_apply, a SECURITY DEFINER door, so it runs as that owner;
+  -- it never had a call surface of its own (no client grant, no door row).
   v_ref := nullif(coalesce(
     p_op->>'scope_type_id',
     p_op->>'scope_type',

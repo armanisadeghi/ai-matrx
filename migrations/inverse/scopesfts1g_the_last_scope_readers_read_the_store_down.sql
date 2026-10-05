@@ -331,7 +331,7 @@ $function$
 CREATE OR REPLACE FUNCTION public._scope_system_resolve_type_id(p_org_id uuid, p_op jsonb, p_kind text)
  RETURNS uuid
  LANGUAGE plpgsql
- SECURITY DEFINER
+ SECURITY INVOKER
  SET search_path TO 'public', 'pg_temp'
 AS $function$
 declare
