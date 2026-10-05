@@ -37,7 +37,7 @@ import { LiveProgressRail } from "@/features/podcasts/generator/components/LiveP
 import { ProductionTeaser } from "@/features/podcasts/generator/components/ProductionTeaser";
 import { MediaOptionsGrid } from "@/features/podcasts/generator/components/MediaOptionsGrid";
 import { MandateAgentPicker } from "@/features/mandates/components/MandateAgentPicker";
-import MarkdownStream from "@/components/MarkdownStream";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { SessionMediaElement } from "@/features/audio/session/SessionMediaElement";
 import { RichDocumentActions } from "@/features/rich-document/RichDocumentActions";
 import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
@@ -484,7 +484,7 @@ function DomainReportsCard({
             </button>
           </div>
           <div className="px-3 py-3 max-h-[460px] overflow-y-auto">
-            <MarkdownStream imagePolicy="ai" content={viewingMarkdown} />
+            <RichContent level="full" imagePolicy="ai" source={viewingMarkdown} />
             <div className="flex justify-end mt-2">
               <RichDocumentActions
                 content={viewingMarkdown}
@@ -1112,7 +1112,7 @@ function BlogOutputCard({
               </button>
             </div>
             <div className="px-3 py-3 max-h-[460px] overflow-y-auto">
-              <MarkdownStream imagePolicy="ai" content={viewingMarkdown} />
+              <RichContent level="full" imagePolicy="ai" source={viewingMarkdown} />
               <div className="flex justify-end mt-2">
                 <RichDocumentActions
                   content={viewingMarkdown}

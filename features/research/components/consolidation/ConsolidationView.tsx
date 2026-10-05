@@ -8,7 +8,7 @@ import { useResearchApi } from '../../hooks/useResearchApi';
 import { useResearchTags, useResearchSynthesis } from '../../hooks/useResearchState';
 import { useResearchStream } from '../../hooks/useResearchStream';
 import { useStreamDebug } from '../../context/ResearchContext';
-import MarkdownStream from '@/components/MarkdownStream';
+import { RichContent } from "@/components/rich-content/RichContent";
 import { AnswerValueView } from '@/components/official/structured-value/AnswerValueView';
 import { confirm } from '@/components/dialogs/confirm/ConfirmDialogHost';
 import { RichDocumentActions } from '@/features/rich-document/RichDocumentActions';
@@ -144,7 +144,7 @@ export default function ConsolidationView({ topicId, tagId }: ConsolidationViewP
                         <span className="text-xs font-medium text-primary">Consolidating {tag ? `“${tag.name}”` : 'tag'}…</span>
                     </div>
                     <div className="px-3 py-3">
-                        <MarkdownStream imagePolicy="ai" content={streamingText} isStreamActive />
+                        <RichContent level="full" imagePolicy="ai" source={streamingText} isStreaming />
                     </div>
                 </div>
             )}
@@ -157,7 +157,7 @@ export default function ConsolidationView({ topicId, tagId }: ConsolidationViewP
                             {consolidation.status === 'failed' && (
                                 <StoppedEarlyNote reason={consolidation.error || 'Consolidation stopped early.'} />
                             )}
-                            <MarkdownStream imagePolicy="ai" content={consolidation.result} />
+                            <RichContent level="full" imagePolicy="ai" source={consolidation.result} />
                             <div className="flex justify-end">
                                 <RichDocumentActions
                                   content={consolidation.result}

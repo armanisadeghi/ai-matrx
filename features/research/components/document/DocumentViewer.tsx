@@ -29,7 +29,7 @@ import { VersionDiff } from "./VersionDiff";
 import { DocumentSkeleton } from "../shared/Skeletons";
 import type { ResearchDocument } from "../../types";
 import { tokenUsageFromJson } from "../../types";
-import MarkdownStream from "@/components/MarkdownStream";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { RichDocumentActions } from "@/features/rich-document/RichDocumentActions";
 import { StoppedEarlyNote } from "../shared/StoppedEarlyNote";
 import { deriveReadiness } from "../../readiness";
@@ -181,7 +181,7 @@ export default function DocumentViewer() {
         </div>
         {streamingDocText && (
           <article>
-            <MarkdownStream imagePolicy="ai" content={streamingDocText} />
+            <RichContent level="full" imagePolicy="ai" source={streamingDocText} />
           </article>
         )}
       </div>

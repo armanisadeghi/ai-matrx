@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@ai-matrx/design-system";
-import MarkdownStream from "@/components/MarkdownStream";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { fmtCount } from "../../format";
 import {
   useResearchKeywords,
@@ -222,7 +222,7 @@ export function KeywordDetailView({
                 className="rounded-xl border border-border/50 bg-card/60 p-3"
               >
                 {s.result ? (
-                  <MarkdownStream imagePolicy="ai" content={s.result} />
+                  <RichContent level="full" imagePolicy="ai" source={s.result} />
                 ) : (
                   <p className="text-[11px] text-muted-foreground">
                     Completed with no text output.

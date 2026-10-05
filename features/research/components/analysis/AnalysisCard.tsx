@@ -15,7 +15,6 @@ import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import MarkdownStream from "@/components/markdown";
 import { useResearchApi } from "../../hooks/useResearchApi";
 import { StoppedEarlyNote } from "../shared/StoppedEarlyNote";
 import { humanizeAgentType } from "../../labels";
@@ -90,7 +89,7 @@ export function AnalysisCard({
           </span>
         </div>
         <div className="px-4 py-3">
-          <MarkdownStream imagePolicy="ai" content={streamingText} isStreamActive />
+          <RichContent level="full" imagePolicy="ai" source={streamingText} isStreaming />
         </div>
       </div>
     );
@@ -299,7 +298,7 @@ export function AnalysisCard({
               reason={analysis.error || "Analysis stopped early."}
             />
           )}
-          <MarkdownStream imagePolicy="ai" content={analysis.result ?? ""} />
+          <RichContent level="full" imagePolicy="ai" source={analysis.result ?? ""} />
 
           {tokenUsage && (
             <div className="flex items-center gap-4 text-[10px] text-muted-foreground border-t border-border pt-2">

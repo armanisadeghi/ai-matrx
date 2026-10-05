@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { MousePointerClick } from "lucide-react";
 import { cn } from "@/lib/utils";
-import MarkdownStream from "@/components/MarkdownStream";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
 
 interface Props {
@@ -56,9 +56,9 @@ export function StreamingTextPanel({
       </div>
       <div ref={scrollRef} className="max-h-[32rem] overflow-y-auto p-3">
         <div>
-          <MarkdownStream imagePolicy="ai"
-            content={text}
-            isStreamActive={isStreaming}
+          <RichContent level="full" imagePolicy="ai"
+            source={text}
+            isStreaming={isStreaming}
             hideCopyButton
           />
         </div>

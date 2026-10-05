@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@ai-matrx/design-system";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { cn } from "@/lib/utils";
-import MarkdownStream from "@/components/markdown";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { Cost } from "@/components/cost/Cost";
 import { useTopicContext } from "../../context/ResearchContext";
 import {
@@ -366,7 +366,7 @@ function DetailPanel({
                 reason={analysis.error || "Analysis stopped early."}
               />
             )}
-            <MarkdownStream imagePolicy="ai" content={analysis.result} />
+            <RichContent level="full" imagePolicy="ai" source={analysis.result} />
           </article>
         ) : isFailed ? (
           <div className="p-6 flex flex-col items-center justify-center min-h-[300px] gap-4 text-center">

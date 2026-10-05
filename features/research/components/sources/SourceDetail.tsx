@@ -95,7 +95,7 @@ import {
   formatEntityMatchConfidence,
   formatSnippetRelevance,
 } from "./sourceScoreDisplay";
-import MarkdownStream from "@/components/MarkdownStream";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { ProcessForRagButton } from "@/features/rag/components/ProcessForRagButton";
 import type {
   ResearchContent,
@@ -485,7 +485,7 @@ function PageAnalysisDocument({
       {analysis.summary_markdown && (
         <AnalysisBlock icon={<FileText className="h-3 w-3" />} title="Summary">
           <div className="rounded-xl border border-border/60 bg-card/60 px-4 py-3">
-            <MarkdownStream imagePolicy="ai" content={analysis.summary_markdown} />
+            <RichContent level="full" imagePolicy="ai" source={analysis.summary_markdown} />
           </div>
         </AnalysisBlock>
       )}
@@ -1918,7 +1918,7 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
                     </button>
                   </div>
                   <div className="px-4 py-3">
-                    <MarkdownStream imagePolicy="ai" content={interrupted.text} />
+                    <RichContent level="full" imagePolicy="ai" source={interrupted.text} />
                   </div>
                 </div>
               )}

@@ -3,7 +3,7 @@
 import { useCallback, useState } from "react";
 import { ChevronDown, ChevronUp, History, Loader2 } from "lucide-react";
 
-import MarkdownStream from "@/components/MarkdownStream";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
 import { toast } from "@/lib/toast";
 
@@ -112,7 +112,7 @@ export function SynthesisVersionHistory({
                 </summary>
                 <div className="border-t border-border/40 px-2.5 py-2">
                   {v.result && v.result.trim().length > 0 ? (
-                    <MarkdownStream imagePolicy="ai" content={v.result} />
+                    <RichContent level="full" imagePolicy="ai" source={v.result} />
                   ) : (
                     // An empty body is a real "produced nothing" outcome, not a
                     // loading state — render it as such.
