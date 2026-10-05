@@ -37,6 +37,7 @@ import type {
 import { Loader2, X } from "lucide-react";
 
 import { cn } from "@ai-matrx/design-system";
+import { Button } from "@ai-matrx/design-system/controls";
 
 /** The attribute `AgentTextarea` stamps on the real composer input. */
 export const AGENT_MAIN_INPUT_ATTR = "data-agent-main-input";
@@ -283,27 +284,11 @@ export function ComposerChip({
   return (
     <span className={cn("group relative inline-flex shrink-0", wrapperClassName)}>
       {body}
-      <button
-        type="button"
-        onClick={(event) => {
+      <Button variant="outline" icon={<X />} onClick={(event) => {
           event.preventDefault();
           event.stopPropagation();
           if (!remove.disabled) remove.onRemove();
-        }}
-        disabled={remove.disabled}
-        aria-label={remove.label}
-        className={cn(
-          "absolute -right-1 -top-1 z-10 flex h-3.5 w-3.5 items-center justify-center rounded-full",
-          "border border-border bg-background text-muted-foreground shadow-sm",
-          "transition-opacity hover:bg-destructive hover:text-destructive-foreground",
-          "opacity-0 focus-visible:opacity-100 group-hover:opacity-100",
-          remove.touch === "hide"
-            ? "max-lg:hidden pointer-coarse:hidden"
-            : "pointer-coarse:opacity-100",
-        )}
-      >
-        <X className="h-2.5 w-2.5" />
-      </button>
+        }} disabled={remove.disabled} aria-label={remove.label} className="absolute z-10 opacity-0 focus-visible:opacity-100 group-hover:opacity-100" />
     </span>
   );
 }

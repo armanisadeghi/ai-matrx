@@ -29,7 +29,7 @@ import {
   restoreConversation,
 } from "../../redux/conversation-list/conversation-trash.thunks";
 import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
-import { Button } from "@ai-matrx/design-system/controls";
+import { Button, DisclosureHeader } from "@ai-matrx/design-system/controls";
 
 interface ConversationTrashSectionProps {
   /** `"consumer"` matches the comfortable /chat sidebar; `"dense"` the rest. */
@@ -79,28 +79,13 @@ export function ConversationTrashSection({
 
   return (
     <div className={cn("shrink-0 border-t border-border/60", className)}>
-      <button
-        type="button"
+      <DisclosureHeader
+        open={open}
         onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        className={cn(
-          "flex w-full items-center gap-1.5 px-3 text-left text-muted-foreground transition-colors hover:bg-accent hover:text-foreground",
-          dense ? "h-6 text-[11px]" : "h-8 text-xs",
-        )}
-      >
-        {open ? (
-          <ChevronDown className="h-3 w-3 shrink-0" />
-        ) : (
-          <ChevronRight className="h-3 w-3 shrink-0" />
-        )}
-        <Trash2 className="h-3 w-3 shrink-0" />
-        <span className="font-medium">Trash</span>
-        {open && status === "succeeded" && (
-          <span className="ml-auto tabular-nums text-muted-foreground/70">
-            {ids.length}
-          </span>
-        )}
-      </button>
+        icon={<Trash2 />}
+        title="Trash"
+        end={open && status === "succeeded" ? ids.length : undefined}
+      />
 
       {open && (
         <div className="pb-1">

@@ -72,11 +72,7 @@ function MemoryRow({
           : "text-foreground hover:bg-muted/60",
       )}
     >
-      <button
-        type="button"
-        onClick={onSelect}
-        className="flex min-w-0 flex-1 items-center gap-2 text-left"
-      >
+      <Button variant="quiet" onClick={onSelect} className="min-w-0">
         <span
           className={cn(
             "flex shrink-0 items-center justify-center rounded px-1 py-px text-[10px] font-bold tabular-nums",
@@ -94,7 +90,7 @@ function MemoryRow({
         >
           {displayTitleForMemory(memory)}
         </span>
-      </button>
+      </Button>
 
       <span className="shrink-0 text-[9px] uppercase tracking-wide text-muted-foreground/70 transition-opacity group-hover/row:opacity-0">
         {memory.scope === "organization" ? "org" : "me"}
@@ -155,22 +151,12 @@ export function AgentMemorySidebar({ state }: AgentMemorySidebarProps) {
       </div>
 
       <div className="shrink-0 px-2 pb-1">
-        <button
-          type="button"
-          onClick={() => setSelectedId(ALL_MEMORIES_ID)}
-          className={cn(
-            "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors",
-            selectedId === ALL_MEMORIES_ID
-              ? "bg-primary/10 text-primary font-medium"
-              : "text-foreground hover:bg-muted/60",
-          )}
-        >
-          <Layers className="h-4 w-4 shrink-0" />
+        <Button variant="quiet" pressed={selectedId === ALL_MEMORIES_ID} icon={<Layers />} onClick={() => setSelectedId(ALL_MEMORIES_ID)} className="w-full">
           <span className="truncate">All memories</span>
           <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">
             {totalCount}
           </span>
-        </button>
+        </Button>
       </div>
 
       <div className="flex shrink-0 items-center justify-between px-2 pb-1">

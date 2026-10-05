@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter, usePathname } from "../../../host/navigation";
 import { Eye, Pencil, Play, History, Plus } from "lucide-react";
 import { cn } from "@ai-matrx/design-system";
+import { Button } from "@ai-matrx/design-system/controls";
 import { useAppSelector } from "../../../store/hooks";
 import {
   selectAgentIsDirty,
@@ -130,22 +131,9 @@ export function AgentSharedHeader({ agentId }: { agentId: string }) {
           {MODES.map(({ id, label, icon: Icon }) => {
             const isActive = id === mode;
             return (
-              <button
-                key={id}
-                onClick={() => handleModeChange(id)}
-                title={label}
-                className={cn(
-                  "flex items-center justify-center gap-1 py-0.5 text-[0.6875rem] font-medium rounded-full transition-colors cursor-pointer",
-                  "px-1.5 md:px-2.5",
-                  "[&_svg]:w-3.5 [&_svg]:h-3.5",
-                  isActive
-                    ? "bg-[var(--matrx-glass-bg-active)] text-[var(--shell-nav-text-hover)]"
-                    : "text-[var(--shell-nav-text)] hover:text-[var(--shell-nav-text-hover)]",
-                )}
-              >
-                <Icon />
+              <Button variant="quiet" pressed={isActive} icon={<Icon />} key={id} onClick={() => handleModeChange(id)} title={label}>
                 <span className="hidden md:inline">{label}</span>
-              </button>
+              </Button>
             );
           })}
         </div>

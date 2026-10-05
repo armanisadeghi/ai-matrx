@@ -11,7 +11,7 @@
 
 import React, { useCallback, useMemo, useState } from "react";
 import { FileText, Loader2, NotebookPen, Search } from "lucide-react";
-import { Input, Tabs } from "@ai-matrx/design-system/controls";
+import { Input, Tabs, Tile } from "@ai-matrx/design-system/controls";
 import {
   Popover,
   PopoverContent,
@@ -136,30 +136,15 @@ function DocumentLinkPickerBody({
           </div>
         ) : (
           filtered.map((doc) => (
-            <button
+            <Tile
               key={doc.id}
-              type="button"
+              variant="quiet"
               onClick={() => onPick(doc.id)}
-              className="flex w-full items-start gap-2 px-2.5 py-1.5 text-left transition-colors hover:bg-accent/50"
-            >
-              <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground/60" />
-              <span className="min-w-0 flex-1">
-                <span className="flex items-center gap-2">
-                  <span className="min-w-0 flex-1 truncate font-medium text-foreground">
-                    {doc.title?.trim() ||
-                      (isScratch ? "Untitled scratchpad" : "Untitled document")}
-                  </span>
-                  <span className="shrink-0 text-[9px] tabular-nums text-muted-foreground/50">
-                    {formatWhen(doc.updatedAt)}
-                  </span>
-                </span>
-                {doc.content.trim() && (
-                  <span className="mt-0.5 block truncate text-[10px] text-muted-foreground/70">
-                    {previewOf(doc.content)}
-                  </span>
-                )}
-              </span>
-            </button>
+              icon={<Icon />}
+              title={doc.title?.trim() || (isScratch ? "Untitled scratchpad" : "Untitled document")}
+              line={doc.content.trim() ? previewOf(doc.content) : undefined}
+              end={formatWhen(doc.updatedAt)}
+            />
           ))
         )}
       </div>

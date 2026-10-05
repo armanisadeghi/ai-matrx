@@ -943,23 +943,15 @@ function MobileMenuContent({
             );
           }
           return (
-            <button
+            <Tile
               key={label}
+              variant="quiet"
               onClick={() => handleItem(label)}
               disabled={label === "Refresh Server Cache" && isRefreshingCache}
-              className={cn(
-                "flex items-center gap-3 w-full px-4 py-2.5 text-sm hover:bg-muted/50 active:bg-muted/70 transition-colors",
-                soon ? "text-muted-foreground" : "text-foreground",
-              )}
-            >
-              <Icon className="w-4 h-4 text-muted-foreground shrink-0" />
-              <span className="flex-1 text-left">
-                {label === "Refresh Server Cache" && isRefreshingCache
-                  ? "Refreshing..."
-                  : label}
-              </span>
-              {soon && <SoonBadge />}
-            </button>
+              icon={<Icon />}
+              title={label === "Refresh Server Cache" && isRefreshingCache ? "Refreshing..." : label}
+              end={soon ? <SoonBadge /> : undefined}
+            />
           );
         })}
 
@@ -1005,19 +997,15 @@ function MobileMenuContent({
       </div>
       <div className="py-1">
         {managementItems.map(({ label, icon: Icon, soon }) => (
-          <button
+          <Tile
             key={label}
+            variant="quiet"
             onClick={() => handleItem(label)}
             disabled={isBusy && label === "Convert to Template"}
-            className={cn(
-              "flex items-center gap-3 w-full px-4 py-2.5 text-sm hover:bg-muted/50 active:bg-muted/70 transition-colors",
-              soon ? "text-muted-foreground" : "text-foreground",
-            )}
-          >
-            <Icon className="w-4 h-4 text-muted-foreground shrink-0" />
-            <span className="flex-1 text-left">{label}</span>
-            {soon && <SoonBadge />}
-          </button>
+            icon={<Icon />}
+            title={label}
+            end={soon ? <SoonBadge /> : undefined}
+          />
         ))}
       </div>
 
@@ -1030,18 +1018,14 @@ function MobileMenuContent({
       </div>
       <div className="py-1">
         {GLOBAL_AGENT_ITEMS.map(({ label, icon: Icon, soon }) => (
-          <button
+          <Tile
             key={label}
+            variant="quiet"
             onClick={() => handleItem(label)}
-            className={cn(
-              "flex items-center gap-3 w-full px-4 py-2.5 text-sm hover:bg-muted/50 active:bg-muted/70 transition-colors",
-              soon ? "text-muted-foreground" : "text-foreground",
-            )}
-          >
-            <Icon className="w-4 h-4 text-muted-foreground shrink-0" />
-            <span className="flex-1 text-left">{label}</span>
-            {soon && <SoonBadge />}
-          </button>
+            icon={<Icon />}
+            title={label}
+            end={soon ? <SoonBadge /> : undefined}
+          />
         ))}
       </div>
 
@@ -1076,17 +1060,12 @@ function MobileMenuContent({
             onClose();
             void lifecycle.toggleArchived();
           }} />
-        <button
-          disabled={lifecycle.isBusy}
-          onClick={() => {
+        <Button variant="quiet" icon={<Trash2 />} disabled={lifecycle.isBusy} onClick={() => {
             onClose();
             void lifecycle.remove();
-          }}
-          className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-destructive hover:bg-muted/50 active:bg-muted/70 transition-colors disabled:opacity-50"
-        >
-          <Trash2 className="w-4 h-4 shrink-0" />
+          }} className="w-full">
           <span className="flex-1 text-left">Delete</span>
-        </button>
+        </Button>
       </div>
         </>
       )}

@@ -331,56 +331,30 @@ export function PlusAttachMenu({
                   conversationId={conversationId}
                   className="h-6 min-w-0 flex-1"
                 />
-                <button
-                  type="button"
-                  disabled={isManualMode}
-                  title={
+                <Button variant="quiet" pressed={view === "overrides"} icon={<Cpu />} disabled={isManualMode} title={
                     isManualMode
                       ? MANUAL_MODE_SETTINGS_HINT
                       : "Per-run model overrides"
-                  }
-                  aria-pressed={view === "overrides"}
-                  onClick={() => {
+                  } onClick={() => {
                     if (isManualMode) return;
                     setView((v) => (v === "overrides" ? "menu" : "overrides"));
-                  }}
-                  className={cn(
-                    "inline-flex h-6 shrink-0 items-center gap-1 rounded-md px-1.5 text-[11px] font-medium transition-colors",
-                    view === "overrides"
-                      ? "bg-muted text-foreground"
-                      : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
-                    isManualMode &&
-                      "cursor-not-allowed opacity-50 hover:bg-transparent hover:text-muted-foreground",
-                  )}
-                >
-                  <Cpu className="h-3.5 w-3.5 shrink-0" />
+                  }} className="shrink-0">
                   Overrides
-                </button>
-                <button
-                  type="button"
-                  disabled={isManualMode}
-                  title={
+                </Button>
+                <Button variant="quiet" icon={<AppWindow />} disabled={isManualMode} title={
                     isManualMode
                       ? MANUAL_MODE_SETTINGS_HINT
                       : "Advanced settings"
-                  }
-                  onClick={() => {
+                  } onClick={() => {
                     if (isManualMode) return;
                     closeMenu();
                     openRunControlsWindow({
                       conversationId,
                       initialTab: "settings",
                     });
-                  }}
-                  className={cn(
-                    "inline-flex h-6 shrink-0 items-center gap-1 rounded-md px-1.5 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground",
-                    isManualMode &&
-                      "cursor-not-allowed opacity-50 hover:bg-transparent hover:text-muted-foreground",
-                  )}
-                >
-                  <AppWindow className="h-3.5 w-3.5 shrink-0" />
+                  }} className="shrink-0">
                   Advanced
-                </button>
+                </Button>
               </div>
 
               {view === "menu" ? (

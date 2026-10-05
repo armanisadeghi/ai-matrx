@@ -11,7 +11,7 @@
 // dropdown (their mutations were no-ops); real rename/delete live in the
 // conversation-list rows (features/agents/redux/conversation-list/).
 
-import { Badge, Button } from "@ai-matrx/design-system/controls";
+import { Badge, Button, DisclosureHeader } from "@ai-matrx/design-system/controls";
 import { useState, useEffect, useRef, useMemo } from "react";
 import {
   MoreHorizontal,
@@ -313,23 +313,14 @@ function SharedChatsSection({
 
   return (
     <div className="px-1 py-1 border-t border-border/50 mt-1">
-      <button
+      <DisclosureHeader
+        open={isOpen}
         onClick={() => setIsOpen((prev) => !prev)}
-        className="flex items-center gap-1.5 w-full px-2 py-1 text-left hover:bg-accent/30 rounded-md transition-colors"
-      >
-        {isOpen ? (
-          <ChevronDown className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-        ) : (
-          <ChevronRight className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-        )}
-        <Users className="h-3 w-3 text-secondary flex-shrink-0" />
-        <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider select-none">
-          Shared with Me
-        </span>
-        {hasFetched && loadError == null && sharedChats.length > 0 && (
-          <Badge>{sharedChats.length}</Badge>
-        )}
-      </button>
+        variant="label"
+        icon={<Users />}
+        title="Shared with Me"
+        meta={hasFetched && loadError == null && sharedChats.length > 0 ? sharedChats.length : undefined}
+      />
 
       {isOpen && (
         <div className="mt-0.5">

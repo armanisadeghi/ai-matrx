@@ -29,6 +29,7 @@ import { useVoicePlaygroundWriteHandlers } from "../../hooks/useVoicePlaygroundW
 import { VoicePicker } from "./VoicePicker";
 import { ToolToggleList } from "./ToolToggleList";
 import { InstructionsEditor } from "./InstructionsEditor";
+import { Button } from "@ai-matrx/design-system/controls";
 
 interface PlaygroundSettingsSheetProps {
   instanceId: string;
@@ -55,9 +56,9 @@ function wrapTrigger(trigger: ReactNode, onOpen: () => void) {
     });
   }
   return (
-    <button type="button" onClick={onOpen} className="contents">
+    <Button variant="quiet" onClick={onOpen} className="contents">
       {trigger}
-    </button>
+    </Button>
   );
 }
 

@@ -94,7 +94,7 @@ import { ConversationSourceFilterTree } from "./ConversationSourceFilterTree";
 import { AllLanesOffNotice } from "./ConversationLaneToggles";
 import { ConversationTrashSection } from "./ConversationTrashSection";
 import { ArchivedDisclosure } from "@ai-matrx/design-system";
-import { SegmentedControl, Button } from "@ai-matrx/design-system/controls";
+import { SegmentedControl, Button, DisclosureHeader } from "@ai-matrx/design-system/controls";
 import { ItemRow } from "@ai-matrx/chat/host/ui-slots";
 import { toast } from "../../../host/notify";
 import {
@@ -850,23 +850,15 @@ const DenseView: React.FC<
 
         {hasMore && !searchActive && (
           <div className="px-2 py-2">
-            <button
-              type="button"
+            <Button
+              variant="outline"
               onClick={onLoadMore}
               disabled={status === "loading-more"}
-              className={cn(
-                "flex h-6 w-full items-center justify-center rounded-sm border border-border text-[11px] text-foreground hover:bg-accent/60 disabled:opacity-60",
-              )}
+              icon={status === "loading-more" ? <Loader2 className="animate-spin" /> : undefined}
+              className="w-full"
             >
-              {status === "loading-more" ? (
-                <>
-                  <Loader2 size={11} className="mr-1 animate-spin" />
-                  Loading…
-                </>
-              ) : (
-                "Load more"
-              )}
-            </button>
+              {status === "loading-more" ? "Loading…" : "Load more"}
+            </Button>
           </div>
         )}
 
@@ -1124,21 +1116,15 @@ const ConsumerView: React.FC<
 
         {hasMore && !searchActive && (
           <div className="px-3 py-2">
-            <button
-              type="button"
+            <Button
+              variant="quiet"
               onClick={onLoadMore}
               disabled={status === "loading-more"}
-              className="flex h-8 w-full items-center justify-center gap-1.5 rounded-lg text-xs text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-60 transition-colors"
+              icon={status === "loading-more" ? <Loader2 className="animate-spin" /> : undefined}
+              className="w-full"
             >
-              {status === "loading-more" ? (
-                <>
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                  Loading…
-                </>
-              ) : (
-                "Load more"
-              )}
-            </button>
+              {status === "loading-more" ? "Loading…" : "Load more"}
+            </Button>
           </div>
         )}
       </div>
@@ -1223,22 +1209,17 @@ const Section: React.FC<SectionProps> = ({
           headerClassName,
         )}
       >
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          className="flex min-w-0 flex-1 items-center gap-1 px-2 py-1 text-left text-[10px] font-semibold uppercase tracking-wide text-muted-foreground hover:text-foreground"
-        >
-          {open ? (
-            <ChevronDown size={10} className="shrink-0" />
+        <Button variant="quiet" icon={open ? (
+            <ChevronDown  size={10} />
           ) : (
-            <ChevronRight size={10} className="shrink-0" />
-          )}
+            <ChevronRight  size={10} />
+          )} onClick={() => setOpen((v) => !v)} className="min-w-0">
           {icon}
           <span className="truncate">{label}</span>
           <span className="ml-auto shrink-0 text-muted-foreground">
             {count}
           </span>
-        </button>
+        </Button>
         {action != null && <span className="shrink-0 pr-1.5">{action}</span>}
       </div>
       {open && <div>{children}</div>}
@@ -1448,25 +1429,15 @@ const PinnedChatsSection: React.FC<{
 
   return (
     <div className="mb-2">
-      <button
-        type="button"
+      <DisclosureHeader
+        open={open}
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/70 hover:text-foreground"
-        aria-expanded={open}
+        variant="label"
+        chevron="end"
         aria-label="Toggle pinned chats"
-      >
-        <span className="flex items-baseline gap-1.5">
-          <span>Pinned</span>
-          <span className="text-[10px] text-muted-foreground/70 normal-case tracking-normal">
-            {pinned.length}
-          </span>
-        </span>
-        {open ? (
-          <ChevronDown className="h-3 w-3 shrink-0" />
-        ) : (
-          <ChevronRight className="h-3 w-3 shrink-0" />
-        )}
-      </button>
+        title="Pinned"
+        meta={pinned.length}
+      />
       {open && (
         <div>
           {visiblePins.map((conv) => (

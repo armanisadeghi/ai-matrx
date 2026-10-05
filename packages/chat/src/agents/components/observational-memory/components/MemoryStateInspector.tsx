@@ -33,7 +33,7 @@ import { supabase } from "../../../../host/db";
 import type { Tables } from "../../../../host/db-types";
 import { formatDateTime, formatRelativeTime, formatTokens } from "./format";
 import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
-import { Button } from "@ai-matrx/design-system/controls";
+import { Button, DisclosureHeader } from "@ai-matrx/design-system/controls";
 
 type MemoryRow = Tables<{ schema: "chat" }, "observational_memory">;
 
@@ -517,30 +517,14 @@ function ObservedMessageIds({ value }: { value: unknown }) {
 
   return (
     <div className="rounded border border-border/60 bg-background/50 overflow-hidden">
-      <button
-        type="button"
+      <DisclosureHeader
+        open={open}
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center gap-1.5 px-2 py-1 bg-muted/20 hover:bg-muted/30 transition-colors text-left"
-      >
-        <ChevronRight
-          className={cn(
-            "w-3 h-3 text-muted-foreground transition-transform shrink-0",
-            open && "rotate-90",
-          )}
-        />
-        <MessageSquare className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-        <div className="flex-1 min-w-0">
-          <div className="text-[11px] font-medium text-foreground">
-            Observed messages
-          </div>
-          <div className="text-[10px] text-muted-foreground truncate">
-            Message IDs already fed into memory
-          </div>
-        </div>
-        <span className="text-[10px] font-mono text-muted-foreground shrink-0">
-          {ids.length}
-        </span>
-      </button>
+        icon={<MessageSquare />}
+        title="Observed messages"
+        line="Message IDs already fed into memory"
+        end={ids.length}
+      />
       {open && (
         <div className="p-2 max-h-48 overflow-y-auto bg-background/50">
           <div className="flex flex-wrap gap-1">

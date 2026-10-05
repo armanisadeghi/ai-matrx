@@ -14,6 +14,7 @@ import { fetchAgentConversations } from "../../redux/conversation-list/conversat
 import { makeSelectAgentConversations } from "../../redux/conversation-list/conversation-list.selectors";
 import type { ConversationListItem } from "../../redux/conversation-list/conversation-list.types";
 import { ItemRow } from "@ai-matrx/chat/host/ui-slots";
+import { Button } from "@ai-matrx/design-system/controls";
 import { buildConversationMenu } from "../conversation-actions/conversationActionRegistry";
 import { renameConversation } from "../../redux/conversation-list/conversation-row-actions.thunks";
 import {
@@ -242,23 +243,18 @@ function VersionGroup({
 
   return (
     <div className="mb-0.5">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1.5 w-full px-2 py-1 text-left transition-colors hover:bg-[var(--matrx-glass-bg-hover)] rounded-sm group"
-      >
-        {open ? (
-          <ChevronDown className="w-3 h-3 shrink-0 text-muted-foreground" />
+      <Button variant="quiet" icon={open ? (
+          <ChevronDown />
         ) : (
-          <ChevronRight className="w-3 h-3 shrink-0 text-muted-foreground" />
-        )}
+          <ChevronRight />
+        )} onClick={() => setOpen((v) => !v)} className="w-full">
         <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
           Version {version}
         </span>
         <span className="text-[10px] text-muted-foreground/60 ml-auto">
           {latestDate}
         </span>
-      </button>
+      </Button>
 
       {open && (
         <div className="pl-1">

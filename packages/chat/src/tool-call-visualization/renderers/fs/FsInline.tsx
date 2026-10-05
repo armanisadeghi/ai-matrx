@@ -36,6 +36,7 @@ import { getArg, isTerminal, resultAsObject } from "../_shared";
 import { GenericRenderer } from "../../registry/GenericRenderer";
 import { ToolErrorCard } from "../../result-fields/ToolErrorCard";
 import { ToolResultCard } from "../_shared-entity/ToolResultCard";
+import { Button } from "@ai-matrx/design-system/controls";
 import type { ToolResultCardProps } from "../_shared-entity/ToolResultCard";
 
 // ─── payload shapes ──────────────────────────────────────────────────────────
@@ -142,16 +143,12 @@ const FsListCard: React.FC<{ path: string; entries: FsEntry[] } & ShellCardProps
                         <FsEntryRow key={`${e.name}-${i}`} entry={e} withTopBorder={i > 0} />
                     ))}
                     {remaining > 0 && (
-                        <button
-                            type="button"
-                            onClick={(ev) => {
+                        <Button variant="quiet" onClick={(ev) => {
                                 ev.stopPropagation();
                                 setShowAll(true);
-                            }}
-                            className="flex w-full items-center gap-1.5 border-t border-border/30 px-4 py-1.5 text-left text-xs font-medium text-muted-foreground hover:text-foreground"
-                        >
+                            }} className="w-full">
                             Show {remaining} more
-                        </button>
+                        </Button>
                     )}
                 </div>
             )}
