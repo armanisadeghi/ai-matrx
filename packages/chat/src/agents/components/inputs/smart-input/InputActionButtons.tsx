@@ -245,10 +245,10 @@ export function InputActionButtons({
     <span className="inline-flex h-7 shrink-0 items-center rounded-full text-muted-foreground/60 transition-colors hover:bg-muted/60">
       <AgentMicrophoneButton
         conversationId={conversationId}
-        size="md"
+        size="sm"
         label="Record audio"
         className="w-7 justify-end rounded-l-full rounded-r-none pr-0.5 text-muted-foreground/60 hover:bg-transparent hover:text-foreground"
-        iconClassName=""
+        iconClassName="h-4 w-4"
         onRecordingStateChange={handleVoiceBusyChange}
       />
       <MicDeviceMenu className="h-7 w-5 justify-start rounded-l-none rounded-r-full pl-0.5 text-muted-foreground/60 hover:bg-transparent hover:text-foreground" />
