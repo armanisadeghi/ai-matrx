@@ -1527,15 +1527,18 @@ export function NoteSidebar({ instanceId, onNoteOpened }: NoteSidebarProps) {
                         // used to squeeze the chip to one letter).
                         // The folder name has priority: the organization shows
                         // as its initials (full name in the row's tooltip).
+                        // Once the name is at its 3.5rem floor the chip gives way (it
+                        // truncates): a shrink-0 chip ran past the row into the count
+                        // ("AW · 1 of 2" over "2", 2026-10-05 final check).
                         <span
                           aria-label={`in ${orgSuffix}`}
-                          className="max-w-[9rem] shrink-0 truncate rounded bg-muted px-1 text-xs font-normal normal-case tracking-normal text-muted-foreground"
+                          className="min-w-0 max-w-[9rem] truncate rounded bg-muted px-1 text-xs font-normal normal-case tracking-normal text-muted-foreground"
                         >
                           {badgeText}
                         </span>
                       )}
                     </span>
-                    <span className="text-xs font-normal opacity-50 tabular-nums">
+                    <span className="shrink-0 text-xs font-normal opacity-50 tabular-nums">
                       {count}
                     </span>
                   </button>
