@@ -163,13 +163,20 @@ const ONE_LINE_CACHE_SIZE = 16;
  * same string.
  */
 export function spelledKindsAsOneLine(text: string): string {
-  if (!text || !mayHoldKindKey(text)) return text;
+  // A key still typing at the very end (`{'__ki`) has no `kind` yet: only the tail is read.
+  if (!text || (!mayHoldKindKey(text) && !mayEndInSpelledKey(text))) return text;
   const cached = ONE_LINE_CACHE.get(text);
   if (cached !== undefined) return cached;
   const out = computeSpelledKindsAsOneLine(text);
   if (ONE_LINE_CACHE.size >= ONE_LINE_CACHE_SIZE) ONE_LINE_CACHE.delete(ONE_LINE_CACHE.keys().next().value!);
   ONE_LINE_CACHE.set(text, out);
   return out;
+}
+
+/** Whether the last characters could be a spelled key still arriving (`{\\"__k`, `{'__`, `{“_`). */
+function mayEndInSpelledKey(text: string): boolean {
+  const tail = text.slice(-40);
+  return tail.includes("{") && SPELLED_PARTIAL_KIND_TAIL.test(tail);
 }
 
 function computeSpelledKindsAsOneLine(text: string): string {
@@ -182,7 +189,9 @@ function computeSpelledKindsAsOneLine(text: string): string {
     cursor = region.end;
   }
   const rest = text.slice(cursor);
-  const partial = rest.includes("{") ? SPELLED_PARTIAL_KIND_TAIL.exec(rest) : null;
+  const tailFrom = Math.max(0, rest.length - 40);
+  const tailMatch = rest.includes("{", tailFrom) ? SPELLED_PARTIAL_KIND_TAIL.exec(rest.slice(tailFrom)) : null;
+  const partial = tailMatch ? { index: tailFrom + tailMatch.index } : null;
   if (partial && !inside(quotedSourceRanges(text), cursor + partial.index)) {
     return out + rest.slice(0, partial.index);
   }
