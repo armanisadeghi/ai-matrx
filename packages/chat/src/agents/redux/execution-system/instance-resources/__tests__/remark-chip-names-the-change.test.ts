@@ -27,7 +27,7 @@ describe("edit chip label", () => {
   });
   it("a replaced phrase names both sides", () => {
     expect(remarkSummaryOf("measurable success metrics", "three clear goals")).toBe(
-      "- measurable success metrics → + three clear goals",
+      "- measurable success metrics. → + three clear goals.",
     );
   });
   it("a removed sentence names what went", () => {

@@ -48,6 +48,7 @@ import {
 import { MessageAttachmentStrip } from "../MessageAttachmentStrip";
 import { isAttachmentMessagePart } from "../../context-items/normalize";
 import MarkdownStream from "@host/components/MarkdownStream";
+import { literalUserText } from "./literal-user-text";
 import type { InstanceContextEntry } from "../../../types/instance.types";
 import type { ChatRootState } from "../../../../store/root-state";
 import { buildVariableDisplayLines } from "../../../utils/variable-display-lines";
@@ -100,7 +101,7 @@ export function AgentUserMessageContent({
       />
       {trimmedText || hasBodyBlocks ? (
         <MarkdownStream imagePolicy="other"
-          content={trimmedText}
+          content={literalUserText(trimmedText)}
           serverProcessedBlocks={hasBodyBlocks ? bodyBlocks : undefined}
           className="text-xs text-foreground"
           hideCopyButton

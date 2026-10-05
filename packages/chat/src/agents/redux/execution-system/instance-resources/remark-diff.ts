@@ -52,10 +52,13 @@ export function remarkChangeSummary(before: string, after: string): string {
       let run = "";
       for (const seg of line.segments) {
         if (seg.type === line.type) run += seg.value;
-        else if (run.trim()) {
-          target.push(run.trim());
+        else if (seg.type === "unchanged" && seg.value.trim() === "" && run.trim()) {
+          // Whitespace between two changed words keeps one run: "a b c" → "x y z".
+          run += seg.value;
+        } else {
+          if (run.trim()) target.push(run.trim());
           run = "";
-        } else run = "";
+        }
       }
       if (run.trim()) target.push(run.trim());
     } else if (line.content.trim()) {

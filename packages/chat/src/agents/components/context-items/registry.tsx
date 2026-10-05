@@ -61,7 +61,6 @@ import { ProcessedDocumentBody } from "./bodies/ProcessedDocumentBody";
 import { ProcessedDocumentTitle } from "./bodies/ProcessedDocumentTitle";
 import { GenericBody, GenericFooter } from "./bodies/GenericBody";
 import { RemarkBody } from "./bodies/RemarkBody";
-import { RemarkBody } from "./bodies/RemarkBody";
 import { BookmarkReferenceBody } from "./bodies/BookmarkReferenceBody";
 import { EntityReferenceBody } from "./bodies/EntityReferenceBody";
 import { ContextInputBody } from "./bodies/ContextInputBody";
