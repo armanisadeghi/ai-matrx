@@ -32,6 +32,8 @@ import {
   type StreamTickRecord,
 } from "@/features/content-ir/studio/stream-simulator";
 import type { RenderPathId, RenderPathVerdict } from "./paths";
+import { wrapArtifactText } from "@/features/canvas/materialization/artifactWire";
+import { resolveArtifactDefByKind } from "@/features/canvas/artifact-types/artifact-type-registry";
 import { drawsKindAsRawJson } from "./draws-raw-kind-json";
 
 /** What a path run hands the UI: blocks to render + the honest verdict. */
@@ -210,6 +212,31 @@ export function artifactWire(kind: string, value: Record<string, unknown>) {
   return `<artifact type="${kind}" id="preview" title="${kind}">\n${body}\n</artifact>\n`;
 }
 
+/** The made-up canvas id the materialized path carries (UUID-shaped, so it renders by id). */
+export const MATERIALIZED_PREVIEW_ID = "5f0c2a8e-3b1d-4c6e-9a7f-2d4b6e8c1a3f";
+
+/** The canvas type a kind materializes as (its artifact def, else the generic kind value). */
+export function canvasTypeForKind(kind: string): string {
+  return resolveArtifactDefByKind(kind)?.canvasType ?? "kind_value";
+}
+
+/**
+ * The MATERIALIZED wire (K5, round 7): what a saved answer's text holds once
+ * the Canvas has its row — prose, then the id-bearing tag the materializer
+ * writes (`wrapArtifactText`), body = compact canonical JSON.
+ */
+export function materializedArtifactWire(kind: string, value: Record<string, unknown>) {
+  const body = JSON.stringify(withKindFirst(value, kind));
+  const title = typeof value.title === "string" ? value.title : kind;
+  return `Here is what you asked for.\n\n${wrapArtifactText({
+    canvasType: canvasTypeForKind(kind),
+    id: MATERIALIZED_PREVIEW_ID,
+    version: 1,
+    title,
+    body,
+  })}\n`;
+}
+
 /**
  * The RELOAD path: a stored value, already parsed, routed as a rehydrated
  * message is. No text is produced and none is parsed — in production either.
@@ -283,6 +310,7 @@ export function wireForPath(
   if (pathId === "chat_xml_tag") return xmlTagWire(kind, value);
   if (pathId === "chat_bare") return buildWireText(value, kind, "bare");
   if (pathId === "chat_artifact") return artifactWire(kind, value);
+  if (pathId === "chat_artifact_materialized") return materializedArtifactWire(kind, value);
   return null;
 }
 

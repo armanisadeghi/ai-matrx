@@ -30,6 +30,7 @@ export type RenderPathId =
   | "chat_xml_tag"
   | "chat_bare"
   | "chat_artifact"
+  | "chat_artifact_materialized"
   | "server_partial"
   | "reload"
   | "direct"
@@ -95,6 +96,15 @@ export const RENDER_PATHS: readonly RenderPathSpec[] = [
       "The artifact system wraps the answer in an <artifact> tag with a Canvas to open in.",
     exercises:
       "Real: the accumulator's attr-XML body path. The block keeps the artifact renderer by design — what is checked here is that the envelope still attaches, which is what every selector reads.",
+    streams: true,
+  },
+  {
+    id: "chat_artifact_materialized",
+    label: "Chat — saved artifact",
+    where:
+      "The same answer after it is saved to the Canvas: prose, then <artifact type=\"<its canvas type>\" id=\"<uuid>\" version=\"1\">, rendered by id.",
+    exercises:
+      "Real: the accumulator over the materialized wire (real wrapArtifactText) and the by-id artifact renderer. The id here is made up, so the saved row is not found and the inline body is shown — the matrix tests also mock the row as loading and loaded.",
     streams: true,
   },
   {

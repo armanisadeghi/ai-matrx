@@ -31,7 +31,7 @@ import { SYSTEM_KIND_DEFINITIONS } from "@/features/content-ir/registry/system-k
 import { REFUSAL_KIND } from "@/features/content-ir/kinds/refusal";
 import { resolveBlockDispatch } from "@/components/mardown-display/chat-markdown/block-registry/block-dispatch";
 import { RENDER_PATHS, type RenderPathId } from "../paths";
-import { routeBlock, runRenderPath } from "../run-path";
+import { canvasTypeForKind, MATERIALIZED_PREVIEW_ID, routeBlock, runRenderPath } from "../run-path";
 
 // 🚨 A PARTIAL MOCK OF A REAL MODULE IS A SUITE THAT DIES ON THE NEXT EXPORT
 // (DD-239). This used to replace the whole capture store with `{ captureError }`.
@@ -46,6 +46,23 @@ jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({
 }));
 
 /**
+ * K5 (round 7): the canvas row source the by-id artifact path reads
+ * (`ArtifactRefBlock` → `useCanvasItem`), set per test: loading, loaded or
+ * missing. Every other path never calls it.
+ */
+type MockCanvasItem = { row: Record<string, unknown> | null; loading: boolean; error: string | null };
+let mockCanvasItem: MockCanvasItem = { row: null, loading: false, error: "not in this store" };
+/** Ids the by-id renderer asked for — proof a cell went through ArtifactRefBlock. */
+const mockCanvasReads: string[] = [];
+jest.mock("@/features/canvas/hooks/useCanvasItem", () => ({
+  useCanvasItem: (id: string | null) => {
+    if (!id) return { row: null, loading: false, error: null };
+    mockCanvasReads.push(id);
+    return mockCanvasItem;
+  },
+}));
+
+/**
  * Paths whose success means "the kind's component rendered".
  *
  * `chat_artifact` is deliberately NOT one of them: an artifact block has an
@@ -57,7 +74,8 @@ jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({
 const COMPONENT_PATHS: RenderPathId[] = RENDER_PATHS.filter(
   (p) =>
     (p.streams || p.id === "reload" || p.id === "server_partial") &&
-    p.id !== "chat_artifact",
+    p.id !== "chat_artifact" &&
+    p.id !== "chat_artifact_materialized",
 ).map((p) => p.id);
 
 interface Archetype {
@@ -339,6 +357,52 @@ describe("THE RENDER MATRIX — a valid payload always reaches its component", (
         }
         expect(leaks).toEqual([]);
       }, 120_000);
+
+      // K5: the REAL materialized form — `<artifact type="<canvas type>"
+      // id="<uuid>" version="1">` after prose — goes through the by-id
+      // renderer (ArtifactRefBlock). Every frame is judged with the saved row
+      // loading, loaded and missing.
+      it.each([
+        ["row loading", () => ({ row: null, loading: true, error: null })],
+        [
+          "row loaded",
+          (kind: string, value: Record<string, unknown>) => ({
+            row: {
+              id: MATERIALIZED_PREVIEW_ID,
+              type: canvasTypeForKind(kind),
+              version: 1,
+              title: kind,
+              content: { data: { ...value, __kind: kind }, type: canvasTypeForKind(kind) },
+            },
+            loading: false,
+            error: null,
+          }),
+        ],
+        ["row missing", () => ({ row: null, loading: false, error: "not found" })],
+      ] as Array<[string, (kind: string, value: Record<string, unknown>) => MockCanvasItem]>)(
+        `never puts a __kind key on screen on "chat_artifact_materialized" (%s, DOM)`,
+        async (_state, rowFor) => {
+          const kind = register(archetype);
+          mockCanvasItem = rowFor(kind, archetype.value);
+          mockCanvasReads.length = 0;
+          const run = runRenderPath("chat_artifact_materialized", kind, archetype.value);
+          if (!run?.frames) throw new Error("chat_artifact_materialized produced no frames");
+          expect(run.frames.some((f) => f.block.type === "artifact")).toBe(true);
+          const leaks: string[] = [];
+          for (const frame of everyKindFrame(run.frames)) {
+            const verdict = await domFrameVerdict(frame.block, { isStreamActive: frame.isStreamActive });
+            if (verdict.failed) leaks.push(`${frame.block.type}${verdict.empty ? ` (EMPTY ${verdict.html.slice(0, 120)})` : ""}: ${verdict.text.replace(/\s+/g, " ").slice(0, 100)}`);
+          }
+          // The prose before the tag stays prose — never a code card.
+          for (const frame of run.frames) {
+            if ((frame.block.content ?? "").startsWith("Here is what")) expect(frame.block.type).toBe("text");
+          }
+          expect(leaks).toEqual([]);
+          // Drawn through the by-id path, for the made-up saved id.
+          expect(mockCanvasReads).toContain(MATERIALIZED_PREVIEW_ID);
+        },
+        120_000,
+      );
 
       it("keeps the payload intact end to end (zero loss)", () => {
         const kind = register(archetype);
