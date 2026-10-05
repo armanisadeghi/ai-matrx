@@ -24,6 +24,8 @@
  */
 import React, { act, useEffect } from "react";
 import { createRoot, type Root } from "react-dom/client";
+import { Provider } from "react-redux";
+import { configureStore } from "@reduxjs/toolkit";
 
 import { MandateOrganizationUnresolvedError } from "@ai-matrx/chat/mandates/service";
 import { useMandate } from "@ai-matrx/chat/mandates/useMandate";
@@ -43,6 +45,10 @@ jest.mock("@ai-matrx/chat/mandates/service", () => {
 });
 
 const KEY = "masterwork.conductor";
+
+// The mandate hooks read the selected organization from the store (it is part
+// of the question), so they render under one, as they do in the app.
+const testStore = configureStore({ reducer: { chatHost: () => ({ org: null }) } });
 
 let container: HTMLDivElement;
 let root: Root;
@@ -94,7 +100,7 @@ it("retries once on its own when the workspace is not ready yet", async () => {
     .mockResolvedValueOnce({ agentId: "agent-1", contract: null });
 
   await act(async () => {
-    root.render(<Probe />);
+    root.render(<Provider store={testStore}><Probe /></Provider>);
   });
   await settle();
 
@@ -112,7 +118,7 @@ it("reports a workspace that never arrives as WAIT, never as an unbound Mandate"
   const consoleError = jest.spyOn(console, "error").mockImplementation();
 
   await act(async () => {
-    root.render(<Probe />);
+    root.render(<Provider store={testStore}><Probe /></Provider>);
   });
   await settle();
 
@@ -131,7 +137,7 @@ it("still reports a genuinely unresolvable Mandate as a fault, with no retry", a
   const consoleError = jest.spyOn(console, "error").mockImplementation();
 
   await act(async () => {
-    root.render(<Probe />);
+    root.render(<Provider store={testStore}><Probe /></Provider>);
   });
   await settle();
 

@@ -28,6 +28,8 @@
  */
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
+import { Provider } from "react-redux";
+import { configureStore } from "@reduxjs/toolkit";
 
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
@@ -179,9 +181,13 @@ afterEach(() => {
   container.remove();
 });
 
+// The mandate hooks read the selected organization from the store (it is part
+// of the question), so they render under one, as they do in the app.
+const testStore = configureStore({ reducer: { chatHost: () => ({ org: null }) } });
+
 async function mount(element: React.ReactElement): Promise<void> {
   await act(async () => {
-    root.render(element);
+    root.render(<Provider store={testStore}>{element}</Provider>);
   });
   // The carriers resolve in an effect; let the settled promises flush.
   await act(async () => {

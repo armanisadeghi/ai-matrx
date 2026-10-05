@@ -1,4 +1,14 @@
+import * as React from "react";
+import { Provider } from "react-redux";
+import { configureStore } from "@reduxjs/toolkit";
 import { renderHook } from "@/test-utils/renderHook";
+
+// The mandate hooks read the selected organization from the store (it is part
+// of the question), so they render under one, as they do in the app.
+const testStore = configureStore({ reducer: { chatHost: () => ({ org: null }) } });
+const wrapper = ({ children }: { children: React.ReactNode }) => (
+  <Provider store={testStore}>{children}</Provider>
+);
 
 const resolveMandate = jest.fn();
 const onMandateCacheInvalidated = jest.fn((_listener: unknown) => jest.fn());
@@ -23,9 +33,9 @@ describe("useMandate — disabled key", () => {
       // sloppily, which the hook trims. Neither is a key, so neither is typed
       // as one — the cast is what makes the test able to pass the sentinel at
       // all now that the carrier is typed (V-L6a).
-      const hook = await renderHook(() =>
-        useMandate(mandateKey as ""),
-      );
+      const hook = await renderHook(() => useMandate(mandateKey as ""), {
+        wrapper,
+      });
 
       expect(resolveMandate).not.toHaveBeenCalled();
       expect(hook.current).toEqual({

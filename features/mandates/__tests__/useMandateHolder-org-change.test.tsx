@@ -10,7 +10,10 @@ jest.mock("@/lib/redux/hooks", () => ({
 }));
 // The chat package reads these hooks through its own module (P3): one double covers both.
 jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
-jest.mock("@/lib/redux/slices/appContextSlice", () => ({
+// The hook reads the selected organization through the chat package's org seam,
+// never the app slice — mocking the slice left this guard green-by-accident-dead
+// (it timed out on every run) while the hook's own behaviour went unchecked.
+jest.mock("@ai-matrx/chat/host/org", () => ({
   selectOrganizationId: () => selectedOrg,
 }));
 
