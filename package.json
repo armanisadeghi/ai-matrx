@@ -618,7 +618,7 @@
     "validate:local": "node scripts/validate.mjs --local",
     "validate:no-sync": "node scripts/validate.mjs --no-sync",
     "validate:no-lint": "node scripts/validate.mjs --no-lint",
-    "sync:matrx-packages": "pnpm update -r \"@ai-matrx/*\" --latest && pnpm check:matrx-packages",
+    "sync:matrx-packages": "pnpm update -r \"@ai-matrx/*\" --latest && pnpm update -r \"@ai-matrx/*\" --depth Infinity && pnpm check:matrx-packages",
     "check:matrx-packages": "node scripts/check-matrx-packages.mjs",
     "check:matrx-packages:duplicates": "node scripts/check-matrx-packages.mjs --duplicates",
     "check:matrx-dist-integrity": "node scripts/check-matrx-dist-integrity.mjs",

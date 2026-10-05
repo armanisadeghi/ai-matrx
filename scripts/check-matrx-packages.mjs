@@ -629,7 +629,24 @@ export async function auditGraph({
         );
     }
 
-    const names = [...new Set([...graph.installed.keys(), ...graph.declared.map((d) => d.name)])].sort();
+    // A package this repo declares ONLY as workspace:* / link: and that no lockfile
+    // copies from the registry is an in-repo workspace member (packages/*): it IS the
+    // local source, so npm has nothing to verify — and it may never have been
+    // published at all. Asking npm about it can only fail. A registry copy pulled in
+    // transitively still lands in graph.installed and is verified like any other.
+    const isWorkspaceOnly = (name) => {
+        if ((graph.installed.get(name)?.size ?? 0) > 0) return false;
+        const declared = graph.declared.filter((d) => d.name === name);
+        return (
+            declared.length > 0 &&
+            declared.every((d) => d.specifier === 'workspace:*' || d.specifier.startsWith('link:'))
+        );
+    };
+    const allNames = [...new Set([...graph.installed.keys(), ...graph.declared.map((d) => d.name)])].sort();
+    for (const name of allNames.filter(isWorkspaceOnly)) {
+        notes.push(`${name} resolves to workspace source (not a registry copy).`);
+    }
+    const names = allNames.filter((name) => !isWorkspaceOnly(name));
     const registry = new Map(
         await Promise.all(names.map(async (name) => [name, await getRegistry(name)])),
     );
@@ -1175,6 +1192,21 @@ async function selfTest() {
         now,
     });
     expect('clean graph has no failures', clean.failures.length, 0);
+
+    // ── GREEN — an unpublished in-repo workspace member is never sent to npm ──
+    const workspaceGraph = emptyGraph();
+    addDeclared(workspaceGraph, '@ai-matrx/unpublished-local', 'dependencies', 'workspace:*', 'package.json');
+    const asked = [];
+    const workspaceOnly = await auditGraph({
+        graph: workspaceGraph,
+        getRegistry: async (name) => {
+            asked.push(name);
+            return { registryError: 'Command failed: npm view (E404)' };
+        },
+        now,
+    });
+    expect('workspace-only member has no failures', workspaceOnly.failures.length, 0);
+    expect('workspace-only member is not looked up on npm', asked.length, 0);
 
     // ── Whole-run exit codes through the real runCheck ──────────────────────
     const runWith = (graph, getRegistry = fixtureRegistry, getTarballReachable = async () => true) =>
