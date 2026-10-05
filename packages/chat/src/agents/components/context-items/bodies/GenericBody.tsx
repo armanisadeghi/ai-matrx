@@ -12,14 +12,10 @@
 
 import type { ContextItemBodyProps } from "../types";
 import { AnswerValueView } from "@host/components/official/structured-value/AnswerValueView";
-import { hasKindKey } from "@ai-matrx/chat/utils/content-ir/surfaces/json-kind-signal";
+import { hasKindKey, valueCarriesKind } from "@ai-matrx/chat/utils/content-ir/surfaces/json-kind-signal";
 
 function carriesKind(value: unknown): boolean {
-  try {
-    return hasKindKey(JSON.stringify(value) ?? "");
-  } catch {
-    return false;
-  }
+  return valueCarriesKind(value);
 }
 
 function countRefs(item: ContextItemBodyProps["item"]): [string, number][] {

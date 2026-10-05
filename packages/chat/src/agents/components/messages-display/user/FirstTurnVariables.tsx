@@ -34,7 +34,7 @@ import { buildVariableDisplayLines } from "../../../utils/variable-display-lines
 import { EntityRef } from "@host/components/official/entity-ref/EntityRef";
 import { useEntityTitles } from "../../../../host/ui-slots";
 import { AnswerValueView } from "@host/components/official/structured-value/AnswerValueView";
-import { hasKindKey } from "@ai-matrx/chat/utils/content-ir/surfaces/json-kind-signal";
+import { hasKindKey, valueCarriesKind } from "@ai-matrx/chat/utils/content-ir/surfaces/json-kind-signal";
 
 /**
  * The structured value of a variable that carries a `__kind` (at any depth),
@@ -43,11 +43,7 @@ import { hasKindKey } from "@ai-matrx/chat/utils/content-ir/surfaces/json-kind-s
  */
 function kindCarryingValue(value: unknown): unknown {
   if (value != null && typeof value === "object") {
-    try {
-      return hasKindKey(JSON.stringify(value)) ? value : null;
-    } catch {
-      return null;
-    }
+    return valueCarriesKind(value) ? value : null;
   }
   if (typeof value === "string" && hasKindKey(value)) {
     try {

@@ -18,7 +18,7 @@ import type { AgendaTask, SchRunRow } from "../../types";
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
-import { hasKindKey } from "@/features/content-ir/surfaces/json-kind-signal";
+import { valueCarriesKind } from "@/features/content-ir/surfaces/json-kind-signal";
 import { answerPreviewText } from "@/components/official/structured-value/AnswerTextPreview";
 
 interface Props {
@@ -116,7 +116,7 @@ export function RunRow({ run, task = null }: Props) {
               <summary className="cursor-pointer text-muted-foreground">
                 Result metadata
               </summary>
-              {hasKindKey(JSON.stringify(run.result_metadata)) ? (
+              {valueCarriesKind(run.result_metadata) ? (
                 <div className="mt-1">
                   <AnswerValueView value={run.result_metadata} density="inline" />
                 </div>

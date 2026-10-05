@@ -11,7 +11,7 @@
  * over the wire shapes, which is what makes the contract testable at all.
  */
 
-import { hasKindKey } from "@/features/content-ir/surfaces/json-kind-signal";
+import { valueCarriesKind } from "@/features/content-ir/surfaces/json-kind-signal";
 
 // ---------------------------------------------------------------------------
 // The shapes, structurally typed
@@ -107,14 +107,10 @@ export function payloadKind(payload: unknown): string | null {
   return typeof kind === "string" && kind.trim() ? kind.trim() : null;
 }
 
-/** A `"__kind"` key anywhere inside a structured payload. */
+/** A kind anywhere inside a structured payload — string-held kinds included. */
 function carriesNestedKind(payload: unknown): boolean {
   if (!payload || typeof payload !== "object") return false;
-  try {
-    return hasKindKey(JSON.stringify(payload));
-  } catch {
-    return false;
-  }
+  return valueCarriesKind(payload);
 }
 
 // ---------------------------------------------------------------------------

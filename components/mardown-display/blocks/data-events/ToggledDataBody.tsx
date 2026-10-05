@@ -11,15 +11,11 @@
  */
 
 import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
-import { hasKindKey } from "@/features/content-ir/surfaces/json-kind-signal";
+import { valueCarriesKind } from "@/features/content-ir/surfaces/json-kind-signal";
 
 function carriesKind(value: unknown): boolean {
   if (value == null || typeof value !== "object") return false;
-  try {
-    return hasKindKey(JSON.stringify(value));
-  } catch {
-    return false;
-  }
+  return valueCarriesKind(value);
 }
 
 export function ToggledDataBody({
