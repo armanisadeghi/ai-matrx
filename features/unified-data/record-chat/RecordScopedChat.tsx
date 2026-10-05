@@ -51,6 +51,10 @@ type DoorCaller = {
   ): PromiseLike<{ data: unknown; error: { message: string } | null }>;
 };
 
+/** How often, and how many times, the bind is asked again while the conversation's row is not made yet. */
+const BIND_RETRY_MS = 3000;
+const BIND_RETRIES = 200;
+
 async function bindConversationToRecord(args: {
   organizationId: string;
   conversationId: string;
@@ -141,16 +145,24 @@ export function RecordScopedChat({ ctx, organizationId, className }: RecordScope
     if (boundFor.current === key) return;
     boundFor.current = key;
     let cancelled = false;
-    void bindConversationToRecord({
-      organizationId,
-      conversationId,
-      recordId: ctx.recordId,
-    }).then((answered) => {
+    // A CONVERSATION'S ROW EXISTS ONLY AFTER ITS FIRST MESSAGE (conversation-start contract: the
+    // client mints the id, the server makes the row on the first turn), so a bind at open is refused
+    // as "not yours" until then. It is asked again until the row is there — the record's facts are
+    // already in the chat's context — and only a refusal that outlives that wait is said.
+    const attempt = async (left: number): Promise<void> => {
+      const answered = await bindConversationToRecord({ organizationId, conversationId, recordId: ctx.recordId });
       if (cancelled) return;
+      if (answered.ok) return setBound("bound");
+      if (left > 0 && /not yours/i.test(answered.because)) {
+        await new Promise((r) => setTimeout(r, BIND_RETRY_MS));
+        if (!cancelled) return attempt(left - 1);
+        return;
+      }
       // NOTHING FAILS SILENTLY. A chat that looks bound and is not would answer about this
       // record out of nothing at all, which is the one failure a record chat may never have.
-      setBound(answered.ok ? "bound" : { refused: answered.because });
-    });
+      setBound({ refused: answered.because });
+    };
+    void attempt(BIND_RETRIES);
     return () => {
       cancelled = true;
     };
@@ -191,6 +203,14 @@ export function RecordScopedChat({ ctx, organizationId, className }: RecordScope
     );
   }
 
+  if (!conversationId && launchRefused) {
+    return (
+      <p className={cn("px-2 py-1 text-xs text-destructive", className)} data-record-chat-refused="">
+        {launchRefused}
+      </p>
+    );
+  }
+
   if (!conversationId) {
     return (
       <p className={cn("px-2 py-1 text-xs text-muted-foreground", className)}>
@@ -206,7 +226,7 @@ export function RecordScopedChat({ ctx, organizationId, className }: RecordScope
       <div className="flex flex-wrap items-center gap-2 text-xs">
         <span className="rounded-full border px-2 py-0.5 font-medium">About: {ctx.title}</span>
         {bound === "pending" ? (
-          <span className="text-muted-foreground">binding this conversation to the record…</span>
+          <span className="text-muted-foreground">Linked once you ask</span>
         ) : bound === "bound" ? null : (
           <span className="text-destructive">
             This conversation is NOT bound to {ctx.title} ({bound.refused}), so the agent has not
