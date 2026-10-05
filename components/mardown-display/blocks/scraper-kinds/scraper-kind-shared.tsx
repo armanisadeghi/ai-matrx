@@ -201,14 +201,13 @@ export const Disclosure: React.FC<{
   return (
     <div className="relative overflow-hidden rounded-lg border border-border bg-card">
       <DisclosureHeader
-        className="w-full"
         open={open}
         onClick={() => setOpen((o) => !o)}
         icon={<Icon />}
         title={label}
         meta={typeof count === "number" ? count : undefined}
         end={summary}
-        className="mr-24"
+        className="w-[calc(100%-6rem)]"
       />
       {copy && (
         <div className="absolute right-9 top-1.5">
