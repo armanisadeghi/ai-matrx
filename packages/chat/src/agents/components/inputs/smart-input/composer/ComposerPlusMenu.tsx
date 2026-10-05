@@ -371,7 +371,7 @@ export function ComposerPlusMenu({
         <ComposerSubmenu row={{ icon: FileText, label: "Message templates" }} panelClassName="w-[360px] h-[min(60dvh,440px)] p-0">
           {(closeCascade) => (
             <SmartInputMessageTemplatePicker
-              onSelect={(templateText) => {
+              onSelect={(templateText: string) => {
                 insertTemplate(templateText);
                 closeCascade();
                 close();
@@ -505,7 +505,7 @@ const WORKSPACE_VIEWS: Exclude<ResourcePickerViewId, null>[] = [
   "documents",
 ];
 function pickerItem(view: Exclude<ResourcePickerViewId, null>) {
-  const item = flattenResourcePickerItems().find((i) => i.id === view);
+  const item = flattenResourcePickerItems().find((i: { id: string }) => i.id === view);
   if (!item) throw new Error(`ComposerPlusMenu: no picker item "${view}"`);
   return item;
 }
